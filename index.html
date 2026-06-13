@@ -107,21 +107,18 @@ window.addEventListener('unhandledrejection', function(e){ __mlErr((e&&e.reason&
 
 <script type="module">
 /* ============ Firebase config — PASTE YOURS HERE ============ */
-/* ============ Firebase config — PASTE YOURS HERE ============ */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, onSnapshot, setDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
+  apiKey: "REPLACE_ME",
+  authDomain: "REPLACE_ME.firebaseapp.com",
+  projectId: "REPLACE_ME",
+  storageBucket: "REPLACE_ME.appspot.com",
+  messagingSenderId: "REPLACE_ME",
+  appId: "REPLACE_ME"
 };
-/* ============================================================ */
-
 /* ============================================================ */
 
 const CATS = [
@@ -154,8 +151,10 @@ function parseEntry(raw){ let s=raw.trim(); let m=s.match(/^(\d+)\s*[x×]?\s+(.+
   if(m) return {qty:parseInt(m[1],10)||1,name:m[2].trim()};
   m=s.match(/^(.+?)\s*[x×]\s*(\d+)$/i); if(m) return {qty:parseInt(m[2],10)||1,name:m[1].trim()};
   return {qty:1,name:s}; }
+const __LABELS_RE = new RegExp('\\s*\\b(' + Object.keys(LABEL_TO_CAT).join('|') + ')\\s*:', 'gi');
+function normalizeBlock(text){ return text.replace(__LABELS_RE, (m,l)=>'\n'+l+':'); }
 function parseInput(text){ const out=[];
-  for(const raw of text.split(/\n/)){ const line=raw.trim(); if(!line) continue;
+  for(const raw of normalizeBlock(text).split(/\n/)){ const line=raw.trim(); if(!line) continue;
     let forced=null, rest=line; const c=line.indexOf(":");
     if(c!==-1){ const lab=line.slice(0,c).trim().toLowerCase(); if(LABEL_TO_CAT[lab]){ forced=LABEL_TO_CAT[lab]; rest=line.slice(c+1);} }
     for(const tok of rest.split(",").map(s=>s.trim()).filter(Boolean)){ const{qty,name}=parseEntry(tok); if(name) out.push({name,qty,cat:forced}); }
@@ -373,7 +372,10 @@ function editSheet(){
 
 function wire(){
   const mi=app.querySelector("#mainInput"), ma=app.querySelector("#mainAdd");
-  if(mi){ mi.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); addEntries(mi.value,null); mi.value=""; mi.focus(); } }; }
+  if(mi){ mi.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); addEntries(mi.value,null); mi.value=""; mi.focus(); } };
+    mi.onpaste=e=>{ const t=(e.clipboardData||window.clipboardData).getData("text");
+      const looksLikeBlock = t && (t.indexOf("\n")>=0 || /\b(meat|fruit|vegetable|veg|fresh|bulk|asian|alcohol|health|others)\s*:/i.test(t) || t.split(",").length>2);
+      if(looksLikeBlock){ e.preventDefault(); addEntries(t,null); mi.value=""; } }; }
   if(ma){ ma.onpointerdown=e=>e.preventDefault(); ma.onclick=()=>{ addEntries(mi.value,null); mi.value=""; mi.focus(); }; }
 
   app.querySelectorAll("[data-pill]").forEach(b=>{ const id=b.dataset.pill;
