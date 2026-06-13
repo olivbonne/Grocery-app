@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Market List" />
+<meta name="theme-color" content="#F2F6EE" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icon-180.png" />
+<title>Market List</title>
+<script>
+/* Surfaces any startup error on screen instead of hanging on "Opening the list…" */
+function __mlErr(msg){ var el=document.getElementById('app');
+  if(el) el.innerHTML='<div style="padding:28px 22px;font:15px/1.5 -apple-system,system-ui,sans-serif;color:#21351F">'
+   +'<b>The app couldn\'t start.</b><br><br>This usually means extra lines were pasted into the Firebase config '
+   +'(remove any line with <code>getAnalytics</code>, <code>firebase/analytics</code>, or a second <code>const app</code>), '
+   +'or the Firestore database rules weren\'t published.<br><br>'
+   +'<b>Error details:</b><br><span style="color:#C24A33;word-break:break-word">'+msg+'</span></div>'; }
+window.addEventListener('error', function(e){ __mlErr((e&&e.message)||(e&&e.error)||'Unknown error'); });
+window.addEventListener('unhandledrejection', function(e){ __mlErr((e&&e.reason&&e.reason.message)?e.reason.message:String(e&&e.reason)); });
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#21351F; --paper:#F2F6EE; --accent:#E2502C; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; background:var(--paper); color:var(--ink);
+    font-family:'Inter',-apple-system,'SF Pro Text',system-ui,sans-serif; }
+  .wrap { max-width:480px; margin:0 auto; padding:calc(12px + env(safe-area-inset-top)) 14px calc(96px + env(safe-area-inset-bottom)); }
+  .disp { font-family:'Bricolage Grotesque','Inter',system-ui,sans-serif; }
+  input { font-family:inherit; font-size:16px; }
+  button { font-family:inherit; cursor:pointer; }
+  .pill { user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; touch-action:manipulation; }
+  @keyframes rise { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .title { font-weight:800; font-size:20px; letter-spacing:-.02em; }
+  .dot { color:var(--accent); }
+  .count { font-size:12px; color:#5C6C59; font-weight:600; }
+  .avatars { display:flex; }
+  .av { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:700; border:2px solid var(--paper); background:#CBD6C7; color:var(--ink); }
+  .av.me { background:var(--ink); color:#fff; }
+  .addbar { display:flex; gap:6px; margin-bottom:10px; }
+  .addbar input { flex:1; min-width:0; padding:11px 14px; border-radius:14px; border:2px solid var(--ink);
+    outline:none; background:#fff; color:var(--ink); }
+  .addbtn { width:46px; border-radius:14px; border:none; background:var(--accent); color:#fff;
+    font-size:22px; font-weight:700; line-height:1; }
+  section.cat { margin-bottom:7px; }
+  .chead { display:flex; align-items:center; gap:6px; margin-bottom:0; }
+  .chead .lbl { display:flex; align-items:center; gap:5px; border:none; background:transparent; padding:0; }
+  .sq { width:8px; height:8px; border-radius:2px; }
+  .cname { font-family:'Bricolage Grotesque',system-ui,sans-serif; font-weight:700; font-size:12px; letter-spacing:.02em; }
+  .cnum { font-size:11px; color:#9AA796; font-weight:700; }
+  .plus { width:20px; height:20px; border-radius:7px; border:none; background:#E1E9DC; color:#5C6C59;
+    font-size:14px; font-weight:800; line-height:1; display:flex; align-items:center; justify-content:center; }
+  .catadd { display:flex; gap:6px; margin:6px 0; animation:rise .15s ease; }
+  .catadd input { flex:1; min-width:0; padding:9px 12px; border-radius:12px; outline:none; background:#fff; color:var(--ink); }
+  .catadd button { width:40px; border-radius:12px; border:none; color:#fff; font-size:19px; font-weight:700; line-height:1; }
+  .pills { display:flex; flex-wrap:wrap; gap:5px; margin-top:4px; }
+  .pill { display:inline-flex; align-items:center; gap:5px; background:#fff; border:1.5px solid #DCE5D7;
+    border-radius:10px; padding:7px 11px; font-size:14px; font-weight:600; color:var(--ink); }
+  .pill.done { background:#E4EBDF; border-color:#D3DECC; border-left-color:#ADBFA6 !important;
+    color:#7C8B78; text-decoration:line-through; }
+  .qty { font-weight:800; font-size:13px; }
+  .ba { margin-top:14px; border-top:1.5px dashed #C9D4C3; padding-top:10px; }
+  .bahead { display:flex; align-items:center; gap:6px; width:100%; border:none; background:transparent; padding:0; }
+  .bapill { display:inline-flex; align-items:center; gap:5px; background:transparent; border-radius:10px;
+    padding:6px 10px; font-size:13px; font-weight:600; color:#41513E; }
+  .hint { margin-top:12px; font-size:11px; color:#8B9987; text-align:center; }
+  .sweep { position:fixed; left:0; right:0; bottom:0; padding:10px 16px calc(20px + env(safe-area-inset-bottom));
+    display:flex; justify-content:center; pointer-events:none;
+    background:linear-gradient(to top, var(--paper) 55%, rgba(242,246,238,0)); }
+  .sweep button { pointer-events:auto; width:100%; max-width:440px; padding:14px; border-radius:16px; border:none;
+    background:var(--accent); color:#fff; font-size:16px; font-weight:800;
+    box-shadow:0 8px 24px rgba(226,80,44,.35); font-family:'Bricolage Grotesque',system-ui,sans-serif; }
+  .sheet-bg { position:fixed; inset:0; background:rgba(33,53,31,.45); display:flex; align-items:flex-end;
+    justify-content:center; z-index:50; }
+  .sheet { background:var(--paper); width:100%; max-width:480px; border-radius:22px 22px 0 0;
+    padding:18px 18px calc(28px + env(safe-area-inset-bottom)); animation:rise .18s ease; }
+  .qstep { display:flex; align-items:center; background:#fff; border:2px solid var(--ink); border-radius:14px; }
+  .qstep button { width:36px; border:none; background:transparent; font-size:20px; font-weight:700; color:var(--ink); }
+  .catchip { padding:7px 11px; border-radius:999px; border:2px solid #D6E0D1; background:#fff; color:var(--ink);
+    font-size:12px; font-weight:700; }
+  .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff;
+    padding:8px 16px; border-radius:999px; font-size:13px; font-weight:700; animation:rise .2s ease; z-index:60; }
+  .center { min-height:100vh; display:flex; align-items:center; justify-content:center; font-weight:600; }
+  .onb { max-width:420px; margin:0 auto; padding:48px 24px; }
+  .onb h1 { font-family:'Bricolage Grotesque',system-ui,sans-serif; font-weight:800; font-size:36px;
+    line-height:1.05; letter-spacing:-.02em; margin:0; }
+  .onb p { margin-top:12px; font-size:14px; line-height:1.5; color:#4A5A47; }
+  .lbl-cap { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#6B7A68; }
+  .namebtn { padding:12px 18px; border-radius:14px; border:2px solid var(--ink); background:#fff;
+    font-size:15px; font-weight:700; color:var(--ink); }
+  .joinrow { display:flex; gap:8px; margin-top:8px; }
+  .joinrow input { flex:1; min-width:0; padding:12px 14px; border-radius:14px; border:2px solid var(--ink);
+    outline:none; background:#fff; color:var(--ink); }
+  .joinrow button { padding:12px 18px; border-radius:14px; border:none; background:var(--ink); color:#fff;
+    font-weight:700; font-size:15px; }
+  .share { margin-top:8px; font-size:12px; color:#5C6C59; }
+  .sharebtn { border:none; background:#E1E9DC; color:#41513E; font-weight:700; font-size:12px;
+    padding:6px 12px; border-radius:999px; }
+</style>
+</head>
+<body>
+<div id="app"><div class="center">Opening the list…</div></div>
+
+<script type="module">
+/* ============ Firebase config — PASTE YOURS HERE ============ */
+/* ============ Firebase config — PASTE YOURS HERE ============ */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, onSnapshot, setDoc }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
+  authDomain: "grocery-list-88109.firebaseapp.com",
+  projectId: "grocery-list-88109",
+  storageBucket: "grocery-list-88109.firebasestorage.app",
+  messagingSenderId: "237398844171",
+  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
+};
+/* ============================================================ */
+
+/* ============================================================ */
+
+const CATS = [
+  { id:"meat", label:"Meat", emoji:"🥩", color:"#B5402B" },
+  { id:"fruit", label:"Fruit", emoji:"🍌", color:"#C98A06" },
+  { id:"vegetable", label:"Vegetable", emoji:"🥦", color:"#3E7C3A" },
+  { id:"fresh", label:"Fresh", emoji:"🥛", color:"#2E8C7F" },
+  { id:"bulk", label:"Bulk", emoji:"🧻", color:"#6B5CA5" },
+  { id:"asian", label:"Asian", emoji:"🍜", color:"#C73B5B" },
+  { id:"alcohol", label:"Alcohol", emoji:"🍷", color:"#8A5A2B" },
+  { id:"health", label:"Health", emoji:"💊", color:"#2E6FA3" },
+  { id:"others", label:"Others", emoji:"🛒", color:"#5B6770" },
+];
+const CAT = id => CATS.find(c=>c.id===id) || CATS[CATS.length-1];
+const LABEL_TO_CAT = (()=>{ const m={}; CATS.forEach(c=>m[c.label.toLowerCase()]=c.id);
+  Object.assign(m,{veg:"vegetable",vegetables:"vegetable",veggies:"vegetable",fruits:"fruit"}); return m; })();
+const DICT = {
+  meat:["chicken","beef","pork","lamb","turkey","duck","sausage","bacon","mince","steak","fish","salmon","prawn","shrimp","tuna","ham","wings","drumstick","thigh","ribs","meatball"],
+  fruit:["banana","apple","orange","berries","berry","strawberr","blueberr","raspberr","kiwi","grape","mango","melon","watermelon","pineapple","peach","pear","plum","lemon","lime","avocado","cherry","papaya","dragonfruit","lychee","longan"],
+  vegetable:["ginger","broccoli","brocollini","broccolini","choysum","choy sum","bok choy","pak choi","kailan","kangkung","tomato","spinach","mushroom","pumpkin","squash","green bean","bean sprout","taugeh","cabbage","chilli","chili","carrot","potato","onion","garlic","shallot","lettuce","cucumber","capsicum","zucchini","corn","celery","kale","leek","eggplant","cauliflower","radish","beetroot","asparagus","coriander","cilantro","basil","spring onion","scallion","lemongrass"],
+  fresh:["milk","egg","yogurt","yoghurt","cheese","parmesan","butter","bread","cream","juice","hummus","margarine","croissant","bagel"],
+  bulk:["floss","sparkling water","water","salt","sugar","flour","rice","pasta","spaghetti","oil","vinegar","shampoo","conditioner","soap","toothpaste","toothbrush","tissue","toilet paper","paper towel","detergent","sponge","cereal","oats","coffee","tea","honey","peanut butter","jam","ketchup","mayo","mustard","stock","canned","chickpea","lentil","battery","foil"],
+  asian:["kimchi","ramen","noodle","noodles","udon","soba","soy sauce","miso","gochujang","gochugaru","nori","seaweed","dumpling","gyoza","wonton","fish sauce","oyster sauce","sesame oil","sesame","curry paste","tofu","tempeh","mirin","dashi","wasabi","sriracha","sambal","laksa","pho","jin ramen","shin ramen"],
+  alcohol:["wine","beer","vodka","whisky","whiskey","gin","rum","soju","sake","cider","champagne","prosecco","tequila"],
+  health:["vitamin","panadol","paracetamol","ibuprofen","medicine","bandage","band-aid","plaster","supplement","probiotic","sunscreen","cough","lozenge","melatonin","fish oil","magnesium"],
+};
+function guessCat(name){ const n=name.toLowerCase();
+  for(const[c,w] of Object.entries(DICT)) if(w.some(x=>n.includes(x))) return c; return null; }
+function parseEntry(raw){ let s=raw.trim(); let m=s.match(/^(\d+)\s*[x×]?\s+(.+)$/i);
+  if(m) return {qty:parseInt(m[1],10)||1,name:m[2].trim()};
+  m=s.match(/^(.+?)\s*[x×]\s*(\d+)$/i); if(m) return {qty:parseInt(m[2],10)||1,name:m[1].trim()};
+  return {qty:1,name:s}; }
+function parseInput(text){ const out=[];
+  for(const raw of text.split(/\n/)){ const line=raw.trim(); if(!line) continue;
+    let forced=null, rest=line; const c=line.indexOf(":");
+    if(c!==-1){ const lab=line.slice(0,c).trim().toLowerCase(); if(LABEL_TO_CAT[lab]){ forced=LABEL_TO_CAT[lab]; rest=line.slice(c+1);} }
+    for(const tok of rest.split(",").map(s=>s.trim()).filter(Boolean)){ const{qty,name}=parseEntry(tok); if(name) out.push({name,qty,cat:forced}); }
+  } return out; }
+const uid = () => Math.random().toString(36).slice(2,9)+Date.now().toString(36);
+
+/* ---- shared list code from URL (?list=CODE) ---- */
+const params = new URLSearchParams(location.search);
+let listCode = params.get("list");
+if(!listCode){ listCode = uid().slice(0,8); params.set("list", listCode);
+  history.replaceState(null,"",location.pathname+"?"+params.toString()); }
+
+/* ---- personal (this device) ---- */
+const LS = { me:"ml_me", collapse:"ml_collapse_"+listCode };
+let me = localStorage.getItem(LS.me) || null;
+let collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}');
+
+/* ---- shared state ---- */
+let state = { items:[], buyAgain:[], members:[] };
+let toast=null, catEntry=null, editing=null, configured=false;
+
+/* ---- Firebase ---- */
+let db=null, listRef=null, applyingRemote=false;
+try {
+  if(firebaseConfig.apiKey !== "REPLACE_ME"){
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+    listRef = doc(db, "lists", listCode);
+    configured = true;
+    onSnapshot(listRef, snap => {
+      if(snap.exists()){
+        const d = snap.data();
+        state = { items:d.items||[], buyAgain:d.buyAgain||[], members:d.members||[] };
+      } else { state = { items:[], buyAgain:[], members:[] }; }
+      applyingRemote = true; render(); applyingRemote = false;
+    }, err => { console.error(err); });
+  }
+} catch(e){ console.error(e); }
+
+async function save(){
+  if(!configured) return;
+  try { await setDoc(listRef, state); } catch(e){ console.error(e); }
+}
+function showToast(msg){ toast=msg; render(); setTimeout(()=>{ toast=null; render(); },1700); }
+
+/* ---- actions ---- */
+function addEntries(text, override){
+  const parsed = parseInput(text); if(!parsed.length) return;
+  const unknown=[];
+  for(const e of parsed){
+    const cat = override || e.cat;
+    const ex = state.items.find(i=>!i.checked && i.name.toLowerCase()===e.name.toLowerCase());
+    if(ex){ if(e.qty>1) ex.qty=(ex.qty||1)+e.qty; continue; }
+    if(cat){ state.items.push({id:uid(),name:e.name,qty:e.qty,cat,checked:false,by:me}); }
+    else { const g=guessCat(e.name); const item={id:uid(),name:e.name,qty:e.qty,cat:g||"others",checked:false,by:me};
+      state.items.push(item); if(!g) unknown.push(item); }
+  }
+  save(); render();
+  // optional: client-side only categorization; unknowns stay in Others until edited
+}
+function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){ it.checked=!it.checked; save(); render(); } }
+function moveToBuyAgain(entries){
+  for(const e of entries){ const k=e.name.toLowerCase()+"|"+e.cat;
+    state.buyAgain = state.buyAgain.filter(x=>(x.name.toLowerCase()+"|"+x.cat)!==k);
+    state.buyAgain.unshift({name:e.name,cat:e.cat}); }
+  state.buyAgain = state.buyAgain.slice(0,80);
+}
+function sweep(){ const checked=state.items.filter(i=>i.checked);
+  moveToBuyAgain(checked.map(i=>({name:i.name,cat:i.cat})));
+  state.items = state.items.filter(i=>!i.checked);
+  save(); render(); showToast(checked.length+" cleared → Buy again"); }
+function restore(entry){ addEntries(entry.name, entry.cat);
+  state.buyAgain = state.buyAgain.filter(x=>!(x.name.toLowerCase()===entry.name.toLowerCase() && x.cat===entry.cat));
+  save(); render(); }
+function saveEdit(){ if(!editing||!editing.name.trim()) return;
+  const it=state.items.find(i=>i.id===editing.id);
+  if(it){ it.name=editing.name.trim(); it.qty=Math.max(1,editing.qty||1); it.cat=editing.cat; }
+  editing=null; save(); render(); }
+function removeEditing(){ moveToBuyAgain([{name:editing.name,cat:editing.cat}]);
+  state.items = state.items.filter(i=>i.id!==editing.id); editing=null; save(); render(); }
+function join(name){ const c=name.trim(); if(!c) return;
+  if(!state.members.includes(c)){ if(state.members.length>=4) return; state.members.push(c); }
+  me=c; localStorage.setItem(LS.me,c); save(); render(); }
+function toggleCat(id){ collapse.cats = collapse.cats.includes(id) ? collapse.cats.filter(x=>x!==id) : [...collapse.cats,id];
+  localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }
+function toggleBA(){ collapse.ba=!collapse.ba; localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }
+
+/* ---- long-press helpers ---- */
+let pressTimer=null, longFired=false;
+function pillDown(){ longFired=false; pressTimer=setTimeout(()=>{ longFired=true; if(navigator.vibrate)navigator.vibrate(10); },450); }
+function pillUp(id){ clearTimeout(pressTimer); const it=state.items.find(i=>i.id===id);
+  if(longFired){ editing={...it}; render(); } else { toggleItem(id); } }
+function pillCancel(){ clearTimeout(pressTimer); }
+
+/* ---- rendering ---- */
+const app = document.getElementById("app");
+const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function render(){
+  if(!configured){ renderSetupNotice(); return; }
+  if(!me){ renderOnboarding(); return; }
+  renderMain();
+  wire();
+}
+
+function renderSetupNotice(){
+  app.innerHTML = `<div class="onb"><h1>Almost there<span class="dot">.</span></h1>
+    <p>This app needs a free Firebase database to sync between phones. Open <b>index.html</b>, paste your Firebase config into the marked block near the top of the script, then redeploy. Full steps are in <b>README.md</b>.</p></div>`;
+}
+
+function renderOnboarding(){
+  const cont = state.members.length ? `<div style="margin-top:24px">
+      <div class="lbl-cap">Continue as</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+        ${state.members.map(m=>`<button class="namebtn" data-join="${esc(m)}">${esc(m)}</button>`).join("")}
+      </div></div>` : "";
+  const add = state.members.length<4 ? `<div style="margin-top:24px">
+      <div class="lbl-cap">${state.members.length?"Or join as someone new":"Add your name"} (${state.members.length}/4 spots used)</div>
+      <div class="joinrow"><input id="joinName" placeholder="Your name" />
+      <button id="joinBtn">Join</button></div></div>` : "";
+  app.innerHTML = `<div class="onb">
+    <h1>Market List<span class="dot">.</span></h1>
+    <p>One grocery list for the whole household. Anyone with this link can see and edit it — up to 4 people. Who's shopping?</p>
+    ${cont}${add}
+    <div class="share">Share link: <button class="sharebtn" id="copyLink">Copy</button></div>
+  </div>`;
+  app.querySelectorAll("[data-join]").forEach(b=>b.onclick=()=>join(b.dataset.join));
+  const jb=app.querySelector("#joinBtn"), jn=app.querySelector("#joinName");
+  if(jb) jb.onclick=()=>join(jn.value);
+  if(jn) jn.onkeydown=e=>{ if(e.key==="Enter") join(jn.value); };
+  const cl=app.querySelector("#copyLink"); if(cl) cl.onclick=copyLink;
+}
+
+function copyLink(){ navigator.clipboard?.writeText(location.href); showToast("Link copied"); }
+
+function renderMain(){
+  const open = state.items.filter(i=>!i.checked).length;
+  const done = state.items.filter(i=>i.checked).length;
+  const avatars = state.members.map((m,i)=>`<div class="av ${m===me?'me':''}" style="margin-left:${i?-6:0}px" title="${esc(m)}">${esc(m.slice(0,1).toUpperCase())}</div>`).join("");
+
+  const cats = CATS.map(cat=>{
+    const list = state.items.filter(i=>i.cat===cat.id)
+      .sort((a,b)=> a.checked===b.checked ? a.name.localeCompare(b.name) : (a.checked?1:-1));
+    const collapsed = collapse.cats.includes(cat.id);
+    const has = list.length>0;
+    const pills = (has && !collapsed) ? `<div class="pills">${list.map(i=>`
+        <button class="pill ${i.checked?'done':''}" data-pill="${i.id}"
+          style="border-left:4px solid ${i.checked?'#ADBFA6':cat.color}">
+          ${(i.qty||1)>1?`<span class="qty" style="color:${i.checked?'#9AA796':cat.color}">${i.qty}×</span>`:""}${esc(i.name)}
+        </button>`).join("")}</div>` : "";
+    const catAdd = catEntry===cat.id ? `<div class="catadd">
+        <input id="catInput" placeholder="Add to ${esc(cat.label)} — commas for several" style="border:2px solid ${cat.color}" />
+        <button id="catAddBtn" style="background:${cat.color}">+</button></div>` : "";
+    return `<section class="cat">
+      <div class="chead">
+        <button class="lbl" data-cat="${cat.id}">
+          <span class="sq" style="background:${cat.color}"></span>
+          <span class="cname" style="color:${has?'#21351F':'#94A290'}">${esc(cat.label)}</span>
+          ${has?`<span class="cnum">${list.length}${collapsed?' ▸':''}</span>`:""}
+        </button>
+        <button class="plus" data-add="${cat.id}" style="${catEntry===cat.id?`background:${cat.color};color:#fff`:''}">${catEntry===cat.id?'×':'+'}</button>
+      </div>${catAdd}${pills}</section>`;
+  }).join("");
+
+  const baPills = state.buyAgain.length
+    ? `<div class="pills">${state.buyAgain.map(e=>{ const c=CAT(e.cat);
+        return `<button class="bapill" data-restore="${esc(e.name)}|${e.cat}" style="border:1.5px dashed ${c.color}"><span style="color:${c.color};font-weight:800">+</span>${esc(e.name)}</button>`;
+      }).join("")}</div><button id="clearBA" style="margin-top:8px;border:none;background:transparent;color:#A8957E;font-size:12px;font-weight:700;padding:0">Clear buy-again history</button>`
+    : `<p style="font-size:12px;color:#9AA796;margin:0">Cleared items land here so you can re-add them with one tap.</p>`;
+
+  app.innerHTML = `<div class="wrap">
+    <header>
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <span class="title disp">Market List<span class="dot">.</span></span>
+        <span class="count">${open===0?'all clear':open+' to buy'}</span>
+      </div>
+      <div class="avatars">${avatars}</div>
+    </header>
+    <div class="addbar">
+      <input id="mainInput" enterkeyhint="done" placeholder="Paste a list or type: banana, 2 kimchi…" />
+      <button class="addbtn" id="mainAdd">+</button>
+    </div>
+    ${cats}
+    <section class="ba">
+      <button class="bahead" id="baHead">
+        <span class="disp" style="font-weight:800;font-size:13px">↩ Buy again</span>
+        <span class="cnum">${state.buyAgain.length}</span>
+        <span class="cnum" style="margin-left:auto">${collapse.ba?'▾':'▸'}</span>
+      </button>
+      ${collapse.ba?`<div style="margin-top:8px">${baPills}</div>`:""}
+    </section>
+    <p class="hint">Tap = got it · Hold = edit · Heading = collapse · <button class="sharebtn" id="copyLink2">Share link</button></p>
+  </div>
+  ${done>0?`<div class="sweep"><button id="sweepBtn">Clear ${done} · save to Buy again</button></div>`:""}
+  ${editing?editSheet():""}
+  ${toast?`<div class="toast">${esc(toast)}</div>`:""}`;
+}
+
+function editSheet(){
+  return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">Edit item</div>
+    <div style="display:flex;gap:8px">
+      <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid #21351F;outline:none;background:#fff;color:#21351F" />
+      <div class="qstep"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">
+      ${CATS.map(c=>`<button class="catchip" data-ec="${c.id}" style="${editing.cat===c.id?`background:${c.color};border-color:${c.color};color:#fff`:''}">${c.emoji} ${c.label}</button>`).join("")}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button id="rmBtn" style="padding:13px 16px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:15px">Remove</button>
+      <button id="saveBtn" style="flex:1;padding:13px;border-radius:14px;border:none;background:#21351F;color:#fff;font-weight:800;font-size:15px">Save</button>
+    </div>
+  </div></div>`;
+}
+
+function wire(){
+  const mi=app.querySelector("#mainInput"), ma=app.querySelector("#mainAdd");
+  if(mi){ mi.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); addEntries(mi.value,null); mi.value=""; mi.focus(); } }; }
+  if(ma){ ma.onpointerdown=e=>e.preventDefault(); ma.onclick=()=>{ addEntries(mi.value,null); mi.value=""; mi.focus(); }; }
+
+  app.querySelectorAll("[data-pill]").forEach(b=>{ const id=b.dataset.pill;
+    b.oncontextmenu=e=>e.preventDefault();
+    b.onpointerdown=pillDown; b.onpointerup=()=>pillUp(id); b.onpointerleave=pillCancel; b.onpointercancel=pillCancel; });
+  app.querySelectorAll("[data-cat]").forEach(b=>{ const id=b.dataset.cat;
+    const has=state.items.some(i=>i.cat===id); if(has) b.onclick=()=>toggleCat(id); });
+  app.querySelectorAll("[data-add]").forEach(b=>{ const id=b.dataset.add;
+    b.onclick=()=>{ catEntry = catEntry===id?null:id; render();
+      const ci=app.querySelector("#catInput"); if(ci) ci.focus(); }; });
+
+  const ci=app.querySelector("#catInput"), cab=app.querySelector("#catAddBtn");
+  if(ci){ ci.focus(); ci.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); addEntries(ci.value,catEntry); ci.value=""; ci.focus(); } }; }
+  if(cab){ cab.onpointerdown=e=>e.preventDefault(); cab.onclick=()=>{ const v=app.querySelector("#catInput").value; addEntries(v,catEntry); render(); const x=app.querySelector("#catInput"); if(x) x.focus(); }; }
+
+  const sb=app.querySelector("#sweepBtn"); if(sb) sb.onclick=sweep;
+  const bh=app.querySelector("#baHead"); if(bh) bh.onclick=toggleBA;
+  app.querySelectorAll("[data-restore]").forEach(b=>{ const [name,cat]=b.dataset.restore.split("|"); b.onclick=()=>restore({name,cat}); });
+  const cba=app.querySelector("#clearBA"); if(cba) cba.onclick=()=>{ state.buyAgain=[]; save(); render(); };
+  const cl=app.querySelector("#copyLink2"); if(cl) cl.onclick=copyLink;
+
+  if(editing){
+    const bg=app.querySelector("#sheetBg"); bg.onclick=()=>{ editing=null; render(); };
+    app.querySelector("#sheet").onclick=e=>e.stopPropagation();
+    const en=app.querySelector("#editName"); en.oninput=e=>editing.name=e.target.value;
+    app.querySelector("#qMinus").onclick=()=>{ editing.qty=Math.max(1,(editing.qty||1)-1); render(); };
+    app.querySelector("#qPlus").onclick=()=>{ editing.qty=(editing.qty||1)+1; render(); };
+    app.querySelectorAll("[data-ec]").forEach(b=>b.onclick=()=>{ editing.cat=b.dataset.ec; render(); });
+    app.querySelector("#rmBtn").onclick=removeEditing;
+    app.querySelector("#saveBtn").onclick=saveEdit;
+  }
+}
+
+/* first paint */
+render();
+</script>
+</body>
+</html>
