@@ -112,12 +112,12 @@ import { getFirestore, doc, onSnapshot, setDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
+  apiKey: "REPLACE_ME",
+  authDomain: "REPLACE_ME.firebaseapp.com",
+  projectId: "REPLACE_ME",
+  storageBucket: "REPLACE_ME.appspot.com",
+  messagingSenderId: "REPLACE_ME",
+  appId: "REPLACE_ME"
 };
 /* ============================================================ */
 
@@ -161,19 +161,24 @@ function parseInput(text){ const out=[];
   } return out; }
 const uid = () => Math.random().toString(36).slice(2,9)+Date.now().toString(36);
 
-/* ---- shared list code from URL (?list=CODE) ---- */
+/* ---- shared list code: from URL, else remembered on this device, else new ---- */
 const params = new URLSearchParams(location.search);
-let listCode = params.get("list");
-if(!listCode){ listCode = uid().slice(0,8); params.set("list", listCode);
-  history.replaceState(null,"",location.pathname+"?"+params.toString()); }
+const LS_LASTLIST = "ml_lastlist";
+let listCode = params.get("list") || localStorage.getItem(LS_LASTLIST) || uid().slice(0,8);
+localStorage.setItem(LS_LASTLIST, listCode);
+if(params.get("list") !== listCode){
+  params.set("list", listCode);
+  history.replaceState(null,"",location.pathname+"?"+params.toString());
+}
 
 /* ---- personal (this device) ---- */
-const LS = { me:"ml_me", collapse:"ml_collapse_"+listCode };
+const LS = { me:"ml_me", collapse:"ml_collapse_"+listCode, cache:"ml_cache_"+listCode };
 let me = localStorage.getItem(LS.me) || null;
 let collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}');
 
-/* ---- shared state ---- */
+/* ---- shared state (seed from local cache so it shows instantly & survives offline) ---- */
 let state = { items:[], buyAgain:[], members:[] };
+try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state = c; } catch(e){}
 let toast=null, catEntry=null, editing=null, configured=false;
 
 /* ---- Firebase ---- */
@@ -188,15 +193,20 @@ try {
       if(snap.exists()){
         const d = snap.data();
         state = { items:d.items||[], buyAgain:d.buyAgain||[], members:d.members||[] };
-      } else { state = { items:[], buyAgain:[], members:[] }; }
+      }
+      try { localStorage.setItem(LS.cache, JSON.stringify(state)); } catch(e){}
       applyingRemote = true; render(); applyingRemote = false;
-    }, err => { console.error(err); });
+    }, err => { console.error(err); showToast("⚠︎ Can't read database — publish Firestore rules"); });
   }
 } catch(e){ console.error(e); }
 
+let __saveWarned = 0;
 async function save(){
+  try { localStorage.setItem(LS.cache, JSON.stringify(state)); } catch(e){}
   if(!configured) return;
-  try { await setDoc(listRef, state); } catch(e){ console.error(e); }
+  try { await setDoc(listRef, state); }
+  catch(e){ console.error(e);
+    if(Date.now()-__saveWarned > 5000){ __saveWarned = Date.now(); showToast("⚠︎ Not syncing — check Firestore rules"); } }
 }
 function showToast(msg){ toast=msg; render(); setTimeout(()=>{ toast=null; render(); },1700); }
 
@@ -346,7 +356,7 @@ function renderMain(){
       </button>
       ${collapse.ba?`<div style="margin-top:8px">${baPills}</div>`:""}
     </section>
-    <p class="hint">Tap = got it · Hold = edit · Heading = collapse · <button class="sharebtn" id="copyLink2">Share link</button></p>
+    <p class="hint">Tap = got it · Hold = edit · Heading = collapse · <button class="sharebtn" id="copyLink2">Share link</button> · <button class="sharebtn" id="switchUser">Switch user</button></p>
   </div>
   ${done>0?`<div class="sweep"><button id="sweepBtn">Clear ${done} · save to Buy again</button></div>`:""}
   ${editing?editSheet():""}
@@ -396,6 +406,7 @@ function wire(){
   app.querySelectorAll("[data-restore]").forEach(b=>{ const [name,cat]=b.dataset.restore.split("|"); b.onclick=()=>restore({name,cat}); });
   const cba=app.querySelector("#clearBA"); if(cba) cba.onclick=()=>{ state.buyAgain=[]; save(); render(); };
   const cl=app.querySelector("#copyLink2"); if(cl) cl.onclick=copyLink;
+  const su=app.querySelector("#switchUser"); if(su) su.onclick=()=>{ localStorage.removeItem(LS.me); me=null; render(); };
 
   if(editing){
     const bg=app.querySelector("#sheetBg"); bg.onclick=()=>{ editing=null; render(); };
