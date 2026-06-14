@@ -112,12 +112,12 @@ import { getFirestore, doc, onSnapshot, setDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
+  apiKey: "REPLACE_ME",
+  authDomain: "REPLACE_ME.firebaseapp.com",
+  projectId: "REPLACE_ME",
+  storageBucket: "REPLACE_ME.appspot.com",
+  messagingSenderId: "REPLACE_ME",
+  appId: "REPLACE_ME"
 };
 /* ============================================================ */
 
@@ -125,11 +125,11 @@ const CATS = [
   { id:"meat", label:"Meat", emoji:"🥩", color:"#B5402B" },
   { id:"fruit", label:"Fruit", emoji:"🍌", color:"#C98A06" },
   { id:"vegetable", label:"Vegetable", emoji:"🥦", color:"#3E7C3A" },
-  { id:"fresh", label:"Fresh", emoji:"🥛", color:"#2E8C7F" },
+  { id:"fresh", label:"Fresh", emoji:"🥛", color:"#2E6FA3" },
   { id:"bulk", label:"Bulk", emoji:"🧻", color:"#6B5CA5" },
+  { id:"health", label:"Health", emoji:"💊", color:"#2E8C7F" },
   { id:"asian", label:"Asian", emoji:"🍜", color:"#C73B5B" },
   { id:"alcohol", label:"Alcohol", emoji:"🍷", color:"#8A5A2B" },
-  { id:"health", label:"Health", emoji:"💊", color:"#2E6FA3" },
   { id:"others", label:"Others", emoji:"🛒", color:"#5B6770" },
 ];
 const CAT = id => CATS.find(c=>c.id===id) || CATS[CATS.length-1];
@@ -329,10 +329,15 @@ function renderMain(){
       </div>${catAdd}${pills}</section>`;
   }).join("");
 
+  const baGroups = CATS.map(cat=>{
+        const its = state.buyAgain.filter(e=>e.cat===cat.id);
+        if(!its.length) return "";
+        return `<div class="pills" style="margin-top:2px">${its.map(e=>
+          `<button class="bapill" data-restore="${esc(e.name)}|${e.cat}" style="border:1.5px dashed ${cat.color}"><span style="color:${cat.color};font-weight:800">+</span>${esc(e.name)}</button>`
+        ).join("")}</div>`;
+      }).join("");
   const baPills = state.buyAgain.length
-    ? `<div class="pills">${state.buyAgain.map(e=>{ const c=CAT(e.cat);
-        return `<button class="bapill" data-restore="${esc(e.name)}|${e.cat}" style="border:1.5px dashed ${c.color}"><span style="color:${c.color};font-weight:800">+</span>${esc(e.name)}</button>`;
-      }).join("")}</div><button id="clearBA" style="margin-top:8px;border:none;background:transparent;color:#A8957E;font-size:12px;font-weight:700;padding:0">Clear buy-again history</button>`
+    ? `${baGroups}<button id="clearBA" style="margin-top:8px;border:none;background:transparent;color:#A8957E;font-size:12px;font-weight:700;padding:0">Clear buy-again history</button>`
     : `<p style="font-size:12px;color:#9AA796;margin:0">Cleared items land here so you can re-add them with one tap.</p>`;
 
   app.innerHTML = `<div class="wrap">
