@@ -11,15 +11,27 @@
 <link rel="apple-touch-icon" href="icon-180.png" />
 <title>Market List</title>
 <script>
-/* Surfaces any startup error on screen instead of hanging on "Opening the list…" */
-function __mlErr(msg){ var el=document.getElementById('app');
+/* Only surfaces an error if the app genuinely never started.
+   Ignores opaque cross-origin "Script error." noise and anything after first render. */
+window.__mlRendered = false;
+function __mlShow(msg){ var el=document.getElementById('app');
   if(el) el.innerHTML='<div style="padding:28px 22px;font:15px/1.5 -apple-system,system-ui,sans-serif;color:#21351F">'
-   +'<b>The app couldn\'t start.</b><br><br>This usually means extra lines were pasted into the Firebase config '
-   +'(remove any line with <code>getAnalytics</code>, <code>firebase/analytics</code>, or a second <code>const app</code>), '
-   +'or the Firestore database rules weren\'t published.<br><br>'
-   +'<b>Error details:</b><br><span style="color:#C24A33;word-break:break-word">'+msg+'</span></div>'; }
-window.addEventListener('error', function(e){ __mlErr((e&&e.message)||(e&&e.error)||'Unknown error'); });
-window.addEventListener('unhandledrejection', function(e){ __mlErr((e&&e.reason&&e.reason.message)?e.reason.message:String(e&&e.reason)); });
+   +'<b>Still loading…</b><br><br>If this keeps happening, re-check your Firebase setup: make sure <b>only the config values</b> were pasted '
+   +'(no line with <code>getAnalytics</code>, <code>firebase/analytics</code>, or a second <code>const app</code>), '
+   +'and that the <b>Firestore database rules were published</b>.<br><br>'
+   +'<span style="color:#C24A33;word-break:break-word">'+msg+'</span></div>'; }
+window.addEventListener('error', function(e){
+  if(window.__mlRendered) return;                       // app already up — ignore stray errors
+  var msg=(e&&e.message)||'';
+  if(msg.indexOf('Script error')===0) return;           // opaque cross-origin event, not actionable
+  __mlShow(msg||'Unknown error');
+});
+window.addEventListener('unhandledrejection', function(e){
+  if(window.__mlRendered) return;
+  var r=e&&e.reason; __mlShow((r&&r.message)?r.message:String(r));
+});
+setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById('app');
+  if(el && /Opening the list/.test(el.textContent||'')) __mlShow('The list did not load.'); } }, 7000);
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -113,12 +125,12 @@ import { getFirestore, doc, onSnapshot, setDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
+  apiKey: "REPLACE_ME",
+  authDomain: "REPLACE_ME.firebaseapp.com",
+  projectId: "REPLACE_ME",
+  storageBucket: "REPLACE_ME.appspot.com",
+  messagingSenderId: "REPLACE_ME",
+  appId: "REPLACE_ME"
 };
 /* ============================================================ */
 
@@ -300,25 +312,36 @@ function toggleBA(){ collapse.ba=!collapse.ba; localStorage.setItem(LS.collapse,
 function copyLink(){ navigator.clipboard?.writeText(location.href); showToast("Link copied"); }
 
 /* ---- voice input (Web Speech API) ---- */
-let recog=null, listening=false;
+let recog=null, listening=false, micFinal="";
 function setMicUI(on){ const b=document.getElementById("micBtn"); if(!b) return;
   b.style.background = on?"#E2502C":"#E1E9DC"; b.style.color = on?"#fff":"#41513E"; b.textContent = on?"●":"🎤"; }
-function stopMic(){ if(recog){ try{ recog.stop(); }catch(e){} } listening=false; setMicUI(false); }
+function micField(){ return document.getElementById("mainInput"); }
 function startMic(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){ showToast("Voice input isn't supported in this browser — tap the 🎤 on your keyboard instead"); return; }
-  const mi=document.getElementById("mainInput"); if(!mi) return;
-  const prefix = mi.value ? mi.value.replace(/\s*,?\s*$/,"")+", " : "";
-  recog = new SR(); recog.lang = navigator.language || "en-US"; recog.interimResults = true; recog.continuous = true;
-  recog.onresult = e => { const finals=[]; let interim="";
-    for(let i=0;i<e.results.length;i++){ const r=e.results[i]; if(r.isFinal) finals.push(r[0].transcript.trim()); else interim+=r[0].transcript; }
-    const parts=[...finals]; if(interim.trim()) parts.push(interim.trim());
-    mi.value = prefix + parts.filter(Boolean).join(", "); };
-  recog.onerror = ev => { if(ev.error==="not-allowed"||ev.error==="service-not-allowed") showToast("Allow microphone access to use voice input"); stopMic(); };
-  recog.onend = () => { listening=false; setMicUI(false); };
+  if(!SR){ showToast("Voice input isn't supported here — tap the 🎤 on your keyboard instead"); return; }
+  const mi = micField(); if(!mi) return;
+  micFinal = mi.value ? mi.value.replace(/\s*,?\s*$/,"")+", " : "";
+  recog = new SR(); recog.lang = navigator.language || "en-US"; recog.interimResults = true; recog.continuous = false;
+  recog.onresult = e => {
+    let interim = "";
+    for(let i=e.resultIndex; i<e.results.length; i++){ const r=e.results[i]; const tx=(r[0].transcript||"").trim();
+      if(r.isFinal){ if(tx) micFinal += tx + ", "; } else { interim += r[0].transcript; } }
+    const m=micField(); if(m) m.value = (micFinal + interim).replace(/,\s*,/g, ", ");
+  };
+  recog.onerror = ev => {
+    if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){ showToast("Allow microphone access to use voice input"); listening=false; }
+    else if(ev.error==="no-speech"){ /* keep listening */ }
+    else { showToast("Voice error: "+ev.error); }
+  };
+  recog.onend = () => {
+    if(listening){ try{ recog.start(); }catch(e){ listening=false; setMicUI(false); } }
+    else { setMicUI(false); const m=micField(); if(m) m.value=m.value.replace(/,\s*$/,""); }
+  };
   try { recog.start(); listening=true; setMicUI(true); showToast("Listening… tap 🎤 again to stop"); }
-  catch(e){ stopMic(); }
+  catch(e){ listening=false; setMicUI(false); showToast("Couldn't start voice input"); }
 }
+function stopMic(){ listening=false; if(recog){ try{ recog.stop(); }catch(e){} }
+  setMicUI(false); const m=micField(); if(m) m.value=m.value.replace(/,\s*$/,""); }
 function toggleMic(){ if(listening) stopMic(); else startMic(); }
 
 /* ---- press handling (tap vs long-press) ---- */
@@ -332,9 +355,9 @@ const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&
 
 function render(){
   ensureCats();
-  if(!configured){ renderSetupNotice(); return; }
-  if(!me){ renderOnboarding(); return; }
-  renderMain(); wire();
+  if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
+  if(!me){ renderOnboarding(); window.__mlRendered=true; return; }
+  renderMain(); wire(); window.__mlRendered=true;
 }
 
 function renderSetupNotice(){
