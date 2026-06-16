@@ -112,12 +112,12 @@ import { getFirestore, doc, onSnapshot, setDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
+  apiKey: "REPLACE_ME",
+  authDomain: "REPLACE_ME.firebaseapp.com",
+  projectId: "REPLACE_ME",
+  storageBucket: "REPLACE_ME.appspot.com",
+  messagingSenderId: "REPLACE_ME",
+  appId: "REPLACE_ME"
 };
 /* ============================================================ */
 
@@ -333,7 +333,7 @@ function renderMain(){
         const its = state.buyAgain.filter(e=>e.cat===cat.id);
         if(!its.length) return "";
         return `<div class="pills" style="margin-top:2px">${its.map(e=>
-          `<button class="bapill" data-restore="${esc(e.name)}|${e.cat}" style="border:1.5px dashed ${cat.color}"><span style="color:${cat.color};font-weight:800">+</span>${esc(e.name)}</button>`
+          `<span class="bapill" style="border:1.5px dashed ${cat.color}"><button class="ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="border:none;background:transparent;color:#41513E;font-weight:600;font-size:13px;padding:0;display:inline-flex;align-items:center;gap:5px"><span style="color:${cat.color};font-weight:800">+</span>${esc(e.name)}</button><button class="ba-del" data-del="${esc(e.name)}|${e.cat}" aria-label="Remove" style="border:none;background:transparent;color:#A8957E;font-size:14px;font-weight:700;padding:0 1px 0 4px;line-height:1">×</button></span>`
         ).join("")}</div>`;
       }).join("");
   const baPills = state.buyAgain.length
@@ -409,6 +409,8 @@ function wire(){
   const sb=app.querySelector("#sweepBtn"); if(sb) sb.onclick=sweep;
   const bh=app.querySelector("#baHead"); if(bh) bh.onclick=toggleBA;
   app.querySelectorAll("[data-restore]").forEach(b=>{ const [name,cat]=b.dataset.restore.split("|"); b.onclick=()=>restore({name,cat}); });
+  app.querySelectorAll("[data-del]").forEach(b=>{ const [name,cat]=b.dataset.del.split("|");
+    b.onclick=()=>{ state.buyAgain=state.buyAgain.filter(x=>!(x.name===name && x.cat===cat)); save(); render(); }; });
   const cba=app.querySelector("#clearBA"); if(cba) cba.onclick=()=>{ state.buyAgain=[]; save(); render(); };
   const cl=app.querySelector("#copyLink2"); if(cl) cl.onclick=copyLink;
   const su=app.querySelector("#switchUser"); if(su) su.onclick=()=>{ localStorage.removeItem(LS.me); me=null; render(); };
