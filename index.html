@@ -113,12 +113,12 @@ import { getFirestore, doc, onSnapshot, setDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
+  apiKey: "REPLACE_ME",
+  authDomain: "REPLACE_ME.firebaseapp.com",
+  projectId: "REPLACE_ME",
+  storageBucket: "REPLACE_ME.appspot.com",
+  messagingSenderId: "REPLACE_ME",
+  appId: "REPLACE_ME"
 };
 /* ============================================================ */
 
@@ -299,6 +299,28 @@ function toggleCat(id){ collapse.cats = collapse.cats.includes(id) ? collapse.ca
 function toggleBA(){ collapse.ba=!collapse.ba; localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }
 function copyLink(){ navigator.clipboard?.writeText(location.href); showToast("Link copied"); }
 
+/* ---- voice input (Web Speech API) ---- */
+let recog=null, listening=false;
+function setMicUI(on){ const b=document.getElementById("micBtn"); if(!b) return;
+  b.style.background = on?"#E2502C":"#E1E9DC"; b.style.color = on?"#fff":"#41513E"; b.textContent = on?"●":"🎤"; }
+function stopMic(){ if(recog){ try{ recog.stop(); }catch(e){} } listening=false; setMicUI(false); }
+function startMic(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ showToast("Voice input isn't supported in this browser — tap the 🎤 on your keyboard instead"); return; }
+  const mi=document.getElementById("mainInput"); if(!mi) return;
+  const prefix = mi.value ? mi.value.replace(/\s*,?\s*$/,"")+", " : "";
+  recog = new SR(); recog.lang = navigator.language || "en-US"; recog.interimResults = true; recog.continuous = true;
+  recog.onresult = e => { const finals=[]; let interim="";
+    for(let i=0;i<e.results.length;i++){ const r=e.results[i]; if(r.isFinal) finals.push(r[0].transcript.trim()); else interim+=r[0].transcript; }
+    const parts=[...finals]; if(interim.trim()) parts.push(interim.trim());
+    mi.value = prefix + parts.filter(Boolean).join(", "); };
+  recog.onerror = ev => { if(ev.error==="not-allowed"||ev.error==="service-not-allowed") showToast("Allow microphone access to use voice input"); stopMic(); };
+  recog.onend = () => { listening=false; setMicUI(false); };
+  try { recog.start(); listening=true; setMicUI(true); showToast("Listening… tap 🎤 again to stop"); }
+  catch(e){ stopMic(); }
+}
+function toggleMic(){ if(listening) stopMic(); else startMic(); }
+
 /* ---- press handling (tap vs long-press) ---- */
 let pressTimer=null, longFired=false;
 function pressStart(){ longFired=false; pressTimer=setTimeout(()=>{ longFired=true; if(navigator.vibrate)navigator.vibrate(10); },450); }
@@ -404,7 +426,8 @@ function renderMain(){
       </div>
     </header>
     <div class="addbar">
-      <input id="mainInput" enterkeyhint="done" placeholder="Paste a list or type: banana, 2 kimchi…" />
+      <input id="mainInput" enterkeyhint="done" placeholder="Paste, type, or tap 🎤 to speak…" />
+      <button class="addbtn" id="micBtn" style="background:#E1E9DC;color:#41513E;font-size:18px">🎤</button>
       <button class="addbtn" id="mainAdd">+</button>
     </div>
     ${cats}
@@ -461,11 +484,12 @@ function editSheet(){
 
 function wire(){
   const mi=app.querySelector("#mainInput"), ma=app.querySelector("#mainAdd");
-  if(mi){ mi.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); addEntries(mi.value,null); mi.value=""; mi.focus(); } };
+  if(mi){ mi.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); stopMic(); addEntries(mi.value,null); mi.value=""; mi.focus(); } };
     mi.onpaste=e=>{ const t=(e.clipboardData||window.clipboardData).getData("text");
       const looksLikeBlock = t && (t.indexOf("\n")>=0 || /\b(meat|fruit|vegetable|veg|fresh|bulk|asian|alcohol|health|others)\s*:/i.test(t) || t.split(",").length>2);
       if(looksLikeBlock){ e.preventDefault(); addEntries(t,null); mi.value=""; } }; }
-  if(ma){ ma.onpointerdown=e=>e.preventDefault(); ma.onclick=()=>{ addEntries(mi.value,null); mi.value=""; mi.focus(); }; }
+  if(ma){ ma.onpointerdown=e=>e.preventDefault(); ma.onclick=()=>{ stopMic(); addEntries(mi.value,null); mi.value=""; mi.focus(); }; }
+  const mb=app.querySelector("#micBtn"); if(mb){ mb.onclick=toggleMic; setMicUI(listening); }
 
   /* item pills: tap = check, hold = edit */
   app.querySelectorAll("[data-pill]").forEach(b=>{ const id=b.dataset.pill;
