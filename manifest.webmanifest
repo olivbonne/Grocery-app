@@ -2,8 +2,6 @@
   "name": "Market List",
   "short_name": "Market",
   "description": "Shared household grocery list",
-  "start_url": ".",
-  "scope": ".",
   "display": "standalone",
   "background_color": "#F2F6EE",
   "theme_color": "#F2F6EE",
