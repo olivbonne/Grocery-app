@@ -82,6 +82,8 @@ window.addEventListener('unhandledrejection', function(e){ __mlErr((e&&e.reason&
   .qstep button { width:36px; border:none; background:transparent; font-size:20px; font-weight:700; color:var(--ink); }
   .catchip { padding:7px 11px; border-radius:999px; border:2px solid #D6E0D1; background:#fff; color:var(--ink);
     font-size:12px; font-weight:700; }
+  .movebtn { flex:1; padding:12px; border-radius:14px; border:2px solid var(--ink); background:#fff; color:var(--ink);
+    font-weight:700; font-size:14px; }
   .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff;
     padding:8px 16px; border-radius:999px; font-size:13px; font-weight:700; animation:rise .2s ease; z-index:60; }
   .center { min-height:100vh; display:flex; align-items:center; justify-content:center; font-weight:600; }
@@ -104,7 +106,6 @@ window.addEventListener('unhandledrejection', function(e){ __mlErr((e&&e.reason&
 </head>
 <body>
 <div id="app"><div class="center">Opening the list…</div></div>
-
 <script type="module">
 /* ============ Firebase config — PASTE YOURS HERE ============ */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -112,16 +113,17 @@ import { getFirestore, doc, onSnapshot, setDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
+  apiKey: "REPLACE_ME",
+  authDomain: "REPLACE_ME.firebaseapp.com",
+  projectId: "REPLACE_ME",
+  storageBucket: "REPLACE_ME.appspot.com",
+  messagingSenderId: "REPLACE_ME",
+  appId: "REPLACE_ME"
 };
 /* ============================================================ */
 
-const CATS = [
+/* default categories (ids stay fixed; label/color/order are editable & saved) */
+const DEFAULT_CATS = [
   { id:"meat", label:"Meat", emoji:"🥩", color:"#B5402B" },
   { id:"fruit", label:"Fruit", emoji:"🍌", color:"#C98A06" },
   { id:"vegetable", label:"Vegetable", emoji:"🥦", color:"#3E7C3A" },
@@ -132,54 +134,72 @@ const CATS = [
   { id:"alcohol", label:"Alcohol", emoji:"🍷", color:"#8A5A2B" },
   { id:"others", label:"Others", emoji:"🛒", color:"#5B6770" },
 ];
-const CAT = id => CATS.find(c=>c.id===id) || CATS[CATS.length-1];
-const LABEL_TO_CAT = (()=>{ const m={}; CATS.forEach(c=>m[c.label.toLowerCase()]=c.id);
-  Object.assign(m,{veg:"vegetable",vegetables:"vegetable",veggies:"vegetable",fruits:"fruit"}); return m; })();
+
+/* meat sub-grouping order: beef, lamb, chicken, seafood, then anything else */
+const MEAT_SUBS = [
+  { id:"beef",    words:["beef","steak","sirloin","ribeye","rib eye","brisket","mince","ground beef","wagyu","veal","chuck"] },
+  { id:"lamb",    words:["lamb","mutton"] },
+  { id:"chicken", words:["chicken","thigh","drumstick","wing","poultry","breast"] },
+  { id:"seafood", words:["fish","salmon","prawn","shrimp","tuna","crab","squid","mussel","oyster","scallop","cod","mackerel","seafood","lobster","clam","anchovy","barramundi","snapper","sardine"] },
+];
+const MEAT_ORDER = ["beef","lamb","chicken","seafood","other"];
+function meatSub(name){ const n=name.toLowerCase(); for(const s of MEAT_SUBS){ if(s.words.some(w=>n.includes(w))) return s.id; } return "other"; }
+
 const DICT = {
-  meat:["chicken","beef","pork","lamb","turkey","duck","sausage","bacon","mince","steak","fish","salmon","prawn","shrimp","tuna","ham","wings","drumstick","thigh","ribs","meatball"],
+  meat:["chicken","beef","pork","lamb","turkey","duck","sausage","bacon","mince","steak","fish","salmon","prawn","shrimp","tuna","ham","wings","drumstick","thigh","ribs","meatball","mutton","veal","crab","squid","scallop","cod","lobster"],
   fruit:["banana","apple","orange","berries","berry","strawberr","blueberr","raspberr","kiwi","grape","mango","melon","watermelon","pineapple","peach","pear","plum","lemon","lime","avocado","cherry","papaya","dragonfruit","lychee","longan"],
   vegetable:["ginger","broccoli","brocollini","broccolini","choysum","choy sum","bok choy","pak choi","kailan","kangkung","tomato","spinach","mushroom","pumpkin","squash","green bean","bean sprout","taugeh","cabbage","chilli","chili","carrot","potato","onion","garlic","shallot","lettuce","cucumber","capsicum","zucchini","corn","celery","kale","leek","eggplant","cauliflower","radish","beetroot","asparagus","coriander","cilantro","basil","spring onion","scallion","lemongrass"],
-  fresh:["milk","egg","yogurt","yoghurt","cheese","parmesan","butter","bread","cream","juice","hummus","margarine","croissant","bagel"],
-  bulk:["floss","sparkling water","water","salt","sugar","flour","rice","pasta","spaghetti","oil","vinegar","shampoo","conditioner","soap","toothpaste","toothbrush","tissue","toilet paper","paper towel","detergent","sponge","cereal","oats","coffee","tea","honey","peanut butter","jam","ketchup","mayo","mustard","stock","canned","chickpea","lentil","battery","foil"],
+  fresh:["milk","egg","yogurt","yoghurt","cheese","parmesan","butter","bread","cream","juice","hummus","margarine","croissant","bagel","baguette"],
+  bulk:["floss","sparkling water","water","salt","sugar","flour","rice","pasta","spaghetti","oil","vinegar","shampoo","conditioner","soap","toothpaste","toothbrush","tissue","toilet paper","paper towel","kitchen towel","detergent","sponge","cereal","oats","coffee","tea","honey","peanut butter","jam","ketchup","mayo","mustard","stock","canned","chickpea","lentil","battery","foil","popcorn","chocolate chip"],
   asian:["kimchi","ramen","noodle","noodles","udon","soba","soy sauce","miso","gochujang","gochugaru","nori","seaweed","dumpling","gyoza","wonton","fish sauce","oyster sauce","sesame oil","sesame","curry paste","tofu","tempeh","mirin","dashi","wasabi","sriracha","sambal","laksa","pho","jin ramen","shin ramen"],
   alcohol:["wine","beer","vodka","whisky","whiskey","gin","rum","soju","sake","cider","champagne","prosecco","tequila"],
   health:["vitamin","panadol","paracetamol","ibuprofen","medicine","bandage","band-aid","plaster","supplement","probiotic","sunscreen","cough","lozenge","melatonin","fish oil","magnesium"],
 };
 function guessCat(name){ const n=name.toLowerCase();
   for(const[c,w] of Object.entries(DICT)) if(w.some(x=>n.includes(x))) return c; return null; }
+
 function parseEntry(raw){ let s=raw.trim(); let m=s.match(/^(\d+)\s*[x×]?\s+(.+)$/i);
   if(m) return {qty:parseInt(m[1],10)||1,name:m[2].trim()};
   m=s.match(/^(.+?)\s*[x×]\s*(\d+)$/i); if(m) return {qty:parseInt(m[2],10)||1,name:m[1].trim()};
   return {qty:1,name:s}; }
-const __LABELS_RE = new RegExp('\\s*\\b(' + Object.keys(LABEL_TO_CAT).join('|') + ')\\s*:', 'gi');
-function normalizeBlock(text){ return text.replace(__LABELS_RE, (m,l)=>'\n'+l+':'); }
-function parseInput(text){ const out=[];
-  for(const raw of normalizeBlock(text).split(/\n/)){ const line=raw.trim(); if(!line) continue;
-    let forced=null, rest=line; const c=line.indexOf(":");
-    if(c!==-1){ const lab=line.slice(0,c).trim().toLowerCase(); if(LABEL_TO_CAT[lab]){ forced=LABEL_TO_CAT[lab]; rest=line.slice(c+1);} }
-    for(const tok of rest.split(",").map(s=>s.trim()).filter(Boolean)){ const{qty,name}=parseEntry(tok); if(name) out.push({name,qty,cat:forced}); }
-  } return out; }
+
 const uid = () => Math.random().toString(36).slice(2,9)+Date.now().toString(36);
 
-/* ---- shared list code: from URL, else remembered on this device, else new ---- */
+/* ---- list code: from URL, else remembered on this device, else new ---- */
 const params = new URLSearchParams(location.search);
 const LS_LASTLIST = "ml_lastlist";
 let listCode = params.get("list") || localStorage.getItem(LS_LASTLIST) || uid().slice(0,8);
 localStorage.setItem(LS_LASTLIST, listCode);
-if(params.get("list") !== listCode){
-  params.set("list", listCode);
-  history.replaceState(null,"",location.pathname+"?"+params.toString());
-}
+if(params.get("list") !== listCode){ params.set("list", listCode);
+  history.replaceState(null,"",location.pathname+"?"+params.toString()); }
 
-/* ---- personal (this device) ---- */
 const LS = { me:"ml_me", collapse:"ml_collapse_"+listCode, cache:"ml_cache_"+listCode };
 let me = localStorage.getItem(LS.me) || null;
 let collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}');
 
-/* ---- shared state (seed from local cache so it shows instantly & survives offline) ---- */
-let state = { items:[], buyAgain:[], members:[] };
+let state = { items:[], buyAgain:[], members:[], categories:null };
 try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state = c; } catch(e){}
 let toast=null, catEntry=null, editing=null, configured=false;
+
+function ensureCats(){ if(!Array.isArray(state.categories) || !state.categories.length){
+  state.categories = DEFAULT_CATS.map(c=>({id:c.id,label:c.label,color:c.color,emoji:c.emoji})); } }
+function catList(){ ensureCats(); return state.categories; }
+function CAT(id){ return catList().find(c=>c.id===id) || DEFAULT_CATS.find(c=>c.id===id) || DEFAULT_CATS[DEFAULT_CATS.length-1]; }
+
+/* dynamic label→id map so renamed categories still parse on paste */
+function labelMap(){ const m={}; DEFAULT_CATS.forEach(c=>m[c.label.toLowerCase()]=c.id);
+  catList().forEach(c=>m[c.label.toLowerCase()]=c.id);
+  Object.assign(m,{veg:"vegetable",vegetables:"vegetable",veggies:"vegetable",fruits:"fruit"}); return m; }
+function parseInput(text){ const map=labelMap();
+  const labels=Object.keys(map).map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+  const re=new RegExp('\\s*\\b('+labels+')\\s*:','gi');
+  const norm=text.replace(re,(m,l)=>'\n'+l+':');
+  const out=[];
+  for(const raw of norm.split(/\n/)){ const line=raw.trim(); if(!line) continue;
+    let forced=null,rest=line; const c=line.indexOf(":");
+    if(c!==-1){ const lab=line.slice(0,c).trim().toLowerCase(); if(map[lab]){ forced=map[lab]; rest=line.slice(c+1);} }
+    for(const tok of rest.split(",").map(s=>s.trim()).filter(Boolean)){ const{qty,name}=parseEntry(tok); if(name) out.push({name,qty,cat:forced}); }
+  } return out; }
 
 /* ---- Firebase ---- */
 let db=null, listRef=null, applyingRemote=false;
@@ -190,10 +210,9 @@ try {
     listRef = doc(db, "lists", listCode);
     configured = true;
     onSnapshot(listRef, snap => {
-      if(snap.exists()){
-        const d = snap.data();
-        state = { items:d.items||[], buyAgain:d.buyAgain||[], members:d.members||[] };
-      }
+      if(snap.exists()){ const d = snap.data();
+        state = { items:d.items||[], buyAgain:d.buyAgain||[], members:d.members||[], categories:d.categories||null }; }
+      ensureCats();
       try { localStorage.setItem(LS.cache, JSON.stringify(state)); } catch(e){}
       applyingRemote = true; render(); applyingRemote = false;
     }, err => { console.error(err); showToast("⚠︎ Can't read database — publish Firestore rules"); });
@@ -213,17 +232,14 @@ function showToast(msg){ toast=msg; render(); setTimeout(()=>{ toast=null; rende
 /* ---- actions ---- */
 function addEntries(text, override){
   const parsed = parseInput(text); if(!parsed.length) return;
-  const unknown=[];
   for(const e of parsed){
     const cat = override || e.cat;
     const ex = state.items.find(i=>!i.checked && i.name.toLowerCase()===e.name.toLowerCase());
     if(ex){ if(e.qty>1) ex.qty=(ex.qty||1)+e.qty; continue; }
     if(cat){ state.items.push({id:uid(),name:e.name,qty:e.qty,cat,checked:false,by:me}); }
-    else { const g=guessCat(e.name); const item={id:uid(),name:e.name,qty:e.qty,cat:g||"others",checked:false,by:me};
-      state.items.push(item); if(!g) unknown.push(item); }
+    else { const g=guessCat(e.name); state.items.push({id:uid(),name:e.name,qty:e.qty,cat:g||"others",checked:false,by:me}); }
   }
   save(); render();
-  // optional: client-side only categorization; unknowns stay in Others until edited
 }
 function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){ it.checked=!it.checked; save(); render(); } }
 function moveToBuyAgain(entries){
@@ -239,35 +255,58 @@ function sweep(){ const checked=state.items.filter(i=>i.checked);
 function restore(entry){ addEntries(entry.name, entry.cat);
   state.buyAgain = state.buyAgain.filter(x=>!(x.name.toLowerCase()===entry.name.toLowerCase() && x.cat===entry.cat));
   save(); render(); }
+
+/* item edit */
 function saveEdit(){ if(!editing||!editing.name.trim()) return;
   const it=state.items.find(i=>i.id===editing.id);
   if(it){ it.name=editing.name.trim(); it.qty=Math.max(1,editing.qty||1); it.cat=editing.cat; }
   editing=null; save(); render(); }
 function removeEditing(){ moveToBuyAgain([{name:editing.name,cat:editing.cat}]);
   state.items = state.items.filter(i=>i.id!==editing.id); editing=null; save(); render(); }
+
+/* buy-again edit */
+function saveBA(){ const nm=(editing.name||"").trim(); if(!nm) return; const cat=editing.cat;
+  state.buyAgain = state.buyAgain.filter(x=>!(x.name===editing.origName && x.cat===editing.origCat));
+  if(!state.buyAgain.some(x=>x.name.toLowerCase()===nm.toLowerCase() && x.cat===cat)) state.buyAgain.unshift({name:nm,cat});
+  editing=null; save(); render(); }
+function removeBAfromSheet(){ state.buyAgain = state.buyAgain.filter(x=>!(x.name===editing.origName && x.cat===editing.origCat));
+  editing=null; save(); render(); }
+
+/* category edit */
+function moveCat(id, ni){ const cs=catList(); const i=cs.findIndex(c=>c.id===id);
+  if(i<0||ni<0||ni>=cs.length) return; const [c]=cs.splice(i,1); cs.splice(ni,0,c); save(); render(); }
+function saveCatEdit(){ const c=catList().find(x=>x.id===editing.id);
+  if(c){ const nm=(editing.label||"").trim(); if(nm) c.label=nm; } editing=null; save(); render(); }
+function removeCat(id){ const cs=catList(); if(cs.length<=1){ showToast("Keep at least one category"); return; }
+  const target=cs.find(c=>c.id!==id).id;
+  if(!confirm('Remove this category? Its items move to "'+CAT(target).label+'".')) return;
+  state.items.forEach(it=>{ if(it.cat===id) it.cat=target; });
+  state.buyAgain.forEach(e=>{ if(e.cat===id) e.cat=target; });
+  state.categories = cs.filter(c=>c.id!==id);
+  editing=null; save(); render(); }
+
 function join(name){ const c=name.trim(); if(!c) return;
   if(!state.members.includes(c)){ if(state.members.length>=4) return; state.members.push(c); }
   me=c; localStorage.setItem(LS.me,c); save(); render(); }
 function toggleCat(id){ collapse.cats = collapse.cats.includes(id) ? collapse.cats.filter(x=>x!==id) : [...collapse.cats,id];
   localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }
 function toggleBA(){ collapse.ba=!collapse.ba; localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }
+function copyLink(){ navigator.clipboard?.writeText(location.href); showToast("Link copied"); }
 
-/* ---- long-press helpers ---- */
+/* ---- press handling (tap vs long-press) ---- */
 let pressTimer=null, longFired=false;
-function pillDown(){ longFired=false; pressTimer=setTimeout(()=>{ longFired=true; if(navigator.vibrate)navigator.vibrate(10); },450); }
-function pillUp(id){ clearTimeout(pressTimer); const it=state.items.find(i=>i.id===id);
-  if(longFired){ editing={...it}; render(); } else { toggleItem(id); } }
-function pillCancel(){ clearTimeout(pressTimer); }
+function pressStart(){ longFired=false; pressTimer=setTimeout(()=>{ longFired=true; if(navigator.vibrate)navigator.vibrate(10); },450); }
+function pressCancel(){ clearTimeout(pressTimer); }
 
 /* ---- rendering ---- */
 const app = document.getElementById("app");
 const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 function render(){
+  ensureCats();
   if(!configured){ renderSetupNotice(); return; }
   if(!me){ renderOnboarding(); return; }
-  renderMain();
-  wire();
+  renderMain(); wire();
 }
 
 function renderSetupNotice(){
@@ -283,14 +322,11 @@ function renderOnboarding(){
       </div></div>` : "";
   const add = state.members.length<4 ? `<div style="margin-top:24px">
       <div class="lbl-cap">${state.members.length?"Or join as someone new":"Add your name"} (${state.members.length}/4 spots used)</div>
-      <div class="joinrow"><input id="joinName" placeholder="Your name" />
-      <button id="joinBtn">Join</button></div></div>` : "";
-  app.innerHTML = `<div class="onb">
-    <h1>Market List<span class="dot">.</span></h1>
+      <div class="joinrow"><input id="joinName" placeholder="Your name" /><button id="joinBtn">Join</button></div></div>` : "";
+  app.innerHTML = `<div class="onb"><h1>Market List<span class="dot">.</span></h1>
     <p>One grocery list for the whole household. Anyone with this link can see and edit it — up to 4 people. Who's shopping?</p>
     ${cont}${add}
-    <div class="share">Share link: <button class="sharebtn" id="copyLink">Copy</button></div>
-  </div>`;
+    <div class="share">Share link: <button class="sharebtn" id="copyLink">Copy</button></div></div>`;
   app.querySelectorAll("[data-join]").forEach(b=>b.onclick=()=>join(b.dataset.join));
   const jb=app.querySelector("#joinBtn"), jn=app.querySelector("#joinName");
   if(jb) jb.onclick=()=>join(jn.value);
@@ -298,23 +334,28 @@ function renderOnboarding(){
   const cl=app.querySelector("#copyLink"); if(cl) cl.onclick=copyLink;
 }
 
-function copyLink(){ navigator.clipboard?.writeText(location.href); showToast("Link copied"); }
+function sortList(list){ return list.slice().sort((a,b)=> a.checked===b.checked ? a.name.localeCompare(b.name) : (a.checked?1:-1)); }
+function pillRow(items, cat){ return `<div class="pills">${items.map(i=>
+    `<button class="pill ${i.checked?'done':''}" data-pill="${i.id}" style="border-left:4px solid ${i.checked?'#ADBFA6':cat.color}">`
+    +`${(i.qty||1)>1?`<span class="qty" style="color:${i.checked?'#9AA796':cat.color}">${i.qty}×</span>`:""}${esc(i.name)}</button>`
+  ).join("")}</div>`; }
 
 function renderMain(){
   const open = state.items.filter(i=>!i.checked).length;
   const done = state.items.filter(i=>i.checked).length;
   const avatars = state.members.map((m,i)=>`<div class="av ${m===me?'me':''}" style="margin-left:${i?-6:0}px" title="${esc(m)}">${esc(m.slice(0,1).toUpperCase())}</div>`).join("");
 
-  const cats = CATS.map(cat=>{
-    const list = state.items.filter(i=>i.cat===cat.id)
-      .sort((a,b)=> a.checked===b.checked ? a.name.localeCompare(b.name) : (a.checked?1:-1));
+  const cats = catList().map(cat=>{
+    const list = sortList(state.items.filter(i=>i.cat===cat.id));
     const collapsed = collapse.cats.includes(cat.id);
     const has = list.length>0;
-    const pills = (has && !collapsed) ? `<div class="pills">${list.map(i=>`
-        <button class="pill ${i.checked?'done':''}" data-pill="${i.id}"
-          style="border-left:4px solid ${i.checked?'#ADBFA6':cat.color}">
-          ${(i.qty||1)>1?`<span class="qty" style="color:${i.checked?'#9AA796':cat.color}">${i.qty}×</span>`:""}${esc(i.name)}
-        </button>`).join("")}</div>` : "";
+    let pills = "";
+    if(has && !collapsed){
+      if(cat.id==="meat"){
+        pills = MEAT_ORDER.map(sub=>{ const its=list.filter(i=>meatSub(i.name)===sub);
+          return its.length ? pillRow(its, cat) : ""; }).join("");
+      } else { pills = pillRow(list, cat); }
+    }
     const catAdd = catEntry===cat.id ? `<div class="catadd">
         <input id="catInput" placeholder="Add to ${esc(cat.label)} — commas for several" style="border:2px solid ${cat.color}" />
         <button id="catAddBtn" style="background:${cat.color}">+</button></div>` : "";
@@ -329,13 +370,15 @@ function renderMain(){
       </div>${catAdd}${pills}</section>`;
   }).join("");
 
-  const baGroups = CATS.map(cat=>{
-        const its = state.buyAgain.filter(e=>e.cat===cat.id);
-        if(!its.length) return "";
-        return `<div class="pills" style="margin-top:2px">${its.map(e=>
-          `<span class="bapill" style="border:1.5px dashed ${cat.color}"><button class="ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="border:none;background:transparent;color:#41513E;font-weight:600;font-size:13px;padding:0;display:inline-flex;align-items:center;gap:5px"><span style="color:${cat.color};font-weight:800">+</span>${esc(e.name)}</button><button class="ba-del" data-del="${esc(e.name)}|${e.cat}" aria-label="Remove" style="border:none;background:transparent;color:#A8957E;font-size:14px;font-weight:700;padding:0 1px 0 4px;line-height:1">×</button></span>`
-        ).join("")}</div>`;
-      }).join("");
+  const baGroups = catList().map(cat=>{
+    const its = state.buyAgain.filter(e=>e.cat===cat.id);
+    if(!its.length) return "";
+    return `<div class="pills" style="margin-top:2px">${its.map(e=>
+      `<span class="bapill" style="border:1.5px dashed ${cat.color}">`
+      +`<button class="ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="border:none;background:transparent;color:#41513E;font-weight:600;font-size:13px;padding:0;display:inline-flex;align-items:center;gap:5px"><span style="color:${cat.color};font-weight:800">+</span>${esc(e.name)}</button>`
+      +`<button class="ba-del" data-del="${esc(e.name)}|${e.cat}" aria-label="Remove" style="border:none;background:transparent;color:#A8957E;font-size:14px;font-weight:700;padding:0 1px 0 4px;line-height:1">×</button>`
+      +`</span>`).join("")}</div>`;
+  }).join("");
   const baPills = state.buyAgain.length
     ? `${baGroups}<button id="clearBA" style="margin-top:8px;border:none;background:transparent;color:#A8957E;font-size:12px;font-weight:700;padding:0">Clear buy-again history</button>`
     : `<p style="font-size:12px;color:#9AA796;margin:0">Cleared items land here so you can re-add them with one tap.</p>`;
@@ -361,23 +404,42 @@ function renderMain(){
       </button>
       ${collapse.ba?`<div style="margin-top:8px">${baPills}</div>`:""}
     </section>
-    <p class="hint">Tap = got it · Hold = edit · Heading = collapse · <button class="sharebtn" id="copyLink2">Share link</button> · <button class="sharebtn" id="switchUser">Switch user</button></p>
+    <p class="hint">Tap = got it · Hold an item / heading to edit · <button class="sharebtn" id="copyLink2">Share link</button> · <button class="sharebtn" id="switchUser">Switch user</button></p>
   </div>
   ${done>0?`<div class="sweep"><button id="sweepBtn">Clear ${done} · save to Buy again</button></div>`:""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast">${esc(toast)}</div>`:""}`;
 }
 
+function chipsHTML(activeCat){ return catList().map(c=>
+  `<button class="catchip" data-ec="${c.id}" style="${activeCat===c.id?`background:${c.color};border-color:${c.color};color:#fff`:''}">${c.emoji} ${esc(c.label)}</button>`).join(""); }
+
 function editSheet(){
+  if(editing.kind==="cat"){
+    const cs=catList(); const idx=cs.findIndex(c=>c.id===editing.id); const n=cs.length;
+    return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
+      <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">Edit category</div>
+      <input id="catName" value="${esc(editing.label)}" style="width:100%;padding:12px 14px;border-radius:14px;border:2px solid #21351F;outline:none;background:#fff;color:#21351F" />
+      <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
+        <button class="movebtn" id="moveUp" ${idx<=0?'disabled style="opacity:.4"':''}>↑ Move up</button>
+        <button class="movebtn" id="moveDown" ${idx>=n-1?'disabled style="opacity:.4"':''}>↓ Move down</button>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:#6B7A68;text-align:center">Position ${idx+1} of ${n}</div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button id="catRemove" style="padding:13px 16px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:15px">Remove</button>
+        <button id="catSave" style="flex:1;padding:13px;border-radius:14px;border:none;background:#21351F;color:#fff;font-weight:800;font-size:15px">Save</button>
+      </div>
+    </div></div>`;
+  }
+  const isItem = editing.kind==="item";
+  const qtyBlock = isItem ? `<div class="qstep"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>` : "";
   return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
-    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">Edit item</div>
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${isItem?"Edit item":"Edit saved item"}</div>
     <div style="display:flex;gap:8px">
       <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid #21351F;outline:none;background:#fff;color:#21351F" />
-      <div class="qstep"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>
+      ${qtyBlock}
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">
-      ${CATS.map(c=>`<button class="catchip" data-ec="${c.id}" style="${editing.cat===c.id?`background:${c.color};border-color:${c.color};color:#fff`:''}">${c.emoji} ${c.label}</button>`).join("")}
-    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">${chipsHTML(editing.cat)}</div>
     <div style="display:flex;gap:8px;margin-top:16px">
       <button id="rmBtn" style="padding:13px 16px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:15px">Remove</button>
       <button id="saveBtn" style="flex:1;padding:13px;border-radius:14px;border:none;background:#21351F;color:#fff;font-weight:800;font-size:15px">Save</button>
@@ -393,41 +455,62 @@ function wire(){
       if(looksLikeBlock){ e.preventDefault(); addEntries(t,null); mi.value=""; } }; }
   if(ma){ ma.onpointerdown=e=>e.preventDefault(); ma.onclick=()=>{ addEntries(mi.value,null); mi.value=""; mi.focus(); }; }
 
+  /* item pills: tap = check, hold = edit */
   app.querySelectorAll("[data-pill]").forEach(b=>{ const id=b.dataset.pill;
     b.oncontextmenu=e=>e.preventDefault();
-    b.onpointerdown=pillDown; b.onpointerup=()=>pillUp(id); b.onpointerleave=pillCancel; b.onpointercancel=pillCancel; });
-  app.querySelectorAll("[data-cat]").forEach(b=>{ const id=b.dataset.cat;
-    const has=state.items.some(i=>i.cat===id); if(has) b.onclick=()=>toggleCat(id); });
-  app.querySelectorAll("[data-add]").forEach(b=>{ const id=b.dataset.add;
-    b.onclick=()=>{ catEntry = catEntry===id?null:id; render();
-      const ci=app.querySelector("#catInput"); if(ci) ci.focus(); }; });
+    b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
+    b.onpointerup=()=>{ pressCancel(); const it=state.items.find(i=>i.id===id); if(!it) return;
+      if(longFired){ editing={kind:"item", ...it}; render(); } else { toggleItem(id); } }; });
 
+  /* category header: tap = collapse, hold = edit/reorder/remove */
+  app.querySelectorAll("[data-cat]").forEach(b=>{ const id=b.dataset.cat;
+    const has=state.items.some(i=>i.cat===id);
+    b.oncontextmenu=e=>e.preventDefault();
+    b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
+    b.onpointerup=()=>{ pressCancel(); if(longFired){ const c=CAT(id); editing={kind:"cat", id, label:c.label}; render(); }
+      else if(has){ toggleCat(id); } }; });
+
+  app.querySelectorAll("[data-add]").forEach(b=>{ const id=b.dataset.add;
+    b.onclick=()=>{ catEntry = catEntry===id?null:id; render(); const ci=app.querySelector("#catInput"); if(ci) ci.focus(); }; });
   const ci=app.querySelector("#catInput"), cab=app.querySelector("#catAddBtn");
   if(ci){ ci.focus(); ci.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); addEntries(ci.value,catEntry); ci.value=""; ci.focus(); } }; }
   if(cab){ cab.onpointerdown=e=>e.preventDefault(); cab.onclick=()=>{ const v=app.querySelector("#catInput").value; addEntries(v,catEntry); render(); const x=app.querySelector("#catInput"); if(x) x.focus(); }; }
 
   const sb=app.querySelector("#sweepBtn"); if(sb) sb.onclick=sweep;
   const bh=app.querySelector("#baHead"); if(bh) bh.onclick=toggleBA;
-  app.querySelectorAll("[data-restore]").forEach(b=>{ const [name,cat]=b.dataset.restore.split("|"); b.onclick=()=>restore({name,cat}); });
-  app.querySelectorAll("[data-del]").forEach(b=>{ const [name,cat]=b.dataset.del.split("|");
+
+  /* buy-again: tap = restore, hold = edit; × = remove */
+  app.querySelectorAll(".ba-restore").forEach(b=>{ const [name,cat]=b.dataset.restore.split("|");
+    b.oncontextmenu=e=>e.preventDefault();
+    b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
+    b.onpointerup=()=>{ pressCancel(); if(longFired){ editing={kind:"ba", name, cat, origName:name, origCat:cat}; render(); } else { restore({name,cat}); } }; });
+  app.querySelectorAll(".ba-del").forEach(b=>{ const [name,cat]=b.dataset.del.split("|");
     b.onclick=()=>{ state.buyAgain=state.buyAgain.filter(x=>!(x.name===name && x.cat===cat)); save(); render(); }; });
   const cba=app.querySelector("#clearBA"); if(cba) cba.onclick=()=>{ state.buyAgain=[]; save(); render(); };
+
   const cl=app.querySelector("#copyLink2"); if(cl) cl.onclick=copyLink;
   const su=app.querySelector("#switchUser"); if(su) su.onclick=()=>{ localStorage.removeItem(LS.me); me=null; render(); };
 
   if(editing){
-    const bg=app.querySelector("#sheetBg"); bg.onclick=()=>{ editing=null; render(); };
-    app.querySelector("#sheet").onclick=e=>e.stopPropagation();
-    const en=app.querySelector("#editName"); en.oninput=e=>editing.name=e.target.value;
-    app.querySelector("#qMinus").onclick=()=>{ editing.qty=Math.max(1,(editing.qty||1)-1); render(); };
-    app.querySelector("#qPlus").onclick=()=>{ editing.qty=(editing.qty||1)+1; render(); };
-    app.querySelectorAll("[data-ec]").forEach(b=>b.onclick=()=>{ editing.cat=b.dataset.ec; render(); });
-    app.querySelector("#rmBtn").onclick=removeEditing;
-    app.querySelector("#saveBtn").onclick=saveEdit;
+    const bg=app.querySelector("#sheetBg"); if(bg) bg.onclick=()=>{ editing=null; render(); };
+    const sh=app.querySelector("#sheet"); if(sh) sh.onclick=e=>e.stopPropagation();
+    if(editing.kind==="cat"){
+      const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>editing.label=e.target.value;
+      const mu=app.querySelector("#moveUp"); if(mu) mu.onclick=()=>{ const cs=catList(); const i=cs.findIndex(c=>c.id===editing.id); moveCat(editing.id,i-1); };
+      const md=app.querySelector("#moveDown"); if(md) md.onclick=()=>{ const cs=catList(); const i=cs.findIndex(c=>c.id===editing.id); moveCat(editing.id,i+1); };
+      const cr=app.querySelector("#catRemove"); if(cr) cr.onclick=()=>removeCat(editing.id);
+      const csv=app.querySelector("#catSave"); if(csv) csv.onclick=saveCatEdit;
+    } else {
+      const en=app.querySelector("#editName"); if(en) en.oninput=e=>editing.name=e.target.value;
+      const qm=app.querySelector("#qMinus"); if(qm) qm.onclick=()=>{ editing.qty=Math.max(1,(editing.qty||1)-1); render(); };
+      const qp=app.querySelector("#qPlus"); if(qp) qp.onclick=()=>{ editing.qty=(editing.qty||1)+1; render(); };
+      app.querySelectorAll("[data-ec]").forEach(b=>b.onclick=()=>{ editing.cat=b.dataset.ec; render(); });
+      const rm=app.querySelector("#rmBtn"); if(rm) rm.onclick=()=> editing.kind==="item" ? removeEditing() : removeBAfromSheet();
+      const sv=app.querySelector("#saveBtn"); if(sv) sv.onclick=()=> editing.kind==="item" ? saveEdit() : saveBA();
+    }
   }
 }
 
-/* first paint */
 render();
 </script>
 </body>
