@@ -49,7 +49,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     --done-bg:#212E28; --done-line:#33433B; --done-text:#7E9286; --done-edge:#52685C;
     --mic-img:url('mic-dark.png');
   }
-  .micbtn{ width:46px; height:44px; flex:none; border-radius:14px; border:1.5px solid var(--line);
+  .micbtn{ width:46px; height:44px; flex:none; border-radius:14px; border:none;
     background:var(--mic-img) center/cover no-repeat; }
   .iconbtn{ width:30px; height:30px; border-radius:9px; border:none; background:var(--chip);
     color:var(--ink); font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; }
@@ -145,14 +145,13 @@ import { getFirestore, doc, onSnapshot, setDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
+  apiKey: "REPLACE_ME",
+  authDomain: "REPLACE_ME.firebaseapp.com",
+  projectId: "REPLACE_ME",
+  storageBucket: "REPLACE_ME.appspot.com",
+  messagingSenderId: "REPLACE_ME",
+  appId: "REPLACE_ME"
 };
-
 /* ============================================================ */
 
 /* default categories (ids stay fixed; label/color/order are editable & saved) */
@@ -306,6 +305,7 @@ function saveEdit(){ if(!editing||!editing.name.trim()) return;
   editing=null; save(); render(); }
 function removeEditing(){ moveToBuyAgain([{name:editing.name,cat:editing.cat,qty:editing.qty||1}]);
   state.items = state.items.filter(i=>i.id!==editing.id); editing=null; save(); render(); }
+function deleteItemEditing(){ state.items = state.items.filter(i=>i.id!==editing.id); editing=null; save(); render(); }
 
 /* buy-again edit */
 function saveBA(){ const nm=(editing.name||"").trim(); if(!nm) return; const cat=editing.cat; const qty=Math.max(1,editing.qty||1);
@@ -313,6 +313,11 @@ function saveBA(){ const nm=(editing.name||"").trim(); if(!nm) return; const cat
   if(!state.buyAgain.some(x=>x.name.toLowerCase()===nm.toLowerCase() && x.cat===cat)) state.buyAgain.unshift({name:nm,cat,qty});
   editing=null; save(); render(); }
 function removeBAfromSheet(){ state.buyAgain = state.buyAgain.filter(x=>!(x.name===editing.origName && x.cat===editing.origCat));
+  editing=null; save(); render(); }
+function restoreEditingToList(){ const nm=(editing.name||"").trim()||editing.origName; const cat=editing.cat; const qty=Math.max(1,editing.qty||1);
+  state.buyAgain = state.buyAgain.filter(x=>!(x.name===editing.origName && x.cat===editing.origCat));
+  const ex=state.items.find(i=>!i.checked && i.name.toLowerCase()===nm.toLowerCase() && i.cat===cat);
+  if(!ex) state.items.push({id:uid(),name:nm,qty,cat,checked:false,by:me});
   editing=null; save(); render(); }
 
 /* category edit */
@@ -338,8 +343,8 @@ function copyLink(){ navigator.clipboard?.writeText(location.href); showToast("L
 
 /* ---- voice input (Web Speech API) ---- */
 let recog=null, listening=false, micFinal="";
-function setMicUI(on){ const b=document.getElementById("micBtn"); if(!b) return;
-  b.style.backgroundImage = on ? "url('mic-on.png')" : ""; }
+function setMicUI(on){ const b=document.getElementById("micBtn"); if(b) b.style.backgroundImage = on ? "url('mic-on.png')" : "";
+  const f=micField(); if(f) f.style.color = on ? "var(--accent)" : ""; }
 function micField(){ return document.getElementById("mainInput"); }
 function grow(el){ if(!el) return; el.style.height="auto"; el.style.height=Math.min(el.scrollHeight,180)+"px"; }
 function startMic(){
@@ -469,15 +474,15 @@ function renderMain(){
       <div style="display:flex;align-items:center;gap:8px">
         <button id="themeBtn" aria-label="Toggle dark mode" class="iconbtn">${theme==="dark"?"☀️":"🌙"}</button>
         <div style="display:flex;align-items:center;gap:4px">
-          <button id="denMinus" aria-label="Smaller" style="width:24px;height:24px;border-radius:7px;border:none;background:var(--chip);color:var(--ink);font-size:16px;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center">−</button>
           <button id="denPlus" aria-label="Larger" style="width:24px;height:24px;border-radius:7px;border:none;background:var(--chip);color:var(--ink);font-size:15px;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center">+</button>
+          <button id="denMinus" aria-label="Smaller" style="width:24px;height:24px;border-radius:7px;border:none;background:var(--chip);color:var(--ink);font-size:16px;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center">−</button>
         </div>
       </div>
     </header>
     <div class="addbar">
+      <button class="micbtn" id="micBtn" aria-label="Voice input"></button>
       <textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Paste, type, or tap the mic to speak…"></textarea>
       <button class="addbtn" id="mainAdd">+</button>
-      <button class="micbtn" id="micBtn" aria-label="Voice input"></button>
     </div>
     ${cats}
     <section class="ba">
@@ -517,6 +522,10 @@ function editSheet(){
   }
   const isItem = editing.kind==="item";
   const qtyBlock = `<div class="qstep"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>`;
+  const secLabel = isItem ? "Buy again" : "Market list";
+  const btnSecStyle = "padding:13px 12px;border-radius:14px;border:2px solid var(--ink);background:transparent;color:var(--ink);font-weight:700;font-size:14px";
+  const btnDelStyle = "padding:13px 12px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:14px";
+  const btnSaveStyle = "flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px";
   return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${isItem?"Edit item":"Edit saved item"}</div>
     <div style="display:flex;gap:8px">
@@ -525,8 +534,9 @@ function editSheet(){
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">${chipsHTML(editing.cat)}</div>
     <div style="display:flex;gap:8px;margin-top:16px">
-      <button id="rmBtn" style="padding:13px 16px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:15px">Remove</button>
-      <button id="saveBtn" style="flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">Save</button>
+      <button id="secBtn" style="${btnSecStyle}">${secLabel}</button>
+      <button id="delBtn" style="${btnDelStyle}">Delete</button>
+      <button id="saveBtn" style="${btnSaveStyle}">Save</button>
     </div>
   </div></div>`;
 }
@@ -596,7 +606,8 @@ function wire(){
       const qm=app.querySelector("#qMinus"); if(qm) qm.onclick=()=>{ editing.qty=Math.max(1,(editing.qty||1)-1); render(); };
       const qp=app.querySelector("#qPlus"); if(qp) qp.onclick=()=>{ editing.qty=(editing.qty||1)+1; render(); };
       app.querySelectorAll("[data-ec]").forEach(b=>b.onclick=()=>{ editing.cat=b.dataset.ec; render(); });
-      const rm=app.querySelector("#rmBtn"); if(rm) rm.onclick=()=> editing.kind==="item" ? removeEditing() : removeBAfromSheet();
+      const sec=app.querySelector("#secBtn"); if(sec) sec.onclick=()=> editing.kind==="item" ? removeEditing() : restoreEditingToList();
+      const del=app.querySelector("#delBtn"); if(del) del.onclick=()=> editing.kind==="item" ? deleteItemEditing() : removeBAfromSheet();
       const sv=app.querySelector("#saveBtn"); if(sv) sv.onclick=()=> editing.kind==="item" ? saveEdit() : saveBA();
     }
   }
