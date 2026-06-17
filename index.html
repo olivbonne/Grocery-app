@@ -1,4 +1,4 @@
-moi<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
@@ -49,7 +49,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     --done-bg:#212E28; --done-line:#33433B; --done-text:#7E9286; --done-edge:#52685C;
     --mic-img:url('mic-dark.png');
   }
-  .micbtn{ width:46px; border-radius:14px; border:1.5px solid var(--line);
+  .micbtn{ width:46px; height:44px; flex:none; border-radius:14px; border:1.5px solid var(--line);
     background:var(--mic-img) center/cover no-repeat; }
   .iconbtn{ width:30px; height:30px; border-radius:9px; border:none; background:var(--chip);
     color:var(--ink); font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; }
@@ -58,7 +58,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     font-family:'Inter',-apple-system,'SF Pro Text',system-ui,sans-serif; }
   .wrap { max-width:480px; margin:0 auto; padding:calc(12px + env(safe-area-inset-top)) 14px calc(96px + env(safe-area-inset-bottom)); }
   .disp { font-family:'Bricolage Grotesque','Inter',system-ui,sans-serif; }
-  input { font-family:inherit; font-size:16px; }
+  input, textarea { font-family:inherit; font-size:16px; }
   button { font-family:inherit; cursor:pointer; }
   .pill { user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; touch-action:manipulation; }
   @keyframes rise { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
@@ -70,10 +70,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .av { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center;
     font-size:11px; font-weight:700; border:2px solid var(--paper); background:var(--chip); color:var(--ink); }
   .av.me { background:var(--btn); color:#fff; }
-  .addbar { display:flex; gap:6px; margin-bottom:10px; }
-  .addbar input { flex:1; min-width:0; padding:11px 14px; border-radius:14px; border:2px solid var(--ink);
-    outline:none; background:var(--card); color:var(--ink); }
-  .addbtn { width:46px; border-radius:14px; border:none; background:var(--accent); color:#fff;
+  .addbar { display:flex; gap:6px; margin-bottom:10px; align-items:flex-end; }
+  .addbar textarea { flex:1; min-width:0; min-height:44px; padding:11px 14px; border-radius:14px; border:2px solid var(--ink);
+    outline:none; background:var(--card); color:var(--ink); resize:none; overflow:hidden; line-height:1.3;
+    white-space:pre-wrap; word-break:break-word; }
+  .addbtn { width:46px; height:44px; flex:none; border-radius:14px; border:none; background:var(--accent); color:#fff;
     font-size:22px; font-weight:700; line-height:1; }
   section.cat { margin-bottom:7px; }
   .chead { display:flex; align-items:center; gap:6px; margin-bottom:0; }
@@ -83,9 +84,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .cnum { font-size:11px; color:var(--muted2); font-weight:700; }
   .plus { width:20px; height:20px; border-radius:7px; border:none; background:var(--chip); color:var(--muted);
     font-size:14px; font-weight:800; line-height:1; display:flex; align-items:center; justify-content:center; }
-  .catadd { display:flex; gap:6px; margin:6px 0; animation:rise .15s ease; }
-  .catadd input { flex:1; min-width:0; padding:9px 12px; border-radius:12px; outline:none; background:var(--card); color:var(--ink); }
-  .catadd button { width:40px; border-radius:12px; border:none; color:#fff; font-size:19px; font-weight:700; line-height:1; }
+  .catadd { display:flex; gap:6px; margin:6px 0; animation:rise .15s ease; align-items:flex-end; }
+  .catadd textarea { flex:1; min-width:0; min-height:38px; padding:9px 12px; border-radius:12px; outline:none;
+    background:var(--card); color:var(--ink); resize:none; overflow:hidden; line-height:1.3;
+    white-space:pre-wrap; word-break:break-word; }
+  .catadd button { width:40px; height:38px; flex:none; border-radius:12px; border:none; color:#fff; font-size:19px; font-weight:700; line-height:1; }
   .pills { display:flex; flex-wrap:wrap; gap:5px; margin-top:4px; }
   .pill { display:inline-flex; align-items:center; gap:5px; background:var(--card); border:1.5px solid var(--line);
     border-radius:10px; padding:7px 11px; font-size:14px; font-weight:600; color:var(--ink); }
@@ -142,12 +145,12 @@ import { getFirestore, doc, onSnapshot, setDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
+  apiKey: "REPLACE_ME",
+  authDomain: "REPLACE_ME.firebaseapp.com",
+  projectId: "REPLACE_ME",
+  storageBucket: "REPLACE_ME.appspot.com",
+  messagingSenderId: "REPLACE_ME",
+  appId: "REPLACE_ME"
 };
 /* ============================================================ */
 
@@ -335,8 +338,9 @@ function copyLink(){ navigator.clipboard?.writeText(location.href); showToast("L
 /* ---- voice input (Web Speech API) ---- */
 let recog=null, listening=false, micFinal="";
 function setMicUI(on){ const b=document.getElementById("micBtn"); if(!b) return;
-  b.style.boxShadow = on ? "0 0 0 3px var(--accent)" : "none"; b.style.opacity = on ? "0.85" : "1"; }
+  b.style.backgroundImage = on ? "url('mic-on.png')" : ""; }
 function micField(){ return document.getElementById("mainInput"); }
+function grow(el){ if(!el) return; el.style.height="auto"; el.style.height=Math.min(el.scrollHeight,180)+"px"; }
 function startMic(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){ showToast("Voice input isn't supported here — tap the 🎤 on your keyboard instead"); return; }
@@ -347,7 +351,7 @@ function startMic(){
     let interim = "";
     for(let i=e.resultIndex; i<e.results.length; i++){ const r=e.results[i]; const tx=(r[0].transcript||"").trim();
       if(r.isFinal){ if(tx) micFinal += tx + ", "; } else { interim += r[0].transcript; } }
-    const m=micField(); if(m) m.value = (micFinal + interim).replace(/,\s*,/g, ", ");
+    const m=micField(); if(m){ m.value = (micFinal + interim).replace(/,\s*,/g, ", "); grow(m); }
   };
   recog.onerror = ev => {
     if(ev.error==="not-allowed"||ev.error==="service-not-allowed"){ showToast("Allow microphone access to use voice input"); listening=false; }
@@ -429,7 +433,7 @@ function renderMain(){
       } else { pills = pillRow(list, cat); }
     }
     const catAdd = catEntry===cat.id ? `<div class="catadd">
-        <input id="catInput" placeholder="Add to ${esc(cat.label)} — commas for several" style="border:2px solid ${cat.color}" />
+        <textarea id="catInput" rows="1" placeholder="Add to ${esc(cat.label)} — commas for several" style="border:2px solid ${cat.color}"></textarea>
         <button id="catAddBtn" style="background:${cat.color}">+</button></div>` : "";
     return `<section class="cat">
       <div class="chead">
@@ -467,11 +471,10 @@ function renderMain(){
           <button id="denMinus" aria-label="Smaller" style="width:24px;height:24px;border-radius:7px;border:none;background:var(--chip);color:var(--ink);font-size:16px;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center">−</button>
           <button id="denPlus" aria-label="Larger" style="width:24px;height:24px;border-radius:7px;border:none;background:var(--chip);color:var(--ink);font-size:15px;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center">+</button>
         </div>
-        <div class="avatars">${avatars}</div>
       </div>
     </header>
     <div class="addbar">
-      <input id="mainInput" enterkeyhint="done" placeholder="Paste, type, or tap the mic to speak…" />
+      <textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Paste, type, or tap the mic to speak…"></textarea>
       <button class="addbtn" id="mainAdd">+</button>
       <button class="micbtn" id="micBtn" aria-label="Voice input"></button>
     </div>
@@ -529,11 +532,12 @@ function editSheet(){
 
 function wire(){
   const mi=app.querySelector("#mainInput"), ma=app.querySelector("#mainAdd");
-  if(mi){ mi.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); stopMic(); addEntries(mi.value,null); mi.value=""; mi.focus(); } };
+  if(mi){ grow(mi); mi.oninput=()=>grow(mi);
+    mi.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); stopMic(); addEntries(mi.value,null); mi.value=""; grow(mi); mi.focus(); } };
     mi.onpaste=e=>{ const t=(e.clipboardData||window.clipboardData).getData("text");
       const looksLikeBlock = t && (t.indexOf("\n")>=0 || /\b(meat|fruit|vegetable|veg|fresh|bulk|asian|alcohol|health|others)\s*:/i.test(t) || t.split(",").length>2);
-      if(looksLikeBlock){ e.preventDefault(); addEntries(t,null); mi.value=""; } }; }
-  if(ma){ ma.onpointerdown=e=>e.preventDefault(); ma.onclick=()=>{ stopMic(); addEntries(mi.value,null); mi.value=""; mi.focus(); }; }
+      if(looksLikeBlock){ e.preventDefault(); addEntries(t,null); mi.value=""; grow(mi); } }; }
+  if(ma){ ma.onpointerdown=e=>e.preventDefault(); ma.onclick=()=>{ stopMic(); addEntries(mi.value,null); mi.value=""; grow(mi); mi.focus(); }; }
   const mb=app.querySelector("#micBtn"); if(mb){ mb.onclick=toggleMic; setMicUI(listening); }
 
   /* item pills: tap = check, hold = edit */
@@ -554,8 +558,9 @@ function wire(){
   app.querySelectorAll("[data-add]").forEach(b=>{ const id=b.dataset.add;
     b.onclick=()=>{ catEntry = catEntry===id?null:id; render(); const ci=app.querySelector("#catInput"); if(ci) ci.focus(); }; });
   const ci=app.querySelector("#catInput"), cab=app.querySelector("#catAddBtn");
-  if(ci){ ci.focus(); ci.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); addEntries(ci.value,catEntry); ci.value=""; ci.focus(); } }; }
-  if(cab){ cab.onpointerdown=e=>e.preventDefault(); cab.onclick=()=>{ const v=app.querySelector("#catInput").value; addEntries(v,catEntry); render(); const x=app.querySelector("#catInput"); if(x) x.focus(); }; }
+  if(ci){ ci.focus(); grow(ci); ci.oninput=()=>grow(ci);
+    ci.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); addEntries(ci.value,catEntry); ci.value=""; grow(ci); ci.focus(); } }; }
+  if(cab){ cab.onpointerdown=e=>e.preventDefault(); cab.onclick=()=>{ const v=app.querySelector("#catInput").value; addEntries(v,catEntry); render(); const x=app.querySelector("#catInput"); if(x){ x.focus(); grow(x); } }; }
 
   const sb=app.querySelector("#sweepBtn"); if(sb) sb.onclick=sweep;
   const bh=app.querySelector("#baHead"); if(bh) bh.onclick=toggleBA;
