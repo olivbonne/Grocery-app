@@ -89,6 +89,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     background:var(--card); color:var(--ink); resize:none; overflow:hidden; line-height:1.2;
     white-space:pre-wrap; word-break:break-word; }
   .catadd button { width:40px; height:38px; flex:none; border-radius:12px; border:none; color:#fff; font-size:19px; font-weight:700; line-height:1; }
+  .suggest { display:flex; gap:6px; overflow-x:auto; margin:-4px 0 10px; -webkit-overflow-scrolling:touch; }
+  .suggest:empty { display:none; }
+  .sugchip { flex:none; padding:7px 12px; border-radius:999px; border:1.5px solid var(--line); background:var(--card);
+    color:var(--ink); font-size:13px; font-weight:600; white-space:nowrap; }
+  .prog { height:5px; background:var(--line); border-radius:999px; margin:0 0 10px; overflow:hidden; }
+  .prog-fill { height:100%; background:var(--accent); border-radius:999px; transition:width .25s ease; }
   .pills { display:flex; flex-wrap:wrap; gap:5px; margin-top:4px; }
   .pill { display:inline-flex; align-items:center; gap:5px; background:var(--card); border:1.5px solid var(--line);
     border-radius:10px; padding:7px 11px; font-size:14px; font-weight:600; color:var(--ink); }
@@ -152,7 +158,6 @@ const firebaseConfig = {
   messagingSenderId: "237398844171",
   appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
 };
-
 /* ============================================================ */
 
 /* default categories (ids stay fixed; label/color/order are editable & saved) */
@@ -280,7 +285,7 @@ function addEntries(text, override){
   }
   save(); render();
 }
-function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){ it.checked=!it.checked; save(); render(); } }
+function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){ if(navigator.vibrate) navigator.vibrate(8); it.checked=!it.checked; save(); render(); } }
 function moveToBuyAgain(entries){
   for(const e of entries){ const k=e.name.toLowerCase()+"|"+e.cat;
     state.buyAgain = state.buyAgain.filter(x=>(x.name.toLowerCase()+"|"+x.cat)!==k);
@@ -348,6 +353,33 @@ function setMicUI(on){ const b=document.getElementById("micBtn"); if(b) b.style.
   const f=micField(); if(f) f.style.color = on ? "var(--accent)" : ""; }
 function micField(){ return document.getElementById("mainInput"); }
 function grow(el){ if(!el) return; el.style.height="auto"; el.style.height=Math.min(el.scrollHeight+4,180)+"px"; }
+function suggestPool(){
+  const seen=new Set(), out=[];
+  const add=n=>{ const k=(n||"").toLowerCase().trim(); if(k && !seen.has(k)){ seen.add(k); out.push(n); } };
+  state.buyAgain.forEach(e=>add(e.name));   // recently bought first
+  state.items.forEach(i=>add(i.name));      // already on the list
+  Object.values(DICT).forEach(arr=>arr.forEach(add)); // common groceries fallback
+  return out;
+}
+function renderSuggest(){
+  const box=document.getElementById("suggest"), mi=micField(); if(!box||!mi){ return; }
+  const v=mi.value, idx=Math.max(v.lastIndexOf(","), v.lastIndexOf("\n"));
+  const frag=v.slice(idx+1).trim().toLowerCase();
+  if(frag.length<1){ box.innerHTML=""; return; }
+  const pool=suggestPool();
+  const starts=pool.filter(n=>n.toLowerCase().startsWith(frag));
+  const incl=pool.filter(n=>!n.toLowerCase().startsWith(frag) && n.toLowerCase().includes(frag));
+  const list=[...starts,...incl].filter(n=>n.toLowerCase()!==frag).slice(0,8);
+  if(!list.length){ box.innerHTML=""; return; }
+  box.innerHTML=list.map(n=>`<button class="sugchip" data-sug="${esc(n)}">${esc(n)}</button>`).join("");
+  box.querySelectorAll("[data-sug]").forEach(b=>{
+    b.onpointerdown=e=>e.preventDefault();   // keep keyboard up
+    b.onclick=()=>{ const name=b.dataset.sug; const cur=mi.value;
+      const i=Math.max(cur.lastIndexOf(","), cur.lastIndexOf("\n"));
+      const head=i>=0 ? cur.slice(0,i+1).replace(/\s*$/,"")+" " : "";
+      mi.value=head+name+", "; grow(mi); mi.focus(); box.innerHTML=""; };
+  });
+}
 function startMic(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){ showToast("Voice input isn't supported here — tap the 🎤 on your keyboard instead"); return; }
@@ -470,7 +502,7 @@ function renderMain(){
     <header>
       <div style="display:flex;align-items:baseline;gap:8px">
         <span class="title disp">Market List<span class="dot">.</span></span>
-        <span class="count">${open===0?'all clear':open+' to buy'}</span>
+        <span class="count">${state.items.length===0?'all clear':(open+' to buy'+(done?` · ${done} in cart`:''))}</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <button id="themeBtn" aria-label="Toggle dark mode" class="iconbtn">${theme==="dark"?"☀️":"🌙"}</button>
@@ -480,11 +512,13 @@ function renderMain(){
         </div>
       </div>
     </header>
+    ${state.items.length>0 ? `<div class="prog"><div class="prog-fill" style="width:${Math.round(done/state.items.length*100)}%"></div></div>` : ""}
     <div class="addbar">
       <button class="micbtn" id="micBtn" aria-label="Voice input"></button>
       <textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Paste, type, or tap the mic…"></textarea>
       <button class="addbtn" id="mainAdd">+</button>
     </div>
+    <div class="suggest" id="suggest"></div>
     ${cats}
     <section class="ba">
       <button class="bahead" id="baHead">
@@ -544,12 +578,12 @@ function editSheet(){
 
 function wire(){
   const mi=app.querySelector("#mainInput"), ma=app.querySelector("#mainAdd");
-  if(mi){ grow(mi); mi.oninput=()=>grow(mi);
-    mi.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); stopMic(); addEntries(mi.value,null); mi.value=""; grow(mi); mi.focus(); } };
+  if(mi){ grow(mi); mi.oninput=()=>{ grow(mi); renderSuggest(); };
+    mi.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); stopMic(); addEntries(mi.value,null); mi.value=""; grow(mi); document.getElementById("suggest").innerHTML=""; mi.focus(); } };
     mi.onpaste=e=>{ const t=(e.clipboardData||window.clipboardData).getData("text");
       const looksLikeBlock = t && (t.indexOf("\n")>=0 || /\b(meat|fruit|vegetable|veg|fresh|bulk|asian|alcohol|health|others)\s*:/i.test(t) || t.split(",").length>2);
-      if(looksLikeBlock){ e.preventDefault(); addEntries(t,null); mi.value=""; grow(mi); } }; }
-  if(ma){ ma.onpointerdown=e=>e.preventDefault(); ma.onclick=()=>{ stopMic(); addEntries(mi.value,null); mi.value=""; grow(mi); mi.focus(); }; }
+      if(looksLikeBlock){ e.preventDefault(); addEntries(t,null); mi.value=""; grow(mi); document.getElementById("suggest").innerHTML=""; } }; }
+  if(ma){ ma.onpointerdown=e=>e.preventDefault(); ma.onclick=()=>{ stopMic(); addEntries(mi.value,null); mi.value=""; grow(mi); const sg=document.getElementById("suggest"); if(sg) sg.innerHTML=""; mi.focus(); }; }
   const mb=app.querySelector("#micBtn"); if(mb){ mb.onclick=toggleMic; setMicUI(listening); }
 
   /* item pills: tap = check, hold = edit */
