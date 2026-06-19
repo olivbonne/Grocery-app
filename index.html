@@ -17,14 +17,14 @@
 <!--  Replace each "REPLACE_ME" with the matching value, then save/deploy.  -->
 <!-- ===================================================================== -->
 <script>
-window.FIREBASE_CONFIG = {  
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+  window.FIREBASE_CONFIG = {
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -126,9 +126,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .iconopt.sel { border-color:var(--btn); }
   .iconopt img { width:24px; height:24px; object-fit:contain; }
   .inwrap { position:relative; flex:1; min-width:0; }
-  .inwrap textarea { width:100%; }
-  .clearbtn { position:absolute; right:7px; bottom:7px; width:20px; height:20px; border-radius:50%; border:none;
-    background:var(--chip); color:var(--muted); font-size:14px; font-weight:700; line-height:1; padding:0;
+  .inwrap textarea { width:100%; padding-right:36px; }
+  .clearbtn { position:absolute; right:8px; top:8px; width:22px; height:22px; border-radius:50%; border:none;
+    background:var(--chip); color:var(--muted); font-size:15px; font-weight:700; line-height:1; padding:0;
     display:none; align-items:center; justify-content:center; }
   .clearbtn.show { display:flex; }
   .catheadchip { padding:5px 11px !important; border-radius:999px; gap:6px; }
@@ -148,6 +148,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .subname { flex:1; min-width:0; font-size:13px; font-weight:600; }
   .iconmini { width:28px; height:28px; flex:none; border-radius:9px; border:none; background:var(--chip);
     color:var(--ink); font-size:13px; font-weight:800; line-height:1; }
+  .subrow2 { display:flex; align-items:center; gap:5px; padding:5px 8px; border:1px solid var(--line);
+    border-radius:10px; margin-bottom:4px; background:var(--card); }
+  .subedit { flex:1; min-width:0; border:none; background:transparent; color:var(--ink); font-size:12px;
+    font-weight:600; outline:none; padding:3px 2px; }
+  .hint2 { margin-top:8px; font-size:12px; color:var(--muted); }
+  .none { font-size:12px; color:var(--muted2); }
   .pills { display:flex; flex-wrap:wrap; gap:5px; margin-top:4px; }
   .pill { display:inline-flex; align-items:center; gap:5px; background:var(--card); border:1.5px solid var(--line);
     border-radius:10px; padding:7px 11px; font-size:14px; font-weight:600; color:var(--ink); }
@@ -267,9 +273,9 @@ function toggleTheme(){ theme = theme==="dark" ? "light" : "dark"; localStorage.
 applyTheme();
 let soundOn = localStorage.getItem("ml_sound")==="1";
 let __ac=null;
-function playTick(){ if(!soundOn) return;
+function playTick(up){ if(!soundOn) return;
   try { __ac = __ac || new (window.AudioContext||window.webkitAudioContext)(); if(__ac.state==="suspended") __ac.resume();
-    const o=__ac.createOscillator(), g=__ac.createGain(); o.type="triangle"; o.frequency.value=880;
+    const o=__ac.createOscillator(), g=__ac.createGain(); o.type="triangle"; o.frequency.value = up===false ? 392 : 880;
     g.gain.setValueAtTime(0.0001,__ac.currentTime); g.gain.exponentialRampToValueAtTime(0.18,__ac.currentTime+0.005);
     g.gain.exponentialRampToValueAtTime(0.0001,__ac.currentTime+0.12);
     o.connect(g); g.connect(__ac.destination); o.start(); o.stop(__ac.currentTime+0.13);
@@ -408,7 +414,8 @@ function addEntries(text, override){
   save(); render();
 }
 function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){
-  if(!it.checked){ lastPop=id; playTick(); if(navigator.vibrate) navigator.vibrate(8); setTimeout(()=>{ if(lastPop===id) lastPop=null; },350); }
+  if(!it.checked){ lastPop=id; playTick(true); if(navigator.vibrate) navigator.vibrate(8); setTimeout(()=>{ if(lastPop===id) lastPop=null; },350); }
+  else { playTick(false); if(navigator.vibrate) navigator.vibrate(5); }
   it.checked=!it.checked; save(); render(); } }
 function moveToBuyAgain(entries){
   for(const e of entries){ const k=e.name.toLowerCase()+"|"+e.cat;
@@ -476,21 +483,44 @@ function createCategoryFromSheet(){ const name=(editing.label||"").trim(); if(!n
   const cs=catList(); const color=NEW_CAT_COLORS[cs.length % NEW_CAT_COLORS.length];
   cs.push({ id:uid(), label:name, color, emoji:(editing.emoji||"🛒"), img:"", subs:[] });
   editing=null; save(); render(); }
-function wirePicker(){
-  app.querySelectorAll("#presetRow [data-icon]").forEach(b=>b.onclick=()=>{ editing.img=b.dataset.icon; editing.emoji=""; render(); });
-  const grid=app.querySelector("#emojiGrid");
-  const bindEmoji=()=>app.querySelectorAll("#emojiGrid [data-emoji]").forEach(b=>b.onclick=()=>{ editing.emoji=b.dataset.emoji; editing.img=""; render(); });
-  bindEmoji();
-  const srch=app.querySelector("#iconSearch"); if(srch) srch.oninput=()=>{ grid.innerHTML=emojiGridHTML(editing.img?"":(editing.emoji||""), srch.value); bindEmoji(); };
-  const up=app.querySelector("#uploadOpt"), f=app.querySelector("#iconFile");
-  if(up&&f){ up.onclick=()=>f.click();
-    f.onchange=()=>{ const file=f.files&&f.files[0]; if(!file) return; const r=new FileReader();
-      r.onload=()=>{ const im=new Image(); im.onload=()=>{ const cv=document.createElement("canvas"); cv.width=cv.height=64;
-        const ctx=cv.getContext("2d"); const sc=Math.min(64/im.width,64/im.height); const w=im.width*sc,h=im.height*sc;
-        ctx.clearRect(0,0,64,64); ctx.drawImage(im,(64-w)/2,(64-h)/2,w,h);
-        editing.img=cv.toDataURL("image/png"); editing.emoji=""; render(); };
-        im.src=r.result; };
-      r.readAsDataURL(file); }; }
+function iconSuggestions(ed){ const out=[], seen=new Set();
+  pictureChoices(ed.id||"").forEach(src=>{ if(!seen.has(src)){ seen.add(src); out.push({img:src}); } });
+  const lab=(ed.label||"").toLowerCase().trim();
+  if(lab) EMOJI_LIB.forEach(x=>{ if(out.length<6 && x.k.split(" ").some(k=>k===lab||lab.includes(k)||k.includes(lab))){ if(!seen.has(x.e)){ seen.add(x.e); out.push({e:x.e}); } } });
+  return out.slice(0,6);
+}
+function iconEditorHTML(){
+  return `<button class="iconbox" id="iconBox">${editing.img?`<img src="${esc(editing.img)}"/>`:`<span style="font-size:22px">${esc(editing.emoji||"🛒")}</span>`}</button>`;
+}
+function iconStripHTML(){
+  let html="";
+  if(editing.pickOpen){
+    const sugg=iconSuggestions(editing);
+    const cells=sugg.map(s=> s.img
+      ? `<button class="picopt ${editing.img===s.img?'sel':''}" data-pic="${esc(s.img)}"><img src="${esc(s.img)}"/></button>`
+      : `<button class="picopt ${(!editing.img&&editing.emoji===s.e)?'sel':''}" data-emo="${s.e}">${s.e}</button>`).join("");
+    html+=`<div class="picstrip">${cells}<button class="picopt" data-act="emoji">😀</button><button class="picopt" data-act="upload">⬇</button></div>`;
+  }
+  if(editing.emojiOpen){
+    html+=`<div class="icongrid" style="margin-top:8px">${EMOJI_LIB.map(x=>`<button class="picopt" data-emo="${x.e}">${x.e}</button>`).join("")}</div>`;
+  }
+  return html;
+}
+function wireIconEditor(){
+  const ib=app.querySelector("#iconBox");
+  if(ib) ib.onclick=()=>{ editing.pickOpen=!editing.pickOpen; editing.emojiOpen=false; render(); };
+  app.querySelectorAll("[data-pic]").forEach(b=>b.onclick=()=>{ editing.img=b.dataset.pic; editing.emoji=""; editing.pickOpen=false; editing.emojiOpen=false; render(); });
+  app.querySelectorAll("[data-emo]").forEach(b=>b.onclick=()=>{ editing.emoji=b.dataset.emo; editing.img=""; editing.pickOpen=false; editing.emojiOpen=false; render(); });
+  const ed=app.querySelector('[data-act="emoji"]'); if(ed) ed.onclick=()=>{ editing.emojiOpen=!editing.emojiOpen; render(); };
+  const f=app.querySelector("#iconFile"), ud=app.querySelector('[data-act="upload"]');
+  if(ud&&f) ud.onclick=()=>f.click();
+  if(f) f.onchange=()=>{ const file=f.files&&f.files[0]; if(!file) return; const r=new FileReader();
+    r.onload=()=>{ const im=new Image(); im.onload=()=>{ const cv=document.createElement("canvas"); cv.width=cv.height=64;
+      const ctx=cv.getContext("2d"); const sc=Math.min(64/im.width,64/im.height); const w=im.width*sc,h=im.height*sc;
+      ctx.clearRect(0,0,64,64); ctx.drawImage(im,(64-w)/2,(64-h)/2,w,h);
+      editing.img=cv.toDataURL("image/png"); editing.emoji=""; editing.pickOpen=false; editing.emojiOpen=false; render(); };
+      im.src=r.result; };
+    r.readAsDataURL(file); };
 }
 function addSub(catId){ const name=(prompt("New subcategory name:")||"").trim(); if(!name) return;
   const c=catList().find(x=>x.id===catId); if(!c) return; if(!Array.isArray(c.subs)) c.subs=[];
@@ -674,7 +704,7 @@ function renderMain(){
     : `<p style="font-size:12px;color:var(--muted2);margin:0">Cleared items land here so you can re-add them with one tap.</p>`;
 
   const anyOpen = catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id));
-  app.innerHTML = `<div class="wrap" style="zoom:${density};width:calc(100% / ${density});max-width:calc(480px / ${density})">
+  app.innerHTML = `<div class="wrap" style="zoom:${density}">
     <header>
       <div style="display:flex;align-items:baseline;gap:8px">
         <span class="title disp">Market List<span class="dot">.</span></span>
@@ -721,11 +751,13 @@ function editSheet(){
   if(editing.kind==="newcat"){
     return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
       <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">New category</div>
-      <div style="display:flex;gap:8px">
-        <input id="catEmoji" value="${esc(editing.emoji||"")}" maxlength="2" placeholder="🛒" style="width:54px;text-align:center;padding:12px 0;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:18px" />
+      <div style="display:flex;gap:8px;align-items:center">
+        ${iconEditorHTML()}
         <input id="catName" value="${esc(editing.label)}" placeholder="Category name" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
       </div>
-      <div style="margin-top:8px;font-size:12px;color:var(--muted)">Tip: tap the emoji field and pick any emoji from your keyboard.</div>
+      ${iconStripHTML()}
+      <div class="hint2">Tap picture/emoji to choose a different one.</div>
+      <input id="iconFile" type="file" accept="image/*" style="display:none" />
       <div style="display:flex;gap:8px;margin-top:16px">
         <button id="newCancel" style="padding:13px 16px;border-radius:14px;border:2px solid var(--ink);background:transparent;color:var(--ink);font-weight:700;font-size:15px">Cancel</button>
         <button id="newCreate" style="flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">Create</button>
@@ -734,38 +766,34 @@ function editSheet(){
   }
   if(editing.kind==="cat"){
     const cs=catList(); const idx=cs.findIndex(c=>c.id===editing.id); const n=cs.length;
-    const cat=cs[idx]||{subs:[]};
-    const subs=cat.subs||[];
-    const subsHTML = subs.length ? subs.map((s,i)=>
-      `<div class="subrow">
-        <span class="subname">${esc(s.label)}</span>
+    const cat=cs[idx]||{subs:[]}; const subs=cat.subs||[];
+    const subRows = subs.length ? subs.map((s,i)=>
+      `<div class="subrow2">
+        <input class="subedit" data-sublabel="${s.id}" value="${esc(s.label)}" />
         <button class="iconmini" data-subup="${s.id}" ${i===0?'disabled style="opacity:.35"':''}>↑</button>
         <button class="iconmini" data-subdown="${s.id}" ${i===subs.length-1?'disabled style="opacity:.35"':''}>↓</button>
         <button class="iconmini subdel" data-sub="${s.id}" style="color:#C24A33">×</button>
-      </div>`).join("") : '<div style="font-size:12px;color:var(--muted2);margin:2px 0 0">None yet</div>';
-    const iconBox = editing.img
-      ? `<button class="iconbox" id="iconBox" aria-label="Change picture"><img src="${esc(editing.img)}"/></button>`
-      : `<input id="catEmoji" value="${esc(editing.emoji||"")}" maxlength="2" placeholder="🛒" class="emojibox" />`;
-    const strip = (editing.img && editing.pickOpen) ? `<div class="picstrip">
-        ${pictureChoices(editing.id).map(src=>`<button class="picopt ${editing.img===src?'sel':''}" data-pic="${src}"><img src="${src}"/></button>`).join("")}
-        <button class="picopt" data-pic="__emoji" title="Use emoji">Aa</button>
-      </div>` : "";
+      </div>`).join("") : '<div class="none" style="margin-top:6px">No subcategories yet</div>';
     return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
       <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">Edit category</div>
       <div style="display:flex;gap:8px;align-items:center">
-        ${iconBox}
+        ${iconEditorHTML()}
         <input id="catName" value="${esc(editing.label)}" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
-        <button class="iconbtn" id="moveUp" ${idx<=0?'disabled style="opacity:.35"':''} style="font-size:16px">↑</button>
-        <button class="iconbtn" id="moveDown" ${idx>=n-1?'disabled style="opacity:.35"':''} style="font-size:16px">↓</button>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+          <div style="font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap">${idx+1} of ${n}</div>
+          <div style="display:flex;gap:4px">
+            <button class="iconbtn" id="moveUp" ${idx<=0?'disabled style="opacity:.35"':''} style="font-size:16px">↑</button>
+            <button class="iconbtn" id="moveDown" ${idx>=n-1?'disabled style="opacity:.35"':''} style="font-size:16px">↓</button>
+          </div>
+        </div>
       </div>
-      ${strip}
-      ${editing.img?'<div style="margin-top:7px;font-size:12px;color:var(--muted)">Hold the picture to choose a different one.</div>':'<div style="margin-top:7px;font-size:12px;color:var(--muted)">Tip: pick any emoji from your keyboard.</div>'}
-      <div style="margin-top:6px;font-size:12px;color:var(--muted);text-align:center">Position ${idx+1} of ${n}</div>
-      <div style="margin-top:14px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Subcategories</div>
-      <div style="margin-top:6px">${subsHTML}</div>
-      <button id="addSubBtn" style="margin-top:8px;border:none;background:var(--chip);color:var(--ink);font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px">+ Add subcategory</button>
+      ${iconStripHTML()}
+      <div class="hint2">Tap picture/emoji to choose a different one.</div>
+      <input id="iconFile" type="file" accept="image/*" style="display:none" />
+      <div style="margin-top:16px"><button id="addSubBtn" style="border:none;background:var(--chip);color:var(--ink);font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px">+ Add subcategory</button></div>
+      <div style="margin-top:8px">${subRows}</div>
       <div style="display:flex;gap:8px;margin-top:16px">
-        <button id="catRemove" style="padding:13px 16px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:15px">Remove</button>
+        <button id="catRemove" style="padding:13px 16px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:15px">Delete</button>
         <button id="catSave" style="flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">Save</button>
       </div>
     </div></div>`;
@@ -868,22 +896,16 @@ function wire(){
     const sh=app.querySelector("#sheet"); if(sh) sh.onclick=e=>e.stopPropagation();
     if(editing.kind==="newcat"){
       const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>editing.label=e.target.value;
-      const ce=app.querySelector("#catEmoji"); if(ce) ce.oninput=e=>editing.emoji=e.target.value;
+      wireIconEditor();
       const cc=app.querySelector("#newCreate"); if(cc) cc.onclick=createCategoryFromSheet;
       const cx=app.querySelector("#newCancel"); if(cx) cx.onclick=()=>{ editing=null; render(); };
     } else if(editing.kind==="cat"){
       const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>editing.label=e.target.value;
-      const ce=app.querySelector("#catEmoji"); if(ce) ce.oninput=e=>editing.emoji=e.target.value;
-      const ib=app.querySelector("#iconBox");
-      if(ib){ ib.oncontextmenu=e=>e.preventDefault();
-        ib.onpointerdown=pressStart; ib.onpointerleave=pressCancel; ib.onpointercancel=pressCancel;
-        ib.onpointerup=()=>{ pressCancel(); editing.pickOpen=!editing.pickOpen; render(); }; }
-      app.querySelectorAll("[data-pic]").forEach(b=>b.onclick=()=>{ const v=b.dataset.pic;
-        if(v==="__emoji"){ editing.img=""; editing.emoji=editing.emoji||""; } else { editing.img=v; }
-        editing.pickOpen=false; render(); });
+      wireIconEditor();
       const mu=app.querySelector("#moveUp"); if(mu) mu.onclick=()=>{ saveCatEditQuiet(); const cs=catList(); const i=cs.findIndex(c=>c.id===editing.id); moveCat(editing.id,i-1); };
       const md=app.querySelector("#moveDown"); if(md) md.onclick=()=>{ saveCatEditQuiet(); const cs=catList(); const i=cs.findIndex(c=>c.id===editing.id); moveCat(editing.id,i+1); };
       const asb=app.querySelector("#addSubBtn"); if(asb) asb.onclick=()=>{ saveCatEditQuiet(); addSub(editing.id); };
+      app.querySelectorAll("[data-sublabel]").forEach(inp=>{ inp.onchange=()=>{ const c=catList().find(x=>x.id===editing.id); const s=c&&c.subs.find(z=>z.id===inp.dataset.sublabel); if(s){ s.label=(inp.value||"").trim()||s.label; save(); } }; });
       app.querySelectorAll("[data-subup]").forEach(b=>b.onclick=()=>{ saveCatEditQuiet(); moveSub(editing.id,b.dataset.subup,-1); });
       app.querySelectorAll("[data-subdown]").forEach(b=>b.onclick=()=>{ saveCatEditQuiet(); moveSub(editing.id,b.dataset.subdown,1); });
       app.querySelectorAll(".subdel").forEach(b=>b.onclick=()=>{ saveCatEditQuiet(); removeSub(editing.id, b.dataset.sub); });
