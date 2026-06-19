@@ -162,12 +162,12 @@ import { getFirestore, doc, onSnapshot, setDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
+  apiKey: "REPLACE_ME",
+  authDomain: "REPLACE_ME.firebaseapp.com",
+  projectId: "REPLACE_ME",
+  storageBucket: "REPLACE_ME.appspot.com",
+  messagingSenderId: "REPLACE_ME",
+  appId: "REPLACE_ME"
 };
 /* ============================================================ */
 
@@ -415,10 +415,12 @@ function restoreEditingToList(){ const nm=(editing.name||"").trim()||editing.ori
 function moveCat(id, ni){ const cs=catList(); const i=cs.findIndex(c=>c.id===id);
   if(i<0||ni<0||ni>=cs.length) return; const [c]=cs.splice(i,1); cs.splice(ni,0,c); save(); render(); }
 function saveCatEdit(){ const c=catList().find(x=>x.id===editing.id);
-  if(c){ const nm=(editing.label||"").trim(); if(nm) c.label=nm; c.img=editing.img||""; if(!c.img && editing.emoji) c.emoji=editing.emoji; }
+  if(c){ const nm=(editing.label||"").trim(); if(nm) c.label=nm;
+    const em=(editing.emoji||"").trim(); if(em){ c.emoji=em; c.img=""; } }
   editing=null; save(); render(); }
 function saveCatEditQuiet(){ const c=catList().find(x=>x.id===editing.id);
-  if(c){ const nm=(editing.label||"").trim(); if(nm) c.label=nm; c.img=editing.img||""; if(!c.img && editing.emoji) c.emoji=editing.emoji; } }
+  if(c){ const nm=(editing.label||"").trim(); if(nm) c.label=nm;
+    const em=(editing.emoji||"").trim(); if(em){ c.emoji=em; c.img=""; } } }
 function removeCat(id){ const cs=catList(); if(cs.length<=1){ showToast("Keep at least one category"); return; }
   const target=cs.find(c=>c.id!==id).id;
   if(!confirm('Remove this category? Its items move to "'+CAT(target).label+'".')) return;
@@ -430,7 +432,7 @@ const NEW_CAT_COLORS=["#B5402B","#C98A06","#3E7C3A","#2E6FA3","#6B5CA5","#2E8C7F
 function addCategory(){ editing={ kind:"newcat", label:"", emoji:"🛒", img:"", subs:[] }; render(); }
 function createCategoryFromSheet(){ const name=(editing.label||"").trim(); if(!name){ showToast("Name the category"); return; }
   const cs=catList(); const color=NEW_CAT_COLORS[cs.length % NEW_CAT_COLORS.length];
-  cs.push({ id:uid(), label:name, color, emoji:editing.img?"":(editing.emoji||"🛒"), img:editing.img||"", subs:[] });
+  cs.push({ id:uid(), label:name, color, emoji:(editing.emoji||"🛒"), img:"", subs:[] });
   editing=null; save(); render(); }
 function wirePicker(){
   app.querySelectorAll("#presetRow [data-icon]").forEach(b=>b.onclick=()=>{ editing.img=b.dataset.icon; editing.emoji=""; render(); });
@@ -568,7 +570,7 @@ function renderOnboarding(){
 
 function sortList(list){ return list.slice().sort((a,b)=> a.checked===b.checked ? a.name.localeCompare(b.name) : (a.checked?1:-1)); }
 function pillRow(items, cat){ const neutral = cat.id==="bulk"; return `<div class="pills">${items.map(i=>{
-    const edge = i.checked ? 'var(--done-edge)' : (neutral ? 'var(--line)' : cat.color);
+    const edge = i.checked ? 'var(--done-edge)' : (neutral ? '#ffffff' : cat.color);
     const qcol = i.checked ? 'var(--muted2)' : (neutral ? 'var(--ink)' : cat.color);
     return `<button class="pill ${i.checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="border-left:4px solid ${edge}">`
     +`${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${esc(i.name)}</button>`;
@@ -671,8 +673,11 @@ function editSheet(){
   if(editing.kind==="newcat"){
     return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
       <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">New category</div>
-      <input id="catName" value="${esc(editing.label)}" placeholder="Category name" style="width:100%;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
-      ${iconPickerHTML()}
+      <div style="display:flex;gap:8px">
+        <input id="catEmoji" value="${esc(editing.emoji||"")}" maxlength="2" placeholder="🛒" style="width:54px;text-align:center;padding:12px 0;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:18px" />
+        <input id="catName" value="${esc(editing.label)}" placeholder="Category name" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--muted)">Tip: tap the emoji field and pick any emoji from your keyboard.</div>
       <div style="display:flex;gap:8px;margin-top:16px">
         <button id="newCancel" style="padding:13px 16px;border-radius:14px;border:2px solid var(--ink);background:transparent;color:var(--ink);font-weight:700;font-size:15px">Cancel</button>
         <button id="newCreate" style="flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">Create</button>
@@ -685,14 +690,19 @@ function editSheet(){
     const subsHTML=(cat.subs||[]).map(s=>
       `<span class="bapill" style="border:1.5px solid var(--line)">${esc(s.label)}<button class="sub-del" data-sub="${s.id}" aria-label="Remove" style="border:none;background:transparent;color:var(--muted);font-size:14px;font-weight:700;padding:0 1px 0 4px;line-height:1">×</button></span>`
     ).join("");
+    const hasImg = !!cat.img;
     return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
       <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">Edit category</div>
-      <input id="catName" value="${esc(editing.label)}" style="width:100%;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
-      ${iconPickerHTML()}
+      <div style="display:flex;gap:8px">
+        <input id="catEmoji" value="${esc(editing.emoji||"")}" maxlength="2" placeholder="${hasImg?'🖼':'🛒'}" style="width:54px;text-align:center;padding:12px 0;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:18px" />
+        <input id="catName" value="${esc(editing.label)}" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
+      </div>
+      ${hasImg?'<div style="margin-top:8px;font-size:12px;color:var(--muted)">This category uses a picture icon. Type an emoji to replace it.</div>':'<div style="margin-top:8px;font-size:12px;color:var(--muted)">Tip: pick any emoji from your keyboard.</div>'}
       <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
         <button class="movebtn" id="moveUp" ${idx<=0?'disabled style="opacity:.4"':''}>↑ Move up</button>
         <button class="movebtn" id="moveDown" ${idx>=n-1?'disabled style="opacity:.4"':''}>↓ Move down</button>
       </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--muted);text-align:center">Position ${idx+1} of ${n}</div>
       <div style="margin-top:14px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Subcategories</div>
       <div class="pills" style="margin-top:6px">${subsHTML || '<span style="font-size:12px;color:var(--muted2)">None yet</span>'}</div>
       <button id="addSubBtn" style="margin-top:8px;border:none;background:var(--chip);color:var(--ink);font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px">+ Add subcategory</button>
@@ -753,7 +763,7 @@ function wire(){
     const has=state.items.some(i=>i.cat===id);
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
-    b.onpointerup=()=>{ pressCancel(); if(longFired){ const c=CAT(id); editing={kind:"cat", id, label:c.label, emoji:c.emoji, img:c.img||""}; render(); }
+    b.onpointerup=()=>{ pressCancel(); if(longFired){ const c=CAT(id); editing={kind:"cat", id, label:c.label, emoji:c.img?"":(c.emoji||""), img:c.img||""}; render(); }
       else if(has){ toggleCat(id); } }; });
 
   app.querySelectorAll("[data-add]").forEach(b=>{ const id=b.dataset.add;
@@ -789,12 +799,12 @@ function wire(){
     const sh=app.querySelector("#sheet"); if(sh) sh.onclick=e=>e.stopPropagation();
     if(editing.kind==="newcat"){
       const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>editing.label=e.target.value;
-      wirePicker();
+      const ce=app.querySelector("#catEmoji"); if(ce) ce.oninput=e=>editing.emoji=e.target.value;
       const cc=app.querySelector("#newCreate"); if(cc) cc.onclick=createCategoryFromSheet;
       const cx=app.querySelector("#newCancel"); if(cx) cx.onclick=()=>{ editing=null; render(); };
     } else if(editing.kind==="cat"){
       const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>editing.label=e.target.value;
-      wirePicker();
+      const ce=app.querySelector("#catEmoji"); if(ce) ce.oninput=e=>editing.emoji=e.target.value;
       const mu=app.querySelector("#moveUp"); if(mu) mu.onclick=()=>{ const cs=catList(); const i=cs.findIndex(c=>c.id===editing.id); moveCat(editing.id,i-1); };
       const md=app.querySelector("#moveDown"); if(md) md.onclick=()=>{ const cs=catList(); const i=cs.findIndex(c=>c.id===editing.id); moveCat(editing.id,i+1); };
       const asb=app.querySelector("#addSubBtn"); if(asb) asb.onclick=()=>{ saveCatEditQuiet(); addSub(editing.id); };
