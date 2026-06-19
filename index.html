@@ -18,14 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
-
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -139,11 +138,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .iconbox { width:54px; height:48px; border-radius:14px; border:2px solid var(--ink); background:var(--card);
     display:flex; align-items:center; justify-content:center; padding:0; flex:none; }
   .iconbox img { width:28px; height:28px; object-fit:contain; }
-  .picstrip { display:flex; gap:8px; overflow-x:auto; margin-top:10px; padding:2px; -webkit-overflow-scrolling:touch; }
-  .picopt { flex:none; width:46px; height:46px; border-radius:12px; border:2px solid var(--line); background:var(--card);
-    display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--ink); }
+  .picstrip { display:flex; gap:5px; margin-top:10px; }
+  .picstrip .picopt { flex:1; width:auto; min-width:0; }
+  .picopt { flex:none; width:42px; height:42px; border-radius:11px; border:2px solid var(--line); background:var(--card);
+    display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--ink); font-size:21px; }
   .picopt.sel { border-color:var(--btn); }
-  .picopt img { width:26px; height:26px; object-fit:contain; }
+  .picopt img { width:25px; height:25px; object-fit:contain; }
   .subrow { display:flex; align-items:center; gap:6px; padding:7px 10px; border:1px solid var(--line);
     border-radius:12px; margin-bottom:5px; background:var(--card); }
   .subname { flex:1; min-width:0; font-size:13px; font-weight:600; }
@@ -287,7 +287,7 @@ let lastPop=null;
 let state = { items:[], buyAgain:[], members:[], categories:null };
 try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state = c; } catch(e){}
 let toast=null, catEntry=null, editing=null, configured=false;
-let draftMain="", draftCatText="";
+let draftMain="", draftCatText="", pendingSubFocus=null;
 
 const DEFAULT_CAT_IMG = { fresh:"milk.png", health:"cross.png", asian:"ramen.png" };
 const ALL_PICS = ["milk.png","cross.png","ramen.png","hammer.png"];
@@ -523,9 +523,8 @@ function wireIconEditor(){
       im.src=r.result; };
     r.readAsDataURL(file); };
 }
-function addSub(catId){ const name=(prompt("New subcategory name:")||"").trim(); if(!name) return;
-  const c=catList().find(x=>x.id===catId); if(!c) return; if(!Array.isArray(c.subs)) c.subs=[];
-  c.subs.push({ id:uid(), label:name }); save(); render(); }
+function addSub(catId){ const c=catList().find(x=>x.id===catId); if(!c) return; if(!Array.isArray(c.subs)) c.subs=[];
+  const id=uid(); c.subs.push({ id, label:"" }); pendingSubFocus=id; save(); render(); }
 function removeSub(catId, subId){ const c=catList().find(x=>x.id===catId); if(!c||!c.subs) return;
   c.subs=c.subs.filter(s=>s.id!==subId);
   state.items.forEach(it=>{ if(it.cat===catId && it.sub===subId) it.sub=null; });
@@ -907,6 +906,7 @@ function wire(){
       const md=app.querySelector("#moveDown"); if(md) md.onclick=()=>{ saveCatEditQuiet(); const cs=catList(); const i=cs.findIndex(c=>c.id===editing.id); moveCat(editing.id,i+1); };
       const asb=app.querySelector("#addSubBtn"); if(asb) asb.onclick=()=>{ saveCatEditQuiet(); addSub(editing.id); };
       app.querySelectorAll("[data-sublabel]").forEach(inp=>{ inp.onchange=()=>{ const c=catList().find(x=>x.id===editing.id); const s=c&&c.subs.find(z=>z.id===inp.dataset.sublabel); if(s){ s.label=(inp.value||"").trim()||s.label; save(); } }; });
+      if(pendingSubFocus){ const ni=app.querySelector(`[data-sublabel="${pendingSubFocus}"]`); pendingSubFocus=null; if(ni){ ni.focus(); } }
       app.querySelectorAll("[data-subup]").forEach(b=>b.onclick=()=>{ saveCatEditQuiet(); moveSub(editing.id,b.dataset.subup,-1); });
       app.querySelectorAll("[data-subdown]").forEach(b=>b.onclick=()=>{ saveCatEditQuiet(); moveSub(editing.id,b.dataset.subdown,1); });
       app.querySelectorAll(".subdel").forEach(b=>b.onclick=()=>{ saveCatEditQuiet(); removeSub(editing.id, b.dataset.sub); });
