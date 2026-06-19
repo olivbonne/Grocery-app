@@ -10,6 +10,25 @@
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="icon-180.png" />
 <title>Market List</title>
+
+<!-- ===================================================================== -->
+<!--  ⬇⬇⬇  FIREBASE CONFIG — PASTE YOUR PROJECT SETTINGS HERE (once)  ⬇⬇⬇   -->
+<!--  Firebase console → Project settings → Your apps → SDK setup/config    -->
+<!--  Replace each "REPLACE_ME" with the matching value, then save/deploy.  -->
+<!-- ===================================================================== -->
+<script>
+window.FIREBASE_CONFIG = {  
+  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
+  authDomain: "grocery-list-88109.firebaseapp.com",
+  projectId: "grocery-list-88109",
+  storageBucket: "grocery-list-88109.firebasestorage.app",
+  messagingSenderId: "237398844171",
+  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
+};
+</script>
+<!-- ===================================================================== -->
+<!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
+<!-- ===================================================================== -->
 <script>
 /* Only surfaces an error if the app genuinely never started.
    Ignores opaque cross-origin "Script error." noise and anything after first render. */
@@ -106,6 +125,29 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     display:flex; align-items:center; justify-content:center; font-size:20px; padding:0; }
   .iconopt.sel { border-color:var(--btn); }
   .iconopt img { width:24px; height:24px; object-fit:contain; }
+  .inwrap { position:relative; flex:1; min-width:0; }
+  .inwrap textarea { width:100%; }
+  .clearbtn { position:absolute; right:7px; bottom:7px; width:20px; height:20px; border-radius:50%; border:none;
+    background:var(--chip); color:var(--muted); font-size:14px; font-weight:700; line-height:1; padding:0;
+    display:none; align-items:center; justify-content:center; }
+  .clearbtn.show { display:flex; }
+  .catheadchip { padding:5px 11px !important; border-radius:999px; gap:6px; }
+  .catheadchip .cname { font-size:12px; }
+  .emojibox { width:54px; text-align:center; padding:12px 0; border-radius:14px; border:2px solid var(--ink);
+    outline:none; background:var(--card); color:var(--ink); font-size:18px; }
+  .iconbox { width:54px; height:48px; border-radius:14px; border:2px solid var(--ink); background:var(--card);
+    display:flex; align-items:center; justify-content:center; padding:0; flex:none; }
+  .iconbox img { width:28px; height:28px; object-fit:contain; }
+  .picstrip { display:flex; gap:8px; overflow-x:auto; margin-top:10px; padding:2px; -webkit-overflow-scrolling:touch; }
+  .picopt { flex:none; width:46px; height:46px; border-radius:12px; border:2px solid var(--line); background:var(--card);
+    display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--ink); }
+  .picopt.sel { border-color:var(--btn); }
+  .picopt img { width:26px; height:26px; object-fit:contain; }
+  .subrow { display:flex; align-items:center; gap:6px; padding:7px 10px; border:1px solid var(--line);
+    border-radius:12px; margin-bottom:5px; background:var(--card); }
+  .subname { flex:1; min-width:0; font-size:13px; font-weight:600; }
+  .iconmini { width:28px; height:28px; flex:none; border-radius:9px; border:none; background:var(--chip);
+    color:var(--ink); font-size:13px; font-weight:800; line-height:1; }
   .pills { display:flex; flex-wrap:wrap; gap:5px; margin-top:4px; }
   .pill { display:inline-flex; align-items:center; gap:5px; background:var(--card); border:1.5px solid var(--line);
     border-radius:10px; padding:7px 11px; font-size:14px; font-weight:600; color:var(--ink); }
@@ -156,20 +198,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
 <body>
 <div id="app"><div class="center">Opening the list…</div></div>
 <script type="module">
-/* ============ Firebase config — PASTE YOURS HERE ============ */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, doc, onSnapshot, setDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
-/* ============================================================ */
+/* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
+const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
 
 /* default categories (ids stay fixed; label/color/order are editable & saved) */
 const DEFAULT_CATS = [
@@ -227,7 +261,7 @@ let me = localStorage.getItem(LS.me) || null;
 let collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}');
 let density = parseFloat(localStorage.getItem("ml_density")||"1") || 1;
 function setDensity(d){ density=Math.min(1.3,Math.max(0.7,Math.round(d*10)/10)); localStorage.setItem("ml_density",density); render(); }
-let theme = localStorage.getItem("ml_theme") || "light";
+let theme = localStorage.getItem("ml_theme") || "dark";
 function applyTheme(){ document.body.classList.toggle("dark", theme==="dark"); }
 function toggleTheme(){ theme = theme==="dark" ? "light" : "dark"; localStorage.setItem("ml_theme", theme); applyTheme(); render(); }
 applyTheme();
@@ -246,7 +280,12 @@ let lastPop=null;
 let state = { items:[], buyAgain:[], members:[], categories:null };
 try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state = c; } catch(e){}
 let toast=null, catEntry=null, editing=null, configured=false;
+let draftMain="", draftCatText="";
 
+const DEFAULT_CAT_IMG = { fresh:"milk.png", health:"cross.png", asian:"ramen.png" };
+const ALL_PICS = ["milk.png","cross.png","ramen.png","hammer.png"];
+function pictureChoices(catId){ const def = DEFAULT_CAT_IMG[catId] || ALL_PICS[0];
+  return [def, ...ALL_PICS.filter(p=>p!==def)]; }
 const MEAT_DEFAULT_SUBS = [
   { id:"beef", label:"Beef" }, { id:"lamb", label:"Lamb" },
   { id:"chicken", label:"Chicken" }, { id:"seafood", label:"Seafood" },
@@ -256,7 +295,7 @@ function ensureCats(){
     state.categories = DEFAULT_CATS.map(c=>({id:c.id,label:c.label,color:c.color,emoji:c.emoji,
       subs: c.id==="meat" ? MEAT_DEFAULT_SUBS.map(s=>({...s})) : [] }));
   }
-  const DEF_IMG = { fresh:"milk.png", health:"cross.png", asian:"ramen.png" };
+  const DEF_IMG = DEFAULT_CAT_IMG;
   state.categories.forEach(c=>{
     if(!Array.isArray(c.subs)){ c.subs = c.id==="meat" ? MEAT_DEFAULT_SUBS.map(s=>({...s})) : []; }
     if(c.img===undefined && DEF_IMG[c.id]){ c.img = DEF_IMG[c.id]; }   // seed default picture icons
@@ -416,11 +455,14 @@ function moveCat(id, ni){ const cs=catList(); const i=cs.findIndex(c=>c.id===id)
   if(i<0||ni<0||ni>=cs.length) return; const [c]=cs.splice(i,1); cs.splice(ni,0,c); save(); render(); }
 function saveCatEdit(){ const c=catList().find(x=>x.id===editing.id);
   if(c){ const nm=(editing.label||"").trim(); if(nm) c.label=nm;
-    const em=(editing.emoji||"").trim(); if(em){ c.emoji=em; c.img=""; } }
+    const em=(editing.emoji||"").trim(); if(em){ c.emoji=em; c.img=""; } else { c.img=editing.img||""; } }
   editing=null; save(); render(); }
 function saveCatEditQuiet(){ const c=catList().find(x=>x.id===editing.id);
   if(c){ const nm=(editing.label||"").trim(); if(nm) c.label=nm;
-    const em=(editing.emoji||"").trim(); if(em){ c.emoji=em; c.img=""; } } }
+    const em=(editing.emoji||"").trim(); if(em){ c.emoji=em; c.img=""; } else { c.img=editing.img||""; } } }
+function moveSub(catId, subId, dir){ const c=catList().find(x=>x.id===catId); if(!c||!c.subs) return;
+  const i=c.subs.findIndex(s=>s.id===subId); const ni=i+dir; if(i<0||ni<0||ni>=c.subs.length) return;
+  const [s]=c.subs.splice(i,1); c.subs.splice(ni,0,s); save(); render(); }
 function removeCat(id){ const cs=catList(); if(cs.length<=1){ showToast("Keep at least one category"); return; }
   const target=cs.find(c=>c.id!==id).id;
   if(!confirm('Remove this category? Its items move to "'+CAT(target).label+'".')) return;
@@ -569,10 +611,11 @@ function renderOnboarding(){
 }
 
 function sortList(list){ return list.slice().sort((a,b)=> a.checked===b.checked ? a.name.localeCompare(b.name) : (a.checked?1:-1)); }
-function pillRow(items, cat){ const neutral = cat.id==="bulk"; return `<div class="pills">${items.map(i=>{
+function pillRow(items, cat){ const neutral = cat.id==="bulk"; const lightNeutral = neutral && theme!=="dark"; return `<div class="pills">${items.map(i=>{
     const edge = i.checked ? 'var(--done-edge)' : (neutral ? '#ffffff' : cat.color);
     const qcol = i.checked ? 'var(--muted2)' : (neutral ? 'var(--ink)' : cat.color);
-    return `<button class="pill ${i.checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="border-left:4px solid ${edge}">`
+    const bord = (lightNeutral && !i.checked) ? `border:1px solid var(--line);border-left:4px solid ${edge}` : `border-left:4px solid ${edge}`;
+    return `<button class="pill ${i.checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="${bord}">`
     +`${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${esc(i.name)}</button>`;
   }).join("")}</div>`; }
 
@@ -601,14 +644,17 @@ function renderMain(){
       if(checked.length) pills += pillRow(checked, cat);   // checked always at the bottom of the category
     }
     const catAdd = catEntry===cat.id ? `<div class="catadd">
-        <textarea id="catInput" rows="1" placeholder="Add to ${esc(cat.label)} — commas for several" style="border:2px solid ${cat.color}"></textarea>
+        <div class="inwrap"><textarea id="catInput" rows="1" placeholder="Add to ${esc(cat.label)} — commas for several" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="Clear">×</button></div>
         <button id="catAddBtn" style="background:${cat.color}">+</button></div>` : "";
+    const chipText = has ? '#fff' : 'var(--muted2)';
+    const chipBg = has ? cat.color : 'transparent';
+    const chipBorder = has ? cat.color : 'var(--line)';
     return `<section class="cat">
       <div class="chead">
-        <button class="lbl" data-cat="${cat.id}">
+        <button class="lbl catheadchip" data-cat="${cat.id}" style="background:${chipBg};border:1.5px solid ${chipBorder};color:${chipText}">
           <span class="cemoji">${catIcon(cat,16)}</span>
-          <span class="cname" style="color:${has?'var(--ink)':'var(--muted2)'}">${esc(cat.label)}</span>
-          ${has?`<span class="cnum">${list.length}${collapsed?' ▸':''}</span>`:""}
+          <span class="cname" style="color:${chipText}">${esc(cat.label)}</span>
+          ${has?`<span class="cnum" style="color:${chipText};opacity:.85">${list.length}${collapsed?' ▸':''}</span>`:""}
         </button>
         <button class="plus" data-add="${cat.id}" style="${catEntry===cat.id?`background:${cat.color};color:#fff`:''}">${catEntry===cat.id?'×':'+'}</button>
       </div>${catAdd}${pills}</section>`;
@@ -627,7 +673,8 @@ function renderMain(){
     ? `${baGroups}<button id="clearBA" style="margin-top:8px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:0">Clear buy-again history</button>`
     : `<p style="font-size:12px;color:var(--muted2);margin:0">Cleared items land here so you can re-add them with one tap.</p>`;
 
-  app.innerHTML = `<div class="wrap" style="zoom:${density}">
+  const anyOpen = catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id));
+  app.innerHTML = `<div class="wrap" style="zoom:${density};width:calc(100% / ${density});max-width:calc(480px / ${density})">
     <header>
       <div style="display:flex;align-items:baseline;gap:8px">
         <span class="title disp">Market List<span class="dot">.</span></span>
@@ -645,10 +692,11 @@ function renderMain(){
     ${state.items.length>0 ? `<div class="prog"><div class="prog-fill" style="width:${Math.round(done/state.items.length*100)}%"></div></div>` : ""}
     <div class="addbar">
       <button class="micbtn" id="micBtn" aria-label="Voice input"></button>
-      <textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Paste, type, or tap the mic…"></textarea>
+      <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Paste, type, or tap the mic…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
       <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
     </div>
     <div class="suggest" id="suggest"></div>
+    ${state.items.length>0?`<div style="display:flex;justify-content:flex-end;margin:0 0 4px"><button id="collapseAll" style="border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:2px 0">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button></div>`:""}
     ${cats}
     <button id="addCat" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
     <section class="ba">
@@ -687,24 +735,34 @@ function editSheet(){
   if(editing.kind==="cat"){
     const cs=catList(); const idx=cs.findIndex(c=>c.id===editing.id); const n=cs.length;
     const cat=cs[idx]||{subs:[]};
-    const subsHTML=(cat.subs||[]).map(s=>
-      `<span class="bapill" style="border:1.5px solid var(--line)">${esc(s.label)}<button class="sub-del" data-sub="${s.id}" aria-label="Remove" style="border:none;background:transparent;color:var(--muted);font-size:14px;font-weight:700;padding:0 1px 0 4px;line-height:1">×</button></span>`
-    ).join("");
-    const hasImg = !!cat.img;
+    const subs=cat.subs||[];
+    const subsHTML = subs.length ? subs.map((s,i)=>
+      `<div class="subrow">
+        <span class="subname">${esc(s.label)}</span>
+        <button class="iconmini" data-subup="${s.id}" ${i===0?'disabled style="opacity:.35"':''}>↑</button>
+        <button class="iconmini" data-subdown="${s.id}" ${i===subs.length-1?'disabled style="opacity:.35"':''}>↓</button>
+        <button class="iconmini subdel" data-sub="${s.id}" style="color:#C24A33">×</button>
+      </div>`).join("") : '<div style="font-size:12px;color:var(--muted2);margin:2px 0 0">None yet</div>';
+    const iconBox = editing.img
+      ? `<button class="iconbox" id="iconBox" aria-label="Change picture"><img src="${esc(editing.img)}"/></button>`
+      : `<input id="catEmoji" value="${esc(editing.emoji||"")}" maxlength="2" placeholder="🛒" class="emojibox" />`;
+    const strip = (editing.img && editing.pickOpen) ? `<div class="picstrip">
+        ${pictureChoices(editing.id).map(src=>`<button class="picopt ${editing.img===src?'sel':''}" data-pic="${src}"><img src="${src}"/></button>`).join("")}
+        <button class="picopt" data-pic="__emoji" title="Use emoji">Aa</button>
+      </div>` : "";
     return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
       <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">Edit category</div>
-      <div style="display:flex;gap:8px">
-        <input id="catEmoji" value="${esc(editing.emoji||"")}" maxlength="2" placeholder="${hasImg?'🖼':'🛒'}" style="width:54px;text-align:center;padding:12px 0;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:18px" />
+      <div style="display:flex;gap:8px;align-items:center">
+        ${iconBox}
         <input id="catName" value="${esc(editing.label)}" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
+        <button class="iconbtn" id="moveUp" ${idx<=0?'disabled style="opacity:.35"':''} style="font-size:16px">↑</button>
+        <button class="iconbtn" id="moveDown" ${idx>=n-1?'disabled style="opacity:.35"':''} style="font-size:16px">↓</button>
       </div>
-      ${hasImg?'<div style="margin-top:8px;font-size:12px;color:var(--muted)">This category uses a picture icon. Type an emoji to replace it.</div>':'<div style="margin-top:8px;font-size:12px;color:var(--muted)">Tip: pick any emoji from your keyboard.</div>'}
-      <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
-        <button class="movebtn" id="moveUp" ${idx<=0?'disabled style="opacity:.4"':''}>↑ Move up</button>
-        <button class="movebtn" id="moveDown" ${idx>=n-1?'disabled style="opacity:.4"':''}>↓ Move down</button>
-      </div>
-      <div style="margin-top:8px;font-size:12px;color:var(--muted);text-align:center">Position ${idx+1} of ${n}</div>
+      ${strip}
+      ${editing.img?'<div style="margin-top:7px;font-size:12px;color:var(--muted)">Hold the picture to choose a different one.</div>':'<div style="margin-top:7px;font-size:12px;color:var(--muted)">Tip: pick any emoji from your keyboard.</div>'}
+      <div style="margin-top:6px;font-size:12px;color:var(--muted);text-align:center">Position ${idx+1} of ${n}</div>
       <div style="margin-top:14px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Subcategories</div>
-      <div class="pills" style="margin-top:6px">${subsHTML || '<span style="font-size:12px;color:var(--muted2)">None yet</span>'}</div>
+      <div style="margin-top:6px">${subsHTML}</div>
       <button id="addSubBtn" style="margin-top:8px;border:none;background:var(--chip);color:var(--ink);font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px">+ Add subcategory</button>
       <div style="display:flex;gap:8px;margin-top:16px">
         <button id="catRemove" style="padding:13px 16px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:15px">Remove</button>
@@ -743,13 +801,21 @@ function editSheet(){
 
 function wire(){
   const mi=app.querySelector("#mainInput"), ma=app.querySelector("#mainAdd");
-  if(mi){ grow(mi); mi.oninput=()=>{ grow(mi); renderSuggest(); };
-    mi.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); stopMic(); addEntries(mi.value,null); mi.value=""; grow(mi); document.getElementById("suggest").innerHTML=""; mi.focus(); } };
+  const mc=app.querySelector("#mainClear");
+  const toggleClear=(el,btn)=>{ if(btn) btn.classList.toggle("show", !!(el&&el.value.trim())); };
+  if(mi){ mi.value=draftMain; grow(mi); toggleClear(mi,mc);
+    mi.oninput=()=>{ draftMain=mi.value; grow(mi); renderSuggest(); toggleClear(mi,mc); };
+    mi.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); stopMic(); addEntries(mi.value,null); mi.value=""; draftMain=""; grow(mi); document.getElementById("suggest").innerHTML=""; toggleClear(mi,mc); mi.focus(); } };
     mi.onpaste=e=>{ const t=(e.clipboardData||window.clipboardData).getData("text");
       const looksLikeBlock = t && (t.indexOf("\n")>=0 || /\b(meat|fruit|vegetable|veg|fresh|bulk|asian|alcohol|health|others)\s*:/i.test(t) || t.split(",").length>2);
-      if(looksLikeBlock){ e.preventDefault(); addEntries(t,null); mi.value=""; grow(mi); document.getElementById("suggest").innerHTML=""; } }; }
-  if(ma){ ma.onpointerdown=e=>e.preventDefault(); ma.onclick=()=>{ stopMic(); addEntries(mi.value,null); mi.value=""; grow(mi); const sg=document.getElementById("suggest"); if(sg) sg.innerHTML=""; mi.focus(); }; }
+      if(looksLikeBlock){ e.preventDefault(); addEntries(t,null); mi.value=""; draftMain=""; grow(mi); document.getElementById("suggest").innerHTML=""; toggleClear(mi,mc); } }; }
+  if(mc){ mc.onpointerdown=e=>e.preventDefault(); mc.onclick=()=>{ if(mi){ mi.value=""; draftMain=""; grow(mi); document.getElementById("suggest").innerHTML=""; toggleClear(mi,mc); mi.focus(); } }; }
+  if(ma){ ma.onpointerdown=e=>e.preventDefault(); ma.onclick=()=>{ stopMic(); addEntries(mi.value,null); mi.value=""; draftMain=""; grow(mi); const sg=document.getElementById("suggest"); if(sg) sg.innerHTML=""; toggleClear(mi,mc); mi.focus(); }; }
   const mb=app.querySelector("#micBtn"); if(mb){ mb.onclick=toggleMic; setMicUI(listening); }
+  const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>i.cat===c.id)).map(c=>c.id);
+    const anyOpen=ids.some(id=>!collapse.cats.includes(id));
+    collapse.cats = anyOpen ? ids.slice() : [];
+    localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
 
   /* item pills: tap = check, hold = edit */
   app.querySelectorAll("[data-pill]").forEach(b=>{ const id=b.dataset.pill;
@@ -767,11 +833,14 @@ function wire(){
       else if(has){ toggleCat(id); } }; });
 
   app.querySelectorAll("[data-add]").forEach(b=>{ const id=b.dataset.add;
-    b.onclick=()=>{ catEntry = catEntry===id?null:id; render(); const ci=app.querySelector("#catInput"); if(ci) ci.focus(); }; });
-  const ci=app.querySelector("#catInput"), cab=app.querySelector("#catAddBtn");
-  if(ci){ ci.focus(); grow(ci); ci.oninput=()=>grow(ci);
-    ci.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); addEntries(ci.value,catEntry); ci.value=""; grow(ci); ci.focus(); } }; }
-  if(cab){ cab.onpointerdown=e=>e.preventDefault(); cab.onclick=()=>{ const v=app.querySelector("#catInput").value; addEntries(v,catEntry); render(); const x=app.querySelector("#catInput"); if(x){ x.focus(); grow(x); } }; }
+    b.onclick=()=>{ if(catEntry===id){ catEntry=null; } else { catEntry=id; draftCatText=""; } render(); const ci=app.querySelector("#catInput"); if(ci) ci.focus(); }; });
+  const ci=app.querySelector("#catInput"), cab=app.querySelector("#catAddBtn"), cc=app.querySelector("#catClear");
+  const toggleCC=()=>{ if(cc) cc.classList.toggle("show", !!(ci&&ci.value.trim())); };
+  if(ci){ ci.value=draftCatText; ci.focus(); grow(ci); toggleCC();
+    ci.oninput=()=>{ draftCatText=ci.value; grow(ci); toggleCC(); };
+    ci.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); addEntries(ci.value,catEntry); ci.value=""; draftCatText=""; grow(ci); toggleCC(); ci.focus(); } }; }
+  if(cc){ cc.onpointerdown=e=>e.preventDefault(); cc.onclick=()=>{ if(ci){ ci.value=""; draftCatText=""; grow(ci); toggleCC(); ci.focus(); } }; }
+  if(cab){ cab.onpointerdown=e=>e.preventDefault(); cab.onclick=()=>{ const v=app.querySelector("#catInput").value; addEntries(v,catEntry); draftCatText=""; render(); const x=app.querySelector("#catInput"); if(x){ x.focus(); grow(x); } }; }
 
   const sb=app.querySelector("#sweepBtn"); if(sb) sb.onclick=sweep;
   const bh=app.querySelector("#baHead"); if(bh) bh.onclick=toggleBA;
@@ -805,10 +874,19 @@ function wire(){
     } else if(editing.kind==="cat"){
       const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>editing.label=e.target.value;
       const ce=app.querySelector("#catEmoji"); if(ce) ce.oninput=e=>editing.emoji=e.target.value;
-      const mu=app.querySelector("#moveUp"); if(mu) mu.onclick=()=>{ const cs=catList(); const i=cs.findIndex(c=>c.id===editing.id); moveCat(editing.id,i-1); };
-      const md=app.querySelector("#moveDown"); if(md) md.onclick=()=>{ const cs=catList(); const i=cs.findIndex(c=>c.id===editing.id); moveCat(editing.id,i+1); };
+      const ib=app.querySelector("#iconBox");
+      if(ib){ ib.oncontextmenu=e=>e.preventDefault();
+        ib.onpointerdown=pressStart; ib.onpointerleave=pressCancel; ib.onpointercancel=pressCancel;
+        ib.onpointerup=()=>{ pressCancel(); editing.pickOpen=!editing.pickOpen; render(); }; }
+      app.querySelectorAll("[data-pic]").forEach(b=>b.onclick=()=>{ const v=b.dataset.pic;
+        if(v==="__emoji"){ editing.img=""; editing.emoji=editing.emoji||""; } else { editing.img=v; }
+        editing.pickOpen=false; render(); });
+      const mu=app.querySelector("#moveUp"); if(mu) mu.onclick=()=>{ saveCatEditQuiet(); const cs=catList(); const i=cs.findIndex(c=>c.id===editing.id); moveCat(editing.id,i-1); };
+      const md=app.querySelector("#moveDown"); if(md) md.onclick=()=>{ saveCatEditQuiet(); const cs=catList(); const i=cs.findIndex(c=>c.id===editing.id); moveCat(editing.id,i+1); };
       const asb=app.querySelector("#addSubBtn"); if(asb) asb.onclick=()=>{ saveCatEditQuiet(); addSub(editing.id); };
-      app.querySelectorAll(".sub-del").forEach(b=>b.onclick=()=>{ saveCatEditQuiet(); removeSub(editing.id, b.dataset.sub); });
+      app.querySelectorAll("[data-subup]").forEach(b=>b.onclick=()=>{ saveCatEditQuiet(); moveSub(editing.id,b.dataset.subup,-1); });
+      app.querySelectorAll("[data-subdown]").forEach(b=>b.onclick=()=>{ saveCatEditQuiet(); moveSub(editing.id,b.dataset.subdown,1); });
+      app.querySelectorAll(".subdel").forEach(b=>b.onclick=()=>{ saveCatEditQuiet(); removeSub(editing.id, b.dataset.sub); });
       const cr=app.querySelector("#catRemove"); if(cr) cr.onclick=()=>removeCat(editing.id);
       const csv=app.querySelector("#catSave"); if(csv) csv.onclick=saveCatEdit;
     } else {
