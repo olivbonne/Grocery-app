@@ -18,14 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
-
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -107,7 +106,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .plus { width:20px; height:20px; border-radius:7px; border:none; background:var(--chip); color:var(--muted);
     font-size:14px; font-weight:800; line-height:1; display:flex; align-items:center; justify-content:center; }
   .catadd { display:flex; gap:6px; margin:6px 0; animation:rise .15s ease; align-items:flex-start; }
-  .catadd textarea { flex:1; min-width:0; height:38px; min-height:38px; padding:8px 12px; border-radius:12px; outline:none;
+  .catadd textarea { flex:1; min-width:0; height:38px; min-height:38px; padding:8px 36px 8px 12px; border-radius:12px; outline:none;
     background:var(--card); color:var(--ink); resize:none; overflow:hidden; line-height:1.2;
     white-space:pre-wrap; word-break:break-word; }
   .catadd button { width:40px; height:38px; flex:none; border-radius:12px; border:none; color:#fff; font-size:19px; font-weight:700; line-height:1; }
@@ -480,10 +479,10 @@ function removeCat(id){ const cs=catList(); if(cs.length<=1){ showToast("Keep at
   state.categories = cs.filter(c=>c.id!==id);
   editing=null; save(); render(); }
 const NEW_CAT_COLORS=["#B5402B","#C98A06","#3E7C3A","#2E6FA3","#6B5CA5","#2E8C7F","#C73B5B","#8A5A2B","#5B6770","#7A6A3A","#4A6FA5"];
-function addCategory(){ editing={ kind:"newcat", label:"", emoji:"🛒", img:"", subs:[] }; render(); }
+function addCategory(){ editing={ kind:"newcat", label:"", emoji:"🛒", img:"", subs:[], color: NEW_CAT_COLORS[catList().length % NEW_CAT_COLORS.length] }; render(); }
 function createCategoryFromSheet(){ const name=(editing.label||"").trim(); if(!name){ showToast("Name the category"); return; }
-  const cs=catList(); const color=NEW_CAT_COLORS[cs.length % NEW_CAT_COLORS.length];
-  cs.push({ id:uid(), label:name, color, emoji:(editing.emoji||"🛒"), img:"", subs:[] });
+  const cs=catList(); const color=editing.color || NEW_CAT_COLORS[cs.length % NEW_CAT_COLORS.length];
+  cs.push({ id:uid(), label:name, color, emoji:(editing.img?"":(editing.emoji||"🛒")), img:editing.img||"", subs:[] });
   editing=null; save(); render(); }
 function iconSuggestions(ed){ const out=[], seen=new Set();
   pictureChoices(ed.id||"").forEach(src=>{ if(!seen.has(src)){ seen.add(src); out.push({img:src}); } });
@@ -491,16 +490,22 @@ function iconSuggestions(ed){ const out=[], seen=new Set();
   if(lab) EMOJI_LIB.forEach(x=>{ if(out.length<6 && x.k.split(" ").some(k=>k===lab||lab.includes(k)||k.includes(lab))){ if(!seen.has(x.e)){ seen.add(x.e); out.push({e:x.e}); } } });
   return out.slice(0,6);
 }
-function iconEditorHTML(){
-  return `<button class="iconbox" id="iconBox">${editing.img?`<img src="${esc(editing.img)}"/>`:`<span style="font-size:22px">${esc(editing.emoji||"🛒")}</span>`}</button>`;
+function dispImg(src){ return (theme==="dark" && DARK_VARIANTS[src]) ? DARK_VARIANTS[src] : src; }
+function editColor(){ if(editing.color) return editing.color;
+  if(editing.kind==="cat"){ const c=CAT(editing.id); if(c&&c.color) return c.color; }
+  return "#6B5CA5"; }
+function iconEditorHTML(){ const col=editColor();
+  return `<button class="iconbox" id="iconBox" style="background:${col};border-color:${col}">${editing.img?`<img src="${esc(dispImg(editing.img))}"/>`:`<span style="font-size:22px">${esc(editing.emoji||"🛒")}</span>`}</button>`;
 }
 function iconStripHTML(){
-  let html="";
+  let html=""; const col=editColor();
   if(editing.pickOpen){
     const sugg=iconSuggestions(editing);
-    const cells=sugg.map(s=> s.img
-      ? `<button class="picopt ${editing.img===s.img?'sel':''}" data-pic="${esc(s.img)}"><img src="${esc(s.img)}"/></button>`
-      : `<button class="picopt ${(!editing.img&&editing.emoji===s.e)?'sel':''}" data-emo="${s.e}">${s.e}</button>`).join("");
+    const cells=sugg.map(s=>{ const sel = s.img ? editing.img===s.img : (!editing.img&&editing.emoji===s.e);
+      const bc = sel?'#fff':col;
+      return s.img
+        ? `<button class="picopt ${sel?'sel':''}" data-pic="${esc(s.img)}" style="background:${col};border-color:${bc}"><img src="${esc(dispImg(s.img))}"/></button>`
+        : `<button class="picopt ${sel?'sel':''}" data-emo="${s.e}" style="background:${col};border-color:${bc};color:#fff">${s.e}</button>`; }).join("");
     html+=`<div class="picstrip">${cells}<button class="picopt" data-act="emoji">😀</button><button class="picopt" data-act="upload">⬇</button></div>`;
   }
   if(editing.emojiOpen){
@@ -642,11 +647,10 @@ function renderOnboarding(){
 }
 
 function sortList(list){ return list.slice().sort((a,b)=> a.checked===b.checked ? a.name.localeCompare(b.name) : (a.checked?1:-1)); }
-function pillRow(items, cat){ const neutral = cat.id==="bulk"; const lightNeutral = neutral && theme!=="dark"; return `<div class="pills">${items.map(i=>{
-    const edge = i.checked ? 'var(--done-edge)' : (neutral ? '#ffffff' : cat.color);
-    const qcol = i.checked ? 'var(--muted2)' : (neutral ? 'var(--ink)' : cat.color);
-    const bord = (lightNeutral && !i.checked) ? `border:1px solid var(--line);border-left:4px solid ${edge}` : `border-left:4px solid ${edge}`;
-    return `<button class="pill ${i.checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="${bord}">`
+function pillRow(items, cat){ return `<div class="pills">${items.map(i=>{
+    const edge = i.checked ? 'var(--done-edge)' : cat.color;
+    const qcol = i.checked ? 'var(--muted2)' : cat.color;
+    return `<button class="pill ${i.checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="border-left:4px solid ${edge}">`
     +`${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${esc(i.name)}</button>`;
   }).join("")}</div>`; }
 
@@ -675,7 +679,7 @@ function renderMain(){
       if(checked.length) pills += pillRow(checked, cat);   // checked always at the bottom of the category
     }
     const catAdd = catEntry===cat.id ? `<div class="catadd">
-        <div class="inwrap"><textarea id="catInput" rows="1" placeholder="Add to ${esc(cat.label)} — commas for several" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="Clear">×</button></div>
+        <div class="inwrap"><textarea id="catInput" rows="1" placeholder="Add to ${esc(cat.label)}" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="Clear">×</button></div>
         <button id="catAddBtn" style="background:${cat.color}">+</button></div>` : "";
     const chipText = has ? '#fff' : 'var(--muted2)';
     const chipBg = has ? cat.color : 'transparent';
@@ -727,7 +731,7 @@ function renderMain(){
       <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
     </div>
     <div class="suggest" id="suggest"></div>
-    ${state.items.length>0?`<div style="display:flex;justify-content:flex-end;margin:0 0 4px"><button id="collapseAll" style="border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:2px 0">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button></div>`:""}
+    ${state.items.length>0?`<div style="display:flex;justify-content:flex-start;margin:0 0 4px"><button id="collapseAll" style="border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:2px 0">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button></div>`:""}
     ${cats}
     <button id="addCat" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
     <section class="ba">
@@ -858,7 +862,7 @@ function wire(){
     const has=state.items.some(i=>i.cat===id);
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
-    b.onpointerup=()=>{ pressCancel(); if(longFired){ const c=CAT(id); editing={kind:"cat", id, label:c.label, emoji:c.img?"":(c.emoji||""), img:c.img||""}; render(); }
+    b.onpointerup=()=>{ pressCancel(); if(longFired){ const c=CAT(id); editing={kind:"cat", id, label:c.label, emoji:c.img?"":(c.emoji||""), img:c.img||"", color:c.color}; render(); }
       else if(has){ toggleCat(id); } }; });
 
   app.querySelectorAll("[data-add]").forEach(b=>{ const id=b.dataset.add;
