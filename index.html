@@ -77,7 +77,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     outline:none; background:var(--card); color:var(--ink); resize:none; overflow:hidden; line-height:1.2;
     white-space:pre-wrap; word-break:break-word; }
   .addbtn { width:46px; height:44px; flex:none; border-radius:14px; border:none; background:var(--accent); color:#fff;
-    font-size:22px; font-weight:700; line-height:1; }
+    display:flex; align-items:center; justify-content:center; padding:0; }
   section.cat { margin-bottom:7px; }
   .chead { display:flex; align-items:center; gap:6px; margin-bottom:0; }
   .chead .lbl { display:flex; align-items:center; gap:5px; border:none; background:transparent; padding:0; }
@@ -97,6 +97,15 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     color:var(--ink); font-size:13px; font-weight:600; white-space:nowrap; }
   .prog { height:5px; background:var(--line); border-radius:999px; margin:0 0 10px; overflow:hidden; }
   .prog-fill { height:100%; background:var(--accent); border-radius:999px; transition:width .25s ease; }
+  .cicon { object-fit:contain; border-radius:3px; vertical-align:middle; display:inline-block; }
+  .iconbtn img.uiicon { width:18px; height:18px; object-fit:contain; display:block; }
+  .iconbtn img.uiicon2 { width:18px; height:18px; object-fit:contain; display:block; }
+  body.dark .iconbtn img.uiicon { filter:invert(1) brightness(1.6); }
+  .icongrid { display:flex; flex-wrap:wrap; gap:6px; max-height:148px; overflow-y:auto; margin-top:8px; }
+  .iconopt { width:42px; height:42px; border-radius:12px; border:2px solid var(--line); background:var(--card);
+    display:flex; align-items:center; justify-content:center; font-size:20px; padding:0; }
+  .iconopt.sel { border-color:var(--btn); }
+  .iconopt img { width:24px; height:24px; object-fit:contain; }
   .pills { display:flex; flex-wrap:wrap; gap:5px; margin-top:4px; }
   .pill { display:inline-flex; align-items:center; gap:5px; background:var(--card); border:1.5px solid var(--line);
     border-radius:10px; padding:7px 11px; font-size:14px; font-weight:600; color:var(--ink); }
@@ -153,12 +162,12 @@ import { getFirestore, doc, onSnapshot, setDoc }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
+  apiKey: "REPLACE_ME",
+  authDomain: "REPLACE_ME.firebaseapp.com",
+  projectId: "REPLACE_ME",
+  storageBucket: "REPLACE_ME.appspot.com",
+  messagingSenderId: "REPLACE_ME",
+  appId: "REPLACE_ME"
 };
 /* ============================================================ */
 
@@ -247,11 +256,55 @@ function ensureCats(){
     state.categories = DEFAULT_CATS.map(c=>({id:c.id,label:c.label,color:c.color,emoji:c.emoji,
       subs: c.id==="meat" ? MEAT_DEFAULT_SUBS.map(s=>({...s})) : [] }));
   }
-  // migrate older saved lists: make sure every category has a subs array, meat keeps its defaults
-  state.categories.forEach(c=>{ if(!Array.isArray(c.subs)){ c.subs = c.id==="meat" ? MEAT_DEFAULT_SUBS.map(s=>({...s})) : []; } });
+  const DEF_IMG = { fresh:"milk.png", health:"cross.png", asian:"ramen.png" };
+  state.categories.forEach(c=>{
+    if(!Array.isArray(c.subs)){ c.subs = c.id==="meat" ? MEAT_DEFAULT_SUBS.map(s=>({...s})) : []; }
+    if(c.img===undefined && DEF_IMG[c.id]){ c.img = DEF_IMG[c.id]; }   // seed default picture icons
+  });
 }
 function catList(){ ensureCats(); return state.categories; }
 function CAT(id){ return catList().find(c=>c.id===id) || DEFAULT_CATS.find(c=>c.id===id) || DEFAULT_CATS[DEFAULT_CATS.length-1]; }
+const DARK_VARIANTS = { "ramen.png":"ramen-dark.png" };
+function catIcon(cat, s){ s=s||16;
+  if(cat && cat.img){ let src=cat.img; if(theme==="dark" && DARK_VARIANTS[src]) src=DARK_VARIANTS[src];
+    return `<img class="cicon" src="${esc(src)}" style="width:${s}px;height:${s}px" alt="" />`; }
+  return `<span style="font-size:${(s-1)}px;line-height:1">${(cat&&cat.emoji)||"🛒"}</span>`; }
+const ICON_PRESETS = [
+  {img:"milk.png"},{img:"cross.png"},{img:"ramen.png"},{img:"hammer.png"},
+];
+const EMOJI_LIB = [
+  {e:"🥩",k:"meat beef steak"},{e:"🍗",k:"chicken poultry meat"},{e:"🐟",k:"fish seafood"},{e:"🍤",k:"prawn shrimp seafood"},
+  {e:"🍌",k:"banana fruit"},{e:"🍎",k:"apple fruit"},{e:"🍓",k:"strawberry fruit berry"},{e:"🍇",k:"grape fruit"},
+  {e:"🥦",k:"broccoli vegetable veg"},{e:"🥕",k:"carrot vegetable veg"},{e:"🍅",k:"tomato vegetable"},{e:"🌶️",k:"chilli pepper spicy"},
+  {e:"🥛",k:"milk dairy fresh"},{e:"🧀",k:"cheese dairy"},{e:"🥚",k:"egg fresh"},{e:"🍞",k:"bread bakery"},
+  {e:"🧻",k:"toilet paper bulk household"},{e:"🧼",k:"soap cleaning household"},{e:"🧴",k:"bottle lotion shampoo"},{e:"🧽",k:"sponge cleaning"},
+  {e:"💊",k:"pill medicine health"},{e:"🩹",k:"bandage plaster health"},{e:"🌡️",k:"thermometer health"},{e:"🧬",k:"supplement health"},
+  {e:"🍜",k:"ramen noodle asian"},{e:"🍱",k:"bento asian"},{e:"🍚",k:"rice asian"},{e:"🥟",k:"dumpling gyoza asian"},
+  {e:"🍷",k:"wine alcohol"},{e:"🍺",k:"beer alcohol"},{e:"🥂",k:"champagne alcohol"},{e:"🥃",k:"whisky alcohol"},
+  {e:"🛒",k:"cart others shopping"},{e:"🧊",k:"ice frozen"},{e:"☕",k:"coffee tea drink"},{e:"🍫",k:"chocolate snack"},
+  {e:"🔧",k:"tool hardware spanner"},{e:"🔨",k:"hammer tool hardware"},{e:"🪛",k:"screwdriver tool hardware"},{e:"🔩",k:"screw bolt hardware"},
+  {e:"🌸",k:"flower garden"},{e:"🐶",k:"pet dog"},{e:"🐱",k:"pet cat"},{e:"👶",k:"baby kids"},
+  {e:"📦",k:"box package"},{e:"🎁",k:"gift present party"},{e:"🎉",k:"party celebrate"},{e:"🍴",k:"food dining"},
+];
+function presetHTML(cur){
+  const imgs = ICON_PRESETS.map(p=>`<button class="iconopt ${cur===p.img?'sel':''}" data-icon="${p.img}"><img src="${p.img}" alt=""/></button>`).join("");
+  return imgs;
+}
+function emojiGridHTML(cur, filter){
+  const f=(filter||"").toLowerCase().trim();
+  const list = f ? EMOJI_LIB.filter(x=>x.k.includes(f)||x.e===f) : EMOJI_LIB;
+  return list.map(x=>`<button class="iconopt ${cur===x.e?'sel':''}" data-emoji="${x.e}">${x.e}</button>`).join("");
+}
+function iconPickerHTML(){
+  const curImg = editing.img||""; const curEmoji = editing.img?"":(editing.emoji||"");
+  return `<div style="margin-top:14px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Icon</div>
+    <div class="icongrid" id="presetRow">${presetHTML(curImg)}
+      <button class="iconopt" id="uploadOpt" title="Upload">⬆️</button>
+    </div>
+    <input id="iconSearch" placeholder="Search emoji (milk, tool, wine…)" style="width:100%;margin-top:8px;padding:9px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:14px" />
+    <div class="icongrid" id="emojiGrid">${emojiGridHTML(curEmoji,"")}</div>
+    <input id="iconFile" type="file" accept="image/*" style="display:none" />`;
+}
 /* an item's subcategory within its category: explicit item.sub if valid, else keyword guess for meat, else null */
 function effectiveSub(item, cat){
   if(!cat || !cat.subs || !cat.subs.length) return null;
@@ -362,10 +415,10 @@ function restoreEditingToList(){ const nm=(editing.name||"").trim()||editing.ori
 function moveCat(id, ni){ const cs=catList(); const i=cs.findIndex(c=>c.id===id);
   if(i<0||ni<0||ni>=cs.length) return; const [c]=cs.splice(i,1); cs.splice(ni,0,c); save(); render(); }
 function saveCatEdit(){ const c=catList().find(x=>x.id===editing.id);
-  if(c){ const nm=(editing.label||"").trim(); if(nm) c.label=nm; if(editing.emoji!==undefined && editing.emoji!=="") c.emoji=editing.emoji; }
+  if(c){ const nm=(editing.label||"").trim(); if(nm) c.label=nm; c.img=editing.img||""; if(!c.img && editing.emoji) c.emoji=editing.emoji; }
   editing=null; save(); render(); }
 function saveCatEditQuiet(){ const c=catList().find(x=>x.id===editing.id);
-  if(c){ const nm=(editing.label||"").trim(); if(nm) c.label=nm; if(editing.emoji!==undefined && editing.emoji!=="") c.emoji=editing.emoji; } }
+  if(c){ const nm=(editing.label||"").trim(); if(nm) c.label=nm; c.img=editing.img||""; if(!c.img && editing.emoji) c.emoji=editing.emoji; } }
 function removeCat(id){ const cs=catList(); if(cs.length<=1){ showToast("Keep at least one category"); return; }
   const target=cs.find(c=>c.id!==id).id;
   if(!confirm('Remove this category? Its items move to "'+CAT(target).label+'".')) return;
@@ -374,9 +427,27 @@ function removeCat(id){ const cs=catList(); if(cs.length<=1){ showToast("Keep at
   state.categories = cs.filter(c=>c.id!==id);
   editing=null; save(); render(); }
 const NEW_CAT_COLORS=["#B5402B","#C98A06","#3E7C3A","#2E6FA3","#6B5CA5","#2E8C7F","#C73B5B","#8A5A2B","#5B6770","#7A6A3A","#4A6FA5"];
-function addCategory(){ const name=(prompt("New category name:")||"").trim(); if(!name) return;
+function addCategory(){ editing={ kind:"newcat", label:"", emoji:"🛒", img:"", subs:[] }; render(); }
+function createCategoryFromSheet(){ const name=(editing.label||"").trim(); if(!name){ showToast("Name the category"); return; }
   const cs=catList(); const color=NEW_CAT_COLORS[cs.length % NEW_CAT_COLORS.length];
-  cs.push({ id:uid(), label:name, color, emoji:"🛒", subs:[] }); save(); render(); }
+  cs.push({ id:uid(), label:name, color, emoji:editing.img?"":(editing.emoji||"🛒"), img:editing.img||"", subs:[] });
+  editing=null; save(); render(); }
+function wirePicker(){
+  app.querySelectorAll("#presetRow [data-icon]").forEach(b=>b.onclick=()=>{ editing.img=b.dataset.icon; editing.emoji=""; render(); });
+  const grid=app.querySelector("#emojiGrid");
+  const bindEmoji=()=>app.querySelectorAll("#emojiGrid [data-emoji]").forEach(b=>b.onclick=()=>{ editing.emoji=b.dataset.emoji; editing.img=""; render(); });
+  bindEmoji();
+  const srch=app.querySelector("#iconSearch"); if(srch) srch.oninput=()=>{ grid.innerHTML=emojiGridHTML(editing.img?"":(editing.emoji||""), srch.value); bindEmoji(); };
+  const up=app.querySelector("#uploadOpt"), f=app.querySelector("#iconFile");
+  if(up&&f){ up.onclick=()=>f.click();
+    f.onchange=()=>{ const file=f.files&&f.files[0]; if(!file) return; const r=new FileReader();
+      r.onload=()=>{ const im=new Image(); im.onload=()=>{ const cv=document.createElement("canvas"); cv.width=cv.height=64;
+        const ctx=cv.getContext("2d"); const sc=Math.min(64/im.width,64/im.height); const w=im.width*sc,h=im.height*sc;
+        ctx.clearRect(0,0,64,64); ctx.drawImage(im,(64-w)/2,(64-h)/2,w,h);
+        editing.img=cv.toDataURL("image/png"); editing.emoji=""; render(); };
+        im.src=r.result; };
+      r.readAsDataURL(file); }; }
+}
 function addSub(catId){ const name=(prompt("New subcategory name:")||"").trim(); if(!name) return;
   const c=catList().find(x=>x.id===catId); if(!c) return; if(!Array.isArray(c.subs)) c.subs=[];
   c.subs.push({ id:uid(), label:name }); save(); render(); }
@@ -496,10 +567,12 @@ function renderOnboarding(){
 }
 
 function sortList(list){ return list.slice().sort((a,b)=> a.checked===b.checked ? a.name.localeCompare(b.name) : (a.checked?1:-1)); }
-function pillRow(items, cat){ return `<div class="pills">${items.map(i=>
-    `<button class="pill ${i.checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="border-left:4px solid ${i.checked?'var(--done-edge)':cat.color}">`
-    +`${(i.qty||1)>1?`<span class="qty" style="color:${i.checked?'var(--muted2)':cat.color}">${i.qty}×</span>`:""}${esc(i.name)}</button>`
-  ).join("")}</div>`; }
+function pillRow(items, cat){ const neutral = cat.id==="bulk"; return `<div class="pills">${items.map(i=>{
+    const edge = i.checked ? 'var(--done-edge)' : (neutral ? 'var(--line)' : cat.color);
+    const qcol = i.checked ? 'var(--muted2)' : (neutral ? 'var(--ink)' : cat.color);
+    return `<button class="pill ${i.checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="border-left:4px solid ${edge}">`
+    +`${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${esc(i.name)}</button>`;
+  }).join("")}</div>`; }
 
 function renderMain(){
   const open = state.items.filter(i=>!i.checked).length;
@@ -531,7 +604,7 @@ function renderMain(){
     return `<section class="cat">
       <div class="chead">
         <button class="lbl" data-cat="${cat.id}">
-          <span class="cemoji" style="font-size:14px;line-height:1">${cat.emoji||"🛒"}</span>
+          <span class="cemoji">${catIcon(cat,16)}</span>
           <span class="cname" style="color:${has?'var(--ink)':'var(--muted2)'}">${esc(cat.label)}</span>
           ${has?`<span class="cnum">${list.length}${collapsed?' ▸':''}</span>`:""}
         </button>
@@ -559,11 +632,11 @@ function renderMain(){
         <span class="count">${state.items.length===0?'all clear':(open+' to buy'+(done?` · ${done} in cart`:''))}</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
-        <button id="soundBtn" aria-label="Toggle sound" class="iconbtn">${soundOn?"🔈":"🔇"}</button>
-        <button id="themeBtn" aria-label="Toggle dark mode" class="iconbtn">${theme==="dark"?"☀️":"🌙"}</button>
+        <button id="soundBtn" aria-label="Toggle sound" class="iconbtn"><img class="uiicon2" src="${soundOn?(theme==='dark'?'sound-on-dark.png':'sound-on.png'):(theme==='dark'?'sound-off-dark.png':'sound-off.png')}" alt=""/></button>
+        <button id="themeBtn" aria-label="Toggle dark mode" class="iconbtn"><img class="uiicon" src="${theme==='dark'?'sun.png':'moon.png'}" alt=""/></button>
         <div style="display:flex;align-items:center;gap:4px">
-          <button id="denPlus" aria-label="Larger" style="width:24px;height:24px;border-radius:7px;border:none;background:var(--chip);color:var(--ink);font-size:15px;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center">+</button>
-          <button id="denMinus" aria-label="Smaller" style="width:24px;height:24px;border-radius:7px;border:none;background:var(--chip);color:var(--ink);font-size:16px;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center">−</button>
+          <button id="denPlus" aria-label="Larger" class="iconbtn" style="font-size:17px;font-weight:800">+</button>
+          <button id="denMinus" aria-label="Smaller" class="iconbtn" style="font-size:18px;font-weight:800">−</button>
         </div>
       </div>
     </header>
@@ -571,7 +644,7 @@ function renderMain(){
     <div class="addbar">
       <button class="micbtn" id="micBtn" aria-label="Voice input"></button>
       <textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Paste, type, or tap the mic…"></textarea>
-      <button class="addbtn" id="mainAdd">+</button>
+      <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
     </div>
     <div class="suggest" id="suggest"></div>
     ${cats}
@@ -592,9 +665,20 @@ function renderMain(){
 }
 
 function chipsHTML(activeCat){ return catList().map(c=>
-  `<button class="catchip" data-ec="${c.id}" style="${activeCat===c.id?`background:${c.color};border-color:${c.color};color:#fff`:''}">${c.emoji} ${esc(c.label)}</button>`).join(""); }
+  `<button class="catchip" data-ec="${c.id}" style="${activeCat===c.id?`background:${c.color};border-color:${c.color};color:#fff`:''}">${catIcon(c,15)} ${esc(c.label)}</button>`).join(""); }
 
 function editSheet(){
+  if(editing.kind==="newcat"){
+    return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
+      <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">New category</div>
+      <input id="catName" value="${esc(editing.label)}" placeholder="Category name" style="width:100%;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
+      ${iconPickerHTML()}
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button id="newCancel" style="padding:13px 16px;border-radius:14px;border:2px solid var(--ink);background:transparent;color:var(--ink);font-weight:700;font-size:15px">Cancel</button>
+        <button id="newCreate" style="flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">Create</button>
+      </div>
+    </div></div>`;
+  }
   if(editing.kind==="cat"){
     const cs=catList(); const idx=cs.findIndex(c=>c.id===editing.id); const n=cs.length;
     const cat=cs[idx]||{subs:[]};
@@ -603,15 +687,12 @@ function editSheet(){
     ).join("");
     return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
       <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">Edit category</div>
-      <div style="display:flex;gap:8px">
-        <input id="catEmoji" value="${esc(editing.emoji||"")}" maxlength="2" style="width:54px;text-align:center;padding:12px 0;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:18px" />
-        <input id="catName" value="${esc(editing.label)}" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
-      </div>
+      <input id="catName" value="${esc(editing.label)}" style="width:100%;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
+      ${iconPickerHTML()}
       <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
         <button class="movebtn" id="moveUp" ${idx<=0?'disabled style="opacity:.4"':''}>↑ Move up</button>
         <button class="movebtn" id="moveDown" ${idx>=n-1?'disabled style="opacity:.4"':''}>↓ Move down</button>
       </div>
-      <div style="margin-top:8px;font-size:12px;color:var(--muted);text-align:center">Position ${idx+1} of ${n}</div>
       <div style="margin-top:14px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Subcategories</div>
       <div class="pills" style="margin-top:6px">${subsHTML || '<span style="font-size:12px;color:var(--muted2)">None yet</span>'}</div>
       <button id="addSubBtn" style="margin-top:8px;border:none;background:var(--chip);color:var(--ink);font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px">+ Add subcategory</button>
@@ -672,7 +753,7 @@ function wire(){
     const has=state.items.some(i=>i.cat===id);
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
-    b.onpointerup=()=>{ pressCancel(); if(longFired){ const c=CAT(id); editing={kind:"cat", id, label:c.label, emoji:c.emoji}; render(); }
+    b.onpointerup=()=>{ pressCancel(); if(longFired){ const c=CAT(id); editing={kind:"cat", id, label:c.label, emoji:c.emoji, img:c.img||""}; render(); }
       else if(has){ toggleCat(id); } }; });
 
   app.querySelectorAll("[data-add]").forEach(b=>{ const id=b.dataset.add;
@@ -706,9 +787,14 @@ function wire(){
   if(editing){
     const bg=app.querySelector("#sheetBg"); if(bg) bg.onclick=()=>{ editing=null; render(); };
     const sh=app.querySelector("#sheet"); if(sh) sh.onclick=e=>e.stopPropagation();
-    if(editing.kind==="cat"){
+    if(editing.kind==="newcat"){
       const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>editing.label=e.target.value;
-      const ce=app.querySelector("#catEmoji"); if(ce) ce.oninput=e=>editing.emoji=e.target.value;
+      wirePicker();
+      const cc=app.querySelector("#newCreate"); if(cc) cc.onclick=createCategoryFromSheet;
+      const cx=app.querySelector("#newCancel"); if(cx) cx.onclick=()=>{ editing=null; render(); };
+    } else if(editing.kind==="cat"){
+      const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>editing.label=e.target.value;
+      wirePicker();
       const mu=app.querySelector("#moveUp"); if(mu) mu.onclick=()=>{ const cs=catList(); const i=cs.findIndex(c=>c.id===editing.id); moveCat(editing.id,i-1); };
       const md=app.querySelector("#moveDown"); if(md) md.onclick=()=>{ const cs=catList(); const i=cs.findIndex(c=>c.id===editing.id); moveCat(editing.id,i+1); };
       const asb=app.querySelector("#addSubBtn"); if(asb) asb.onclick=()=>{ saveCatEditQuiet(); addSub(editing.id); };
