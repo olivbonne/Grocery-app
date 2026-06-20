@@ -18,14 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
-
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -110,7 +109,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .catadd textarea { flex:1; min-width:0; height:38px; min-height:38px; padding:8px 36px 8px 12px; border-radius:12px; outline:none;
     background:var(--card); color:var(--ink); resize:none; overflow:hidden; line-height:1.2;
     white-space:pre-wrap; word-break:break-word; }
-  .catadd button { width:40px; height:38px; flex:none; border-radius:12px; border:none; color:#fff; font-size:19px; font-weight:700; line-height:1; }
+  .catadd > button { width:40px; height:38px; flex:none; border-radius:12px; border:none; color:#fff; font-size:19px; font-weight:700; line-height:1; }
   .suggest { display:flex; gap:6px; overflow-x:auto; margin:-4px 0 10px; -webkit-overflow-scrolling:touch; }
   .suggest:empty { display:none; }
   .sugchip { flex:none; padding:7px 12px; border-radius:999px; border:1.5px solid var(--line); background:var(--card);
@@ -212,7 +211,10 @@ import { getFirestore, doc, onSnapshot, setDoc }
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.22";
+const APP_VERSION = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "v—";
+  const p=n=>String(n).padStart(2,"0");
+  return `v${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}catch(e){ return "v—"; } })();
 
 /* default categories (ids stay fixed; label/color/order are editable & saved) */
 const DEFAULT_CATS = [
@@ -441,7 +443,7 @@ function restore(name,cat){
 /* item edit */
 function saveEdit(){ if(!editing||!editing.name.trim()) return;
   const it=state.items.find(i=>i.id===editing.id);
-  if(it){ it.name=editing.name.trim(); it.qty=Math.max(1,editing.qty||1); it.cat=editing.cat; it.sub=editing.sub||null; it.starred=!!editing.starred; }
+  if(it){ it.name=editing.name.trim(); it.qty=Math.max(1,editing.qty||1); it.cat=editing.cat; it.sub=editing.sub||null; it.starred=!!editing.starred; it.weight=editing.weight||""; }
   editing=null; save(); render(); }
 function removeEditing(){ moveToBuyAgain([{name:editing.name,cat:editing.cat,qty:editing.qty||1}]);
   state.items = state.items.filter(i=>i.id!==editing.id); editing=null; save(); render(); }
@@ -481,7 +483,7 @@ function removeCat(id){ const cs=catList(); if(cs.length<=1){ showToast("Keep at
   state.categories = cs.filter(c=>c.id!==id);
   editing=null; save(); render(); }
 const NEW_CAT_COLORS=["#B5402B","#C98A06","#3E7C3A","#2E6FA3","#6B5CA5","#2E8C7F","#C73B5B","#8A5A2B","#5B6770","#7A6A3A","#4A6FA5"];
-function addCategory(){ editing={ kind:"newcat", label:"", emoji:"🛒", img:"", subs:[], color: NEW_CAT_COLORS[catList().length % NEW_CAT_COLORS.length] }; render(); }
+function addCategory(){ editing={ kind:"newcat", label:"", emoji:"🛒", img:"", subs:[], iconManual:false, color: NEW_CAT_COLORS[catList().length % NEW_CAT_COLORS.length] }; render(); }
 function createCategoryFromSheet(){ const name=(editing.label||"").trim(); if(!name){ showToast("Name the category"); return; }
   const cs=catList(); const color=editing.color || NEW_CAT_COLORS[cs.length % NEW_CAT_COLORS.length];
   cs.push({ id:uid(), label:name, color, emoji:(editing.img?"":(editing.emoji||"🛒")), img:editing.img||"", subs:[] });
@@ -499,6 +501,10 @@ function editColor(){ if(editing.color) return editing.color;
 function iconEditorHTML(){ const col=editColor();
   return `<button class="iconbox" id="iconBox" style="background:${col};border-color:${col}">${editing.img?`<img src="${esc(dispImg(editing.img))}"/>`:`<span style="font-size:22px">${esc(editing.emoji||"🛒")}</span>`}</button>`;
 }
+function autoIcon(){ if(!editing||editing.iconManual) return;
+  const s=iconSuggestions(editing).find(x=>x.e); if(s){ editing.emoji=s.e; editing.img=""; }
+  const ib=app.querySelector("#iconBox"); if(ib){ const col=editColor(); ib.style.background=col; ib.style.borderColor=col;
+    ib.innerHTML = editing.img?`<img src="${esc(dispImg(editing.img))}"/>`:`<span style="font-size:22px">${esc(editing.emoji||"🛒")}</span>`; } }
 function iconStripHTML(){
   let html=""; const col=editColor();
   if(editing.pickOpen){
@@ -521,8 +527,8 @@ function iconStripHTML(){
 function wireIconEditor(){
   const ib=app.querySelector("#iconBox");
   if(ib) ib.onclick=()=>{ editing.pickOpen=!editing.pickOpen; editing.emojiOpen=false; render(); };
-  app.querySelectorAll("[data-pic]").forEach(b=>b.onclick=()=>{ editing.img=b.dataset.pic; editing.emoji=""; editing.pickOpen=false; editing.emojiOpen=false; render(); });
-  app.querySelectorAll("[data-emo]").forEach(b=>b.onclick=()=>{ editing.emoji=b.dataset.emo; editing.img=""; editing.pickOpen=false; editing.emojiOpen=false; render(); });
+  app.querySelectorAll("[data-pic]").forEach(b=>b.onclick=()=>{ editing.img=b.dataset.pic; editing.emoji=""; editing.iconManual=true; editing.pickOpen=false; editing.emojiOpen=false; render(); });
+  app.querySelectorAll("[data-emo]").forEach(b=>b.onclick=()=>{ editing.emoji=b.dataset.emo; editing.img=""; editing.iconManual=true; editing.pickOpen=false; editing.emojiOpen=false; render(); });
   const ed=app.querySelector('[data-act="emoji"]'); if(ed) ed.onclick=()=>{ editing.emojiOpen=!editing.emojiOpen; render(); };
   const f=app.querySelector("#iconFile"), ud=app.querySelector('[data-act="upload"]');
   if(ud&&f) ud.onclick=()=>f.click();
@@ -530,7 +536,7 @@ function wireIconEditor(){
     r.onload=()=>{ const im=new Image(); im.onload=()=>{ const cv=document.createElement("canvas"); cv.width=cv.height=64;
       const ctx=cv.getContext("2d"); const sc=Math.min(64/im.width,64/im.height); const w=im.width*sc,h=im.height*sc;
       ctx.clearRect(0,0,64,64); ctx.drawImage(im,(64-w)/2,(64-h)/2,w,h);
-      editing.img=cv.toDataURL("image/png"); editing.emoji=""; editing.pickOpen=false; editing.emojiOpen=false; render(); };
+      editing.img=cv.toDataURL("image/png"); editing.emoji=""; editing.iconManual=true; editing.pickOpen=false; editing.emojiOpen=false; render(); };
       im.src=r.result; };
     r.readAsDataURL(file); };
 }
@@ -659,13 +665,16 @@ function pillRow(items, cat){ return `<div class="pills">${items.map(i=>{
     const edge = i.checked ? 'var(--done-edge)' : cat.color;
     const qcol = i.checked ? 'var(--muted2)' : cat.color;
     return `<button class="pill ${i.checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="border-left:4px solid ${edge}">`
-    +`${(!i.checked&&i.starred)?`<span style="color:#E8A91D;margin-right:1px">★</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${esc(i.name)}</button>`;
+    +`${(!i.checked&&i.starred)?`<span style="color:#E8A91D;margin-right:1px">★</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(i.name)}</button>`;
   }).join("")}</div>`; }
 
 function renderMain(){
   const open = state.items.filter(i=>!i.checked).length;
   const done = state.items.filter(i=>i.checked).length;
   const avatars = state.members.map((m,i)=>`<div class="av ${m===me?'me':''}" style="margin-left:${i?-6:0}px" title="${esc(m)}">${esc(m.slice(0,1).toUpperCase())}</div>`).join("");
+
+  const anyOpen = catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id));
+  const firstCatId = (catList().find(c=>state.items.some(i=>i.cat===c.id))||{}).id;
 
   const cats = catList().map(cat=>{
     const list = sortList(state.items.filter(i=>i.cat===cat.id));
@@ -700,6 +709,7 @@ function renderMain(){
           ${has?`<span class="cnum" style="color:${chipText};opacity:.85">${list.length}${collapsed?' ▸':''}</span>`:""}
         </button>
         <button class="plus" data-add="${cat.id}" style="${catEntry===cat.id?`background:${cat.color};color:#fff`:''}">${catEntry===cat.id?'×':'+'}</button>
+        ${cat.id===firstCatId?`<button id="collapseAll" style="margin-left:auto;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:2px 0">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button>`:""}
       </div>${catAdd}${pills}</section>`;
   }).join("");
 
@@ -716,7 +726,6 @@ function renderMain(){
     ? `${baGroups}<button id="clearBA" style="margin-top:8px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:0">Clear buy-again history</button>`
     : `<p style="font-size:12px;color:var(--muted2);margin:0">Cleared items land here so you can re-add them with one tap.</p>`;
 
-  const anyOpen = catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id));
   app.innerHTML = `<div class="wrap" style="zoom:${density}">
     <header>
       <div style="display:flex;align-items:baseline;gap:8px">
@@ -739,7 +748,6 @@ function renderMain(){
       <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
     </div>
     <div class="suggest" id="suggest"></div>
-    ${state.items.length>0?`<div style="display:flex;justify-content:flex-start;margin:0 0 4px"><button id="collapseAll" style="border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:2px 0">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button></div>`:""}
     ${cats}
     <button id="addCat" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
     <section class="ba">
@@ -830,8 +838,11 @@ function editSheet(){
       <div class="disp" style="font-weight:800;font-size:17px">${isItem?"Edit item":"Edit saved item"}</div>
       ${isItem?`<button id="starBtn" aria-label="Star" style="border:none;background:transparent;font-size:24px;line-height:1;padding:2px;color:${editing.starred?'#E8A91D':'var(--muted2)'}">${editing.starred?'★':'☆'}</button>`:""}
     </div>
-    <div style="display:flex;gap:8px">
-      <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
+    <input id="editName" value="${esc(editing.name)}" style="width:100%;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
+    <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+      <select id="weightSel" style="flex:1;min-width:0;padding:11px 12px;border-radius:14px;border:2px solid var(--ink);background:var(--card);color:var(--ink);font-size:15px;font-weight:600">
+        ${["","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg"].map(w=>`<option value="${w}" ${(editing.weight||"")===w?'selected':''}>${w||'— weight —'}</option>`).join("")}
+      </select>
       ${qtyBlock}
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">${chipsHTML(editing.cat)}</div>
@@ -874,7 +885,7 @@ function wire(){
     const has=state.items.some(i=>i.cat===id);
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
-    b.onpointerup=()=>{ pressCancel(); if(longFired){ const c=CAT(id); editing={kind:"cat", id, label:c.label, emoji:c.img?"":(c.emoji||""), img:c.img||"", color:c.color}; render(); }
+    b.onpointerup=()=>{ pressCancel(); if(longFired){ const c=CAT(id); editing={kind:"cat", id, label:c.label, emoji:c.img?"":(c.emoji||""), img:c.img||"", color:c.color, iconManual:!!c.img}; render(); }
       else if(has){ toggleCat(id); } }; });
 
   app.querySelectorAll("[data-add]").forEach(b=>{ const id=b.dataset.add;
@@ -912,12 +923,12 @@ function wire(){
     const bg=app.querySelector("#sheetBg"); if(bg) bg.onclick=()=>{ editing=null; render(); };
     const sh=app.querySelector("#sheet"); if(sh) sh.onclick=e=>e.stopPropagation();
     if(editing.kind==="newcat"){
-      const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>editing.label=e.target.value;
+      const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>{ editing.label=e.target.value; autoIcon(); };
       wireIconEditor();
       const cc=app.querySelector("#newCreate"); if(cc) cc.onclick=createCategoryFromSheet;
       const cx=app.querySelector("#newCancel"); if(cx) cx.onclick=()=>{ editing=null; render(); };
     } else if(editing.kind==="cat"){
-      const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>editing.label=e.target.value;
+      const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>{ editing.label=e.target.value; autoIcon(); };
       wireIconEditor();
       const mu=app.querySelector("#moveUp"); if(mu) mu.onclick=()=>{ saveCatEditQuiet(); const cs=catList(); const i=cs.findIndex(c=>c.id===editing.id); moveCat(editing.id,i-1); };
       const md=app.querySelector("#moveDown"); if(md) md.onclick=()=>{ saveCatEditQuiet(); const cs=catList(); const i=cs.findIndex(c=>c.id===editing.id); moveCat(editing.id,i+1); };
@@ -931,6 +942,7 @@ function wire(){
       const csv=app.querySelector("#catSave"); if(csv) csv.onclick=saveCatEdit;
     } else {
       const en=app.querySelector("#editName"); if(en) en.oninput=e=>editing.name=e.target.value;
+      const ws=app.querySelector("#weightSel"); if(ws) ws.onchange=e=>{ editing.weight=e.target.value; };
       const stb=app.querySelector("#starBtn"); if(stb) stb.onclick=()=>{ editing.starred=!editing.starred; render(); };
       const qm=app.querySelector("#qMinus"); if(qm) qm.onclick=()=>{ editing.qty=Math.max(1,(editing.qty||1)-1); render(); };
       const qp=app.querySelector("#qPlus"); if(qp) qp.onclick=()=>{ editing.qty=(editing.qty||1)+1; render(); };
