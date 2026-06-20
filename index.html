@@ -17,14 +17,14 @@
 <!--  Replace each "REPLACE_ME" with the matching value, then save/deploy.  -->
 <!-- ===================================================================== -->
 <script>
-window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+  window.FIREBASE_CONFIG = {
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -127,7 +127,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .iconopt img { width:24px; height:24px; object-fit:contain; }
   .inwrap { position:relative; flex:1; min-width:0; }
   .inwrap textarea { width:100%; padding-right:36px; }
-  .clearbtn { position:absolute; right:8px; top:8px; width:22px; height:22px; border-radius:50%; border:none;
+  .clearbtn { position:absolute; right:8px; top:50%; transform:translateY(-50%); width:22px; height:22px; border-radius:50%; border:none;
     background:var(--chip); color:var(--muted); font-size:15px; font-weight:700; line-height:1; padding:0;
     display:none; align-items:center; justify-content:center; }
   .clearbtn.show { display:flex; }
@@ -211,6 +211,7 @@ import { getFirestore, doc, onSnapshot, setDoc }
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
+const APP_VERSION = "v0.22";
 
 /* default categories (ids stay fixed; label/color/order are editable & saved) */
 const DEFAULT_CATS = [
@@ -439,7 +440,7 @@ function restore(name,cat){
 /* item edit */
 function saveEdit(){ if(!editing||!editing.name.trim()) return;
   const it=state.items.find(i=>i.id===editing.id);
-  if(it){ it.name=editing.name.trim(); it.qty=Math.max(1,editing.qty||1); it.cat=editing.cat; it.sub=editing.sub||null; }
+  if(it){ it.name=editing.name.trim(); it.qty=Math.max(1,editing.qty||1); it.cat=editing.cat; it.sub=editing.sub||null; it.starred=!!editing.starred; }
   editing=null; save(); render(); }
 function removeEditing(){ moveToBuyAgain([{name:editing.name,cat:editing.cat,qty:editing.qty||1}]);
   state.items = state.items.filter(i=>i.id!==editing.id); editing=null; save(); render(); }
@@ -509,7 +510,10 @@ function iconStripHTML(){
     html+=`<div class="picstrip">${cells}<button class="picopt" data-act="emoji">😀</button><button class="picopt" data-act="upload">⬇</button></div>`;
   }
   if(editing.emojiOpen){
-    html+=`<div class="icongrid" style="margin-top:8px">${EMOJI_LIB.map(x=>`<button class="picopt" data-emo="${x.e}">${x.e}</button>`).join("")}</div>`;
+    const lab=(editing.label||"").toLowerCase().trim();
+    const isMatch=x=> lab && x.k.split(" ").some(k=>k===lab||lab.includes(k)||k.includes(lab));
+    const ordered=[...EMOJI_LIB.filter(isMatch), ...EMOJI_LIB.filter(x=>!isMatch(x))];
+    html+=`<div class="icongrid" style="margin-top:8px">${ordered.map(x=>`<button class="picopt" data-emo="${x.e}" style="background:${col};border-color:${editing.emoji===x.e?'#fff':col};color:#fff">${x.e}</button>`).join("")}</div>`;
   }
   return html;
 }
@@ -646,12 +650,15 @@ function renderOnboarding(){
   const cl=app.querySelector("#copyLink"); if(cl) cl.onclick=copyLink;
 }
 
-function sortList(list){ return list.slice().sort((a,b)=> a.checked===b.checked ? a.name.localeCompare(b.name) : (a.checked?1:-1)); }
+function sortList(list){ return list.slice().sort((a,b)=>{
+  if(a.checked!==b.checked) return a.checked?1:-1;
+  if(!a.checked){ const sa=a.starred?0:1, sb=b.starred?0:1; if(sa!==sb) return sa-sb; }
+  return a.name.localeCompare(b.name); }); }
 function pillRow(items, cat){ return `<div class="pills">${items.map(i=>{
     const edge = i.checked ? 'var(--done-edge)' : cat.color;
     const qcol = i.checked ? 'var(--muted2)' : cat.color;
     return `<button class="pill ${i.checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="border-left:4px solid ${edge}">`
-    +`${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${esc(i.name)}</button>`;
+    +`${(!i.checked&&i.starred)?`<span style="color:#E8A91D;margin-right:1px">★</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${esc(i.name)}</button>`;
   }).join("")}</div>`; }
 
 function renderMain(){
@@ -743,6 +750,7 @@ function renderMain(){
       ${collapse.ba?`<div style="margin-top:8px">${baPills}</div>`:""}
     </section>
     <p class="hint">Tap = got it · Hold an item / heading to edit · <button class="sharebtn" id="copyLink2">Share link</button> · <button class="sharebtn" id="switchUser">Switch user</button></p>
+    <div style="text-align:center;margin-top:6px;font-size:10px;color:var(--muted2);font-weight:600">${APP_VERSION}</div>
   </div>
   ${done>0?`<div class="sweep"><button id="sweepBtn">Clear ${done} · save to Buy again</button></div>`:""}
   ${editing?editSheet():""}
@@ -817,7 +825,10 @@ function editSheet(){
          ${selCat.subs.map(s=>`<button class="catchip" data-es="${s.id}" style="${editing.sub===s.id?`background:${selCat.color};border-color:${selCat.color};color:#fff`:''}">${esc(s.label)}</button>`).join("")}
        </div>` : "";
   return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
-    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${isItem?"Edit item":"Edit saved item"}</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="disp" style="font-weight:800;font-size:17px">${isItem?"Edit item":"Edit saved item"}</div>
+      ${isItem?`<button id="starBtn" aria-label="Star" style="border:none;background:transparent;font-size:24px;line-height:1;padding:2px;color:${editing.starred?'#E8A91D':'var(--muted2)'}">${editing.starred?'★':'☆'}</button>`:""}
+    </div>
     <div style="display:flex;gap:8px">
       <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
       ${qtyBlock}
@@ -919,6 +930,7 @@ function wire(){
       const csv=app.querySelector("#catSave"); if(csv) csv.onclick=saveCatEdit;
     } else {
       const en=app.querySelector("#editName"); if(en) en.oninput=e=>editing.name=e.target.value;
+      const stb=app.querySelector("#starBtn"); if(stb) stb.onclick=()=>{ editing.starred=!editing.starred; render(); };
       const qm=app.querySelector("#qMinus"); if(qm) qm.onclick=()=>{ editing.qty=Math.max(1,(editing.qty||1)-1); render(); };
       const qp=app.querySelector("#qPlus"); if(qp) qp.onclick=()=>{ editing.qty=(editing.qty||1)+1; render(); };
       app.querySelectorAll("[data-ec]").forEach(b=>b.onclick=()=>{ editing.cat=b.dataset.ec; editing.sub=null; render(); });
