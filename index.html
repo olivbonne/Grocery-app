@@ -18,13 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -142,6 +142,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .picscroll { display:flex; gap:5px; flex:1; min-width:0; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px; }
   .picscroll .picopt { flex:none; }
   .picfix { flex:none; }
+  .colorbtn { margin-left:5px; padding:0; border:2px solid var(--line);
+    background:
+      radial-gradient(circle at center, var(--cc) 0 44%, rgba(0,0,0,0) 46%),
+      conic-gradient(#ff3b30,#ff9500,#ffcc00,#34c759,#00c7be,#007aff,#5856d6,#ff2d55,#ff3b30); }
   .picopt { flex:none; width:42px; height:42px; border-radius:11px; border:2px solid var(--line); background:var(--card);
     display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--ink); font-size:21px; }
   .picopt.sel { border-color:var(--btn); }
@@ -481,17 +485,17 @@ function restoreEditingToList(){ const nm=(editing.name||"").trim()||editing.ori
 function moveCat(id, ni){ const cs=catList(); const i=cs.findIndex(c=>c.id===id);
   if(i<0||ni<0||ni>=cs.length) return; const [c]=cs.splice(i,1); cs.splice(ni,0,c); save(); render(); }
 function saveCatEdit(){ const c=catList().find(x=>x.id===editing.id);
-  if(c){ const nm=(editing.label||"").trim(); if(nm) c.label=nm;
+  if(c){ const nm=(editing.label||"").trim(); if(nm) c.label=nm; if(editing.color) c.color=editing.color;
     const em=(editing.emoji||"").trim(); if(em){ c.emoji=em; c.img=""; } else { c.img=editing.img||""; } }
   editing=null; save(); render(); }
 function saveCatEditQuiet(){ const c=catList().find(x=>x.id===editing.id);
-  if(c){ const nm=(editing.label||"").trim(); if(nm) c.label=nm;
+  if(c){ const nm=(editing.label||"").trim(); if(nm) c.label=nm; if(editing.color) c.color=editing.color;
     const em=(editing.emoji||"").trim(); if(em){ c.emoji=em; c.img=""; } else { c.img=editing.img||""; } } }
 function moveSub(catId, subId, dir){ const c=catList().find(x=>x.id===catId); if(!c||!c.subs) return;
   const i=c.subs.findIndex(s=>s.id===subId); const ni=i+dir; if(i<0||ni<0||ni>=c.subs.length) return;
   const [s]=c.subs.splice(i,1); c.subs.splice(ni,0,s); save(); render(); }
 function removeCat(id){ const cs=catList(); if(cs.length<=1){ showToast("Keep at least one category"); return; }
-  const target=cs.find(c=>c.id!==id).id;
+  const target = (id!=="others" && CAT("others")) ? "others" : cs.find(c=>c.id!==id).id;
   if(!confirm('Remove this category? Its items move to "'+CAT(target).label+'".')) return;
   state.items.forEach(it=>{ if(it.cat===id){ it.cat=target; it.sub=null; } });
   state.buyAgain.forEach(e=>{ if(e.cat===id) e.cat=target; });
@@ -534,15 +538,17 @@ function iconStripHTML(){ if(!editing.pickOpen) return ""; const col=editColor()
   const cells = ordered.map(s=>cellHTML(s,col)).join("");
   return `<div class="pickrow">
     <div class="picscroll" id="picStrip">${cells}</div>
-    <button class="picopt picfix" data-act="emoji">😀</button>
+    <button class="picopt picfix colorbtn" id="colorBtn" aria-label="Background colour" style="--cc:${editColor()}"></button>
+    <input type="color" id="catColor" value="${editColor()}" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" />
     <button class="picopt picfix" data-act="upload">⬇</button>
   </div>`;
 }
 function bindStrip(){
   app.querySelectorAll("#picStrip [data-pic]").forEach(b=>b.onclick=()=>{ editing.img=b.dataset.pic; editing.emoji=""; editing.iconManual=true; render(); });
   app.querySelectorAll("#picStrip [data-emo]").forEach(b=>b.onclick=()=>{ editing.emoji=b.dataset.emo; editing.img=""; editing.iconManual=true; render(); });
-  const ek=app.querySelector("#emojiKbd");
-  const eb=app.querySelector('[data-act="emoji"]'); if(eb&&ek) eb.onclick=()=>{ ek.focus(); };
+  const cb=app.querySelector("#colorBtn"), ci=app.querySelector("#catColor");
+  if(cb&&ci) cb.onclick=()=>ci.click();
+  if(ci) ci.oninput=()=>{ editing.color=ci.value; render(); };
   const f=app.querySelector("#iconFile"), ud=app.querySelector('[data-act="upload"]');
   if(ud&&f) ud.onclick=()=>f.click();
 }
