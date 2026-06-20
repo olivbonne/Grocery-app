@@ -18,14 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
-
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -74,7 +73,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .iconbtn{ width:30px; height:30px; border-radius:9px; border:none; background:var(--chip);
     color:var(--ink); font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body { margin:0; background:var(--paper); color:var(--ink);
+  html,body { margin:0; background:var(--paper); color:var(--ink); overflow-x:hidden;
     font-family:'Inter',-apple-system,'SF Pro Text',system-ui,sans-serif; }
   .wrap { max-width:480px; margin:0 auto; padding:calc(12px + env(safe-area-inset-top)) 14px calc(96px + env(safe-area-inset-bottom)); }
   .disp { font-family:'Bricolage Grotesque','Inter',system-ui,sans-serif; }
@@ -139,8 +138,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .iconbox { width:54px; height:48px; border-radius:14px; border:2px solid var(--ink); background:var(--card);
     display:flex; align-items:center; justify-content:center; padding:0; flex:none; }
   .iconbox img { width:28px; height:28px; object-fit:contain; }
-  .picstrip { display:flex; gap:5px; margin-top:10px; }
-  .picstrip .picopt { flex:1; width:auto; min-width:0; }
+  .pickrow { display:flex; gap:5px; margin-top:10px; align-items:center; }
+  .picscroll { display:flex; gap:5px; flex:1; min-width:0; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px; }
+  .picscroll .picopt { flex:none; }
+  .picfix { flex:none; }
   .picopt { flex:none; width:42px; height:42px; border-radius:11px; border:2px solid var(--line); background:var(--card);
     display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--ink); font-size:21px; }
   .picopt.sel { border-color:var(--btn); }
@@ -325,18 +326,30 @@ const ICON_PRESETS = [
   {img:"milk.png"},{img:"cross.png"},{img:"ramen.png"},{img:"hammer.png"},
 ];
 const EMOJI_LIB = [
-  {e:"🥩",k:"meat beef steak"},{e:"🍗",k:"chicken poultry meat"},{e:"🐟",k:"fish seafood"},{e:"🍤",k:"prawn shrimp seafood"},
-  {e:"🍌",k:"banana fruit"},{e:"🍎",k:"apple fruit"},{e:"🍓",k:"strawberry fruit berry"},{e:"🍇",k:"grape fruit"},
-  {e:"🥦",k:"broccoli vegetable veg"},{e:"🥕",k:"carrot vegetable veg"},{e:"🍅",k:"tomato vegetable"},{e:"🌶️",k:"chilli pepper spicy"},
-  {e:"🥛",k:"milk dairy fresh"},{e:"🧀",k:"cheese dairy"},{e:"🥚",k:"egg fresh"},{e:"🍞",k:"bread bakery"},
-  {e:"🧻",k:"toilet paper bulk household"},{e:"🧼",k:"soap cleaning household"},{e:"🧴",k:"bottle lotion shampoo"},{e:"🧽",k:"sponge cleaning"},
-  {e:"💊",k:"pill medicine health"},{e:"🩹",k:"bandage plaster health"},{e:"🌡️",k:"thermometer health"},{e:"🧬",k:"supplement health"},
-  {e:"🍜",k:"ramen noodle asian"},{e:"🍱",k:"bento asian"},{e:"🍚",k:"rice asian"},{e:"🥟",k:"dumpling gyoza asian"},
-  {e:"🍷",k:"wine alcohol"},{e:"🍺",k:"beer alcohol"},{e:"🥂",k:"champagne alcohol"},{e:"🥃",k:"whisky alcohol"},
-  {e:"🛒",k:"cart others shopping"},{e:"🧊",k:"ice frozen"},{e:"☕",k:"coffee tea drink"},{e:"🍫",k:"chocolate snack"},
-  {e:"🔧",k:"tool hardware spanner"},{e:"🔨",k:"hammer tool hardware"},{e:"🪛",k:"screwdriver tool hardware"},{e:"🔩",k:"screw bolt hardware"},
-  {e:"🌸",k:"flower garden"},{e:"🐶",k:"pet dog"},{e:"🐱",k:"pet cat"},{e:"👶",k:"baby kids"},
-  {e:"📦",k:"box package"},{e:"🎁",k:"gift present party"},{e:"🎉",k:"party celebrate"},{e:"🍴",k:"food dining"},
+  // meat & poultry
+  {e:"🥩",k:"meat beef steak red"},{e:"🍖",k:"meat bone lamb chop ribs"},{e:"🍗",k:"chicken poultry meat drumstick turkey"},{e:"🥓",k:"bacon meat pork"},{e:"🌭",k:"sausage hotdog meat"},{e:"🍔",k:"burger beef meat"},{e:"🐂",k:"beef cow meat"},{e:"🐑",k:"lamb sheep meat"},{e:"🐔",k:"chicken poultry"},{e:"🐷",k:"pork pig meat"},{e:"🦃",k:"turkey poultry meat"},
+  // fish & seafood
+  {e:"🐟",k:"fish seafood"},{e:"🐠",k:"fish seafood"},{e:"🦐",k:"prawn shrimp seafood"},{e:"🦞",k:"lobster seafood"},{e:"🦀",k:"crab seafood"},{e:"🦑",k:"squid calamari seafood"},{e:"🐙",k:"octopus seafood"},{e:"🦪",k:"oyster shellfish seafood"},{e:"🍣",k:"sushi fish asian seafood"},{e:"🍤",k:"prawn tempura seafood asian"},
+  // fruit
+  {e:"🍌",k:"banana fruit"},{e:"🍎",k:"apple fruit red"},{e:"🍏",k:"apple green fruit"},{e:"🍐",k:"pear fruit"},{e:"🍊",k:"orange fruit citrus"},{e:"🍋",k:"lemon fruit citrus"},{e:"🍓",k:"strawberry fruit berry"},{e:"🫐",k:"blueberry berry fruit"},{e:"🍇",k:"grape fruit"},{e:"🍉",k:"watermelon fruit"},{e:"🍈",k:"melon fruit"},{e:"🍒",k:"cherry fruit"},{e:"🍑",k:"peach fruit"},{e:"🥭",k:"mango fruit"},{e:"🍍",k:"pineapple fruit"},{e:"🥥",k:"coconut fruit"},{e:"🥝",k:"kiwi fruit"},{e:"🍅",k:"tomato fruit vegetable"},{e:"🫒",k:"olive fruit"},
+  // vegetables
+  {e:"🥦",k:"broccoli vegetable veg green"},{e:"🥬",k:"lettuce leafy vegetable veg salad"},{e:"🥕",k:"carrot vegetable veg"},{e:"🌽",k:"corn vegetable veg"},{e:"🥒",k:"cucumber vegetable veg"},{e:"🫑",k:"pepper capsicum vegetable veg"},{e:"🌶️",k:"chilli pepper spicy vegetable"},{e:"🧄",k:"garlic vegetable veg"},{e:"🧅",k:"onion vegetable veg"},{e:"🥔",k:"potato vegetable veg"},{e:"🍠",k:"sweet potato yam vegetable"},{e:"🍆",k:"eggplant aubergine vegetable veg"},{e:"🫛",k:"peas beans vegetable veg"},{e:"🍄",k:"mushroom vegetable veg"},{e:"🥗",k:"salad vegetable veg greens"},{e:"🌰",k:"chestnut nut"},
+  // dairy & fresh
+  {e:"🥛",k:"milk dairy fresh"},{e:"🧀",k:"cheese dairy fresh"},{e:"🥚",k:"egg fresh dairy"},{e:"🧈",k:"butter dairy fresh"},{e:"🍳",k:"egg fried breakfast fresh"},{e:"🥤",k:"drink cup juice fresh"},
+  // bakery
+  {e:"🍞",k:"bread bakery loaf"},{e:"🥖",k:"baguette bread bakery"},{e:"🥐",k:"croissant bakery pastry"},{e:"🥯",k:"bagel bakery bread"},{e:"🥨",k:"pretzel bakery snack"},{e:"🧇",k:"waffle bakery breakfast"},{e:"🥞",k:"pancake breakfast bakery"},{e:"🍰",k:"cake bakery dessert"},{e:"🧁",k:"cupcake bakery dessert"},{e:"🥧",k:"pie bakery dessert"},{e:"🍪",k:"cookie biscuit snack bakery"},{e:"🍩",k:"donut doughnut bakery"},
+  // asian
+  {e:"🍜",k:"ramen noodle asian soup"},{e:"🍲",k:"hotpot stew asian soup"},{e:"🍱",k:"bento asian lunch"},{e:"🍚",k:"rice asian"},{e:"🍙",k:"riceball onigiri asian"},{e:"🍘",k:"rice cracker asian"},{e:"🥟",k:"dumpling gyoza asian"},{e:"🥡",k:"takeout box asian"},{e:"🥢",k:"chopsticks asian"},{e:"🍢",k:"oden skewer asian"},{e:"🍛",k:"curry rice asian"},{e:"🫕",k:"fondue pot"},
+  // bulk / household / cleaning
+  {e:"🧻",k:"toilet paper bulk household tissue"},{e:"🧼",k:"soap cleaning household"},{e:"🧴",k:"bottle lotion shampoo household"},{e:"🧽",k:"sponge cleaning household"},{e:"🧹",k:"broom cleaning household"},{e:"🧺",k:"basket laundry household"},{e:"🪣",k:"bucket cleaning household"},{e:"🧯",k:"extinguisher household"},{e:"🔋",k:"battery household bulk"},{e:"💡",k:"bulb light household"},{e:"🗑️",k:"bin trash household"},{e:"📦",k:"box package bulk others"},{e:"🛒",k:"cart shopping others"},{e:"🛍️",k:"bags shopping others"},
+  // health
+  {e:"💊",k:"pill medicine health pharmacy"},{e:"🩹",k:"bandage plaster health"},{e:"🌡️",k:"thermometer health"},{e:"🧬",k:"supplement dna health"},{e:"🩺",k:"stethoscope health doctor"},{e:"💉",k:"syringe vaccine health"},{e:"🦠",k:"germ health"},{e:"🧪",k:"vitamin tube health"},{e:"🪥",k:"toothbrush dental health hygiene"},{e:"🧷",k:"safety pin baby"},
+  // alcohol & drinks
+  {e:"🍷",k:"wine alcohol drink"},{e:"🍺",k:"beer alcohol drink"},{e:"🍻",k:"beers alcohol drink"},{e:"🥂",k:"champagne alcohol drink"},{e:"🍾",k:"champagne bottle alcohol"},{e:"🥃",k:"whisky alcohol drink"},{e:"🍸",k:"cocktail alcohol drink"},{e:"🍹",k:"cocktail tropical drink"},{e:"🍶",k:"sake asian alcohol"},{e:"☕",k:"coffee tea drink"},{e:"🍵",k:"tea drink asian"},{e:"🧃",k:"juice box drink"},{e:"🧋",k:"bubble tea drink asian"},{e:"🥤",k:"soda drink"},{e:"💧",k:"water drink"},
+  // snacks / sweets / frozen / condiments
+  {e:"🍫",k:"chocolate snack sweet"},{e:"🍬",k:"candy sweet snack"},{e:"🍭",k:"lollipop sweet snack"},{e:"🍿",k:"popcorn snack"},{e:"🥜",k:"peanut nut snack"},{e:"🍯",k:"honey condiment sweet"},{e:"🧂",k:"salt condiment seasoning"},{e:"🧊",k:"ice frozen"},{e:"🍦",k:"ice cream frozen dessert"},{e:"🍨",k:"ice cream frozen dessert"},{e:"🥫",k:"can tin canned food"},{e:"🍝",k:"pasta spaghetti italian"},{e:"🍕",k:"pizza italian"},{e:"🌮",k:"taco mexican"},{e:"🌯",k:"burrito wrap mexican"},
+  // baby / pet / others
+  {e:"👶",k:"baby kids infant"},{e:"🍼",k:"baby bottle milk infant"},{e:"🐶",k:"pet dog"},{e:"🐱",k:"pet cat"},{e:"🦴",k:"bone pet dog"},{e:"🐾",k:"paw pet"},{e:"🌸",k:"flower garden others"},{e:"🪴",k:"plant garden others"},{e:"🎁",k:"gift present party others"},{e:"🎉",k:"party celebrate others"},{e:"🍴",k:"food dining others"},{e:"🔧",k:"tool hardware spanner diy"},{e:"🔨",k:"hammer tool hardware diy"},{e:"🪛",k:"screwdriver tool hardware diy"},{e:"🔩",k:"screw bolt hardware diy"},
 ];
 function presetHTML(cur){
   const imgs = ICON_PRESETS.map(p=>`<button class="iconopt ${cur===p.img?'sel':''}" data-icon="${p.img}"><img src="${p.img}" alt=""/></button>`).join("");
@@ -511,29 +524,33 @@ function cellHTML(s, col){ const sel = s.img ? editing.img===s.img : (!editing.i
     ? `<button class="picopt ${sel?'sel':''}" data-pic="${esc(s.img)}" style="background:${col};border-color:${bc}"><img src="${esc(dispImg(s.img))}"/></button>`
     : `<button class="picopt ${sel?'sel':''}" data-emo="${s.e}" style="background:${col};border-color:${bc};color:#fff">${s.e}</button>`;
 }
-/* Always-visible strip: up to 5 keyword-relevant icons, then the CURRENT selection on the
-   right (position 6), then 😀 (7, native emoji keyboard) and ⬇ (8, upload). */
-function iconStripHTML(){ const col=editColor();
+/* Row appears only when the icon is tapped. The left part is a horizontally scrollable
+   window (~6 cells) through EVERY keyword-relevant picture/emoji, current selection first.
+   😀 (native emoji keyboard) and ⬇ (upload) stay fixed on the right. */
+function iconStripHTML(){ if(!editing.pickOpen) return ""; const col=editColor();
   const cur = editing.img ? {img:editing.img} : (editing.emoji ? {e:editing.emoji} : null);
-  let rel = relevantIcons(editing).filter(x=> cur ? (x.img? x.img!==cur.img : x.e!==cur.e) : true);
-  rel = rel.slice(0,5);
-  const ordered = [...rel, ...(cur?[cur]:[])];
+  const rel = relevantIcons(editing).filter(x=> cur ? (x.img? x.img!==cur.img : x.e!==cur.e) : true);
+  const ordered = [...(cur?[cur]:[]), ...rel];
   const cells = ordered.map(s=>cellHTML(s,col)).join("");
-  return `<div class="picstrip" id="picStrip">${cells}<button class="picopt" data-act="emoji">😀</button><button class="picopt" data-act="upload">⬇</button></div>`;
+  return `<div class="pickrow">
+    <div class="picscroll" id="picStrip">${cells}</div>
+    <button class="picopt picfix" data-act="emoji">😀</button>
+    <button class="picopt picfix" data-act="upload">⬇</button>
+  </div>`;
 }
 function bindStrip(){
   app.querySelectorAll("#picStrip [data-pic]").forEach(b=>b.onclick=()=>{ editing.img=b.dataset.pic; editing.emoji=""; editing.iconManual=true; render(); });
   app.querySelectorAll("#picStrip [data-emo]").forEach(b=>b.onclick=()=>{ editing.emoji=b.dataset.emo; editing.img=""; editing.iconManual=true; render(); });
   const ek=app.querySelector("#emojiKbd");
-  const eb=app.querySelector('#picStrip [data-act="emoji"]'); if(eb&&ek) eb.onclick=()=>{ ek.focus(); };
-  const f=app.querySelector("#iconFile"), ud=app.querySelector('#picStrip [data-act="upload"]');
+  const eb=app.querySelector('[data-act="emoji"]'); if(eb&&ek) eb.onclick=()=>{ ek.focus(); };
+  const f=app.querySelector("#iconFile"), ud=app.querySelector('[data-act="upload"]');
   if(ud&&f) ud.onclick=()=>f.click();
 }
 function refreshStrip(){ const wrap=app.querySelector("#stripWrap"); if(wrap){ wrap.innerHTML=iconStripHTML(); bindStrip(); } }
 function wireIconEditor(){
   bindStrip();
   const ib=app.querySelector("#iconBox"), ek=app.querySelector("#emojiKbd");
-  if(ib&&ek) ib.onclick=()=>{ ek.focus(); };
+  if(ib) ib.onclick=()=>{ editing.pickOpen=!editing.pickOpen; render(); };
   if(ek) ek.oninput=e=>{ const chars=[...(e.target.value||"")]; const ch=chars[chars.length-1];
     if(ch){ editing.emoji=ch; editing.img=""; editing.iconManual=true; } e.target.value=""; render(); };
   const f=app.querySelector("#iconFile");
@@ -731,7 +748,7 @@ function renderMain(){
     ? `${baGroups}<button id="clearBA" style="margin-top:8px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:0">Clear buy-again history</button>`
     : `<p style="font-size:12px;color:var(--muted2);margin:0">Cleared items land here so you can re-add them with one tap.</p>`;
 
-  app.innerHTML = `<div class="wrap" style="zoom:${density}">
+  app.innerHTML = `<div class="wrap" style="zoom:${density};width:calc(100% / ${density});max-width:calc(480px / ${density})">
     <header>
       <div style="display:flex;align-items:baseline;gap:8px">
         <span class="title disp">Market List<span class="dot">.</span></span>
@@ -783,7 +800,6 @@ function editSheet(){
         <input id="catName" value="${esc(editing.label)}" placeholder="Category name" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
       </div>
       <div id="stripWrap">${iconStripHTML()}</div>
-      <div class="hint2">Pick a relevant picture or emoji · current is on the right · 😀 opens the full emoji keyboard</div>
       <input id="iconFile" type="file" accept="image/*" style="display:none" />
       <input id="emojiKbd" inputmode="text" autocomplete="off" style="position:absolute;opacity:0;height:1px;width:1px;pointer-events:none;left:-9999px" />
       <div style="display:flex;gap:8px;margin-top:16px">
@@ -816,7 +832,6 @@ function editSheet(){
         </div>
       </div>
       <div id="stripWrap">${iconStripHTML()}</div>
-      <div class="hint2">Pick a relevant picture or emoji · current is on the right · 😀 opens the full emoji keyboard</div>
       <input id="iconFile" type="file" accept="image/*" style="display:none" />
       <input id="emojiKbd" inputmode="text" autocomplete="off" style="position:absolute;opacity:0;height:1px;width:1px;pointer-events:none;left:-9999px" />
       <div style="margin-top:16px"><button id="addSubBtn" style="border:none;background:var(--chip);color:var(--ink);font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px">+ Add subcategory</button></div>
@@ -847,8 +862,8 @@ function editSheet(){
     </div>
     <div style="display:flex;gap:6px;align-items:stretch">
       <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:15px" />
-      <select id="weightSel" style="width:76px;flex:none;height:46px;padding:0 4px;border-radius:14px;border:2px solid var(--ink);background:var(--card);color:var(--ink);font-size:14px;font-weight:600">
-        ${["","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg"].map(w=>`<option value="${w}" ${(editing.weight||"")===w?'selected':''}>${w||'—'}</option>`).join("")}
+      <select id="weightSel" style="width:80px;flex:none;height:46px;padding:0 4px;border-radius:14px;border:2px solid var(--ink);background:var(--card);color:var(--ink);font-size:14px;font-weight:600">
+        ${["","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"].map(w=>{ const hl=(w==="500g"||w==="1kg"); return `<option value="${w}" ${(editing.weight||"")===w?'selected':''}>${w?(hl?'★ '+w:w):''}</option>`; }).join("")}
       </select>
       <div class="qstep" style="height:46px;align-items:center"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>
     </div>
