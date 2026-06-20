@@ -18,13 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-    apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -140,16 +140,25 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     display:flex; align-items:center; justify-content:center; padding:0; flex:none; }
   .iconbox img { width:28px; height:28px; object-fit:contain; }
   .pickrow { display:flex; gap:5px; margin-top:10px; align-items:center; }
-  .picscroll { display:flex; gap:5px; flex:1; min-width:0; overflow-x:auto; -webkit-overflow-scrolling:touch;
-    padding:0 2px 2px 0; scroll-snap-type:x proximity; }
+  .picscroll { display:flex; gap:5px; flex:0 1 265px; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    padding:0 0 2px 0; scroll-snap-type:x proximity; }
   .picscroll .picopt { flex:none; scroll-snap-align:start; }
   .picfix { flex:none; }
-  .picopt { flex:none; width:42px; height:42px; border-radius:11px; border:2px solid var(--line); background:var(--card);
-    display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--ink); font-size:21px; }
-  .picopt.colorbtn { margin-left:9px; padding:0; border:2px solid var(--line);
+  .picopt { flex:none; width:40px; height:40px; border-radius:11px; border:2px solid var(--line); background:var(--card);
+    display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--ink); font-size:20px; }
+  .picopt.colorbtn { margin-left:6px; padding:0; border:2px solid var(--line);
     background:
       radial-gradient(circle at center, var(--cc) 0 45%, rgba(255,255,255,0) 47%),
       conic-gradient(#ff3b30,#ff9500,#ffcc00,#34c759,#00c7be,#007aff,#5856d6,#ff2d55,#ff3b30); }
+  .picopt.colorbtn.on { border-color:#fff; }
+  .uploadbtn { padding:0; color:#fff; background:var(--btn); border-color:var(--btn); }
+  .uploadbtn svg { display:block; width:28px; height:28px; }
+  .palette { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .swatch { width:34px; height:34px; border-radius:9px; border:2px solid var(--line); padding:0; }
+  .swatch.sel { border-color:#fff; }
+  .customsw { position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center;
+    background:conic-gradient(#ff3b30,#ff9500,#ffcc00,#34c759,#00c7be,#007aff,#5856d6,#ff2d55,#ff3b30); }
+  .customsw input[type=color] { position:absolute; inset:0; width:100%; height:100%; opacity:0; border:none; padding:0; background:transparent; }
   .picopt.sel { border-color:var(--btn); }
   .picopt img { width:25px; height:25px; object-fit:contain; }
   .subrow { display:flex; align-items:center; gap:6px; padding:7px 10px; border:1px solid var(--line);
@@ -219,7 +228,7 @@ import { getFirestore, doc, onSnapshot, setDoc }
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.30";
+const APP_VERSION = "v0.36";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -504,6 +513,7 @@ function removeCat(id){ const cs=catList(); if(cs.length<=1){ showToast("Keep at
   state.categories = cs.filter(c=>c.id!==id);
   editing=null; save(); render(); }
 const NEW_CAT_COLORS=["#B5402B","#C98A06","#3E7C3A","#2E6FA3","#6B5CA5","#2E8C7F","#C73B5B","#8A5A2B","#5B6770","#7A6A3A","#4A6FA5"];
+const PALETTE=["#B5402B","#E05A2B","#C98A06","#E0A800","#3E7C3A","#5BA84F","#2E8C7F","#2E6FA3","#4A6FA5","#6B5CA5","#9C3E8C","#C73B5B","#8A5A2B","#5B6770","#3A3A3A"];
 function addCategory(){ editing={ kind:"newcat", label:"", emoji:"🛒", img:"", subs:[], iconManual:false, color: NEW_CAT_COLORS[catList().length % NEW_CAT_COLORS.length] }; render(); }
 function createCategoryFromSheet(){ const name=(editing.label||"").trim(); if(!name){ showToast("Name the category"); return; }
   const cs=catList(); const color=editing.color || NEW_CAT_COLORS[cs.length % NEW_CAT_COLORS.length];
@@ -524,6 +534,12 @@ function editColor(){ if(editing.color) return editing.color;
 function iconEditorHTML(){ const col=editColor();
   return `<button class="iconbox" id="iconBox" style="background:${col};border-color:${col}">${editing.img?`<img src="${esc(dispImg(editing.img))}"/>`:`<span style="font-size:22px">${esc(editing.emoji||"🛒")}</span>`}</button>`;
 }
+function autoIcon(){ if(!editing || editing.iconManual) return;
+  const best = relevantIcons(editing)[0];
+  if(best){ if(best.img){ editing.img=best.img; editing.emoji=""; } else { editing.emoji=best.e; editing.img=""; } }
+  const ib=app.querySelector("#iconBox");
+  if(ib){ const col=editColor(); ib.style.background=col; ib.style.borderColor=col;
+    ib.innerHTML = editing.img ? `<img src="${esc(dispImg(editing.img))}"/>` : `<span style="font-size:22px">${esc(editing.emoji||"🛒")}</span>`; } }
 function cellHTML(s, col){ const sel = s.img ? editing.img===s.img : (!editing.img&&editing.emoji===s.e);
   const bc = sel?'#fff':col;
   return s.img
@@ -538,19 +554,23 @@ function iconStripHTML(){ if(!editing.pickOpen) return ""; const col=editColor()
   const rel = relevantIcons(editing).filter(x=> cur ? (x.img? x.img!==cur.img : x.e!==cur.e) : true);
   const ordered = [...(cur?[cur]:[]), ...rel];
   const cells = ordered.map(s=>cellHTML(s,col)).join("");
+  const dl = `<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13M6 11l6 6 6-6M4 21h16"/></svg>`;
+  const palette = editing.colorOpen ? `<div class="palette" id="palette">
+      ${PALETTE.map(c=>`<button class="swatch ${col.toLowerCase()===c.toLowerCase()?'sel':''}" data-color="${c}" style="background:${c}"></button>`).join("")}
+      <label class="swatch customsw"><input type="color" id="catColor" value="${col}"/></label>
+    </div>` : "";
   return `<div class="pickrow">
     <div class="picscroll" id="picStrip">${cells}</div>
-    <button class="picopt picfix colorbtn" id="colorBtn" aria-label="Background colour" style="--cc:${editColor()}"></button>
-    <input type="color" id="catColor" value="${editColor()}" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" />
-    <button class="picopt picfix" data-act="upload">⬇</button>
-  </div>`;
+    <button class="picopt picfix colorbtn ${editing.colorOpen?'on':''}" id="colorBtn" aria-label="Background colour" style="--cc:${col}"></button>
+    <button class="picopt picfix uploadbtn" data-act="upload" aria-label="Upload from photos or files">${dl}</button>
+  </div>${palette}`;
 }
 function bindStrip(){
   app.querySelectorAll("#picStrip [data-pic]").forEach(b=>b.onclick=()=>{ editing.img=b.dataset.pic; editing.emoji=""; editing.iconManual=true; render(); });
   app.querySelectorAll("#picStrip [data-emo]").forEach(b=>b.onclick=()=>{ editing.emoji=b.dataset.emo; editing.img=""; editing.iconManual=true; render(); });
-  const cb=app.querySelector("#colorBtn"), ci=app.querySelector("#catColor");
-  if(cb&&ci) cb.onclick=()=>ci.click();
-  if(ci) ci.oninput=()=>{ editing.color=ci.value; render(); };
+  const cb=app.querySelector("#colorBtn"); if(cb) cb.onclick=()=>{ editing.colorOpen=!editing.colorOpen; render(); };
+  app.querySelectorAll("#palette [data-color]").forEach(b=>b.onclick=()=>{ editing.color=b.dataset.color; editing.colorOpen=false; render(); });
+  const ci=app.querySelector("#catColor"); if(ci){ ci.oninput=()=>{ editing.color=ci.value; render(); }; ci.onchange=()=>{ editing.color=ci.value; render(); }; }
   const f=app.querySelector("#iconFile"), ud=app.querySelector('[data-act="upload"]');
   if(ud&&f) ud.onclick=()=>f.click();
 }
@@ -955,12 +975,12 @@ function wire(){
     const bg=app.querySelector("#sheetBg"); if(bg) bg.onclick=()=>{ editing=null; render(); };
     const sh=app.querySelector("#sheet"); if(sh) sh.onclick=e=>e.stopPropagation();
     if(editing.kind==="newcat"){
-      const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>{ editing.label=e.target.value; refreshStrip(); };
+      const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>{ editing.label=e.target.value; autoIcon(); refreshStrip(); };
       wireIconEditor();
       const cc=app.querySelector("#newCreate"); if(cc) cc.onclick=createCategoryFromSheet;
       const cx=app.querySelector("#newCancel"); if(cx) cx.onclick=()=>{ editing=null; render(); };
     } else if(editing.kind==="cat"){
-      const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>{ editing.label=e.target.value; refreshStrip(); };
+      const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>{ editing.label=e.target.value; autoIcon(); refreshStrip(); };
       wireIconEditor();
       const mu=app.querySelector("#moveUp"); if(mu) mu.onclick=()=>{ saveCatEditQuiet(); const cs=catList(); const i=cs.findIndex(c=>c.id===editing.id); moveCat(editing.id,i-1); };
       const md=app.querySelector("#moveDown"); if(md) md.onclick=()=>{ saveCatEditQuiet(); const cs=catList(); const i=cs.findIndex(c=>c.id===editing.id); moveCat(editing.id,i+1); };
