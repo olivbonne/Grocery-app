@@ -18,13 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-    apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -75,7 +75,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { margin:0; background:var(--paper); color:var(--ink);
     font-family:'Inter',-apple-system,'SF Pro Text',system-ui,sans-serif; }
-  .wrap { max-width:480px; margin:0 auto; padding:calc(12px + env(safe-area-inset-top)) 14px calc(96px + env(safe-area-inset-bottom)); }
+  .wrap { max-width:480px; margin:0 auto; overflow-x:hidden; }
+  .zoomer { padding:calc(12px + env(safe-area-inset-top)) 14px calc(96px + env(safe-area-inset-bottom)); box-sizing:border-box; }
   .disp { font-family:'Bricolage Grotesque','Inter',system-ui,sans-serif; }
   input, textarea { font-family:inherit; font-size:16px; }
   button { font-family:inherit; cursor:pointer; }
@@ -138,10 +139,17 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .iconbox { width:54px; height:48px; border-radius:14px; border:2px solid var(--ink); background:var(--card);
     display:flex; align-items:center; justify-content:center; padding:0; flex:none; }
   .iconbox img { width:28px; height:28px; object-fit:contain; }
-  .picstrip { display:flex; gap:5px; margin-top:10px; }
-  .picstrip .picopt { flex:1; width:auto; min-width:0; }
+  .pickrow { display:flex; gap:5px; margin-top:10px; align-items:center; }
+  .picscroll { display:flex; gap:5px; flex:1; min-width:0; overflow-x:auto; -webkit-overflow-scrolling:touch;
+    padding:0 2px 2px 0; scroll-snap-type:x proximity; }
+  .picscroll .picopt { flex:none; scroll-snap-align:start; }
+  .picfix { flex:none; }
   .picopt { flex:none; width:42px; height:42px; border-radius:11px; border:2px solid var(--line); background:var(--card);
     display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--ink); font-size:21px; }
+  .picopt.colorbtn { margin-left:9px; padding:0; border:2px solid var(--line);
+    background:
+      radial-gradient(circle at center, var(--cc) 0 45%, rgba(255,255,255,0) 47%),
+      conic-gradient(#ff3b30,#ff9500,#ffcc00,#34c759,#00c7be,#007aff,#5856d6,#ff2d55,#ff3b30); }
   .picopt.sel { border-color:var(--btn); }
   .picopt img { width:25px; height:25px; object-fit:contain; }
   .subrow { display:flex; align-items:center; gap:6px; padding:7px 10px; border:1px solid var(--line);
@@ -211,10 +219,11 @@ import { getFirestore, doc, onSnapshot, setDoc }
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "v—";
+const APP_VERSION = "v0.30";
+const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
-  return `v${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-}catch(e){ return "v—"; } })();
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}catch(e){ return ""; } })();
 
 /* default categories (ids stay fixed; label/color/order are editable & saved) */
 const DEFAULT_CATS = [
@@ -323,18 +332,30 @@ const ICON_PRESETS = [
   {img:"milk.png"},{img:"cross.png"},{img:"ramen.png"},{img:"hammer.png"},
 ];
 const EMOJI_LIB = [
-  {e:"🥩",k:"meat beef steak"},{e:"🍗",k:"chicken poultry meat"},{e:"🐟",k:"fish seafood"},{e:"🍤",k:"prawn shrimp seafood"},
-  {e:"🍌",k:"banana fruit"},{e:"🍎",k:"apple fruit"},{e:"🍓",k:"strawberry fruit berry"},{e:"🍇",k:"grape fruit"},
-  {e:"🥦",k:"broccoli vegetable veg"},{e:"🥕",k:"carrot vegetable veg"},{e:"🍅",k:"tomato vegetable"},{e:"🌶️",k:"chilli pepper spicy"},
-  {e:"🥛",k:"milk dairy fresh"},{e:"🧀",k:"cheese dairy"},{e:"🥚",k:"egg fresh"},{e:"🍞",k:"bread bakery"},
-  {e:"🧻",k:"toilet paper bulk household"},{e:"🧼",k:"soap cleaning household"},{e:"🧴",k:"bottle lotion shampoo"},{e:"🧽",k:"sponge cleaning"},
-  {e:"💊",k:"pill medicine health"},{e:"🩹",k:"bandage plaster health"},{e:"🌡️",k:"thermometer health"},{e:"🧬",k:"supplement health"},
-  {e:"🍜",k:"ramen noodle asian"},{e:"🍱",k:"bento asian"},{e:"🍚",k:"rice asian"},{e:"🥟",k:"dumpling gyoza asian"},
-  {e:"🍷",k:"wine alcohol"},{e:"🍺",k:"beer alcohol"},{e:"🥂",k:"champagne alcohol"},{e:"🥃",k:"whisky alcohol"},
-  {e:"🛒",k:"cart others shopping"},{e:"🧊",k:"ice frozen"},{e:"☕",k:"coffee tea drink"},{e:"🍫",k:"chocolate snack"},
-  {e:"🔧",k:"tool hardware spanner"},{e:"🔨",k:"hammer tool hardware"},{e:"🪛",k:"screwdriver tool hardware"},{e:"🔩",k:"screw bolt hardware"},
-  {e:"🌸",k:"flower garden"},{e:"🐶",k:"pet dog"},{e:"🐱",k:"pet cat"},{e:"👶",k:"baby kids"},
-  {e:"📦",k:"box package"},{e:"🎁",k:"gift present party"},{e:"🎉",k:"party celebrate"},{e:"🍴",k:"food dining"},
+  // meat & poultry
+  {e:"🥩",k:"meat beef steak red"},{e:"🍖",k:"meat bone lamb chop ribs"},{e:"🍗",k:"chicken poultry meat drumstick turkey"},{e:"🥓",k:"bacon meat pork"},{e:"🌭",k:"sausage hotdog meat"},{e:"🍔",k:"burger beef meat"},{e:"🐂",k:"beef cow meat"},{e:"🐑",k:"lamb sheep meat"},{e:"🐔",k:"chicken poultry"},{e:"🐷",k:"pork pig meat"},{e:"🦃",k:"turkey poultry meat"},
+  // fish & seafood
+  {e:"🐟",k:"fish seafood"},{e:"🐠",k:"fish seafood"},{e:"🦐",k:"prawn shrimp seafood"},{e:"🦞",k:"lobster seafood"},{e:"🦀",k:"crab seafood"},{e:"🦑",k:"squid calamari seafood"},{e:"🐙",k:"octopus seafood"},{e:"🦪",k:"oyster shellfish seafood"},{e:"🍣",k:"sushi fish asian seafood"},{e:"🍤",k:"prawn tempura seafood asian"},
+  // fruit
+  {e:"🍌",k:"banana fruit"},{e:"🍎",k:"apple fruit red"},{e:"🍏",k:"apple green fruit"},{e:"🍐",k:"pear fruit"},{e:"🍊",k:"orange fruit citrus"},{e:"🍋",k:"lemon fruit citrus"},{e:"🍓",k:"strawberry fruit berry"},{e:"🫐",k:"blueberry berry fruit"},{e:"🍇",k:"grape fruit"},{e:"🍉",k:"watermelon fruit"},{e:"🍈",k:"melon fruit"},{e:"🍒",k:"cherry fruit"},{e:"🍑",k:"peach fruit"},{e:"🥭",k:"mango fruit"},{e:"🍍",k:"pineapple fruit"},{e:"🥥",k:"coconut fruit"},{e:"🥝",k:"kiwi fruit"},{e:"🍅",k:"tomato fruit vegetable"},{e:"🫒",k:"olive fruit"},
+  // vegetables
+  {e:"🥦",k:"broccoli vegetable veg green"},{e:"🥬",k:"lettuce leafy vegetable veg salad"},{e:"🥕",k:"carrot vegetable veg"},{e:"🌽",k:"corn vegetable veg"},{e:"🥒",k:"cucumber vegetable veg"},{e:"🫑",k:"pepper capsicum vegetable veg"},{e:"🌶️",k:"chilli pepper spicy vegetable"},{e:"🧄",k:"garlic vegetable veg"},{e:"🧅",k:"onion vegetable veg"},{e:"🥔",k:"potato vegetable veg"},{e:"🍠",k:"sweet potato yam vegetable"},{e:"🍆",k:"eggplant aubergine vegetable veg"},{e:"🫛",k:"peas beans vegetable veg"},{e:"🍄",k:"mushroom vegetable veg"},{e:"🥗",k:"salad vegetable veg greens"},{e:"🌰",k:"chestnut nut"},
+  // dairy & fresh
+  {e:"🥛",k:"milk dairy fresh"},{e:"🧀",k:"cheese dairy fresh"},{e:"🥚",k:"egg fresh dairy"},{e:"🧈",k:"butter dairy fresh"},{e:"🍳",k:"egg fried breakfast fresh"},{e:"🥤",k:"drink cup juice fresh"},
+  // bakery
+  {e:"🍞",k:"bread bakery loaf"},{e:"🥖",k:"baguette bread bakery"},{e:"🥐",k:"croissant bakery pastry"},{e:"🥯",k:"bagel bakery bread"},{e:"🥨",k:"pretzel bakery snack"},{e:"🧇",k:"waffle bakery breakfast"},{e:"🥞",k:"pancake breakfast bakery"},{e:"🍰",k:"cake bakery dessert"},{e:"🧁",k:"cupcake bakery dessert"},{e:"🥧",k:"pie bakery dessert"},{e:"🍪",k:"cookie biscuit snack bakery"},{e:"🍩",k:"donut doughnut bakery"},
+  // asian
+  {e:"🍜",k:"ramen noodle asian soup"},{e:"🍲",k:"hotpot stew asian soup"},{e:"🍱",k:"bento asian lunch"},{e:"🍚",k:"rice asian"},{e:"🍙",k:"riceball onigiri asian"},{e:"🍘",k:"rice cracker asian"},{e:"🥟",k:"dumpling gyoza asian"},{e:"🥡",k:"takeout box asian"},{e:"🥢",k:"chopsticks asian"},{e:"🍢",k:"oden skewer asian"},{e:"🍛",k:"curry rice asian"},{e:"🫕",k:"fondue pot"},
+  // bulk / household / cleaning
+  {e:"🧻",k:"toilet paper bulk household tissue"},{e:"🧼",k:"soap cleaning household"},{e:"🧴",k:"bottle lotion shampoo household"},{e:"🧽",k:"sponge cleaning household"},{e:"🧹",k:"broom cleaning household"},{e:"🧺",k:"basket laundry household"},{e:"🪣",k:"bucket cleaning household"},{e:"🧯",k:"extinguisher household"},{e:"🔋",k:"battery household bulk"},{e:"💡",k:"bulb light household"},{e:"🗑️",k:"bin trash household"},{e:"📦",k:"box package bulk others"},{e:"🛒",k:"cart shopping others"},{e:"🛍️",k:"bags shopping others"},
+  // health
+  {e:"💊",k:"pill medicine health pharmacy"},{e:"🩹",k:"bandage plaster health"},{e:"🌡️",k:"thermometer health"},{e:"🧬",k:"supplement dna health"},{e:"🩺",k:"stethoscope health doctor"},{e:"💉",k:"syringe vaccine health"},{e:"🦠",k:"germ health"},{e:"🧪",k:"vitamin tube health"},{e:"🪥",k:"toothbrush dental health hygiene"},{e:"🧷",k:"safety pin baby"},
+  // alcohol & drinks
+  {e:"🍷",k:"wine alcohol drink"},{e:"🍺",k:"beer alcohol drink"},{e:"🍻",k:"beers alcohol drink"},{e:"🥂",k:"champagne alcohol drink"},{e:"🍾",k:"champagne bottle alcohol"},{e:"🥃",k:"whisky alcohol drink"},{e:"🍸",k:"cocktail alcohol drink"},{e:"🍹",k:"cocktail tropical drink"},{e:"🍶",k:"sake asian alcohol"},{e:"☕",k:"coffee tea drink"},{e:"🍵",k:"tea drink asian"},{e:"🧃",k:"juice box drink"},{e:"🧋",k:"bubble tea drink asian"},{e:"🥤",k:"soda drink"},{e:"💧",k:"water drink"},
+  // snacks / sweets / frozen / condiments
+  {e:"🍫",k:"chocolate snack sweet"},{e:"🍬",k:"candy sweet snack"},{e:"🍭",k:"lollipop sweet snack"},{e:"🍿",k:"popcorn snack"},{e:"🥜",k:"peanut nut snack"},{e:"🍯",k:"honey condiment sweet"},{e:"🧂",k:"salt condiment seasoning"},{e:"🧊",k:"ice frozen"},{e:"🍦",k:"ice cream frozen dessert"},{e:"🍨",k:"ice cream frozen dessert"},{e:"🥫",k:"can tin canned food"},{e:"🍝",k:"pasta spaghetti italian"},{e:"🍕",k:"pizza italian"},{e:"🌮",k:"taco mexican"},{e:"🌯",k:"burrito wrap mexican"},
+  // baby / pet / others
+  {e:"👶",k:"baby kids infant"},{e:"🍼",k:"baby bottle milk infant"},{e:"🐶",k:"pet dog"},{e:"🐱",k:"pet cat"},{e:"🦴",k:"bone pet dog"},{e:"🐾",k:"paw pet"},{e:"🌸",k:"flower garden others"},{e:"🪴",k:"plant garden others"},{e:"🎁",k:"gift present party others"},{e:"🎉",k:"party celebrate others"},{e:"🍴",k:"food dining others"},{e:"🔧",k:"tool hardware spanner diy"},{e:"🔨",k:"hammer tool hardware diy"},{e:"🪛",k:"screwdriver tool hardware diy"},{e:"🔩",k:"screw bolt hardware diy"},
 ];
 function presetHTML(cur){
   const imgs = ICON_PRESETS.map(p=>`<button class="iconopt ${cur===p.img?'sel':''}" data-icon="${p.img}"><img src="${p.img}" alt=""/></button>`).join("");
@@ -466,17 +487,17 @@ function restoreEditingToList(){ const nm=(editing.name||"").trim()||editing.ori
 function moveCat(id, ni){ const cs=catList(); const i=cs.findIndex(c=>c.id===id);
   if(i<0||ni<0||ni>=cs.length) return; const [c]=cs.splice(i,1); cs.splice(ni,0,c); save(); render(); }
 function saveCatEdit(){ const c=catList().find(x=>x.id===editing.id);
-  if(c){ const nm=(editing.label||"").trim(); if(nm) c.label=nm;
+  if(c){ const nm=(editing.label||"").trim(); if(nm) c.label=nm; if(editing.color) c.color=editing.color;
     const em=(editing.emoji||"").trim(); if(em){ c.emoji=em; c.img=""; } else { c.img=editing.img||""; } }
   editing=null; save(); render(); }
 function saveCatEditQuiet(){ const c=catList().find(x=>x.id===editing.id);
-  if(c){ const nm=(editing.label||"").trim(); if(nm) c.label=nm;
+  if(c){ const nm=(editing.label||"").trim(); if(nm) c.label=nm; if(editing.color) c.color=editing.color;
     const em=(editing.emoji||"").trim(); if(em){ c.emoji=em; c.img=""; } else { c.img=editing.img||""; } } }
 function moveSub(catId, subId, dir){ const c=catList().find(x=>x.id===catId); if(!c||!c.subs) return;
   const i=c.subs.findIndex(s=>s.id===subId); const ni=i+dir; if(i<0||ni<0||ni>=c.subs.length) return;
   const [s]=c.subs.splice(i,1); c.subs.splice(ni,0,s); save(); render(); }
 function removeCat(id){ const cs=catList(); if(cs.length<=1){ showToast("Keep at least one category"); return; }
-  const target=cs.find(c=>c.id!==id).id;
+  const target = (id!=="others" && CAT("others")) ? "others" : cs.find(c=>c.id!==id).id;
   if(!confirm('Remove this category? Its items move to "'+CAT(target).label+'".')) return;
   state.items.forEach(it=>{ if(it.cat===id){ it.cat=target; it.sub=null; } });
   state.buyAgain.forEach(e=>{ if(e.cat===id) e.cat=target; });
@@ -488,11 +509,13 @@ function createCategoryFromSheet(){ const name=(editing.label||"").trim(); if(!n
   const cs=catList(); const color=editing.color || NEW_CAT_COLORS[cs.length % NEW_CAT_COLORS.length];
   cs.push({ id:uid(), label:name, color, emoji:(editing.img?"":(editing.emoji||"🛒")), img:editing.img||"", subs:[] });
   editing=null; save(); render(); }
-function iconSuggestions(ed){ const out=[], seen=new Set();
-  pictureChoices(ed.id||"").forEach(src=>{ if(!seen.has(src)){ seen.add(src); out.push({img:src}); } });
-  const lab=(ed.label||"").toLowerCase().trim();
-  if(lab) EMOJI_LIB.forEach(x=>{ if(out.length<6 && x.k.split(" ").some(k=>k===lab||lab.includes(k)||k.includes(lab))){ if(!seen.has(x.e)){ seen.add(x.e); out.push({e:x.e}); } } });
-  return out.slice(0,6);
+const PIC_TAGS = { "milk.png":"milk dairy fresh egg cheese", "cross.png":"health medicine pharmacy supplement vitamin", "ramen.png":"asian noodle ramen rice", "hammer.png":"hardware tool hammer diy" };
+function relevantIcons(ed){ const lab=(ed.label||"").toLowerCase().trim();
+  const match=k=> lab && k.split(" ").some(w=>w===lab||lab.includes(w)||w.includes(lab));
+  const out=[];
+  ALL_PICS.forEach(src=>{ if(match(PIC_TAGS[src]||"")) out.push({img:src}); });
+  EMOJI_LIB.forEach(x=>{ if(match(x.k)) out.push({e:x.e}); });
+  return out;
 }
 function dispImg(src){ return (theme==="dark" && DARK_VARIANTS[src]) ? DARK_VARIANTS[src] : src; }
 function editColor(){ if(editing.color) return editing.color;
@@ -501,42 +524,49 @@ function editColor(){ if(editing.color) return editing.color;
 function iconEditorHTML(){ const col=editColor();
   return `<button class="iconbox" id="iconBox" style="background:${col};border-color:${col}">${editing.img?`<img src="${esc(dispImg(editing.img))}"/>`:`<span style="font-size:22px">${esc(editing.emoji||"🛒")}</span>`}</button>`;
 }
-function autoIcon(){ if(!editing||editing.iconManual) return;
-  const s=iconSuggestions(editing).find(x=>x.e); if(s){ editing.emoji=s.e; editing.img=""; }
-  const ib=app.querySelector("#iconBox"); if(ib){ const col=editColor(); ib.style.background=col; ib.style.borderColor=col;
-    ib.innerHTML = editing.img?`<img src="${esc(dispImg(editing.img))}"/>`:`<span style="font-size:22px">${esc(editing.emoji||"🛒")}</span>`; } }
-function iconStripHTML(){
-  let html=""; const col=editColor();
-  if(editing.pickOpen){
-    const sugg=iconSuggestions(editing);
-    const cells=sugg.map(s=>{ const sel = s.img ? editing.img===s.img : (!editing.img&&editing.emoji===s.e);
-      const bc = sel?'#fff':col;
-      return s.img
-        ? `<button class="picopt ${sel?'sel':''}" data-pic="${esc(s.img)}" style="background:${col};border-color:${bc}"><img src="${esc(dispImg(s.img))}"/></button>`
-        : `<button class="picopt ${sel?'sel':''}" data-emo="${s.e}" style="background:${col};border-color:${bc};color:#fff">${s.e}</button>`; }).join("");
-    html+=`<div class="picstrip">${cells}<button class="picopt" data-act="emoji">😀</button><button class="picopt" data-act="upload">⬇</button></div>`;
-  }
-  if(editing.emojiOpen){
-    const lab=(editing.label||"").toLowerCase().trim();
-    const isMatch=x=> lab && x.k.split(" ").some(k=>k===lab||lab.includes(k)||k.includes(lab));
-    const ordered=[...EMOJI_LIB.filter(isMatch), ...EMOJI_LIB.filter(x=>!isMatch(x))];
-    html+=`<div class="icongrid" style="margin-top:8px">${ordered.map(x=>`<button class="picopt" data-emo="${x.e}" style="background:${col};border-color:${editing.emoji===x.e?'#fff':col};color:#fff">${x.e}</button>`).join("")}</div>`;
-  }
-  return html;
+function cellHTML(s, col){ const sel = s.img ? editing.img===s.img : (!editing.img&&editing.emoji===s.e);
+  const bc = sel?'#fff':col;
+  return s.img
+    ? `<button class="picopt ${sel?'sel':''}" data-pic="${esc(s.img)}" style="background:${col};border-color:${bc}"><img src="${esc(dispImg(s.img))}"/></button>`
+    : `<button class="picopt ${sel?'sel':''}" data-emo="${s.e}" style="background:${col};border-color:${bc};color:#fff">${s.e}</button>`;
 }
-function wireIconEditor(){
-  const ib=app.querySelector("#iconBox");
-  if(ib) ib.onclick=()=>{ editing.pickOpen=!editing.pickOpen; editing.emojiOpen=false; render(); };
-  app.querySelectorAll("[data-pic]").forEach(b=>b.onclick=()=>{ editing.img=b.dataset.pic; editing.emoji=""; editing.iconManual=true; editing.pickOpen=false; editing.emojiOpen=false; render(); });
-  app.querySelectorAll("[data-emo]").forEach(b=>b.onclick=()=>{ editing.emoji=b.dataset.emo; editing.img=""; editing.iconManual=true; editing.pickOpen=false; editing.emojiOpen=false; render(); });
-  const ed=app.querySelector('[data-act="emoji"]'); if(ed) ed.onclick=()=>{ editing.emojiOpen=!editing.emojiOpen; render(); };
+/* Row appears only when the icon is tapped. The left part is a horizontally scrollable
+   window (~6 cells) through EVERY keyword-relevant picture/emoji, current selection first.
+   😀 (native emoji keyboard) and ⬇ (upload) stay fixed on the right. */
+function iconStripHTML(){ if(!editing.pickOpen) return ""; const col=editColor();
+  const cur = editing.img ? {img:editing.img} : (editing.emoji ? {e:editing.emoji} : null);
+  const rel = relevantIcons(editing).filter(x=> cur ? (x.img? x.img!==cur.img : x.e!==cur.e) : true);
+  const ordered = [...(cur?[cur]:[]), ...rel];
+  const cells = ordered.map(s=>cellHTML(s,col)).join("");
+  return `<div class="pickrow">
+    <div class="picscroll" id="picStrip">${cells}</div>
+    <button class="picopt picfix colorbtn" id="colorBtn" aria-label="Background colour" style="--cc:${editColor()}"></button>
+    <input type="color" id="catColor" value="${editColor()}" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" />
+    <button class="picopt picfix" data-act="upload">⬇</button>
+  </div>`;
+}
+function bindStrip(){
+  app.querySelectorAll("#picStrip [data-pic]").forEach(b=>b.onclick=()=>{ editing.img=b.dataset.pic; editing.emoji=""; editing.iconManual=true; render(); });
+  app.querySelectorAll("#picStrip [data-emo]").forEach(b=>b.onclick=()=>{ editing.emoji=b.dataset.emo; editing.img=""; editing.iconManual=true; render(); });
+  const cb=app.querySelector("#colorBtn"), ci=app.querySelector("#catColor");
+  if(cb&&ci) cb.onclick=()=>ci.click();
+  if(ci) ci.oninput=()=>{ editing.color=ci.value; render(); };
   const f=app.querySelector("#iconFile"), ud=app.querySelector('[data-act="upload"]');
   if(ud&&f) ud.onclick=()=>f.click();
+}
+function refreshStrip(){ const wrap=app.querySelector("#stripWrap"); if(wrap){ wrap.innerHTML=iconStripHTML(); bindStrip(); } }
+function wireIconEditor(){
+  bindStrip();
+  const ib=app.querySelector("#iconBox"), ek=app.querySelector("#emojiKbd");
+  if(ib) ib.onclick=()=>{ editing.pickOpen=!editing.pickOpen; render(); };
+  if(ek) ek.oninput=e=>{ const chars=[...(e.target.value||"")]; const ch=chars[chars.length-1];
+    if(ch){ editing.emoji=ch; editing.img=""; editing.iconManual=true; } e.target.value=""; render(); };
+  const f=app.querySelector("#iconFile");
   if(f) f.onchange=()=>{ const file=f.files&&f.files[0]; if(!file) return; const r=new FileReader();
     r.onload=()=>{ const im=new Image(); im.onload=()=>{ const cv=document.createElement("canvas"); cv.width=cv.height=64;
       const ctx=cv.getContext("2d"); const sc=Math.min(64/im.width,64/im.height); const w=im.width*sc,h=im.height*sc;
       ctx.clearRect(0,0,64,64); ctx.drawImage(im,(64-w)/2,(64-h)/2,w,h);
-      editing.img=cv.toDataURL("image/png"); editing.emoji=""; editing.iconManual=true; editing.pickOpen=false; editing.emojiOpen=false; render(); };
+      editing.img=cv.toDataURL("image/png"); editing.emoji=""; editing.iconManual=true; render(); };
       im.src=r.result; };
     r.readAsDataURL(file); };
 }
@@ -560,7 +590,7 @@ let recog=null, listening=false, micFinal="";
 function setMicUI(on){ const b=document.getElementById("micBtn"); if(b) b.style.backgroundImage = on ? "url('mic-on.png')" : "";
   const f=micField(); if(f) f.style.color = on ? "var(--accent)" : ""; }
 function micField(){ return document.getElementById("mainInput"); }
-function grow(el){ if(!el) return; el.style.height="auto"; el.style.height=Math.min(el.scrollHeight+4,180)+"px"; }
+function grow(el){ if(!el) return; el.style.height="auto"; el.style.height=Math.min(el.scrollHeight+4,180)+"px"; syncZoomHeight(); }
 function suggestPool(){
   const seen=new Set(), out=[];
   const add=n=>{ const k=(n||"").toLowerCase().trim(); if(k && !seen.has(k)){ seen.add(k); out.push(n); } };
@@ -625,11 +655,13 @@ function pressCancel(){ clearTimeout(pressTimer); }
 const app = document.getElementById("app");
 const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
+function syncZoomHeight(){ const z=document.getElementById("zoomer"); if(z&&z.parentElement){
+  z.parentElement.style.height = Math.ceil(z.getBoundingClientRect().height) + "px"; } }
 function render(){
   ensureCats();
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
   if(!me){ renderOnboarding(); window.__mlRendered=true; return; }
-  renderMain(); wire(); window.__mlRendered=true;
+  renderMain(); wire(); window.__mlRendered=true; syncZoomHeight();
 }
 
 function renderSetupNotice(){
@@ -726,7 +758,7 @@ function renderMain(){
     ? `${baGroups}<button id="clearBA" style="margin-top:8px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:0">Clear buy-again history</button>`
     : `<p style="font-size:12px;color:var(--muted2);margin:0">Cleared items land here so you can re-add them with one tap.</p>`;
 
-  app.innerHTML = `<div class="wrap" style="zoom:${density}">
+  app.innerHTML = `<div class="wrap"><div class="zoomer" id="zoomer" style="transform:scale(${density});transform-origin:top left;width:calc(100% / ${density})">
     <header>
       <div style="display:flex;align-items:baseline;gap:8px">
         <span class="title disp">Market List<span class="dot">.</span></span>
@@ -759,8 +791,8 @@ function renderMain(){
       ${collapse.ba?`<div style="margin-top:8px">${baPills}</div>`:""}
     </section>
     <p class="hint">Tap = got it · Hold an item / heading to edit · <button class="sharebtn" id="copyLink2">Share link</button> · <button class="sharebtn" id="switchUser">Switch user</button></p>
-    <div style="text-align:center;margin-top:6px;font-size:10px;color:var(--muted2);font-weight:600">${APP_VERSION}</div>
-  </div>
+    <div style="text-align:center;margin-top:6px;font-size:10px;color:var(--muted2);font-weight:600" title="Build (file last modified): ${APP_BUILD_DATE}">${APP_VERSION}</div>
+  </div></div>
   ${done>0?`<div class="sweep"><button id="sweepBtn">Clear ${done} · save to Buy again</button></div>`:""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast">${esc(toast)}</div>`:""}`;
@@ -777,9 +809,9 @@ function editSheet(){
         ${iconEditorHTML()}
         <input id="catName" value="${esc(editing.label)}" placeholder="Category name" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
       </div>
-      ${iconStripHTML()}
-      <div class="hint2">Tap picture/emoji to choose a different one.</div>
+      <div id="stripWrap">${iconStripHTML()}</div>
       <input id="iconFile" type="file" accept="image/*" style="display:none" />
+      <input id="emojiKbd" inputmode="text" autocomplete="off" style="position:absolute;opacity:0;height:1px;width:1px;pointer-events:none;left:-9999px" />
       <div style="display:flex;gap:8px;margin-top:16px">
         <button id="newCancel" style="padding:13px 16px;border-radius:14px;border:2px solid var(--ink);background:transparent;color:var(--ink);font-weight:700;font-size:15px">Cancel</button>
         <button id="newCreate" style="flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">Create</button>
@@ -809,9 +841,9 @@ function editSheet(){
           </div>
         </div>
       </div>
-      ${iconStripHTML()}
-      <div class="hint2">Tap picture/emoji to choose a different one.</div>
+      <div id="stripWrap">${iconStripHTML()}</div>
       <input id="iconFile" type="file" accept="image/*" style="display:none" />
+      <input id="emojiKbd" inputmode="text" autocomplete="off" style="position:absolute;opacity:0;height:1px;width:1px;pointer-events:none;left:-9999px" />
       <div style="margin-top:16px"><button id="addSubBtn" style="border:none;background:var(--chip);color:var(--ink);font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px">+ Add subcategory</button></div>
       <div style="margin-top:8px">${subRows}</div>
       <div style="display:flex;gap:8px;margin-top:16px">
@@ -838,12 +870,12 @@ function editSheet(){
       <div class="disp" style="font-weight:800;font-size:17px">${isItem?"Edit item":"Edit saved item"}</div>
       ${isItem?`<button id="starBtn" aria-label="Star" style="border:none;background:transparent;font-size:24px;line-height:1;padding:2px;color:${editing.starred?'#E8A91D':'var(--muted2)'}">${editing.starred?'★':'☆'}</button>`:""}
     </div>
-    <input id="editName" value="${esc(editing.name)}" style="width:100%;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
-    <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-      <select id="weightSel" style="flex:1;min-width:0;padding:11px 12px;border-radius:14px;border:2px solid var(--ink);background:var(--card);color:var(--ink);font-size:15px;font-weight:600">
-        ${["","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg"].map(w=>`<option value="${w}" ${(editing.weight||"")===w?'selected':''}>${w||'— weight —'}</option>`).join("")}
+    <div style="display:flex;gap:6px;align-items:stretch">
+      <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:15px" />
+      <select id="weightSel" style="width:80px;flex:none;height:46px;padding:0 4px;border-radius:14px;border:2px solid var(--ink);background:var(--card);color:var(--ink);font-size:14px;font-weight:600">
+        ${["","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"].map(w=>{ const hl=(w==="500g"||w==="1kg"); return `<option value="${w}" ${(editing.weight||"")===w?'selected':''}>${w?(hl?'★ '+w:w):''}</option>`; }).join("")}
       </select>
-      ${qtyBlock}
+      <div class="qstep" style="height:46px;align-items:center"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">${chipsHTML(editing.cat)}</div>
     ${subChips}
@@ -923,12 +955,12 @@ function wire(){
     const bg=app.querySelector("#sheetBg"); if(bg) bg.onclick=()=>{ editing=null; render(); };
     const sh=app.querySelector("#sheet"); if(sh) sh.onclick=e=>e.stopPropagation();
     if(editing.kind==="newcat"){
-      const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>{ editing.label=e.target.value; autoIcon(); };
+      const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>{ editing.label=e.target.value; refreshStrip(); };
       wireIconEditor();
       const cc=app.querySelector("#newCreate"); if(cc) cc.onclick=createCategoryFromSheet;
       const cx=app.querySelector("#newCancel"); if(cx) cx.onclick=()=>{ editing=null; render(); };
     } else if(editing.kind==="cat"){
-      const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>{ editing.label=e.target.value; autoIcon(); };
+      const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>{ editing.label=e.target.value; refreshStrip(); };
       wireIconEditor();
       const mu=app.querySelector("#moveUp"); if(mu) mu.onclick=()=>{ saveCatEditQuiet(); const cs=catList(); const i=cs.findIndex(c=>c.id===editing.id); moveCat(editing.id,i-1); };
       const md=app.querySelector("#moveDown"); if(md) md.onclick=()=>{ saveCatEditQuiet(); const cs=catList(); const i=cs.findIndex(c=>c.id===editing.id); moveCat(editing.id,i+1); };
@@ -955,6 +987,7 @@ function wire(){
   }
 }
 
+window.addEventListener("resize", syncZoomHeight);
 render();
 </script>
 </body>
