@@ -18,13 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-    apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -61,7 +61,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     --done-bg:#E4EBDF; --done-line:#D3DECC; --done-text:#7C8B78; --done-edge:#ADBFA6;
     --mic-img:url('mic-light.png');
   }
-  body.dark{
+  body.dark, html.dark{
     --ink:#E7EEE5; --paper:#141C18; --accent:#E2502C;
     --card:#1E2B25; --line:#33433B; --chip:#27352E; --muted:#9DB0A4; --muted2:#7E9286;
     --btn:#2F4A2C; --btn-text:#EAF2E7;
@@ -73,7 +73,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .iconbtn{ width:30px; height:30px; border-radius:9px; border:none; background:var(--chip);
     color:var(--ink); font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html,body { margin:0; background:var(--paper); color:var(--ink);
+  html,body { margin:0; background:var(--paper); color:var(--ink); min-height:100vh;
     font-family:'Inter',-apple-system,'SF Pro Text',system-ui,sans-serif; }
   .wrap { max-width:480px; margin:0 auto; overflow-x:hidden; }
   .zoomer { padding:calc(12px + env(safe-area-inset-top)) 14px calc(96px + env(safe-area-inset-bottom)); box-sizing:border-box; }
@@ -291,7 +291,7 @@ let collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":
 let density = parseFloat(localStorage.getItem("ml_density")||"1") || 1;
 function setDensity(d){ density=Math.min(1.3,Math.max(0.7,Math.round(d*10)/10)); localStorage.setItem("ml_density",density); render(); }
 let theme = localStorage.getItem("ml_theme") || "dark";
-function applyTheme(){ document.body.classList.toggle("dark", theme==="dark"); }
+function applyTheme(){ document.body.classList.toggle("dark", theme==="dark"); document.documentElement.classList.toggle("dark", theme==="dark"); }
 function toggleTheme(){ theme = theme==="dark" ? "light" : "dark"; localStorage.setItem("ml_theme", theme); applyTheme(); render(); }
 applyTheme();
 let soundOn = localStorage.getItem("ml_sound")==="1";
@@ -455,17 +455,17 @@ function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){
 function moveToBuyAgain(entries){
   for(const e of entries){ const k=e.name.toLowerCase()+"|"+e.cat;
     state.buyAgain = state.buyAgain.filter(x=>(x.name.toLowerCase()+"|"+x.cat)!==k);
-    state.buyAgain.unshift({name:e.name,cat:e.cat,qty:e.qty||1}); }
+    state.buyAgain.unshift({name:e.name,cat:e.cat,qty:e.qty||1,weight:e.weight||""}); }
   state.buyAgain = state.buyAgain.slice(0,80);
 }
 function sweep(){ const checked=state.items.filter(i=>i.checked);
-  moveToBuyAgain(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1})));
+  moveToBuyAgain(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||""})));
   state.items = state.items.filter(i=>!i.checked);
   save(); render(); showToast(checked.length+" cleared → Buy again"); }
 function restore(name,cat){
   const entry = state.buyAgain.find(x=>x.name===name && x.cat===cat) || {name,cat,qty:1};
   const ex = state.items.find(i=>!i.checked && i.name.toLowerCase()===name.toLowerCase() && i.cat===cat);
-  if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,checked:false,by:me}); }
+  if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",checked:false,by:me}); }
   state.buyAgain = state.buyAgain.filter(x=>!(x.name.toLowerCase()===name.toLowerCase() && x.cat===cat));
   save(); render();
 }
@@ -475,21 +475,21 @@ function saveEdit(){ if(!editing||!editing.name.trim()) return;
   const it=state.items.find(i=>i.id===editing.id);
   if(it){ it.name=editing.name.trim(); it.qty=Math.max(1,editing.qty||1); it.cat=editing.cat; it.sub=editing.sub||null; it.starred=!!editing.starred; it.weight=editing.weight||""; }
   editing=null; save(); render(); }
-function removeEditing(){ moveToBuyAgain([{name:editing.name,cat:editing.cat,qty:editing.qty||1}]);
+function removeEditing(){ moveToBuyAgain([{name:editing.name,cat:editing.cat,qty:editing.qty||1,weight:editing.weight||""}]);
   state.items = state.items.filter(i=>i.id!==editing.id); editing=null; save(); render(); }
 function deleteItemEditing(){ state.items = state.items.filter(i=>i.id!==editing.id); editing=null; save(); render(); }
 
 /* buy-again edit */
 function saveBA(){ const nm=(editing.name||"").trim(); if(!nm) return; const cat=editing.cat; const qty=Math.max(1,editing.qty||1);
   state.buyAgain = state.buyAgain.filter(x=>!(x.name===editing.origName && x.cat===editing.origCat));
-  if(!state.buyAgain.some(x=>x.name.toLowerCase()===nm.toLowerCase() && x.cat===cat)) state.buyAgain.unshift({name:nm,cat,qty});
+  if(!state.buyAgain.some(x=>x.name.toLowerCase()===nm.toLowerCase() && x.cat===cat)) state.buyAgain.unshift({name:nm,cat,qty,weight:editing.weight||""});
   editing=null; save(); render(); }
 function removeBAfromSheet(){ state.buyAgain = state.buyAgain.filter(x=>!(x.name===editing.origName && x.cat===editing.origCat));
   editing=null; save(); render(); }
 function restoreEditingToList(){ const nm=(editing.name||"").trim()||editing.origName; const cat=editing.cat; const qty=Math.max(1,editing.qty||1);
   state.buyAgain = state.buyAgain.filter(x=>!(x.name===editing.origName && x.cat===editing.origCat));
   const ex=state.items.find(i=>!i.checked && i.name.toLowerCase()===nm.toLowerCase() && i.cat===cat);
-  if(!ex) state.items.push({id:uid(),name:nm,qty,cat,checked:false,by:me});
+  if(!ex) state.items.push({id:uid(),name:nm,qty,cat,weight:editing.weight||"",checked:false,by:me});
   editing=null; save(); render(); }
 
 /* category edit */
@@ -761,7 +761,6 @@ function renderMain(){
           ${has?`<span class="cnum" style="color:${chipText};opacity:.85">${list.length}${collapsed?' ▸':''}</span>`:""}
         </button>
         <button class="plus" data-add="${cat.id}" style="${catEntry===cat.id?`background:${cat.color};color:#fff`:''}">${catEntry===cat.id?'×':'+'}</button>
-        ${cat.id===firstCatId?`<button id="collapseAll" style="margin-left:auto;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:2px 0">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button>`:""}
       </div>${catAdd}${pills}</section>`;
   }).join("");
 
@@ -772,6 +771,7 @@ function renderMain(){
       `<button class="bapill ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="border:1.5px dashed ${cat.color}">`
       +`<span style="color:${cat.color};font-weight:800">+</span>`
       +`${(e.qty||1)>1?`<span style="color:${cat.color};font-weight:800">${e.qty}×</span>`:""}`
+      +`${e.weight?`<span style="color:${cat.color};font-weight:800">${esc(e.weight)} </span>`:""}`
       +`${esc(e.name)}</button>`).join("")}</div>`;
   }).join("");
   const baPills = state.buyAgain.length
@@ -800,6 +800,7 @@ function renderMain(){
       <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
     </div>
     <div class="suggest" id="suggest"></div>
+    ${state.items.length>0?`<div style="display:flex;justify-content:flex-end;margin:2px 0 4px"><button id="collapseAll" style="border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:2px 0">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button></div>`:""}
     ${cats}
     <button id="addCat" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
     <section class="ba">
@@ -893,7 +894,7 @@ function editSheet(){
     <div style="display:flex;gap:6px;align-items:stretch">
       <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:15px" />
       <select id="weightSel" style="width:80px;flex:none;height:46px;padding:0 4px;border-radius:14px;border:2px solid var(--ink);background:var(--card);color:var(--ink);font-size:14px;font-weight:600">
-        ${["","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"].map(w=>{ const hl=(w==="500g"||w==="1kg"); return `<option value="${w}" ${(editing.weight||"")===w?'selected':''}>${w?(hl?'★ '+w:w):''}</option>`; }).join("")}
+        ${["","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"].map(w=>{ const hl=(w==="500g"||w==="1kg"); return `<option value="${w}" ${(editing.weight||"")===w?'selected':''}>${w?(hl?'★ '+w:w):'none'}</option>`; }).join("")}
       </select>
       <div class="qstep" style="height:46px;align-items:center"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>
     </div>
@@ -958,7 +959,7 @@ function wire(){
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
     b.onpointerup=()=>{ pressCancel();
-      if(longFired){ const en=state.buyAgain.find(x=>x.name===name && x.cat===cat); editing={kind:"ba", name, cat, qty:(en?en.qty||1:1), origName:name, origCat:cat}; render(); }
+      if(longFired){ const en=state.buyAgain.find(x=>x.name===name && x.cat===cat); editing={kind:"ba", name, cat, qty:(en?en.qty||1:1), weight:(en?en.weight||"":""), origName:name, origCat:cat}; render(); }
       else { restore(name,cat); } }; });
   const cba=app.querySelector("#clearBA"); if(cba) cba.onclick=()=>{ state.buyAgain=[]; save(); render(); };
 
@@ -994,7 +995,12 @@ function wire(){
       const csv=app.querySelector("#catSave"); if(csv) csv.onclick=saveCatEdit;
     } else {
       const en=app.querySelector("#editName"); if(en) en.oninput=e=>editing.name=e.target.value;
-      const ws=app.querySelector("#weightSel"); if(ws) ws.onchange=e=>{ editing.weight=e.target.value; };
+      const ws=app.querySelector("#weightSel");
+      if(ws){ const blank=ws.querySelector('option[value=""]');
+        const refBlank=()=>{ if(blank) blank.textContent = (document.activeElement===ws) ? "none" : (ws.value===""?"":"none"); };
+        ws.onfocus=refBlank; ws.onblur=refBlank;
+        ws.onchange=e=>{ editing.weight=e.target.value; refBlank(); };
+        refBlank(); }
       const stb=app.querySelector("#starBtn"); if(stb) stb.onclick=()=>{ editing.starred=!editing.starred; render(); };
       const qm=app.querySelector("#qMinus"); if(qm) qm.onclick=()=>{ editing.qty=Math.max(1,(editing.qty||1)-1); render(); };
       const qp=app.querySelector("#qPlus"); if(qp) qp.onclick=()=>{ editing.qty=(editing.qty||1)+1; render(); };
