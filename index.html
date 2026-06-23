@@ -18,13 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -230,6 +230,29 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .share { margin-top:8px; font-size:12px; color:var(--muted); }
   .sharebtn { border:none; background:var(--chip); color:var(--ink); font-weight:700; font-size:12px;
     padding:6px 12px; border-radius:999px; }
+  .iconbtn.on { background:var(--accent); color:#fff; }
+  .shopbar { position:sticky; top:calc(env(safe-area-inset-top)); z-index:5; display:flex; align-items:center; justify-content:space-between;
+    background:var(--accent); color:#fff; border-radius:14px; padding:10px 14px; font-weight:800; font-size:14px; margin:4px 0 12px; }
+  .shopbar button { border:none; background:rgba(255,255,255,.22); color:#fff; font-weight:800; border-radius:10px; padding:7px 16px; font-size:14px; }
+  .byinit { margin-left:6px; width:18px; height:18px; border-radius:50%; background:var(--chip); color:var(--muted);
+    font-size:10px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; flex:none; }
+  .pill.done .byinit { background:var(--done-line); color:var(--done-text); }
+  .empty { text-align:center; padding:36px 12px 12px; color:var(--muted); }
+  .empty-emoji { font-size:44px; }
+  .empty-title { font-size:18px; font-weight:800; color:var(--ink); margin:10px 0 4px; }
+  .empty-sub { font-size:13px; color:var(--muted); margin:4px 0; }
+  /* A3 Shopping mode: bigger glanceable targets, editing chrome hidden */
+  .wrap.shop .pill { min-height:60px; font-size:18px; padding:0 16px; }
+  .wrap.shop .catheadchip { font-size:15px; padding:8px 14px; }
+  .wrap.shop .plus, .wrap.shop .catadd, .wrap.shop #addCat, .wrap.shop .hint,
+  .wrap.shop #collapseAll { display:none !important; }
+  .wrap.shop .pill.done { opacity:.5; }
+  /* A14 respect reduced motion */
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after { animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
+    .pill:active { transform:none; }
+    .justpop { animation:none !important; }
+  }
 </style>
 </head>
 <body>
@@ -241,7 +264,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.36";
+const APP_VERSION = "v0.37";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -303,10 +326,12 @@ let me = localStorage.getItem(LS.me) || null;
 let collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}');
 let density = parseFloat(localStorage.getItem("ml_density")||"1") || 1;
 function setDensity(d){ density=Math.min(1.3,Math.max(0.7,Math.round(d*10)/10)); localStorage.setItem("ml_density",density); render(); }
-let theme = localStorage.getItem("ml_theme") || "dark";
+let theme = localStorage.getItem("ml_theme") || ((typeof window!=="undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark");
 function applyTheme(){ document.body.classList.toggle("dark", theme==="dark"); document.documentElement.classList.toggle("dark", theme==="dark"); }
 function toggleTheme(){ theme = theme==="dark" ? "light" : "dark"; localStorage.setItem("ml_theme", theme); applyTheme(); render(); }
 applyTheme();
+let shopMode = localStorage.getItem("ml_shop")==="1";
+function toggleShop(){ shopMode=!shopMode; localStorage.setItem("ml_shop", shopMode?"1":"0"); collapse.ba = !shopMode && collapse.ba; render(); }
 let soundOn = localStorage.getItem("ml_sound")==="1";
 let __ac=null;
 function playTick(up){ if(!soundOn) return;
@@ -450,6 +475,11 @@ try {
 if(typeof window!=="undefined"){
   window.addEventListener("online",  ()=>{ netOnline=true;  render(); });
   window.addEventListener("offline", ()=>{ netOnline=false; render(); });
+  if(window.visualViewport){
+    const vv=window.visualViewport;
+    const onVV=()=>{ kbOffset = Math.max(0, window.innerHeight - (vv.height + vv.offsetTop)); applyKb(); };
+    vv.addEventListener("resize", onVV); vv.addEventListener("scroll", onVV);
+  }
 }
 
 let __saveWarned = 0;
@@ -495,7 +525,7 @@ function addEntries(text, override){
 function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){
   if(!it.checked){ lastPop=id; playTick(true); if(navigator.vibrate) navigator.vibrate(8); setTimeout(()=>{ if(lastPop===id) lastPop=null; },350); }
   else { playTick(false); if(navigator.vibrate) navigator.vibrate(5); }
-  it.checked=!it.checked; markDirty(id); save(); render(); } }
+  it.checked=!it.checked; if(it.checked){ it.checkedBy=me; } markDirty(id); save(); render(); } }
 function moveToBuyAgain(entries){
   for(const e of entries){ const k=e.name.toLowerCase()+"|"+e.cat;
     state.buyAgain = state.buyAgain.filter(x=>(x.name.toLowerCase()+"|"+x.cat)!==k);
@@ -649,7 +679,10 @@ function join(name){ const c=name.trim(); if(!c) return;
 function toggleCat(id){ collapse.cats = collapse.cats.includes(id) ? collapse.cats.filter(x=>x!==id) : [...collapse.cats,id];
   localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }
 function toggleBA(){ collapse.ba=!collapse.ba; localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }
-function copyLink(){ navigator.clipboard?.writeText(location.href); showToast("Link copied"); }
+function copyLink(){ const url=location.href;
+  if(navigator.share){ navigator.share({title:"Market List", text:"Join our shared grocery list", url}).catch(()=>{}); }
+  else if(navigator.clipboard){ navigator.clipboard.writeText(url); showToast("Link copied"); }
+  else { showToast("Copy this URL from the address bar"); } }
 
 /* ---- voice input (Web Speech API) ---- */
 let recog=null, listening=false, micFinal="";
@@ -723,7 +756,10 @@ const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&
 
 function syncZoomHeight(){ const z=document.getElementById("zoomer"); const bb=document.getElementById("botbar");
   if(z){ if(bb){ const h=bb.getBoundingClientRect().height||120; z.style.paddingBottom = Math.ceil(h/density + 20) + "px"; }
-    if(z.parentElement) z.parentElement.style.height = Math.ceil(z.getBoundingClientRect().height) + "px"; } }
+    if(z.parentElement) z.parentElement.style.height = Math.ceil(z.getBoundingClientRect().height) + "px"; }
+  applyKb(); }
+let kbOffset=0;
+function applyKb(){ const bar=document.getElementById("botbar"); if(bar) bar.style.transform = kbOffset>1 ? `translateY(${-kbOffset}px)` : ""; }
 function render(){
   ensureCats();
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
@@ -764,7 +800,7 @@ function pillRow(items, cat){ return `<div class="pills">${items.map(i=>{
     const edge = i.checked ? 'var(--done-edge)' : cat.color;
     const qcol = i.checked ? 'var(--muted2)' : cat.color;
     return `<button class="pill ${i.checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="border-left:4px solid ${edge}">`
-    +`${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}${(!i.checked&&i.starred)?`<span style="color:#E8A91D;margin-right:1px">★</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(i.name)}</button>`;
+    +`${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}${(!i.checked&&i.starred)?`<span style="color:#E8A91D;margin-right:1px">★</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(i.name)}${(state.members.length>1 && (i.checked?(i.checkedBy||i.by):i.by))?`<span class="byinit" title="${i.checked?('✓ by '+esc(i.checkedBy||i.by||'?')):('added by '+esc(i.by||'?'))}">${esc((i.checked?(i.checkedBy||i.by):i.by||'').slice(0,1).toUpperCase())}</span>`:""}</button>`;
   }).join("")}</div>`; }
 
 function renderMain(){
@@ -825,7 +861,7 @@ function renderMain(){
     ? `${baGroups}<button id="clearBA" style="margin-top:8px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:0">Clear buy-again history</button>`
     : `<p style="font-size:12px;color:var(--muted2);margin:0">Cleared items land here so you can re-add them with one tap.</p>`;
 
-  app.innerHTML = `<div class="wrap"><div class="zoomer" id="zoomer" style="transform:scale(${density});transform-origin:top left;width:calc(100% / ${density})">
+  app.innerHTML = `<div class="wrap ${shopMode?'shop':''}"><div class="zoomer" id="zoomer" style="transform:scale(${density});transform-origin:top left;width:calc(100% / ${density})">
     <header>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span class="title disp">Market List<span class="dot">.</span></span>
@@ -833,6 +869,7 @@ function renderMain(){
         ${syncChip()}
       </div>
       <div style="display:flex;align-items:center;gap:8px">
+        <button id="shopBtn" aria-label="Shopping mode" class="iconbtn ${shopMode?'on':''}" title="Shopping mode"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg></button>
         <button id="soundBtn" aria-label="Toggle sound" class="iconbtn"><img class="uiicon2" src="${soundOn?(theme==='dark'?'sound-on-dark.png':'sound-on.png'):(theme==='dark'?'sound-off-dark.png':'sound-off.png')}" alt=""/></button>
         <button id="themeBtn" aria-label="Toggle dark mode" class="iconbtn"><img class="uiicon" src="${theme==='dark'?'sun.png':'moon.png'}" alt=""/></button>
         <div style="display:flex;align-items:center;gap:4px">
@@ -843,6 +880,14 @@ function renderMain(){
     </header>
     ${state.items.length>0 ? `<div class="prog"><div class="prog-fill" style="width:${Math.round(done/state.items.length*100)}%"></div></div>` : ""}
     ${state.items.length>0?`<div style="display:flex;justify-content:flex-end;margin:8px 0 4px"><button id="collapseAll" style="border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:2px 0">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button></div>`:""}
+    ${shopMode?`<div class="shopbar"><span>🛒 Shopping mode · ${open} left${done?` · ${done} in cart`:''}</span><button id="doneShop">Done</button></div>`:""}
+    ${(state.items.length===0 && !shopMode)?`<div class="empty">
+        <div class="empty-emoji">🧺</div>
+        <p class="empty-title">Your list is empty</p>
+        <p class="empty-sub">Add your first item in the bar below — try one of these:</p>
+        <div class="pills" style="justify-content:center">${["Milk","Eggs","Bananas","Bread"].map(x=>`<button class="sugchip" data-example="${x}">+ ${x}</button>`).join("")}</div>
+        <p class="empty-sub" style="margin-top:16px">Shared via this link — tap <b>Share link</b> below to invite up to 4 people.</p>
+      </div>`:""}
     ${cats}
     <button id="addCat" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
     <section class="ba">
@@ -1017,6 +1062,9 @@ function wire(){
   const dm=app.querySelector("#denMinus"); if(dm) dm.onclick=()=>setDensity(density-0.1);
   const dp=app.querySelector("#denPlus"); if(dp) dp.onclick=()=>setDensity(density+0.1);
   const tb=app.querySelector("#themeBtn"); if(tb) tb.onclick=toggleTheme;
+  const shb=app.querySelector("#shopBtn"); if(shb) shb.onclick=toggleShop;
+  const dsh=app.querySelector("#doneShop"); if(dsh) dsh.onclick=toggleShop;
+  app.querySelectorAll("[data-example]").forEach(b=>b.onclick=()=>{ addEntries(b.dataset.example, null); });
   const snd=app.querySelector("#soundBtn"); if(snd) snd.onclick=toggleSound;
   const ac=app.querySelector("#addCat"); if(ac) ac.onclick=addCategory;
 
