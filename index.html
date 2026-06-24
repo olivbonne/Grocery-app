@@ -18,13 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -275,8 +275,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .wchipq { flex:none; padding:8px 12px; border-radius:999px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:13px; }
   .wchipq.on { background:var(--accent); border-color:var(--accent); color:#fff; }
   .qm-edit { flex:none; width:40px; height:40px; border:none; border-radius:11px; background:var(--card); color:var(--muted); font-size:20px; font-weight:800; }
-  .shopbar { position:sticky; top:calc(env(safe-area-inset-top)); z-index:5; display:flex; align-items:center; justify-content:space-between;
-    background:var(--accent); color:#fff; border-radius:14px; padding:10px 14px; font-weight:800; font-size:14px; margin:4px 0 12px; }
+  .shopbar { display:flex; align-items:center; justify-content:space-between;
+    background:var(--accent); color:#fff; border-radius:14px; padding:10px 14px; font-weight:800; font-size:14px; }
   .shopbar button { border:none; background:rgba(255,255,255,.22); color:#fff; font-weight:800; border-radius:10px; padding:7px 16px; font-size:14px; }
   .byinit { margin-left:6px; width:18px; height:18px; border-radius:50%; background:var(--chip); color:var(--muted);
     font-size:10px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; flex:none; }
@@ -365,7 +365,7 @@ localStorage.setItem(LS_LASTLIST, listCode);
 if(params.get("list") !== listCode){ params.set("list", listCode);
   history.replaceState(null,"",location.pathname+"?"+params.toString()); }
 
-const LS = { me:"ml_me", collapse:"ml_collapse_"+listCode, cache:"ml_cache_"+listCode };
+let LS = { me:"ml_me", collapse:"ml_collapse_"+listCode, cache:"ml_cache_"+listCode };
 let me = localStorage.getItem(LS.me) || null;
 let collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}');
 let density = parseFloat(localStorage.getItem("ml_density")||"1") || 1;
@@ -386,9 +386,16 @@ function rememberList(code,name){ const a=getLists(); const i=a.findIndex(x=>x.c
   else { a.push({code, name:name||"Groceries"}); saveLists(a); } }
 function newListPrompt(){ const name=prompt("Name the new list:","Groceries"); if(name===null) return;
   const code=uid().slice(0,8); rememberList(code, (name||"").trim()||"Groceries");
-  localStorage.setItem(LS_LASTLIST, code); location.href = location.pathname+"?list="+code; }
-function switchList(code){ if(code===listCode){ listsOpen=false; render(); return; }
-  localStorage.setItem(LS_LASTLIST, code); location.href = location.pathname+"?list="+code; }
+  switchList(code); save(); }
+function switchList(code){ listsOpen=false; if(code===listCode){ render(); return; }
+  listCode=code; localStorage.setItem(LS_LASTLIST, code);
+  LS = { me:"ml_me", collapse:"ml_collapse_"+code, cache:"ml_cache_"+code };
+  try{ collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}'); }catch(e){ collapse={cats:[],ba:false}; }
+  state = { items:[], buyAgain:[], members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99} };
+  try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state=c; }catch(e){}
+  ensureCats(); editing=null; quickEdit=null;
+  if(typeof history!=="undefined" && history.replaceState){ try{ history.replaceState(null, "", location.pathname+"?list="+code); }catch(e){} }
+  subscribe(); render(); }
 function renameList(){ const name=prompt("Rename this list:", state.name||"Groceries"); if(name===null) return;
   state.name=(name||"").trim()||"Groceries"; rememberList(listCode, state.name); save(); render(); }
 function moveList(code,dir){ const a=getLists(); const i=a.findIndex(x=>x.code===code); const j=i+dir;
@@ -514,31 +521,36 @@ function parseInput(text){ const map=labelMap();
   } return out; }
 
 /* ---- Firebase ---- */
-let db=null, listRef=null, applyingRemote=false;
+let db=null, listRef=null, applyingRemote=false, unsub=null;
 let netOnline = (typeof navigator!=="undefined" && "onLine" in navigator) ? navigator.onLine : true;
 let syncing=false, fromCache=false;
 let dirtyIds = new Set();   // items changed locally, not yet confirmed by server
 function markDirty(id){ if(id) dirtyIds.add(id); }
+function subscribe(){
+  if(unsub){ try{ unsub(); }catch(e){} unsub=null; }
+  if(!db) return;
+  listRef = doc(db, "lists", listCode);
+  unsub = onSnapshot(listRef, { includeMetadataChanges:true }, snap => {
+    syncing = snap.metadata.hasPendingWrites;
+    fromCache = snap.metadata.fromCache;
+    if(!syncing && !fromCache) dirtyIds.clear();
+    if(snap.exists() && !snap.metadata.hasPendingWrites){ const d = snap.data();
+      state = { items:d.items||[], buyAgain:d.buyAgain||[], members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99} };
+      if(!state.name){ const ln=(getLists().find(l=>l.code===listCode)||{}).name; if(ln){ state.name=ln; save(); } }
+      if(state.name) rememberList(listCode, state.name); }
+    else if(snap.exists() && snap.metadata.hasPendingWrites){ /* keep local optimistic state */ }
+    ensureCats();
+    try { localStorage.setItem(LS.cache, JSON.stringify(state)); } catch(e){}
+    applyingRemote = true; render(); applyingRemote = false;
+  }, err => { console.error(err); showToast("⚠︎ Can't read database — publish Firestore rules"); });
+}
 try {
   if(firebaseConfig.apiKey !== "REPLACE_ME"){
     const app = initializeApp(firebaseConfig);
     try { db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); }
     catch(e){ db = getFirestore(app); }   // fallback if persistence unavailable
-    listRef = doc(db, "lists", listCode);
     configured = true;
-    onSnapshot(listRef, { includeMetadataChanges:true }, snap => {
-      syncing = snap.metadata.hasPendingWrites;
-      fromCache = snap.metadata.fromCache;
-      if(!syncing && !fromCache) dirtyIds.clear();   // server confirmed all pending writes
-      if(snap.exists() && !snap.metadata.hasPendingWrites){ const d = snap.data();
-        state = { items:d.items||[], buyAgain:d.buyAgain||[], members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99} };
-        if(!state.name){ const ln=(getLists().find(l=>l.code===listCode)||{}).name; if(ln){ state.name=ln; save(); } }
-        if(state.name) rememberList(listCode, state.name); }
-      else if(snap.exists() && snap.metadata.hasPendingWrites){ /* keep local optimistic state */ }
-      ensureCats();
-      try { localStorage.setItem(LS.cache, JSON.stringify(state)); } catch(e){}
-      applyingRemote = true; render(); applyingRemote = false;
-    }, err => { console.error(err); showToast("⚠︎ Can't read database — publish Firestore rules"); });
+    subscribe();
   }
 } catch(e){ console.error(e); }
 if(typeof window!=="undefined"){
@@ -948,7 +960,7 @@ function renderMain(){
       +`${esc(e.name)}</button>`).join("")}</div>`;
   }).join("");
   const baPills = state.buyAgain.length
-    ? `${baGroups}<button id="clearBA" style="margin-top:8px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:0">Clear buy-again history</button>`
+    ? `${baGroups}`
     : `<p style="font-size:12px;color:var(--muted2);margin:0">Cleared items land here so you can re-add them with one tap.</p>`;
   const baIcon = state.baMeta.img ? `<img class="cicon" src="${esc(dispImg(state.baMeta.img))}">` : (state.baMeta.emoji||"↩");
   const baBlock = `<section class="cat">
@@ -992,9 +1004,9 @@ function renderMain(){
         ${state.items.length>0?`<button id="collapseAll" class="collapseall">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button>`:`<span></span>`}
       </div>
       ${done>0?`<div style="margin-top:8px"><button id="sweepBtn" class="sweepbtn">Clear ${done} checked → Buy again</button></div>`:""}
+      ${shopMode?`<div class="shopbar" style="margin-top:8px"><span>🛒 Shopping mode · ${open} left${done?` · ${done} in cart`:''}</span><button id="doneShop">Done</button></div>`:""}
     </div>
     <div class="zoomwrap"><div class="zoomer" id="zoomer" style="transform:scale(${density});transform-origin:top left;width:calc(100% / ${density})">
-      ${shopMode?`<div class="shopbar"><span>🛒 Shopping mode · ${open} left${done?` · ${done} in cart`:''}</span><button id="doneShop">Done</button></div>`:""}
       ${(state.items.length===0 && !shopMode)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">Your list is empty</p>
