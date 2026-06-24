@@ -18,13 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -99,9 +99,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .seg button.on { background:var(--accent); color:#fff; }
   .optaction { width:100%; margin-top:10px; padding:12px; border-radius:13px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:14px; }
   .listrows { display:flex; flex-direction:column; gap:8px; max-height:46vh; overflow:auto; }
-  .listrow { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:14px; border-radius:13px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:15px; }
+  .listrow { display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:13px; border:1.5px solid var(--line); background:var(--card); }
   .listrow.cur { border-color:var(--accent); }
-  .listrow-cur { font-size:11px; color:var(--accent); font-weight:800; }
+  .listrow-name { flex:1; min-width:0; text-align:left; border:none; background:transparent; color:var(--ink); font-weight:700; font-size:15px; padding:6px 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .listrow .iconmini { width:30px; height:34px; flex:none; }
+  .listrow-cur { font-size:11px; color:var(--accent); font-weight:800; margin-left:6px; }
   .listrow-go { color:var(--muted); font-size:18px; }
   .newlist { width:100%; margin-top:12px; padding:13px; border-radius:14px; border:none; background:var(--accent); color:#fff; font-weight:800; font-size:15px; }
   .disp { font-family:'Bricolage Grotesque','Inter',system-ui,sans-serif; }
@@ -127,13 +129,13 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .addbtn { width:46px; height:44px; flex:none; border-radius:14px; border:none; background:var(--accent); color:#fff;
     display:flex; align-items:center; justify-content:center; padding:0; }
   section.cat { margin-bottom:7px; }
-  .chead { display:flex; align-items:center; gap:6px; margin-bottom:0; }
+  .chead { display:flex; align-items:center; gap:6px; margin-bottom:0; position:relative; }
   .chead .lbl { display:flex; align-items:center; gap:5px; border:none; background:transparent; padding:0; }
   .sq { width:8px; height:8px; border-radius:2px; }
   .cname { font-family:'Bricolage Grotesque',system-ui,sans-serif; font-weight:700; font-size:12px; letter-spacing:.02em; }
   .cnum { font-size:11px; color:var(--muted2); font-weight:700; }
-  .plus { width:20px; height:20px; border-radius:7px; border:none; background:var(--chip); color:var(--muted);
-    font-size:14px; font-weight:800; line-height:1; display:flex; align-items:center; justify-content:center; }
+  .plus { position:absolute; right:8px; top:50%; transform:translateY(-50%); width:24px; height:24px; border-radius:8px; border:none; background:var(--chip); color:var(--ink);
+    font-size:15px; font-weight:800; line-height:1; display:flex; align-items:center; justify-content:center; z-index:1; }
   .catadd { display:flex; gap:6px; margin:6px 0; animation:rise .15s ease; align-items:flex-start; }
   .catadd textarea { flex:1; min-width:0; height:38px; min-height:38px; padding:8px 36px 8px 12px; border-radius:12px; outline:none;
     background:var(--card); color:var(--ink); resize:none; overflow:hidden; line-height:1.2;
@@ -160,8 +162,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     background:var(--chip); color:var(--muted); font-size:15px; font-weight:700; line-height:1; padding:0;
     display:none; align-items:center; justify-content:center; }
   .clearbtn.show { display:flex; }
-  .catheadchip { padding:5px 11px !important; border-radius:999px; gap:6px; }
-  .catheadchip .cname { font-size:12px; }
+  .catheadchip { padding:9px 44px 9px 13px !important; border-radius:13px; gap:7px; width:100%; box-sizing:border-box; }
+  .catheadchip .cname { font-size:13px; }
+  .catheadchip .cnum { margin-left:auto; }
   .emojibox { width:54px; text-align:center; padding:12px 0; border-radius:14px; border:2px solid var(--ink);
     outline:none; background:var(--card); color:var(--ink); font-size:18px; }
   .iconbox { width:54px; height:48px; border-radius:14px; border:2px solid var(--ink); background:var(--card);
@@ -304,7 +307,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.39";
+const APP_VERSION = "v0.40";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -387,6 +390,13 @@ function switchList(code){ if(code===listCode){ listsOpen=false; render(); retur
   localStorage.setItem(LS_LASTLIST, code); location.href = location.pathname+"?list="+code; }
 function renameList(){ const name=prompt("Rename this list:", state.name||"Groceries"); if(name===null) return;
   state.name=(name||"").trim()||"Groceries"; rememberList(listCode, state.name); save(); render(); }
+function moveList(code,dir){ const a=getLists(); const i=a.findIndex(x=>x.code===code); const j=i+dir;
+  if(i<0||j<0||j>=a.length) return; const t=a[i]; a[i]=a[j]; a[j]=t; saveLists(a); render(); }
+function delList(code){ const a=getLists(); const l=a.find(x=>x.code===code);
+  if(!confirm(`Remove "${(l&&l.name)||'this list'}" from your lists?\n\nThe list itself isn't deleted — you can re-add it later with its share link.`)) return;
+  const b=a.filter(x=>x.code!==code); saveLists(b);
+  if(code===listCode){ if(b.length){ switchList(b[0].code); } else { localStorage.removeItem(LS_LASTLIST); location.href=location.pathname; } }
+  else { render(); } }
 let soundOn = localStorage.getItem("ml_sound")==="1";
 let __ac=null;
 function playTick(up){ if(!soundOn) return;
@@ -881,7 +891,7 @@ function renderMain(){
   const done = state.items.filter(i=>i.checked).length;
   const avatars = state.members.map((m,i)=>`<div class="av ${m===me?'me':''}" style="margin-left:${i?-6:0}px" title="${esc(m)}">${esc(m.slice(0,1).toUpperCase())}</div>`).join("");
 
-  const anyOpen = catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id));
+  const anyOpen = catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id)) || (state.buyAgain.length>0 && collapse.ba);
   const firstCatId = (catList().find(c=>state.items.some(i=>i.cat===c.id))||{}).id;
 
   const catBlocks = catList().map(cat=>{
@@ -975,6 +985,7 @@ function renderMain(){
         <button class="listname" id="listName">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Groceries")} <span class="caret">▾</span></button>
         ${state.items.length>0?`<button id="collapseAll" class="collapseall">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button>`:`<span></span>`}
       </div>
+      ${done>0?`<div style="margin-top:8px"><button id="sweepBtn" class="sweepbtn">Clear ${done} checked → Buy again</button></div>`:""}
     </div>
     <div class="zoomwrap"><div class="zoomer" id="zoomer" style="transform:scale(${density});transform-origin:top left;width:calc(100% / ${density})">
       ${shopMode?`<div class="shopbar"><span>🛒 Shopping mode · ${open} left${done?` · ${done} in cart`:''}</span><button id="doneShop">Done</button></div>`:""}
@@ -985,7 +996,6 @@ function renderMain(){
           <div class="pills" style="justify-content:center">${["Milk","Eggs","Bananas","Bread"].map(x=>`<button class="sugchip" data-example="${x}">+ ${x}</button>`).join("")}</div>
           <p class="empty-sub" style="margin-top:16px">Shared via this link — open <b>Options › Share link</b> to invite up to 4 people.</p>
         </div>`:""}
-      ${done>0?`<div style="margin:2px 0 10px"><button id="sweepBtn" class="sweepbtn">Clear ${done} checked → Buy again</button></div>`:""}
       ${listBody}
       <button id="addCat" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
     </div></div>
@@ -1005,7 +1015,7 @@ function optionsSheet(){
   return `<div class="sheet-bg" id="optBg"><div class="sheet" id="optSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:14px">Options</div>
     ${row("Appearance", `<div class="seg"><button data-opt-theme="light" class="${theme==='light'?'on':''}">Light</button><button data-opt-theme="dark" class="${theme==='dark'?'on':''}">Dark</button></div>`)}
-    ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;text-align:center;font-weight:800">${Math.round(density*100)}%</span><button id="optZoomPlus">+</button></div>`)}
+    ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(density*100)}%</span><button id="optZoomPlus">+</button></div>`)}
     ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
     ${row("Sort", `<div class="seg"><button data-opt-sort="cat" class="${sortMode==='cat'?'on':''}">Category</button><button data-opt-sort="alpha" class="${sortMode==='alpha'?'on':''}">A–Z</button></div>`)}
     <button class="optaction" id="optSwitchUser">Switch user${me?` (${esc(me)})`:""}</button>
@@ -1015,10 +1025,12 @@ function optionsSheet(){
 }
 function listsSheet(){
   const lists=getLists();
-  const rows=lists.map(l=>`<button class="listrow ${l.code===listCode?'cur':''}" data-list="${esc(l.code)}">
-      <span class="listrow-name">${esc(l.name||'Untitled list')}</span>
-      ${l.code===listCode?`<span class="listrow-cur">current</span>`:`<span class="listrow-go">›</span>`}
-    </button>`).join("");
+  const rows=lists.map((l,i)=>`<div class="listrow ${l.code===listCode?'cur':''}">
+      <button class="listrow-name" data-list="${esc(l.code)}">${esc(l.name||'Untitled list')}${l.code===listCode?` <span class="listrow-cur">current</span>`:''}</button>
+      <button class="iconmini" data-list-up="${esc(l.code)}" ${i===0?'disabled style="opacity:.3"':''}>↑</button>
+      <button class="iconmini" data-list-down="${esc(l.code)}" ${i===lists.length-1?'disabled style="opacity:.3"':''}>↓</button>
+      <button class="iconmini" data-list-del="${esc(l.code)}" style="color:#C24A33">×</button>
+    </div>`).join("");
   return `<div class="sheet-bg" id="listsBg"><div class="sheet" id="listsSheetEl">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px">
       <div class="disp" style="font-weight:800;font-size:17px">Your lists</div>
@@ -1156,8 +1168,9 @@ function wire(){
   if(ma){ ma.onpointerdown=e=>e.preventDefault(); ma.onclick=()=>{ stopMic(); addEntries(mi.value,null); mi.value=""; draftMain=""; grow(mi); const sg=document.getElementById("suggest"); if(sg) sg.innerHTML=""; toggleClear(mi,mc); mi.focus(); }; }
   const mb=app.querySelector("#micBtn"); if(mb){ mb.onclick=toggleMic; setMicUI(listening); }
   const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>i.cat===c.id)).map(c=>c.id);
-    const anyOpen=ids.some(id=>!collapse.cats.includes(id));
-    collapse.cats = anyOpen ? ids.slice() : [];
+    const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);
+    collapse.cats = open ? ids.slice() : [];
+    collapse.ba = open ? false : true;
     localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
 
   /* item pills: tap = check, hold = edit */
@@ -1231,6 +1244,9 @@ function wire(){
   const lsBg=app.querySelector("#listsBg"); if(lsBg) lsBg.onclick=()=>{ listsOpen=false; render(); };
   const lsS=app.querySelector("#listsSheetEl"); if(lsS) lsS.onclick=e=>e.stopPropagation();
   app.querySelectorAll("[data-list]").forEach(b=>b.onclick=()=>switchList(b.dataset.list));
+  app.querySelectorAll("[data-list-up]").forEach(b=>b.onclick=()=>moveList(b.dataset.listUp,-1));
+  app.querySelectorAll("[data-list-down]").forEach(b=>b.onclick=()=>moveList(b.dataset.listDown,1));
+  app.querySelectorAll("[data-list-del]").forEach(b=>b.onclick=()=>delList(b.dataset.listDel));
   const nl=app.querySelector("#newList"); if(nl) nl.onclick=newListPrompt;
   const rl=app.querySelector("#renameList"); if(rl) rl.onclick=renameList;
 
