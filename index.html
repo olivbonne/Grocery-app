@@ -18,13 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -76,7 +76,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   html,body { margin:0; background:var(--paper); color:var(--ink); min-height:100vh;
     font-family:'Inter',-apple-system,'SF Pro Text',system-ui,sans-serif; }
   .wrap { max-width:480px; margin:0 auto; }
-  .topfix { position:sticky; top:0; z-index:30; background:var(--paper); padding:calc(8px + env(safe-area-inset-top)) 14px 6px; }
+  .topfix { position:fixed; top:0; left:0; right:0; margin:0 auto; max-width:480px; z-index:30; background:var(--paper); padding:calc(8px + env(safe-area-inset-top)) 14px 8px; box-shadow:0 6px 14px -10px rgba(0,0,0,.5); }
   .zoomwrap { overflow:hidden; }
   .zoomer { padding:6px 14px 96px; box-sizing:border-box; }
   .ctrlrow { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px; }
@@ -232,7 +232,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .syncchip.sav .dotind { background:#E0A800; animation:syncpulse 1s infinite; }
   @keyframes syncpulse { 0%,100%{opacity:1} 50%{opacity:.25} }
   .undobtn { margin-left:10px; background:rgba(255,255,255,.22); border:none; color:#fff; font-weight:800;
-    font-size:13px; padding:4px 12px; border-radius:999px; }
+    font-size:13px; padding:4px 12px; border-radius:999px; white-space:nowrap; flex:none; }
+  .toast > span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .sheet-bg { position:fixed; inset:0; background:rgba(33,53,31,.45); display:flex; align-items:flex-end;
     justify-content:center; z-index:50; }
   .sheet { background:var(--paper); width:100%; max-width:480px; border-radius:22px 22px 0 0;
@@ -775,20 +776,23 @@ function renderSuggest(){
   const box=document.getElementById("suggest"), mi=micField(); if(!box||!mi){ return; }
   const v=mi.value, idx=Math.max(v.lastIndexOf(","), v.lastIndexOf("\n"));
   const frag=v.slice(idx+1).trim().toLowerCase();
-  if(frag.length<1){ box.innerHTML=""; return; }
-  const pool=suggestPool();
-  const starts=pool.filter(n=>n.toLowerCase().startsWith(frag));
-  const incl=pool.filter(n=>!n.toLowerCase().startsWith(frag) && n.toLowerCase().includes(frag));
-  const list=[...starts,...incl].filter(n=>n.toLowerCase()!==frag).slice(0,8);
-  if(!list.length){ box.innerHTML=""; return; }
-  box.innerHTML=list.map(n=>`<button class="sugchip" data-sug="${esc(n)}">${esc(n)}</button>`).join("");
+  let html="";
+  if(frag.length>=1){
+    const pool=suggestPool();
+    const starts=pool.filter(n=>n.toLowerCase().startsWith(frag));
+    const incl=pool.filter(n=>!n.toLowerCase().startsWith(frag) && n.toLowerCase().includes(frag));
+    const list=[...starts,...incl].filter(n=>n.toLowerCase()!==frag).slice(0,8);
+    html=list.map(n=>`<button class="sugchip" data-sug="${esc(n)}">${esc(n)}</button>`).join("");
+  }
+  box.innerHTML=html;
   box.querySelectorAll("[data-sug]").forEach(b=>{
     b.onpointerdown=e=>e.preventDefault();   // keep keyboard up
     b.onclick=()=>{ const name=b.dataset.sug; const cur=mi.value;
       const i=Math.max(cur.lastIndexOf(","), cur.lastIndexOf("\n"));
       const head=i>=0 ? cur.slice(0,i+1).replace(/\s*$/,"")+" " : "";
-      mi.value=head+name+", "; grow(mi); mi.focus(); box.innerHTML=""; };
+      mi.value=head+name+", "; grow(mi); mi.focus(); box.innerHTML=""; syncZoomHeight(); };
   });
+  syncZoomHeight();
 }
 function startMic(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -827,9 +831,11 @@ function pressCancel(){ clearTimeout(pressTimer); }
 const app = document.getElementById("app");
 const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
-function syncZoomHeight(){ const z=document.getElementById("zoomer"); const bb=document.getElementById("bottomnav");
+function syncZoomHeight(){ const z=document.getElementById("zoomer"); const bb=document.getElementById("bottomnav"); const tf=document.getElementById("topfix");
+  const zw=z?z.parentElement:null;
+  if(zw && tf){ zw.style.marginTop = Math.ceil(tf.getBoundingClientRect().height) + "px"; }
   if(z){ if(bb){ const h=bb.getBoundingClientRect().height||64; z.style.paddingBottom = Math.ceil(h/density + 24) + "px"; }
-    if(z.parentElement) z.parentElement.style.height = Math.ceil(z.getBoundingClientRect().height) + "px"; }
+    if(zw) zw.style.height = Math.ceil(z.getBoundingClientRect().height) + "px"; }
   applyKb(); }
 let kbOffset=0, kbActive=false;
 function applyKb(){ const bar=document.getElementById("botbar"); if(bar) bar.style.transform = kbOffset>1 ? `translateY(${-kbOffset}px)` : ""; }
