@@ -18,13 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -304,7 +304,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.38";
+const APP_VERSION = "v0.39";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -399,7 +399,7 @@ function playTick(up){ if(!soundOn) return;
 function toggleSound(){ soundOn=!soundOn; localStorage.setItem("ml_sound", soundOn?"1":"0"); render(); }
 let lastPop=null;
 
-let state = { items:[], buyAgain:[], members:[], categories:null, name:"" };
+let state = { items:[], buyAgain:[], members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99} };
 rememberList(listCode);
 try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state = c; } catch(e){}
 let toast=null, toastAction=null, undoSnap=null, _toastT=null, catEntry=null, editing=null, configured=false;
@@ -520,7 +520,9 @@ try {
       fromCache = snap.metadata.fromCache;
       if(!syncing && !fromCache) dirtyIds.clear();   // server confirmed all pending writes
       if(snap.exists() && !snap.metadata.hasPendingWrites){ const d = snap.data();
-        state = { items:d.items||[], buyAgain:d.buyAgain||[], members:d.members||[], categories:d.categories||null, name:d.name||"" }; if(state.name) rememberList(listCode, state.name); }
+        state = { items:d.items||[], buyAgain:d.buyAgain||[], members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99} };
+        if(!state.name){ const ln=(getLists().find(l=>l.code===listCode)||{}).name; if(ln){ state.name=ln; save(); } }
+        if(state.name) rememberList(listCode, state.name); }
       else if(snap.exists() && snap.metadata.hasPendingWrites){ /* keep local optimistic state */ }
       ensureCats();
       try { localStorage.setItem(LS.cache, JSON.stringify(state)); } catch(e){}
@@ -590,18 +592,18 @@ function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){
 function moveToBuyAgain(entries){
   for(const e of entries){ const k=e.name.toLowerCase()+"|"+e.cat;
     state.buyAgain = state.buyAgain.filter(x=>(x.name.toLowerCase()+"|"+x.cat)!==k);
-    state.buyAgain.unshift({name:e.name,cat:e.cat,qty:e.qty||1,weight:e.weight||""}); }
+    state.buyAgain.unshift({name:e.name,cat:e.cat,qty:e.qty||1,weight:e.weight||"",sub:e.sub||""}); }
   state.buyAgain = state.buyAgain.slice(0,80);
 }
 function sweep(){ const checked=state.items.filter(i=>i.checked); if(!checked.length) return;
   const prev=snapState();
-  moveToBuyAgain(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||""})));
+  moveToBuyAgain(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||""})));
   state.items = state.items.filter(i=>!i.checked);
   save(); render(); showUndo(prev, checked.length+" cleared → Buy again"); }
 function restore(name,cat){
   const entry = state.buyAgain.find(x=>x.name===name && x.cat===cat) || {name,cat,qty:1};
   const ex = state.items.find(i=>!i.checked && i.name.toLowerCase()===name.toLowerCase() && i.cat===cat);
-  if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",checked:false,by:me}); }
+  if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",checked:false,by:me}); }
   state.buyAgain = state.buyAgain.filter(x=>!(x.name.toLowerCase()===name.toLowerCase() && x.cat===cat));
   save(); render();
 }
@@ -611,21 +613,21 @@ function saveEdit(){ if(!editing||!editing.name.trim()) return;
   const it=state.items.find(i=>i.id===editing.id);
   if(it){ it.name=editing.name.trim(); it.qty=Math.max(1,editing.qty||1); it.cat=editing.cat; it.sub=editing.sub||null; it.starred=!!editing.starred; it.weight=editing.weight||""; }
   editing=null; save(); render(); }
-function removeEditing(){ moveToBuyAgain([{name:editing.name,cat:editing.cat,qty:editing.qty||1,weight:editing.weight||""}]);
+function removeEditing(){ moveToBuyAgain([{name:editing.name,cat:editing.cat,qty:editing.qty||1,weight:editing.weight||"",sub:editing.sub||""}]);
   state.items = state.items.filter(i=>i.id!==editing.id); editing=null; save(); render(); }
 function deleteItemEditing(){ const prev=snapState(); const nm=editing.name; state.items = state.items.filter(i=>i.id!==editing.id); editing=null; save(); render(); showUndo(prev, esc(nm)+" deleted"); }
 
 /* buy-again edit */
 function saveBA(){ const nm=(editing.name||"").trim(); if(!nm) return; const cat=editing.cat; const qty=Math.max(1,editing.qty||1);
   state.buyAgain = state.buyAgain.filter(x=>!(x.name===editing.origName && x.cat===editing.origCat));
-  if(!state.buyAgain.some(x=>x.name.toLowerCase()===nm.toLowerCase() && x.cat===cat)) state.buyAgain.unshift({name:nm,cat,qty,weight:editing.weight||""});
+  if(!state.buyAgain.some(x=>x.name.toLowerCase()===nm.toLowerCase() && x.cat===cat)) state.buyAgain.unshift({name:nm,cat,qty,weight:editing.weight||"",sub:editing.sub||""});
   editing=null; save(); render(); }
 function removeBAfromSheet(){ state.buyAgain = state.buyAgain.filter(x=>!(x.name===editing.origName && x.cat===editing.origCat));
   editing=null; save(); render(); }
 function restoreEditingToList(){ const nm=(editing.name||"").trim()||editing.origName; const cat=editing.cat; const qty=Math.max(1,editing.qty||1);
   state.buyAgain = state.buyAgain.filter(x=>!(x.name===editing.origName && x.cat===editing.origCat));
   const ex=state.items.find(i=>!i.checked && i.name.toLowerCase()===nm.toLowerCase() && i.cat===cat);
-  if(!ex) state.items.push({id:uid(),name:nm,qty,cat,weight:editing.weight||"",checked:false,by:me});
+  if(!ex) state.items.push({id:uid(),name:nm,qty,cat,weight:editing.weight||"",sub:editing.sub||"",checked:false,by:me});
   editing=null; save(); render(); }
 
 /* category edit */
@@ -654,7 +656,7 @@ const PALETTE=["#B5402B","#E05A2B","#C98A06","#E0A800","#3E7C3A","#5BA84F","#2E8
 function addCategory(){ editing={ kind:"newcat", label:"", emoji:"🛒", img:"", subs:[], iconManual:false, color: NEW_CAT_COLORS[catList().length % NEW_CAT_COLORS.length] }; render(); }
 function createCategoryFromSheet(){ const name=(editing.label||"").trim(); if(!name){ showToast("Name the category"); return; }
   const cs=catList(); const color=editing.color || NEW_CAT_COLORS[cs.length % NEW_CAT_COLORS.length];
-  cs.push({ id:uid(), label:name, color, emoji:(editing.img?"":(editing.emoji||"🛒")), img:editing.img||"", subs:[] });
+  cs.push({ id:uid(), label:name, color, emoji:(editing.img?"":(editing.emoji||"🛒")), img:editing.img||"", subs:[], custom:true });
   editing=null; save(); render(); }
 const PIC_TAGS = { "milk.png":"milk dairy fresh egg cheese", "cross.png":"health medicine pharmacy supplement vitamin", "ramen.png":"asian noodle ramen rice", "hammer.png":"hardware tool hammer diy" };
 function relevantIcons(ed){ const lab=(ed.label||"").toLowerCase().trim();
@@ -882,10 +884,11 @@ function renderMain(){
   const anyOpen = catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id));
   const firstCatId = (catList().find(c=>state.items.some(i=>i.cat===c.id))||{}).id;
 
-  const cats = catList().map(cat=>{
+  const catBlocks = catList().map(cat=>{
     const list = sortList(state.items.filter(i=>i.cat===cat.id));
     const collapsed = collapse.cats.includes(cat.id);
     const has = list.length>0;
+    if(!has && !cat.custom && catEntry!==cat.id) return null;
     let pills = "";
     if(has && !collapsed){
       const unchecked = list.filter(i=>!i.checked);
@@ -916,29 +919,38 @@ function renderMain(){
         </button>
         <button class="plus" data-add="${cat.id}" style="${catEntry===cat.id?`background:${cat.color};color:#fff`:''}">${catEntry===cat.id?'×':'+'}</button>
       </div>${catAdd}${pills}</section>`;
-  }).join("");
+  }).filter(Boolean);
 
   const baGroups = catList().map(cat=>{
     const its = state.buyAgain.filter(e=>e.cat===cat.id);
     if(!its.length) return "";
-    return `<div class="pills" style="margin-top:2px">${its.map(e=>{
-      const sid=effectiveSub(e,cat); const slbl = sid ? ((cat.subs||[]).find(s=>s.id===sid)||{}).label : "";
-      return `<button class="bapill ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="border:1.5px dashed ${cat.color}">`
+    return `<div class="pills" style="margin-top:2px">${its.map(e=>
+      `<button class="bapill ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="border:1.5px dashed ${cat.color}">`
       +`<span style="color:${cat.color};font-weight:800">+</span>`
       +`${(e.qty||1)>1?`<span style="color:${cat.color};font-weight:800">${e.qty}×</span>`:""}`
       +`${e.weight?`<span style="color:${cat.color};font-weight:800">${esc(e.weight)} </span>`:""}`
-      +`${esc(e.name)}`
-      +`${slbl?`<span class="basub">${esc(slbl)}</span>`:""}</button>`;
-    }).join("")}</div>`;
+      +`${esc(e.name)}</button>`).join("")}</div>`;
   }).join("");
   const baPills = state.buyAgain.length
     ? `${baGroups}<button id="clearBA" style="margin-top:8px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:0">Clear buy-again history</button>`
     : `<p style="font-size:12px;color:var(--muted2);margin:0">Cleared items land here so you can re-add them with one tap.</p>`;
+  const baIcon = state.baMeta.img ? `<img class="cicon" src="${esc(dispImg(state.baMeta.img))}">` : (state.baMeta.emoji||"↩");
+  const baBlock = `<section class="cat">
+      <div class="chead">
+        <button class="lbl catheadchip baheadchip" id="baHead" data-bacat="1">
+          <span class="cemoji">${baIcon}</span>
+          <span class="cname">${esc(state.baMeta.label||"Buy again")}</span>
+          ${state.buyAgain.length?`<span class="cnum">${state.buyAgain.length}${collapse.ba?'':' ▸'}</span>`:""}
+        </button>
+      </div>
+      ${collapse.ba?`<div style="margin-top:6px">${baPills}</div>`:""}
+    </section>`;
 
   const pct = state.items.length ? Math.round(done/state.items.length*100) : 0;
-  const listBody = (sortMode==="alpha")
-    ? `<section class="cat">${ state.items.length ? pillsMixed(sortList(state.items)) : "" }</section>`
-    : cats;
+  let bodyBlocks;
+  if(sortMode==="alpha"){ bodyBlocks = [ `<section class="cat">${ state.items.length ? pillsMixed(sortList(state.items)) : "" }</section>`, baBlock ]; }
+  else { bodyBlocks = catBlocks.slice(); const bp=Math.max(0, Math.min(state.baMeta.pos|0, bodyBlocks.length)); bodyBlocks.splice(bp, 0, baBlock); }
+  const listBody = bodyBlocks.join("");
   app.innerHTML = `<div class="wrap ${shopMode?'shop':''}">
     <div class="topfix" id="topfix">
       <header>
@@ -960,7 +972,7 @@ function renderMain(){
       </div>
       <div class="suggest" id="suggest"></div>
       <div class="ctrlrow">
-        <button class="listname" id="listName">${esc(state.name||"Groceries")} <span class="caret">▾</span></button>
+        <button class="listname" id="listName">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Groceries")} <span class="caret">▾</span></button>
         ${state.items.length>0?`<button id="collapseAll" class="collapseall">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button>`:`<span></span>`}
       </div>
     </div>
@@ -973,18 +985,8 @@ function renderMain(){
           <div class="pills" style="justify-content:center">${["Milk","Eggs","Bananas","Bread"].map(x=>`<button class="sugchip" data-example="${x}">+ ${x}</button>`).join("")}</div>
           <p class="empty-sub" style="margin-top:16px">Shared via this link — open <b>Options › Share link</b> to invite up to 4 people.</p>
         </div>`:""}
+      ${done>0?`<div style="margin:2px 0 10px"><button id="sweepBtn" class="sweepbtn">Clear ${done} checked → Buy again</button></div>`:""}
       ${listBody}
-      ${done>0?`<div style="margin:6px 0 10px"><button id="sweepBtn" class="sweepbtn">Clear ${done} checked → Buy again</button></div>`:""}
-      <section class="cat">
-        <div class="chead">
-          <button class="lbl catheadchip baheadchip" id="baHead">
-            <span class="cemoji">↩</span>
-            <span class="cname">Buy again</span>
-            ${state.buyAgain.length?`<span class="cnum">${state.buyAgain.length}${collapse.ba?'':' ▸'}</span>`:""}
-          </button>
-        </div>
-        ${collapse.ba?`<div style="margin-top:6px">${baPills}</div>`:""}
-      </section>
       <button id="addCat" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
     </div></div>
   </div>
@@ -1080,6 +1082,31 @@ function editSheet(){
       </div>
     </div></div>`;
   }
+  if(editing.kind==="bacat"){
+    const shown = catList().filter(c=> state.items.some(i=>i.cat===c.id) || c.custom).length;
+    const n = shown+1; const idx = Math.max(0, Math.min(editing.pos|0, shown));
+    return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
+      <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">Edit “Buy again”</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        ${iconEditorHTML()}
+        <input id="catName" value="${esc(editing.label)}" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+          <div style="font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap">${idx+1} of ${n}</div>
+          <div style="display:flex;gap:4px">
+            <button class="iconbtn" id="baUp" ${idx<=0?'disabled style="opacity:.35"':''} style="font-size:16px">↑</button>
+            <button class="iconbtn" id="baDown" ${idx>=n-1?'disabled style="opacity:.35"':''} style="font-size:16px">↓</button>
+          </div>
+        </div>
+      </div>
+      <div id="stripWrap">${iconStripHTML()}</div>
+      <input id="iconFile" type="file" accept="image/*" style="display:none" />
+      <input id="emojiKbd" inputmode="text" autocomplete="off" style="position:absolute;opacity:0;height:1px;width:1px;pointer-events:none;left:-9999px" />
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button id="baDeleteHist" style="padding:13px 12px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:14px">Delete history</button>
+        <button id="baCatSave" style="flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">Save</button>
+      </div>
+    </div></div>`;
+  }
   const isItem = editing.kind==="item";
   const qtyBlock = `<div class="qstep"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>`;
   const secLabel = isItem ? "Buy again" : "Market list";
@@ -1087,7 +1114,7 @@ function editSheet(){
   const btnDelStyle = "padding:13px 12px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:14px";
   const btnSaveStyle = "flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px";
   const selCat = CAT(editing.cat);
-  const subChips = (isItem && selCat && selCat.subs && selCat.subs.length)
+  const subChips = (selCat && selCat.subs && selCat.subs.length)
     ? `<div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:14px">Subcategory</div>
        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
          <button class="catchip" data-es="" style="${!editing.sub?`background:var(--btn);border-color:var(--btn);color:#fff`:''}">None</button>
@@ -1162,14 +1189,18 @@ function wire(){
 
   const sb=app.querySelector("#sweepBtn"); if(sb) sb.onclick=sweep;
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
-  const bh=app.querySelector("#baHead"); if(bh) bh.onclick=toggleBA;
+  const bh=app.querySelector("#baHead"); if(bh){ bh.oncontextmenu=e=>e.preventDefault();
+    bh.onpointerdown=pressStart; bh.onpointerleave=pressCancel; bh.onpointercancel=pressCancel;
+    bh.onpointerup=()=>{ pressCancel();
+      if(longFired){ editing={kind:"bacat", label:state.baMeta.label||"Buy again", emoji:state.baMeta.img?"":(state.baMeta.emoji||"↩"), img:state.baMeta.img||"", color:"#6AA8FF", iconManual:true, pos:state.baMeta.pos|0}; render(); }
+      else { toggleBA(); } }; }
 
   /* buy-again: tap = restore, hold = edit (remove lives inside the edit popup) */
   app.querySelectorAll(".ba-restore").forEach(b=>{ const [name,cat]=b.dataset.restore.split("|");
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
     b.onpointerup=()=>{ pressCancel();
-      if(longFired){ const en=state.buyAgain.find(x=>x.name===name && x.cat===cat); editing={kind:"ba", name, cat, qty:(en?en.qty||1:1), weight:(en?en.weight||"":""), origName:name, origCat:cat}; render(); }
+      if(longFired){ const en=state.buyAgain.find(x=>x.name===name && x.cat===cat); editing={kind:"ba", name, cat, qty:(en?en.qty||1:1), weight:(en?en.weight||"":""), sub:(en?en.sub||"":""), origName:name, origCat:cat}; render(); }
       else { restore(name,cat); } }; });
   const cba=app.querySelector("#clearBA"); if(cba) cba.onclick=()=>{ const prev=snapState(); state.buyAgain=[]; save(); render(); showUndo(prev,"Buy-again cleared"); };
 
@@ -1224,6 +1255,15 @@ function wire(){
       app.querySelectorAll(".subdel").forEach(b=>b.onclick=()=>{ saveCatEditQuiet(); removeSub(editing.id, b.dataset.sub); });
       const cr=app.querySelector("#catRemove"); if(cr) cr.onclick=()=>removeCat(editing.id);
       const csv=app.querySelector("#catSave"); if(csv) csv.onclick=saveCatEdit;
+    } else if(editing.kind==="bacat"){
+      const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>{ editing.label=e.target.value; };
+      wireIconEditor();
+      const shown = catList().filter(c=> state.items.some(i=>i.cat===c.id) || c.custom).length;
+      const persistPos=()=>{ state.baMeta={label:editing.label||"Buy again", emoji:editing.img?"":(editing.emoji||"↩"), img:editing.img||"", pos:editing.pos}; save(); };
+      const bu=app.querySelector("#baUp"); if(bu) bu.onclick=()=>{ editing.pos=Math.max(0,(Math.min(editing.pos|0,shown))-1); persistPos(); render(); };
+      const bd=app.querySelector("#baDown"); if(bd) bd.onclick=()=>{ editing.pos=Math.min(shown,(Math.min(editing.pos|0,shown))+1); persistPos(); render(); };
+      const bdel=app.querySelector("#baDeleteHist"); if(bdel) bdel.onclick=()=>{ const prev=snapState(); state.buyAgain=[]; editing=null; save(); render(); showUndo(prev,"Buy-again history cleared"); };
+      const bsv=app.querySelector("#baCatSave"); if(bsv) bsv.onclick=()=>{ state.baMeta={label:(editing.label||"").trim()||"Buy again", emoji:editing.img?"":(editing.emoji||"↩"), img:editing.img||"", pos:editing.pos|0}; rememberList(listCode, state.name); editing=null; save(); render(); };
     } else {
       const en=app.querySelector("#editName"); if(en) en.oninput=e=>editing.name=e.target.value;
       const ws=app.querySelector("#weightSel");
