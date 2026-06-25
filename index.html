@@ -18,13 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -89,8 +89,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .navbtn:active { color:var(--ink); }
   .navbtn span { letter-spacing:.2px; }
   .navbtn.active { color:var(--ink); }
-  .navbtn.active::before { content:""; position:absolute; top:0; left:50%; transform:translateX(-50%); width:30px; height:4px; border-radius:0 0 6px 6px; background:var(--accent); }
-  .cartwrap { position:relative; display:inline-flex; }
+  .navbtn.active::before { content:""; position:absolute; top:-6px; left:50%; transform:translateX(-50%); width:42px; height:3px; border-radius:0 0 6px 6px; background:var(--accent); }
+  .cartwrap { position:relative; display:inline-flex; align-items:center; gap:4px; }
+  .cartcount { font-size:11px; font-weight:800; color:var(--accent); line-height:1; }
   .cartbadge { position:absolute; top:-7px; right:-12px; min-width:17px; height:17px; padding:0 5px; border-radius:999px; background:var(--accent); color:#fff; font-size:10px; font-weight:800; line-height:1; white-space:nowrap; display:flex; align-items:center; justify-content:center; box-sizing:border-box; }
   .baheadchip { background:transparent !important; border:1.5px solid var(--bablue) !important; color:var(--bablue) !important; }
   .baheadchip .cname, .baheadchip .cnum, .baheadchip .cemoji { color:var(--bablue) !important; }
@@ -321,7 +322,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.41";
+const APP_VERSION = "v0.42";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -387,13 +388,14 @@ let theme = localStorage.getItem("ml_theme") || ((typeof window!=="undefined" &&
 function applyTheme(){ document.body.classList.toggle("dark", theme==="dark"); document.documentElement.classList.toggle("dark", theme==="dark"); }
 function toggleTheme(){ theme = theme==="dark" ? "light" : "dark"; localStorage.setItem("ml_theme", theme); applyTheme(); render(); }
 applyTheme();
-let shopMode = localStorage.getItem("ml_shop")==="1";
+let shopMode = false;
 function toggleShop(){ shopMode=!shopMode; localStorage.setItem("ml_shop", shopMode?"1":"0"); collapse.ba = !shopMode && collapse.ba; render(); }
 let sortMode = localStorage.getItem("ml_sort")||"cat";
 function setSort(m){ sortMode=m; localStorage.setItem("ml_sort",m); render(); }
 let optOpen=false, listsOpen=false;
 let view="detail", listActOpen=false, listActCode=null;
 function listCount(code){ try{ const s = (code===listCode) ? state : JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); return (s&&s.items)? s.items.filter(i=>!i.checked).length : 0; }catch(e){ return 0; } }
+function listStats(code){ try{ const s=(code===listCode)?state:JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); const items=(s&&s.items)||[]; const total=items.length, done=items.filter(i=>i.checked).length; return {total, done, pct: total?Math.round(done/total*100):0}; }catch(e){ return {total:0,done:0,pct:0}; } }
 function listURL(code){ return location.origin + location.pathname + "?list=" + code; }
 function renameListCode(code){ const a=getLists(); const l=a.find(x=>x.code===code); const name=prompt("Rename this list:", (l&&l.name)||"Groceries"); if(name===null) return;
   const nm=(name||"").trim()||"Groceries"; rememberList(code, nm);
@@ -904,6 +906,7 @@ function render(){
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
   if(!me){ renderOnboarding(); window.__mlRendered=true; return; }
   if(view==="lists"){ renderListsPage(); wireListsPage(); window.__mlRendered=true; syncZoomHeight(); return; }
+  if(view==="plan"){ renderPlanPage(); wirePlanPage(); window.__mlRendered=true; syncZoomHeight(); return; }
   renderMain(); wire(); window.__mlRendered=true; syncZoomHeight();
 }
 
@@ -962,16 +965,15 @@ function renderMain(){
   const firstCatId = (catList().find(c=>state.items.some(i=>i.cat===c.id))||{}).id;
 
   const catBlocks = catList().map(cat=>{
-    const list = sortList(state.items.filter(i=>i.cat===cat.id));
+    const all = sortList(state.items.filter(i=>i.cat===cat.id));
+    const list = all.filter(i=>!i.checked);   // checked items live in the Checked section now
     const collapsed = collapse.cats.includes(cat.id);
     const has = list.length>0;
     if(!has && !cat.custom && catEntry!==cat.id) return null;
     let pills = "";
     if(has && !collapsed){
-      const unchecked = list.filter(i=>!i.checked);
-      const checked = list.filter(i=>i.checked);
+      const unchecked = list;
       if(cat.subs && cat.subs.length){
-        // unchecked grouped by subcategory (in order), then anything unassigned, all on their own lines
         pills = cat.subs.map(s=>{ const its=unchecked.filter(i=>effectiveSub(i,cat)===s.id);
           return its.length ? pillRow(its, cat) : ""; }).join("");
         const none = unchecked.filter(i=>!effectiveSub(i,cat));
@@ -979,7 +981,6 @@ function renderMain(){
       } else {
         pills = unchecked.length ? pillRow(unchecked, cat) : "";
       }
-      if(checked.length) pills += pillRow(checked, cat);   // checked always at the bottom of the category
     }
     const catAdd = catEntry===cat.id ? `<div class="catadd">
         <div class="inwrap"><textarea id="catInput" rows="1" placeholder="Add to ${esc(cat.label)}" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="Clear">×</button></div>
@@ -1023,10 +1024,24 @@ function renderMain(){
       ${collapse.ba?`<div style="margin-top:6px">${baPills}</div>`:""}
     </section>`;
 
+  const checkedItems = state.items.filter(i=>i.checked);
+  const checkedOpen = collapse.checked!==false;
+  const checkedBlock = checkedItems.length ? `<section class="cat">
+      <div class="chead">
+        <button class="lbl catheadchip checkedheadchip" id="checkedHead" style="background:var(--done-bg);border:1.5px solid var(--done-edge);color:var(--muted)">
+          <span class="cemoji">✓</span>
+          <span class="cname" style="color:var(--muted)">Checked items</span>
+          <span class="cnum" style="color:var(--muted)">${checkedItems.length}${checkedOpen?'':' ▸'}</span>
+        </button>
+      </div>
+      ${checkedOpen?`<div style="margin-top:6px">${pillsMixed(sortList(checkedItems))}</div>`:""}
+    </section>` : "";
+
   const pct = state.items.length ? Math.round(done/state.items.length*100) : 0;
   let bodyBlocks;
-  if(sortMode==="alpha"){ bodyBlocks = [ `<section class="cat">${ state.items.length ? pillsMixed(sortList(state.items)) : "" }</section>`, baBlock ]; }
+  if(sortMode==="alpha"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(sortList(unchecked)) : "" }</section>`, baBlock ]; }
   else { bodyBlocks = catBlocks.slice(); const bp=Math.max(0, Math.min(state.baMeta.pos|0, bodyBlocks.length)); bodyBlocks.splice(bp, 0, baBlock); }
+  if(checkedBlock) bodyBlocks.push(checkedBlock);
   const listBody = bodyBlocks.join("");
   app.innerHTML = `<div class="wrap ${shopMode?'shop':''}">
     <div class="topfix" id="topfix">
@@ -1034,11 +1049,10 @@ function renderMain(){
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <button class="backbtn" id="toLists" aria-label="Back to lists" style="font-size:20px;line-height:1;padding:4px 12px">‹</button>
           <span class="title disp">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="dot">.</span></span>
-          <span class="count">${state.items.length===0?'all clear':(open+' to buy'+(done?` · ${done} in cart`:''))}</span>
-          ${syncChip()}
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           ${avatars}
+          ${syncChip()}
           <button id="optBtnTop" aria-label="Options" class="iconbtn" title="Options"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
         </div>
       </header>
@@ -1067,7 +1081,7 @@ function renderMain(){
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
     <button class="navbtn" id="addNav"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Add</span></button>
-    <button class="navbtn ${shopMode?'active':''}" id="cartNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${state.items.length>0?`<span class="cartbadge">${done}/${state.items.length}</span>`:""}</span><span>Cart</span></button>
+    <button class="navbtn active" id="cartNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${state.items.length>0?`<span class="cartcount">${done}/${state.items.length}</span>`:""}</span><span>Cart</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${listsOpen?listsSheet():""}
@@ -1087,10 +1101,11 @@ function renderListsPage(){
     </div>
     <div class="zoomwrap"><div class="zoomer" id="zoomer">
       <div class="listgrid">
-        ${lists.map(l=>{ const cnt=listCount(l.code); const cur=l.code===listCode;
+        ${lists.map(l=>{ const st=listStats(l.code); const cur=l.code===listCode;
           return `<button class="listbubble ${cur?'cur':''}" data-open="${esc(l.code)}">
             <span class="lb-name">${esc(l.name||'Untitled list')}</span>
-            <span class="lb-count">${cnt} to buy</span>
+            <span class="lb-count">${st.done}/${st.total} items${st.total? (st.done>=st.total?' · all done':''):''}</span>
+            ${st.total?`<div class="prog" style="margin-top:9px"><div class="prog-fill" style="width:${st.pct}%"></div></div>`:""}
           </button>`; }).join("")}
         <button class="listbubble add" id="newListBubble"><span class="lb-name">+ New list</span></button>
       </div>
@@ -1100,7 +1115,7 @@ function renderListsPage(){
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn active" id="listsBtnL"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
     <button class="navbtn" id="addListNav"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Add</span></button>
-    <button class="navbtn" id="cartNavL"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${ccT>0?`<span class="cartbadge">${ccD}/${ccT}</span>`:""}</span><span>Cart</span></button>
+    <button class="navbtn" id="cartNavL"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${ccT>0?`<span class="cartcount">${ccD}/${ccT}</span>`:""}</span><span>Cart</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${listActOpen?listActSheet():""}
@@ -1123,7 +1138,7 @@ function wireListsPage(){
   });
   const nb=app.querySelector("#newListBubble"); if(nb) nb.onclick=newListPrompt;
   const anl=app.querySelector("#addListNav"); if(anl) anl.onclick=newListPrompt;
-  const cnl=app.querySelector("#cartNavL"); if(cnl) cnl.onclick=()=>{ view="detail"; shopMode=true; localStorage.setItem("ml_shop","1"); collapse.ba=false; render(); };
+  const cnl=app.querySelector("#cartNavL"); if(cnl) cnl.onclick=()=>{ view="detail"; shopMode=false; render(); };
   const ob=app.querySelector("#optBtnTop"); if(ob) ob.onclick=()=>{ optOpen=true; render(); };
   wireOptions();
   const lbg=app.querySelector("#listActBg"); if(lbg) lbg.onclick=()=>{ listActOpen=false; render(); };
@@ -1132,6 +1147,54 @@ function wireListsPage(){
   const lash=app.querySelector("#laShare"); if(lash) lash.onclick=()=>shareListCode(listActCode);
   const lac=app.querySelector("#laDup"); if(lac) lac.onclick=()=>duplicateListCode(listActCode);
   const lad=app.querySelector("#laDelete"); if(lad) lad.onclick=()=>delListUndo(listActCode);
+  const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
+}
+function renderPlanPage(){
+  const done=state.items.filter(i=>i.checked).length;
+  const cartIcon=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>`;
+  const baGroups = catList().map(cat=>{ const its=state.buyAgain.filter(e=>e.cat===cat.id); if(!its.length) return "";
+    return `<section class="cat"><div class="chead"><div class="lbl catheadchip" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;width:100%"><span class="cemoji">${catIcon(cat,16)}</span><span class="cname" style="color:#fff">${esc(cat.label)}</span><span class="cnum" style="color:#fff;opacity:.85">${its.length}</span></div></div>
+      <div class="pills" style="margin-top:6px">${its.map(e=>`<button class="bapill ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="border:1.5px dashed ${cat.color}"><span style="color:${cat.color};font-weight:800">+</span>${(e.qty||1)>1?`<span style="color:${cat.color};font-weight:800">${e.qty}×</span>`:""}${e.weight?`<span style="color:${cat.color};font-weight:800">${esc(e.weight)} </span>`:""}${esc(e.name)}</button>`).join("")}</div></section>`;
+  }).join("");
+  const hasBA = state.buyAgain.length>0;
+  app.innerHTML = `<div class="wrap">
+    <div class="topfix" id="topfix">
+      <header>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="backbtn" id="toCart" aria-label="Back" style="font-size:20px;line-height:1;padding:4px 12px">‹</button>
+          <span class="title disp">Plan<span class="dot">.</span></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">${syncChip()}<button id="optBtnTop" class="iconbtn" aria-label="Options"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
+      </header>
+      <div class="addbar">
+        <button class="micbtn" id="micBtn" aria-label="Voice input"></button>
+        <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Add items to ${esc(state.name||'your list')}…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
+        <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
+      </div>
+      <div class="suggest" id="suggest"></div>
+    </div>
+    <div class="zoomwrap"><div class="zoomer" id="zoomer" style="transform:scale(${density});transform-origin:top left;width:calc(100% / ${density})">
+      <p class="hint" style="margin:2px 0 12px">Plan your shop — tap a previous item to add it back to <b>${esc(state.name||'your list')}</b>.</p>
+      ${hasBA ? baGroups : `<div class="empty"><div class="empty-emoji">🛒</div><p class="empty-title">Nothing to plan yet</p><p class="empty-sub">Items you clear from a list land here, so you can quickly add them again next time.</p></div>`}
+    </div></div>
+  </div>
+  <nav class="bottomnav" id="bottomnav">
+    <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
+    <button class="navbtn active" id="addNav"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Add</span></button>
+    <button class="navbtn" id="cartNav"><span class="cartwrap">${cartIcon}${state.items.length>0?`<span class="cartcount">${done}/${state.items.length}</span>`:""}</span><span>Cart</span></button>
+  </nav>
+  ${optOpen?optionsSheet():""}
+  ${toast?`<div class="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
+}
+function wirePlanPage(){
+  wireAddBar();
+  app.querySelectorAll(".ba-restore").forEach(b=>b.onclick=()=>{ const [name,cat]=b.dataset.restore.split("|"); restore(name,cat); });
+  const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>{ view="lists"; optOpen=false; render(); };
+  const an=app.querySelector("#addNav"); if(an) an.onclick=()=>{ const mi=document.getElementById("mainInput"); if(mi) mi.focus(); };
+  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>{ view="detail"; shopMode=false; render(); };
+  const tc=app.querySelector("#toCart"); if(tc) tc.onclick=()=>{ view="detail"; shopMode=false; render(); };
+  const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
+  wireOptions();
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 function wireOptions(){
@@ -1296,7 +1359,7 @@ function editSheet(){
   </div></div>`;
 }
 
-function wire(){
+function wireAddBar(){
   const mi=app.querySelector("#mainInput"), ma=app.querySelector("#mainAdd");
   const mc=app.querySelector("#mainClear");
   const toggleClear=(el,btn)=>{ if(btn) btn.classList.toggle("show", !!(el&&el.value.trim())); };
@@ -1309,6 +1372,10 @@ function wire(){
   if(mc){ mc.onpointerdown=e=>e.preventDefault(); mc.onclick=()=>{ if(mi){ mi.value=""; draftMain=""; grow(mi); document.getElementById("suggest").innerHTML=""; toggleClear(mi,mc); mi.focus(); } }; }
   if(ma){ ma.onpointerdown=e=>e.preventDefault(); ma.onclick=()=>{ stopMic(); addEntries(mi.value,null); mi.value=""; draftMain=""; grow(mi); const sg=document.getElementById("suggest"); if(sg) sg.innerHTML=""; toggleClear(mi,mc); mi.focus(); }; }
   const mb=app.querySelector("#micBtn"); if(mb){ mb.onclick=toggleMic; setMicUI(listening); }
+}
+function wire(){
+  wireAddBar();
+  const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>i.cat===c.id)).map(c=>c.id);
     const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);
     collapse.cats = open ? ids.slice() : [];
@@ -1364,8 +1431,8 @@ function wire(){
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const ln=app.querySelector("#listName"); if(ln) ln.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>{ view="lists"; optOpen=false; render(); };
-  const an=app.querySelector("#addNav"); if(an) an.onclick=()=>{ const mi=document.getElementById("mainInput"); if(mi){ mi.focus(); try{ mi.setSelectionRange(mi.value.length, mi.value.length); }catch(e){} } };
-  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=toggleShop;
+  const an=app.querySelector("#addNav"); if(an) an.onclick=()=>{ view="plan"; optOpen=false; render(); };
+  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>{ view="detail"; shopMode=false; render(); };
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; listsOpen=false; render(); };
   app.querySelectorAll("[data-example]").forEach(b=>b.onclick=()=>{ addEntries(b.dataset.example, null); });
   app.querySelectorAll("[data-qm-minus]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.qmMinus); if(it){ it.qty=Math.max(1,(it.qty||1)-1); markDirty(it.id); save(); render(); } });
