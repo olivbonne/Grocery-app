@@ -18,13 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -322,7 +322,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.43";
+const APP_VERSION = "v0.44";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1059,7 +1059,7 @@ function renderMain(){
       ${state.items.length>0 ? `<div class="prog"><div class="prog-fill" style="width:${pct}%"></div></div>` : ""}
       <div class="addbar">
         <button class="micbtn" id="micBtn" aria-label="Voice input"></button>
-        <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Paste, type, or tap the mic…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
+        <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Add items to ${esc(state.name||'your list')}…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
         <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
       </div>
       <div class="suggest" id="suggest"></div>
@@ -1114,7 +1114,7 @@ function renderListsPage(){
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn active" id="listsBtnL"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
-    <button class="navbtn" id="addListNav"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Add</span></button>
+    <button class="navbtn" id="addListNav"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Plan</span></button>
     <button class="navbtn" id="cartNavL"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${ccT>0?`<span class="cartcount">${ccD}/${ccT}</span>`:""}</span><span>Shop</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
@@ -1137,7 +1137,7 @@ function wireListsPage(){
     b.onpointerup=()=>{ pressCancel(); if(longFired){ listActCode=code; listActOpen=true; render(); } else { switchList(code); view="detail"; render(); } };
   });
   const nb=app.querySelector("#newListBubble"); if(nb) nb.onclick=newListPrompt;
-  const anl=app.querySelector("#addListNav"); if(anl) anl.onclick=newListPrompt;
+  const anl=app.querySelector("#addListNav"); if(anl) anl.onclick=()=>{ view="plan"; render(); };
   const cnl=app.querySelector("#cartNavL"); if(cnl) cnl.onclick=()=>{ view="detail"; shopMode=false; render(); };
   const ob=app.querySelector("#optBtnTop"); if(ob) ob.onclick=()=>{ optOpen=true; render(); };
   wireOptions();
@@ -1155,13 +1155,15 @@ function renderPlanPage(){
   const planGroups = catList().map(cat=>{
     const inList = state.items.filter(i=>i.cat===cat.id);
     const ba = state.buyAgain.filter(e=>e.cat===cat.id && !inList.some(i=>i.name.toLowerCase()===e.name.toLowerCase()));
-    if(!inList.length && !ba.length) return "";
+    const total = inList.length+ba.length;
+    if(!total && !cat.custom) return "";
+    const collapsed = (collapse.planCats||[]).includes(cat.id);
     const filled = inList.map(i=>`<button class="bapill plan-in" data-plan-rm="${i.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;${i.checked?'opacity:.5;':''}">${(i.qty||1)>1?`<span style="font-weight:800">${i.qty}× </span>`:""}${i.weight?`<span style="font-weight:800">${esc(i.weight)} </span>`:""}${esc(i.name)}${i.checked?' ✓':''}</button>`).join("");
     const outline = ba.map(e=>`<button class="bapill ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="border:1.5px dashed ${cat.color}"><span style="color:${cat.color};font-weight:800">+</span>${(e.qty||1)>1?`<span style="color:${cat.color};font-weight:800">${e.qty}×</span>`:""}${e.weight?`<span style="color:${cat.color};font-weight:800">${esc(e.weight)} </span>`:""}${esc(e.name)}</button>`).join("");
-    return `<section class="cat"><div class="chead"><div class="lbl catheadchip" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;width:100%"><span class="cemoji">${catIcon(cat,16)}</span><span class="cname" style="color:#fff">${esc(cat.label)}</span><span class="cnum" style="color:#fff;opacity:.85">${inList.length}/${inList.length+ba.length}</span></div></div>
-      <div class="pills" style="margin-top:6px">${filled}${outline}</div></section>`;
+    return `<section class="cat"><div class="chead"><button class="lbl catheadchip" data-planc="${cat.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;width:100%"><span class="cemoji">${catIcon(cat,16)}</span><span class="cname" style="color:#fff">${esc(cat.label)}</span><span class="cnum" style="color:#fff;opacity:.85">${inList.length}/${total}${collapsed?' ▸':''}</span></button></div>
+      ${collapsed?"":`<div class="pills" style="margin-top:6px">${filled}${outline}</div>`}</section>`;
   }).join("");
-  const hasAny = state.items.length>0 || state.buyAgain.length>0;
+  const hasAny = catList().some(c=> state.items.some(i=>i.cat===c.id) || state.buyAgain.some(e=>e.cat===c.id) || c.custom);
   app.innerHTML = `<div class="wrap">
     <div class="topfix" id="topfix">
       <header>
@@ -1179,8 +1181,8 @@ function renderPlanPage(){
       <div class="suggest" id="suggest"></div>
     </div>
     <div class="zoomwrap"><div class="zoomer" id="zoomer" style="transform:scale(${density});transform-origin:top left;width:calc(100% / ${density})">
-      <p class="hint" style="margin:2px 0 12px">Filled = already on the list · tap to remove. Outlined = previous items · tap <b>+</b> to add.</p>
       ${hasAny ? planGroups : `<div class="empty"><div class="empty-emoji">🛒</div><p class="empty-title">Nothing to plan yet</p><p class="empty-sub">Add items above, or clear items from a list and they'll show here to add again next time.</p></div>`}
+      <button id="addCatPlan" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
     </div></div>
   </div>
   <nav class="bottomnav" id="bottomnav">
@@ -1189,6 +1191,7 @@ function renderPlanPage(){
     <button class="navbtn" id="cartNav"><span class="cartwrap">${cartIcon}${state.items.length>0?`<span class="cartcount">${done}/${state.items.length}</span>`:""}</span><span>Shop</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
+  ${editing?editSheet():""}
   ${toast?`<div class="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
 function planRemove(id){ const it=state.items.find(i=>i.id===id); if(!it) return;
@@ -1197,8 +1200,25 @@ function planRemove(id){ const it=state.items.find(i=>i.id===id); if(!it) return
   state.items = state.items.filter(i=>i.id!==id); save(); render(); }
 function wirePlanPage(){
   wireAddBar();
-  app.querySelectorAll(".ba-restore").forEach(b=>b.onclick=()=>{ const [name,cat]=b.dataset.restore.split("|"); restore(name,cat); });
-  app.querySelectorAll(".plan-in").forEach(b=>b.onclick=()=>planRemove(b.dataset.planRm));
+  app.querySelectorAll(".ba-restore").forEach(b=>{ const [name,cat]=b.dataset.restore.split("|");
+    b.oncontextmenu=e=>e.preventDefault();
+    b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
+    b.onpointerup=()=>{ pressCancel();
+      if(longFired){ const en=state.buyAgain.find(x=>x.name===name && x.cat===cat); editing={kind:"ba", name, cat, qty:(en?en.qty||1:1), weight:(en?en.weight||"":""), sub:(en?en.sub||"":""), origName:name, origCat:cat}; render(); }
+      else { restore(name,cat); } }; });
+  app.querySelectorAll(".plan-in").forEach(b=>{ const id=b.dataset.planRm;
+    b.oncontextmenu=e=>e.preventDefault();
+    b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
+    b.onpointerup=()=>{ pressCancel(); const it=state.items.find(i=>i.id===id); if(!it) return;
+      if(longFired){ quickEdit=null; editing={kind:"item", ...it}; render(); }
+      else { planRemove(id); } }; });
+  app.querySelectorAll("[data-planc]").forEach(b=>{ const id=b.dataset.planc;
+    b.oncontextmenu=e=>e.preventDefault();
+    b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
+    b.onpointerup=()=>{ pressCancel();
+      if(longFired){ const c=CAT(id); editing={kind:"cat", id, label:c.label, emoji:c.img?"":(c.emoji||""), img:c.img||"", color:c.color, iconManual:!!c.img}; render(); }
+      else { if(!collapse.planCats) collapse.planCats=[]; collapse.planCats = collapse.planCats.includes(id) ? collapse.planCats.filter(x=>x!==id) : [...collapse.planCats, id]; localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); } }; });
+  const acp=app.querySelector("#addCatPlan"); if(acp) acp.onclick=addCategory;
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const an=app.querySelector("#addNav"); if(an) an.onclick=()=>{ const mi=document.getElementById("mainInput"); if(mi) mi.focus(); };
   const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>{ view="detail"; shopMode=false; render(); };
@@ -1206,14 +1226,21 @@ function wirePlanPage(){
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireOptions();
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
+  wireEditSheet();
 }
 function wireOptions(){
   const optBg=app.querySelector("#optBg"); if(optBg) optBg.onclick=()=>{ optOpen=false; render(); };
   const optS=app.querySelector("#optSheet"); if(optS) optS.onclick=e=>e.stopPropagation();
   const oca=app.querySelector("#optCollapseAll"); if(oca) oca.onclick=()=>{
-    const ids=catList().filter(c=>state.items.some(i=>i.cat===c.id)).map(c=>c.id);
-    const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);
-    collapse.cats = open ? ids.slice() : []; collapse.ba = open ? false : true;
+    if(view==="plan"){
+      const ids=catList().filter(c=> state.items.some(i=>i.cat===c.id)||state.buyAgain.some(e=>e.cat===c.id)||c.custom).map(c=>c.id);
+      const pc=collapse.planCats||[]; const open=ids.some(id=>!pc.includes(id));
+      collapse.planCats = open ? ids.slice() : [];
+    } else {
+      const ids=catList().filter(c=>state.items.some(i=>i.cat===c.id)).map(c=>c.id);
+      const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);
+      collapse.cats = open ? ids.slice() : []; collapse.ba = open ? false : true;
+    }
     localStorage.setItem(LS.collapse, JSON.stringify(collapse)); optOpen=false; render(); };
   app.querySelectorAll("[data-opt-theme]").forEach(b=>b.onclick=()=>{ if(theme!==b.dataset.optTheme) toggleTheme(); });
   const ozm=app.querySelector("#optZoomMinus"); if(ozm) ozm.onclick=()=>setDensity(density-0.1);
@@ -1225,7 +1252,9 @@ function wireOptions(){
 }
 function optionsSheet(){
   const row=(label,control)=>`<div class="optrow"><span class="optlabel">${label}</span><span class="optctrl">${control}</span></div>`;
-  const anyOpen = catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id)) || (state.buyAgain.length>0 && collapse.ba);
+  const anyOpen = (view==="plan")
+    ? catList().some(c=> (state.items.some(i=>i.cat===c.id)||state.buyAgain.some(e=>e.cat===c.id)||c.custom) && !(collapse.planCats||[]).includes(c.id))
+    : (catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id)) || (state.buyAgain.length>0 && collapse.ba));
   return `<div class="sheet-bg" id="optBg"><div class="sheet" id="optSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:14px">Options</div>
     ${(state.items.length>0 || state.buyAgain.length>0) ? `<button class="optaction" id="optCollapseAll" style="margin-bottom:10px">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button>` : ""}
@@ -1465,6 +1494,9 @@ function wire(){
   const rl=app.querySelector("#renameList"); if(rl) rl.onclick=renameList;
 
 
+  wireEditSheet();
+}
+function wireEditSheet(){
   if(editing){
     const bg=app.querySelector("#sheetBg"); if(bg) bg.onclick=()=>{ editing=null; render(); };
     const sh=app.querySelector("#sheet"); if(sh) sh.onclick=e=>e.stopPropagation();
