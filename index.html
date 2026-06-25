@@ -18,13 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -90,8 +90,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .navbtn span { letter-spacing:.2px; }
   .navbtn.active { color:var(--ink); }
   .navbtn.active::before { content:""; position:absolute; top:-6px; left:50%; transform:translateX(-50%); width:42px; height:3px; border-radius:0 0 6px 6px; background:var(--accent); }
-  .cartwrap { position:relative; display:inline-flex; align-items:center; gap:4px; }
-  .cartcount { font-size:11px; font-weight:800; color:var(--accent); line-height:1; }
+  .cartwrap { position:relative; display:inline-flex; align-items:center; justify-content:center; }
+  .cartcount { position:absolute; left:100%; top:50%; transform:translateY(-50%); margin-left:3px; font-size:11px; font-weight:800; color:var(--accent); line-height:1; white-space:nowrap; }
   .cartbadge { position:absolute; top:-7px; right:-12px; min-width:17px; height:17px; padding:0 5px; border-radius:999px; background:var(--accent); color:#fff; font-size:10px; font-weight:800; line-height:1; white-space:nowrap; display:flex; align-items:center; justify-content:center; box-sizing:border-box; }
   .baheadchip { background:transparent !important; border:1.5px solid var(--bablue) !important; color:var(--bablue) !important; }
   .baheadchip .cname, .baheadchip .cnum, .baheadchip .cemoji { color:var(--bablue) !important; }
@@ -322,7 +322,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.42";
+const APP_VERSION = "v0.43";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1041,7 +1041,7 @@ function renderMain(){
   let bodyBlocks;
   if(sortMode==="alpha"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(sortList(unchecked)) : "" }</section>`, baBlock ]; }
   else { bodyBlocks = catBlocks.slice(); const bp=Math.max(0, Math.min(state.baMeta.pos|0, bodyBlocks.length)); bodyBlocks.splice(bp, 0, baBlock); }
-  if(checkedBlock) bodyBlocks.push(checkedBlock);
+  if(checkedBlock) bodyBlocks.unshift(checkedBlock);
   const listBody = bodyBlocks.join("");
   app.innerHTML = `<div class="wrap ${shopMode?'shop':''}">
     <div class="topfix" id="topfix">
@@ -1080,8 +1080,8 @@ function renderMain(){
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
-    <button class="navbtn" id="addNav"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Add</span></button>
-    <button class="navbtn active" id="cartNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${state.items.length>0?`<span class="cartcount">${done}/${state.items.length}</span>`:""}</span><span>Cart</span></button>
+    <button class="navbtn" id="addNav"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Plan</span></button>
+    <button class="navbtn active" id="cartNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${state.items.length>0?`<span class="cartcount">${done}/${state.items.length}</span>`:""}</span><span>Shop</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${listsOpen?listsSheet():""}
@@ -1115,7 +1115,7 @@ function renderListsPage(){
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn active" id="listsBtnL"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
     <button class="navbtn" id="addListNav"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Add</span></button>
-    <button class="navbtn" id="cartNavL"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${ccT>0?`<span class="cartcount">${ccD}/${ccT}</span>`:""}</span><span>Cart</span></button>
+    <button class="navbtn" id="cartNavL"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${ccT>0?`<span class="cartcount">${ccD}/${ccT}</span>`:""}</span><span>Shop</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${listActOpen?listActSheet():""}
@@ -1152,17 +1152,22 @@ function wireListsPage(){
 function renderPlanPage(){
   const done=state.items.filter(i=>i.checked).length;
   const cartIcon=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>`;
-  const baGroups = catList().map(cat=>{ const its=state.buyAgain.filter(e=>e.cat===cat.id); if(!its.length) return "";
-    return `<section class="cat"><div class="chead"><div class="lbl catheadchip" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;width:100%"><span class="cemoji">${catIcon(cat,16)}</span><span class="cname" style="color:#fff">${esc(cat.label)}</span><span class="cnum" style="color:#fff;opacity:.85">${its.length}</span></div></div>
-      <div class="pills" style="margin-top:6px">${its.map(e=>`<button class="bapill ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="border:1.5px dashed ${cat.color}"><span style="color:${cat.color};font-weight:800">+</span>${(e.qty||1)>1?`<span style="color:${cat.color};font-weight:800">${e.qty}×</span>`:""}${e.weight?`<span style="color:${cat.color};font-weight:800">${esc(e.weight)} </span>`:""}${esc(e.name)}</button>`).join("")}</div></section>`;
+  const planGroups = catList().map(cat=>{
+    const inList = state.items.filter(i=>i.cat===cat.id);
+    const ba = state.buyAgain.filter(e=>e.cat===cat.id && !inList.some(i=>i.name.toLowerCase()===e.name.toLowerCase()));
+    if(!inList.length && !ba.length) return "";
+    const filled = inList.map(i=>`<button class="bapill plan-in" data-plan-rm="${i.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;${i.checked?'opacity:.5;':''}">${(i.qty||1)>1?`<span style="font-weight:800">${i.qty}× </span>`:""}${i.weight?`<span style="font-weight:800">${esc(i.weight)} </span>`:""}${esc(i.name)}${i.checked?' ✓':''}</button>`).join("");
+    const outline = ba.map(e=>`<button class="bapill ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="border:1.5px dashed ${cat.color}"><span style="color:${cat.color};font-weight:800">+</span>${(e.qty||1)>1?`<span style="color:${cat.color};font-weight:800">${e.qty}×</span>`:""}${e.weight?`<span style="color:${cat.color};font-weight:800">${esc(e.weight)} </span>`:""}${esc(e.name)}</button>`).join("");
+    return `<section class="cat"><div class="chead"><div class="lbl catheadchip" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;width:100%"><span class="cemoji">${catIcon(cat,16)}</span><span class="cname" style="color:#fff">${esc(cat.label)}</span><span class="cnum" style="color:#fff;opacity:.85">${inList.length}/${inList.length+ba.length}</span></div></div>
+      <div class="pills" style="margin-top:6px">${filled}${outline}</div></section>`;
   }).join("");
-  const hasBA = state.buyAgain.length>0;
+  const hasAny = state.items.length>0 || state.buyAgain.length>0;
   app.innerHTML = `<div class="wrap">
     <div class="topfix" id="topfix">
       <header>
         <div style="display:flex;align-items:center;gap:8px">
           <button class="backbtn" id="toCart" aria-label="Back" style="font-size:20px;line-height:1;padding:4px 12px">‹</button>
-          <span class="title disp">Plan<span class="dot">.</span></span>
+          <span class="title disp">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Plan")}<span class="dot">.</span></span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">${syncChip()}<button id="optBtnTop" class="iconbtn" aria-label="Options"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
       </header>
@@ -1174,21 +1179,26 @@ function renderPlanPage(){
       <div class="suggest" id="suggest"></div>
     </div>
     <div class="zoomwrap"><div class="zoomer" id="zoomer" style="transform:scale(${density});transform-origin:top left;width:calc(100% / ${density})">
-      <p class="hint" style="margin:2px 0 12px">Plan your shop — tap a previous item to add it back to <b>${esc(state.name||'your list')}</b>.</p>
-      ${hasBA ? baGroups : `<div class="empty"><div class="empty-emoji">🛒</div><p class="empty-title">Nothing to plan yet</p><p class="empty-sub">Items you clear from a list land here, so you can quickly add them again next time.</p></div>`}
+      <p class="hint" style="margin:2px 0 12px">Filled = already on the list · tap to remove. Outlined = previous items · tap <b>+</b> to add.</p>
+      ${hasAny ? planGroups : `<div class="empty"><div class="empty-emoji">🛒</div><p class="empty-title">Nothing to plan yet</p><p class="empty-sub">Add items above, or clear items from a list and they'll show here to add again next time.</p></div>`}
     </div></div>
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
-    <button class="navbtn active" id="addNav"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Add</span></button>
-    <button class="navbtn" id="cartNav"><span class="cartwrap">${cartIcon}${state.items.length>0?`<span class="cartcount">${done}/${state.items.length}</span>`:""}</span><span>Cart</span></button>
+    <button class="navbtn active" id="addNav"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Plan</span></button>
+    <button class="navbtn" id="cartNav"><span class="cartwrap">${cartIcon}${state.items.length>0?`<span class="cartcount">${done}/${state.items.length}</span>`:""}</span><span>Shop</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${toast?`<div class="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
+function planRemove(id){ const it=state.items.find(i=>i.id===id); if(!it) return;
+  if(!state.buyAgain.some(b=>b.name.toLowerCase()===it.name.toLowerCase() && b.cat===it.cat)){
+    state.buyAgain.unshift({name:it.name,cat:it.cat,qty:it.qty||1,weight:it.weight||"",sub:it.sub||""}); }
+  state.items = state.items.filter(i=>i.id!==id); save(); render(); }
 function wirePlanPage(){
   wireAddBar();
   app.querySelectorAll(".ba-restore").forEach(b=>b.onclick=()=>{ const [name,cat]=b.dataset.restore.split("|"); restore(name,cat); });
+  app.querySelectorAll(".plan-in").forEach(b=>b.onclick=()=>planRemove(b.dataset.planRm));
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const an=app.querySelector("#addNav"); if(an) an.onclick=()=>{ const mi=document.getElementById("mainInput"); if(mi) mi.focus(); };
   const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>{ view="detail"; shopMode=false; render(); };
