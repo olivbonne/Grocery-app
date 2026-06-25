@@ -18,13 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -91,7 +91,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .navbtn.active { color:var(--ink); }
   .navbtn.active::before { content:""; position:absolute; top:0; left:50%; transform:translateX(-50%); width:30px; height:4px; border-radius:0 0 6px 6px; background:var(--accent); }
   .cartwrap { position:relative; display:inline-flex; }
-  .cartbadge { position:absolute; top:-7px; right:-9px; min-width:17px; height:17px; padding:0 4px; border-radius:999px; background:var(--accent); color:#fff; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; box-sizing:border-box; }
+  .cartbadge { position:absolute; top:-7px; right:-12px; min-width:17px; height:17px; padding:0 5px; border-radius:999px; background:var(--accent); color:#fff; font-size:10px; font-weight:800; line-height:1; white-space:nowrap; display:flex; align-items:center; justify-content:center; box-sizing:border-box; }
   .baheadchip { background:transparent !important; border:1.5px solid var(--bablue) !important; color:var(--bablue) !important; }
   .baheadchip .cname, .baheadchip .cnum, .baheadchip .cemoji { color:var(--bablue) !important; }
   .basub { margin-left:6px; font-size:10px; font-weight:700; color:var(--muted2); background:var(--chip); border-radius:6px; padding:1px 6px; }
@@ -321,7 +321,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.40";
+const APP_VERSION = "v0.41";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -404,6 +404,25 @@ function shareListCode(code){ const url=listURL(code); listActOpen=false;
   else { showToast("Copy from the address bar"); } }
 function copyListCode(code){ const url=listURL(code); listActOpen=false;
   if(navigator.clipboard){ navigator.clipboard.writeText(url); showToast("Link copied"); } else { showToast("Copy from the address bar"); } }
+function duplicateListCode(code){
+  let src; try{ src = (code===listCode) ? state : JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); }catch(e){ src=null; }
+  listActOpen=false;
+  if(!src || !src.items){ showToast("Open this list once before duplicating"); render(); return; }
+  const base=(getLists().find(x=>x.code===code)||{}).name || src.name || "List";
+  const newCode=uid().slice(0,8), newName=base+" copy";
+  const dup={
+    items:(src.items||[]).map(i=>({...i, id:uid(), checked:false, checkedBy:null})),
+    buyAgain:(src.buyAgain||[]).map(b=>({...b})),
+    members:(me?[me]:[]),
+    categories:src.categories?JSON.parse(JSON.stringify(src.categories)):null,
+    name:newName,
+    baMeta:src.baMeta?{...src.baMeta}:{label:"Buy again",emoji:"↩",img:"",pos:99}
+  };
+  rememberList(newCode, newName);
+  switchList(newCode);
+  state=dup; ensureCats(); save(); render();
+  showToast("Duplicated as “"+newName+"”");
+}
 function delListUndo(code){ const a=getLists(); const i=a.findIndex(x=>x.code===code); if(i<0){ listActOpen=false; render(); return; }
   const removed=a[i]; a.splice(i,1); saveLists(a); listActOpen=false;
   toast="“"+(removed.name||"List")+"” removed"; toastAction={ label:"Undo", fn:()=>{ const b=getLists(); b.splice(Math.min(i,b.length),0,removed); saveLists(b); toast=null; toastAction=null; clearTimeout(_toastT); render(); } };
@@ -1013,7 +1032,7 @@ function renderMain(){
     <div class="topfix" id="topfix">
       <header>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <button class="backbtn" id="toLists" aria-label="Back to lists">‹ Lists</button>
+          <button class="backbtn" id="toLists" aria-label="Back to lists" style="font-size:20px;line-height:1;padding:4px 12px">‹</button>
           <span class="title disp">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="dot">.</span></span>
           <span class="count">${state.items.length===0?'all clear':(open+' to buy'+(done?` · ${done} in cart`:''))}</span>
           ${syncChip()}
@@ -1030,10 +1049,6 @@ function renderMain(){
         <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
       </div>
       <div class="suggest" id="suggest"></div>
-      <div class="ctrlrow">
-        <button class="listname" id="listName">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Groceries")} <span class="caret">▾</span></button>
-        ${state.items.length>0?`<button id="collapseAll" class="collapseall">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button>`:`<span></span>`}
-      </div>
       ${done>0?`<div style="margin-top:8px"><button id="sweepBtn" class="sweepbtn">Clear ${done} checked → Buy again</button></div>`:""}
       ${shopMode?`<div class="shopbar" style="margin-top:8px"><span>🛒 Shopping mode · ${open} left${done?` · ${done} in cart`:''}</span><button id="doneShop">Done</button></div>`:""}
     </div>
@@ -1052,7 +1067,7 @@ function renderMain(){
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
     <button class="navbtn" id="addNav"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Add</span></button>
-    <button class="navbtn ${shopMode?'active':''}" id="cartNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${open>0?`<span class="cartbadge">${open>99?'99+':open}</span>`:""}</span><span>Cart</span></button>
+    <button class="navbtn ${shopMode?'active':''}" id="cartNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${state.items.length>0?`<span class="cartbadge">${done}/${state.items.length}</span>`:""}</span><span>Cart</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${listsOpen?listsSheet():""}
@@ -1062,7 +1077,7 @@ function renderMain(){
 
 function renderListsPage(){
   const lists=getLists();
-  const cc=listCount(listCode);
+  const ccT=state.items.length, ccD=state.items.filter(i=>i.checked).length;
   app.innerHTML = `<div class="wrap">
     <div class="topfix" id="topfix">
       <header>
@@ -1085,7 +1100,7 @@ function renderListsPage(){
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn active" id="listsBtnL"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
     <button class="navbtn" id="addListNav"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Add</span></button>
-    <button class="navbtn" id="cartNavL"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${cc>0?`<span class="cartbadge">${cc>99?'99+':cc}</span>`:""}</span><span>Cart</span></button>
+    <button class="navbtn" id="cartNavL"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${ccT>0?`<span class="cartbadge">${ccD}/${ccT}</span>`:""}</span><span>Cart</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${listActOpen?listActSheet():""}
@@ -1096,7 +1111,7 @@ function listActSheet(){ const l=getLists().find(x=>x.code===listActCode)||{};
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${esc(l.name||'List')}</div>
     <button class="optaction" id="laRename">Rename</button>
     <button class="optaction" id="laShare">Share</button>
-    <button class="optaction" id="laCopy">Copy link</button>
+    <button class="optaction" id="laDup">Duplicate list</button>
     <button class="optaction" id="laDelete" style="border-color:#C24A33;color:#C24A33">Delete</button>
   </div></div>`;
 }
@@ -1115,13 +1130,18 @@ function wireListsPage(){
   const las=app.querySelector("#listActSheet"); if(las) las.onclick=e=>e.stopPropagation();
   const lar=app.querySelector("#laRename"); if(lar) lar.onclick=()=>renameListCode(listActCode);
   const lash=app.querySelector("#laShare"); if(lash) lash.onclick=()=>shareListCode(listActCode);
-  const lac=app.querySelector("#laCopy"); if(lac) lac.onclick=()=>copyListCode(listActCode);
+  const lac=app.querySelector("#laDup"); if(lac) lac.onclick=()=>duplicateListCode(listActCode);
   const lad=app.querySelector("#laDelete"); if(lad) lad.onclick=()=>delListUndo(listActCode);
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 function wireOptions(){
   const optBg=app.querySelector("#optBg"); if(optBg) optBg.onclick=()=>{ optOpen=false; render(); };
   const optS=app.querySelector("#optSheet"); if(optS) optS.onclick=e=>e.stopPropagation();
+  const oca=app.querySelector("#optCollapseAll"); if(oca) oca.onclick=()=>{
+    const ids=catList().filter(c=>state.items.some(i=>i.cat===c.id)).map(c=>c.id);
+    const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);
+    collapse.cats = open ? ids.slice() : []; collapse.ba = open ? false : true;
+    localStorage.setItem(LS.collapse, JSON.stringify(collapse)); optOpen=false; render(); };
   app.querySelectorAll("[data-opt-theme]").forEach(b=>b.onclick=()=>{ if(theme!==b.dataset.optTheme) toggleTheme(); });
   const ozm=app.querySelector("#optZoomMinus"); if(ozm) ozm.onclick=()=>setDensity(density-0.1);
   const ozp=app.querySelector("#optZoomPlus"); if(ozp) ozp.onclick=()=>setDensity(density+0.1);
@@ -1132,8 +1152,10 @@ function wireOptions(){
 }
 function optionsSheet(){
   const row=(label,control)=>`<div class="optrow"><span class="optlabel">${label}</span><span class="optctrl">${control}</span></div>`;
+  const anyOpen = catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id)) || (state.buyAgain.length>0 && collapse.ba);
   return `<div class="sheet-bg" id="optBg"><div class="sheet" id="optSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:14px">Options</div>
+    ${(state.items.length>0 || state.buyAgain.length>0) ? `<button class="optaction" id="optCollapseAll" style="margin-bottom:10px">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button>` : ""}
     ${row("Appearance", `<div class="seg"><button data-opt-theme="light" class="${theme==='light'?'on':''}">Light</button><button data-opt-theme="dark" class="${theme==='dark'?'on':''}">Dark</button></div>`)}
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(density*100)}%</span><button id="optZoomPlus">+</button></div>`)}
     ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
