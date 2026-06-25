@@ -18,13 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -85,9 +85,13 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .collapseall { border:none; background:transparent; color:var(--muted); font-size:12px; font-weight:700; padding:2px 0; }
   .bottomnav { position:fixed; left:0; right:0; bottom:0; z-index:40; display:flex; max-width:480px; margin:0 auto;
     background:var(--paper); border-top:1px solid var(--line); padding:6px 18px calc(8px + env(safe-area-inset-bottom)); justify-content:space-between; }
-  .navbtn { flex:1; border:none; background:transparent; color:var(--muted); display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px; font-weight:700; padding:6px 0; }
+  .navbtn { position:relative; flex:1; border:none; background:transparent; color:var(--muted); display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px; font-weight:700; padding:6px 0; }
   .navbtn:active { color:var(--ink); }
   .navbtn span { letter-spacing:.2px; }
+  .navbtn.active { color:var(--ink); }
+  .navbtn.active::before { content:""; position:absolute; top:0; left:50%; transform:translateX(-50%); width:30px; height:4px; border-radius:0 0 6px 6px; background:var(--accent); }
+  .cartwrap { position:relative; display:inline-flex; }
+  .cartbadge { position:absolute; top:-7px; right:-9px; min-width:17px; height:17px; padding:0 4px; border-radius:999px; background:var(--accent); color:#fff; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; box-sizing:border-box; }
   .baheadchip { background:transparent !important; border:1.5px solid var(--bablue) !important; color:var(--bablue) !important; }
   .baheadchip .cname, .baheadchip .cnum, .baheadchip .cemoji { color:var(--bablue) !important; }
   .basub { margin-left:6px; font-size:10px; font-weight:700; color:var(--muted2); background:var(--chip); border-radius:6px; padding:1px 6px; }
@@ -1016,7 +1020,7 @@ function renderMain(){
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           ${avatars}
-          <button id="shopBtn" aria-label="Shopping mode" class="iconbtn ${shopMode?'on':''}" title="Shopping mode"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg></button>
+          <button id="optBtnTop" aria-label="Options" class="iconbtn" title="Options"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
         </div>
       </header>
       ${state.items.length>0 ? `<div class="prog"><div class="prog-fill" style="width:${pct}%"></div></div>` : ""}
@@ -1048,7 +1052,7 @@ function renderMain(){
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
     <button class="navbtn" id="addNav"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Add</span></button>
-    <button class="navbtn" id="optBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><span>Options</span></button>
+    <button class="navbtn ${shopMode?'active':''}" id="cartNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${open>0?`<span class="cartbadge">${open>99?'99+':open}</span>`:""}</span><span>Cart</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${listsOpen?listsSheet():""}
@@ -1058,11 +1062,12 @@ function renderMain(){
 
 function renderListsPage(){
   const lists=getLists();
+  const cc=listCount(listCode);
   app.innerHTML = `<div class="wrap">
     <div class="topfix" id="topfix">
       <header>
         <div style="display:flex;align-items:center;gap:8px"><span class="title disp">Lists<span class="dot">.</span></span></div>
-        <div style="display:flex;align-items:center;gap:8px">${syncChip()}</div>
+        <div style="display:flex;align-items:center;gap:8px">${syncChip()}<button id="optBtnTop" aria-label="Options" class="iconbtn" title="Options"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
       </header>
     </div>
     <div class="zoomwrap"><div class="zoomer" id="zoomer">
@@ -1078,7 +1083,9 @@ function renderListsPage(){
     </div></div>
   </div>
   <nav class="bottomnav" id="bottomnav">
-    <button class="navbtn" id="optBtnL"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><span>Options</span></button>
+    <button class="navbtn active" id="listsBtnL"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
+    <button class="navbtn" id="addListNav"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Add</span></button>
+    <button class="navbtn" id="cartNavL"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${cc>0?`<span class="cartbadge">${cc>99?'99+':cc}</span>`:""}</span><span>Cart</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${listActOpen?listActSheet():""}
@@ -1100,7 +1107,9 @@ function wireListsPage(){
     b.onpointerup=()=>{ pressCancel(); if(longFired){ listActCode=code; listActOpen=true; render(); } else { switchList(code); view="detail"; render(); } };
   });
   const nb=app.querySelector("#newListBubble"); if(nb) nb.onclick=newListPrompt;
-  const ob=app.querySelector("#optBtnL"); if(ob) ob.onclick=()=>{ optOpen=true; render(); };
+  const anl=app.querySelector("#addListNav"); if(anl) anl.onclick=newListPrompt;
+  const cnl=app.querySelector("#cartNavL"); if(cnl) cnl.onclick=()=>{ view="detail"; shopMode=true; localStorage.setItem("ml_shop","1"); collapse.ba=false; render(); };
+  const ob=app.querySelector("#optBtnTop"); if(ob) ob.onclick=()=>{ optOpen=true; render(); };
   wireOptions();
   const lbg=app.querySelector("#listActBg"); if(lbg) lbg.onclick=()=>{ listActOpen=false; render(); };
   const las=app.querySelector("#listActSheet"); if(las) las.onclick=e=>e.stopPropagation();
@@ -1328,13 +1337,14 @@ function wire(){
       else { restore(name,cat); } }; });
   const cba=app.querySelector("#clearBA"); if(cba) cba.onclick=()=>{ const prev=snapState(); state.buyAgain=[]; save(); render(); showUndo(prev,"Buy-again cleared"); };
 
-  const shb=app.querySelector("#shopBtn"); if(shb) shb.onclick=toggleShop;
+  const shb=app.querySelector("#cartNav"); if(shb) shb.onclick=toggleShop;
   const dsh=app.querySelector("#doneShop"); if(dsh) dsh.onclick=toggleShop;
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const ln=app.querySelector("#listName"); if(ln) ln.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const an=app.querySelector("#addNav"); if(an) an.onclick=()=>{ const mi=document.getElementById("mainInput"); if(mi){ mi.focus(); try{ mi.setSelectionRange(mi.value.length, mi.value.length); }catch(e){} } };
-  const ob=app.querySelector("#optBtn"); if(ob) ob.onclick=()=>{ optOpen=true; listsOpen=false; render(); };
+  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=toggleShop;
+  const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; listsOpen=false; render(); };
   app.querySelectorAll("[data-example]").forEach(b=>b.onclick=()=>{ addEntries(b.dataset.example, null); });
   app.querySelectorAll("[data-qm-minus]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.qmMinus); if(it){ it.qty=Math.max(1,(it.qty||1)-1); markDirty(it.id); save(); render(); } });
   app.querySelectorAll("[data-qm-plus]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.qmPlus); if(it){ it.qty=(it.qty||1)+1; markDirty(it.id); save(); render(); } });
