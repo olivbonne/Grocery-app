@@ -18,13 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -280,6 +280,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .listbubble .lb-name { font-family:'Bricolage Grotesque',system-ui,sans-serif; font-weight:800; font-size:20px; color:var(--ink); }
   .listbubble .lb-count { font-size:13px; color:var(--muted); font-weight:700; }
   .lb-badge { flex:none; font-size:13px; font-weight:800; color:#fff; background:var(--accent); border-radius:999px; padding:3px 10px; white-space:nowrap; }
+  .lb-chevron { flex:none; color:var(--muted); font-size:24px; line-height:1; font-weight:700; margin-left:-2px; }
   .listbubble.cur .lb-badge { background:var(--accent); }
   .listbubble.add { align-items:center; background:transparent; border-style:dashed; }
   .listbubble.add .lb-name { color:var(--accent); font-size:16px; }
@@ -328,7 +329,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.45";
+const APP_VERSION = "v0.46";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -401,10 +402,12 @@ function toggleTheme(){ theme = theme==="dark" ? "light" : "dark"; localStorage.
 applyTheme();
 let shopMode = false;
 function toggleShop(){ shopMode=!shopMode; localStorage.setItem("ml_shop", shopMode?"1":"0"); collapse.ba = !shopMode && collapse.ba; render(); }
-let sortMode = localStorage.getItem("ml_sort")||"cat";
-function setSort(m){ sortMode=m; localStorage.setItem("ml_sort",m); render(); }
+let sorts = {}; try{ sorts = JSON.parse(localStorage.getItem("ml_sorts")||"null") || {}; }catch(e){ sorts={}; }
+const _legacySort = localStorage.getItem("ml_sort")||"cat";
+function sortModeFor(){ return sorts[view] || _legacySort; }
+function setSort(m){ sorts[view]=m; localStorage.setItem("ml_sorts", JSON.stringify(sorts)); render(); }
 let optOpen=false, listsOpen=false;
-let view="detail", listActOpen=false, listActCode=null;
+let view="detail", listActOpen=false, listActCode=null, newListOpen=false, newListDraft="";
 function listCount(code){ try{ const s = (code===listCode) ? state : JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); return (s&&s.items)? s.items.filter(i=>!i.checked).length : 0; }catch(e){ return 0; } }
 function listStats(code){ try{ const s=(code===listCode)?state:JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); const items=(s&&s.items)||[]; const total=items.length, done=items.filter(i=>i.checked).length; return {total, done, pct: total?Math.round(done/total*100):0}; }catch(e){ return {total:0,done:0,pct:0}; } }
 function listURL(code){ return location.origin + location.pathname + "?list=" + code; }
@@ -445,9 +448,15 @@ function saveLists(a){ localStorage.setItem("ml_lists", JSON.stringify(a)); }
 function rememberList(code,name){ const a=getLists(); const i=a.findIndex(x=>x.code===code);
   if(i>=0){ if(name && a[i].name!==name){ a[i].name=name; saveLists(a); } }
   else { a.push({code, name:name||"Groceries"}); saveLists(a); } }
-function newListPrompt(){ const name=prompt("Name the new list:","Groceries"); if(name===null) return;
-  const code=uid().slice(0,8); rememberList(code, (name||"").trim()||"Groceries");
-  switchList(code); save(); }
+function newListPrompt(){ newListOpen=true; newListDraft=""; render(); }
+function newListSheet(){ return `<div class="sheet-bg" id="newListBg"><div class="sheet" id="newListSheet">
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">New list</div>
+    <div style="display:flex;gap:8px;align-items:stretch">
+      <input id="newListName" placeholder="List name" value="${esc(newListDraft)}" autocomplete="off" style="flex:1;min-width:0;height:48px;padding:0 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:16px" />
+      <button id="newListCreate" style="flex:none;padding:0 18px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">Create</button>
+    </div></div></div>`; }
+function createNewListFromSheet(){ const nm=(newListDraft||"").trim()||"Untitled list"; const code=uid().slice(0,8);
+  rememberList(code, nm); newListOpen=false; newListDraft=""; switchList(code); view="plan"; save(); render(); }
 function switchList(code){ listsOpen=false; if(code===listCode){ render(); return; }
   listCode=code; localStorage.setItem(LS_LASTLIST, code);
   LS = { me:"ml_me", collapse:"ml_collapse_"+code, cache:"ml_cache_"+code };
@@ -1054,8 +1063,10 @@ function renderMain(){
     </section>` : "";
 
   const pct = state.items.length ? Math.round(done/state.items.length*100) : 0;
+  const sm = sortModeFor();
   let bodyBlocks;
-  if(sortMode==="alpha"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(sortList(unchecked)) : "" }</section>`, baBlock ]; }
+  if(sm==="alpha"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(sortList(unchecked)) : "" }</section>`, baBlock ]; }
+  else if(sm==="auto"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>`, baBlock ]; }
   else { bodyBlocks = catBlocks.slice(); const bp=Math.max(0, Math.min(state.baMeta.pos|0, bodyBlocks.length)); bodyBlocks.splice(bp, 0, baBlock); }
   if(checkedBlock) bodyBlocks.unshift(checkedBlock);
   const listBody = bodyBlocks.join("");
@@ -1122,6 +1133,7 @@ function renderListsPage(){
             <div style="display:flex;align-items:center;gap:10px;width:100%">
               <span class="lb-name" style="flex:1;min-width:0">${esc(l.name||'Untitled list')}</span>
               <span class="lb-badge">${st.done}/${st.total}</span>
+              <span class="lb-chevron" aria-hidden="true">›</span>
             </div>
             <div class="prog" style="margin-top:11px;width:100%"><div class="prog-fill" style="width:${st.pct}%"></div></div>
           </button>`; }).join("")}
@@ -1137,6 +1149,7 @@ function renderListsPage(){
   </nav>
   ${optOpen?optionsSheet():""}
   ${listActOpen?listActSheet():""}
+  ${newListOpen?newListSheet():""}
   ${toast?`<div class="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
 function listActSheet(){ const l=getLists().find(x=>x.code===listActCode)||{};
@@ -1155,6 +1168,13 @@ function wireListsPage(){
     b.onpointerup=()=>{ pressCancel(); if(longFired){ listActCode=code; listActOpen=true; render(); } else { switchList(code); view="plan"; render(); } };
   });
   const nb=app.querySelector("#newListBubble"); if(nb) nb.onclick=newListPrompt;
+  const nlbg=app.querySelector("#newListBg"); if(nlbg) nlbg.onclick=()=>{ newListOpen=false; render(); };
+  const nls=app.querySelector("#newListSheet"); if(nls) nls.onclick=e=>e.stopPropagation();
+  const nln=app.querySelector("#newListName");
+  if(nln){ nln.focus(); try{ nln.setSelectionRange(nln.value.length,nln.value.length); }catch(e){}
+    nln.oninput=()=>{ newListDraft=nln.value; };
+    nln.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); createNewListFromSheet(); } }; }
+  const nlc=app.querySelector("#newListCreate"); if(nlc){ nlc.onpointerdown=e=>e.preventDefault(); nlc.onclick=createNewListFromSheet; }
   const anl=app.querySelector("#addListNav"); if(anl) anl.onclick=()=>{ view="plan"; render(); };
   const cnl=app.querySelector("#cartNavL"); if(cnl) cnl.onclick=()=>{ view="detail"; shopMode=false; render(); };
   const ob=app.querySelector("#optBtnTop"); if(ob) ob.onclick=()=>{ optOpen=true; render(); };
@@ -1167,33 +1187,46 @@ function wireListsPage(){
   const lad=app.querySelector("#laDelete"); if(lad) lad.onclick=()=>delListUndo(listActCode);
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
+function planFilledPill(i, cat){ const edge=i.checked?'var(--done-edge)':cat.color; const qcol=i.checked?'var(--muted2)':cat.color;
+  return `<button class="pill plan-in ${i.checked?'done':''}" data-plan-rm="${i.id}" style="border-left:4px solid ${edge}">${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(i.name)}${i.checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit">▾</span></button>${quickEdit===i.id?qpanelHTML(i,cat):""}`; }
+function planOutlineChip(e, cat){ return `<button class="bapill ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="border:1.5px dashed ${cat.color}"><span style="color:${cat.color};font-weight:800">+</span>${(e.qty||1)>1?`<span style="color:${cat.color};font-weight:800">${e.qty}×</span>`:""}${e.weight?`<span style="color:${cat.color};font-weight:800">${esc(e.weight)} </span>`:""}${esc(e.name)}</button>`; }
 function renderPlanPage(){
   const done=state.items.filter(i=>i.checked).length;
   const cartIcon=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>`;
-  const planGroups = catList().map(cat=>{
-    const inList = state.items.filter(i=>i.cat===cat.id);
-    const ba = state.buyAgain.filter(e=>e.cat===cat.id && !inList.some(i=>i.name.toLowerCase()===e.name.toLowerCase()));
-    const total = inList.length+ba.length;
-    if(!total && !cat.custom) return "";
-    const collapsed = (collapse.planCats||[]).includes(cat.id);
-    const catAdd = catEntry===cat.id ? `<div class="catadd">
-        <div class="inwrap"><textarea id="catInput" rows="1" placeholder="Add to ${esc(cat.label)}" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="Clear">×</button></div>
-        <button id="catAddBtn" style="background:${cat.color}">+</button></div>` : "";
-    const filled = inList.map(i=>`<button class="bapill plan-in" data-plan-rm="${i.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;${i.checked?'opacity:.5;':''}">${(i.qty||1)>1?`<span style="font-weight:800">${i.qty}× </span>`:""}${i.weight?`<span style="font-weight:800">${esc(i.weight)} </span>`:""}${esc(i.name)}${i.checked?' ✓':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit" style="color:#fff;margin-left:2px">▾</span></button>${quickEdit===i.id?qpanelHTML(i,cat):""}`).join("");
-    const outline = ba.map(e=>`<button class="bapill ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="border:1.5px dashed ${cat.color}"><span style="color:${cat.color};font-weight:800">+</span>${(e.qty||1)>1?`<span style="color:${cat.color};font-weight:800">${e.qty}×</span>`:""}${e.weight?`<span style="color:${cat.color};font-weight:800">${esc(e.weight)} </span>`:""}${esc(e.name)}</button>`).join("");
-    return `<section class="cat"><div class="chead"><button class="lbl catheadchip" data-planc="${cat.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;width:100%"><span class="cemoji">${catIcon(cat,16)}</span><span class="cname" style="color:#fff">${esc(cat.label)}</span><span class="cnum" style="color:#fff;opacity:.85">${inList.length}/${total}${collapsed?' ▸':''}</span></button>
-      <button class="plus" data-add="${cat.id}" style="${catEntry===cat.id?`background:${cat.color};color:#fff`:''}">${catEntry===cat.id?'×':'+'}</button></div>${catAdd}
-      ${collapsed?"":`<div class="pills" style="margin-top:6px">${filled}${outline}</div>`}</section>`;
-  }).join("");
+  const psm = sortModeFor();
+  let planBody;
+  if(psm==="cat"){
+    planBody = catList().map(cat=>{
+      const inList = state.items.filter(i=>i.cat===cat.id);
+      const ba = state.buyAgain.filter(e=>e.cat===cat.id && !inList.some(i=>i.name.toLowerCase()===e.name.toLowerCase()));
+      const total = inList.length+ba.length;
+      if(!total && !cat.custom) return "";
+      const collapsed = (collapse.planCats||[]).includes(cat.id);
+      const catAdd = catEntry===cat.id ? `<div class="catadd">
+          <div class="inwrap"><textarea id="catInput" rows="1" placeholder="Add to ${esc(cat.label)}" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="Clear">×</button></div>
+          <button id="catAddBtn" style="background:${cat.color}">+</button></div>` : "";
+      const filled = inList.map(i=>planFilledPill(i,cat)).join("");
+      const outline = ba.map(e=>planOutlineChip(e,cat)).join("");
+      return `<section class="cat"><div class="chead"><button class="lbl catheadchip" data-planc="${cat.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;width:100%"><span class="cemoji">${catIcon(cat,16)}</span><span class="cname" style="color:#fff">${esc(cat.label)}</span><span class="cnum" style="color:#fff;opacity:.85">${inList.length}/${total}${collapsed?' ▸':''}</span></button>
+        <button class="plus" data-add="${cat.id}" style="${catEntry===cat.id?`background:${cat.color};color:#fff`:''}">${catEntry===cat.id?'×':'+'}</button></div>${catAdd}
+        ${collapsed?"":`<div class="pills" style="margin-top:6px">${filled}${outline}</div>`}</section>`;
+    }).join("");
+  } else {
+    let inList = state.items.slice();
+    let ba = state.buyAgain.filter(e=> !state.items.some(i=>i.name.toLowerCase()===e.name.toLowerCase() && i.cat===e.cat));
+    if(psm==="alpha"){ inList=inList.sort((a,b)=>a.name.localeCompare(b.name)); ba=ba.slice().sort((a,b)=>a.name.localeCompare(b.name)); }
+    const filled = inList.map(i=>planFilledPill(i, CAT(i.cat))).join("");
+    const outline = ba.map(e=>planOutlineChip(e, CAT(e.cat))).join("");
+    planBody = (filled||outline) ? `<section class="cat"><div class="pills">${filled}${outline}</div></section>` : "";
+  }
   const hasAny = catList().some(c=> state.items.some(i=>i.cat===c.id) || state.buyAgain.some(e=>e.cat===c.id) || c.custom);
   const avatars = state.members.map((m,i)=>`<div class="av ${m===me?'me':''}" style="margin-left:${i?-6:0}px" title="${esc(m)}">${esc(m.slice(0,1).toUpperCase())}</div>`).join("");
   app.innerHTML = `<div class="wrap">
     <div class="topfix" id="topfix">
       <header>
-        <div style="display:flex;align-items:center;gap:6px">
-          <button class="backbtn" id="planBack" aria-label="Back to lists" style="font-size:20px;line-height:1;padding:4px 11px">‹</button>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button class="backbtn" id="planBack" aria-label="Back to lists" style="font-size:20px;line-height:1;padding:4px 12px">‹</button>
           <span class="title disp">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Plan")}<span class="dot">.</span></span>
-          <button class="backbtn" id="planFwd" aria-label="Open shop" style="font-size:20px;line-height:1;padding:4px 11px">›</button>
         </div>
         <div style="display:flex;align-items:center;gap:8px">${avatars}${syncChip()}<button id="optBtnTop" class="iconbtn" aria-label="Options"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
       </header>
@@ -1205,7 +1238,7 @@ function renderPlanPage(){
       <div class="suggest" id="suggest"></div>
     </div>
     <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
-      ${hasAny ? planGroups : `<div class="empty"><div class="empty-emoji">🛒</div><p class="empty-title">Nothing to plan yet</p><p class="empty-sub">Add items above, or clear items from a list and they'll show here to add again next time.</p></div>`}
+      ${hasAny ? planBody : `<div class="empty"><div class="empty-emoji">🛒</div><p class="empty-title">Nothing to plan yet</p><p class="empty-sub">Add items above, or clear items from a list and they'll show here to add again next time.</p></div>`}
       <button id="addCatPlan" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
     </div></div>
   </div>
@@ -1258,7 +1291,6 @@ function wirePlanPage(){
   const an=app.querySelector("#addNav"); if(an) an.onclick=()=>{ const mi=document.getElementById("mainInput"); if(mi) mi.focus(); };
   const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>{ view="detail"; shopMode=false; render(); };
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>{ view="lists"; optOpen=false; render(); };
-  const pfw=app.querySelector("#planFwd"); if(pfw) pfw.onclick=()=>{ view="detail"; shopMode=false; render(); };
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireOptions();
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
@@ -1284,6 +1316,8 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-sound]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optSound==="1"; if(soundOn!==want) toggleSound(); });
   app.querySelectorAll("[data-opt-sort]").forEach(b=>b.onclick=()=>setSort(b.dataset.optSort));
   app.querySelectorAll("[data-opt-style]").forEach(b=>b.onclick=()=>{ if(styl()!==b.dataset.optStyle) setStyle(b.dataset.optStyle); });
+  app.querySelectorAll("[data-list-up]").forEach(b=>b.onclick=()=>moveList(b.dataset.listUp,-1));
+  app.querySelectorAll("[data-list-down]").forEach(b=>b.onclick=()=>moveList(b.dataset.listDown,1));
   const osu=app.querySelector("#optSwitchUser"); if(osu) osu.onclick=()=>{ localStorage.removeItem(LS.me); me=null; optOpen=false; render(); };
   const osh=app.querySelector("#optShare"); if(osh) osh.onclick=copyLink;
 }
@@ -1294,12 +1328,16 @@ function optionsSheet(){
     : (catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id)) || (state.buyAgain.length>0 && collapse.ba));
   return `<div class="sheet-bg" id="optBg"><div class="sheet" id="optSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:14px">Options</div>
-    ${(state.items.length>0 || state.buyAgain.length>0) ? `<button class="optaction" id="optCollapseAll" style="margin-bottom:10px">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button>` : ""}
+    ${view==="lists" ? `<div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:2px 0 8px">Reorder lists</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
+        ${getLists().map((l,i)=>`<div class="listrow"><span class="listrow-name" style="flex:1">${esc(l.name||'Untitled list')}</span><button class="iconmini" data-list-up="${esc(l.code)}" ${i===0?'disabled style="opacity:.3"':''}>↑</button><button class="iconmini" data-list-down="${esc(l.code)}" ${i===getLists().length-1?'disabled style="opacity:.3"':''}>↓</button></div>`).join("")}
+      </div>` : ""}
+    ${(view!=="lists" && (state.items.length>0 || state.buyAgain.length>0)) ? `<button class="optaction" id="optCollapseAll" style="margin-bottom:10px">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button>` : ""}
     ${row("Appearance", `<div class="seg"><button data-opt-theme="light" class="${theme==='light'?'on':''}">Light</button><button data-opt-theme="dark" class="${theme==='dark'?'on':''}">Dark</button></div>`)}
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
     ${(view==="plan"||view==="detail") ? row("Style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
     ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
-    ${row("Sort", `<div class="seg"><button data-opt-sort="cat" class="${sortMode==='cat'?'on':''}">Category</button><button data-opt-sort="alpha" class="${sortMode==='alpha'?'on':''}">A–Z</button></div>`)}
+    ${view!=="lists" ? row("Sort", `<div class="seg"><button data-opt-sort="auto" class="${sortModeFor()==='auto'?'on':''}">Auto</button><button data-opt-sort="cat" class="${sortModeFor()==='cat'?'on':''}">Category</button><button data-opt-sort="alpha" class="${sortModeFor()==='alpha'?'on':''}">A–Z</button></div>`) : ""}
     <button class="optaction" id="optSwitchUser">Switch user${me?` (${esc(me)})`:""}</button>
     <button class="optaction" id="optShare">Share link</button>
     <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted2);font-weight:600" title="Build (file last modified): ${APP_BUILD_DATE}">${APP_VERSION}</div>
