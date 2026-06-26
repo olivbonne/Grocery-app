@@ -18,13 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -221,6 +221,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .bahead { display:flex; align-items:center; gap:6px; width:100%; border:none; background:transparent; padding:0; }
   .bapill { display:inline-flex; align-items:center; gap:5px; background:transparent; border-radius:10px;
     padding:6px 10px; font-size:13px; font-weight:600; color:var(--ink); }
+  /* per-page style: compact = small chips, normal = big bubbles */
+  .zoomer.compact .pill { min-height:38px; font-size:13px; padding:0 11px; border-radius:11px; border-left-width:4px; }
+  .zoomer.normal .bapill { min-height:46px; font-size:15px; padding:10px 14px; border-radius:13px; gap:7px; }
+  .zoomer.normal .bapill .qmore { font-size:13px; }
   .hint { margin-top:12px; font-size:11px; color:var(--muted); text-align:center; }
   .botbar { position:fixed; left:0; right:0; bottom:0; z-index:40; max-width:480px; margin:0 auto;
     padding:8px 14px calc(8px + env(safe-area-inset-bottom));
@@ -275,6 +279,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .listbubble.cur { border-color:var(--accent); }
   .listbubble .lb-name { font-family:'Bricolage Grotesque',system-ui,sans-serif; font-weight:800; font-size:20px; color:var(--ink); }
   .listbubble .lb-count { font-size:13px; color:var(--muted); font-weight:700; }
+  .lb-badge { flex:none; font-size:13px; font-weight:800; color:#fff; background:var(--accent); border-radius:999px; padding:3px 10px; white-space:nowrap; }
+  .listbubble.cur .lb-badge { background:var(--accent); }
   .listbubble.add { align-items:center; background:transparent; border-style:dashed; }
   .listbubble.add .lb-name { color:var(--accent); font-size:16px; }
   .qmore { margin-left:6px; width:22px; height:22px; flex:none; border-radius:7px; display:inline-flex; align-items:center; justify-content:center;
@@ -322,7 +328,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.44";
+const APP_VERSION = "v0.45";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -382,8 +388,13 @@ if(params.get("list") !== listCode){ params.set("list", listCode);
 let LS = { me:"ml_me", collapse:"ml_collapse_"+listCode, cache:"ml_cache_"+listCode };
 let me = localStorage.getItem(LS.me) || null;
 let collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}');
-let density = parseFloat(localStorage.getItem("ml_density")||"1") || 1;
-function setDensity(d){ density=Math.min(1.3,Math.max(0.7,Math.round(d*10)/10)); localStorage.setItem("ml_density",density); render(); }
+let densities = {}; try{ densities = JSON.parse(localStorage.getItem("ml_densities")||"null") || {}; }catch(e){ densities={}; }
+const _legacyDensity = parseFloat(localStorage.getItem("ml_density")||"1") || 1;
+function dens(){ const v=densities[view]; return (typeof v==="number" && v) ? v : _legacyDensity; }
+function setDensity(d){ const nd=Math.min(1.3,Math.max(0.7,Math.round(d*10)/10)); densities[view]=nd; localStorage.setItem("ml_densities", JSON.stringify(densities)); render(); }
+let styles = {}; try{ styles = JSON.parse(localStorage.getItem("ml_styles")||"null") || {}; }catch(e){ styles={}; }
+function styl(){ return styles[view] || (view==="plan" ? "compact" : "normal"); }
+function setStyle(s){ styles[view]=s; localStorage.setItem("ml_styles", JSON.stringify(styles)); render(); }
 let theme = localStorage.getItem("ml_theme") || ((typeof window!=="undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark");
 function applyTheme(){ document.body.classList.toggle("dark", theme==="dark"); document.documentElement.classList.toggle("dark", theme==="dark"); }
 function toggleTheme(){ theme = theme==="dark" ? "light" : "dark"; localStorage.setItem("ml_theme", theme); applyTheme(); render(); }
@@ -896,7 +907,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&
 function syncZoomHeight(){ const z=document.getElementById("zoomer"); const bb=document.getElementById("bottomnav"); const tf=document.getElementById("topfix");
   const zw=z?z.parentElement:null;
   if(zw && tf){ zw.style.marginTop = Math.ceil(tf.getBoundingClientRect().height) + "px"; }
-  if(z){ if(bb){ const h=bb.getBoundingClientRect().height||64; z.style.paddingBottom = Math.ceil(h/density + 24) + "px"; }
+  if(z){ if(bb){ const h=bb.getBoundingClientRect().height||64; z.style.paddingBottom = Math.ceil(h/dens() + 24) + "px"; }
     if(zw) zw.style.height = Math.ceil(z.getBoundingClientRect().height) + "px"; }
   applyKb(); }
 let kbOffset=0, kbActive=false;
@@ -943,8 +954,7 @@ function pillHTML(i, cat){
   const edge = i.checked ? 'var(--done-edge)' : cat.color;
   const qcol = i.checked ? 'var(--muted2)' : cat.color;
   return `<button class="pill ${i.checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="border-left:4px solid ${edge}">`
-    +`${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}${(!i.checked&&i.starred)?`<span style="color:#E8A91D;margin-right:1px">★</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(i.name)}${(!i.checked)?`<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit">▾</span>`:""}</button>`
-    + (quickEdit===i.id ? qpanelHTML(i, cat) : "");
+    +`${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}${(!i.checked&&i.starred)?`<span style="color:#E8A91D;margin-right:1px">★</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(i.name)}</button>`;
 }
 function pillRow(items, cat){ return `<div class="pills">${items.map(i=>pillHTML(i,cat)).join("")}</div>`; }
 function pillsMixed(items){ return `<div class="pills">${items.map(i=>pillHTML(i, CAT(i.cat))).join("")}</div>`; }
@@ -956,6 +966,12 @@ function qpanelHTML(i, cat){ const cur=i.weight||"";
     <button class="qm-edit" data-qm-edit="${i.id}" aria-label="Full edit">⋯</button>
   </div>`; }
 
+function wireQuickPanel(){
+  app.querySelectorAll("[data-qm-minus]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.qmMinus); if(it){ it.qty=Math.max(1,(it.qty||1)-1); markDirty(it.id); save(); render(); } });
+  app.querySelectorAll("[data-qm-plus]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.qmPlus); if(it){ it.qty=(it.qty||1)+1; markDirty(it.id); save(); render(); } });
+  app.querySelectorAll("[data-qm-weight]").forEach(b=>b.onclick=()=>{ const [id,w]=b.dataset.qmWeight.split("|"); const it=state.items.find(i=>i.id===id); if(it){ it.weight=w; markDirty(it.id); save(); render(); } });
+  app.querySelectorAll("[data-qm-edit]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.qmEdit); if(it){ quickEdit=null; editing={kind:"item", ...it}; render(); } });
+}
 function renderMain(){
   const open = state.items.filter(i=>!i.checked).length;
   const done = state.items.filter(i=>i.checked).length;
@@ -1066,7 +1082,7 @@ function renderMain(){
       ${done>0?`<div style="margin-top:8px"><button id="sweepBtn" class="sweepbtn">Clear ${done} checked → Buy again</button></div>`:""}
       ${shopMode?`<div class="shopbar" style="margin-top:8px"><span>🛒 Shopping mode · ${open} left${done?` · ${done} in cart`:''}</span><button id="doneShop">Done</button></div>`:""}
     </div>
-    <div class="zoomwrap"><div class="zoomer" id="zoomer" style="transform:scale(${density});transform-origin:top left;width:calc(100% / ${density})">
+    <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${(state.items.length===0 && !shopMode)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">Your list is empty</p>
@@ -1103,9 +1119,11 @@ function renderListsPage(){
       <div class="listgrid">
         ${lists.map(l=>{ const st=listStats(l.code); const cur=l.code===listCode;
           return `<button class="listbubble ${cur?'cur':''}" data-open="${esc(l.code)}">
-            <span class="lb-name">${esc(l.name||'Untitled list')}</span>
-            <span class="lb-count">${st.done}/${st.total} items${st.total? (st.done>=st.total?' · all done':''):''}</span>
-            ${st.total?`<div class="prog" style="margin-top:9px"><div class="prog-fill" style="width:${st.pct}%"></div></div>`:""}
+            <div style="display:flex;align-items:center;gap:10px;width:100%">
+              <span class="lb-name" style="flex:1;min-width:0">${esc(l.name||'Untitled list')}</span>
+              <span class="lb-badge">${st.done}/${st.total}</span>
+            </div>
+            <div class="prog" style="margin-top:11px;width:100%"><div class="prog-fill" style="width:${st.pct}%"></div></div>
           </button>`; }).join("")}
         <button class="listbubble add" id="newListBubble"><span class="lb-name">+ New list</span></button>
       </div>
@@ -1134,7 +1152,7 @@ function wireListsPage(){
   app.querySelectorAll("[data-open]").forEach(b=>{ const code=b.dataset.open;
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
-    b.onpointerup=()=>{ pressCancel(); if(longFired){ listActCode=code; listActOpen=true; render(); } else { switchList(code); view="detail"; render(); } };
+    b.onpointerup=()=>{ pressCancel(); if(longFired){ listActCode=code; listActOpen=true; render(); } else { switchList(code); view="plan"; render(); } };
   });
   const nb=app.querySelector("#newListBubble"); if(nb) nb.onclick=newListPrompt;
   const anl=app.querySelector("#addListNav"); if(anl) anl.onclick=()=>{ view="plan"; render(); };
@@ -1158,20 +1176,26 @@ function renderPlanPage(){
     const total = inList.length+ba.length;
     if(!total && !cat.custom) return "";
     const collapsed = (collapse.planCats||[]).includes(cat.id);
-    const filled = inList.map(i=>`<button class="bapill plan-in" data-plan-rm="${i.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;${i.checked?'opacity:.5;':''}">${(i.qty||1)>1?`<span style="font-weight:800">${i.qty}× </span>`:""}${i.weight?`<span style="font-weight:800">${esc(i.weight)} </span>`:""}${esc(i.name)}${i.checked?' ✓':''}</button>`).join("");
+    const catAdd = catEntry===cat.id ? `<div class="catadd">
+        <div class="inwrap"><textarea id="catInput" rows="1" placeholder="Add to ${esc(cat.label)}" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="Clear">×</button></div>
+        <button id="catAddBtn" style="background:${cat.color}">+</button></div>` : "";
+    const filled = inList.map(i=>`<button class="bapill plan-in" data-plan-rm="${i.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;${i.checked?'opacity:.5;':''}">${(i.qty||1)>1?`<span style="font-weight:800">${i.qty}× </span>`:""}${i.weight?`<span style="font-weight:800">${esc(i.weight)} </span>`:""}${esc(i.name)}${i.checked?' ✓':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit" style="color:#fff;margin-left:2px">▾</span></button>${quickEdit===i.id?qpanelHTML(i,cat):""}`).join("");
     const outline = ba.map(e=>`<button class="bapill ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="border:1.5px dashed ${cat.color}"><span style="color:${cat.color};font-weight:800">+</span>${(e.qty||1)>1?`<span style="color:${cat.color};font-weight:800">${e.qty}×</span>`:""}${e.weight?`<span style="color:${cat.color};font-weight:800">${esc(e.weight)} </span>`:""}${esc(e.name)}</button>`).join("");
-    return `<section class="cat"><div class="chead"><button class="lbl catheadchip" data-planc="${cat.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;width:100%"><span class="cemoji">${catIcon(cat,16)}</span><span class="cname" style="color:#fff">${esc(cat.label)}</span><span class="cnum" style="color:#fff;opacity:.85">${inList.length}/${total}${collapsed?' ▸':''}</span></button></div>
+    return `<section class="cat"><div class="chead"><button class="lbl catheadchip" data-planc="${cat.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;width:100%"><span class="cemoji">${catIcon(cat,16)}</span><span class="cname" style="color:#fff">${esc(cat.label)}</span><span class="cnum" style="color:#fff;opacity:.85">${inList.length}/${total}${collapsed?' ▸':''}</span></button>
+      <button class="plus" data-add="${cat.id}" style="${catEntry===cat.id?`background:${cat.color};color:#fff`:''}">${catEntry===cat.id?'×':'+'}</button></div>${catAdd}
       ${collapsed?"":`<div class="pills" style="margin-top:6px">${filled}${outline}</div>`}</section>`;
   }).join("");
   const hasAny = catList().some(c=> state.items.some(i=>i.cat===c.id) || state.buyAgain.some(e=>e.cat===c.id) || c.custom);
+  const avatars = state.members.map((m,i)=>`<div class="av ${m===me?'me':''}" style="margin-left:${i?-6:0}px" title="${esc(m)}">${esc(m.slice(0,1).toUpperCase())}</div>`).join("");
   app.innerHTML = `<div class="wrap">
     <div class="topfix" id="topfix">
       <header>
-        <div style="display:flex;align-items:center;gap:8px">
-          <button class="backbtn" id="toCart" aria-label="Back" style="font-size:20px;line-height:1;padding:4px 12px">‹</button>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button class="backbtn" id="planBack" aria-label="Back to lists" style="font-size:20px;line-height:1;padding:4px 11px">‹</button>
           <span class="title disp">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Plan")}<span class="dot">.</span></span>
+          <button class="backbtn" id="planFwd" aria-label="Open shop" style="font-size:20px;line-height:1;padding:4px 11px">›</button>
         </div>
-        <div style="display:flex;align-items:center;gap:8px">${syncChip()}<button id="optBtnTop" class="iconbtn" aria-label="Options"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
+        <div style="display:flex;align-items:center;gap:8px">${avatars}${syncChip()}<button id="optBtnTop" class="iconbtn" aria-label="Options"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
       </header>
       <div class="addbar">
         <button class="micbtn" id="micBtn" aria-label="Voice input"></button>
@@ -1180,7 +1204,7 @@ function renderPlanPage(){
       </div>
       <div class="suggest" id="suggest"></div>
     </div>
-    <div class="zoomwrap"><div class="zoomer" id="zoomer" style="transform:scale(${density});transform-origin:top left;width:calc(100% / ${density})">
+    <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${hasAny ? planGroups : `<div class="empty"><div class="empty-emoji">🛒</div><p class="empty-title">Nothing to plan yet</p><p class="empty-sub">Add items above, or clear items from a list and they'll show here to add again next time.</p></div>`}
       <button id="addCatPlan" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
     </div></div>
@@ -1209,20 +1233,32 @@ function wirePlanPage(){
   app.querySelectorAll(".plan-in").forEach(b=>{ const id=b.dataset.planRm;
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
-    b.onpointerup=()=>{ pressCancel(); const it=state.items.find(i=>i.id===id); if(!it) return;
-      if(longFired){ quickEdit=null; editing={kind:"item", ...it}; render(); }
-      else { planRemove(id); } }; });
+    b.onpointerup=(e)=>{ pressCancel(); const it=state.items.find(i=>i.id===id); if(!it) return;
+      if(longFired){ quickEdit=null; editing={kind:"item", ...it}; render(); return; }
+      if(e.target.closest("[data-qmore]")){ quickEdit = (quickEdit===id ? null : id); render(); return; }
+      quickEdit=null; planRemove(id); }; });
+  wireQuickPanel();
   app.querySelectorAll("[data-planc]").forEach(b=>{ const id=b.dataset.planc;
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
     b.onpointerup=()=>{ pressCancel();
       if(longFired){ const c=CAT(id); editing={kind:"cat", id, label:c.label, emoji:c.img?"":(c.emoji||""), img:c.img||"", color:c.color, iconManual:!!c.img}; render(); }
       else { if(!collapse.planCats) collapse.planCats=[]; collapse.planCats = collapse.planCats.includes(id) ? collapse.planCats.filter(x=>x!==id) : [...collapse.planCats, id]; localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); } }; });
+  app.querySelectorAll("[data-add]").forEach(b=>{ const id=b.dataset.add;
+    b.onclick=()=>{ if(catEntry===id){ catEntry=null; } else { catEntry=id; draftCatText=""; } render(); const ci=app.querySelector("#catInput"); if(ci) ci.focus(); }; });
+  const pci=app.querySelector("#catInput"), pcab=app.querySelector("#catAddBtn"), pcc=app.querySelector("#catClear");
+  const pToggle=()=>{ if(pcc) pcc.classList.toggle("show", !!(pci&&pci.value.trim())); };
+  if(pci){ pci.value=draftCatText; pci.focus(); grow(pci); pToggle();
+    pci.oninput=()=>{ draftCatText=pci.value; grow(pci); pToggle(); };
+    pci.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); addEntries(pci.value,catEntry); pci.value=""; draftCatText=""; grow(pci); pToggle(); pci.focus(); } }; }
+  if(pcc){ pcc.onpointerdown=e=>e.preventDefault(); pcc.onclick=()=>{ if(pci){ pci.value=""; draftCatText=""; grow(pci); pToggle(); pci.focus(); } }; }
+  if(pcab){ pcab.onpointerdown=e=>e.preventDefault(); pcab.onclick=()=>{ const v=app.querySelector("#catInput").value; addEntries(v,catEntry); draftCatText=""; render(); const x=app.querySelector("#catInput"); if(x){ x.focus(); grow(x); } }; }
   const acp=app.querySelector("#addCatPlan"); if(acp) acp.onclick=addCategory;
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const an=app.querySelector("#addNav"); if(an) an.onclick=()=>{ const mi=document.getElementById("mainInput"); if(mi) mi.focus(); };
   const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>{ view="detail"; shopMode=false; render(); };
-  const tc=app.querySelector("#toCart"); if(tc) tc.onclick=()=>{ view="detail"; shopMode=false; render(); };
+  const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>{ view="lists"; optOpen=false; render(); };
+  const pfw=app.querySelector("#planFwd"); if(pfw) pfw.onclick=()=>{ view="detail"; shopMode=false; render(); };
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireOptions();
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
@@ -1243,10 +1279,11 @@ function wireOptions(){
     }
     localStorage.setItem(LS.collapse, JSON.stringify(collapse)); optOpen=false; render(); };
   app.querySelectorAll("[data-opt-theme]").forEach(b=>b.onclick=()=>{ if(theme!==b.dataset.optTheme) toggleTheme(); });
-  const ozm=app.querySelector("#optZoomMinus"); if(ozm) ozm.onclick=()=>setDensity(density-0.1);
-  const ozp=app.querySelector("#optZoomPlus"); if(ozp) ozp.onclick=()=>setDensity(density+0.1);
+  const ozm=app.querySelector("#optZoomMinus"); if(ozm) ozm.onclick=()=>setDensity(dens()-0.1);
+  const ozp=app.querySelector("#optZoomPlus"); if(ozp) ozp.onclick=()=>setDensity(dens()+0.1);
   app.querySelectorAll("[data-opt-sound]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optSound==="1"; if(soundOn!==want) toggleSound(); });
   app.querySelectorAll("[data-opt-sort]").forEach(b=>b.onclick=()=>setSort(b.dataset.optSort));
+  app.querySelectorAll("[data-opt-style]").forEach(b=>b.onclick=()=>{ if(styl()!==b.dataset.optStyle) setStyle(b.dataset.optStyle); });
   const osu=app.querySelector("#optSwitchUser"); if(osu) osu.onclick=()=>{ localStorage.removeItem(LS.me); me=null; optOpen=false; render(); };
   const osh=app.querySelector("#optShare"); if(osh) osh.onclick=copyLink;
 }
@@ -1259,7 +1296,8 @@ function optionsSheet(){
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:14px">Options</div>
     ${(state.items.length>0 || state.buyAgain.length>0) ? `<button class="optaction" id="optCollapseAll" style="margin-bottom:10px">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button>` : ""}
     ${row("Appearance", `<div class="seg"><button data-opt-theme="light" class="${theme==='light'?'on':''}">Light</button><button data-opt-theme="dark" class="${theme==='dark'?'on':''}">Dark</button></div>`)}
-    ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(density*100)}%</span><button id="optZoomPlus">+</button></div>`)}
+    ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
+    ${(view==="plan"||view==="detail") ? row("Style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
     ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
     ${row("Sort", `<div class="seg"><button data-opt-sort="cat" class="${sortMode==='cat'?'on':''}">Category</button><button data-opt-sort="alpha" class="${sortMode==='alpha'?'on':''}">A–Z</button></div>`)}
     <button class="optaction" id="optSwitchUser">Switch user${me?` (${esc(me)})`:""}</button>
@@ -1365,7 +1403,7 @@ function editSheet(){
   }
   const isItem = editing.kind==="item";
   const qtyBlock = `<div class="qstep"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>`;
-  const secLabel = isItem ? "Buy again" : "Market list";
+  const secLabel = isItem ? "Buy again" : "Add to list";
   const btnSecStyle = "padding:13px 12px;border-radius:14px;border:2px solid var(--ink);background:transparent;color:var(--ink);font-weight:700;font-size:14px";
   const btnDelStyle = "padding:13px 12px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:14px";
   const btnSaveStyle = "flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px";
@@ -1378,7 +1416,7 @@ function editSheet(){
        </div>` : "";
   return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div class="disp" style="font-weight:800;font-size:17px">${isItem?"Edit item":"Edit saved item"}</div>
+      <div class="disp" style="font-weight:800;font-size:17px">${isItem?"Edit item":"Buy again"}</div>
       ${isItem?`<button id="starBtn" aria-label="Star" style="border:none;background:transparent;font-size:24px;line-height:1;padding:2px;color:${editing.starred?'#E8A91D':'var(--muted2)'}">${editing.starred?'★':'☆'}</button>`:""}
     </div>
     <div style="display:flex;gap:6px;align-items:stretch">
@@ -1469,15 +1507,12 @@ function wire(){
   const dsh=app.querySelector("#doneShop"); if(dsh) dsh.onclick=toggleShop;
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const ln=app.querySelector("#listName"); if(ln) ln.onclick=()=>{ view="lists"; optOpen=false; render(); };
-  const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>{ view="lists"; optOpen=false; render(); };
+  const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>{ view="plan"; optOpen=false; render(); };
   const an=app.querySelector("#addNav"); if(an) an.onclick=()=>{ view="plan"; optOpen=false; render(); };
   const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>{ view="detail"; shopMode=false; render(); };
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; listsOpen=false; render(); };
   app.querySelectorAll("[data-example]").forEach(b=>b.onclick=()=>{ addEntries(b.dataset.example, null); });
-  app.querySelectorAll("[data-qm-minus]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.qmMinus); if(it){ it.qty=Math.max(1,(it.qty||1)-1); markDirty(it.id); save(); render(); } });
-  app.querySelectorAll("[data-qm-plus]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.qmPlus); if(it){ it.qty=(it.qty||1)+1; markDirty(it.id); save(); render(); } });
-  app.querySelectorAll("[data-qm-weight]").forEach(b=>b.onclick=()=>{ const [id,w]=b.dataset.qmWeight.split("|"); const it=state.items.find(i=>i.id===id); if(it){ it.weight=w; markDirty(it.id); save(); render(); } });
-  app.querySelectorAll("[data-qm-edit]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.qmEdit); if(it){ quickEdit=null; editing={kind:"item", ...it}; render(); } });
+  wireQuickPanel();
   const ac=app.querySelector("#addCat"); if(ac) ac.onclick=addCategory;
 
   /* options sheet */
