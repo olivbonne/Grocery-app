@@ -18,13 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -339,7 +339,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.50";
+const APP_VERSION = "v0.51";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -495,6 +495,15 @@ function playTick(up){ if(!soundOn) return;
     o.connect(g); g.connect(__ac.destination); o.start(); o.stop(__ac.currentTime+0.13);
   } catch(e){} }
 function toggleSound(){ soundOn=!soundOn; localStorage.setItem("ml_sound", soundOn?"1":"0"); render(); }
+function playPlan(add){ if(!soundOn) return;
+  try { __ac = __ac || new (window.AudioContext||window.webkitAudioContext)(); if(__ac.state==="suspended") __ac.resume();
+    const o=__ac.createOscillator(), g=__ac.createGain(), t=__ac.currentTime; o.type="triangle";
+    if(add){ o.frequency.setValueAtTime(587,t); o.frequency.exponentialRampToValueAtTime(988,t+0.11); }   // adding: rising
+    else { o.frequency.setValueAtTime(523,t); o.frequency.exponentialRampToValueAtTime(294,t+0.13); }      // buy again: falling
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.16,t+0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.16);
+    o.connect(g); g.connect(__ac.destination); o.start(); o.stop(t+0.17);
+  } catch(e){} }
 let lastPop=null;
 
 let state = { items:[], buyAgain:[], members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99} };
@@ -703,7 +712,7 @@ function sweep(){ const checked=state.items.filter(i=>i.checked); if(!checked.le
   moveToBuyAgain(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||""})));
   state.items = state.items.filter(i=>!i.checked);
   save(); render(); showUndo(prev, checked.length+" cleared → Buy again"); }
-function restore(name,cat){
+function restore(name,cat){ playPlan(true);
   const entry = state.buyAgain.find(x=>x.name===name && x.cat===cat) || {name,cat,qty:1};
   const ex = state.items.find(i=>!i.checked && i.name.toLowerCase()===name.toLowerCase() && i.cat===cat);
   if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",checked:false,by:me}); }
@@ -977,7 +986,7 @@ function pillHTML(i, cat){
   const edge = i.checked ? 'var(--done-edge)' : cat.color;
   const qcol = i.checked ? 'var(--muted2)' : cat.color;
   return `<button class="pill ${i.checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="border-left:4px solid ${edge}">`
-    +`${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}${(!i.checked&&i.starred)?`<span style="color:#E8A91D;margin-right:1px">★</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(i.name)}</button>`;
+    +`${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}${(!i.checked&&i.starred)?`<span style="color:#E8A91D;margin-right:1px">★</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}</button>`;
 }
 function pillRow(items, cat){ return `<div class="pills">${items.map(i=>pillHTML(i,cat)).join("")}</div>`; }
 function pillsMixed(items){ return `<div class="pills">${items.map(i=>pillHTML(i, CAT(i.cat))).join("")}</div>`; }
@@ -1206,9 +1215,10 @@ function wireListsPage(){
   const lad=app.querySelector("#laDelete"); if(lad) lad.onclick=()=>delListUndo(listActCode);
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
+function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
 function planFilledPill(i, cat){ const edge=i.checked?'var(--done-edge)':cat.color; const qcol=i.checked?'var(--muted2)':cat.color;
-  return `<button class="pill plan-in ${i.checked?'done':''}" data-plan-rm="${i.id}" style="border-left:4px solid ${edge}">${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(i.name)}${i.checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit">▾</span></button>${quickEdit===i.id?qpanelHTML(i,cat):""}`; }
-function planOutlineChip(e, cat){ return `<button class="bapill ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="border:1.5px dashed ${cat.color}"><span style="color:${cat.color};font-weight:800">+</span>${(e.qty||1)>1?`<span style="color:${cat.color};font-weight:800">${e.qty}×</span>`:""}${e.weight?`<span style="color:${cat.color};font-weight:800">${esc(e.weight)} </span>`:""}${esc(e.name)}</button>`; }
+  return `<button class="pill plan-in ${i.checked?'done':''}" data-plan-rm="${i.id}" style="border-left:4px solid ${edge}">${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}${i.checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit">▾</span></button>${quickEdit===i.id?qpanelHTML(i,cat):""}`; }
+function planOutlineChip(e, cat){ return `<button class="pill plan-out ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="background:transparent;border:1.5px dashed ${cat.color}"><span class="qty" style="color:${cat.color}">+</span>${(e.qty||1)>1?`<span class="qty" style="color:${cat.color}">${e.qty}×</span>`:""}${e.weight?`<span class="qty" style="color:${cat.color}">${esc(e.weight)} </span>`:""}${esc(cap(e.name))}</button>`; }
 function renderPlanPage(){
   const done=state.items.filter(i=>i.checked).length;
   const cartIcon=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>`;
@@ -1241,8 +1251,7 @@ function renderPlanPage(){
           <div class="inwrap"><textarea id="catInput" rows="1" placeholder="Add to ${esc(cat.label)}" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="Clear">×</button></div>
           <button id="catAddBtn" style="background:${cat.color}">+</button></div>` : "";
       const combined = [ ...inList.map(i=>({it:i,isBa:false})), ...dotted.map(e=>({it:e,isBa:true})) ].sort((A,B)=>bySortKey(A.it,B.it));
-      let html=""; let lastKey=null;
-      combined.forEach(({it,isBa})=>{ const k=subKey(it); if(lastKey!==null && k!==lastKey) html+=`<div style="flex-basis:100%;height:0"></div>`; lastKey=k; html += isBa?planOutlineChip(it,CAT(it.cat)):planFilledPill(it,CAT(it.cat)); });
+      const html = combined.map(({it,isBa})=> isBa?planOutlineChip(it,CAT(it.cat)):planFilledPill(it,CAT(it.cat)) ).join("");
       return `<section class="cat"><div class="chead"><button class="lbl catheadchip" data-planc="${cat.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;width:100%"><span class="cemoji">${catIcon(cat,16)}</span><span class="cname" style="color:#fff">${esc(cat.label)}</span><span class="cnum" style="color:#fff;opacity:.85">${inList.length}/${total}${collapsed?' ▸':''}</span></button>
         <button class="plus" data-add="${cat.id}" style="${catEntry===cat.id?`background:${cat.color};color:#fff`:''}">${catEntry===cat.id?'×':'+'}</button></div>${catAdd}
         ${collapsed?"":`<div class="pills" style="margin-top:6px">${html}</div>`}</section>`;
@@ -1286,7 +1295,7 @@ function renderPlanPage(){
   ${editing?editSheet():""}
   ${toast?`<div class="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
-function planRemove(id){ const it=state.items.find(i=>i.id===id); if(!it) return;
+function planRemove(id){ const it=state.items.find(i=>i.id===id); if(!it) return; playPlan(false);
   if(!state.buyAgain.some(b=>b.name.toLowerCase()===it.name.toLowerCase() && b.cat===it.cat)){
     state.buyAgain.push({name:it.name,cat:it.cat,qty:it.qty||1,weight:it.weight||"",sub:it.sub||""}); }
   state.items = state.items.filter(i=>i.id!==id); save(); render(); }
