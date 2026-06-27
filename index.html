@@ -18,13 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -339,7 +339,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.48";
+const APP_VERSION = "v0.50";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -969,6 +969,10 @@ function sortList(list){ return list.slice().sort((a,b)=>{
   if(a.checked!==b.checked) return a.checked?1:-1;
   if(!a.checked){ const sa=a.starred?0:1, sb=b.starred?0:1; if(sa!==sb) return sa-sb; }
   return a.name.localeCompare(b.name); }); }
+function catIndexOf(catId){ const i=catList().findIndex(c=>c.id===catId); return i<0?999:i; }
+function subIndexOf(it){ const c=CAT(it.cat); if(!c||!c.subs||!c.subs.length) return 0; const s=effectiveSub(it,c); const i=c.subs.findIndex(x=>x.id===s); return i<0?c.subs.length:i; }
+function bySortKey(a,b){ const ca=catIndexOf(a.cat), cb=catIndexOf(b.cat); if(ca!==cb) return ca-cb; const sa=subIndexOf(a), sb=subIndexOf(b); if(sa!==sb) return sa-sb; return (a.name||"").localeCompare(b.name||""); }
+function subKey(it){ return it.cat + "|" + subIndexOf(it); }
 function pillHTML(i, cat){
   const edge = i.checked ? 'var(--done-edge)' : cat.color;
   const qcol = i.checked ? 'var(--muted2)' : cat.color;
@@ -1076,7 +1080,7 @@ function renderMain(){
   const sm = sortModeFor();
   let bodyBlocks;
   if(sm==="alpha"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(sortList(unchecked)) : "" }</section>` ]; }
-  else if(sm==="auto"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
+  else if(sm==="auto"){ const unchecked=state.items.filter(i=>!i.checked).slice().sort(bySortKey); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
   else { bodyBlocks = catBlocks.slice(); }
   if(checkedBlock) bodyBlocks.unshift(checkedBlock);
   const listBody = bodyBlocks.join("");
@@ -1210,10 +1214,9 @@ function renderPlanPage(){
   const cartIcon=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>`;
   const psm = sortModeFor();
   let planBody;
-  if(psm!=="alpha"){
+  if(psm==="cat"){
     planBody = catList().map(cat=>{
-      let inList = state.items.filter(i=>i.cat===cat.id);
-      if(psm==="cat") inList = sortList(inList);
+      let inList = state.items.filter(i=>i.cat===cat.id).sort(bySortKey);
       const ba = state.buyAgain.filter(e=>e.cat===cat.id && !inList.some(i=>i.name.toLowerCase()===e.name.toLowerCase()));
       const total = inList.length+ba.length;
       if(!total && !cat.custom) return "";
@@ -1227,10 +1230,26 @@ function renderPlanPage(){
         <button class="plus" data-add="${cat.id}" style="${catEntry===cat.id?`background:${cat.color};color:#fff`:''}">${catEntry===cat.id?'×':'+'}</button></div>${catAdd}
         ${collapsed?"":`<div class="pills" style="margin-top:6px">${filled}${outline}</div>`}</section>`;
     }).join("");
+  } else if(psm==="auto"){
+    planBody = catList().map(cat=>{
+      const inList = state.items.filter(i=>i.cat===cat.id);
+      const dotted = state.buyAgain.filter(e=>e.cat===cat.id && !inList.some(i=>i.name.toLowerCase()===e.name.toLowerCase()));
+      const total = inList.length+dotted.length;
+      if(!total && !cat.custom) return "";
+      const collapsed = (collapse.planCats||[]).includes(cat.id);
+      const catAdd = catEntry===cat.id ? `<div class="catadd">
+          <div class="inwrap"><textarea id="catInput" rows="1" placeholder="Add to ${esc(cat.label)}" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="Clear">×</button></div>
+          <button id="catAddBtn" style="background:${cat.color}">+</button></div>` : "";
+      const combined = [ ...inList.map(i=>({it:i,isBa:false})), ...dotted.map(e=>({it:e,isBa:true})) ].sort((A,B)=>bySortKey(A.it,B.it));
+      let html=""; let lastKey=null;
+      combined.forEach(({it,isBa})=>{ const k=subKey(it); if(lastKey!==null && k!==lastKey) html+=`<div style="flex-basis:100%;height:0"></div>`; lastKey=k; html += isBa?planOutlineChip(it,CAT(it.cat)):planFilledPill(it,CAT(it.cat)); });
+      return `<section class="cat"><div class="chead"><button class="lbl catheadchip" data-planc="${cat.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;width:100%"><span class="cemoji">${catIcon(cat,16)}</span><span class="cname" style="color:#fff">${esc(cat.label)}</span><span class="cnum" style="color:#fff;opacity:.85">${inList.length}/${total}${collapsed?' ▸':''}</span></button>
+        <button class="plus" data-add="${cat.id}" style="${catEntry===cat.id?`background:${cat.color};color:#fff`:''}">${catEntry===cat.id?'×':'+'}</button></div>${catAdd}
+        ${collapsed?"":`<div class="pills" style="margin-top:6px">${html}</div>`}</section>`;
+    }).join("");
   } else {
-    let inList = state.items.slice();
-    let ba = state.buyAgain.filter(e=> !state.items.some(i=>i.name.toLowerCase()===e.name.toLowerCase() && i.cat===e.cat));
-    if(psm==="alpha"){ inList=inList.sort((a,b)=>a.name.localeCompare(b.name)); ba=ba.slice().sort((a,b)=>a.name.localeCompare(b.name)); }
+    let inList = state.items.slice().sort((a,b)=>a.name.localeCompare(b.name));
+    let ba = state.buyAgain.filter(e=> !state.items.some(i=>i.name.toLowerCase()===e.name.toLowerCase() && i.cat===e.cat)).sort((a,b)=>a.name.localeCompare(b.name));
     const filled = inList.map(i=>planFilledPill(i, CAT(i.cat))).join("");
     const outline = ba.map(e=>planOutlineChip(e, CAT(e.cat))).join("");
     planBody = (filled||outline) ? `<section class="cat"><div class="pills">${filled}${outline}</div></section>` : "";
@@ -1269,7 +1288,7 @@ function renderPlanPage(){
 }
 function planRemove(id){ const it=state.items.find(i=>i.id===id); if(!it) return;
   if(!state.buyAgain.some(b=>b.name.toLowerCase()===it.name.toLowerCase() && b.cat===it.cat)){
-    state.buyAgain.unshift({name:it.name,cat:it.cat,qty:it.qty||1,weight:it.weight||"",sub:it.sub||""}); }
+    state.buyAgain.push({name:it.name,cat:it.cat,qty:it.qty||1,weight:it.weight||"",sub:it.sub||""}); }
   state.items = state.items.filter(i=>i.id!==id); save(); render(); }
 function wirePlanPage(){
   wireAddBar();

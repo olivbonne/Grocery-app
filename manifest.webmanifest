@@ -3,6 +3,7 @@
   "short_name": "Market",
   "description": "Shared household grocery list",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#F2F6EE",
   "theme_color": "#F2F6EE",
   "icons": [
