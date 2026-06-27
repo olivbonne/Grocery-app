@@ -18,13 +18,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -221,6 +221,15 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .bahead { display:flex; align-items:center; gap:6px; width:100%; border:none; background:transparent; padding:0; }
   .bapill { display:inline-flex; align-items:center; gap:5px; background:transparent; border-radius:10px;
     padding:6px 10px; font-size:13px; font-weight:600; color:var(--ink); }
+  #rotate-lock { display:none; }
+  @media (orientation:landscape) and (max-height:520px){
+    #app { display:none !important; }
+    #rotate-lock { display:flex; position:fixed; inset:0; z-index:9999; flex-direction:column; align-items:center; justify-content:center;
+      gap:12px; background:var(--paper); color:var(--ink); text-align:center; padding:24px; }
+    #rotate-lock .rl-emoji { font-size:40px; }
+    #rotate-lock .rl-title { font-family:'Bricolage Grotesque',system-ui,sans-serif; font-weight:800; font-size:18px; }
+    #rotate-lock .rl-sub { font-size:13px; color:var(--muted); max-width:260px; }
+  }
   /* per-page style: compact = small chips, normal = big bubbles */
   .zoomer.compact .pill { min-height:38px; font-size:13px; padding:0 11px; border-radius:11px; border-left-width:4px; }
   .zoomer.normal .bapill { min-height:46px; font-size:15px; padding:10px 14px; border-radius:13px; gap:7px; }
@@ -322,6 +331,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
 </head>
 <body>
 <div id="app"><div class="center">Opening the list…</div></div>
+<div id="rotate-lock"><div class="rl-emoji">📱</div><div class="rl-title">Rotate to portrait</div><div class="rl-sub">Market List works best upright — turn your phone back to portrait to continue.</div></div>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
@@ -329,7 +339,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.46";
+const APP_VERSION = "v0.48";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1065,9 +1075,9 @@ function renderMain(){
   const pct = state.items.length ? Math.round(done/state.items.length*100) : 0;
   const sm = sortModeFor();
   let bodyBlocks;
-  if(sm==="alpha"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(sortList(unchecked)) : "" }</section>`, baBlock ]; }
-  else if(sm==="auto"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>`, baBlock ]; }
-  else { bodyBlocks = catBlocks.slice(); const bp=Math.max(0, Math.min(state.baMeta.pos|0, bodyBlocks.length)); bodyBlocks.splice(bp, 0, baBlock); }
+  if(sm==="alpha"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(sortList(unchecked)) : "" }</section>` ]; }
+  else if(sm==="auto"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
+  else { bodyBlocks = catBlocks.slice(); }
   if(checkedBlock) bodyBlocks.unshift(checkedBlock);
   const listBody = bodyBlocks.join("");
   app.innerHTML = `<div class="wrap ${shopMode?'shop':''}">
@@ -1083,7 +1093,7 @@ function renderMain(){
           <button id="optBtnTop" aria-label="Options" class="iconbtn" title="Options"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
         </div>
       </header>
-      ${state.items.length>0 ? `<div class="prog"><div class="prog-fill" style="width:${pct}%"></div></div>` : ""}
+      ${state.items.length>0 ? `` : ""}
       <div class="addbar">
         <button class="micbtn" id="micBtn" aria-label="Voice input"></button>
         <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Add items to ${esc(state.name||'your list')}…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
@@ -1102,13 +1112,12 @@ function renderMain(){
           <p class="empty-sub" style="margin-top:16px">Shared via this link — open <b>Options › Share link</b> to invite up to 4 people.</p>
         </div>`:""}
       ${listBody}
-      <button id="addCat" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
     </div></div>
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
-    <button class="navbtn" id="addNav"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Plan</span></button>
-    <button class="navbtn active" id="cartNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${state.items.length>0?`<span class="cartcount">${done}/${state.items.length}</span>`:""}</span><span>Shop</span></button>
+    <button class="navbtn" id="addNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>${state.items.length>0?`<span class="cartcount">${state.items.length}</span>`:""}</span><span>Plan</span></button>
+    <button class="navbtn active" id="cartNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${state.items.length>0?`<span class="cartcount">${done}</span>`:""}</span><span>Shop</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${listsOpen?listsSheet():""}
@@ -1144,17 +1153,21 @@ function renderListsPage(){
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn active" id="listsBtnL"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
-    <button class="navbtn" id="addListNav"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Plan</span></button>
-    <button class="navbtn" id="cartNavL"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${ccT>0?`<span class="cartcount">${ccD}/${ccT}</span>`:""}</span><span>Shop</span></button>
+    <button class="navbtn" id="addListNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>${ccT>0?`<span class="cartcount">${ccT}</span>`:""}</span><span>Plan</span></button>
+    <button class="navbtn" id="cartNavL"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${ccT>0?`<span class="cartcount">${ccD}</span>`:""}</span><span>Shop</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
   ${toast?`<div class="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
-function listActSheet(){ const l=getLists().find(x=>x.code===listActCode)||{};
+function listActSheet(){ const a=getLists(); const idx=a.findIndex(x=>x.code===listActCode); const l=a[idx]||{};
   return `<div class="sheet-bg" id="listActBg"><div class="sheet" id="listActSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${esc(l.name||'List')}</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="optaction" id="laUp" style="flex:1;margin:0" ${idx<=0?'disabled style="flex:1;margin:0;opacity:.35"':''}>↑ Move up</button>
+      <button class="optaction" id="laDown" style="flex:1;margin:0" ${idx>=a.length-1?'disabled style="flex:1;margin:0;opacity:.35"':''}>↓ Move down</button>
+    </div>
     <button class="optaction" id="laRename">Rename</button>
     <button class="optaction" id="laShare">Share</button>
     <button class="optaction" id="laDup">Duplicate list</button>
@@ -1182,6 +1195,8 @@ function wireListsPage(){
   const lbg=app.querySelector("#listActBg"); if(lbg) lbg.onclick=()=>{ listActOpen=false; render(); };
   const las=app.querySelector("#listActSheet"); if(las) las.onclick=e=>e.stopPropagation();
   const lar=app.querySelector("#laRename"); if(lar) lar.onclick=()=>renameListCode(listActCode);
+  const laup=app.querySelector("#laUp"); if(laup) laup.onclick=()=>moveList(listActCode,-1);
+  const ladn=app.querySelector("#laDown"); if(ladn) ladn.onclick=()=>moveList(listActCode,1);
   const lash=app.querySelector("#laShare"); if(lash) lash.onclick=()=>shareListCode(listActCode);
   const lac=app.querySelector("#laDup"); if(lac) lac.onclick=()=>duplicateListCode(listActCode);
   const lad=app.querySelector("#laDelete"); if(lad) lad.onclick=()=>delListUndo(listActCode);
@@ -1195,9 +1210,10 @@ function renderPlanPage(){
   const cartIcon=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>`;
   const psm = sortModeFor();
   let planBody;
-  if(psm==="cat"){
+  if(psm!=="alpha"){
     planBody = catList().map(cat=>{
-      const inList = state.items.filter(i=>i.cat===cat.id);
+      let inList = state.items.filter(i=>i.cat===cat.id);
+      if(psm==="cat") inList = sortList(inList);
       const ba = state.buyAgain.filter(e=>e.cat===cat.id && !inList.some(i=>i.name.toLowerCase()===e.name.toLowerCase()));
       const total = inList.length+ba.length;
       if(!total && !cat.custom) return "";
@@ -1244,8 +1260,8 @@ function renderPlanPage(){
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
-    <button class="navbtn active" id="addNav"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><span>Plan</span></button>
-    <button class="navbtn" id="cartNav"><span class="cartwrap">${cartIcon}${state.items.length>0?`<span class="cartcount">${done}/${state.items.length}</span>`:""}</span><span>Shop</span></button>
+    <button class="navbtn active" id="addNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>${state.items.length>0?`<span class="cartcount">${state.items.length}</span>`:""}</span><span>Plan</span></button>
+    <button class="navbtn" id="cartNav"><span class="cartwrap">${cartIcon}${state.items.length>0?`<span class="cartcount">${done}</span>`:""}</span><span>Shop</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${editing?editSheet():""}
@@ -1316,8 +1332,6 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-sound]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optSound==="1"; if(soundOn!==want) toggleSound(); });
   app.querySelectorAll("[data-opt-sort]").forEach(b=>b.onclick=()=>setSort(b.dataset.optSort));
   app.querySelectorAll("[data-opt-style]").forEach(b=>b.onclick=()=>{ if(styl()!==b.dataset.optStyle) setStyle(b.dataset.optStyle); });
-  app.querySelectorAll("[data-list-up]").forEach(b=>b.onclick=()=>moveList(b.dataset.listUp,-1));
-  app.querySelectorAll("[data-list-down]").forEach(b=>b.onclick=()=>moveList(b.dataset.listDown,1));
   const osu=app.querySelector("#optSwitchUser"); if(osu) osu.onclick=()=>{ localStorage.removeItem(LS.me); me=null; optOpen=false; render(); };
   const osh=app.querySelector("#optShare"); if(osh) osh.onclick=copyLink;
 }
@@ -1328,10 +1342,6 @@ function optionsSheet(){
     : (catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id)) || (state.buyAgain.length>0 && collapse.ba));
   return `<div class="sheet-bg" id="optBg"><div class="sheet" id="optSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:14px">Options</div>
-    ${view==="lists" ? `<div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:2px 0 8px">Reorder lists</div>
-      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px">
-        ${getLists().map((l,i)=>`<div class="listrow"><span class="listrow-name" style="flex:1">${esc(l.name||'Untitled list')}</span><button class="iconmini" data-list-up="${esc(l.code)}" ${i===0?'disabled style="opacity:.3"':''}>↑</button><button class="iconmini" data-list-down="${esc(l.code)}" ${i===getLists().length-1?'disabled style="opacity:.3"':''}>↓</button></div>`).join("")}
-      </div>` : ""}
     ${(view!=="lists" && (state.items.length>0 || state.buyAgain.length>0)) ? `<button class="optaction" id="optCollapseAll" style="margin-bottom:10px">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button>` : ""}
     ${row("Appearance", `<div class="seg"><button data-opt-theme="light" class="${theme==='light'?'on':''}">Light</button><button data-opt-theme="dark" class="${theme==='dark'?'on':''}">Dark</button></div>`)}
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
