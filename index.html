@@ -29,13 +29,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -356,7 +356,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.55";
+const APP_VERSION = "v0.56";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -432,23 +432,44 @@ function fillMode(){ return fill; }
 function setFill(m){ fill=m; localStorage.setItem("ml_fill", m); render(); }
 /* Location sort — store-walk order from Coles Dandenong aisle photos.
    r ascending = order encountered; vegetable/fruit forced to the top by category. */
+/* Location sort — full Coles Dandenong store-walk order from aisle photos.
+   Front (aisle 0): vegetable, fruit, eggs. Then aisles 1–14. Perimeter dairy is split:
+   butter sits by aisle 4, yogurt & cream by aisle 6, milk & cheese by aisle 13.
+   Entries are scanned top-to-bottom and the first keyword match wins, so more specific
+   multi-word terms are listed before the generic ones they contain. r = walk position. */
 const LOC_AISLES = [
-  { r:10, words:["bread","flatbread","cereal","muesli","oats","weetbix","gluten free","health food","wrap","tortilla","bagel","crumpet"] },
-  { r:11, words:["chocolate","lolly","lollies","candy","snack","chip","crisps","popcorn","cordial","soft drink","softdrink","cola","lemonade","sweets","gum"] },
-  { r:13, words:["coffee","tea","longlife milk","long life milk","uht","cracker","lunchbox","biscuit","cookie","milo"] },
-  { r:14, words:["flour","sugar","bbq","picnic","muesli bar","spread","honey","jam","peanut butter","nutella","maple"] },
-  { r:15, words:["indian","noodle","ramen","udon","soba","asian","pasta","spaghetti","macaroni","international","rice","curry","couscous","quinoa","laksa","pho"] },
-  { r:16, words:["sauce","ketchup","mayo","mayonnaise","mustard","canned veg","canned tomato","tinned","paper towel","kitchen towel","canned fish","tuna","sardine","baked bean","bean","chickpea","lentil","quick snack","tomato paste","passata","coconut milk","tissue","toilet paper"] },
-  { r:17, words:["gravy","spice","seasoning","oil","vinegar","cookware","houseware","soup","stock","broth","salt","pepper","herb","baking"] },
-  { r:18, words:["dishwashing","dishwasher","cleaning","cleaner","brushware","brush","household","laundry","detergent","fabric softener","air freshener","bleach","sponge","garbage bag","bin bag","foil","cling wrap","glad wrap"] },
-  { r:19, words:["baby","formula","nappy","nappies","diaper","wipes","vitamin","medicine","panadol","paracetamol","ibuprofen","nurofen","dental","toothpaste","toothbrush","floss","mouthwash","supplement","probiotic","bandage","band-aid","plaster","sunscreen","cough","lozenge","melatonin","fish oil","magnesium","shampoo","conditioner","soap","body wash","deodorant","razor","tampon"] },
-  { r:20, words:["frozen","ice cream","icecream","ice-cream","dip ","pastry","puff pastry","gelato","sorbet","pizza","fries","peas"] },
+  // specific overrides (must beat the generic terms they contain)
+  { r:14, words:["longlife milk","long life milk","uht"] },                 // long-life milk is aisle 4 (not the fridge)
+  { r:17, words:["coconut milk"] },                                         // aisle 7
+  { r:15, words:["peanut butter"] },                                        // aisle 5
+  { r:16, words:["soy sauce","fish sauce","oyster sauce","hoisin","sriracha","sambal"] }, // aisle 6 (asian)
+  { r:20, words:["fish oil"] },                                             // aisle 10 (health)
+  { r:23, words:["toilet paper","toilet roll","toilet"] },                  // aisle 13 (beat "oil" inside "toilet")
+  { r:24, words:["ice cream","ice-cream","icecream","icy pole","ice block"] }, // aisle 14
+  // front / perimeter
+  { r:3,  words:["egg"] },                                                  // aisle 0, after produce
+  { r:5,  words:["beef","steak","mince","lamb","mutton","chicken","pork","bacon","sausage"," ham","turkey","duck","veal","drumstick","thigh","poultry","ribs","meatball","prawn","shrimp","salmon","crab","squid","scallop","barramundi","snapper","seafood"] }, // meat wall
+  // numbered aisles 1–14
+  { r:11, words:["bread","flatbread","cereal","muesli","oats","weetbix","gluten free","health food","tortilla","bagel","crumpet","croissant","baguette"] },                   // 1
+  { r:12, words:["chocolate","lolly","lollies","candy","sweets","gum","snack","chip","crisps","popcorn","cordial"] },                                                          // 2
+  { r:13, words:["water","soft drink","softdrink","soda","cola","lemonade","juice","energy drink","mineral water","sparkling","mixer","tonic"] },                              // 3
+  { r:14, words:["coffee","tea","cracker","lunchbox","biscuit","cookie","milo","butter"] },                                                                                   // 4 (+ butter)
+  { r:15, words:["flour","sugar","bbq","picnic","muesli bar","spread","honey","jam","nutella","maple","baking"] },                                                            // 5
+  { r:16, words:["indian","noodle","ramen","udon","soba","asian","pasta","spaghetti","macaroni","international","rice","curry","couscous","quinoa","laksa","pho","yogurt","yoghurt","cream"] }, // 6 (+ yogurt/cream)
+  { r:17, words:["sauce","ketchup","mayo","mayonnaise","mustard","canned veg","canned tomato","tinned","paper towel","kitchen towel","canned fish","tuna","sardine","baked bean","bean","chickpea","lentil","quick snack","tomato paste","passata"] },          // 7
+  { r:18, words:["gravy","spice","seasoning","oil","vinegar","cookware","houseware","soup","stock","broth","salt","pepper","herb"] },                                          // 8
+  { r:19, words:["dishwashing","dishwasher","cleaning","cleaner","brushware","brush","household","laundry","detergent","fabric softener","air freshener","bleach","sponge","garbage bag","bin bag","foil","cling wrap","glad wrap"] },                            // 9
+  { r:20, words:["baby","formula","nappy","nappies","diaper","wipes","vitamin","medicine","panadol","paracetamol","ibuprofen","nurofen","dental","toothpaste","toothbrush","floss","mouthwash","supplement","probiotic","bandage","band-aid","plaster","sunscreen","cough","lozenge","melatonin","magnesium"] },                  // 10
+  { r:21, words:["shaving","shave","razor","shampoo","conditioner","body wash","bodywash","soap","cosmetic","skin care","skincare","hair care","haircare","deodorant","moisturiser","moisturizer","makeup","lipstick","mascara","tampon","sanitary"] },          // 11
+  { r:22, words:["pet food","dog food","dog treat","dog","cat food","cat litter","bird seed","kibble","puppy","kitten"] },                                                     // 12
+  { r:23, words:["toilet paper","tissue","hosiery","sock","milk","cheese","frozen veg","mixed veg","frozen pea","fish finger","fish"] },                                       // 13 (+ milk/cheese)
+  { r:24, words:["frozen","gelato","sorbet","dip","pastry","puff pastry","pizza","fries","ready meal","frozen meal","berries"] },                                             // 14
 ];
 function aisleRank(it){ const c=it.cat;
-  if(c==="vegetable") return 0; if(c==="fruit") return 1;
+  if(c==="vegetable") return 1; if(c==="fruit") return 2;
   const n=(it.name||"").toLowerCase();
   for(const a of LOC_AISLES){ if(a.words.some(w=>n.includes(w))) return a.r; }
-  const cf={fresh:2,meat:3,asian:15,alcohol:26,health:19,bulk:16,others:90}[c];
+  const cf={fresh:23,meat:5,asian:16,alcohol:25,health:20,bulk:17,others:90}[c];
   return cf!=null?cf:95;
 }
 function byAisle(a,b){ const ra=aisleRank(a),rb=aisleRank(b); if(ra!==rb) return ra-rb; return (a.name||"").localeCompare(b.name||""); }
