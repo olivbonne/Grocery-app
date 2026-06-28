@@ -12,6 +12,12 @@
 <meta property="og:description" content="A shared household grocery list, synced live across your household." />
 <meta property="og:type" content="website" />
 <meta property="og:image" content="https://grocery-app-2-sage.vercel.app/icon-512.png" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="512" />
+<meta property="og:image:height" content="512" />
+<meta property="og:url" content="https://grocery-app-2-sage.vercel.app/" />
+<meta name="twitter:card" content="summary" />
+<link rel="canonical" href="https://grocery-app-2-sage.vercel.app/" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="icon-180.png" />
 <title>Market List</title>
@@ -23,13 +29,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -57,7 +63,7 @@ window.addEventListener('unhandledrejection', function(e){
 setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById('app');
   if(el && /Opening the list/.test(el.textContent||'')) __mlShow('The list did not load.'); } }, 7000);
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --ink:#21351F; --paper:#F2F6EE; --accent:#E2502C;
@@ -83,7 +89,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .pill:active, .bapill:active, .listbubble:active, .navbtn:active, .iconbtn:active, .micbtn:active, .optaction:active { transform: scale(0.97); }
   button:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
   html,body { margin:0; background:var(--paper); color:var(--ink); min-height:100vh; min-height:100dvh;
-    font-family:'Inter',-apple-system,'SF Pro Text',system-ui,sans-serif; }
+    font-family:'Outfit',-apple-system,'SF Pro Text',system-ui,sans-serif; }
   .wrap { max-width:480px; margin:0 auto; }
   .topfix { position:fixed; top:0; left:0; right:0; margin:0 auto; max-width:480px; z-index:30; background:var(--paper); padding:calc(8px + env(safe-area-inset-top)) 14px 8px; box-shadow:0 6px 16px -10px rgba(20,30,22,.45); }
   .zoomwrap { overflow:hidden; }
@@ -120,7 +126,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .listrow-cur { font-size:11px; color:var(--accent); font-weight:800; margin-left:6px; }
   .listrow-go { color:var(--muted); font-size:18px; }
   .newlist { width:100%; margin-top:12px; padding:13px; border-radius:14px; border:none; background:var(--accent); color:#fff; font-weight:800; font-size:15px; }
-  .disp { font-family:'Bricolage Grotesque','Inter',system-ui,sans-serif; }
+  .disp { font-family:'Outfit','Outfit',system-ui,sans-serif; }
   input, textarea { font-family:inherit; font-size:16px; }
   button { font-family:inherit; cursor:pointer; }
   .pill { user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; touch-action:manipulation; }
@@ -146,7 +152,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .chead { display:flex; align-items:center; gap:6px; margin-bottom:0; position:relative; }
   .chead .lbl { display:flex; align-items:center; gap:5px; border:none; background:transparent; padding:0; }
   .sq { width:8px; height:8px; border-radius:2px; }
-  .cname { font-family:'Bricolage Grotesque',system-ui,sans-serif; font-weight:700; font-size:12px; letter-spacing:.02em; }
+  .cname { font-family:'Outfit',system-ui,sans-serif; font-weight:700; font-size:12px; letter-spacing:.02em; }
   .cnum { font-size:11px; color:var(--muted2); font-weight:700; }
   .plus { position:absolute; right:8px; top:50%; transform:translateY(-50%); width:24px; height:24px; border-radius:8px; border:none; background:var(--chip); color:var(--ink);
     font-size:15px; font-weight:800; line-height:1; display:flex; align-items:center; justify-content:center; z-index:1; }
@@ -236,7 +242,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     #rotate-lock { display:flex; position:fixed; inset:0; z-index:9999; flex-direction:column; align-items:center; justify-content:center;
       gap:12px; background:var(--paper); color:var(--ink); text-align:center; padding:24px; }
     #rotate-lock .rl-emoji { font-size:40px; }
-    #rotate-lock .rl-title { font-family:'Bricolage Grotesque',system-ui,sans-serif; font-weight:800; font-size:18px; }
+    #rotate-lock .rl-title { font-family:'Outfit',system-ui,sans-serif; font-weight:800; font-size:18px; }
     #rotate-lock .rl-sub { font-size:13px; color:var(--muted); max-width:260px; }
   }
   /* per-page style: compact = small chips, normal = big bubbles */
@@ -251,7 +257,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .botbar .suggest { margin:0 0 6px; }
   .sweeprow { display:flex; justify-content:center; margin-bottom:8px; }
   .sweeprow button { width:100%; padding:13px; border-radius:16px; border:none; background:var(--accent); color:#fff;
-    font-size:15px; font-weight:800; box-shadow:0 8px 24px rgba(226,80,44,.35); font-family:'Bricolage Grotesque',system-ui,sans-serif; }
+    font-size:15px; font-weight:800; box-shadow:0 8px 24px rgba(226,80,44,.35); font-family:'Outfit',system-ui,sans-serif; }
   .syncchip { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 8px;
     border-radius:999px; border:1px solid var(--line); color:var(--muted); background:var(--card); white-space:nowrap; }
   .syncchip .dotind { width:7px; height:7px; border-radius:50%; background:#3BA776; flex:none; }
@@ -275,7 +281,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     padding:8px 16px; border-radius:999px; font-size:13px; font-weight:700; animation:toastrise .2s ease; z-index:60; display:flex; align-items:center; max-width:92vw; }
   .center { min-height:100vh; min-height:100dvh; display:flex; align-items:center; justify-content:center; font-weight:600; }
   .onb { max-width:420px; margin:0 auto; padding:48px 24px; }
-  .onb h1 { font-family:'Bricolage Grotesque',system-ui,sans-serif; font-weight:800; font-size:36px;
+  .onb h1 { font-family:'Outfit',system-ui,sans-serif; font-weight:800; font-size:36px;
     line-height:1.05; letter-spacing:-.02em; margin:0; }
   .onb p { margin-top:12px; font-size:14px; line-height:1.5; color:var(--muted); }
   .lbl-cap { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
@@ -295,7 +301,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .listbubble { display:flex; flex-direction:column; align-items:flex-start; gap:4px; width:100%; text-align:left;
     background:var(--card); border:1.5px solid var(--line); border-radius:20px; padding:20px 18px; }
   .listbubble.cur { border-color:var(--accent); }
-  .listbubble .lb-name { font-family:'Bricolage Grotesque',system-ui,sans-serif; font-weight:800; font-size:20px; color:var(--ink); }
+  .listbubble .lb-name { font-family:'Outfit',system-ui,sans-serif; font-weight:800; font-size:20px; color:var(--ink); }
   .listbubble .lb-count { font-size:13px; color:var(--muted); font-weight:700; }
   .lb-badge { flex:none; font-size:13px; font-weight:800; color:#fff; background:var(--accent); border-radius:999px; padding:3px 10px; white-space:nowrap; }
   .lb-chevron { flex:none; color:var(--muted); font-size:24px; line-height:1; font-weight:700; margin-left:-2px; }
@@ -348,7 +354,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.52";
+const APP_VERSION = "v0.54";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1227,8 +1233,8 @@ function wireListsPage(){
 }
 function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
 function planFilledPill(i, cat){ const edge=i.checked?'var(--done-edge)':cat.color; const qcol=i.checked?'var(--muted2)':cat.color;
-  return `<button class="pill plan-in ${i.checked?'done':''}" data-plan-rm="${i.id}" style="border-left:4px solid ${edge}">${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}${i.checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit">▾</span></button>${quickEdit===i.id?qpanelHTML(i,cat):""}`; }
-function planOutlineChip(e, cat){ return `<button class="pill plan-out ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="background:transparent;border:1.5px dashed ${cat.color}"><span class="qty" style="color:${cat.color}">+</span>${(e.qty||1)>1?`<span class="qty" style="color:${cat.color}">${e.qty}×</span>`:""}${e.weight?`<span class="qty" style="color:${cat.color}">${esc(e.weight)} </span>`:""}${esc(cap(e.name))}</button>`; }
+  return `<button class="pill plan-in ${i.checked?'done':''}" data-plan-rm="${i.id}" style="border-left:4px solid ${edge}"><span class="qty" style="visibility:hidden;color:${qcol}" aria-hidden="true">+</span>${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}${i.checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit">▾</span></button>${quickEdit===i.id?qpanelHTML(i,cat):""}`; }
+function planOutlineChip(e, cat){ return `<button class="pill plan-out ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="background:transparent;border:1.5px dashed ${cat.color}"><span class="qty" style="color:${cat.color}">+</span>${(e.qty||1)>1?`<span class="qty" style="color:${cat.color}">${e.qty}×</span>`:""}${e.weight?`<span class="qty" style="color:${cat.color}">${esc(e.weight)} </span>`:""}${esc(cap(e.name))}<span class="qmore" style="visibility:hidden" aria-hidden="true">▾</span></button>`; }
 function renderPlanPage(){
   const done=state.items.filter(i=>i.checked).length;
   const cartIcon=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>`;
