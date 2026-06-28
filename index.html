@@ -29,13 +29,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -117,6 +117,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .seg { display:inline-flex; border:1.5px solid var(--line); border-radius:11px; overflow:hidden; }
   .seg button { border:none; background:var(--card); color:var(--ink); font-weight:700; font-size:13px; padding:8px 12px; min-width:40px; }
   .seg button.on { background:var(--accent); color:#fff; }
+  .seg.seg-wrap { flex-wrap:wrap; overflow:visible; max-width:74%; justify-content:flex-end; }
+  .seg.seg-wrap button { padding:8px 9px; min-width:0; }
   .optaction { width:100%; margin-top:10px; padding:12px; border-radius:13px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:14px; }
   .listrows { display:flex; flex-direction:column; gap:8px; max-height:46vh; overflow:auto; }
   .listrow { display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:13px; border:1.5px solid var(--line); background:var(--card); }
@@ -354,7 +356,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.54";
+const APP_VERSION = "v0.55";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -425,6 +427,31 @@ let theme = localStorage.getItem("ml_theme") || ((typeof window!=="undefined" &&
 function applyTheme(){ const d = theme==="dark"; document.body.classList.toggle("dark", d); document.documentElement.classList.toggle("dark", d);
   const tc=document.getElementById("themeColor"); if(tc) tc.content = d ? "#141C18" : "#F2F6EE"; }
 function toggleTheme(){ theme = theme==="dark" ? "light" : "dark"; localStorage.setItem("ml_theme", theme); applyTheme(); render(); }
+let fill = localStorage.getItem("ml_fill")||"empty";
+function fillMode(){ return fill; }
+function setFill(m){ fill=m; localStorage.setItem("ml_fill", m); render(); }
+/* Location sort — store-walk order from Coles Dandenong aisle photos.
+   r ascending = order encountered; vegetable/fruit forced to the top by category. */
+const LOC_AISLES = [
+  { r:10, words:["bread","flatbread","cereal","muesli","oats","weetbix","gluten free","health food","wrap","tortilla","bagel","crumpet"] },
+  { r:11, words:["chocolate","lolly","lollies","candy","snack","chip","crisps","popcorn","cordial","soft drink","softdrink","cola","lemonade","sweets","gum"] },
+  { r:13, words:["coffee","tea","longlife milk","long life milk","uht","cracker","lunchbox","biscuit","cookie","milo"] },
+  { r:14, words:["flour","sugar","bbq","picnic","muesli bar","spread","honey","jam","peanut butter","nutella","maple"] },
+  { r:15, words:["indian","noodle","ramen","udon","soba","asian","pasta","spaghetti","macaroni","international","rice","curry","couscous","quinoa","laksa","pho"] },
+  { r:16, words:["sauce","ketchup","mayo","mayonnaise","mustard","canned veg","canned tomato","tinned","paper towel","kitchen towel","canned fish","tuna","sardine","baked bean","bean","chickpea","lentil","quick snack","tomato paste","passata","coconut milk","tissue","toilet paper"] },
+  { r:17, words:["gravy","spice","seasoning","oil","vinegar","cookware","houseware","soup","stock","broth","salt","pepper","herb","baking"] },
+  { r:18, words:["dishwashing","dishwasher","cleaning","cleaner","brushware","brush","household","laundry","detergent","fabric softener","air freshener","bleach","sponge","garbage bag","bin bag","foil","cling wrap","glad wrap"] },
+  { r:19, words:["baby","formula","nappy","nappies","diaper","wipes","vitamin","medicine","panadol","paracetamol","ibuprofen","nurofen","dental","toothpaste","toothbrush","floss","mouthwash","supplement","probiotic","bandage","band-aid","plaster","sunscreen","cough","lozenge","melatonin","fish oil","magnesium","shampoo","conditioner","soap","body wash","deodorant","razor","tampon"] },
+  { r:20, words:["frozen","ice cream","icecream","ice-cream","dip ","pastry","puff pastry","gelato","sorbet","pizza","fries","peas"] },
+];
+function aisleRank(it){ const c=it.cat;
+  if(c==="vegetable") return 0; if(c==="fruit") return 1;
+  const n=(it.name||"").toLowerCase();
+  for(const a of LOC_AISLES){ if(a.words.some(w=>n.includes(w))) return a.r; }
+  const cf={fresh:2,meat:3,asian:15,alcohol:26,health:19,bulk:16,others:90}[c];
+  return cf!=null?cf:95;
+}
+function byAisle(a,b){ const ra=aisleRank(a),rb=aisleRank(b); if(ra!==rb) return ra-rb; return (a.name||"").localeCompare(b.name||""); }
 applyTheme();
 let shopMode = false;
 function toggleShop(){ shopMode=!shopMode; localStorage.setItem("ml_shop", shopMode?"1":"0"); collapse.ba = !shopMode && collapse.ba; render(); }
@@ -999,10 +1026,12 @@ function subIndexOf(it){ const c=CAT(it.cat); if(!c||!c.subs||!c.subs.length) re
 function bySortKey(a,b){ const ca=catIndexOf(a.cat), cb=catIndexOf(b.cat); if(ca!==cb) return ca-cb; const sa=subIndexOf(a), sb=subIndexOf(b); if(sa!==sb) return sa-sb; return (a.name||"").localeCompare(b.name||""); }
 function subKey(it){ return it.cat + "|" + subIndexOf(it); }
 function pillHTML(i, cat){
-  const edge = i.checked ? 'var(--done-edge)' : cat.color;
-  const qcol = i.checked ? 'var(--muted2)' : cat.color;
-  return `<button class="pill ${i.checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="border-left:4px solid ${edge}">`
-    +`${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}${(!i.checked&&i.starred)?`<span style="color:#E8A91D;margin-right:1px">★</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}</button>`;
+  const checked=i.checked; const full=fillMode()==="full"&&!checked;
+  const edge = checked ? 'var(--done-edge)' : cat.color;
+  const qcol = full ? '#fff' : (checked ? 'var(--muted2)' : cat.color);
+  const style = full ? `background:${cat.color};border:1.5px solid ${cat.color};color:#fff` : `border-left:4px solid ${edge}`;
+  return `<button class="pill ${checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="${style}">`
+    +`${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}${(!checked&&i.starred)?`<span style="color:${full?'#fff':'#E8A91D'};margin-right:1px">★</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}</button>`;
 }
 function pillRow(items, cat){ return `<div class="pills">${items.map(i=>pillHTML(i,cat)).join("")}</div>`; }
 function pillsMixed(items){ return `<div class="pills">${items.map(i=>pillHTML(i, CAT(i.cat))).join("")}</div>`; }
@@ -1106,6 +1135,7 @@ function renderMain(){
   let bodyBlocks;
   if(sm==="alpha"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(sortList(unchecked)) : "" }</section>` ]; }
   else if(sm==="auto"){ const unchecked=state.items.filter(i=>!i.checked).slice().sort(bySortKey); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
+  else if(sm==="location"){ const unchecked=state.items.filter(i=>!i.checked).slice().sort(byAisle); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
   else { bodyBlocks = catBlocks.slice(); }
   if(checkedBlock) bodyBlocks.unshift(checkedBlock);
   const listBody = bodyBlocks.join("");
@@ -1232,9 +1262,11 @@ function wireListsPage(){
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
-function planFilledPill(i, cat){ const edge=i.checked?'var(--done-edge)':cat.color; const qcol=i.checked?'var(--muted2)':cat.color;
-  return `<button class="pill plan-in ${i.checked?'done':''}" data-plan-rm="${i.id}" style="border-left:4px solid ${edge}"><span class="qty" style="visibility:hidden;color:${qcol}" aria-hidden="true">+</span>${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}${i.checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit">▾</span></button>${quickEdit===i.id?qpanelHTML(i,cat):""}`; }
-function planOutlineChip(e, cat){ return `<button class="pill plan-out ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="background:transparent;border:1.5px dashed ${cat.color}"><span class="qty" style="color:${cat.color}">+</span>${(e.qty||1)>1?`<span class="qty" style="color:${cat.color}">${e.qty}×</span>`:""}${e.weight?`<span class="qty" style="color:${cat.color}">${esc(e.weight)} </span>`:""}${esc(cap(e.name))}<span class="qmore" style="visibility:hidden" aria-hidden="true">▾</span></button>`; }
+function planFilledPill(i, cat){ const checked=i.checked; const full=fillMode()==="full"&&!checked;
+  const edge=checked?'var(--done-edge)':cat.color; const qcol=full?'#fff':(checked?'var(--muted2)':cat.color);
+  const style=full?`background:${cat.color};border:1.5px solid ${cat.color};color:#fff`:`border-left:4px solid ${edge}`;
+  return `<button class="pill plan-in ${checked?'done':''}" data-plan-rm="${i.id}" style="${style}">${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}${checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit"${full?' style="color:rgba(255,255,255,.92)"':''}>▾</span></button>${quickEdit===i.id?qpanelHTML(i,cat):""}`; }
+function planOutlineChip(e, cat){ return `<button class="pill plan-out ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="background:transparent;border:1.5px dashed ${cat.color}">${(e.qty||1)>1?`<span class="qty" style="color:${cat.color}">${e.qty}×</span>`:""}${e.weight?`<span class="qty" style="color:${cat.color}">${esc(e.weight)} </span>`:""}${esc(cap(e.name))}<span class="qmore" style="visibility:hidden" aria-hidden="true">▾</span></button>`; }
 function renderPlanPage(){
   const done=state.items.filter(i=>i.checked).length;
   const cartIcon=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>`;
@@ -1272,6 +1304,11 @@ function renderPlanPage(){
         <button class="plus" data-add="${cat.id}" style="${catEntry===cat.id?`background:${cat.color};color:#fff`:''}">${catEntry===cat.id?'×':'+'}</button></div>${catAdd}
         ${collapsed?"":`<div class="pills" style="margin-top:6px">${html}</div>`}</section>`;
     }).join("");
+  } else if(psm==="location"){
+    const dotted = state.buyAgain.filter(e=> !state.items.some(i=>i.name.toLowerCase()===e.name.toLowerCase() && i.cat===e.cat));
+    const all = [ ...state.items.map(i=>({it:i,isBa:false})), ...dotted.map(e=>({it:e,isBa:true})) ].sort((A,B)=>byAisle(A.it,B.it));
+    const html = all.map(({it,isBa})=> isBa?planOutlineChip(it,CAT(it.cat)):planFilledPill(it,CAT(it.cat)) ).join("");
+    planBody = all.length ? `<section class="cat"><div class="pills">${html}</div></section>` : "";
   } else {
     let inList = state.items.slice().sort((a,b)=>a.name.localeCompare(b.name));
     let ba = state.buyAgain.filter(e=> !state.items.some(i=>i.name.toLowerCase()===e.name.toLowerCase() && i.cat===e.cat)).sort((a,b)=>a.name.localeCompare(b.name));
@@ -1371,6 +1408,7 @@ function wireOptions(){
     }
     localStorage.setItem(LS.collapse, JSON.stringify(collapse)); optOpen=false; render(); };
   app.querySelectorAll("[data-opt-theme]").forEach(b=>b.onclick=()=>{ if(theme!==b.dataset.optTheme) toggleTheme(); });
+  app.querySelectorAll("[data-opt-fill]").forEach(b=>b.onclick=()=>{ if(fillMode()!==b.dataset.optFill) setFill(b.dataset.optFill); });
   const ozm=app.querySelector("#optZoomMinus"); if(ozm) ozm.onclick=()=>setDensity(dens()-0.1);
   const ozp=app.querySelector("#optZoomPlus"); if(ozp) ozp.onclick=()=>setDensity(dens()+0.1);
   app.querySelectorAll("[data-opt-sound]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optSound==="1"; if(soundOn!==want) toggleSound(); });
@@ -1387,11 +1425,12 @@ function optionsSheet(){
   return `<div class="sheet-bg" id="optBg"><div class="sheet" id="optSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:14px">Options</div>
     ${(view!=="lists" && (state.items.length>0 || state.buyAgain.length>0)) ? `<button class="optaction" id="optCollapseAll" style="margin-bottom:10px">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button>` : ""}
-    ${row("Appearance", `<div class="seg"><button data-opt-theme="light" class="${theme==='light'?'on':''}">Light</button><button data-opt-theme="dark" class="${theme==='dark'?'on':''}">Dark</button></div>`)}
+    ${row("Mode", `<div class="seg"><button data-opt-theme="light" class="${theme==='light'?'on':''}">Light</button><button data-opt-theme="dark" class="${theme==='dark'?'on':''}">Dark</button></div>`)}
+    ${row("Appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}">Full</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}">Empty</button></div>`)}
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
     ${(view==="plan"||view==="detail") ? row("Style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
     ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
-    ${view!=="lists" ? row("Sort", `<div class="seg"><button data-opt-sort="auto" class="${sortModeFor()==='auto'?'on':''}">Auto</button><button data-opt-sort="cat" class="${sortModeFor()==='cat'?'on':''}">Category</button><button data-opt-sort="alpha" class="${sortModeFor()==='alpha'?'on':''}">A–Z</button></div>`) : ""}
+    ${view!=="lists" ? row("Sort", `<div class="seg seg-wrap"><button data-opt-sort="auto" class="${sortModeFor()==='auto'?'on':''}">Auto</button><button data-opt-sort="cat" class="${sortModeFor()==='cat'?'on':''}">Category</button><button data-opt-sort="alpha" class="${sortModeFor()==='alpha'?'on':''}">A–Z</button><button data-opt-sort="location" class="${sortModeFor()==='location'?'on':''}">Location</button></div>`) : ""}
     <button class="optaction" id="optSwitchUser">Switch user${me?` (${esc(me)})`:""}</button>
     <button class="optaction" id="optShare">Share link</button>
     <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted2);font-weight:600" title="Build (file last modified): ${APP_BUILD_DATE}">${APP_VERSION}</div>
