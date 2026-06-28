@@ -29,13 +29,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -93,13 +93,19 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .wrap { max-width:480px; margin:0 auto; }
   .topfix { position:fixed; top:0; left:0; right:0; margin:0 auto; max-width:480px; z-index:30; background:var(--paper); padding:calc(8px + env(safe-area-inset-top)) 14px 8px; box-shadow:0 6px 16px -10px rgba(20,30,22,.45); }
   .zoomwrap { overflow:hidden; }
-  .zoomer { padding:6px 14px 96px; box-sizing:border-box; }
+  .zoomer { padding:6px 14px 24px; box-sizing:border-box; }
   .ctrlrow { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px; }
   .listname { border:none; background:transparent; color:var(--ink); font-weight:800; font-size:15px; padding:2px 0; display:inline-flex; align-items:center; gap:5px; max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .listname .caret { color:var(--muted); font-size:11px; }
   .collapseall { border:none; background:transparent; color:var(--muted); font-size:12px; font-weight:700; padding:2px 0; }
   .bottomnav { position:fixed; left:0; right:0; bottom:0; z-index:40; display:flex; max-width:480px; margin:0 auto;
     background:var(--paper); border-top:1px solid var(--line); padding:6px 18px calc(8px + env(safe-area-inset-bottom)); justify-content:space-between; }
+  /* App shell: header + nav stay put, only the middle scrolls (robust on iOS PWAs). */
+  body.shell #app { height:100dvh; display:flex; flex-direction:column; max-width:480px; margin:0 auto; overflow:hidden; }
+  body.shell .wrap { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; max-width:none; margin:0; }
+  body.shell .topfix { position:static; flex:none; max-width:none; }
+  body.shell .scroll { flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  body.shell .bottomnav { position:static; flex:none; max-width:none; }
   .navbtn { position:relative; flex:1; border:none; background:transparent; color:var(--muted); display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px; font-weight:700; padding:6px 0; }
   .navbtn:active { color:var(--ink); }
   .navbtn span { letter-spacing:.2px; }
@@ -356,7 +362,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.56";
+const APP_VERSION = "v0.57";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -430,6 +436,47 @@ function toggleTheme(){ theme = theme==="dark" ? "light" : "dark"; localStorage.
 let fill = localStorage.getItem("ml_fill")||"empty";
 function fillMode(){ return fill; }
 function setFill(m){ fill=m; localStorage.setItem("ml_fill", m); render(); }
+// ---- Location / at-store detection ----
+let useLoc = localStorage.getItem("ml_useloc"); useLoc = (useLoc===null ? true : useLoc==="1");
+let storeLoc=null; try{ storeLoc = JSON.parse(localStorage.getItem("ml_storeloc")||"null"); }catch(e){ storeLoc=null; }
+let locState = { checked:false, atStore:false, busy:false, ts:0, err:0 };
+const LOC_RADIUS_M = 180;  // within this many metres of the saved store counts as "at the store"
+function distM(a,b){ const R=6371000, toR=x=>x*Math.PI/180;
+  const dLat=toR(b.lat-a.lat), dLng=toR(b.lng-a.lng);
+  const s=Math.sin(dLat/2)**2 + Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.min(1,Math.sqrt(s))); }
+// Should Location sort show the STORE aisle order right now?
+function locActive(){ if(!useLoc) return true; if(!storeLoc) return false; return locState.checked && locState.atStore; }
+function ensureLocCheck(){
+  if(!useLoc || !storeLoc) return;
+  const now=Date.now();
+  if(locState.busy) return;
+  if(locState.checked && now-locState.ts < 120000) return;   // cache 2 min
+  if(typeof navigator==="undefined" || !navigator.geolocation){ locState={checked:true,atStore:false,busy:false,ts:now,err:0}; return; }
+  locState.busy=true;
+  navigator.geolocation.getCurrentPosition(
+    pos=>{ const d=distM({lat:pos.coords.latitude,lng:pos.coords.longitude}, storeLoc);
+      locState={checked:true, atStore:d<=LOC_RADIUS_M, busy:false, ts:Date.now(), err:0, dist:d}; render(); },
+    err=>{ locState={checked:true, atStore:false, busy:false, ts:Date.now(), err:(err&&err.code)||1}; render(); },
+    { enableHighAccuracy:false, maximumAge:60000, timeout:8000 });
+}
+function setStoreHere(){
+  if(typeof navigator==="undefined" || !navigator.geolocation){ showToast("Location not available here"); return; }
+  showToast("Getting location…");
+  navigator.geolocation.getCurrentPosition(
+    pos=>{ storeLoc={lat:pos.coords.latitude,lng:pos.coords.longitude}; localStorage.setItem("ml_storeloc", JSON.stringify(storeLoc));
+      locState={checked:true,atStore:true,busy:false,ts:Date.now(),err:0,dist:0}; showToast("Store location saved ✓"); render(); },
+    err=>{ showToast("Couldn’t get location — check permissions"); },
+    { enableHighAccuracy:true, maximumAge:0, timeout:10000 });
+}
+function locStatusText(){
+  if(!useLoc) return "Off · Location sort shows aisle order";
+  if(!storeLoc) return "Tap “Set store here” while you’re at the shop";
+  if(locState.busy) return "Checking your location…";
+  if(locState.err) return "Location unavailable · showing Auto when away";
+  if(!locState.checked) return "Store saved ✓";
+  return locState.atStore ? "At the store ✓ · aisle order active" : "Away · Location sort shows Auto";
+}
 /* Location sort — store-walk order from Coles Dandenong aisle photos.
    r ascending = order encountered; vegetable/fruit forced to the top by category. */
 /* Location sort — full Coles Dandenong store-walk order from aisle photos.
@@ -447,8 +494,7 @@ const LOC_AISLES = [
   { r:23, words:["toilet paper","toilet roll","toilet"] },                  // aisle 13 (beat "oil" inside "toilet")
   { r:24, words:["ice cream","ice-cream","icecream","icy pole","ice block"] }, // aisle 14
   // front / perimeter
-  { r:3,  words:["egg"] },                                                  // aisle 0, after produce
-  { r:5,  words:["beef","steak","mince","lamb","mutton","chicken","pork","bacon","sausage"," ham","turkey","duck","veal","drumstick","thigh","poultry","ribs","meatball","prawn","shrimp","salmon","crab","squid","scallop","barramundi","snapper","seafood"] }, // meat wall
+  { r:4,  words:["egg"] },                                                  // eggs at the front with produce
   // numbered aisles 1–14
   { r:11, words:["bread","flatbread","cereal","muesli","oats","weetbix","gluten free","health food","tortilla","bagel","crumpet","croissant","baguette"] },                   // 1
   { r:12, words:["chocolate","lolly","lollies","candy","sweets","gum","snack","chip","crisps","popcorn","cordial"] },                                                          // 2
@@ -466,13 +512,18 @@ const LOC_AISLES = [
   { r:24, words:["frozen","gelato","sorbet","dip","pastry","puff pastry","pizza","fries","ready meal","frozen meal","berries"] },                                             // 14
 ];
 function aisleRank(it){ const c=it.cat;
-  if(c==="vegetable") return 1; if(c==="fruit") return 2;
+  if(c==="meat") return 1;        // meat & seafood pinned to the very top
+  if(c==="vegetable") return 2;
+  if(c==="fruit") return 3;
+  if(c==="alcohol") return 99;    // last
+  if(c==="asian") return 98;      // 2nd from last
+  if(c==="health") return 97;     // 3rd from last
   const n=(it.name||"").toLowerCase();
   for(const a of LOC_AISLES){ if(a.words.some(w=>n.includes(w))) return a.r; }
-  const cf={fresh:23,meat:5,asian:16,alcohol:25,health:20,bulk:17,others:90}[c];
-  return cf!=null?cf:95;
+  const cf={fresh:23,bulk:17,others:90}[c];
+  return cf!=null?cf:75;
 }
-function byAisle(a,b){ const ra=aisleRank(a),rb=aisleRank(b); if(ra!==rb) return ra-rb; return (a.name||"").localeCompare(b.name||""); }
+function byAisle(a,b){ const ra=aisleRank(a),rb=aisleRank(b); if(ra!==rb) return ra-rb; return bySortKey(a,b); }
 applyTheme();
 let shopMode = false;
 function toggleShop(){ shopMode=!shopMode; localStorage.setItem("ml_shop", shopMode?"1":"0"); collapse.ba = !shopMode && collapse.ba; render(); }
@@ -996,16 +1047,14 @@ function pressCancel(){ clearTimeout(pressTimer); }
 const app = document.getElementById("app");
 const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
-function syncZoomHeight(){ const z=document.getElementById("zoomer"); const bb=document.getElementById("bottomnav"); const tf=document.getElementById("topfix");
-  const zw=z?z.parentElement:null;
-  if(zw && tf){ zw.style.marginTop = Math.ceil(tf.getBoundingClientRect().height) + "px"; }
-  if(z){ if(bb){ const h=bb.getBoundingClientRect().height||64; z.style.paddingBottom = Math.ceil(h/dens() + 24) + "px"; }
-    if(zw) zw.style.height = Math.ceil(z.getBoundingClientRect().height) + "px"; }
+function syncZoomHeight(){ const z=document.getElementById("zoomer"); const zw=z?z.parentElement:null;
+  if(z && zw){ zw.style.height = Math.ceil(z.getBoundingClientRect().height) + "px"; }
   applyKb(); }
 let kbOffset=0, kbActive=false;
 function applyKb(){ const bar=document.getElementById("botbar"); if(bar) bar.style.transform = kbOffset>1 ? `translateY(${-kbOffset}px)` : ""; }
 function render(){
   ensureCats();
+  document.body.classList.toggle("shell", !!(configured && me));
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
   if(!me){ renderOnboarding(); window.__mlRendered=true; return; }
   if(view==="lists"){ renderListsPage(); wireListsPage(); window.__mlRendered=true; syncZoomHeight(); return; }
@@ -1156,7 +1205,7 @@ function renderMain(){
   let bodyBlocks;
   if(sm==="alpha"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(sortList(unchecked)) : "" }</section>` ]; }
   else if(sm==="auto"){ const unchecked=state.items.filter(i=>!i.checked).slice().sort(bySortKey); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
-  else if(sm==="location"){ const unchecked=state.items.filter(i=>!i.checked).slice().sort(byAisle); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
+  else if(sm==="location"){ ensureLocCheck(); const cmp=locActive()?byAisle:bySortKey; const unchecked=state.items.filter(i=>!i.checked).slice().sort(cmp); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
   else { bodyBlocks = catBlocks.slice(); }
   if(checkedBlock) bodyBlocks.unshift(checkedBlock);
   const listBody = bodyBlocks.join("");
@@ -1183,7 +1232,7 @@ function renderMain(){
       ${done>0?`<div style="margin-top:8px"><button id="sweepBtn" class="sweepbtn">Clear ${done} checked → Buy again</button></div>`:""}
       ${shopMode?`<div class="shopbar" style="margin-top:8px"><span>🛒 Shopping mode · ${open} left${done?` · ${done} in cart`:''}</span><button id="doneShop">Done</button></div>`:""}
     </div>
-    <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
+    <div class="scroll"><div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${(state.items.length===0 && !shopMode)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">Your list is empty</p>
@@ -1192,7 +1241,7 @@ function renderMain(){
           <p class="empty-sub" style="margin-top:16px">Shared via this link — open <b>Options › Share link</b> to invite up to 4 people.</p>
         </div>`:""}
       ${listBody}
-    </div></div>
+    </div></div></div>
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
@@ -1215,7 +1264,7 @@ function renderListsPage(){
         <div style="display:flex;align-items:center;gap:8px">${syncChip()}<button id="optBtnTop" aria-label="Options" class="iconbtn" title="Options"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
       </header>
     </div>
-    <div class="zoomwrap"><div class="zoomer" id="zoomer">
+    <div class="scroll"><div class="zoomwrap"><div class="zoomer" id="zoomer">
       <div class="listgrid">
         ${lists.map(l=>{ const st=listStats(l.code); const cur=l.code===listCode;
           return `<button class="listbubble ${cur?'cur':''}" data-open="${esc(l.code)}">
@@ -1229,7 +1278,7 @@ function renderListsPage(){
         <button class="listbubble add" id="newListBubble"><span class="lb-name">+ New list</span></button>
       </div>
       <p class="hint" style="text-align:center;margin-top:16px">Tap a list to open it · press &amp; hold to rename, share, or delete.</p>
-    </div></div>
+    </div></div></div>
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn active" id="listsBtnL"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
@@ -1326,8 +1375,9 @@ function renderPlanPage(){
         ${collapsed?"":`<div class="pills" style="margin-top:6px">${html}</div>`}</section>`;
     }).join("");
   } else if(psm==="location"){
+    ensureLocCheck(); const cmp=locActive()?byAisle:bySortKey;
     const dotted = state.buyAgain.filter(e=> !state.items.some(i=>i.name.toLowerCase()===e.name.toLowerCase() && i.cat===e.cat));
-    const all = [ ...state.items.map(i=>({it:i,isBa:false})), ...dotted.map(e=>({it:e,isBa:true})) ].sort((A,B)=>byAisle(A.it,B.it));
+    const all = [ ...state.items.map(i=>({it:i,isBa:false})), ...dotted.map(e=>({it:e,isBa:true})) ].sort((A,B)=>cmp(A.it,B.it));
     const html = all.map(({it,isBa})=> isBa?planOutlineChip(it,CAT(it.cat)):planFilledPill(it,CAT(it.cat)) ).join("");
     planBody = all.length ? `<section class="cat"><div class="pills">${html}</div></section>` : "";
   } else {
@@ -1355,10 +1405,10 @@ function renderPlanPage(){
       </div>
       <div class="suggest" id="suggest"></div>
     </div>
-    <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
+    <div class="scroll"><div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${hasAny ? planBody : `<div class="empty"><div class="empty-emoji">🛒</div><p class="empty-title">Nothing to plan yet</p><p class="empty-sub">Add items above, or clear items from a list and they'll show here to add again next time.</p></div>`}
       <button id="addCatPlan" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
-    </div></div>
+    </div></div></div>
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
@@ -1434,6 +1484,8 @@ function wireOptions(){
   const ozp=app.querySelector("#optZoomPlus"); if(ozp) ozp.onclick=()=>setDensity(dens()+0.1);
   app.querySelectorAll("[data-opt-sound]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optSound==="1"; if(soundOn!==want) toggleSound(); });
   app.querySelectorAll("[data-opt-sort]").forEach(b=>b.onclick=()=>setSort(b.dataset.optSort));
+  app.querySelectorAll("[data-opt-useloc]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optUseloc==="1"; if(useLoc!==want){ useLoc=want; localStorage.setItem("ml_useloc", want?"1":"0"); if(want){ locState={checked:false,atStore:false,busy:false,ts:0,err:0}; ensureLocCheck(); } render(); } });
+  const oss=app.querySelector("#optSetStore"); if(oss) oss.onclick=setStoreHere;
   app.querySelectorAll("[data-opt-style]").forEach(b=>b.onclick=()=>{ if(styl()!==b.dataset.optStyle) setStyle(b.dataset.optStyle); });
   const osu=app.querySelector("#optSwitchUser"); if(osu) osu.onclick=()=>{ localStorage.removeItem(LS.me); me=null; optOpen=false; render(); };
   const osh=app.querySelector("#optShare"); if(osh) osh.onclick=copyLink;
@@ -1452,6 +1504,9 @@ function optionsSheet(){
     ${(view==="plan"||view==="detail") ? row("Style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
     ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
     ${view!=="lists" ? row("Sort", `<div class="seg seg-wrap"><button data-opt-sort="auto" class="${sortModeFor()==='auto'?'on':''}">Auto</button><button data-opt-sort="cat" class="${sortModeFor()==='cat'?'on':''}">Category</button><button data-opt-sort="alpha" class="${sortModeFor()==='alpha'?'on':''}">A–Z</button><button data-opt-sort="location" class="${sortModeFor()==='location'?'on':''}">Location</button></div>`) : ""}
+    ${(view!=="lists" && sortModeFor()==="location") ? `${row("Location", `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">On</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">Off</button></div>`)}
+    <button class="optaction" id="optSetStore" style="margin-top:2px">📍 Set store here</button>
+    <div style="margin:-4px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${esc(locStatusText())}</div>` : ""}
     <button class="optaction" id="optSwitchUser">Switch user${me?` (${esc(me)})`:""}</button>
     <button class="optaction" id="optShare">Share link</button>
     <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted2);font-weight:600" title="Build (file last modified): ${APP_BUILD_DATE}">${APP_VERSION}</div>
