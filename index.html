@@ -29,13 +29,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -93,19 +93,13 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .wrap { max-width:480px; margin:0 auto; }
   .topfix { position:fixed; top:0; left:0; right:0; margin:0 auto; max-width:480px; z-index:30; background:var(--paper); padding:calc(8px + env(safe-area-inset-top)) 14px 8px; box-shadow:0 6px 16px -10px rgba(20,30,22,.45); }
   .zoomwrap { overflow:hidden; }
-  .zoomer { padding:6px 14px 24px; box-sizing:border-box; }
+  .zoomer { padding:6px 14px 96px; box-sizing:border-box; }
   .ctrlrow { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px; }
   .listname { border:none; background:transparent; color:var(--ink); font-weight:800; font-size:15px; padding:2px 0; display:inline-flex; align-items:center; gap:5px; max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .listname .caret { color:var(--muted); font-size:11px; }
   .collapseall { border:none; background:transparent; color:var(--muted); font-size:12px; font-weight:700; padding:2px 0; }
   .bottomnav { position:fixed; left:0; right:0; bottom:0; z-index:40; display:flex; max-width:480px; margin:0 auto;
     background:var(--paper); border-top:1px solid var(--line); padding:6px 18px calc(8px + env(safe-area-inset-bottom)); justify-content:space-between; }
-  /* App shell: header + nav stay put, only the middle scrolls (robust on iOS PWAs). */
-  body.shell #app { height:100dvh; display:flex; flex-direction:column; max-width:480px; margin:0 auto; overflow:hidden; }
-  body.shell .wrap { flex:1 1 auto; min-height:0; display:flex; flex-direction:column; max-width:none; margin:0; }
-  body.shell .topfix { position:static; flex:none; max-width:none; }
-  body.shell .scroll { flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
-  body.shell .bottomnav { position:static; flex:none; max-width:none; }
   .navbtn { position:relative; flex:1; border:none; background:transparent; color:var(--muted); display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px; font-weight:700; padding:6px 0; }
   .navbtn:active { color:var(--ink); }
   .navbtn span { letter-spacing:.2px; }
@@ -118,6 +112,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .baheadchip .cname, .baheadchip .cnum, .baheadchip .cemoji { color:var(--muted) !important; }
   .basub { margin-left:6px; font-size:10px; font-weight:700; color:var(--muted2); background:var(--chip); border-radius:6px; padding:1px 6px; }
   .sweepbtn { width:100%; padding:12px; border-radius:14px; border:none; background:var(--btn); color:var(--btn-text); font-weight:800; font-size:14px; }
+  .sweepbanner { background:#2F9E44; color:#fff; margin-top:12px; }
   .optrow { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px solid var(--line); }
   .optlabel { font-weight:700; font-size:14px; }
   .seg { display:inline-flex; border:1.5px solid var(--line); border-radius:11px; overflow:hidden; }
@@ -362,7 +357,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.57";
+const APP_VERSION = "v0.58";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -438,53 +433,57 @@ function fillMode(){ return fill; }
 function setFill(m){ fill=m; localStorage.setItem("ml_fill", m); render(); }
 // ---- Location / at-store detection ----
 let useLoc = localStorage.getItem("ml_useloc"); useLoc = (useLoc===null ? true : useLoc==="1");
-let storeLoc=null; try{ storeLoc = JSON.parse(localStorage.getItem("ml_storeloc")||"null"); }catch(e){ storeLoc=null; }
-let locState = { checked:false, atStore:false, busy:false, ts:0, err:0 };
-const LOC_RADIUS_M = 180;  // within this many metres of the saved store counts as "at the store"
+let storeSel = localStorage.getItem("ml_store") || "auto";      // "auto" | store id
+let storeLocs = {}; try{ storeLocs = JSON.parse(localStorage.getItem("ml_storelocs")||"{}")||{}; }catch(e){ storeLocs={}; }
+let locState = { checked:false, busy:false, ts:0, err:0, nearId:null, dist:Infinity };
+const LOC_RADIUS_M = 250;  // within this many metres of a store's coords counts as being "at" it
 function distM(a,b){ const R=6371000, toR=x=>x*Math.PI/180;
   const dLat=toR(b.lat-a.lat), dLng=toR(b.lng-a.lng);
   const s=Math.sin(dLat/2)**2 + Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLng/2)**2;
   return 2*R*Math.asin(Math.min(1,Math.sqrt(s))); }
-// Should Location sort show the STORE aisle order right now?
-function locActive(){ if(!useLoc) return true; if(!storeLoc) return false; return locState.checked && locState.atStore; }
+function storeById(id){ return STORES.find(s=>s.id===id)||null; }
+function storeCoord(s){ if(!s) return null; if(storeLocs[s.id]) return storeLocs[s.id]; return (s.lat!=null)?{lat:s.lat,lng:s.lng}:null; }
+// Which store's layout is in effect (manual pick wins, else GPS-detected, else none).
+function activeStore(){ if(storeSel!=="auto") return storeById(storeSel); if(useLoc && locState.nearId) return storeById(locState.nearId); return null; }
+function activeAisles(){ const s=activeStore(); return (s&&s.aisles) || AISLES_DAND; }
+// Should Location sort show STORE aisle order right now?
+function locActive(){ if(storeSel!=="auto") return true; if(!useLoc) return false; return !!(locState.checked && locState.nearId); }
 function ensureLocCheck(){
-  if(!useLoc || !storeLoc) return;
+  if(storeSel!=="auto" || !useLoc) return;            // GPS only needed for auto-detect
   const now=Date.now();
   if(locState.busy) return;
   if(locState.checked && now-locState.ts < 120000) return;   // cache 2 min
-  if(typeof navigator==="undefined" || !navigator.geolocation){ locState={checked:true,atStore:false,busy:false,ts:now,err:0}; return; }
+  if(typeof navigator==="undefined" || !navigator.geolocation){ locState={checked:true,nearId:null,busy:false,ts:now,err:0}; return; }
   locState.busy=true;
   navigator.geolocation.getCurrentPosition(
-    pos=>{ const d=distM({lat:pos.coords.latitude,lng:pos.coords.longitude}, storeLoc);
-      locState={checked:true, atStore:d<=LOC_RADIUS_M, busy:false, ts:Date.now(), err:0, dist:d}; render(); },
-    err=>{ locState={checked:true, atStore:false, busy:false, ts:Date.now(), err:(err&&err.code)||1}; render(); },
+    pos=>{ const here={lat:pos.coords.latitude,lng:pos.coords.longitude};
+      let best=null,bd=Infinity; for(const s of STORES){ const c=storeCoord(s); if(!c) continue; const d=distM(here,c); if(d<bd){ bd=d; best=s; } }
+      locState={checked:true, nearId:(best&&bd<=LOC_RADIUS_M)?best.id:null, busy:false, ts:Date.now(), err:0, dist:bd}; render(); },
+    err=>{ locState={checked:true, nearId:null, busy:false, ts:Date.now(), err:(err&&err.code)||1}; render(); },
     { enableHighAccuracy:false, maximumAge:60000, timeout:8000 });
 }
 function setStoreHere(){
+  if(storeSel==="auto"){ showToast("Pick a store first, then Set store here"); return; }
   if(typeof navigator==="undefined" || !navigator.geolocation){ showToast("Location not available here"); return; }
   showToast("Getting location…");
   navigator.geolocation.getCurrentPosition(
-    pos=>{ storeLoc={lat:pos.coords.latitude,lng:pos.coords.longitude}; localStorage.setItem("ml_storeloc", JSON.stringify(storeLoc));
-      locState={checked:true,atStore:true,busy:false,ts:Date.now(),err:0,dist:0}; showToast("Store location saved ✓"); render(); },
+    pos=>{ storeLocs[storeSel]={lat:pos.coords.latitude,lng:pos.coords.longitude}; localStorage.setItem("ml_storelocs", JSON.stringify(storeLocs));
+      showToast("Saved "+((storeById(storeSel)||{}).name||"store")+" ✓"); render(); },
     err=>{ showToast("Couldn’t get location — check permissions"); },
     { enableHighAccuracy:true, maximumAge:0, timeout:10000 });
 }
-function locStatusText(){
-  if(!useLoc) return "Off · Location sort shows aisle order";
-  if(!storeLoc) return "Tap “Set store here” while you’re at the shop";
-  if(locState.busy) return "Checking your location…";
-  if(locState.err) return "Location unavailable · showing Auto when away";
-  if(!locState.checked) return "Store saved ✓";
-  return locState.atStore ? "At the store ✓ · aisle order active" : "Away · Location sort shows Auto";
+function storeLabel(){
+  if(storeSel!=="auto"){ const s=storeById(storeSel); return s ? (s.name+" · selected") : "Others"; }
+  if(!useLoc) return "Others · location off";
+  if(locState.busy || !locState.checked) return "Checking location…";
+  if(locState.err) return "Others · location unavailable";
+  const s=locState.nearId?storeById(locState.nearId):null;
+  return s ? ("📍 "+s.name) : "Others · not at a saved store";
 }
-/* Location sort — store-walk order from Coles Dandenong aisle photos.
-   r ascending = order encountered; vegetable/fruit forced to the top by category. */
-/* Location sort — full Coles Dandenong store-walk order from aisle photos.
-   Front (aisle 0): vegetable, fruit, eggs. Then aisles 1–14. Perimeter dairy is split:
-   butter sits by aisle 4, yogurt & cream by aisle 6, milk & cheese by aisle 13.
-   Entries are scanned top-to-bottom and the first keyword match wins, so more specific
-   multi-word terms are listed before the generic ones they contain. r = walk position. */
-const LOC_AISLES = [
+/* Location sort — per-store walk order from aisle photos. Entries scanned top-to-bottom,
+   first keyword match wins, so specific multi-word terms precede the generic ones they contain.
+   r = walk position (category pins in aisleRank override these for meat/veg/fruit/health/asian/alcohol). */
+const AISLES_DAND = [
   // specific overrides (must beat the generic terms they contain)
   { r:14, words:["longlife milk","long life milk","uht"] },                 // long-life milk is aisle 4 (not the fridge)
   { r:17, words:["coconut milk"] },                                         // aisle 7
@@ -511,6 +510,34 @@ const LOC_AISLES = [
   { r:23, words:["toilet paper","tissue","hosiery","sock","milk","cheese","frozen veg","mixed veg","frozen pea","fish finger","fish"] },                                       // 13 (+ milk/cheese)
   { r:24, words:["frozen","gelato","sorbet","dip","pastry","puff pastry","pizza","fries","ready meal","frozen meal","berries"] },                                             // 14
 ];
+// Coles Victoria Gardens, Richmond — 10 aisles (r = aisle number + 10; perimeter dairy last).
+const AISLES_RICH = [
+  // specific overrides
+  { r:12, words:["longlife milk","long life milk","uht"] },                 // aisle 2
+  { r:12, words:["peanut butter"] },                                        // aisle 2 (spreads)
+  { r:13, words:["muesli bar"] },                                           // aisle 3 (beat "muesli")
+  { r:15, words:["coconut milk","soy sauce","fish sauce","oyster sauce","hoisin","sriracha","sambal","curry paste","canned fish","tinned fish","tuna","sardine"] }, // aisle 5
+  { r:18, words:["toilet paper","toilet roll","toilet"] },                  // aisle 8 (beat "oil")
+  { r:20, words:["ice cream","ice-cream","icecream","frozen veg","mixed veg","frozen pea","frozen meal","fish finger","fish fillet"] }, // aisle 10
+  // numbered aisles 1–10
+  { r:11, words:["bread","flatbread","gluten free","health food","tortilla","bagel","crumpet","croissant","baguette","topping","sprinkle"] },        // 1
+  { r:12, words:["coffee","tea","cereal","weetbix","oats","muesli","spread","honey","jam","nutella","milo"] },                                       // 2
+  { r:13, words:["lolly","lollies","candy","sweets","chocolate","biscuit","cookie","cracker","snack","popcorn","gum"] },                             // 3
+  { r:14, words:["energy drink","soft drink","softdrink","soda","cola","lemonade","chip","crisps","water","mineral water","sparkling","mixer","tonic","cordial","juice"] }, // 4
+  { r:15, words:["indian","international","asian","noodle","ramen","udon","soba","rice","curry","couscous","laksa","pho","pasta","spaghetti","macaroni","canned","tinned","bean","baked bean","chickpea","lentil","passata","pasta sauce","sauce","ketchup","mayo","mustard","soup","stock","broth"] }, // 5
+  { r:16, words:["sugar","cookware","houseware","oil","vinegar","flour","baking","herb","spice","seasoning","salt","pepper","gravy"] },               // 6
+  { r:17, words:["cosmetic","makeup","lipstick","mascara","dental","toothpaste","toothbrush","floss","mouthwash","body wash","bodywash","soap","hair care","haircare","shampoo","conditioner","deodorant","medicine","panadol","paracetamol","ibuprofen","nurofen","razor","shaving","shave","sunscreen","sanitary","tampon"] }, // 7
+  { r:18, words:["baby","formula","nappy","nappies","diaper","wipes","laundry","detergent","fabric softener","tissue","paper towel","kitchen towel","hosiery","sock"] }, // 8
+  { r:19, words:["gardening","garden","cleaning","cleaner","brush","air freshener","bleach","dishwashing","dishwasher","sponge","foil","cling wrap","glad wrap","bin bag","garbage bag","pet food","dog food","dog treat","cat food","cat litter","bird seed","kibble","pest control","pest","insect","fly spray"] }, // 9
+  { r:20, words:["pizza","frozen","gelato","sorbet","pastry","puff pastry","fries","ready meal","berries","dip","egg","vegetable"] },                 // 10 (eggs + frozen veg)
+  // perimeter dairy (end of the walk)
+  { r:23, words:["milk","cheese","cream","yogurt","yoghurt","butter"] },
+];
+// Known stores. Coords are best-estimate centres; refine on-site with “Set store here”.
+const STORES = [
+  { id:"dand", name:"Coles Dandenong",                 lat:-37.9881, lng:145.2140, aisles:AISLES_DAND },
+  { id:"rich", name:"Coles Victoria Gardens Richmond", lat:-37.8158, lng:144.9996, aisles:AISLES_RICH },
+];
 function aisleRank(it){ const c=it.cat;
   if(c==="meat") return 1;        // meat & seafood pinned to the very top
   if(c==="vegetable") return 2;
@@ -519,7 +546,7 @@ function aisleRank(it){ const c=it.cat;
   if(c==="asian") return 98;      // 2nd from last
   if(c==="health") return 97;     // 3rd from last
   const n=(it.name||"").toLowerCase();
-  for(const a of LOC_AISLES){ if(a.words.some(w=>n.includes(w))) return a.r; }
+  for(const a of activeAisles()){ if(a.words.some(w=>n.includes(w))) return a.r; }
   const cf={fresh:23,bulk:17,others:90}[c];
   return cf!=null?cf:75;
 }
@@ -1047,14 +1074,16 @@ function pressCancel(){ clearTimeout(pressTimer); }
 const app = document.getElementById("app");
 const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
-function syncZoomHeight(){ const z=document.getElementById("zoomer"); const zw=z?z.parentElement:null;
-  if(z && zw){ zw.style.height = Math.ceil(z.getBoundingClientRect().height) + "px"; }
+function syncZoomHeight(){ const z=document.getElementById("zoomer"); const bb=document.getElementById("bottomnav"); const tf=document.getElementById("topfix");
+  const zw=z?z.parentElement:null;
+  if(zw && tf){ zw.style.marginTop = Math.ceil(tf.getBoundingClientRect().height) + "px"; }
+  if(z){ if(bb){ const h=bb.getBoundingClientRect().height||64; z.style.paddingBottom = Math.ceil(h/dens() + 24) + "px"; }
+    if(zw) zw.style.height = Math.ceil(z.getBoundingClientRect().height) + "px"; }
   applyKb(); }
 let kbOffset=0, kbActive=false;
 function applyKb(){ const bar=document.getElementById("botbar"); if(bar) bar.style.transform = kbOffset>1 ? `translateY(${-kbOffset}px)` : ""; }
 function render(){
   ensureCats();
-  document.body.classList.toggle("shell", !!(configured && me));
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
   if(!me){ renderOnboarding(); window.__mlRendered=true; return; }
   if(view==="lists"){ renderListsPage(); wireListsPage(); window.__mlRendered=true; syncZoomHeight(); return; }
@@ -1207,7 +1236,8 @@ function renderMain(){
   else if(sm==="auto"){ const unchecked=state.items.filter(i=>!i.checked).slice().sort(bySortKey); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
   else if(sm==="location"){ ensureLocCheck(); const cmp=locActive()?byAisle:bySortKey; const unchecked=state.items.filter(i=>!i.checked).slice().sort(cmp); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
   else { bodyBlocks = catBlocks.slice(); }
-  if(checkedBlock) bodyBlocks.unshift(checkedBlock);
+  if(checkedBlock) bodyBlocks.push(checkedBlock);
+  if(done>0) bodyBlocks.push(`<button id="sweepBtn" class="sweepbtn sweepbanner">Clear ${done} checked → Buy again</button>`);
   const listBody = bodyBlocks.join("");
   app.innerHTML = `<div class="wrap ${shopMode?'shop':''}">
     <div class="topfix" id="topfix">
@@ -1229,10 +1259,9 @@ function renderMain(){
         <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
       </div>
       <div class="suggest" id="suggest"></div>
-      ${done>0?`<div style="margin-top:8px"><button id="sweepBtn" class="sweepbtn">Clear ${done} checked → Buy again</button></div>`:""}
       ${shopMode?`<div class="shopbar" style="margin-top:8px"><span>🛒 Shopping mode · ${open} left${done?` · ${done} in cart`:''}</span><button id="doneShop">Done</button></div>`:""}
     </div>
-    <div class="scroll"><div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
+    <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${(state.items.length===0 && !shopMode)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">Your list is empty</p>
@@ -1241,7 +1270,7 @@ function renderMain(){
           <p class="empty-sub" style="margin-top:16px">Shared via this link — open <b>Options › Share link</b> to invite up to 4 people.</p>
         </div>`:""}
       ${listBody}
-    </div></div></div>
+    </div></div>
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
@@ -1264,7 +1293,7 @@ function renderListsPage(){
         <div style="display:flex;align-items:center;gap:8px">${syncChip()}<button id="optBtnTop" aria-label="Options" class="iconbtn" title="Options"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
       </header>
     </div>
-    <div class="scroll"><div class="zoomwrap"><div class="zoomer" id="zoomer">
+    <div class="zoomwrap"><div class="zoomer" id="zoomer">
       <div class="listgrid">
         ${lists.map(l=>{ const st=listStats(l.code); const cur=l.code===listCode;
           return `<button class="listbubble ${cur?'cur':''}" data-open="${esc(l.code)}">
@@ -1278,7 +1307,7 @@ function renderListsPage(){
         <button class="listbubble add" id="newListBubble"><span class="lb-name">+ New list</span></button>
       </div>
       <p class="hint" style="text-align:center;margin-top:16px">Tap a list to open it · press &amp; hold to rename, share, or delete.</p>
-    </div></div></div>
+    </div></div>
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn active" id="listsBtnL"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
@@ -1405,10 +1434,10 @@ function renderPlanPage(){
       </div>
       <div class="suggest" id="suggest"></div>
     </div>
-    <div class="scroll"><div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
+    <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${hasAny ? planBody : `<div class="empty"><div class="empty-emoji">🛒</div><p class="empty-title">Nothing to plan yet</p><p class="empty-sub">Add items above, or clear items from a list and they'll show here to add again next time.</p></div>`}
       <button id="addCatPlan" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
-    </div></div></div>
+    </div></div>
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
@@ -1484,7 +1513,8 @@ function wireOptions(){
   const ozp=app.querySelector("#optZoomPlus"); if(ozp) ozp.onclick=()=>setDensity(dens()+0.1);
   app.querySelectorAll("[data-opt-sound]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optSound==="1"; if(soundOn!==want) toggleSound(); });
   app.querySelectorAll("[data-opt-sort]").forEach(b=>b.onclick=()=>setSort(b.dataset.optSort));
-  app.querySelectorAll("[data-opt-useloc]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optUseloc==="1"; if(useLoc!==want){ useLoc=want; localStorage.setItem("ml_useloc", want?"1":"0"); if(want){ locState={checked:false,atStore:false,busy:false,ts:0,err:0}; ensureLocCheck(); } render(); } });
+  app.querySelectorAll("[data-opt-useloc]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optUseloc==="1"; if(useLoc!==want){ useLoc=want; localStorage.setItem("ml_useloc", want?"1":"0"); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(want) ensureLocCheck(); render(); } });
+  app.querySelectorAll("[data-opt-store]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optStore; if(storeSel!==v){ storeSel=v; localStorage.setItem("ml_store", v); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(v==="auto") ensureLocCheck(); render(); } });
   const oss=app.querySelector("#optSetStore"); if(oss) oss.onclick=setStoreHere;
   app.querySelectorAll("[data-opt-style]").forEach(b=>b.onclick=()=>{ if(styl()!==b.dataset.optStyle) setStyle(b.dataset.optStyle); });
   const osu=app.querySelector("#optSwitchUser"); if(osu) osu.onclick=()=>{ localStorage.removeItem(LS.me); me=null; optOpen=false; render(); };
@@ -1504,9 +1534,10 @@ function optionsSheet(){
     ${(view==="plan"||view==="detail") ? row("Style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
     ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
     ${view!=="lists" ? row("Sort", `<div class="seg seg-wrap"><button data-opt-sort="auto" class="${sortModeFor()==='auto'?'on':''}">Auto</button><button data-opt-sort="cat" class="${sortModeFor()==='cat'?'on':''}">Category</button><button data-opt-sort="alpha" class="${sortModeFor()==='alpha'?'on':''}">A–Z</button><button data-opt-sort="location" class="${sortModeFor()==='location'?'on':''}">Location</button></div>`) : ""}
-    ${(view!=="lists" && sortModeFor()==="location") ? `${row("Location", `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">On</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">Off</button></div>`)}
-    <button class="optaction" id="optSetStore" style="margin-top:2px">📍 Set store here</button>
-    <div style="margin:-4px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${esc(locStatusText())}</div>` : ""}
+    ${(view!=="lists" && sortModeFor()==="location") ? `${row("Store", `<div class="seg seg-wrap"><button data-opt-store="auto" class="${storeSel==='auto'?'on':''}">Auto</button><button data-opt-store="dand" class="${storeSel==='dand'?'on':''}">Dandenong</button><button data-opt-store="rich" class="${storeSel==='rich'?'on':''}">Richmond</button></div>`)}
+    ${row("Location", `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">On</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">Off</button></div>`)}
+    ${storeSel!=="auto" ? `<button class="optaction" id="optSetStore" style="margin-top:2px">📍 Set ${esc((storeById(storeSel)||{}).name||"store")} location here</button>` : ""}
+    <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${esc(storeLabel())}</div>` : ""}
     <button class="optaction" id="optSwitchUser">Switch user${me?` (${esc(me)})`:""}</button>
     <button class="optaction" id="optShare">Share link</button>
     <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted2);font-weight:600" title="Build (file last modified): ${APP_BUILD_DATE}">${APP_VERSION}</div>
