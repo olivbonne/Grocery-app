@@ -29,13 +29,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -121,6 +121,16 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .seg.seg-wrap { flex-wrap:wrap; overflow:visible; max-width:74%; justify-content:flex-end; }
   .seg.seg-wrap button { padding:8px 9px; min-width:0; }
   .optaction { width:100%; margin-top:10px; padding:12px; border-radius:13px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:14px; }
+  .storegrid { display:flex; flex-wrap:wrap; gap:6px; }
+  .storechip { border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:13px; padding:8px 12px; border-radius:11px; }
+  .storechip.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .checkedbar { position:fixed; left:0; right:0; bottom:0; max-width:480px; margin:0 auto; z-index:35;
+    background:var(--paper); border-top:1px solid var(--line); box-shadow:0 -7px 16px -10px rgba(20,30,22,.45);
+    display:flex; flex-direction:column; max-height:42vh; padding:6px 14px 10px; box-sizing:border-box; }
+  .checkedbarhead { flex:none; border:none; background:transparent; color:var(--muted); font-weight:800; font-size:13px;
+    display:flex; align-items:center; justify-content:space-between; padding:4px 2px; }
+  .checkedscroll { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:2px 0 8px; }
+  .checkedbar .sweepbanner { flex:none; margin-top:0; }
   .listrows { display:flex; flex-direction:column; gap:8px; max-height:46vh; overflow:auto; }
   .listrow { display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:13px; border:1.5px solid var(--line); background:var(--card); }
   .listrow.cur { border-color:var(--accent); }
@@ -357,7 +367,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.58";
+const APP_VERSION = "v0.59";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -533,12 +543,19 @@ const AISLES_RICH = [
   // perimeter dairy (end of the walk)
   { r:23, words:["milk","cheese","cream","yogurt","yoghurt","butter"] },
 ];
-// Known stores. Coords are best-estimate centres; refine on-site with “Set store here”.
+// Known stores. Coords are best-estimate centres; refine on-site with “Set … location here”.
+const MARKET_CATS = ["meat","vegetable","fruit","fresh"];   // Dandenong market only stocks these
 const STORES = [
-  { id:"dand", name:"Coles Dandenong",                 lat:-37.9881, lng:145.2140, aisles:AISLES_DAND },
-  { id:"rich", name:"Coles Victoria Gardens Richmond", lat:-37.8158, lng:144.9996, aisles:AISLES_RICH },
+  { id:"dand",  name:"Coles Dandenong",   lat:-37.9881, lng:145.2140, aisles:AISLES_DAND },
+  { id:"rich",  name:"Coles Vic Garden",  lat:-37.8158, lng:144.9996, aisles:AISLES_RICH },
+  { id:"trade", name:"Coles Traders",     lat:null,     lng:null,     aisles:[] },   // aisle map TBC
+  { id:"dmkt",  name:"Dandenong market",  lat:null,     lng:null,     market:true },  // fresh/meat/produce only
 ];
+// At a market store, only meat & seafood, vegetable, fruit and fresh are shown.
+function storeShows(it){ const st=activeStore(); return (st&&st.market) ? MARKET_CATS.includes(it.cat) : true; }
 function aisleRank(it){ const c=it.cat;
+  const st=activeStore();
+  if(st && st.market){ const i=MARKET_CATS.indexOf(c); return i<0 ? 900 : (i+1); }  // meat→1 veg→2 fruit→3 fresh→4
   if(c==="meat") return 1;        // meat & seafood pinned to the very top
   if(c==="vegetable") return 2;
   if(c==="fruit") return 3;
@@ -556,7 +573,7 @@ let shopMode = false;
 function toggleShop(){ shopMode=!shopMode; localStorage.setItem("ml_shop", shopMode?"1":"0"); collapse.ba = !shopMode && collapse.ba; render(); }
 let sorts = {}; try{ sorts = JSON.parse(localStorage.getItem("ml_sorts")||"null") || {}; }catch(e){ sorts={}; }
 const _legacySort = localStorage.getItem("ml_sort")||"cat";
-function sortModeFor(){ return sorts[view] || _legacySort; }
+function sortModeFor(){ const v=sorts[view]||_legacySort; return v==="auto"?"cat":v; }
 function setSort(m){ sorts[view]=m; localStorage.setItem("ml_sorts", JSON.stringify(sorts)); render(); }
 let optOpen=false, listsOpen=false;
 let view="detail", listActOpen=false, listActCode=null, newListOpen=false, newListDraft="";
@@ -1074,10 +1091,13 @@ function pressCancel(){ clearTimeout(pressTimer); }
 const app = document.getElementById("app");
 const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
-function syncZoomHeight(){ const z=document.getElementById("zoomer"); const bb=document.getElementById("bottomnav"); const tf=document.getElementById("topfix");
+function syncZoomHeight(){ const z=document.getElementById("zoomer"); const bb=document.getElementById("bottomnav"); const tf=document.getElementById("topfix"); const cb=document.getElementById("checkedbar");
   const zw=z?z.parentElement:null;
   if(zw && tf){ zw.style.marginTop = Math.ceil(tf.getBoundingClientRect().height) + "px"; }
-  if(z){ if(bb){ const h=bb.getBoundingClientRect().height||64; z.style.paddingBottom = Math.ceil(h/dens() + 24) + "px"; }
+  const navH = bb ? (bb.getBoundingClientRect().height||64) : 0;
+  if(cb){ cb.style.bottom = Math.ceil(navH) + "px"; }
+  const cbH = cb ? cb.getBoundingClientRect().height : 0;
+  if(z){ z.style.paddingBottom = Math.ceil((navH + cbH)/dens() + 24) + "px";
     if(zw) zw.style.height = Math.ceil(z.getBoundingClientRect().height) + "px"; }
   applyKb(); }
 let kbOffset=0, kbActive=false;
@@ -1218,27 +1238,25 @@ function renderMain(){
 
   const checkedItems = state.items.filter(i=>i.checked);
   const checkedOpen = collapse.checked!==false;
-  const checkedBlock = checkedItems.length ? `<section class="cat">
-      <div class="chead">
-        <button class="lbl catheadchip checkedheadchip" id="checkedHead" style="background:var(--done-bg);border:1.5px solid var(--done-edge);color:var(--muted)">
-          <span class="cemoji">✓</span>
-          <span class="cname" style="color:var(--muted)">Checked items</span>
-          <span class="cnum" style="color:var(--muted)">${checkedItems.length}${checkedOpen?'':' ▸'}</span>
-        </button>
-      </div>
-      ${checkedOpen?`<div style="margin-top:6px">${pillsMixed(sortList(checkedItems))}</div>`:""}
-    </section>` : "";
 
   const pct = state.items.length ? Math.round(done/state.items.length*100) : 0;
   const sm = sortModeFor();
   let bodyBlocks;
   if(sm==="alpha"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(sortList(unchecked)) : "" }</section>` ]; }
-  else if(sm==="auto"){ const unchecked=state.items.filter(i=>!i.checked).slice().sort(bySortKey); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
-  else if(sm==="location"){ ensureLocCheck(); const cmp=locActive()?byAisle:bySortKey; const unchecked=state.items.filter(i=>!i.checked).slice().sort(cmp); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
+  else if(sm==="location"){ ensureLocCheck(); const useStore=locActive(); const cmp=useStore?byAisle:bySortKey;
+    let unchecked=state.items.filter(i=>!i.checked); const n0=unchecked.length;
+    if(useStore) unchecked=unchecked.filter(storeShows);
+    unchecked=unchecked.slice().sort(cmp);
+    const hid=n0-unchecked.length;
+    const note=(useStore && hid>0) ? `<div class="hint" style="margin:0 0 8px;text-align:left">${esc((activeStore()||{}).name||"Market")} · fresh, meat &amp; produce only · ${hid} other ${hid===1?"item":"items"} hidden</div>` : "";
+    bodyBlocks = [ `<section class="cat">${note}${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
   else { bodyBlocks = catBlocks.slice(); }
-  if(checkedBlock) bodyBlocks.push(checkedBlock);
-  if(done>0) bodyBlocks.push(`<button id="sweepBtn" class="sweepbtn sweepbanner">Clear ${done} checked → Buy again</button>`);
   const listBody = bodyBlocks.join("");
+  const checkedBar = done>0 ? `<div class="checkedbar" id="checkedbar">
+      <button class="checkedbarhead" id="checkedHead"><span>✓ ${done} checked</span><span>${checkedOpen?"▾":"▸"}</span></button>
+      ${checkedOpen?`<div class="checkedscroll">${pillsMixed(sortList(checkedItems))}</div>`:""}
+      <button id="sweepBtn" class="sweepbtn sweepbanner">Clear ${done} checked → Buy again</button>
+    </div>` : "";
   app.innerHTML = `<div class="wrap ${shopMode?'shop':''}">
     <div class="topfix" id="topfix">
       <header>
@@ -1272,6 +1290,7 @@ function renderMain(){
       ${listBody}
     </div></div>
   </div>
+  ${checkedBar}
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
     <button class="navbtn" id="addNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>${state.items.length>0?`<span class="cartcount">${state.items.length}</span>`:""}</span><span>Plan</span></button>
@@ -1533,8 +1552,11 @@ function optionsSheet(){
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
     ${(view==="plan"||view==="detail") ? row("Style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
     ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
-    ${view!=="lists" ? row("Sort", `<div class="seg seg-wrap"><button data-opt-sort="auto" class="${sortModeFor()==='auto'?'on':''}">Auto</button><button data-opt-sort="cat" class="${sortModeFor()==='cat'?'on':''}">Category</button><button data-opt-sort="alpha" class="${sortModeFor()==='alpha'?'on':''}">A–Z</button><button data-opt-sort="location" class="${sortModeFor()==='location'?'on':''}">Location</button></div>`) : ""}
-    ${(view!=="lists" && sortModeFor()==="location") ? `${row("Store", `<div class="seg seg-wrap"><button data-opt-store="auto" class="${storeSel==='auto'?'on':''}">Auto</button><button data-opt-store="dand" class="${storeSel==='dand'?'on':''}">Dandenong</button><button data-opt-store="rich" class="${storeSel==='rich'?'on':''}">Richmond</button></div>`)}
+    ${view!=="lists" ? row("Sort", `<div class="seg seg-wrap"><button data-opt-sort="location" class="${sortModeFor()==='location'?'on':''}">Location</button><button data-opt-sort="cat" class="${sortModeFor()==='cat'?'on':''}">Category</button><button data-opt-sort="alpha" class="${sortModeFor()==='alpha'?'on':''}">A–Z</button></div>`) : ""}
+    ${(view!=="lists" && sortModeFor()==="location") ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
+      <span class="optlabel">Store</span>
+      <div class="storegrid">${[{id:"auto",name:"Auto-detect"},...STORES].map(s=>`<button data-opt-store="${s.id}" class="storechip ${storeSel===s.id?'on':''}">${esc(s.name)}</button>`).join("")}</div>
+    </div>
     ${row("Location", `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">On</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">Off</button></div>`)}
     ${storeSel!=="auto" ? `<button class="optaction" id="optSetStore" style="margin-top:2px">📍 Set ${esc((storeById(storeSel)||{}).name||"store")} location here</button>` : ""}
     <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${esc(storeLabel())}</div>` : ""}
