@@ -29,13 +29,13 @@
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "REPLACE_ME",
+    authDomain: "REPLACE_ME.firebaseapp.com",
+    projectId: "REPLACE_ME",
+    storageBucket: "REPLACE_ME.firebasestorage.app",
+    messagingSenderId: "REPLACE_ME",
+    appId: "REPLACE_ME"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -120,6 +120,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .seg button.on { background:var(--accent); color:#fff; }
   .seg.seg-wrap { flex-wrap:wrap; overflow:visible; max-width:74%; justify-content:flex-end; }
   .seg.seg-wrap button { padding:8px 9px; min-width:0; }
+  .seg.segfull { display:flex; width:100%; }
+  .seg.segfull button { flex:1 1 0; min-width:0; padding:9px 6px; }
   .optaction { width:100%; margin-top:10px; padding:12px; border-radius:13px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:14px; }
   .storegrid { display:flex; flex-wrap:wrap; gap:6px; }
   .storechip { border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:13px; padding:8px 12px; border-radius:11px; }
@@ -367,7 +369,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.59";
+const APP_VERSION = "v0.60";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -549,6 +551,8 @@ const STORES = [
   { id:"dand",  name:"Coles Dandenong",   lat:-37.9881, lng:145.2140, aisles:AISLES_DAND },
   { id:"rich",  name:"Coles Vic Garden",  lat:-37.8158, lng:144.9996, aisles:AISLES_RICH },
   { id:"trade", name:"Coles Traders",     lat:null,     lng:null,     aisles:[] },   // aisle map TBC
+  { id:"asri",  name:"Asian Richmond",    lat:null,     lng:null,     aisles:[] },   // aisle map TBC
+  { id:"asgl",  name:"Asian Glenferrie",  lat:null,     lng:null,     aisles:[] },   // aisle map TBC
   { id:"dmkt",  name:"Dandenong market",  lat:null,     lng:null,     market:true },  // fresh/meat/produce only
 ];
 // At a market store, only meat & seafood, vegetable, fruit and fresh are shown.
@@ -575,6 +579,9 @@ let sorts = {}; try{ sorts = JSON.parse(localStorage.getItem("ml_sorts")||"null"
 const _legacySort = localStorage.getItem("ml_sort")||"cat";
 function sortModeFor(){ const v=sorts[view]||_legacySort; return v==="auto"?"cat":v; }
 function setSort(m){ sorts[view]=m; localStorage.setItem("ml_sorts", JSON.stringify(sorts)); render(); }
+let displays = {}; try{ displays = JSON.parse(localStorage.getItem("ml_displays")||"null") || {}; }catch(e){ displays={}; }
+function displayFor(){ return displays[view]==="flat" ? "flat" : "cat"; }   // "cat"=grouped sections, "flat"=one flat list
+function setDisplay(m){ displays[view]=m; localStorage.setItem("ml_displays", JSON.stringify(displays)); render(); }
 let optOpen=false, listsOpen=false;
 let view="detail", listActOpen=false, listActCode=null, newListOpen=false, newListDraft="";
 function listCount(code){ try{ const s = (code===listCode) ? state : JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); return (s&&s.items)? s.items.filter(i=>!i.checked).length : 0; }catch(e){ return 0; } }
@@ -859,7 +866,7 @@ function addEntries(text, override){
 function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){
   if(!it.checked){ lastPop=id; playTick(true); if(navigator.vibrate) navigator.vibrate(8); setTimeout(()=>{ if(lastPop===id) lastPop=null; },350); }
   else { playTick(false); if(navigator.vibrate) navigator.vibrate(5); }
-  it.checked=!it.checked; if(it.checked){ it.checkedBy=me; } markDirty(id); save(); render(); } }
+  it.checked=!it.checked; if(it.checked){ it.checkedBy=me; it.checkedAt=Date.now(); } markDirty(id); save(); render(); } }
 function moveToBuyAgain(entries){
   for(const e of entries){ const k=e.name.toLowerCase()+"|"+e.cat;
     state.buyAgain = state.buyAgain.filter(x=>(x.name.toLowerCase()+"|"+x.cat)!==k);
@@ -1250,11 +1257,12 @@ function renderMain(){
     const hid=n0-unchecked.length;
     const note=(useStore && hid>0) ? `<div class="hint" style="margin:0 0 8px;text-align:left">${esc((activeStore()||{}).name||"Market")} · fresh, meat &amp; produce only · ${hid} other ${hid===1?"item":"items"} hidden</div>` : "";
     bodyBlocks = [ `<section class="cat">${note}${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
+  else if(displayFor()==="flat"){ const unchecked=state.items.filter(i=>!i.checked).slice().sort(bySortKey); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
   else { bodyBlocks = catBlocks.slice(); }
   const listBody = bodyBlocks.join("");
   const checkedBar = done>0 ? `<div class="checkedbar" id="checkedbar">
       <button class="checkedbarhead" id="checkedHead"><span>✓ ${done} checked</span><span>${checkedOpen?"▾":"▸"}</span></button>
-      ${checkedOpen?`<div class="checkedscroll">${pillsMixed(sortList(checkedItems))}</div>`:""}
+      ${checkedOpen?`<div class="checkedscroll">${pillsMixed(checkedItems.slice().sort((a,b)=>(b.checkedAt||0)-(a.checkedAt||0)))}</div>`:""}
       <button id="sweepBtn" class="sweepbtn sweepbanner">Clear ${done} checked → Buy again</button>
     </div>` : "";
   app.innerHTML = `<div class="wrap ${shopMode?'shop':''}">
@@ -1390,7 +1398,12 @@ function renderPlanPage(){
   const cartIcon=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>`;
   const psm = sortModeFor();
   let planBody;
-  if(psm==="cat"){
+  if(psm==="cat" && displayFor()==="flat"){
+    const dotted = state.buyAgain.filter(e=> !state.items.some(i=>i.name.toLowerCase()===e.name.toLowerCase() && i.cat===e.cat));
+    const all = [ ...state.items.map(i=>({it:i,isBa:false})), ...dotted.map(e=>({it:e,isBa:true})) ].sort((A,B)=>bySortKey(A.it,B.it));
+    const html = all.map(({it,isBa})=> isBa?planOutlineChip(it,CAT(it.cat)):planFilledPill(it,CAT(it.cat)) ).join("");
+    planBody = all.length ? `<section class="cat"><div class="pills">${html}</div></section>` : "";
+  } else if(psm==="cat"){
     planBody = catList().map(cat=>{
       let inList = state.items.filter(i=>i.cat===cat.id).sort(bySortKey);
       const ba = state.buyAgain.filter(e=>e.cat===cat.id && !inList.some(i=>i.name.toLowerCase()===e.name.toLowerCase()));
@@ -1532,6 +1545,7 @@ function wireOptions(){
   const ozp=app.querySelector("#optZoomPlus"); if(ozp) ozp.onclick=()=>setDensity(dens()+0.1);
   app.querySelectorAll("[data-opt-sound]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optSound==="1"; if(soundOn!==want) toggleSound(); });
   app.querySelectorAll("[data-opt-sort]").forEach(b=>b.onclick=()=>setSort(b.dataset.optSort));
+  app.querySelectorAll("[data-opt-display]").forEach(b=>b.onclick=()=>{ if(displayFor()!==b.dataset.optDisplay) setDisplay(b.dataset.optDisplay); });
   app.querySelectorAll("[data-opt-useloc]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optUseloc==="1"; if(useLoc!==want){ useLoc=want; localStorage.setItem("ml_useloc", want?"1":"0"); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(want) ensureLocCheck(); render(); } });
   app.querySelectorAll("[data-opt-store]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optStore; if(storeSel!==v){ storeSel=v; localStorage.setItem("ml_store", v); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(v==="auto") ensureLocCheck(); render(); } });
   const oss=app.querySelector("#optSetStore"); if(oss) oss.onclick=setStoreHere;
@@ -1552,7 +1566,11 @@ function optionsSheet(){
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
     ${(view==="plan"||view==="detail") ? row("Style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
     ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
-    ${view!=="lists" ? row("Sort", `<div class="seg seg-wrap"><button data-opt-sort="location" class="${sortModeFor()==='location'?'on':''}">Location</button><button data-opt-sort="cat" class="${sortModeFor()==='cat'?'on':''}">Category</button><button data-opt-sort="alpha" class="${sortModeFor()==='alpha'?'on':''}">A–Z</button></div>`) : ""}
+    ${view!=="lists" ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
+      <span class="optlabel">Sort</span>
+      <div class="seg segfull"><button data-opt-sort="location" class="${sortModeFor()==='location'?'on':''}">Location</button><button data-opt-sort="cat" class="${sortModeFor()==='cat'?'on':''}">Category</button><button data-opt-sort="alpha" class="${sortModeFor()==='alpha'?'on':''}">A–Z</button></div>
+    </div>
+    ${sortModeFor()==="cat" ? row("Display", `<div class="seg"><button data-opt-display="cat" class="${displayFor()==='cat'?'on':''}">Category</button><button data-opt-display="flat" class="${displayFor()==='flat'?'on':''}">Flat list</button></div>`) : ""}` : ""}
     ${(view!=="lists" && sortModeFor()==="location") ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
       <span class="optlabel">Store</span>
       <div class="storegrid">${[{id:"auto",name:"Auto-detect"},...STORES].map(s=>`<button data-opt-store="${s.id}" class="storechip ${storeSel===s.id?'on':''}">${esc(s.name)}</button>`).join("")}</div>
