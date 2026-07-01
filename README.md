@@ -66,6 +66,9 @@ Easiest, no tools:
 - **Clear** button moves checked items into **Buy again** at the bottom — tap any of those to add it back next time.
 - Tap a category heading to collapse it; tap **Buy again** to expand/collapse it.
 
+## Terms
+- **List code** — the random code in your share link (`...vercel.app/?list=abc12345`) that identifies your shared list. Anyone with it can view and edit that list.
+
 ## Notes
 - I couldn't test this against a live Firebase from here, so if something doesn't sync, double-check the config values and that the Firestore rules were published.
 - Free tiers are generous; a household grocery list won't get close to any limit.
