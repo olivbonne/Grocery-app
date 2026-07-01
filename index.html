@@ -24,18 +24,18 @@
 
 <!-- ===================================================================== -->
 <!--  ⬇⬇⬇  FIREBASE CONFIG — PASTE YOUR PROJECT SETTINGS HERE (once)  ⬇⬇⬇   -->
-<!--  Firebase console → Project settings → Your apps → SDK setup/config    -->
-<!--  Replace each "REPLACE_ME" with the matching value, then save/deploy.  -->
+<!--  Firebase config is already filled in for project grocery-list-88109.        -->
+<!--  (These web values aren't secret — they ship to the browser by design.)     -->
 <!-- ===================================================================== -->
 <script>
   window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
-  authDomain: "grocery-list-88109.firebaseapp.com",
-  projectId: "grocery-list-88109",
-  storageBucket: "grocery-list-88109.firebasestorage.app",
-  messagingSenderId: "237398844171",
-  appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
-};
+    apiKey: "AIzaSyDaDqbsLY2wpWdF28GCfP_-bu7Q5NSHvNY",
+    authDomain: "grocery-list-88109.firebaseapp.com",
+    projectId: "grocery-list-88109",
+    storageBucket: "grocery-list-88109.firebasestorage.app",
+    messagingSenderId: "237398844171",
+    appId: "1:237398844171:web:2a922c658eb04e1fb1780e"
+  };
 </script>
 <!-- ===================================================================== -->
 <!--  ⬆⬆⬆  END FIREBASE CONFIG — nothing else below needs editing  ⬆⬆⬆      -->
@@ -180,6 +180,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .suggest:empty { display:none; }
   .sugchip { flex:none; padding:7px 12px; border-radius:999px; border:1.5px solid var(--line); background:var(--card);
     color:var(--ink); font-size:13px; font-weight:600; white-space:nowrap; }
+  .sugchip.sugba { border-color:var(--accent); color:var(--accent); font-weight:800; }
   .prog { height:5px; background:var(--line); border-radius:999px; margin:0 0 10px; overflow:hidden; }
   .prog-fill { height:100%; background:var(--accent); border-radius:999px; transition:width .25s ease; }
   .cicon { object-fit:contain; border-radius:3px; vertical-align:middle; display:inline-block; }
@@ -369,7 +370,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.60";
+const APP_VERSION = "v0.62";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1045,11 +1046,20 @@ function renderSuggest(){
   const frag=v.slice(idx+1).trim().toLowerCase();
   let html="";
   if(frag.length>=1){
+    // Buy-again matches first, shown as the full item (qty / weight / name).
+    const baMatch = state.buyAgain.filter(e=>e.name.toLowerCase().includes(frag))
+      .sort((a,b)=>(b.name.toLowerCase().startsWith(frag)?1:0)-(a.name.toLowerCase().startsWith(frag)?1:0))
+      .slice(0,6);
+    const baNames = new Set(baMatch.map(e=>e.name.toLowerCase()));
+    const baHtml = baMatch.map(e=>{
+      const lbl=`${(e.qty||1)>1?e.qty+'× ':''}${e.weight?esc(e.weight)+' ':''}${esc(cap(e.name))}`;
+      return `<button class="sugchip sugba" data-sugba="${esc(e.name)}|${e.cat}">↩ ${lbl}</button>`;
+    }).join("");
     const pool=suggestPool();
     const starts=pool.filter(n=>n.toLowerCase().startsWith(frag));
     const incl=pool.filter(n=>!n.toLowerCase().startsWith(frag) && n.toLowerCase().includes(frag));
-    const list=[...starts,...incl].filter(n=>n.toLowerCase()!==frag).slice(0,8);
-    html=list.map(n=>`<button class="sugchip" data-sug="${esc(n)}">${esc(n)}</button>`).join("");
+    const list=[...starts,...incl].filter(n=>n.toLowerCase()!==frag && !baNames.has(n.toLowerCase())).slice(0,8);
+    html=baHtml+list.map(n=>`<button class="sugchip" data-sug="${esc(n)}">${esc(n)}</button>`).join("");
   }
   box.innerHTML=html;
   box.querySelectorAll("[data-sug]").forEach(b=>{
@@ -1058,6 +1068,13 @@ function renderSuggest(){
       const i=Math.max(cur.lastIndexOf(","), cur.lastIndexOf("\n"));
       const head=i>=0 ? cur.slice(0,i+1).replace(/\s*$/,"")+" " : "";
       mi.value=head+name+", "; grow(mi); mi.focus(); box.innerHTML=""; syncZoomHeight(); };
+  });
+  box.querySelectorAll("[data-sugba]").forEach(b=>{
+    b.onpointerdown=e=>e.preventDefault();
+    b.onclick=()=>{ const [name,cat]=b.dataset.sugba.split("|"); const cur=mi.value;
+      const i=Math.max(cur.lastIndexOf(","), cur.lastIndexOf("\n"));
+      draftMain = i>=0 ? cur.slice(0,i+1).replace(/\s*$/,"")+" " : "";   // keep any items typed before
+      restore(name,cat); };   // re-adds with its stored qty / weight / category, then re-renders
   });
   syncZoomHeight();
 }
@@ -1183,7 +1200,7 @@ function renderMain(){
   const anyOpen = catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id)) || (state.buyAgain.length>0 && collapse.ba);
   const firstCatId = (catList().find(c=>state.items.some(i=>i.cat===c.id))||{}).id;
 
-  const catBlocks = catList().map(cat=>{
+  const buildCatBlocks = (flatWithin)=> catList().map(cat=>{
     const all = sortList(state.items.filter(i=>i.cat===cat.id));
     const list = all.filter(i=>!i.checked);   // checked items live in the Checked section now
     const collapsed = collapse.cats.includes(cat.id);
@@ -1192,7 +1209,7 @@ function renderMain(){
     let pills = "";
     if(has && !collapsed){
       const unchecked = list;
-      if(cat.subs && cat.subs.length){
+      if(cat.subs && cat.subs.length && !flatWithin){
         pills = cat.subs.map(s=>{ const its=unchecked.filter(i=>effectiveSub(i,cat)===s.id);
           return its.length ? pillRow(its, cat) : ""; }).join("");
         const none = unchecked.filter(i=>!effectiveSub(i,cat));
@@ -1247,9 +1264,10 @@ function renderMain(){
   const checkedOpen = collapse.checked!==false;
 
   const pct = state.items.length ? Math.round(done/state.items.length*100) : 0;
-  const sm = sortModeFor();
+  const disp = displayFor();
+  const sm = (disp==="cat" && sortModeFor()==="location") ? "cat" : sortModeFor();   // Location needs flat display
   let bodyBlocks;
-  if(sm==="alpha"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(sortList(unchecked)) : "" }</section>` ]; }
+  if(disp==="cat"){ bodyBlocks = buildCatBlocks(sm==="alpha"); }                       // A–Z = plain alpha within each category
   else if(sm==="location"){ ensureLocCheck(); const useStore=locActive(); const cmp=useStore?byAisle:bySortKey;
     let unchecked=state.items.filter(i=>!i.checked); const n0=unchecked.length;
     if(useStore) unchecked=unchecked.filter(storeShows);
@@ -1257,8 +1275,8 @@ function renderMain(){
     const hid=n0-unchecked.length;
     const note=(useStore && hid>0) ? `<div class="hint" style="margin:0 0 8px;text-align:left">${esc((activeStore()||{}).name||"Market")} · fresh, meat &amp; produce only · ${hid} other ${hid===1?"item":"items"} hidden</div>` : "";
     bodyBlocks = [ `<section class="cat">${note}${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
-  else if(displayFor()==="flat"){ const unchecked=state.items.filter(i=>!i.checked).slice().sort(bySortKey); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
-  else { bodyBlocks = catBlocks.slice(); }
+  else if(sm==="alpha"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(sortList(unchecked)) : "" }</section>` ]; }
+  else { const unchecked=state.items.filter(i=>!i.checked).slice().sort(bySortKey); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
   const listBody = bodyBlocks.join("");
   const checkedBar = done>0 ? `<div class="checkedbar" id="checkedbar">
       <button class="checkedbarhead" id="checkedHead"><span>✓ ${done} checked</span><span>${checkedOpen?"▾":"▸"}</span></button>
@@ -1396,7 +1414,7 @@ function planOutlineChip(e, cat){ return `<button class="pill plan-out ba-restor
 function renderPlanPage(){
   const done=state.items.filter(i=>i.checked).length;
   const cartIcon=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>`;
-  const psm = sortModeFor();
+  const psm = (displayFor()==="cat" && sortModeFor()==="location") ? "cat" : sortModeFor();
   let planBody;
   if(psm==="cat" && displayFor()==="flat"){
     const dotted = state.buyAgain.filter(e=> !state.items.some(i=>i.name.toLowerCase()===e.name.toLowerCase() && i.cat===e.cat));
@@ -1555,6 +1573,7 @@ function wireOptions(){
 }
 function optionsSheet(){
   const row=(label,control)=>`<div class="optrow"><span class="optlabel">${label}</span><span class="optctrl">${control}</span></div>`;
+  const curSort = (displayFor()==="cat" && sortModeFor()==="location") ? "cat" : sortModeFor();
   const anyOpen = (view==="plan")
     ? catList().some(c=> (state.items.some(i=>i.cat===c.id)||state.buyAgain.some(e=>e.cat===c.id)||c.custom) && !(collapse.planCats||[]).includes(c.id))
     : (catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id)) || (state.buyAgain.length>0 && collapse.ba));
@@ -1565,19 +1584,19 @@ function optionsSheet(){
     ${row("Appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}">Full</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}">Empty</button></div>`)}
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
     ${(view==="plan"||view==="detail") ? row("Style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
-    ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
-    ${view!=="lists" ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
+    ${view!=="lists" ? `${row("Display", `<div class="seg"><button data-opt-display="cat" class="${displayFor()==='cat'?'on':''}">Category</button><button data-opt-display="flat" class="${displayFor()==='flat'?'on':''}">Flat list</button></div>`)}
+    <div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
       <span class="optlabel">Sort</span>
-      <div class="seg segfull"><button data-opt-sort="location" class="${sortModeFor()==='location'?'on':''}">Location</button><button data-opt-sort="cat" class="${sortModeFor()==='cat'?'on':''}">Category</button><button data-opt-sort="alpha" class="${sortModeFor()==='alpha'?'on':''}">A–Z</button></div>
+      <div class="seg segfull">${displayFor()==="flat"?`<button data-opt-sort="location" class="${curSort==='location'?'on':''}">Location</button>`:""}<button data-opt-sort="cat" class="${curSort==='cat'?'on':''}">Category</button><button data-opt-sort="alpha" class="${curSort==='alpha'?'on':''}">A–Z</button></div>
     </div>
-    ${sortModeFor()==="cat" ? row("Display", `<div class="seg"><button data-opt-display="cat" class="${displayFor()==='cat'?'on':''}">Category</button><button data-opt-display="flat" class="${displayFor()==='flat'?'on':''}">Flat list</button></div>`) : ""}` : ""}
-    ${(view!=="lists" && sortModeFor()==="location") ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
+    ${(displayFor()==="flat" && curSort==="location") ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
       <span class="optlabel">Store</span>
       <div class="storegrid">${[{id:"auto",name:"Auto-detect"},...STORES].map(s=>`<button data-opt-store="${s.id}" class="storechip ${storeSel===s.id?'on':''}">${esc(s.name)}</button>`).join("")}</div>
     </div>
     ${row("Location", `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">On</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">Off</button></div>`)}
     ${storeSel!=="auto" ? `<button class="optaction" id="optSetStore" style="margin-top:2px">📍 Set ${esc((storeById(storeSel)||{}).name||"store")} location here</button>` : ""}
-    <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${esc(storeLabel())}</div>` : ""}
+    <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${esc(storeLabel())}</div>` : ""}` : ""}
+    ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
     <button class="optaction" id="optSwitchUser">Switch user${me?` (${esc(me)})`:""}</button>
     <button class="optaction" id="optShare">Share link</button>
     <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted2);font-weight:600" title="Build (file last modified): ${APP_BUILD_DATE}">${APP_VERSION}</div>
