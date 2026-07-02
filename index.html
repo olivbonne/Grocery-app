@@ -1428,10 +1428,14 @@ function renderPlanPage(){
     const all = [ ...state.items.map(i=>({it:i,isBa:false})), ...dotted.map(e=>({it:e,isBa:true})) ].sort((A,B)=>bySortKey(A.it,B.it));
     const html = all.map(({it,isBa})=> isBa?planOutlineChip(it,CAT(it.cat)):planFilledPill(it,CAT(it.cat)) ).join("");
     planBody = all.length ? `<section class="cat"><div class="pills">${html}</div></section>` : "";
-  } else if(psm==="cat"){
+  } else if(displayFor()==="cat"){
+    const alpha = sortModeFor()==="alpha";                                   // A–Z sorts items within each category by name
+    const byName = (a,b)=>(a.name||"").localeCompare(b.name||"");
     planBody = catList().map(cat=>{
       let inList = state.items.filter(i=>i.cat===cat.id);
-      const ba = state.buyAgain.filter(e=>e.cat===cat.id && !inList.some(i=>i.name.toLowerCase()===e.name.toLowerCase()));
+      if(alpha) inList = inList.sort(byName);
+      let ba = state.buyAgain.filter(e=>e.cat===cat.id && !inList.some(i=>i.name.toLowerCase()===e.name.toLowerCase()));
+      if(alpha) ba = ba.sort(byName);
       const total = inList.length+ba.length;
       if(!total && !cat.custom) return "";
       const collapsed = (collapse.planCats||[]).includes(cat.id);
