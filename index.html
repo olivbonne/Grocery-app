@@ -123,8 +123,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .seg.segfull { display:flex; width:100%; }
   .seg.segfull button { flex:1 1 0; min-width:0; padding:9px 6px; }
   .optaction { width:100%; margin-top:10px; padding:12px; border-radius:13px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:14px; }
-  .storegrid { display:flex; flex-wrap:wrap; gap:6px; }
-  .storechip { border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:13px; padding:8px 12px; border-radius:11px; }
+  .storegrid { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px; }
+  .storechip { border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:13px; padding:8px 12px; border-radius:11px; white-space:nowrap; flex:0 0 auto; }
   .storechip.on { background:var(--accent); border-color:var(--accent); color:#fff; }
   .checkedbar { position:fixed; left:0; right:0; bottom:0; max-width:480px; margin:0 auto; z-index:35;
     background:var(--paper); border-top:1px solid var(--line); box-shadow:0 -7px 16px -10px rgba(20,30,22,.45);
@@ -286,7 +286,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .sheet-bg { position:fixed; inset:0; background:rgba(33,53,31,.45); display:flex; align-items:flex-end;
     justify-content:center; z-index:50; }
   .sheet { background:var(--paper); width:100%; max-width:480px; border-radius:22px 22px 0 0;
-    padding:18px 18px calc(28px + env(safe-area-inset-bottom)); animation:rise .18s ease; }
+    padding:18px 18px calc(28px + env(safe-area-inset-bottom)); animation:rise .18s ease;
+    max-height:88dvh; overflow-y:auto; -webkit-overflow-scrolling:touch; }
   .qstep { display:flex; align-items:center; background:var(--card); border:2px solid var(--ink); border-radius:14px; }
   .qstep button { width:36px; border:none; background:transparent; font-size:20px; font-weight:700; color:var(--ink); }
   .catchip { padding:7px 11px; border-radius:999px; border:2px solid var(--line); background:var(--card); color:var(--ink);
@@ -370,7 +371,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.62";
+const APP_VERSION = "v0.63";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -409,8 +410,12 @@ const DICT = {
   alcohol:["wine","beer","vodka","whisky","whiskey","gin","rum","soju","sake","cider","champagne","prosecco","tequila"],
   health:["vitamin","panadol","paracetamol","ibuprofen","medicine","bandage","band-aid","plaster","supplement","probiotic","sunscreen","cough","lozenge","melatonin","fish oil","magnesium"],
 };
-function guessCat(name){ const n=name.toLowerCase();
-  for(const[c,w] of Object.entries(DICT)) if(w.some(x=>n.includes(x))) return c; return null; }
+function knownCat(name){ const n=(name||"").toLowerCase().trim(); if(!n) return null;
+  const hit = state.items.find(i=>i.name.toLowerCase()===n) || state.buyAgain.find(e=>e.name.toLowerCase()===n);
+  return hit ? hit.cat : null; }
+function guessCat(name){ const n=(name||"").toLowerCase(); let best=null, bestLen=0;
+  for(const[c,w] of Object.entries(DICT)) for(const x of w){ if(x.length>bestLen && n.includes(x)){ best=c; bestLen=x.length; } }
+  return best; }
 
 function parseEntry(raw){ let s=raw.trim(); let m=s.match(/^(\d+)\s*[x×]?\s+(.+)$/i);
   if(m) return {qty:parseInt(m[1],10)||1,name:m[2].trim()};
@@ -460,7 +465,7 @@ function storeCoord(s){ if(!s) return null; if(storeLocs[s.id]) return storeLocs
 function activeStore(){ if(storeSel!=="auto") return storeById(storeSel); if(useLoc && locState.nearId) return storeById(locState.nearId); return null; }
 function activeAisles(){ const s=activeStore(); return (s&&s.aisles) || AISLES_DAND; }
 // Should Location sort show STORE aisle order right now?
-function locActive(){ if(storeSel!=="auto") return true; if(!useLoc) return false; return !!(locState.checked && locState.nearId); }
+function locActive(){ if(storeSel==="home"||storeSel==="other") return false; if(storeSel!=="auto") return true; if(!useLoc) return false; return !!(locState.checked && locState.nearId); }
 function ensureLocCheck(){
   if(storeSel!=="auto" || !useLoc) return;            // GPS only needed for auto-detect
   const now=Date.now();
@@ -486,6 +491,8 @@ function setStoreHere(){
     { enableHighAccuracy:true, maximumAge:0, timeout:10000 });
 }
 function storeLabel(){
+  if(storeSel==="home") return "🏠 Home · sorted by category";
+  if(storeSel==="other") return "Other store · sorted by category";
   if(storeSel!=="auto"){ const s=storeById(storeSel); return s ? (s.name+" · selected") : "Others"; }
   if(!useLoc) return "Others · location off";
   if(locState.busy || !locState.checked) return "Checking location…";
@@ -859,7 +866,7 @@ function addEntries(text, override){
     if(ex){ if(e.qty>1) ex.qty=(ex.qty||1)+e.qty; markDirty(ex.id); continue; }
     const nid=uid();
     if(cat){ state.items.push({id:nid,name:e.name,qty:e.qty,cat,checked:false,by:me}); }
-    else { const g=guessCat(e.name); state.items.push({id:nid,name:e.name,qty:e.qty,cat:g||"others",checked:false,by:me}); }
+    else { const g=knownCat(e.name)||guessCat(e.name); state.items.push({id:nid,name:e.name,qty:e.qty,cat:g||"others",checked:false,by:me}); }
     markDirty(nid);
   }
   save(); render();
@@ -1423,7 +1430,7 @@ function renderPlanPage(){
     planBody = all.length ? `<section class="cat"><div class="pills">${html}</div></section>` : "";
   } else if(psm==="cat"){
     planBody = catList().map(cat=>{
-      let inList = state.items.filter(i=>i.cat===cat.id).sort(bySortKey);
+      let inList = state.items.filter(i=>i.cat===cat.id);
       const ba = state.buyAgain.filter(e=>e.cat===cat.id && !inList.some(i=>i.name.toLowerCase()===e.name.toLowerCase()));
       const total = inList.length+ba.length;
       if(!total && !cat.custom) return "";
@@ -1431,11 +1438,11 @@ function renderPlanPage(){
       const catAdd = catEntry===cat.id ? `<div class="catadd">
           <div class="inwrap"><textarea id="catInput" rows="1" placeholder="Add to ${esc(cat.label)}" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="Clear">×</button></div>
           <button id="catAddBtn" style="background:${cat.color}">+</button></div>` : "";
-      const filled = inList.map(i=>planFilledPill(i,cat)).join("");
-      const outline = ba.map(e=>planOutlineChip(e,cat)).join("");
+      const merged = [ ...inList.map(i=>({it:i,isBa:false})), ...ba.map(e=>({it:e,isBa:true})) ].sort((A,B)=>bySortKey(A.it,B.it));
+      const pills = merged.map(({it,isBa})=> isBa?planOutlineChip(it,cat):planFilledPill(it,cat)).join("");
       return `<section class="cat"><div class="chead"><button class="lbl catheadchip" data-planc="${cat.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;width:100%"><span class="cemoji">${catIcon(cat,16)}</span><span class="cname" style="color:#fff">${esc(cat.label)}</span><span class="cnum" style="color:#fff;opacity:.85">${inList.length}/${total}${collapsed?' ▸':''}</span></button>
         <button class="plus" data-add="${cat.id}" style="${catEntry===cat.id?`background:${cat.color};color:#fff`:''}">${catEntry===cat.id?'×':'+'}</button></div>${catAdd}
-        ${collapsed?"":`<div class="pills" style="margin-top:6px">${filled}${outline}</div>`}</section>`;
+        ${collapsed?"":`<div class="pills" style="margin-top:6px">${pills}</div>`}</section>`;
     }).join("");
   } else if(psm==="auto"){
     planBody = catList().map(cat=>{
@@ -1591,10 +1598,10 @@ function optionsSheet(){
     </div>
     ${(displayFor()==="flat" && curSort==="location") ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
       <span class="optlabel">Store</span>
-      <div class="storegrid">${[{id:"auto",name:"Auto-detect"},...STORES].map(s=>`<button data-opt-store="${s.id}" class="storechip ${storeSel===s.id?'on':''}">${esc(s.name)}</button>`).join("")}</div>
+      <div class="storegrid">${[{id:"auto",name:"Auto-detect"},{id:"home",name:"🏠 Home"},...STORES,{id:"other",name:"Other"}].map(s=>`<button data-opt-store="${s.id}" class="storechip ${storeSel===s.id?'on':''}">${esc(s.name)}</button>`).join("")}</div>
     </div>
     ${row("Location", `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">On</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">Off</button></div>`)}
-    ${storeSel!=="auto" ? `<button class="optaction" id="optSetStore" style="margin-top:2px">📍 Set ${esc((storeById(storeSel)||{}).name||"store")} location here</button>` : ""}
+    ${STORES.some(s=>s.id===storeSel) ? `<button class="optaction" id="optSetStore" style="margin-top:2px">📍 Set ${esc((storeById(storeSel)||{}).name||"store")} location here</button>` : ""}
     <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${esc(storeLabel())}</div>` : ""}` : ""}
     ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
     <button class="optaction" id="optSwitchUser">Switch user${me?` (${esc(me)})`:""}</button>
