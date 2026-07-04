@@ -384,7 +384,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.64";
+const APP_VERSION = "v0.65";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -423,9 +423,10 @@ const DICT = {
   alcohol:["wine","beer","vodka","whisky","whiskey","gin","rum","soju","sake","cider","champagne","prosecco","tequila"],
   health:["vitamin","panadol","paracetamol","ibuprofen","medicine","bandage","band-aid","plaster","supplement","probiotic","sunscreen","cough","lozenge","melatonin","fish oil","magnesium"],
 };
-function knownCat(name){ const n=(name||"").toLowerCase().trim(); if(!n) return null;
-  const hit = state.items.find(i=>i.name.toLowerCase()===n) || state.buyAgain.find(e=>e.name.toLowerCase()===n);
-  return hit ? hit.cat : null; }
+/* A16 remember the full entry (category AND subcategory), not just the category,
+   so re-typing a cleared item puts it back exactly where it lived before */
+function knownEntry(name){ const n=(name||"").toLowerCase().trim(); if(!n) return null;
+  return state.items.find(i=>i.name.toLowerCase()===n) || state.buyAgain.find(e=>e.name.toLowerCase()===n) || null; }
 function guessCat(name){ const n=(name||"").toLowerCase(); let best=null, bestLen=0;
   for(const[c,w] of Object.entries(DICT)) for(const x of w){ if(x.length>bestLen && n.includes(x)){ best=c; bestLen=x.length; } }
   return best; }
@@ -472,13 +473,16 @@ function distM(a,b){ const R=6371000, toR=x=>x*Math.PI/180;
   const dLat=toR(b.lat-a.lat), dLng=toR(b.lng-a.lng);
   const s=Math.sin(dLat/2)**2 + Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLng/2)**2;
   return 2*R*Math.asin(Math.min(1,Math.sqrt(s))); }
-function storeById(id){ return STORES.find(s=>s.id===id)||null; }
+/* A16 Home is a real, rememberable place: it can save a GPS location and be auto-detected,
+   but it has no aisles — being at Home always sorts by category. */
+const HOME_STORE = { id:"home", name:"🏠 Home" };
+function storeById(id){ if(id==="home") return HOME_STORE; return STORES.find(s=>s.id===id)||null; }
 function storeCoord(s){ if(!s) return null; if(storeLocs[s.id]) return storeLocs[s.id]; return (s.lat!=null)?{lat:s.lat,lng:s.lng}:null; }
 // Which store's layout is in effect (manual pick wins, else GPS-detected, else none).
 function activeStore(){ if(storeSel!=="auto") return storeById(storeSel); if(useLoc && locState.nearId) return storeById(locState.nearId); return null; }
 function activeAisles(){ const s=activeStore(); return (s&&s.aisles) || AISLES_DAND; }
 // Should Location sort show STORE aisle order right now?
-function locActive(){ if(storeSel==="home"||storeSel==="other") return false; if(storeSel!=="auto") return true; if(!useLoc) return false; return !!(locState.checked && locState.nearId); }
+function locActive(){ if(storeSel==="home"||storeSel==="other") return false; if(storeSel!=="auto") return true; if(!useLoc) return false; return !!(locState.checked && locState.nearId && locState.nearId!=="home"); }
 function ensureLocCheck(){
   if(storeSel!=="auto" || !useLoc) return;            // GPS only needed for auto-detect
   const now=Date.now();
@@ -488,7 +492,7 @@ function ensureLocCheck(){
   locState.busy=true;
   navigator.geolocation.getCurrentPosition(
     pos=>{ const here={lat:pos.coords.latitude,lng:pos.coords.longitude};
-      let best=null,bd=Infinity; for(const s of STORES){ const c=storeCoord(s); if(!c) continue; const d=distM(here,c); if(d<bd){ bd=d; best=s; } }
+      let best=null,bd=Infinity; for(const s of [HOME_STORE,...STORES]){ const c=storeCoord(s); if(!c) continue; const d=distM(here,c); if(d<bd){ bd=d; best=s; } }
       locState={checked:true, nearId:(best&&bd<=LOC_RADIUS_M)?best.id:null, busy:false, ts:Date.now(), err:0, dist:bd}; render(); },
     err=>{ locState={checked:true, nearId:null, busy:false, ts:Date.now(), err:(err&&err.code)||1}; render(); },
     { enableHighAccuracy:false, maximumAge:60000, timeout:8000 });
@@ -511,7 +515,7 @@ function storeLabel(){
   if(locState.busy || !locState.checked) return "Checking location…";
   if(locState.err) return "Others · location unavailable";
   const s=locState.nearId?storeById(locState.nearId):null;
-  return s ? ("📍 "+s.name) : "Others · not at a saved store";
+  return s ? ("📍 "+s.name+(s.aisles?"":" · sorted by category")) : "Others · not at a saved store";
 }
 /* Location sort — per-store walk order from aisle photos. Entries scanned top-to-bottom,
    first keyword match wins, so specific multi-word terms precede the generic ones they contain.
@@ -878,8 +882,9 @@ function addEntries(text, override){
     const ex = state.items.find(i=>!i.checked && i.name.toLowerCase()===e.name.toLowerCase());
     if(ex){ if(e.qty>1) ex.qty=(ex.qty||1)+e.qty; markDirty(ex.id); continue; }
     const nid=uid();
-    if(cat){ state.items.push({id:nid,name:e.name,qty:e.qty,cat,checked:false,by:me}); }
-    else { const g=knownCat(e.name)||guessCat(e.name); state.items.push({id:nid,name:e.name,qty:e.qty,cat:g||"others",checked:false,by:me}); }
+    const known = knownEntry(e.name);
+    if(cat){ state.items.push({id:nid,name:e.name,qty:e.qty,cat,sub:(known&&known.cat===cat&&known.sub)||"",checked:false,by:me}); }
+    else { const g=(known&&known.cat)||guessCat(e.name); state.items.push({id:nid,name:e.name,qty:e.qty,cat:g||"others",sub:(known&&known.sub)||"",checked:false,by:me}); }
     markDirty(nid);
   }
   save(); render();
@@ -1316,14 +1321,14 @@ function renderMain(){
           <button id="optBtnTop" aria-label="Options" class="iconbtn" title="Options"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
         </div>
       </header>
-      ${state.items.length>0 ? `` : ""}
       <div class="addbar">
         <button class="micbtn" id="micBtn" aria-label="Voice input"></button>
         <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Add items to ${esc(state.name||'your list')}…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
         <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
       </div>
       <div class="suggest" id="suggest"></div>
-      ${shopMode?`<div class="shopbar" style="margin-top:8px"><span>🛒 Shopping mode · ${open} left${done?` · ${done} in cart`:''}</span><button id="doneShop">Done</button></div>`:""}
+      ${shopMode?`<div class="shopbar" style="margin-top:8px"><span>🛒 Shopping mode · ${open} left${done?` · ${done} in cart`:''}</span><button id="doneShop">Done</button></div>`
+        :(state.items.length>0?`<div class="shopbar" style="margin-top:8px;background:var(--btn)"><span>🛒 At the store?</span><button id="startShop">Start shopping</button></div>`:"")}
     </div>
     <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${(state.items.length===0 && !shopMode)?`<div class="empty">
@@ -1340,7 +1345,7 @@ function renderMain(){
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
     <button class="navbtn" id="addNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>${state.items.length>0?`<span class="cartcount">${state.items.length}</span>`:""}</span><span>Plan</span></button>
-    <button class="navbtn active" id="cartNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${state.items.length>0?`<span class="cartcount">${done}</span>`:""}</span><span>Shop</span></button>
+    <button class="navbtn active" id="cartNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg></span><span>Shop</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${listsOpen?listsSheet():""}
@@ -1350,7 +1355,7 @@ function renderMain(){
 
 function renderListsPage(){
   const lists=getLists();
-  const ccT=state.items.length, ccD=state.items.filter(i=>i.checked).length;
+  const ccT=state.items.length;
   app.innerHTML = `<div class="wrap">
     <div class="topfix" id="topfix">
       <header>
@@ -1364,7 +1369,7 @@ function renderListsPage(){
           return `<button class="listbubble ${cur?'cur':''}" data-open="${esc(l.code)}">
             <div style="display:flex;align-items:center;gap:10px;width:100%">
               <span class="lb-name" style="flex:1;min-width:0">${esc(l.name||'Untitled list')}</span>
-              <span class="lb-badge">${st.done}/${st.total}</span>
+              <span class="lb-badge">${st.total}</span>
               <span class="lb-chevron" aria-hidden="true">›</span>
             </div>
             <div class="prog" style="margin-top:11px;width:100%"><div class="prog-fill" style="width:${st.pct}%"></div></div>
@@ -1377,7 +1382,7 @@ function renderListsPage(){
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn active" id="listsBtnL"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
     <button class="navbtn" id="addListNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>${ccT>0?`<span class="cartcount">${ccT}</span>`:""}</span><span>Plan</span></button>
-    <button class="navbtn" id="cartNavL"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${ccT>0?`<span class="cartcount">${ccD}</span>`:""}</span><span>Shop</span></button>
+    <button class="navbtn" id="cartNavL"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg></span><span>Shop</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${listActOpen?listActSheet():""}
@@ -1432,7 +1437,6 @@ function planFilledPill(i, cat){ const checked=i.checked; const full=fillMode()=
   return `<button class="pill plan-in ${checked?'done':''}" data-plan-rm="${i.id}" style="${style}">${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}${checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit"${full?' style="color:rgba(255,255,255,.92)"':''}>▾</span></button>${quickEdit===i.id?qpanelHTML(i,cat):""}`; }
 function planOutlineChip(e, cat){ return `<button class="pill plan-out ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="background:transparent;border:1.5px dashed ${cat.color}">${(e.qty||1)>1?`<span class="qty" style="color:${cat.color}">${e.qty}×</span>`:""}${e.weight?`<span class="qty" style="color:${cat.color}">${esc(e.weight)} </span>`:""}${esc(cap(e.name))}<span class="qmore" style="visibility:hidden" aria-hidden="true">▾</span></button>`; }
 function renderPlanPage(){
-  const done=state.items.filter(i=>i.checked).length;
   const cartIcon=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>`;
   const psm = (displayFor()==="cat" && sortModeFor()==="location") ? "cat" : sortModeFor();
   let planBody;
@@ -1516,7 +1520,7 @@ function renderPlanPage(){
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
     <button class="navbtn active" id="addNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>${state.items.length>0?`<span class="cartcount">${state.items.length}</span>`:""}</span><span>Plan</span></button>
-    <button class="navbtn" id="cartNav"><span class="cartwrap">${cartIcon}${state.items.length>0?`<span class="cartcount">${done}</span>`:""}</span><span>Shop</span></button>
+    <button class="navbtn" id="cartNav"><span class="cartwrap">${cartIcon}</span><span>Shop</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${editing?editSheet():""}
@@ -1528,7 +1532,7 @@ function planRemove(id){ const it=state.items.find(i=>i.id===id); if(!it) return
   state.items = state.items.filter(i=>i.id!==id); save(); render(); }
 function wirePlanPage(){
   wireAddBar();
-  app.querySelectorAll(".ba-restore").forEach(b=>{ const [name,cat]=b.dataset.restore.split("|");
+  app.querySelectorAll(".ba-restore").forEach(b=>{ const _p=b.dataset.restore.split("|"), cat=_p.pop(), name=_p.join("|");
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
     b.onpointerup=()=>{ pressCancel();
@@ -1618,7 +1622,7 @@ function optionsSheet(){
       <div class="storegrid">${[{id:"auto",name:"Auto-detect"},{id:"home",name:"🏠 Home"},...STORES,{id:"other",name:"Other"}].map(s=>`<button data-opt-store="${s.id}" class="storechip ${storeSel===s.id?'on':''}">${esc(s.name)}</button>`).join("")}</div>
     </div>
     ${row("Location", `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">On</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">Off</button></div>`)}
-    ${STORES.some(s=>s.id===storeSel) ? `<button class="optaction" id="optSetStore" style="margin-top:2px">📍 Set ${esc((storeById(storeSel)||{}).name||"store")} location here</button>` : ""}
+    ${(storeSel==="home" || STORES.some(s=>s.id===storeSel)) ? `<button class="optaction" id="optSetStore" style="margin-top:2px">📍 Set ${esc((storeById(storeSel)||{}).name||"store")} location here</button>` : ""}
     <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${esc(storeLabel())}</div>` : ""}` : ""}
     ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
     <button class="optaction" id="optSwitchUser">Switch user${me?` (${esc(me)})`:""}</button>
@@ -1816,7 +1820,7 @@ function wire(){
       else { toggleBA(); } }; }
 
   /* buy-again: tap = restore, hold = edit (remove lives inside the edit popup) */
-  app.querySelectorAll(".ba-restore").forEach(b=>{ const [name,cat]=b.dataset.restore.split("|");
+  app.querySelectorAll(".ba-restore").forEach(b=>{ const _p=b.dataset.restore.split("|"), cat=_p.pop(), name=_p.join("|");
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
     b.onpointerup=()=>{ pressCancel();
@@ -1826,6 +1830,7 @@ function wire(){
 
   const shb=app.querySelector("#cartNav"); if(shb) shb.onclick=toggleShop;
   const dsh=app.querySelector("#doneShop"); if(dsh) dsh.onclick=toggleShop;
+  const ssh=app.querySelector("#startShop"); if(ssh) ssh.onclick=toggleShop;
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const ln=app.querySelector("#listName"); if(ln) ln.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>{ view="plan"; optOpen=false; render(); };
@@ -1902,6 +1907,33 @@ function wireEditSheet(){
     }
   }
 }
+
+/* A16 swipe left/right anywhere on the page body to move between Lists ⇄ Plan ⇄ Shop.
+   Ignores swipes that start on sheets, inputs, or horizontally-scrolling rows, and
+   ignores gestures that are slow, short, too vertical, or multi-touch (pinch). */
+const PAGE_ORDER = ["lists","plan","detail"];
+let _swipe = null;
+document.addEventListener("touchstart", e=>{
+  _swipe = null;
+  if(e.touches.length !== 1) return;
+  const t = e.target;
+  if(t && t.closest && t.closest(".sheet-bg, textarea, input, .suggest, .storegrid, .wrowq, .picscroll, .icongrid, .listrows, .checkedscroll")) return;
+  _swipe = { x:e.touches[0].clientX, y:e.touches[0].clientY, t:Date.now() };
+}, {passive:true});
+document.addEventListener("touchend", e=>{
+  if(!_swipe) return; const s=_swipe; _swipe=null;
+  if(!me || editing || optOpen || listActOpen || newListOpen) return;
+  const c = e.changedTouches && e.changedTouches[0]; if(!c) return;
+  const dx = c.clientX - s.x, dy = c.clientY - s.y, dt = Date.now() - s.t;
+  if(dt > 600 || Math.abs(dx) < 70 || Math.abs(dy) > 60 || Math.abs(dx) < 1.6*Math.abs(dy)) return;
+  const i = PAGE_ORDER.indexOf(view); if(i < 0) return;
+  const ni = i + (dx < 0 ? 1 : -1);
+  if(ni < 0 || ni >= PAGE_ORDER.length) return;
+  view = PAGE_ORDER[ni];
+  if(view === "detail") shopMode = false;
+  catEntry = null; quickEdit = null;
+  render();
+}, {passive:true});
 
 window.addEventListener("resize", syncZoomHeight);
 render();
