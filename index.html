@@ -384,7 +384,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.65";
+const APP_VERSION = "v0.66";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -664,7 +664,7 @@ function switchList(code){ listsOpen=false; if(code===listCode){ render(); retur
   try{ collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}'); }catch(e){ collapse={cats:[],ba:false}; }
   state = { items:[], buyAgain:[], members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99} };
   try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state=c; }catch(e){}
-  ensureCats(); editing=null; quickEdit=null; view="detail";
+  ensureCats(); editing=null; quickEdit=null; view="plan";
   if(typeof history!=="undefined" && history.replaceState){ try{ history.replaceState(null, "", location.pathname+"?list="+code); }catch(e){} }
   subscribe(); render(); }
 function renameList(){ const name=prompt("Rename this list:", state.name||"Groceries"); if(name===null) return;
@@ -1042,7 +1042,7 @@ function removeSub(catId, subId){ const c=catList().find(x=>x.id===catId); if(!c
 
 function join(name){ const c=name.trim(); if(!c) return;
   if(!state.members.includes(c)){ if(state.members.length>=4) return; state.members.push(c); }
-  me=c; localStorage.setItem(LS.me,c); save(); render(); }
+  me=c; localStorage.setItem(LS.me,c); view="plan"; save(); render(); }   // first stop after joining: the Choose page
 function toggleCat(id){ collapse.cats = collapse.cats.includes(id) ? collapse.cats.filter(x=>x!==id) : [...collapse.cats,id];
   localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }
 function toggleBA(){ collapse.ba=!collapse.ba; localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }
@@ -1344,7 +1344,7 @@ function renderMain(){
   ${checkedBar}
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
-    <button class="navbtn" id="addNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>${state.items.length>0?`<span class="cartcount">${state.items.length}</span>`:""}</span><span>Plan</span></button>
+    <button class="navbtn" id="addNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 2 2 4-4"/><path d="M13 7h8"/><path d="m3 16 2 2 4-4"/><path d="M13 17h8"/></svg>${state.items.length>0?`<span class="cartcount">${state.items.length}</span>`:""}</span><span>Choose</span></button>
     <button class="navbtn active" id="cartNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg></span><span>Shop</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
@@ -1381,7 +1381,7 @@ function renderListsPage(){
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn active" id="listsBtnL"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
-    <button class="navbtn" id="addListNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>${ccT>0?`<span class="cartcount">${ccT}</span>`:""}</span><span>Plan</span></button>
+    <button class="navbtn" id="addListNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 2 2 4-4"/><path d="M13 7h8"/><path d="m3 16 2 2 4-4"/><path d="M13 17h8"/></svg>${ccT>0?`<span class="cartcount">${ccT}</span>`:""}</span><span>Choose</span></button>
     <button class="navbtn" id="cartNavL"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg></span><span>Shop</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
@@ -1501,7 +1501,7 @@ function renderPlanPage(){
       <header>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <button class="backbtn" id="planBack" aria-label="Back to lists" style="font-size:20px;line-height:1;padding:4px 12px">‹</button>
-          <span class="title disp">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Plan")}<span class="dot">.</span></span>
+          <span class="title disp">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Choose")}<span class="dot">.</span></span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">${avatars}${syncChip()}<button id="optBtnTop" class="iconbtn" aria-label="Options"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
       </header>
@@ -1513,13 +1513,16 @@ function renderPlanPage(){
       <div class="suggest" id="suggest"></div>
     </div>
     <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
+      ${(hasAny && !localStorage.getItem("ml_hint_choose")) ? `<div class="subrow" style="justify-content:space-between;gap:8px;margin-bottom:8px">
+        <span style="font-size:12px;color:var(--muted);font-weight:600">Plan your shop here — solid items are on the list, faded ones were bought before. Tap to add or remove.</span>
+        <button class="iconmini" id="hintChooseX" aria-label="Dismiss">×</button></div>` : ""}
       ${hasAny ? planBody : `<div class="empty"><div class="empty-emoji">🛒</div><p class="empty-title">Nothing to plan yet</p><p class="empty-sub">Add items above, or clear items from a list and they'll show here to add again next time.</p></div>`}
       <button id="addCatPlan" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
     </div></div>
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
-    <button class="navbtn active" id="addNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>${state.items.length>0?`<span class="cartcount">${state.items.length}</span>`:""}</span><span>Plan</span></button>
+    <button class="navbtn active" id="addNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 2 2 4-4"/><path d="M13 7h8"/><path d="m3 16 2 2 4-4"/><path d="M13 17h8"/></svg>${state.items.length>0?`<span class="cartcount">${state.items.length}</span>`:""}</span><span>Choose</span></button>
     <button class="navbtn" id="cartNav"><span class="cartwrap">${cartIcon}</span><span>Shop</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
@@ -1562,6 +1565,7 @@ function wirePlanPage(){
   if(pcc){ pcc.onpointerdown=e=>e.preventDefault(); pcc.onclick=()=>{ if(pci){ pci.value=""; draftCatText=""; grow(pci); pToggle(); pci.focus(); } }; }
   if(pcab){ pcab.onpointerdown=e=>e.preventDefault(); pcab.onclick=()=>{ const v=app.querySelector("#catInput").value; addEntries(v,catEntry); draftCatText=""; render(); const x=app.querySelector("#catInput"); if(x){ x.focus(); grow(x); } }; }
   const acp=app.querySelector("#addCatPlan"); if(acp) acp.onclick=addCategory;
+  const hcx=app.querySelector("#hintChooseX"); if(hcx) hcx.onclick=()=>{ localStorage.setItem("ml_hint_choose","1"); render(); };
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const an=app.querySelector("#addNav"); if(an) an.onclick=()=>{ const mi=document.getElementById("mainInput"); if(mi) mi.focus(); };
   const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>{ view="detail"; shopMode=false; render(); };
