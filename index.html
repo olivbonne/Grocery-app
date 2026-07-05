@@ -378,6 +378,41 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .iconbtn::after, .iconmini::after { content:""; position:absolute; inset:-7px; }
   .clearbtn::after { content:""; position:absolute; inset:-8px; }
   .qmore::after { content:""; position:absolute; inset:-6px; }
+  /* A20 shop-mode check circle on each item pill */
+  .pcheck { margin-left:8px; flex:none; width:24px; height:24px; border-radius:50%;
+    border:2px solid var(--muted2); display:inline-flex; align-items:center; justify-content:center;
+    font-size:14px; font-weight:900; line-height:1; color:transparent; box-sizing:border-box; }
+  .pill.done .pcheck { border-color:var(--done-edge); background:var(--done-edge); color:#fff; }
+  /* A20 redesigned shopping-mode banner (mirrors the bottom cart) */
+  .shopbar2 { gap:12px; padding:12px 14px; }
+  .shopbar2 .sb-cart { flex:none; width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.22);
+    display:flex; align-items:center; justify-content:center; font-size:20px; }
+  .shopbar2 .sb-mid { flex:1; min-width:0; display:flex; flex-direction:column; gap:5px; }
+  .shopbar2 .sb-title { font-size:15px; font-weight:800; line-height:1; }
+  .shopbar2 .sb-stats { display:flex; gap:7px; }
+  .shopbar2 .sb-pill { font-size:12px; font-weight:800; padding:3px 10px; border-radius:999px;
+    background:rgba(255,255,255,.20); color:#fff; white-space:nowrap; }
+  .shopbar2 .sb-pill.sb-incart { background:#fff; color:var(--accent); }
+  .shopbar2 .sb-done { flex:none; }
+  /* A20 bottom-nav middle "to buy" stat slot */
+  .navstat { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    padding:6px 0; line-height:1; }
+  .navstat-n { font-size:17px; font-weight:900; color:var(--accent); font-variant-numeric:tabular-nums; }
+  .navstat-l { font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.2px; }
+  /* A20 cart bounce when a flying item lands */
+  @keyframes cartbounce { 0%{transform:scale(1)} 35%{transform:scale(1.12)} 70%{transform:scale(.97)} 100%{transform:scale(1)} }
+  .cartpulse { animation:cartbounce .42s ease; }
+  /* A20 flying item → cart */
+  .cartfly { position:fixed; z-index:60; width:38px; height:38px; border-radius:11px; pointer-events:none;
+    display:flex; align-items:center; justify-content:center; font-size:20px; color:#fff;
+    box-shadow:0 6px 18px rgba(0,0,0,.28); will-change:transform,opacity; }
+  .cartfly img { width:24px; height:24px; object-fit:contain; }
+  /* A20 Users list in Settings */
+  .userlist { display:flex; flex-wrap:wrap; gap:8px; }
+  .userchip { display:inline-flex; align-items:center; gap:6px; padding:9px 14px; border-radius:999px;
+    border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:14px; }
+  .userchip.on { background:var(--btn); border-color:var(--btn); color:#fff; }
+  .userchip .ucur { font-size:10px; font-weight:800; opacity:.8; text-transform:uppercase; letter-spacing:.4px; }
   /* A14 respect reduced motion */
   @media (prefers-reduced-motion: reduce){
     *, *::before, *::after { animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
@@ -396,7 +431,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.70";
+const APP_VERSION = "v0.71";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -642,12 +677,65 @@ function toggleShop(){ shopMode=!shopMode; if(shopMode) aiResetTrip(); localStor
 function optMode(){ return view==="lists" ? "lists" : (shopMode ? "shop" : "plan"); }
 let _prevPlanned=null, _prevChecked=null;
 function cartBadgeHTML(iconHTML){
-  const planned = state.items.filter(i=>!i.checked).length;
   const checked = state.items.filter(i=>i.checked).length;
-  const plannedChanged = _prevPlanned!==null && _prevPlanned!==planned;
   const checkedChanged = _prevChecked!==null && _prevChecked!==checked;
-  _prevPlanned = planned; _prevChecked = checked;
-  return `<span class="cartwrap">${planned>0?`<span class="cartcount${plannedChanged?' justpop':''}" style="position:static;margin-right:4px">${planned}</span>`:""}${iconHTML}${checked>0?`<span class="cartbadge${checkedChanged?' justpop':''}">${checked}</span>`:""}</span>`;
+  _prevChecked = checked;
+  return `<span class="cartwrap" id="cartWrap">${iconHTML}${checked>0?`<span class="cartbadge${checkedChanged?' justpop':''}">${checked}</span>`:""}</span>`;
+}
+// A20 bottom-nav middle "to buy" stat (was the inline cart count) — pops when it changes
+function navStatHTML(){
+  const planned = state.items.filter(i=>!i.checked).length;
+  const changed = _prevPlanned!==null && _prevPlanned!==planned;
+  _prevPlanned = planned;
+  return `<div class="navstat"><span class="navstat-n${changed?' justpop':''}">${planned}</span><span class="navstat-l">to buy</span></div>`;
+}
+// A20 fly a miniature of the tapped item along a Bézier arc into the cart, then bounce the cart + banner
+let _flyLast = 0;
+function flyItemToCart(srcEl, it){
+  try{
+    if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const cartEl = document.querySelector("#cartWrap") || document.querySelector("#cartNav,#cartNavL");
+    if(!srcEl || !cartEl) return;
+    const s = srcEl.getBoundingClientRect(), c = cartEl.getBoundingClientRect();
+    const P0 = { x:s.left+s.width/2, y:s.top+s.height/2 };
+    const P2 = { x:c.left+c.width/2, y:c.top+c.height/2 };
+    const cat = CAT(it.cat);
+    const icon = catIcon(cat, 20);
+    // stagger rapid taps so they queue one-after-another (~80ms apart)
+    const now = performance.now();
+    const at = Math.max(now, _flyLast + 80);
+    _flyLast = at;
+    setTimeout(()=>launchFlyer(P0, P2, (cat&&cat.color)||"var(--accent)", icon), at-now);
+  }catch(e){}
+}
+function launchFlyer(P0, P2, color, iconHTML){
+  const fly = document.createElement("div");
+  fly.className = "cartfly";
+  fly.style.left = P0.x+"px"; fly.style.top = P0.y+"px";
+  fly.style.background = color;
+  fly.innerHTML = iconHTML;
+  document.body.appendChild(fly);
+  const arcUp = Math.max(70, Math.abs(P2.y-P0.y)*0.28);
+  const P1 = { x:(P0.x+P2.x)/2, y:Math.min(P0.y,P2.y)-arcUp };
+  const N = 18, frames = [];
+  for(let k=0;k<=N;k++){ const t=k/N, mt=1-t;
+    const x = mt*mt*P0.x + 2*mt*t*P1.x + t*t*P2.x;
+    const y = mt*mt*P0.y + 2*mt*t*P1.y + t*t*P2.y;
+    const sc = 1 - 0.6*t;                       // 1 → 0.4 (miniature on arrival)
+    const op = t>0.82 ? Math.max(0,(1-t)/0.18) : 1;
+    frames.push({ transform:`translate(-50%,-50%) translate(${(x-P0.x).toFixed(1)}px,${(y-P0.y).toFixed(1)}px) scale(${sc.toFixed(3)})`, opacity:op });
+  }
+  const anim = fly.animate(frames, { duration:520, easing:"ease-in-out" });
+  let fired = false;
+  const done = ()=>{ if(fired) return; fired = true; fly.remove(); bumpCart(); };
+  anim.onfinish = done; anim.oncancel = done;
+  setTimeout(done, 640);   // safety net if WAAPI events don't fire
+}
+function bumpCart(){
+  document.querySelectorAll("#cartWrap, .sb-incart").forEach(el=>{
+    el.classList.remove("cartpulse"); void el.offsetWidth; el.classList.add("cartpulse");
+    setTimeout(()=>el.classList.remove("cartpulse"), 460);
+  });
 }
 let sorts = {}; try{ sorts = JSON.parse(localStorage.getItem("ml_sorts")||"null") || {}; }catch(e){ sorts={}; }
 const _legacySort = localStorage.getItem("ml_sort")||"cat";
@@ -1250,7 +1338,7 @@ function pillHTML(i, cat){
   const qcol = full ? '#fff' : (checked ? 'var(--muted2)' : cat.color);
   const style = full ? `background:${cat.color};border:1.5px solid ${cat.color};color:#fff` : `border-left:4px solid ${edge}`;
   return `<button class="pill ${checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="${style}">`
-    +`${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}${(!checked&&i.starred)?`<span style="color:${full?'#fff':'#E8A91D'};margin-right:1px">★</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}</button>`;
+    +`${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}${(!checked&&i.starred)?`<span style="color:${full?'#fff':'#E8A91D'};margin-right:1px">★</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}${shopMode?`<span class="pcheck" aria-hidden="true"${full?' style="border-color:rgba(255,255,255,.85);color:#fff"':''}>${checked?'✓':''}</span>`:""}</button>`;
 }
 function pillRow(items, cat){ return `<div class="pills">${items.map(i=>pillHTML(i,cat)).join("")}</div>`; }
 function pillsMixed(items){ return `<div class="pills">${items.map(i=>pillHTML(i, CAT(i.cat))).join("")}</div>`; }
@@ -1271,7 +1359,6 @@ function wireQuickPanel(){
 function renderMain(){
   const open = state.items.filter(i=>!i.checked).length;
   const done = state.items.filter(i=>i.checked).length;
-  const avatars = state.members.map((m,i)=>`<div class="av ${m===me?'me':''}" style="margin-left:${i?-6:0}px" title="${esc(m)}">${esc(m.slice(0,1).toUpperCase())}</div>`).join("");
 
   const anyOpen = catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id)) || (state.buyAgain.length>0 && collapse.ba);
   const firstCatId = (catList().find(c=>state.items.some(i=>i.cat===c.id))||{}).id;
@@ -1371,9 +1458,8 @@ function renderMain(){
           <span class="title disp">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="dot">.</span></span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          ${avatars}
           ${syncChip()}
-          <button id="optBtnTop" aria-label="Options" class="iconbtn" title="Options"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
+          <button id="optBtnTop" aria-label="Settings" class="iconbtn" title="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
         </div>
       </header>
       <div class="addbar">
@@ -1381,7 +1467,14 @@ function renderMain(){
         <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
       </div>
       <div class="suggest" id="suggest"></div>
-      ${shopMode?`<div class="shopbar" style="margin-top:8px"><span>🛒 Shopping mode · ${open} left${done?` · ${done} in cart`:''}</span><button id="doneShop">Done</button></div>`
+      ${shopMode?`<div class="shopbar shopbar2" style="margin-top:8px">
+          <div class="sb-cart" aria-hidden="true">🛒</div>
+          <div class="sb-mid">
+            <div class="sb-title">Shopping mode</div>
+            <div class="sb-stats"><span class="sb-pill">${open} to buy</span>${done?`<span class="sb-pill sb-incart">${done} in cart</span>`:''}</div>
+          </div>
+          <button id="doneShop" class="sb-done">Done</button>
+        </div>`
         :(state.items.length>0?`<div class="shopbar" style="margin-top:8px;background:var(--btn)"><span>🛒 At the store?</span><button id="startShop">Start shopping</button></div>`:"")}
     </div>
     <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
@@ -1390,7 +1483,7 @@ function renderMain(){
           <p class="empty-title">Your list is empty</p>
           <p class="empty-sub">Add your first item in the bar above — try one of these:</p>
           <div class="pills" style="justify-content:center">${["Milk","Eggs","Bananas","Bread"].map(x=>`<button class="sugchip" data-example="${x}">+ ${x}</button>`).join("")}</div>
-          <p class="empty-sub" style="margin-top:16px">Shared via this link — open <b>Options › Share link</b> to invite up to 4 people.</p>
+          <p class="empty-sub" style="margin-top:16px">Shared via this link — open <b>Settings › Share link</b> to invite up to 4 people.</p>
         </div>`:""}
       ${listBody}
     </div></div>
@@ -1398,6 +1491,7 @@ function renderMain(){
   ${checkedBar}
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
+    ${navStatHTML()}
     <button class="navbtn active" id="cartNav">${cartBadgeHTML('<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>')}<span>Cart</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
@@ -1412,7 +1506,7 @@ function renderListsPage(){
     <div class="topfix" id="topfix">
       <header>
         <div style="display:flex;align-items:center;gap:8px"><span class="title disp">Lists<span class="dot">.</span></span></div>
-        <div style="display:flex;align-items:center;gap:8px">${syncChip()}<button id="optBtnTop" aria-label="Options" class="iconbtn" title="Options"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
+        <div style="display:flex;align-items:center;gap:8px">${syncChip()}<button id="optBtnTop" aria-label="Settings" class="iconbtn" title="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
       </header>
     </div>
     <div class="zoomwrap"><div class="zoomer" id="zoomer">
@@ -1433,6 +1527,7 @@ function renderListsPage(){
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn active" id="listsBtnL"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
+    ${navStatHTML()}
     <button class="navbtn" id="cartNavL">${cartBadgeHTML('<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>')}<span>Cart</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
@@ -1545,7 +1640,6 @@ function renderPlanPage(){
     planBody = (filled||outline) ? `<section class="cat"><div class="pills">${filled}${outline}</div></section>` : "";
   }
   const hasAny = catList().some(c=> state.items.some(i=>i.cat===c.id) || state.buyAgain.some(e=>e.cat===c.id) || c.custom);
-  const avatars = state.members.map((m,i)=>`<div class="av ${m===me?'me':''}" style="margin-left:${i?-6:0}px" title="${esc(m)}">${esc(m.slice(0,1).toUpperCase())}</div>`).join("");
   app.innerHTML = `<div class="wrap">
     <div class="topfix" id="topfix">
       <header>
@@ -1553,7 +1647,7 @@ function renderPlanPage(){
           <button class="backbtn" id="planBack" aria-label="Back to lists" style="font-size:20px;line-height:1;padding:4px 12px">‹</button>
           <span class="title disp">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Choose")}<span class="dot">.</span></span>
         </div>
-        <div style="display:flex;align-items:center;gap:8px">${avatars}${syncChip()}<button id="optBtnTop" class="iconbtn" aria-label="Options"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
+        <div style="display:flex;align-items:center;gap:8px">${syncChip()}<button id="optBtnTop" class="iconbtn" aria-label="Settings" title="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
       </header>
       <div class="addbar">
         <button class="smartbtn" id="smartBtn" aria-label="Smart add" title="Smart add — let AI sort your list">✨</button>
@@ -1573,6 +1667,7 @@ function renderPlanPage(){
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
+    ${navStatHTML()}
     <button class="navbtn active" id="cartNav">${cartBadgeHTML(cartIcon)}<span>Cart</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
@@ -1656,7 +1751,7 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-store]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optStore; if(storeSel!==v){ storeSel=v; localStorage.setItem("ml_store", v); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(v==="auto") ensureLocCheck(); render(); } });
   const oss=app.querySelector("#optSetStore"); if(oss) oss.onclick=setStoreHere;
   app.querySelectorAll("[data-opt-style]").forEach(b=>b.onclick=()=>{ if(styl()!==b.dataset.optStyle) setStyle(b.dataset.optStyle); });
-  const osu=app.querySelector("#optSwitchUser"); if(osu) osu.onclick=()=>{ localStorage.removeItem(LS.me); me=null; optOpen=false; render(); };
+  app.querySelectorAll("[data-switch-user]").forEach(b=>b.onclick=()=>{ const nm=b.dataset.switchUser; if(nm && nm!==me){ me=nm; localStorage.setItem(LS.me, nm); } optOpen=false; render(); });
   const osh=app.querySelector("#optShare"); if(osh) osh.onclick=copyLink;
 }
 /* A18 ✨ Smart add — planning-mode AI parse → preview → confirm.
@@ -1740,7 +1835,7 @@ function optionsSheet(){
     ? catList().some(c=> (state.items.some(i=>i.cat===c.id)||state.buyAgain.some(e=>e.cat===c.id)||c.custom) && !(collapse.planCats||[]).includes(c.id))
     : (catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id)) || (state.buyAgain.length>0 && collapse.ba));
   return `<div class="sheet-bg" id="optBg"><div class="sheet" id="optSheet">
-    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:14px">Options</div>
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:14px">Settings</div>
     ${(view!=="lists" && (state.items.length>0 || state.buyAgain.length>0)) ? `<button class="optaction" id="optCollapseAll" style="margin-bottom:10px">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button>` : ""}
     ${row("Mode", `<div class="seg"><button data-opt-theme="light" class="${theme==='light'?'on':''}">Light</button><button data-opt-theme="dark" class="${theme==='dark'?'on':''}">Dark</button></div>`)}
     ${row("Appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}">Full</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}">Empty</button></div>`)}
@@ -1749,7 +1844,7 @@ function optionsSheet(){
     ${view!=="lists" ? `${row("Display", `<div class="seg"><button data-opt-display="cat" class="${displayFor()==='cat'?'on':''}">Category</button><button data-opt-display="flat" class="${displayFor()==='flat'?'on':''}">Flat list</button></div>`)}
     <div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
       <span class="optlabel">Sort</span>
-      <div class="seg segfull">${displayFor()==="flat"?`<button data-opt-sort="location" class="${curSort==='location'?'on':''}">Location</button>`:""}${(displayFor()==="flat" && shopMode)?`<button data-opt-sort="ai" class="${curSort==='ai'?'on':''}">✨ AI</button>`:""}<button data-opt-sort="cat" class="${curSort==='cat'?'on':''}">Category</button><button data-opt-sort="alpha" class="${curSort==='alpha'?'on':''}">A–Z</button></div>
+      <div class="seg segfull">${displayFor()==="flat"?`<button data-opt-sort="location" class="${curSort==='location'?'on':''}">Location</button>`:""}${(displayFor()==="flat" && shopMode)?`<button data-opt-sort="ai" class="${curSort==='ai'?'on':''}">✨ AI</button>`:""}<button data-opt-sort="cat" class="${curSort==='cat'?'on':''}">Subcategory</button><button data-opt-sort="alpha" class="${curSort==='alpha'?'on':''}">A–Z</button></div>
     </div>
     ${(displayFor()==="flat" && curSort==="ai") ? `<div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">✨ AI learns the order you check things off at ${esc((activeStore()||{}).name||"each store")} and reorders your next trip. Pick the store below so it learns per shop.</div>` : ""}
     ${(displayFor()==="flat" && (curSort==="location"||curSort==="ai")) ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
@@ -1760,7 +1855,10 @@ function optionsSheet(){
     ${(storeSel==="home" || STORES.some(s=>s.id===storeSel)) ? `<button class="optaction" id="optSetStore" style="margin-top:2px">📍 Set ${esc((storeById(storeSel)||{}).name||"store")} location here</button>` : ""}
     <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${esc(storeLabel())}</div>` : ""}` : ""}
     ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
-    <button class="optaction" id="optSwitchUser">Switch user${me?` (${esc(me)})`:""}</button>
+    ${state.members.length ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
+      <span class="optlabel">Users</span>
+      <div class="userlist">${state.members.map(m=>`<button class="userchip ${m===me?'on':''}" data-switch-user="${esc(m)}">${esc(m)}${m===me?`<span class="ucur">you</span>`:""}</button>`).join("")}</div>
+    </div>` : ""}
     <button class="optaction" id="optShare">Share link</button>
     <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted2);font-weight:600" title="Build (file last modified): ${APP_BUILD_DATE}">${APP_VERSION}</div>
   </div></div>`;
@@ -1926,7 +2024,9 @@ function wire(){
     b.onpointerup=(e)=>{ pressCancel(); const it=state.items.find(i=>i.id===id); if(!it) return;
       if(longFired){ quickEdit=null; editing={kind:"item", ...it}; render(); return; }
       if(e.target.closest("[data-qmore]")){ quickEdit = (quickEdit===id ? null : id); render(); return; }
-      quickEdit=null; toggleItem(id); }; });
+      quickEdit=null;
+      if(shopMode && !it.checked) flyItemToCart(b, it);   // A20 fly a mini-item into the cart on check
+      toggleItem(id); }; });
 
   /* category header: tap = collapse, hold = edit/reorder/remove */
   app.querySelectorAll("[data-cat]").forEach(b=>{ const id=b.dataset.cat;

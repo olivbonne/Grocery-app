@@ -22,15 +22,15 @@ No build step, no framework. Firebase Firestore for live household sync, Vercel 
   PR into `main` without asking for confirmation, then restart `claude/review` from the
   updated `main` for the next change. (Standing user instruction — merging deploys to prod.)
 - **Model split (10-80-10):** plan and review on **Opus 4.8 at high effort**; run
-  execution on **Sonnet 5 at medium effort** (Opus for the thinking, Sonnet for the
-  grind — both cheaper than Fable). Project settings default the main thread to
-  `model: opus` / `effortLevel: high`.
-- **Execution runs in a Sonnet subagent.** Reserve the main thread (Opus) for planning
-  and review; delegate the heavy code-editing (the "80%") to a subagent pinned to
-  `model: sonnet` (the main model can't self-switch mid-session, so this is how the
-  split is achieved). Give each subagent a thorough brief and have it verify before
-  returning. (The Agent tool can't set subagent effort per-spawn; Sonnet's default is
-  fine for execution.)
+  execution on **Opus 4.8 at low effort** (Opus for the thinking, low-effort Opus for
+  the grind). Project settings default the main thread to `model: opus` /
+  `effortLevel: high`.
+- **Execution runs on low-effort Opus 4.8.** Reserve the main thread's high-effort budget
+  for planning and review; run the heavy code-editing (the "80%") at low effort — either
+  directly (drop effort for the grind, raise it back for review) or via a subagent when a
+  clean brief + isolation helps. Give any subagent a thorough brief and have it verify
+  before returning. (Standing note: the user has previously preferred direct
+  implementation in the main thread over spawning a subagent — don't spawn unless asked.)
 - **Always end a task by reporting what each agent did** — which subagent made which
   changes, and what the main thread did (plan/review/ship).
 - Run `/verify-app` before opening or updating a PR. Use `/release` for the
