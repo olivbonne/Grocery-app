@@ -384,7 +384,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.67";
+const APP_VERSION = "v0.68";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -451,11 +451,11 @@ let me = localStorage.getItem(LS.me) || null;
 let collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}');
 let densities = {}; try{ densities = JSON.parse(localStorage.getItem("ml_densities")||"null") || {}; }catch(e){ densities={}; }
 const _legacyDensity = parseFloat(localStorage.getItem("ml_density")||"1") || 1;
-function dens(){ const v=densities[view]; return (typeof v==="number" && v) ? v : _legacyDensity; }
-function setDensity(d){ const nd=Math.min(1.3,Math.max(0.7,Math.round(d*10)/10)); densities[view]=nd; localStorage.setItem("ml_densities", JSON.stringify(densities)); render(); }
+function dens(){ const v=densities[optMode()]; return (typeof v==="number" && v) ? v : _legacyDensity; }
+function setDensity(d){ const nd=Math.min(1.3,Math.max(0.7,Math.round(d*10)/10)); densities[optMode()]=nd; localStorage.setItem("ml_densities", JSON.stringify(densities)); render(); }
 let styles = {}; try{ styles = JSON.parse(localStorage.getItem("ml_styles")||"null") || {}; }catch(e){ styles={}; }
-function styl(){ return styles[view] || (shopMode ? "normal" : "compact"); }
-function setStyle(s){ styles[view]=s; localStorage.setItem("ml_styles", JSON.stringify(styles)); render(); }
+function styl(){ return styles[optMode()] || (shopMode ? "normal" : "compact"); }
+function setStyle(s){ styles[optMode()]=s; localStorage.setItem("ml_styles", JSON.stringify(styles)); render(); }
 let theme = localStorage.getItem("ml_theme") || ((typeof window!=="undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark");
 function applyTheme(){ const d = theme==="dark"; document.body.classList.toggle("dark", d); document.documentElement.classList.toggle("dark", d);
   const tc=document.getElementById("themeColor"); if(tc) tc.content = d ? "#141C18" : "#F2F6EE"; }
@@ -600,13 +600,23 @@ function byAisle(a,b){ const ra=aisleRank(a),rb=aisleRank(b); if(ra!==rb) return
 applyTheme();
 let shopMode = false;
 function toggleShop(){ shopMode=!shopMode; localStorage.setItem("ml_shop", shopMode?"1":"0"); collapse.ba = !shopMode && collapse.ba; render(); }
+function optMode(){ return view==="lists" ? "lists" : (shopMode ? "shop" : "plan"); }
+let _prevPlanned=null, _prevChecked=null;
+function cartBadgeHTML(iconHTML){
+  const planned = state.items.filter(i=>!i.checked).length;
+  const checked = state.items.filter(i=>i.checked).length;
+  const plannedChanged = _prevPlanned!==null && _prevPlanned!==planned;
+  const checkedChanged = _prevChecked!==null && _prevChecked!==checked;
+  _prevPlanned = planned; _prevChecked = checked;
+  return `<span class="cartwrap">${planned>0?`<span class="cartcount${plannedChanged?' justpop':''}" style="position:static;margin-right:4px">${planned}</span>`:""}${iconHTML}${checked>0?`<span class="cartbadge${checkedChanged?' justpop':''}">${checked}</span>`:""}</span>`;
+}
 let sorts = {}; try{ sorts = JSON.parse(localStorage.getItem("ml_sorts")||"null") || {}; }catch(e){ sorts={}; }
 const _legacySort = localStorage.getItem("ml_sort")||"cat";
-function sortModeFor(){ const v=sorts[view]||_legacySort; return v==="auto"?"cat":v; }
-function setSort(m){ sorts[view]=m; localStorage.setItem("ml_sorts", JSON.stringify(sorts)); render(); }
+function sortModeFor(){ const v=sorts[optMode()]||_legacySort; return v==="auto"?"cat":v; }
+function setSort(m){ sorts[optMode()]=m; localStorage.setItem("ml_sorts", JSON.stringify(sorts)); render(); }
 let displays = {}; try{ displays = JSON.parse(localStorage.getItem("ml_displays")||"null") || {}; }catch(e){ displays={}; }
-function displayFor(){ return displays[view]==="flat" ? "flat" : "cat"; }   // "cat"=grouped sections, "flat"=one flat list
-function setDisplay(m){ displays[view]=m; localStorage.setItem("ml_displays", JSON.stringify(displays)); render(); }
+function displayFor(){ return displays[optMode()]==="flat" ? "flat" : "cat"; }   // "cat"=grouped sections, "flat"=one flat list
+function setDisplay(m){ displays[optMode()]=m; localStorage.setItem("ml_displays", JSON.stringify(displays)); render(); }
 let optOpen=false, listsOpen=false;
 let view="detail", listActOpen=false, listActCode=null, newListOpen=false, newListDraft="";
 function listCount(code){ try{ const s = (code===listCode) ? state : JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); return (s&&s.items)? s.items.filter(i=>!i.checked).length : 0; }catch(e){ return 0; } }
@@ -1322,7 +1332,6 @@ function renderMain(){
         </div>
       </header>
       <div class="addbar">
-        <button class="micbtn" id="micBtn" aria-label="Voice input"></button>
         <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Add items to ${esc(state.name||'your list')}…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
         <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
       </div>
@@ -1344,7 +1353,7 @@ function renderMain(){
   ${checkedBar}
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
-    <button class="navbtn active" id="cartNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${state.items.length>0?`<span class="cartcount">${state.items.length}</span>`:""}</span><span>List</span></button>
+    <button class="navbtn active" id="cartNav">${cartBadgeHTML('<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>')}<span>Cart</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${listsOpen?listsSheet():""}
@@ -1354,7 +1363,6 @@ function renderMain(){
 
 function renderListsPage(){
   const lists=getLists();
-  const ccT=state.items.length;
   app.innerHTML = `<div class="wrap">
     <div class="topfix" id="topfix">
       <header>
@@ -1380,7 +1388,7 @@ function renderListsPage(){
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn active" id="listsBtnL"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
-    <button class="navbtn" id="cartNavL"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${ccT>0?`<span class="cartcount">${ccT}</span>`:""}</span><span>List</span></button>
+    <button class="navbtn" id="cartNavL">${cartBadgeHTML('<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>')}<span>Cart</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${listActOpen?listActSheet():""}
@@ -1503,7 +1511,6 @@ function renderPlanPage(){
         <div style="display:flex;align-items:center;gap:8px">${avatars}${syncChip()}<button id="optBtnTop" class="iconbtn" aria-label="Options"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
       </header>
       <div class="addbar">
-        <button class="micbtn" id="micBtn" aria-label="Voice input"></button>
         <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Add items to ${esc(state.name||'your list')}…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
         <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
       </div>
@@ -1520,7 +1527,7 @@ function renderPlanPage(){
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
-    <button class="navbtn active" id="cartNav"><span class="cartwrap">${cartIcon}${state.items.length>0?`<span class="cartcount">${state.items.length}</span>`:""}</span><span>List</span></button>
+    <button class="navbtn active" id="cartNav">${cartBadgeHTML(cartIcon)}<span>Cart</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${editing?editSheet():""}
@@ -1767,13 +1774,12 @@ function wireAddBar(){
   const toggleClear=(el,btn)=>{ if(btn) btn.classList.toggle("show", !!(el&&el.value.trim())); };
   if(mi){ mi.value=draftMain; grow(mi); toggleClear(mi,mc);
     mi.oninput=()=>{ draftMain=mi.value; grow(mi); renderSuggest(); toggleClear(mi,mc); };
-    mi.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); stopMic(); addEntries(mi.value,null); mi.value=""; draftMain=""; grow(mi); document.getElementById("suggest").innerHTML=""; toggleClear(mi,mc); mi.focus(); } };
+    mi.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); addEntries(mi.value,null); mi.value=""; draftMain=""; grow(mi); document.getElementById("suggest").innerHTML=""; toggleClear(mi,mc); mi.focus(); } };
     mi.onpaste=e=>{ const t=(e.clipboardData||window.clipboardData).getData("text");
       const looksLikeBlock = t && (t.indexOf("\n")>=0 || /\b(meat|fruit|vegetable|veg|fresh|bulk|asian|alcohol|health|others)\s*:/i.test(t) || t.split(",").length>2);
       if(looksLikeBlock){ e.preventDefault(); addEntries(t,null); mi.value=""; draftMain=""; grow(mi); document.getElementById("suggest").innerHTML=""; toggleClear(mi,mc); } }; }
   if(mc){ mc.onpointerdown=e=>e.preventDefault(); mc.onclick=()=>{ if(mi){ mi.value=""; draftMain=""; grow(mi); document.getElementById("suggest").innerHTML=""; toggleClear(mi,mc); mi.focus(); } }; }
-  if(ma){ ma.onpointerdown=e=>e.preventDefault(); ma.onclick=()=>{ stopMic(); addEntries(mi.value,null); mi.value=""; draftMain=""; grow(mi); const sg=document.getElementById("suggest"); if(sg) sg.innerHTML=""; toggleClear(mi,mc); mi.focus(); }; }
-  const mb=app.querySelector("#micBtn"); if(mb){ mb.onclick=toggleMic; setMicUI(listening); }
+  if(ma){ ma.onpointerdown=e=>e.preventDefault(); ma.onclick=()=>{ addEntries(mi.value,null); mi.value=""; draftMain=""; grow(mi); const sg=document.getElementById("suggest"); if(sg) sg.innerHTML=""; toggleClear(mi,mc); mi.focus(); }; }
 }
 function wire(){
   wireAddBar();
