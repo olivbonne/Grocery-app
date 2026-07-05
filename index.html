@@ -384,7 +384,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.66";
+const APP_VERSION = "v0.67";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -454,7 +454,7 @@ const _legacyDensity = parseFloat(localStorage.getItem("ml_density")||"1") || 1;
 function dens(){ const v=densities[view]; return (typeof v==="number" && v) ? v : _legacyDensity; }
 function setDensity(d){ const nd=Math.min(1.3,Math.max(0.7,Math.round(d*10)/10)); densities[view]=nd; localStorage.setItem("ml_densities", JSON.stringify(densities)); render(); }
 let styles = {}; try{ styles = JSON.parse(localStorage.getItem("ml_styles")||"null") || {}; }catch(e){ styles={}; }
-function styl(){ return styles[view] || (view==="plan" ? "compact" : "normal"); }
+function styl(){ return styles[view] || (shopMode ? "normal" : "compact"); }
 function setStyle(s){ styles[view]=s; localStorage.setItem("ml_styles", JSON.stringify(styles)); render(); }
 let theme = localStorage.getItem("ml_theme") || ((typeof window!=="undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark");
 function applyTheme(){ const d = theme==="dark"; document.body.classList.toggle("dark", d); document.documentElement.classList.toggle("dark", d);
@@ -657,14 +657,14 @@ function newListSheet(){ return `<div class="sheet-bg" id="newListBg"><div class
       <button id="newListCreate" style="flex:none;padding:0 18px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">Create</button>
     </div></div></div>`; }
 function createNewListFromSheet(){ const nm=(newListDraft||"").trim()||"Untitled list"; const code=uid().slice(0,8);
-  rememberList(code, nm); newListOpen=false; newListDraft=""; switchList(code); view="plan"; save(); render(); }
+  rememberList(code, nm); newListOpen=false; newListDraft=""; switchList(code); view="detail"; shopMode=false; save(); render(); }
 function switchList(code){ listsOpen=false; if(code===listCode){ render(); return; }
   listCode=code; localStorage.setItem(LS_LASTLIST, code);
   LS = { me:"ml_me", collapse:"ml_collapse_"+code, cache:"ml_cache_"+code };
   try{ collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}'); }catch(e){ collapse={cats:[],ba:false}; }
   state = { items:[], buyAgain:[], members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99} };
   try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state=c; }catch(e){}
-  ensureCats(); editing=null; quickEdit=null; view="plan";
+  ensureCats(); editing=null; quickEdit=null; view="detail"; shopMode=false;
   if(typeof history!=="undefined" && history.replaceState){ try{ history.replaceState(null, "", location.pathname+"?list="+code); }catch(e){} }
   subscribe(); render(); }
 function renameList(){ const name=prompt("Rename this list:", state.name||"Groceries"); if(name===null) return;
@@ -1042,7 +1042,7 @@ function removeSub(catId, subId){ const c=catList().find(x=>x.id===catId); if(!c
 
 function join(name){ const c=name.trim(); if(!c) return;
   if(!state.members.includes(c)){ if(state.members.length>=4) return; state.members.push(c); }
-  me=c; localStorage.setItem(LS.me,c); view="plan"; save(); render(); }   // first stop after joining: the Choose page
+  me=c; localStorage.setItem(LS.me,c); view="detail"; shopMode=false; save(); render(); }   // first stop after joining: the list (planning) page
 function toggleCat(id){ collapse.cats = collapse.cats.includes(id) ? collapse.cats.filter(x=>x!==id) : [...collapse.cats,id];
   localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }
 function toggleBA(){ collapse.ba=!collapse.ba; localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }
@@ -1156,7 +1156,7 @@ function render(){
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
   if(!me){ renderOnboarding(); window.__mlRendered=true; return; }
   if(view==="lists"){ renderListsPage(); wireListsPage(); window.__mlRendered=true; syncZoomHeight(); return; }
-  if(view==="plan"){ renderPlanPage(); wirePlanPage(); window.__mlRendered=true; syncZoomHeight(); return; }
+  if(view!=="lists" && !shopMode){ renderPlanPage(); wirePlanPage(); window.__mlRendered=true; syncZoomHeight(); return; }
   renderMain(); wire(); window.__mlRendered=true; syncZoomHeight();
 }
 
@@ -1344,8 +1344,7 @@ function renderMain(){
   ${checkedBar}
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
-    <button class="navbtn" id="addNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 2 2 4-4"/><path d="M13 7h8"/><path d="m3 16 2 2 4-4"/><path d="M13 17h8"/></svg>${state.items.length>0?`<span class="cartcount">${state.items.length}</span>`:""}</span><span>Choose</span></button>
-    <button class="navbtn active" id="cartNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg></span><span>Shop</span></button>
+    <button class="navbtn active" id="cartNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${state.items.length>0?`<span class="cartcount">${state.items.length}</span>`:""}</span><span>List</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${listsOpen?listsSheet():""}
@@ -1381,8 +1380,7 @@ function renderListsPage(){
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn active" id="listsBtnL"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
-    <button class="navbtn" id="addListNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 2 2 4-4"/><path d="M13 7h8"/><path d="m3 16 2 2 4-4"/><path d="M13 17h8"/></svg>${ccT>0?`<span class="cartcount">${ccT}</span>`:""}</span><span>Choose</span></button>
-    <button class="navbtn" id="cartNavL"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg></span><span>Shop</span></button>
+    <button class="navbtn" id="cartNavL"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>${ccT>0?`<span class="cartcount">${ccT}</span>`:""}</span><span>List</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${listActOpen?listActSheet():""}
@@ -1406,7 +1404,7 @@ function wireListsPage(){
   app.querySelectorAll("[data-open]").forEach(b=>{ const code=b.dataset.open;
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
-    b.onpointerup=()=>{ pressCancel(); if(longFired){ listActCode=code; listActOpen=true; render(); } else { switchList(code); view="plan"; render(); } };
+    b.onpointerup=()=>{ pressCancel(); if(longFired){ listActCode=code; listActOpen=true; render(); } else { switchList(code); view="detail"; shopMode=false; render(); } };
   });
   const nb=app.querySelector("#newListBubble"); if(nb) nb.onclick=newListPrompt;
   const nlbg=app.querySelector("#newListBg"); if(nlbg) nlbg.onclick=()=>{ newListOpen=false; render(); };
@@ -1416,7 +1414,6 @@ function wireListsPage(){
     nln.oninput=()=>{ newListDraft=nln.value; };
     nln.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); createNewListFromSheet(); } }; }
   const nlc=app.querySelector("#newListCreate"); if(nlc){ nlc.onpointerdown=e=>e.preventDefault(); nlc.onclick=createNewListFromSheet; }
-  const anl=app.querySelector("#addListNav"); if(anl) anl.onclick=()=>{ view="plan"; render(); };
   const cnl=app.querySelector("#cartNavL"); if(cnl) cnl.onclick=()=>{ view="detail"; shopMode=false; render(); };
   const ob=app.querySelector("#optBtnTop"); if(ob) ob.onclick=()=>{ optOpen=true; render(); };
   wireOptions();
@@ -1511,6 +1508,7 @@ function renderPlanPage(){
         <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
       </div>
       <div class="suggest" id="suggest"></div>
+      ${hasAny?`<div class="shopbar" style="margin-top:8px;background:var(--btn)"><span>🛒 At the store?</span><button id="startShop">Start shopping</button></div>`:""}
     </div>
     <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${(hasAny && !localStorage.getItem("ml_hint_choose")) ? `<div class="subrow" style="justify-content:space-between;gap:8px;margin-bottom:8px">
@@ -1522,8 +1520,7 @@ function renderPlanPage(){
   </div>
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
-    <button class="navbtn active" id="addNav"><span class="cartwrap"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 2 2 4-4"/><path d="M13 7h8"/><path d="m3 16 2 2 4-4"/><path d="M13 17h8"/></svg>${state.items.length>0?`<span class="cartcount">${state.items.length}</span>`:""}</span><span>Choose</span></button>
-    <button class="navbtn" id="cartNav"><span class="cartwrap">${cartIcon}</span><span>Shop</span></button>
+    <button class="navbtn active" id="cartNav"><span class="cartwrap">${cartIcon}${state.items.length>0?`<span class="cartcount">${state.items.length}</span>`:""}</span><span>List</span></button>
   </nav>
   ${optOpen?optionsSheet():""}
   ${editing?editSheet():""}
@@ -1567,8 +1564,7 @@ function wirePlanPage(){
   const acp=app.querySelector("#addCatPlan"); if(acp) acp.onclick=addCategory;
   const hcx=app.querySelector("#hintChooseX"); if(hcx) hcx.onclick=()=>{ localStorage.setItem("ml_hint_choose","1"); render(); };
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>{ view="lists"; optOpen=false; render(); };
-  const an=app.querySelector("#addNav"); if(an) an.onclick=()=>{ const mi=document.getElementById("mainInput"); if(mi) mi.focus(); };
-  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>{ view="detail"; shopMode=false; render(); };
+  const ss=app.querySelector("#startShop"); if(ss) ss.onclick=toggleShop;
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireOptions();
@@ -1579,7 +1575,7 @@ function wireOptions(){
   const optBg=app.querySelector("#optBg"); if(optBg) optBg.onclick=()=>{ optOpen=false; render(); };
   const optS=app.querySelector("#optSheet"); if(optS) optS.onclick=e=>e.stopPropagation();
   const oca=app.querySelector("#optCollapseAll"); if(oca) oca.onclick=()=>{
-    if(view==="plan"){
+    if(!shopMode){
       const ids=catList().filter(c=> state.items.some(i=>i.cat===c.id)||state.buyAgain.some(e=>e.cat===c.id)||c.custom).map(c=>c.id);
       const pc=collapse.planCats||[]; const open=ids.some(id=>!pc.includes(id));
       collapse.planCats = open ? ids.slice() : [];
@@ -1606,7 +1602,7 @@ function wireOptions(){
 function optionsSheet(){
   const row=(label,control)=>`<div class="optrow"><span class="optlabel">${label}</span><span class="optctrl">${control}</span></div>`;
   const curSort = (displayFor()==="cat" && sortModeFor()==="location") ? "cat" : sortModeFor();
-  const anyOpen = (view==="plan")
+  const anyOpen = (!shopMode)
     ? catList().some(c=> (state.items.some(i=>i.cat===c.id)||state.buyAgain.some(e=>e.cat===c.id)||c.custom) && !(collapse.planCats||[]).includes(c.id))
     : (catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id)) || (state.buyAgain.length>0 && collapse.ba));
   return `<div class="sheet-bg" id="optBg"><div class="sheet" id="optSheet">
@@ -1615,7 +1611,7 @@ function optionsSheet(){
     ${row("Mode", `<div class="seg"><button data-opt-theme="light" class="${theme==='light'?'on':''}">Light</button><button data-opt-theme="dark" class="${theme==='dark'?'on':''}">Dark</button></div>`)}
     ${row("Appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}">Full</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}">Empty</button></div>`)}
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
-    ${(view==="plan"||view==="detail") ? row("Style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
+    ${(view!=="lists") ? row("Style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
     ${view!=="lists" ? `${row("Display", `<div class="seg"><button data-opt-display="cat" class="${displayFor()==='cat'?'on':''}">Category</button><button data-opt-display="flat" class="${displayFor()==='flat'?'on':''}">Flat list</button></div>`)}
     <div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
       <span class="optlabel">Sort</span>
@@ -1832,14 +1828,11 @@ function wire(){
       else { restore(name,cat); } }; });
   const cba=app.querySelector("#clearBA"); if(cba) cba.onclick=()=>{ const prev=snapState(); state.buyAgain=[]; save(); render(); showUndo(prev,"Buy-again cleared"); };
 
-  const shb=app.querySelector("#cartNav"); if(shb) shb.onclick=toggleShop;
   const dsh=app.querySelector("#doneShop"); if(dsh) dsh.onclick=toggleShop;
   const ssh=app.querySelector("#startShop"); if(ssh) ssh.onclick=toggleShop;
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const ln=app.querySelector("#listName"); if(ln) ln.onclick=()=>{ view="lists"; optOpen=false; render(); };
-  const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>{ view="plan"; optOpen=false; render(); };
-  const an=app.querySelector("#addNav"); if(an) an.onclick=()=>{ view="plan"; optOpen=false; render(); };
-  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>{ view="detail"; shopMode=false; render(); };
+  const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>{ shopMode=false; optOpen=false; render(); };
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; listsOpen=false; render(); };
   app.querySelectorAll("[data-example]").forEach(b=>b.onclick=()=>{ addEntries(b.dataset.example, null); });
   wireQuickPanel();
@@ -1915,7 +1908,7 @@ function wireEditSheet(){
 /* A16 swipe left/right anywhere on the page body to move between Lists ⇄ Plan ⇄ Shop.
    Ignores swipes that start on sheets, inputs, or horizontally-scrolling rows, and
    ignores gestures that are slow, short, too vertical, or multi-touch (pinch). */
-const PAGE_ORDER = ["lists","plan","detail"];
+const PAGE_ORDER = ["lists","detail"];
 let _swipe = null;
 document.addEventListener("touchstart", e=>{
   _swipe = null;
