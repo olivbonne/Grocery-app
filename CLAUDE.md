@@ -18,6 +18,9 @@ No build step, no framework. Firebase Firestore for live household sync, Vercel 
 ## Workflow
 - Develop on the standing branch **`claude/review`**, push, and open/update a PR into `main`.
   **Never push `main` directly.** Merging the PR deploys via Vercel.
+- **Auto-merge is authorized.** Once a change is verified (`/verify-app` + syntax), merge its
+  PR into `main` without asking for confirmation, then restart `claude/review` from the
+  updated `main` for the next change. (Standing user instruction — merging deploys to prod.)
 - **Model split (10-80-10):** plan and review on **Opus 4.8 at high effort**; run
   execution on **Sonnet 5 at medium effort** (Opus for the thinking, Sonnet for the
   grind — both cheaper than Fable). Project settings default the main thread to
