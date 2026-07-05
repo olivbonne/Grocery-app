@@ -1,9 +1,11 @@
 // api/parse.js — Vercel Node serverless function (CommonJS).
 //
-// Holds the Anthropic API key SERVER-SIDE so the client (index.html) never sees it.
+// Turns free-form grocery text into structured items using Groq
+// (llama-3.1-8b-instant), keeping the API key SERVER-SIDE so the client
+// (index.html) never sees it.
 // Contract:  POST /api/parse  { text }  ->  { items: [{ name, qty, category }] }
 //
-// The key lives in the ANTHROPIC_API_KEY environment variable (Vercel Project
+// The key lives in the GROQ_API_KEY environment variable (Vercel Project
 // Settings -> Environment Variables). It is never logged, never returned to the
 // browser, and never embedded in any static asset. See docs/ai-setup.md.
 
@@ -14,27 +16,36 @@ const CATEGORIES = [
   'asian', 'alcohol', 'health', 'others',
 ];
 
+// Groq is OpenAI-compatible. llama-3.1-8b-instant is the cheapest/fastest model
+// and is plenty for grocery parsing. Swap MODEL to 'llama-3.3-70b-versatile' for
+// higher accuracy on messy input at slightly higher cost/latency.
+const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const MODEL = 'llama-3.1-8b-instant';
+
 const SYSTEM = [
   'You parse free-form grocery shopping text into discrete items.',
   'The input may be casual, e.g. "2 milk, dozen eggs, stuff for tacos".',
   'Expand vague requests (like "stuff for tacos") into concrete grocery items.',
-  'Return ONLY a JSON array. No prose, no explanation, no markdown code fences.',
-  'Each element is an object with exactly these keys:',
+  'Respond with a JSON object of exactly this shape: {"items": [ ... ]}.',
+  'Each element of "items" has exactly these keys:',
   '  "name": string  — the item name, lowercase, singular where natural',
-  '  "qty": integer  — quantity, default 1 if unspecified (e.g. "dozen eggs" -> qty 12)',
+  '  "qty": integer  — quantity, default 1 if unspecified (e.g. "dozen eggs" -> 12)',
   '  "category": one of ' + CATEGORIES.map((c) => '"' + c + '"').join(', '),
   'Choose the closest category; use "others" when nothing fits.',
-  'Example input: "2 milk, dozen eggs"',
-  'Example output: [{"name":"milk","qty":2,"category":"fresh"},{"name":"eggs","qty":12,"category":"fresh"}]',
+  'Return only the JSON object — no prose, no markdown fences.',
 ].join('\n');
 
-// Strip an accidental ```json ... ``` fence if the model added one anyway.
-function stripFences(s) {
-  let t = String(s).trim();
-  if (t.startsWith('```')) {
-    t = t.replace(/^```[a-zA-Z]*\s*/, '').replace(/\s*```$/, '').trim();
-  }
-  return t;
+// The model output is untrusted: coerce every field into a safe shape.
+function clampItem(x) {
+  if (!x || typeof x !== 'object') return null;
+  const name = String(x.name || '').trim().slice(0, 60);
+  if (!name) return null;
+  let qty = parseInt(x.qty, 10);
+  if (!Number.isFinite(qty) || qty < 1) qty = 1;
+  if (qty > 999) qty = 999;
+  let category = String(x.category || '').toLowerCase().trim();
+  if (!CATEGORIES.includes(category)) category = 'others';
+  return { name, qty, category };
 }
 
 module.exports = async (req, res) => {
@@ -44,7 +55,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
       // Never leak the reason beyond "not configured".
       res.status(500).json({ error: 'Server not configured' });
@@ -74,18 +85,21 @@ module.exports = async (req, res) => {
 
     let upstream;
     try {
-      upstream = await fetch('https://api.anthropic.com/v1/messages', {
+      upstream = await fetch(GROQ_URL, {
         method: 'POST',
         headers: {
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
+          'authorization': 'Bearer ' + apiKey,
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
+          model: MODEL,
+          messages: [
+            { role: 'system', content: SYSTEM },
+            { role: 'user', content: text },
+          ],
+          temperature: 0.2,
           max_tokens: 1024,
-          system: SYSTEM,
-          messages: [{ role: 'user', content: text }],
+          response_format: { type: 'json_object' },
         }),
       });
     } catch (e) {
@@ -107,25 +121,31 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const reply = data && data.content && data.content[0] && data.content[0].text;
+    const reply = data && data.choices && data.choices[0]
+      && data.choices[0].message && data.choices[0].message.content;
     if (typeof reply !== 'string') {
       res.status(502).json({ error: 'Parse failed' });
       return;
     }
 
-    let items;
+    let parsed;
     try {
-      items = JSON.parse(stripFences(reply));
+      parsed = JSON.parse(reply);
     } catch (e) {
       res.status(502).json({ error: 'Parse failed' });
       return;
     }
 
-    if (!Array.isArray(items)) {
+    // JSON mode returns an object; accept {items:[...]} or a bare array just in case.
+    const rawItems = Array.isArray(parsed)
+      ? parsed
+      : (parsed && Array.isArray(parsed.items) ? parsed.items : null);
+    if (!rawItems) {
       res.status(502).json({ error: 'Parse failed' });
       return;
     }
 
+    const items = rawItems.map(clampItem).filter(Boolean);
     res.status(200).json({ items });
   } catch (e) {
     // Catch-all: never let an unexpected error leak details or the key.
