@@ -283,6 +283,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .zoomer.normal .bapill { min-height:46px; font-size:15px; padding:10px 14px; border-radius:13px; gap:7px; }
   .zoomer.normal .bapill .qmore { font-size:13px; }
   .hint { margin-top:12px; font-size:11px; color:var(--muted); text-align:center; }
+  /* A19 AI-order note — visible in shop mode (unlike .hint) */
+  .aihint { margin:0 0 10px; font-size:12px; font-weight:700; color:var(--muted); text-align:left; }
   .botbar { position:fixed; left:0; right:0; bottom:0; z-index:40; max-width:480px; margin:0 auto;
     padding:8px 14px calc(8px + env(safe-area-inset-bottom));
     background:linear-gradient(to top, var(--paper) 76%, transparent); }
@@ -394,7 +396,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.69";
+const APP_VERSION = "v0.70";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -607,9 +609,36 @@ function aisleRank(it){ const c=it.cat;
   return cf!=null?cf:75;
 }
 function byAisle(a,b){ const ra=aisleRank(a),rb=aisleRank(b); if(ra!==rb) return ra-rb; return bySortKey(a,b); }
+
+/* A19 AI shop order — learns the order you actually check categories at each
+   store and reorders future trips. Starts identical to Location (aisleRank
+   baseline) and diverges as data accumulates. Purely local; no LLM call. */
+let aiOrder = {}; try{ aiOrder = JSON.parse(localStorage.getItem("ml_aiorder")||"null") || {}; }catch(e){ aiOrder={}; }
+let _aiTripCats = [];   // distinct categories checked so far this shopping trip, in order
+function aiStoreKey(){ const s=activeStore(); if(s&&s.id) return s.id; return storeSel||"default"; }
+function aiResetTrip(){ _aiTripCats = []; }
+function aiRecordCheck(cat){
+  if(!cat || _aiTripCats.includes(cat)) return;   // only the first time each category is reached this trip
+  const rank = _aiTripCats.length;                 // 0-based order this category was reached
+  _aiTripCats.push(cat);
+  const key = aiStoreKey();
+  const store = aiOrder[key] || (aiOrder[key] = {});
+  const A = 0.35;                                   // EMA weight — adapts but resists one-off noise
+  store[cat] = (store[cat]==null) ? rank : store[cat]*(1-A) + rank*A;
+  try{ localStorage.setItem("ml_aiorder", JSON.stringify(aiOrder)); }catch(e){}
+}
+function aiRank(it){
+  const store = aiOrder[aiStoreKey()] || {};
+  const s = store[it.cat];
+  // Map the learned check-order EMA (0..~8) onto aisleRank's ~1..99 scale so
+  // learned and not-yet-learned categories interleave sensibly. Unseen = pure location.
+  return (s==null) ? aisleRank(it) : (s*11 + 1);
+}
+function byAI(a,b){ const ra=aiRank(a),rb=aiRank(b); if(ra!==rb) return ra-rb; return byAisle(a,b); }
+function aiSeenCount(){ return Object.keys(aiOrder[aiStoreKey()]||{}).length; }
 applyTheme();
 let shopMode = false;
-function toggleShop(){ shopMode=!shopMode; localStorage.setItem("ml_shop", shopMode?"1":"0"); collapse.ba = !shopMode && collapse.ba; render(); }
+function toggleShop(){ shopMode=!shopMode; if(shopMode) aiResetTrip(); localStorage.setItem("ml_shop", shopMode?"1":"0"); collapse.ba = !shopMode && collapse.ba; render(); }
 function optMode(){ return view==="lists" ? "lists" : (shopMode ? "shop" : "plan"); }
 let _prevPlanned=null, _prevChecked=null;
 function cartBadgeHTML(iconHTML){
@@ -914,7 +943,7 @@ function addEntries(text, override){
 function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){
   if(!it.checked){ lastPop=id; playTick(true); if(navigator.vibrate) navigator.vibrate(8); setTimeout(()=>{ if(lastPop===id) lastPop=null; },350); }
   else { playTick(false); if(navigator.vibrate) navigator.vibrate(5); }
-  it.checked=!it.checked; if(it.checked){ it.checkedBy=me; it.checkedAt=Date.now(); } markDirty(id); save(); render(); } }
+  it.checked=!it.checked; if(it.checked){ it.checkedBy=me; it.checkedAt=Date.now(); if(shopMode) aiRecordCheck(it.cat); } markDirty(id); save(); render(); } }
 function moveToBuyAgain(entries){
   for(const e of entries){ const k=e.name.toLowerCase()+"|"+e.cat;
     state.buyAgain = state.buyAgain.filter(x=>(x.name.toLowerCase()+"|"+x.cat)!==k);
@@ -1312,9 +1341,13 @@ function renderMain(){
 
   const pct = state.items.length ? Math.round(done/state.items.length*100) : 0;
   const disp = displayFor();
-  const sm = (disp==="cat" && sortModeFor()==="location") ? "cat" : sortModeFor();   // Location needs flat display
+  const sm = (disp==="cat" && (sortModeFor()==="location"||sortModeFor()==="ai")) ? "cat" : sortModeFor();   // Location & AI need flat display
   let bodyBlocks;
   if(disp==="cat"){ bodyBlocks = buildCatBlocks(sm==="alpha"); }                       // A–Z = plain alpha within each category
+  else if(sm==="ai"){ ensureLocCheck(); const unchecked=state.items.filter(i=>!i.checked).slice().sort(byAI);   // AI = learned per-store check order
+    const seen=aiSeenCount();
+    const note=`<div class="aihint">✨ AI order · ${seen>=3?`learned from your trips at ${esc((activeStore()||{}).name||"this store")}`:`starting from store layout — learns as you shop`}</div>`;
+    bodyBlocks = [ `<section class="cat">${note}${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
   else if(sm==="location"){ ensureLocCheck(); const useStore=locActive(); const cmp=useStore?byAisle:bySortKey;
     let unchecked=state.items.filter(i=>!i.checked); const n0=unchecked.length;
     if(useStore) unchecked=unchecked.filter(storeShows);
@@ -1702,7 +1735,7 @@ function commitSmartItems(){
 }
 function optionsSheet(){
   const row=(label,control)=>`<div class="optrow"><span class="optlabel">${label}</span><span class="optctrl">${control}</span></div>`;
-  const curSort = (displayFor()==="cat" && sortModeFor()==="location") ? "cat" : sortModeFor();
+  const curSort = (displayFor()==="cat" && (sortModeFor()==="location"||sortModeFor()==="ai")) ? "cat" : sortModeFor();
   const anyOpen = (!shopMode)
     ? catList().some(c=> (state.items.some(i=>i.cat===c.id)||state.buyAgain.some(e=>e.cat===c.id)||c.custom) && !(collapse.planCats||[]).includes(c.id))
     : (catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id)) || (state.buyAgain.length>0 && collapse.ba));
@@ -1716,9 +1749,10 @@ function optionsSheet(){
     ${view!=="lists" ? `${row("Display", `<div class="seg"><button data-opt-display="cat" class="${displayFor()==='cat'?'on':''}">Category</button><button data-opt-display="flat" class="${displayFor()==='flat'?'on':''}">Flat list</button></div>`)}
     <div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
       <span class="optlabel">Sort</span>
-      <div class="seg segfull">${displayFor()==="flat"?`<button data-opt-sort="location" class="${curSort==='location'?'on':''}">Location</button>`:""}<button data-opt-sort="cat" class="${curSort==='cat'?'on':''}">Category</button><button data-opt-sort="alpha" class="${curSort==='alpha'?'on':''}">A–Z</button></div>
+      <div class="seg segfull">${displayFor()==="flat"?`<button data-opt-sort="location" class="${curSort==='location'?'on':''}">Location</button>`:""}${(displayFor()==="flat" && shopMode)?`<button data-opt-sort="ai" class="${curSort==='ai'?'on':''}">✨ AI</button>`:""}<button data-opt-sort="cat" class="${curSort==='cat'?'on':''}">Category</button><button data-opt-sort="alpha" class="${curSort==='alpha'?'on':''}">A–Z</button></div>
     </div>
-    ${(displayFor()==="flat" && curSort==="location") ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
+    ${(displayFor()==="flat" && curSort==="ai") ? `<div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">✨ AI learns the order you check things off at ${esc((activeStore()||{}).name||"each store")} and reorders your next trip. Pick the store below so it learns per shop.</div>` : ""}
+    ${(displayFor()==="flat" && (curSort==="location"||curSort==="ai")) ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
       <span class="optlabel">Store</span>
       <div class="storegrid">${[{id:"auto",name:"Auto-detect"},{id:"home",name:"🏠 Home"},...STORES,{id:"other",name:"Other"}].map(s=>`<button data-opt-store="${s.id}" class="storechip ${storeSel===s.id?'on':''}">${esc(s.name)}</button>`).join("")}</div>
     </div>
