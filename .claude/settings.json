@@ -1,5 +1,8 @@
 {
+  "model": "opus",
+  "effortLevel": "high",
   "permissions": {
+    "defaultMode": "acceptEdits",
     "allow": [
       "Edit",
       "Write",
