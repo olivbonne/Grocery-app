@@ -18,13 +18,16 @@ No build step, no framework. Firebase Firestore for live household sync, Vercel 
 ## Workflow
 - Develop on the standing branch **`claude/review`**, push, and open/update a PR into `main`.
   **Never push `main` directly.** Merging the PR deploys via Vercel.
-- **10-80-10 model habit:** plan on Fable 5 (plan mode), execute on Opus 4.8/Haiku
-  (`/model claude-opus-4-8`), then review the finished diff on Fable 5 before merging.
-- **Execution runs in an Opus subagent.** Reserve the main thread for planning and
-  review; delegate the heavy code-editing (the "80%") to a subagent pinned to
-  `model: opus` (the main model can't self-switch mid-session, so this is how the
-  10-80-10 split is actually achieved). Give each subagent a thorough brief and have
-  it verify before returning.
+- **Model split (10-80-10):** plan and review on **Opus 4.8 at high effort**; run
+  execution on **Sonnet 5 at medium effort** (Opus for the thinking, Sonnet for the
+  grind — both cheaper than Fable). Project settings default the main thread to
+  `model: opus` / `effortLevel: high`.
+- **Execution runs in a Sonnet subagent.** Reserve the main thread (Opus) for planning
+  and review; delegate the heavy code-editing (the "80%") to a subagent pinned to
+  `model: sonnet` (the main model can't self-switch mid-session, so this is how the
+  split is achieved). Give each subagent a thorough brief and have it verify before
+  returning. (The Agent tool can't set subagent effort per-spawn; Sonnet's default is
+  fine for execution.)
 - **Always end a task by reporting what each agent did** — which subagent made which
   changes, and what the main thread did (plan/review/ship).
 - Run `/verify-app` before opening or updating a PR. Use `/release` for the
