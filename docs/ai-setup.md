@@ -60,7 +60,7 @@ The function validates the model's output server-side: `qty` is coerced to a
 positive integer, `category` is forced to one of the allowed values (else
 `others`), and `name` is trimmed/length-capped.
 
-## Recipe endpoint — "📖 Add from a recipe"
+## Recipe endpoint — folded into ✨ Smart add
 
 A second function, `api/recipe.js`, extracts a shopping list from pasted recipe
 text using the same server-side Groq key.
@@ -77,6 +77,13 @@ server-side). In the app the ingredients land in the **Smart-add preview**, wher
 you can scale by servings, edit any item, and see which are already on your list
 before adding. Until `GROQ_API_KEY` is set it returns `500` and the sheet says so.
 
+**One entry point (v0.77).** There is no separate "Add from a recipe" button.
+The **✨ Smart add** button reads the add-box text and, when it *looks like a
+recipe* (a `Serves N` line, cooking verbs/steps, or measurements like
+`tbsp`/`°`/`minutes` across several lines), routes to `/api/recipe` and shows the
+servings scaler; otherwise it uses `/api/parse` for a plain list. Both share the
+same editable preview.
+
 ## Model
 
 Uses **`llama-3.1-8b-instant`** on Groq — the cheapest, fastest option, and
@@ -87,7 +94,9 @@ slower). Groq JSON mode (`response_format: json_object`) guarantees valid JSON.
 ## Client wiring — "✨ Smart add"
 
 Wired into the app: in planning mode, the **✨** button sends the add-box text to
-`POST /api/parse` and shows the returned items as **editable chips for preview**
-before anything is committed. Nothing is added silently — the user reviews and
-confirms first. If the key isn't set (or the call fails), Smart-add says so and
-plain typing keeps working.
+`POST /api/parse` (or `POST /api/recipe` when the text looks like a recipe — see
+above) and shows the returned items as **editable chips for preview** before
+anything is committed. Each chip expands to edit **Quantity → Weight → Category →
+Subcategory**. Nothing is added silently — the user reviews and confirms first. If
+the key isn't set (or the call fails), Smart-add says so and plain typing keeps
+working.
