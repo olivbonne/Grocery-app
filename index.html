@@ -468,13 +468,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     padding:6px 0; line-height:1; }
   .navstat-n { font-size:17px; font-weight:900; color:var(--accent); font-variant-numeric:tabular-nums; }
   .navstat-l { font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.2px; }
-  /* A20 cart bounce when a flying item lands; A23 cart lifts up-right + doubles, with a sparkle burst */
+  /* A20 cart bounce when a flying item lands; A23 cart lifts up-right + doubles when an item is received */
   @keyframes cartbounce { 0%{transform:scale(1)} 35%{transform:scale(1.12)} 70%{transform:scale(.97)} 100%{transform:scale(1)} }
   .cartpulse { animation:cartbounce .42s ease; }
   @keyframes cartpop { 0%{transform:translate(0,0) scale(1)} 30%{transform:translate(5px,-12px) scale(2)} 62%{transform:translate(2px,-4px) scale(1.05)} 100%{transform:translate(0,0) scale(1)} }
   .cartpop { animation:cartpop .75s cubic-bezier(.34,1.56,.64,1); transform-origin:center; }
-  .sparkle { position:fixed; z-index:61; width:3px; height:12px; border-radius:2px; background:#7ED957;
-    box-shadow:0 0 6px rgba(126,217,87,.85); pointer-events:none; will-change:transform,opacity; }
   /* A22 flying item → cart: a live clone of the checked tile arcs down into the cart */
   .tilefly { position:fixed; z-index:60; margin:0 !important; pointer-events:none; box-sizing:border-box;
     transform-origin:center; box-shadow:0 12px 26px rgba(0,0,0,.30); will-change:transform,opacity; }
@@ -502,7 +500,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.78";
+const APP_VERSION = "v0.79";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -983,28 +981,11 @@ function launchTileFlyer(clone, P0, P2){
 }
 function bumpCart(){
   const cart = document.querySelector("#cartWrap");
-  if(cart){ cart.classList.remove("cartpop"); void cart.offsetWidth; cart.classList.add("cartpop"); setTimeout(()=>cart.classList.remove("cartpop"), 800); spawnSparkles(cart); }
+  if(cart){ cart.classList.remove("cartpop"); void cart.offsetWidth; cart.classList.add("cartpop"); setTimeout(()=>cart.classList.remove("cartpop"), 800); }
   document.querySelectorAll(".sb-incart").forEach(el=>{
     el.classList.remove("cartpulse"); void el.offsetWidth; el.classList.add("cartpulse");
     setTimeout(()=>el.classList.remove("cartpulse"), 460);
   });
-}
-// A23 green sparkle burst radiating from the cart when an item lands
-function spawnSparkles(cartEl){
-  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const c=cartEl.getBoundingClientRect(), cx=c.left+c.width/2, cy=c.top+c.height/2, N=6;
-  for(let i=0;i<N;i++){
-    const ang=(-90 + (i-(N-1)/2)*32) * Math.PI/180;   // fan upward/outward
-    const sp=document.createElement("div"); sp.className="sparkle";
-    sp.style.left=cx+"px"; sp.style.top=cy+"px"; document.body.appendChild(sp);
-    const d=24+Math.random()*10, rot=ang+Math.PI/2;
-    sp.animate([
-      { transform:`translate(-50%,-50%) rotate(${rot}rad) translateY(0) scale(.4)`, opacity:0 },
-      { transform:`translate(-50%,-50%) rotate(${rot}rad) translateY(-${(d*0.55).toFixed(1)}px) scale(1)`, opacity:1, offset:.4 },
-      { transform:`translate(-50%,-50%) rotate(${rot}rad) translateY(-${d.toFixed(1)}px) scale(.3)`, opacity:0 }
-    ], { duration:680, easing:"cubic-bezier(.2,.7,.3,1)" });
-    setTimeout(()=>sp.remove(), 720);
-  }
 }
 let sorts = {}; try{ sorts = JSON.parse(localStorage.getItem("ml_sorts")||"null") || {}; }catch(e){ sorts={}; }
 const _legacySort = localStorage.getItem("ml_sort")||"cat";
