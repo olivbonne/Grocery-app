@@ -60,6 +60,23 @@ The function validates the model's output server-side: `qty` is coerced to a
 positive integer, `category` is forced to one of the allowed values (else
 `others`), and `name` is trimmed/length-capped.
 
+## Recipe endpoint — "📖 Add from a recipe"
+
+A second function, `api/recipe.js`, extracts a shopping list from pasted recipe
+text using the same server-side Groq key.
+
+```
+POST /api/recipe
+Request body:   { "text": "Pancakes\n200g flour\n2 eggs\n300ml milk\n..." }
+Response body:  { "title": "Pancakes", "servings": 4,
+                  "items": [ { "name": "flour", "qty": 1, "weight": "200g", "category": "bulk" }, ... ] }
+```
+
+Same key, same guardrails as `/api/parse` (405/400/500/502, output validated
+server-side). In the app the ingredients land in the **Smart-add preview**, where
+you can scale by servings, edit any item, and see which are already on your list
+before adding. Until `GROQ_API_KEY` is set it returns `500` and the sheet says so.
+
 ## Model
 
 Uses **`llama-3.1-8b-instant`** on Groq — the cheapest, fastest option, and

@@ -112,6 +112,19 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .swt{ flex:none; padding:7px 11px; border-radius:999px; border:1.5px solid var(--line); background:var(--card);
     color:var(--ink); font-weight:700; font-size:12px; min-width:38px; }
   .swt.on{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  /* B3 recipe → list */
+  .reclink{ margin:6px 0 0; align-self:flex-start; border:none; background:transparent; color:var(--accent);
+    font-weight:800; font-size:12.5px; padding:2px 2px; }
+  .recipein{ width:100%; box-sizing:border-box; border:2px solid var(--ink); border-radius:14px; padding:12px 14px;
+    background:var(--card); color:var(--ink); font-size:14px; font-weight:500; line-height:1.5; resize:vertical;
+    font-family:inherit; outline:none; -webkit-appearance:none; }
+  .recipeerr{ margin-top:10px; font-size:12.5px; font-weight:700; color:#C24A33; line-height:1.5; }
+  .servrow{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 12px; padding:10px 12px;
+    border-radius:13px; background:var(--chip); }
+  .servlbl{ font-size:12px; font-weight:800; color:var(--ink); text-transform:uppercase; letter-spacing:.4px; }
+  .servnote{ font-size:11px; font-weight:600; color:var(--muted2); flex:1; min-width:100%; }
+  .smartchip-have{ flex:none; font-size:10px; font-weight:800; color:var(--muted2); background:var(--chip);
+    border-radius:999px; padding:2px 7px; text-transform:uppercase; letter-spacing:.3px; }
   .iconbtn{ width:30px; height:30px; border-radius:9px; border:none; background:var(--chip);
     color:var(--ink); font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -473,7 +486,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.74";
+const APP_VERSION = "v0.75";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -898,6 +911,8 @@ function setDisplay(m){ displays[optMode()]=m; localStorage.setItem("ml_displays
 let optOpen=false, listsOpen=false;
 // A18 ✨ Smart add (planning-mode AI parse → preview → confirm)
 let smartOpen=false, smartLoading=false, smartError="", smartItems=[], smartEdit=null;
+// B3 recipe → list (text-first): pours extracted ingredients into the shared Smart-add preview
+let recipeOpen=false, recipeText="", recipeLoading=false, recipeError="", smartServings=null;
 let view="detail", listActOpen=false, listActCode=null, newListOpen=false, newListDraft="";
 function listCount(code){ try{ const s = (code===listCode) ? state : JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); return (s&&s.items)? s.items.filter(i=>!i.checked).length : 0; }catch(e){ return 0; } }
 function listStats(code){ try{ const s=(code===listCode)?state:JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); const items=(s&&s.items)||[]; const total=items.length, done=items.filter(i=>i.checked).length; return {total, done, pct: total?Math.round(done/total*100):0}; }catch(e){ return {total:0,done:0,pct:0}; } }
@@ -1814,6 +1829,7 @@ function renderPlanPage(){
         <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
       </div>
       <div class="suggest" id="suggest"></div>
+      <button class="reclink" id="recipeBtn">📖 Add from a recipe</button>
       ${hasAny?`<div class="shopbar" style="margin-top:8px;background:var(--btn)"><span>🛒 At the store?</span><button id="startShop">Start shopping</button></div>`:""}
     </div>
     <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
@@ -1832,6 +1848,7 @@ function renderPlanPage(){
   </nav>
   ${optOpen?optionsSheet():""}
   ${smartOpen?smartSheet():""}
+  ${recipeOpen?recipeSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -1882,8 +1899,15 @@ function wirePlanPage(){
   // A18 ✨ Smart add sheet
   const sBg=app.querySelector("#smartBg"); if(sBg) sBg.onclick=e=>{ if(e.target===sBg){ smartOpen=false; render(); } };
   const sOk=app.querySelector("#smartOk"); if(sOk) sOk.onclick=()=>{ smartOpen=false; smartError=""; render(); };
-  const sCancel=app.querySelector("#smartCancel"); if(sCancel) sCancel.onclick=()=>{ smartOpen=false; smartItems=[]; smartEdit=null; render(); };
+  const sCancel=app.querySelector("#smartCancel"); if(sCancel) sCancel.onclick=()=>{ smartOpen=false; smartItems=[]; smartEdit=null; smartServings=null; render(); };
   const sConfirm=app.querySelector("#smartConfirm"); if(sConfirm) sConfirm.onclick=commitSmartItems;
+  app.querySelectorAll("[data-recipe-serv]").forEach(b=>{ b.onclick=()=>recipeScale(+b.dataset.recipeServ); });   // B3 servings scaler
+  // B3 📖 recipe sheet
+  const rBtn=app.querySelector("#recipeBtn"); if(rBtn) rBtn.onclick=()=>{ recipeOpen=true; recipeError=""; render(); };
+  const rBg=app.querySelector("#recipeBg"); if(rBg) rBg.onclick=e=>{ if(e.target===rBg){ recipeOpen=false; render(); } };
+  const rIn=app.querySelector("#recipeInput"); if(rIn){ rIn.value=recipeText; rIn.oninput=()=>{ recipeText=rIn.value; }; }
+  const rCancel=app.querySelector("#recipeCancel"); if(rCancel) rCancel.onclick=()=>{ recipeOpen=false; render(); };
+  const rGo=app.querySelector("#recipeGo"); if(rGo){ rGo.onpointerdown=e=>e.preventDefault(); rGo.onclick=recipeExtract; }
   app.querySelectorAll("[data-smart-rm]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartRm; smartItems.splice(i,1); if(smartEdit===i) smartEdit=null; else if(smartEdit>i) smartEdit--; if(!smartItems.length){ smartOpen=false; smartItems=[]; smartEdit=null; } render(); }; });
   // B1 edit a parsed chip's category / qty / weight before committing
   app.querySelectorAll("[data-smart-edit]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartEdit; smartEdit = (smartEdit===i ? null : i); render(); }; });
@@ -1933,7 +1957,7 @@ async function smartAdd(){
   const mi=document.getElementById("mainInput");
   const text=(mi?mi.value:"").trim();
   if(!text) return;
-  smartOpen=true; smartLoading=true; smartError=""; smartItems=[]; smartEdit=null; render();
+  smartOpen=true; smartLoading=true; smartError=""; smartItems=[]; smartEdit=null; smartServings=null; render();
   let res, data;
   try{
     res=await fetch("/api/parse",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({text})});
@@ -1961,6 +1985,53 @@ async function smartAdd(){
   if(!smartItems.length){ smartError="Nothing to add from that — try adding more detail, or type your items."; }
   render();
 }
+// B3 pull ingredients from pasted recipe text into the Smart-add preview (with servings scaling)
+async function recipeExtract(){
+  const text=(recipeText||"").trim(); if(!text) return;
+  recipeLoading=true; recipeError=""; render();
+  let res, data;
+  try{ res=await fetch("/api/recipe",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({text})}); }catch(e){ res=null; }
+  if(!res){ recipeLoading=false; recipeError="Couldn't reach the recipe reader. Check your connection and try again."; render(); return; }
+  if(res.status===500){ recipeLoading=false; recipeError="Recipe extract isn't set up yet. Add a GROQ_API_KEY in Vercel (see docs/ai-setup.md)."; render(); return; }
+  if(!res.ok){ recipeLoading=false; recipeError="Couldn't read that recipe — try pasting just the ingredient list."; render(); return; }
+  try{ data=await res.json(); }catch(e){ data=null; }
+  const raw=(data&&Array.isArray(data.items))?data.items:null;
+  if(!raw||!raw.length){ recipeLoading=false; recipeError="No ingredients found — try pasting the full recipe."; render(); return; }
+  const allowed=catList().map(c=>c.id);
+  smartItems=raw.map(it=>{ const q=(Number.isFinite(+(it&&it.qty))&&+it.qty>=1)?Math.min(999,Math.round(+it.qty)):1;
+    return { name:String(it&&it.name||"").trim(), qty:q, baseQty:q,
+      category:(it&&allowed.includes(String(it.category)))?String(it.category):"others",
+      weight:(it&&typeof it.weight==="string")?it.weight.trim().slice(0,16):"" }; }).filter(it=>it.name);
+  const src=(data&&+data.servings>=1)?Math.round(+data.servings):4;
+  smartServings={ src, target:src, title:(data&&data.title)?String(data.title).slice(0,80):"" };
+  recipeLoading=false; recipeOpen=false; recipeText=""; smartError=""; smartEdit=null; smartOpen=true; render();
+}
+function recipeScale(delta){
+  if(!smartServings) return;
+  const t=Math.max(1,Math.min(99,(smartServings.target||smartServings.src)+delta));
+  smartServings.target=t;
+  const f=t/smartServings.src;
+  for(const it of smartItems){ const b=(it.baseQty!=null?it.baseQty:it.qty); it.qty=Math.max(1,Math.round(b*f)); }
+  render();
+}
+function recipeSheet(){
+  let inner;
+  if(recipeLoading){
+    inner=`<div style="padding:22px 4px;text-align:center;color:var(--muted);font-weight:700">📖 Reading the recipe…</div>`;
+  } else {
+    inner=`<textarea id="recipeInput" class="recipein" rows="7" placeholder="Paste a recipe here — ingredients and steps are both fine.">${esc(recipeText)}</textarea>
+      ${recipeError?`<div class="recipeerr">${esc(recipeError)}</div>`:""}
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="optaction" id="recipeCancel" style="flex:1">Cancel</button>
+        <button class="optaction" id="recipeGo" style="flex:1;background:var(--accent);color:#fff;border-color:var(--accent)">Extract ingredients</button>
+      </div>`;
+  }
+  return `<div class="sheet-bg" id="recipeBg"><div class="sheet" id="recipeSheetEl">
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">📖 Add from recipe</div>
+    <div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:12px">Paste any recipe — I'll pull out the ingredients so you can review, scale and add them.</div>
+    ${inner}
+  </div></div>`;
+}
 function smartSheet(){
   let inner;
   if(smartLoading){
@@ -1972,6 +2043,7 @@ function smartSheet(){
     const n=smartItems.length;
     const WOPTS=["","100g","200g","300g","500g","750g","1kg","2kg","5kg"];
     const chips=smartItems.map((it,idx)=>{ const c=CAT(it.category); const open=smartEdit===idx;
+      const have=state.items.some(i=>!i.checked && (i.name||"").toLowerCase()===it.name.toLowerCase());
       const editor = open ? `<div class="smartedit">
           <div class="smartedit-row"><span class="smartedit-lbl">Quantity</span>
             <div class="qstep2"><button data-smart-q="${idx}|-1" aria-label="Less">−</button><span>${it.qty||1}</span><button data-smart-q="${idx}|1" aria-label="More">+</button></div></div>
@@ -1984,21 +2056,32 @@ function smartSheet(){
         <div class="smartchip-top">
           <button class="smartchip-head" data-smart-edit="${idx}">
             <span class="smartchip-name">${(it.qty>1)?`<b>${it.qty}× </b>`:""}${it.weight?`<b>${esc(it.weight)} </b>`:""}${esc(cap(it.name))}</span>
+            ${have?`<span class="smartchip-have" title="Already on your list">in list</span>`:""}
             <span class="smartchip-cat">${catIcon(c,13)} ${esc(c.label)}</span>
             <span class="smartchip-caret" aria-hidden="true">▾</span>
           </button>
           <button class="iconmini" data-smart-rm="${idx}" aria-label="Remove" style="color:#C24A33">×</button>
         </div>${editor}
       </div>`; }).join("");
-    inner=`<div class="smartchips">${chips}</div>
+    const scaler = smartServings ? `<div class="servrow">
+        <span class="servlbl">Serves</span>
+        <div class="qstep2"><button data-recipe-serv="-1" aria-label="Fewer servings">−</button><span>${smartServings.target}</span><button data-recipe-serv="1" aria-label="More servings">+</button></div>
+        <span class="servnote">recipe makes ${smartServings.src} · quantities scale</span>
+      </div>` : "";
+    inner=`${scaler}<div class="smartchips">${chips}</div>
       <div style="display:flex;gap:8px;margin-top:14px">
         <button class="optaction" id="smartCancel" style="flex:1">Cancel</button>
         <button class="optaction" id="smartConfirm" style="flex:1;background:var(--accent);color:#fff;border-color:var(--accent)">Add ${n} item${n>1?'s':''}</button>
       </div>`;
   }
+  const rec=!!smartServings;
+  const ttl=rec ? (smartServings.title ? `📖 ${esc(smartServings.title)}` : "📖 From recipe") : "✨ Smart add";
+  const sub=(smartError||smartLoading) ? "Review what AI understood, then add."
+    : rec ? "Review ingredients — set servings, edit any item, then add. Items already on your list are tagged."
+    : "Tap an item to edit its category, quantity or weight.";
   return `<div class="sheet-bg" id="smartBg"><div class="sheet" id="smartSheetEl">
-    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">✨ Smart add</div>
-    <div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:14px">${smartError||smartLoading?"Review what AI understood, then add.":"Tap an item to edit its category, quantity or weight."}</div>
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">${ttl}</div>
+    <div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:14px">${sub}</div>
     ${inner}
   </div></div>`;
 }
@@ -2013,7 +2096,7 @@ function commitSmartItems(){
   }
   const mi=document.getElementById("mainInput"); if(mi) mi.value="";
   draftMain="";
-  smartOpen=false; smartItems=[]; smartError=""; smartEdit=null;
+  smartOpen=false; smartItems=[]; smartError=""; smartEdit=null; smartServings=null;
   save(); render();
 }
 function optionsSheet(){
