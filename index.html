@@ -94,10 +94,24 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     display:flex; align-items:center; justify-content:center; }
   .smartbtn:active{ transform:scale(0.96); }
   .smartchips{ display:flex; flex-direction:column; gap:8px; }
-  .smartchip{ display:flex; align-items:center; gap:8px; padding:9px 10px 9px 12px; border-radius:13px;
-    background:var(--card); border:1px solid var(--line); }
+  .smartchip{ border-radius:13px; background:var(--card); border:1px solid var(--line); overflow:hidden; }
+  .smartchip.open{ border-color:var(--ink); }
+  .smartchip-top{ display:flex; align-items:center; gap:8px; padding:9px 10px 9px 12px; }
+  .smartchip-head{ flex:1; min-width:0; display:flex; align-items:center; gap:8px; border:none; background:transparent;
+    color:var(--ink); text-align:left; padding:0; cursor:pointer; }
   .smartchip-name{ flex:1; min-width:0; font-weight:700; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .smartchip-cat{ font-size:11px; font-weight:700; color:var(--muted2); flex:none; }
+  .smartchip-cat{ font-size:11px; font-weight:700; color:var(--muted2); flex:none; display:inline-flex; align-items:center; gap:3px; }
+  .smartchip-caret{ flex:none; color:var(--muted2); font-size:12px; font-weight:800; transition:transform .15s ease; }
+  .smartchip.open .smartchip-caret{ transform:rotate(180deg); }
+  .smartedit{ padding:2px 12px 12px; display:flex; flex-direction:column; gap:7px; animation:rise .15s ease; }
+  .smartedit-row{ display:flex; align-items:center; gap:10px; }
+  .smartedit-lbl{ font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; min-width:64px; }
+  .scatrow, .swtrow{ display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px; }
+  .scat{ flex:none; display:inline-flex; align-items:center; gap:4px; padding:7px 11px; border-radius:999px;
+    border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:12px; white-space:nowrap; }
+  .swt{ flex:none; padding:7px 11px; border-radius:999px; border:1.5px solid var(--line); background:var(--card);
+    color:var(--ink); font-weight:700; font-size:12px; min-width:38px; }
+  .swt.on{ background:var(--accent); border-color:var(--accent); color:#fff; }
   .iconbtn{ width:30px; height:30px; border-radius:9px; border:none; background:var(--chip);
     color:var(--ink); font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -431,7 +445,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.71";
+const APP_VERSION = "v0.72";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -746,7 +760,7 @@ function displayFor(){ return displays[optMode()]==="flat" ? "flat" : "cat"; }  
 function setDisplay(m){ displays[optMode()]=m; localStorage.setItem("ml_displays", JSON.stringify(displays)); render(); }
 let optOpen=false, listsOpen=false;
 // A18 ✨ Smart add (planning-mode AI parse → preview → confirm)
-let smartOpen=false, smartLoading=false, smartError="", smartItems=[];
+let smartOpen=false, smartLoading=false, smartError="", smartItems=[], smartEdit=null;
 let view="detail", listActOpen=false, listActCode=null, newListOpen=false, newListDraft="";
 function listCount(code){ try{ const s = (code===listCode) ? state : JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); return (s&&s.items)? s.items.filter(i=>!i.checked).length : 0; }catch(e){ return 0; } }
 function listStats(code){ try{ const s=(code===listCode)?state:JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); const items=(s&&s.items)||[]; const total=items.length, done=items.filter(i=>i.checked).length; return {total, done, pct: total?Math.round(done/total*100):0}; }catch(e){ return {total:0,done:0,pct:0}; } }
@@ -1717,9 +1731,14 @@ function wirePlanPage(){
   // A18 ✨ Smart add sheet
   const sBg=app.querySelector("#smartBg"); if(sBg) sBg.onclick=e=>{ if(e.target===sBg){ smartOpen=false; render(); } };
   const sOk=app.querySelector("#smartOk"); if(sOk) sOk.onclick=()=>{ smartOpen=false; smartError=""; render(); };
-  const sCancel=app.querySelector("#smartCancel"); if(sCancel) sCancel.onclick=()=>{ smartOpen=false; smartItems=[]; render(); };
+  const sCancel=app.querySelector("#smartCancel"); if(sCancel) sCancel.onclick=()=>{ smartOpen=false; smartItems=[]; smartEdit=null; render(); };
   const sConfirm=app.querySelector("#smartConfirm"); if(sConfirm) sConfirm.onclick=commitSmartItems;
-  app.querySelectorAll("[data-smart-rm]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartRm; smartItems.splice(i,1); if(!smartItems.length){ smartOpen=false; smartItems=[]; } render(); }; });
+  app.querySelectorAll("[data-smart-rm]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartRm; smartItems.splice(i,1); if(smartEdit===i) smartEdit=null; else if(smartEdit>i) smartEdit--; if(!smartItems.length){ smartOpen=false; smartItems=[]; smartEdit=null; } render(); }; });
+  // B1 edit a parsed chip's category / qty / weight before committing
+  app.querySelectorAll("[data-smart-edit]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartEdit; smartEdit = (smartEdit===i ? null : i); render(); }; });
+  app.querySelectorAll("[data-smart-q]").forEach(b=>{ b.onclick=()=>{ const [i,d]=b.dataset.smartQ.split("|"); const it=smartItems[+i]; if(it){ it.qty=Math.max(1,Math.min(999,(it.qty||1)+(+d))); render(); } }; });
+  app.querySelectorAll("[data-smart-cat]").forEach(b=>{ b.onclick=()=>{ const [i,cid]=b.dataset.smartCat.split("|"); const it=smartItems[+i]; if(it){ it.category=cid; render(); } }; });
+  app.querySelectorAll("[data-smart-wt]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartWt.split("|"); const i=+p[0], w=p[1]||""; const it=smartItems[i]; if(it){ it.weight = (it.weight===w ? "" : w); render(); } }; });
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireOptions();
@@ -1760,7 +1779,7 @@ async function smartAdd(){
   const mi=document.getElementById("mainInput");
   const text=(mi?mi.value:"").trim();
   if(!text) return;
-  smartOpen=true; smartLoading=true; smartError=""; smartItems=[]; render();
+  smartOpen=true; smartLoading=true; smartError=""; smartItems=[]; smartEdit=null; render();
   let res, data;
   try{
     res=await fetch("/api/parse",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({text})});
@@ -1782,6 +1801,7 @@ async function smartAdd(){
     name:String(it&&it.name||"").trim(),
     qty:(Number.isFinite(+(it&&it.qty))&&+it.qty>=1)?Math.min(999,Math.round(+it.qty)):1,
     category:(it&&allowed.includes(String(it.category)))?String(it.category):"others",
+    weight:(it&&typeof it.weight==="string")?it.weight.trim().slice(0,8):"",
   })).filter(it=>it.name);
   smartLoading=false;
   if(!smartItems.length){ smartError="Nothing to add from that — try adding more detail, or type your items."; }
@@ -1796,11 +1816,25 @@ function smartSheet(){
       <button class="optaction" id="smartOk">OK</button>`;
   } else {
     const n=smartItems.length;
-    const chips=smartItems.map((it,idx)=>{ const c=CAT(it.category);
-      return `<div class="smartchip" style="border-left:4px solid ${c.color}">
-        <span class="smartchip-name">${it.qty>1?`<b>${it.qty}× </b>`:""}${esc(cap(it.name))}</span>
-        <span class="smartchip-cat">${esc(c.emoji)} ${esc(c.label)}</span>
-        <button class="iconmini" data-smart-rm="${idx}" aria-label="Remove" style="color:#C24A33">×</button>
+    const WOPTS=["","100g","200g","300g","500g","750g","1kg","2kg","5kg"];
+    const chips=smartItems.map((it,idx)=>{ const c=CAT(it.category); const open=smartEdit===idx;
+      const editor = open ? `<div class="smartedit">
+          <div class="smartedit-row"><span class="smartedit-lbl">Quantity</span>
+            <div class="qstep2"><button data-smart-q="${idx}|-1" aria-label="Less">−</button><span>${it.qty||1}</span><button data-smart-q="${idx}|1" aria-label="More">+</button></div></div>
+          <div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">Category</span>
+            <div class="scatrow">${catList().map(cc=>`<button class="scat" data-smart-cat="${idx}|${cc.id}" style="${cc.id===it.category?`background:${cc.color};border-color:${cc.color};color:#fff`:''}">${catIcon(cc,13)} ${esc(cc.label)}</button>`).join("")}</div></div>
+          <div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">Weight</span>
+            <div class="swtrow">${WOPTS.map(w=>`<button class="swt ${((it.weight||"")===w)?'on':''}" data-smart-wt="${idx}|${w}">${w||'unit'}</button>`).join("")}</div></div>
+        </div>` : "";
+      return `<div class="smartchip ${open?'open':''}" style="border-left:4px solid ${c.color}">
+        <div class="smartchip-top">
+          <button class="smartchip-head" data-smart-edit="${idx}">
+            <span class="smartchip-name">${(it.qty>1)?`<b>${it.qty}× </b>`:""}${it.weight?`<b>${esc(it.weight)} </b>`:""}${esc(cap(it.name))}</span>
+            <span class="smartchip-cat">${catIcon(c,13)} ${esc(c.label)}</span>
+            <span class="smartchip-caret" aria-hidden="true">▾</span>
+          </button>
+          <button class="iconmini" data-smart-rm="${idx}" aria-label="Remove" style="color:#C24A33">×</button>
+        </div>${editor}
       </div>`; }).join("");
     inner=`<div class="smartchips">${chips}</div>
       <div style="display:flex;gap:8px;margin-top:14px">
@@ -1810,22 +1844,22 @@ function smartSheet(){
   }
   return `<div class="sheet-bg" id="smartBg"><div class="sheet" id="smartSheetEl">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">✨ Smart add</div>
-    <div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:14px">Review what AI understood, then add.</div>
+    <div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:14px">${smartError||smartLoading?"Review what AI understood, then add.":"Tap an item to edit its category, quantity or weight."}</div>
     ${inner}
   </div></div>`;
 }
 function commitSmartItems(){
   for(const it of smartItems){
     const ex=state.items.find(i=>!i.checked && i.name.toLowerCase()===it.name.toLowerCase());
-    if(ex){ if(it.qty>1) ex.qty=(ex.qty||1)+it.qty; markDirty(ex.id); continue; }
+    if(ex){ if(it.qty>1) ex.qty=(ex.qty||1)+it.qty; if(it.weight) ex.weight=it.weight; markDirty(ex.id); continue; }
     const nid=uid();
     const known=knownEntry(it.name);
-    state.items.push({id:nid,name:it.name,qty:it.qty,cat:it.category,sub:(known&&known.cat===it.category&&known.sub)||"",checked:false,by:me});
+    state.items.push({id:nid,name:it.name,qty:it.qty,cat:it.category,sub:(known&&known.cat===it.category&&known.sub)||"",weight:it.weight||"",checked:false,by:me});
     markDirty(nid);
   }
   const mi=document.getElementById("mainInput"); if(mi) mi.value="";
   draftMain="";
-  smartOpen=false; smartItems=[]; smartError="";
+  smartOpen=false; smartItems=[]; smartError=""; smartEdit=null;
   save(); render();
 }
 function optionsSheet(){
