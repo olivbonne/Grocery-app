@@ -340,6 +340,15 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .daychip { flex:1; padding:8px 0; border-radius:10px; border:1.5px solid var(--line); background:var(--card);
     color:var(--ink); font-weight:700; font-size:12px; }
   .daychip.on { background:var(--btn); border-color:var(--btn); color:#fff; }
+  /* B5 merge-duplicates card */
+  .mergelist { display:flex; flex-direction:column; gap:8px; }
+  .mergerow { display:flex; align-items:center; gap:10px; }
+  .mergerow-txt { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+  .mergerow-names { font-size:13px; font-weight:700; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mergerow-into { font-size:11px; font-weight:700; color:var(--muted); }
+  .mergerow-btns { flex:none; display:flex; align-items:center; gap:4px; }
+  .merge-go { border:none; background:var(--accent); color:#fff; font-weight:800; font-size:12px; padding:7px 13px; border-radius:10px; }
+  .merge-x { border:none; background:transparent; color:var(--muted2); font-size:16px; font-weight:800; padding:2px 6px; }
   .botbar { position:fixed; left:0; right:0; bottom:0; z-index:40; max-width:480px; margin:0 auto;
     padding:8px 14px calc(8px + env(safe-area-inset-bottom));
     background:linear-gradient(to top, var(--paper) 76%, transparent); }
@@ -486,7 +495,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.75";
+const APP_VERSION = "v0.76";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -833,6 +842,60 @@ function predictCardHTML(){
     ${predictWhyOpen?`<div class="predict-whytxt">Based on how often you've bought these before — estimated on your device, nothing leaves your phone. Adds only when you tap. Change the schedule or turn this off in <b>Settings › Predictions</b>.</div>`:""}
     <div class="predict-list">${chips}</div>
     <button class="predict-hide" data-pred-hide>Not now</button>
+  </div>`;
+}
+
+/* B5 de-duplication & merge — on-device (no AI). Clusters look-alike items by a
+   token-subset rule (one name refines another, e.g. "milk" ⊆ "whole milk"), so
+   variants merge but distinct products ("chicken breast" vs "turkey breast")
+   don't. Proposes only; the merge is reversible via the standard Undo. */
+let mergeX = {}; try{ mergeX = JSON.parse(localStorage.getItem("ml_merge_x")||"null") || {}; }catch(e){ mergeX={}; }
+function mergeTokens(name){ return (name||"").toLowerCase().replace(/[^a-z0-9%\s]/g," ").split(/\s+/).filter(Boolean); }
+function _subsetMerge(a,b){ const sa=new Set(a), sb=new Set(b);
+  return [...sa].every(t=>sb.has(t)) || [...sb].every(t=>sa.has(t)); }   // one token set ⊆ the other
+function mergeClusters(){
+  const byCat={};
+  for(const it of state.items){ if(it.checked) continue; const tok=mergeTokens(it.name); if(!tok.length) continue;
+    (byCat[it.cat]||(byCat[it.cat]=[])).push({it, tok}); }
+  const out=[];
+  for(const cat in byCat){ const arr=byCat[cat], n=arr.length; if(n<2) continue;
+    const parent=arr.map((_,i)=>i);
+    const find=x=>{ while(parent[x]!==x){ parent[x]=parent[parent[x]]; x=parent[x]; } return x; };
+    for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){ if(_subsetMerge(arr[i].tok,arr[j].tok)) parent[find(i)]=find(j); }
+    const cl={};
+    for(let i=0;i<n;i++){ const r=find(i); (cl[r]||(cl[r]=[])).push(arr[i]); }
+    for(const r in cl){ const members=cl[r]; if(members.length<2) continue;
+      const its=members.map(m=>m.it);
+      const sig=its.map(i=>i.name.toLowerCase()).sort().join("|");
+      if(mergeX[sig]) continue;
+      const canon=members.slice().sort((a,b)=> a.tok.length-b.tok.length || a.it.name.length-b.it.name.length)[0].it;
+      out.push({ sig, cat, canon:canon.name, items:its });
+    }
+  }
+  return out;
+}
+function mergeCluster(sig){
+  const cl=mergeClusters().find(c=>c.sig===sig); if(!cl) return;
+  const prev=snapState();
+  let qty=0, weight="", sub="";
+  for(const it of cl.items){ qty += (it.qty||1); if(!weight && it.weight) weight=it.weight; if(!sub && it.sub) sub=it.sub; }
+  const keepId=cl.items[0].id, ids=new Set(cl.items.map(i=>i.id));
+  state.items = state.items.filter(i=>!ids.has(i.id));
+  state.items.push({ id:keepId, name:cap(cl.canon), qty:Math.min(999,qty||1), cat:cl.cat, weight, sub, checked:false, by:me });
+  markDirty(keepId); save(); render();
+  showUndo(prev, `Merged into ${cap(cl.canon)}`);
+}
+function mergeDismiss(sig){ mergeX[sig]=1; try{ localStorage.setItem("ml_merge_x", JSON.stringify(mergeX)); }catch(e){} render(); }
+function mergeHideAll(){ for(const c of mergeClusters()) mergeX[c.sig]=1; try{ localStorage.setItem("ml_merge_x", JSON.stringify(mergeX)); }catch(e){} render(); }
+function mergeCardHTML(){
+  const cls=mergeClusters(); if(!cls.length) return "";
+  const rows=cls.slice(0,4).map(c=>`<div class="mergerow">
+      <div class="mergerow-txt"><span class="mergerow-names">${esc(c.items.map(i=>cap(i.name)).join(", "))}</span><span class="mergerow-into">→ ${esc(cap(c.canon))}</span></div>
+      <div class="mergerow-btns"><button class="merge-go" data-merge-go="${esc(c.sig)}">Merge</button><button class="merge-x" data-merge-x="${esc(c.sig)}" aria-label="Keep separate">×</button></div>
+    </div>`).join("");
+  return `<div class="predict mergecard">
+    <div class="predict-top"><span class="predict-ttl">🔀 Possible duplicates</span><button class="predict-why" data-merge-hide>Not now</button></div>
+    <div class="mergelist">${rows}</div>
   </div>`;
 }
 applyTheme();
@@ -1834,6 +1897,7 @@ function renderPlanPage(){
     </div>
     <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${predictCardHTML()}
+      ${mergeCardHTML()}
       ${(hasAny && !localStorage.getItem("ml_hint_choose")) ? `<div class="subrow" style="justify-content:space-between;gap:8px;margin-bottom:8px">
         <span style="font-size:12px;color:var(--muted);font-weight:600">Plan your shop here — solid items are on the list, faded ones were bought before. Tap to add or remove.</span>
         <button class="iconmini" id="hintChooseX" aria-label="Dismiss">×</button></div>` : ""}
@@ -1894,6 +1958,10 @@ function wirePlanPage(){
   app.querySelectorAll("[data-pred-rm]").forEach(b=>b.onclick=()=>predictDismiss(b.dataset.predRm));
   const pHide=app.querySelector("[data-pred-hide]"); if(pHide) pHide.onclick=predictHideAll;
   const pWhy=app.querySelector("[data-pred-why]"); if(pWhy) pWhy.onclick=()=>{ predictWhyOpen=!predictWhyOpen; render(); };
+  // B5 merge duplicates
+  app.querySelectorAll("[data-merge-go]").forEach(b=>b.onclick=()=>mergeCluster(b.dataset.mergeGo));
+  app.querySelectorAll("[data-merge-x]").forEach(b=>b.onclick=()=>mergeDismiss(b.dataset.mergeX));
+  const mHide=app.querySelector("[data-merge-hide]"); if(mHide) mHide.onclick=mergeHideAll;
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const ss=app.querySelector("#startShop"); if(ss) ss.onclick=toggleShop;
   // A18 ✨ Smart add sheet
