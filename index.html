@@ -105,7 +105,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .smartchip.open .smartchip-caret{ transform:rotate(180deg); }
   .smartedit{ padding:2px 12px 12px; display:flex; flex-direction:column; gap:7px; animation:rise .15s ease; }
   .smartedit-row{ display:flex; align-items:center; gap:10px; }
-  .smartedit-lbl{ font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; min-width:64px; }
+  .smartedit-lbl{ font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.3px; flex:none; width:74px; }
   .scatrow, .swtrow{ display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px; }
   .scat{ flex:none; display:inline-flex; align-items:center; gap:4px; padding:7px 11px; border-radius:999px;
     border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:12px; white-space:nowrap; }
@@ -113,12 +113,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     color:var(--ink); font-weight:700; font-size:12px; min-width:38px; }
   .swt.on{ background:var(--accent); border-color:var(--accent); color:#fff; }
   /* B3 recipe → list */
-  .reclink{ margin:6px 0 0; align-self:flex-start; border:none; background:transparent; color:var(--accent);
-    font-weight:800; font-size:12.5px; padding:2px 2px; }
-  .recipein{ width:100%; box-sizing:border-box; border:2px solid var(--ink); border-radius:14px; padding:12px 14px;
-    background:var(--card); color:var(--ink); font-size:14px; font-weight:500; line-height:1.5; resize:vertical;
-    font-family:inherit; outline:none; -webkit-appearance:none; }
-  .recipeerr{ margin-top:10px; font-size:12.5px; font-weight:700; color:#C24A33; line-height:1.5; }
+  .rechint{ margin:6px 2px 0; font-size:12px; font-weight:600; color:var(--muted); line-height:1.4; }
+  .rechint b{ color:var(--ink); font-weight:800; }
   .servrow{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 12px; padding:10px 12px;
     border-radius:13px; background:var(--chip); }
   .servlbl{ font-size:12px; font-weight:800; color:var(--ink); text-transform:uppercase; letter-spacing:.4px; }
@@ -450,7 +446,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* A20 redesigned shopping-mode banner (mirrors the bottom cart) */
   .shopbar2 { gap:12px; padding:12px 14px; }
   .shopbar2 .sb-cart { flex:none; width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.22);
-    display:flex; align-items:center; justify-content:center; font-size:20px; }
+    display:flex; align-items:center; justify-content:center; color:#fff; }
+  .shopbar .cartglyph { display:inline-flex; vertical-align:middle; margin-right:6px; }
+  .shopbar .cartglyph svg { width:18px; height:18px; }
   .shopbar2 .sb-mid { flex:1; min-width:0; display:flex; flex-direction:column; gap:5px; }
   .shopbar2 .sb-title { font-size:15px; font-weight:800; line-height:1; }
   .shopbar2 .sb-stats { display:flex; gap:7px; }
@@ -458,19 +456,22 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     background:rgba(255,255,255,.20); color:#fff; white-space:nowrap; }
   .shopbar2 .sb-pill.sb-incart { background:#fff; color:var(--accent); }
   .shopbar2 .sb-done { flex:none; }
-  /* A20 bottom-nav middle "to buy" stat slot */
-  .navstat { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  /* A22 bottom-nav right cluster: "N left" | divider | cart, kept tight together */
+  .navright { flex:1; display:flex; align-items:center; justify-content:center; gap:14px; }
+  .navright .navbtn { flex:none; }
+  .navdiv { width:1px; height:28px; background:var(--line); border-radius:1px; }
+  .navstat { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
     padding:6px 0; line-height:1; }
   .navstat-n { font-size:17px; font-weight:900; color:var(--accent); font-variant-numeric:tabular-nums; }
   .navstat-l { font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.2px; }
-  /* A20 cart bounce when a flying item lands */
+  /* A20 cart bounce when a flying item lands; A22 cart doubles when an item is received */
   @keyframes cartbounce { 0%{transform:scale(1)} 35%{transform:scale(1.12)} 70%{transform:scale(.97)} 100%{transform:scale(1)} }
   .cartpulse { animation:cartbounce .42s ease; }
-  /* A20 flying item → cart */
-  .cartfly { position:fixed; z-index:60; width:38px; height:38px; border-radius:11px; pointer-events:none;
-    display:flex; align-items:center; justify-content:center; font-size:20px; color:#fff;
-    box-shadow:0 6px 18px rgba(0,0,0,.28); will-change:transform,opacity; }
-  .cartfly img { width:24px; height:24px; object-fit:contain; }
+  @keyframes cartpop { 0%{transform:scale(1)} 30%{transform:scale(2)} 62%{transform:scale(.9)} 100%{transform:scale(1)} }
+  .cartpop { animation:cartpop .5s cubic-bezier(.34,1.56,.64,1); transform-origin:center; }
+  /* A22 flying item → cart: a live clone of the checked tile arcs down into the cart */
+  .tilefly { position:fixed; z-index:60; margin:0 !important; pointer-events:none; box-sizing:border-box;
+    transform-origin:center; box-shadow:0 12px 26px rgba(0,0,0,.30); will-change:transform,opacity; }
   /* A20 Users list in Settings */
   .userlist { display:flex; flex-wrap:wrap; gap:8px; }
   .userchip { display:inline-flex; align-items:center; gap:6px; padding:9px 14px; border-radius:999px;
@@ -495,7 +496,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.76";
+const APP_VERSION = "v0.77";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -909,14 +910,27 @@ function cartBadgeHTML(iconHTML){
   _prevChecked = checked;
   return `<span class="cartwrap" id="cartWrap">${iconHTML}${checked>0?`<span class="cartbadge${checkedChanged?' justpop':''}">${checked}</span>`:""}</span>`;
 }
-// A20 bottom-nav middle "to buy" stat (was the inline cart count) — pops when it changes
+// A22 bottom-nav "N left" stat (sits beside the cart) — pops when it changes
 function navStatHTML(){
   const planned = state.items.filter(i=>!i.checked).length;
   const changed = _prevPlanned!==null && _prevPlanned!==planned;
   _prevPlanned = planned;
-  return `<div class="navstat"><span class="navstat-n${changed?' justpop':''}">${planned}</span><span class="navstat-l">to buy</span></div>`;
+  return `<div class="navstat"><span class="navstat-n${changed?' justpop':''}">${planned}</span><span class="navstat-l">left</span></div>`;
 }
-// A20 fly a miniature of the tapped item along a Bézier arc into the cart, then bounce the cart + banner
+// A22 shared glyphs + bottom-nav builder (Lists left · "N left" | divider | Cart, grouped right)
+const CART_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>';
+const LISTS_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>';
+function bottomNav(o){
+  return `<nav class="bottomnav" id="bottomnav">
+    <button class="navbtn ${o.listsActive?'active':''}" id="${o.listsId}">${LISTS_SVG}<span>Lists</span></button>
+    <div class="navright">
+      ${navStatHTML()}
+      <span class="navdiv" aria-hidden="true"></span>
+      <button class="navbtn ${o.cartActive?'active':''}" id="${o.cartId}">${cartBadgeHTML(CART_SVG)}<span>Cart</span></button>
+    </div>
+  </nav>`;
+}
+// A22 fly a live clone of the just-checked tile along a smooth downward arc into the cart
 let _flyLast = 0;
 function flyItemToCart(srcEl, it){
   try{
@@ -924,42 +938,42 @@ function flyItemToCart(srcEl, it){
     const cartEl = document.querySelector("#cartWrap") || document.querySelector("#cartNav,#cartNavL");
     if(!srcEl || !cartEl) return;
     const s = srcEl.getBoundingClientRect(), c = cartEl.getBoundingClientRect();
+    const clone = srcEl.cloneNode(true);
+    clone.classList.add("tilefly");
+    clone.removeAttribute("id");
+    clone.style.left = s.left+"px"; clone.style.top = s.top+"px";
+    clone.style.width = s.width+"px"; clone.style.height = s.height+"px";
     const P0 = { x:s.left+s.width/2, y:s.top+s.height/2 };
     const P2 = { x:c.left+c.width/2, y:c.top+c.height/2 };
-    const cat = CAT(it.cat);
-    const icon = catIcon(cat, 20);
-    // stagger rapid taps so they queue one-after-another (~80ms apart)
+    // stagger rapid taps so they queue one-after-another (~90ms apart)
     const now = performance.now();
-    const at = Math.max(now, _flyLast + 80);
+    const at = Math.max(now, _flyLast + 90);
     _flyLast = at;
-    setTimeout(()=>launchFlyer(P0, P2, (cat&&cat.color)||"var(--accent)", icon), at-now);
+    setTimeout(()=>launchTileFlyer(clone, P0, P2), at-now);
   }catch(e){}
 }
-function launchFlyer(P0, P2, color, iconHTML){
-  const fly = document.createElement("div");
-  fly.className = "cartfly";
-  fly.style.left = P0.x+"px"; fly.style.top = P0.y+"px";
-  fly.style.background = color;
-  fly.innerHTML = iconHTML;
-  document.body.appendChild(fly);
-  const arcUp = Math.max(70, Math.abs(P2.y-P0.y)*0.28);
-  const P1 = { x:(P0.x+P2.x)/2, y:Math.min(P0.y,P2.y)-arcUp };
-  const N = 18, frames = [];
+function launchTileFlyer(clone, P0, P2){
+  document.body.appendChild(clone);
+  // control point stays between the tile and the cart — a gentle sideways bow, never rising above the start
+  const P1 = { x:P0.x + (P2.x-P0.x)*0.18, y:P0.y + (P2.y-P0.y)*0.62 };
+  const N = 20, frames = [];
   for(let k=0;k<=N;k++){ const t=k/N, mt=1-t;
     const x = mt*mt*P0.x + 2*mt*t*P1.x + t*t*P2.x;
     const y = mt*mt*P0.y + 2*mt*t*P1.y + t*t*P2.y;
-    const sc = 1 - 0.6*t;                       // 1 → 0.4 (miniature on arrival)
-    const op = t>0.82 ? Math.max(0,(1-t)/0.18) : 1;
-    frames.push({ transform:`translate(-50%,-50%) translate(${(x-P0.x).toFixed(1)}px,${(y-P0.y).toFixed(1)}px) scale(${sc.toFixed(3)})`, opacity:op });
+    const sc = 1 - 0.72*t;                      // full tile → ~0.28 as it drops into the cart
+    const op = t>0.8 ? Math.max(0,(1-t)/0.2) : 1;
+    frames.push({ transform:`translate(${(x-P0.x).toFixed(1)}px,${(y-P0.y).toFixed(1)}px) scale(${sc.toFixed(3)})`, opacity:op });
   }
-  const anim = fly.animate(frames, { duration:520, easing:"ease-in-out" });
+  const anim = clone.animate(frames, { duration:560, easing:"cubic-bezier(.4,0,.2,1)" });
   let fired = false;
-  const done = ()=>{ if(fired) return; fired = true; fly.remove(); bumpCart(); };
+  const done = ()=>{ if(fired) return; fired = true; clone.remove(); bumpCart(); };
   anim.onfinish = done; anim.oncancel = done;
-  setTimeout(done, 640);   // safety net if WAAPI events don't fire
+  setTimeout(done, 720);   // safety net if WAAPI events don't fire
 }
 function bumpCart(){
-  document.querySelectorAll("#cartWrap, .sb-incart").forEach(el=>{
+  const cart = document.querySelector("#cartWrap");
+  if(cart){ cart.classList.remove("cartpop"); void cart.offsetWidth; cart.classList.add("cartpop"); setTimeout(()=>cart.classList.remove("cartpop"), 520); }
+  document.querySelectorAll(".sb-incart").forEach(el=>{
     el.classList.remove("cartpulse"); void el.offsetWidth; el.classList.add("cartpulse");
     setTimeout(()=>el.classList.remove("cartpulse"), 460);
   });
@@ -975,7 +989,7 @@ let optOpen=false, listsOpen=false;
 // A18 ✨ Smart add (planning-mode AI parse → preview → confirm)
 let smartOpen=false, smartLoading=false, smartError="", smartItems=[], smartEdit=null;
 // B3 recipe → list (text-first): pours extracted ingredients into the shared Smart-add preview
-let recipeOpen=false, recipeText="", recipeLoading=false, recipeError="", smartServings=null;
+let smartServings=null;
 let view="detail", listActOpen=false, listActCode=null, newListOpen=false, newListDraft="";
 function listCount(code){ try{ const s = (code===listCode) ? state : JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); return (s&&s.items)? s.items.filter(i=>!i.checked).length : 0; }catch(e){ return 0; } }
 function listStats(code){ try{ const s=(code===listCode)?state:JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); const items=(s&&s.items)||[]; const total=items.length, done=items.filter(i=>i.checked).length; return {total, done, pct: total?Math.round(done/total*100):0}; }catch(e){ return {total:0,done:0,pct:0}; } }
@@ -1705,14 +1719,14 @@ function renderMain(){
       </div>
       <div class="suggest" id="suggest"></div>
       ${shopMode?`<div class="shopbar shopbar2" style="margin-top:8px">
-          <div class="sb-cart" aria-hidden="true">🛒</div>
+          <div class="sb-cart" aria-hidden="true">${CART_SVG}</div>
           <div class="sb-mid">
             <div class="sb-title">Shopping mode</div>
             <div class="sb-stats"><span class="sb-pill">${open} to buy</span>${done?`<span class="sb-pill sb-incart">${done} in cart</span>`:''}</div>
           </div>
           <button id="doneShop" class="sb-done">Done</button>
         </div>`
-        :(state.items.length>0?`<div class="shopbar" style="margin-top:8px;background:var(--btn)"><span>🛒 At the store?</span><button id="startShop">Start shopping</button></div>`:"")}
+        :(state.items.length>0?`<div class="shopbar" style="margin-top:8px;background:var(--btn)"><span><span class="cartglyph">${CART_SVG}</span>At the store?</span><button id="startShop">Start shopping</button></div>`:"")}
     </div>
     <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${(state.items.length===0 && !shopMode)?`<div class="empty">
@@ -1726,11 +1740,7 @@ function renderMain(){
     </div></div>
   </div>
   ${checkedBar}
-  <nav class="bottomnav" id="bottomnav">
-    <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
-    ${navStatHTML()}
-    <button class="navbtn active" id="cartNav">${cartBadgeHTML('<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>')}<span>Cart</span></button>
-  </nav>
+  ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:true})}
   ${optOpen?optionsSheet():""}
   ${listsOpen?listsSheet():""}
   ${editing?editSheet():""}
@@ -1762,11 +1772,7 @@ function renderListsPage(){
       <p class="hint" style="text-align:center;margin-top:16px">Tap a list to open it · press &amp; hold to rename, share, or delete.</p>
     </div></div>
   </div>
-  <nav class="bottomnav" id="bottomnav">
-    <button class="navbtn active" id="listsBtnL"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
-    ${navStatHTML()}
-    <button class="navbtn" id="cartNavL">${cartBadgeHTML('<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>')}<span>Cart</span></button>
-  </nav>
+  ${bottomNav({listsId:"listsBtnL",listsActive:true,cartId:"cartNavL",cartActive:false})}
   ${optOpen?optionsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
@@ -1819,7 +1825,6 @@ function planFilledPill(i, cat){ const checked=i.checked; const full=fillMode()=
   return `<button class="pill plan-in ${checked?'done':''}" data-plan-rm="${i.id}" style="${style}">${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}${checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit"${full?' style="color:rgba(255,255,255,.92)"':''}>▾</span></button>${quickEdit===i.id?qpanelHTML(i,cat):""}`; }
 function planOutlineChip(e, cat){ return `<button class="pill plan-out ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="background:transparent;border:1.5px dashed ${cat.color}">${(e.qty||1)>1?`<span class="qty" style="color:${cat.color}">${e.qty}×</span>`:""}${e.weight?`<span class="qty" style="color:${cat.color}">${esc(e.weight)} </span>`:""}${esc(cap(e.name))}<span class="qmore" style="visibility:hidden" aria-hidden="true">▾</span></button>`; }
 function renderPlanPage(){
-  const cartIcon=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>`;
   const psm = (displayFor()==="cat" && sortModeFor()==="location") ? "cat" : sortModeFor();
   let planBody;
   if(psm==="cat" && displayFor()==="flat"){
@@ -1887,13 +1892,13 @@ function renderPlanPage(){
         <div style="display:flex;align-items:center;gap:8px">${syncChip()}<button id="optBtnTop" class="iconbtn" aria-label="Settings" title="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
       </header>
       <div class="addbar">
-        <button class="smartbtn" id="smartBtn" aria-label="Smart add" title="Smart add — let AI sort your list">✨</button>
+        <button class="smartbtn" id="smartBtn" aria-label="Smart add" title="Smart add — turn a list or a whole recipe into items">✨</button>
         <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Add items to ${esc(state.name||'your list')}…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
         <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
       </div>
       <div class="suggest" id="suggest"></div>
-      <button class="reclink" id="recipeBtn">📖 Add from a recipe</button>
-      ${hasAny?`<div class="shopbar" style="margin-top:8px;background:var(--btn)"><span>🛒 At the store?</span><button id="startShop">Start shopping</button></div>`:""}
+      <div class="rechint">✨ Smart add reads a plain list <b>or</b> a whole recipe — paste one to scale &amp; add.</div>
+      ${hasAny?`<div class="shopbar" style="margin-top:8px;background:var(--btn)"><span><span class="cartglyph">${CART_SVG}</span>At the store?</span><button id="startShop">Start shopping</button></div>`:""}
     </div>
     <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${predictCardHTML()}
@@ -1905,14 +1910,9 @@ function renderPlanPage(){
       <button id="addCatPlan" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
     </div></div>
   </div>
-  <nav class="bottomnav" id="bottomnav">
-    <button class="navbtn" id="listsBtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg><span>Lists</span></button>
-    ${navStatHTML()}
-    <button class="navbtn active" id="cartNav">${cartBadgeHTML(cartIcon)}<span>Cart</span></button>
-  </nav>
+  ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:true})}
   ${optOpen?optionsSheet():""}
   ${smartOpen?smartSheet():""}
-  ${recipeOpen?recipeSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -1971,16 +1971,12 @@ function wirePlanPage(){
   const sConfirm=app.querySelector("#smartConfirm"); if(sConfirm) sConfirm.onclick=commitSmartItems;
   app.querySelectorAll("[data-recipe-serv]").forEach(b=>{ b.onclick=()=>recipeScale(+b.dataset.recipeServ); });   // B3 servings scaler
   // B3 📖 recipe sheet
-  const rBtn=app.querySelector("#recipeBtn"); if(rBtn) rBtn.onclick=()=>{ recipeOpen=true; recipeError=""; render(); };
-  const rBg=app.querySelector("#recipeBg"); if(rBg) rBg.onclick=e=>{ if(e.target===rBg){ recipeOpen=false; render(); } };
-  const rIn=app.querySelector("#recipeInput"); if(rIn){ rIn.value=recipeText; rIn.oninput=()=>{ recipeText=rIn.value; }; }
-  const rCancel=app.querySelector("#recipeCancel"); if(rCancel) rCancel.onclick=()=>{ recipeOpen=false; render(); };
-  const rGo=app.querySelector("#recipeGo"); if(rGo){ rGo.onpointerdown=e=>e.preventDefault(); rGo.onclick=recipeExtract; }
   app.querySelectorAll("[data-smart-rm]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartRm; smartItems.splice(i,1); if(smartEdit===i) smartEdit=null; else if(smartEdit>i) smartEdit--; if(!smartItems.length){ smartOpen=false; smartItems=[]; smartEdit=null; } render(); }; });
   // B1 edit a parsed chip's category / qty / weight before committing
   app.querySelectorAll("[data-smart-edit]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartEdit; smartEdit = (smartEdit===i ? null : i); render(); }; });
   app.querySelectorAll("[data-smart-q]").forEach(b=>{ b.onclick=()=>{ const [i,d]=b.dataset.smartQ.split("|"); const it=smartItems[+i]; if(it){ it.qty=Math.max(1,Math.min(999,(it.qty||1)+(+d))); render(); } }; });
-  app.querySelectorAll("[data-smart-cat]").forEach(b=>{ b.onclick=()=>{ const [i,cid]=b.dataset.smartCat.split("|"); const it=smartItems[+i]; if(it){ it.category=cid; render(); } }; });
+  app.querySelectorAll("[data-smart-cat]").forEach(b=>{ b.onclick=()=>{ const [i,cid]=b.dataset.smartCat.split("|"); const it=smartItems[+i]; if(it){ if(it.category!==cid) it.sub=""; it.category=cid; render(); } }; });
+  app.querySelectorAll("[data-smart-sub]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartSub.split("|"); const it=smartItems[+p[0]]; if(it){ it.sub=(it.sub===(p[1]||"")?"":(p[1]||"")); render(); } }; });
   app.querySelectorAll("[data-smart-wt]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartWt.split("|"); const i=+p[0], w=p[1]||""; const it=smartItems[i]; if(it){ it.weight = (it.weight===w ? "" : w); render(); } }; });
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
@@ -2021,14 +2017,23 @@ function wireOptions(){
 }
 /* A18 ✨ Smart add — planning-mode AI parse → preview → confirm.
    Calls the server-side /api/parse (Groq); the API key never touches the client. */
+// B3 recipe-shaped input (steps / servings / cooking verbs) routes to /api/recipe so servings scale
+function looksLikeRecipe(t){
+  const s=(t||"").toLowerCase();
+  if(/\bserves?\s+\d/.test(s)) return true;
+  const steps=/(preheat|bake|roast|simmer|whisk|knead|combine|saut|\bfry\b|\bboil\b|marinat|garnish|drain|dough|batter|\boven\b|\bmin(ute)?s?\b|°|degrees|tbsp|tsp|tablespoon|teaspoon)/;
+  const lines=(t||"").split(/\n/).filter(l=>l.trim()).length;
+  return steps.test(s) && lines>=3;
+}
 async function smartAdd(){
   const mi=document.getElementById("mainInput");
   const text=(mi?mi.value:"").trim();
   if(!text) return;
+  const recipe=looksLikeRecipe(text);
   smartOpen=true; smartLoading=true; smartError=""; smartItems=[]; smartEdit=null; smartServings=null; render();
   let res, data;
   try{
-    res=await fetch("/api/parse",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({text})});
+    res=await fetch(recipe?"/api/recipe":"/api/parse",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({text})});
   }catch(e){ res=null; }
   if(!res){
     smartLoading=false; smartError="Couldn't reach Smart add. Check your connection — you can still type items normally."; render(); return;
@@ -2043,36 +2048,18 @@ async function smartAdd(){
   const raw=(data&&Array.isArray(data.items))?data.items:null;
   if(!raw){ smartLoading=false; smartError="Couldn't read that — try rephrasing, or just type your items."; render(); return; }
   const allowed=catList().map(c=>c.id);
-  smartItems=raw.map(it=>({
-    name:String(it&&it.name||"").trim(),
-    qty:(Number.isFinite(+(it&&it.qty))&&+it.qty>=1)?Math.min(999,Math.round(+it.qty)):1,
-    category:(it&&allowed.includes(String(it.category)))?String(it.category):"others",
-    weight:(it&&typeof it.weight==="string")?it.weight.trim().slice(0,8):"",
-  })).filter(it=>it.name);
-  smartLoading=false;
-  if(!smartItems.length){ smartError="Nothing to add from that — try adding more detail, or type your items."; }
-  render();
-}
-// B3 pull ingredients from pasted recipe text into the Smart-add preview (with servings scaling)
-async function recipeExtract(){
-  const text=(recipeText||"").trim(); if(!text) return;
-  recipeLoading=true; recipeError=""; render();
-  let res, data;
-  try{ res=await fetch("/api/recipe",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({text})}); }catch(e){ res=null; }
-  if(!res){ recipeLoading=false; recipeError="Couldn't reach the recipe reader. Check your connection and try again."; render(); return; }
-  if(res.status===500){ recipeLoading=false; recipeError="Recipe extract isn't set up yet. Add a GROQ_API_KEY in Vercel (see docs/ai-setup.md)."; render(); return; }
-  if(!res.ok){ recipeLoading=false; recipeError="Couldn't read that recipe — try pasting just the ingredient list."; render(); return; }
-  try{ data=await res.json(); }catch(e){ data=null; }
-  const raw=(data&&Array.isArray(data.items))?data.items:null;
-  if(!raw||!raw.length){ recipeLoading=false; recipeError="No ingredients found — try pasting the full recipe."; render(); return; }
-  const allowed=catList().map(c=>c.id);
   smartItems=raw.map(it=>{ const q=(Number.isFinite(+(it&&it.qty))&&+it.qty>=1)?Math.min(999,Math.round(+it.qty)):1;
-    return { name:String(it&&it.name||"").trim(), qty:q, baseQty:q,
+    return {
+      name:String(it&&it.name||"").trim(),
+      qty:q, baseQty:q, sub:"",
       category:(it&&allowed.includes(String(it.category)))?String(it.category):"others",
-      weight:(it&&typeof it.weight==="string")?it.weight.trim().slice(0,16):"" }; }).filter(it=>it.name);
-  const src=(data&&+data.servings>=1)?Math.round(+data.servings):4;
-  smartServings={ src, target:src, title:(data&&data.title)?String(data.title).slice(0,80):"" };
-  recipeLoading=false; recipeOpen=false; recipeText=""; smartError=""; smartEdit=null; smartOpen=true; render();
+      weight:(it&&typeof it.weight==="string")?it.weight.trim().slice(0,16):"",
+    }; }).filter(it=>it.name);
+  if(recipe){ const src=(data&&+data.servings>=1)?Math.round(+data.servings):4;
+    smartServings={ src, target:src, title:(data&&data.title)?String(data.title).slice(0,80):"" }; }
+  smartLoading=false;
+  if(!smartItems.length){ smartError=recipe?"No ingredients found — try pasting the full recipe.":"Nothing to add from that — try adding more detail, or type your items."; }
+  render();
 }
 function recipeScale(delta){
   if(!smartServings) return;
@@ -2081,24 +2068,6 @@ function recipeScale(delta){
   const f=t/smartServings.src;
   for(const it of smartItems){ const b=(it.baseQty!=null?it.baseQty:it.qty); it.qty=Math.max(1,Math.round(b*f)); }
   render();
-}
-function recipeSheet(){
-  let inner;
-  if(recipeLoading){
-    inner=`<div style="padding:22px 4px;text-align:center;color:var(--muted);font-weight:700">📖 Reading the recipe…</div>`;
-  } else {
-    inner=`<textarea id="recipeInput" class="recipein" rows="7" placeholder="Paste a recipe here — ingredients and steps are both fine.">${esc(recipeText)}</textarea>
-      ${recipeError?`<div class="recipeerr">${esc(recipeError)}</div>`:""}
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="optaction" id="recipeCancel" style="flex:1">Cancel</button>
-        <button class="optaction" id="recipeGo" style="flex:1;background:var(--accent);color:#fff;border-color:var(--accent)">Extract ingredients</button>
-      </div>`;
-  }
-  return `<div class="sheet-bg" id="recipeBg"><div class="sheet" id="recipeSheetEl">
-    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">📖 Add from recipe</div>
-    <div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:12px">Paste any recipe — I'll pull out the ingredients so you can review, scale and add them.</div>
-    ${inner}
-  </div></div>`;
 }
 function smartSheet(){
   let inner;
@@ -2112,13 +2081,16 @@ function smartSheet(){
     const WOPTS=["","100g","200g","300g","500g","750g","1kg","2kg","5kg"];
     const chips=smartItems.map((it,idx)=>{ const c=CAT(it.category); const open=smartEdit===idx;
       const have=state.items.some(i=>!i.checked && (i.name||"").toLowerCase()===it.name.toLowerCase());
+      const subs=(c.subs&&c.subs.length)?c.subs:null;
       const editor = open ? `<div class="smartedit">
           <div class="smartedit-row"><span class="smartedit-lbl">Quantity</span>
             <div class="qstep2"><button data-smart-q="${idx}|-1" aria-label="Less">−</button><span>${it.qty||1}</span><button data-smart-q="${idx}|1" aria-label="More">+</button></div></div>
-          <div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">Category</span>
-            <div class="scatrow">${catList().map(cc=>`<button class="scat" data-smart-cat="${idx}|${cc.id}" style="${cc.id===it.category?`background:${cc.color};border-color:${cc.color};color:#fff`:''}">${catIcon(cc,13)} ${esc(cc.label)}</button>`).join("")}</div></div>
           <div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">Weight</span>
             <div class="swtrow">${WOPTS.map(w=>`<button class="swt ${((it.weight||"")===w)?'on':''}" data-smart-wt="${idx}|${w}">${w||'unit'}</button>`).join("")}</div></div>
+          <div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">Category</span>
+            <div class="scatrow">${catList().map(cc=>`<button class="scat" data-smart-cat="${idx}|${cc.id}" style="${cc.id===it.category?`background:${cc.color};border-color:${cc.color};color:#fff`:''}">${catIcon(cc,13)} ${esc(cc.label)}</button>`).join("")}</div></div>
+          ${subs?`<div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">Subcategory</span>
+            <div class="scatrow"><button class="scat" data-smart-sub="${idx}|" style="${!it.sub?`background:${c.color};border-color:${c.color};color:#fff`:''}">None</button>${subs.map(s=>`<button class="scat" data-smart-sub="${idx}|${s.id}" style="${it.sub===s.id?`background:${c.color};border-color:${c.color};color:#fff`:''}">${esc(s.label)}</button>`).join("")}</div></div>`:""}
         </div>` : "";
       return `<div class="smartchip ${open?'open':''}" style="border-left:4px solid ${c.color}">
         <div class="smartchip-top">
@@ -2156,10 +2128,11 @@ function smartSheet(){
 function commitSmartItems(){
   for(const it of smartItems){
     const ex=state.items.find(i=>!i.checked && i.name.toLowerCase()===it.name.toLowerCase());
-    if(ex){ if(it.qty>1) ex.qty=(ex.qty||1)+it.qty; if(it.weight) ex.weight=it.weight; markDirty(ex.id); continue; }
+    if(ex){ if(it.qty>1) ex.qty=(ex.qty||1)+it.qty; if(it.weight) ex.weight=it.weight; if(it.sub) ex.sub=it.sub; markDirty(ex.id); continue; }
     const nid=uid();
     const known=knownEntry(it.name);
-    state.items.push({id:nid,name:it.name,qty:it.qty,cat:it.category,sub:(known&&known.cat===it.category&&known.sub)||"",weight:it.weight||"",checked:false,by:me});
+    const sub=it.sub || ((known&&known.cat===it.category&&known.sub)||"");
+    state.items.push({id:nid,name:it.name,qty:it.qty,cat:it.category,sub,weight:it.weight||"",checked:false,by:me});
     markDirty(nid);
   }
   const mi=document.getElementById("mainInput"); if(mi) mi.value="";
@@ -2322,13 +2295,14 @@ function editSheet(){
       ${isItem?`<button id="starBtn" aria-label="Star" style="border:none;background:transparent;font-size:24px;line-height:1;padding:2px;color:${editing.starred?'#E8A91D':'var(--muted2)'}">${editing.starred?'★':'☆'}</button>`:""}
     </div>
     <div style="display:flex;gap:6px;align-items:stretch">
-      <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:15px" />
+      <div class="qstep" style="height:46px;align-items:center;flex:none"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>
       <select id="weightSel" style="width:80px;flex:none;height:46px;padding:0 4px;border-radius:14px;border:2px solid var(--ink);background:var(--card);color:var(--ink);font-size:14px;font-weight:600">
         ${["","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"].map(w=>{ const hl=(w==="500g"||w==="1kg"); return `<option value="${w}" ${(editing.weight||"")===w?'selected':''}>${w?(hl?'★ '+w:w):'unit'}</option>`; }).join("")}
       </select>
-      <div class="qstep" style="height:46px;align-items:center"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>
+      <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:15px" />
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">${chipsHTML(editing.cat)}</div>
+    <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:14px">Category</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${chipsHTML(editing.cat)}</div>
     ${subChips}
     <div style="display:flex;gap:8px;margin-top:16px">
       <button id="secBtn" style="${btnSecStyle}">${secLabel}</button>
