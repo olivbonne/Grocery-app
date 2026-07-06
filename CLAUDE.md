@@ -21,16 +21,18 @@ No build step, no framework. Firebase Firestore for live household sync, Vercel 
 - **Auto-merge is authorized.** Once a change is verified (`/verify-app` + syntax), merge its
   PR into `main` without asking for confirmation, then restart `claude/review` from the
   updated `main` for the next change. (Standing user instruction — merging deploys to prod.)
-- **Model split (10-80-10):** plan and review on **Opus 4.8 at high effort**; run
-  execution on **Opus 4.8 at low effort** (Opus for the thinking, low-effort Opus for
-  the grind). Project settings default the main thread to `model: opus` /
-  `effortLevel: high`.
-- **Execution runs on low-effort Opus 4.8.** Reserve the main thread's high-effort budget
-  for planning and review; run the heavy code-editing (the "80%") at low effort — either
-  directly (drop effort for the grind, raise it back for review) or via a subagent when a
-  clean brief + isolation helps. Give any subagent a thorough brief and have it verify
-  before returning. (Standing note: the user has previously preferred direct
-  implementation in the main thread over spawning a subagent — don't spawn unless asked.)
+- **Model split (10-80-10):** plan and review on the **main thread (Opus 4.8, high
+  effort)**; run execution in a **spawned Opus 4.8 low-effort subagent** (Opus for the
+  thinking, low-effort Opus for the grind). Project settings default the main thread to
+  `model: opus` / `effortLevel: high`. See the RULE under **Workflow** below.
+- **RULE — execution runs in a spawned Opus 4.8 low-effort subagent.** Reserve the main
+  thread's high-effort budget for planning and review; hand the heavy code-editing (the
+  "80%") to a **subagent on `model: opus`, low effort**. This is the standing default, not
+  an "only when asked" — plan on the main thread, spawn the low-effort Opus subagent to do
+  the edits, then review its diff on the main thread. Give the subagent a thorough,
+  self-contained brief (files, exact changes, conventions, version bump, verification bar)
+  and have it **verify before returning** (`node --check` + `/verify-app`). Trivial one-line
+  touch-ups can stay in the main thread; anything larger goes to the subagent.
 - **Always end a task by reporting what each agent did** — which subagent made which
   changes, and what the main thread did (plan/review/ship).
 - Run `/verify-app` before opening or updating a PR. Use `/release` for the
