@@ -299,6 +299,15 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .hint { margin-top:12px; font-size:11px; color:var(--muted); text-align:center; }
   /* A19 AI-order note — visible in shop mode (unlike .hint) */
   .aihint { margin:0 0 10px; font-size:12px; font-weight:700; color:var(--muted); text-align:left; }
+  /* B7 AI aisle-order proposal (accept/revert) */
+  .aiprop { margin:0 0 12px; padding:12px 13px; border-radius:14px; border:1.5px solid var(--accent);
+    background:var(--card); display:flex; flex-direction:column; gap:10px; }
+  .aiprop-txt { font-size:12.5px; font-weight:600; color:var(--ink); line-height:1.45; }
+  .aiprop-txt b { font-weight:800; }
+  .aiprop-btns { display:flex; gap:8px; }
+  .aiprop-btns button { flex:1; padding:9px; border-radius:11px; font-weight:800; font-size:13px; }
+  .aiprop-keep { border:1.5px solid var(--line); background:transparent; color:var(--ink); }
+  .aiprop-apply { border:none; background:var(--accent); color:#fff; }
   .botbar { position:fixed; left:0; right:0; bottom:0; z-index:40; max-width:480px; margin:0 auto;
     padding:8px 14px calc(8px + env(safe-area-inset-bottom));
     background:linear-gradient(to top, var(--paper) 76%, transparent); }
@@ -445,7 +454,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.72";
+const APP_VERSION = "v0.73";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -676,15 +685,44 @@ function aiRecordCheck(cat){
   store[cat] = (store[cat]==null) ? rank : store[cat]*(1-A) + rank*A;
   try{ localStorage.setItem("ml_aiorder", JSON.stringify(aiOrder)); }catch(e){}
 }
+// B7: display ranks against the ACCEPTED order (aiApplied), never the live EMA —
+// so the list can't silently reshuffle mid-shop while learning keeps updating aiOrder.
+let aiApplied = {}; try{ aiApplied = JSON.parse(localStorage.getItem("ml_aiapplied")||"null") || {}; }catch(e){ aiApplied={}; }
+let aiDismiss = {}; try{ aiDismiss = JSON.parse(localStorage.getItem("ml_aidismiss")||"null") || {}; }catch(e){ aiDismiss={}; }
 function aiRank(it){
-  const store = aiOrder[aiStoreKey()] || {};
-  const s = store[it.cat];
-  // Map the learned check-order EMA (0..~8) onto aisleRank's ~1..99 scale so
-  // learned and not-yet-learned categories interleave sensibly. Unseen = pure location.
+  const store = aiApplied[aiStoreKey()];            // accepted order only; undefined = pure Location baseline
+  const s = store && store[it.cat];
+  // Map the accepted check-order (0..~8) onto aisleRank's ~1..99 scale so
+  // accepted and not-yet-accepted categories interleave sensibly. Unseen = pure location.
   return (s==null) ? aisleRank(it) : (s*11 + 1);
 }
 function byAI(a,b){ const ra=aiRank(a),rb=aiRank(b); if(ra!==rb) return ra-rb; return byAisle(a,b); }
 function aiSeenCount(){ return Object.keys(aiOrder[aiStoreKey()]||{}).length; }
+function aiSeq(map,key){ const s=map[key]||{}; return Object.keys(s).sort((a,b)=>s[a]-s[b]); }   // categories in learned/accepted order
+// B7: is there a freshly-learned order that reorders the current list vs what's shown, and not yet dismissed?
+function aiProposal(){
+  const key=aiStoreKey();
+  if(Object.keys(aiOrder[key]||{}).length < 2) return null;                         // need enough signal
+  const onList=[...new Set(state.items.filter(i=>!i.checked).map(i=>i.cat))];
+  const prop=aiSeq(aiOrder,key).filter(c=>onList.includes(c));
+  if(prop.length < 2) return null;                                                  // fewer than 2 learned cats on the list
+  const curL=onList.slice().sort((a,b)=>aiRank({cat:a,name:""})-aiRank({cat:b,name:""})).filter(c=>prop.includes(c));
+  const propKey=prop.join(">");
+  if(propKey===curL.join(">")) return null;                                         // already in the learned order → nothing to propose
+  if(aiDismiss[key]===propKey) return null;                                         // this exact proposal was dismissed
+  return { key, propKey };
+}
+function aiApplyProposal(){
+  const key=aiStoreKey();
+  aiApplied[key]=Object.assign({}, aiOrder[key]);                                   // snapshot the learned order as accepted
+  delete aiDismiss[key];
+  try{ localStorage.setItem("ml_aiapplied", JSON.stringify(aiApplied)); localStorage.setItem("ml_aidismiss", JSON.stringify(aiDismiss)); }catch(e){}
+  render();
+}
+function aiDismissProposal(){
+  const p=aiProposal(); if(p){ aiDismiss[p.key]=p.propKey; try{ localStorage.setItem("ml_aidismiss", JSON.stringify(aiDismiss)); }catch(e){} }
+  render();
+}
 applyTheme();
 let shopMode = false;
 function toggleShop(){ shopMode=!shopMode; if(shopMode) aiResetTrip(); localStorage.setItem("ml_shop", shopMode?"1":"0"); collapse.ba = !shopMode && collapse.ba; render(); }
@@ -1445,9 +1483,16 @@ function renderMain(){
   const sm = (disp==="cat" && (sortModeFor()==="location"||sortModeFor()==="ai")) ? "cat" : sortModeFor();   // Location & AI need flat display
   let bodyBlocks;
   if(disp==="cat"){ bodyBlocks = buildCatBlocks(sm==="alpha"); }                       // A–Z = plain alpha within each category
-  else if(sm==="ai"){ ensureLocCheck(); const unchecked=state.items.filter(i=>!i.checked).slice().sort(byAI);   // AI = learned per-store check order
-    const seen=aiSeenCount();
-    const note=`<div class="aihint">✨ AI order · ${seen>=3?`learned from your trips at ${esc((activeStore()||{}).name||"this store")}`:`starting from store layout — learns as you shop`}</div>`;
+  else if(sm==="ai"){ ensureLocCheck(); const unchecked=state.items.filter(i=>!i.checked).slice().sort(byAI);   // AI = accepted per-store check order
+    const applied=!!aiApplied[aiStoreKey()];
+    // B7: propose a freshly-learned order (accept/revert) only at trip start — never reshuffle mid-shop
+    const prop = (_aiTripCats.length===0) ? aiProposal() : null;
+    const note = prop
+      ? `<div class="aiprop">
+          <div class="aiprop-txt"><b>✨ New aisle order</b> — learned from the order you checked things off on recent trips. Apply it to this list?</div>
+          <div class="aiprop-btns"><button class="aiprop-keep" data-ai-keep>Keep current</button><button class="aiprop-apply" data-ai-apply>Apply</button></div>
+        </div>`
+      : `<div class="aihint">✨ AI order · ${applied?`following your saved aisle order${_aiTripCats.length?` · frozen for this trip`:``}`:`starting from store layout — learns as you shop`}</div>`;
     bodyBlocks = [ `<section class="cat">${note}${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
   else if(sm==="location"){ ensureLocCheck(); const useStore=locActive(); const cmp=useStore?byAisle:bySortKey;
     let unchecked=state.items.filter(i=>!i.checked); const n0=unchecked.length;
@@ -2099,6 +2144,8 @@ function wire(){
 
   const dsh=app.querySelector("#doneShop"); if(dsh) dsh.onclick=toggleShop;
   const ssh=app.querySelector("#startShop"); if(ssh) ssh.onclick=toggleShop;
+  const aiAp=app.querySelector("[data-ai-apply]"); if(aiAp) aiAp.onclick=aiApplyProposal;   // B7 accept the proposed aisle order
+  const aiKp=app.querySelector("[data-ai-keep]"); if(aiKp) aiKp.onclick=aiDismissProposal;   // B7 revert / keep current
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const ln=app.querySelector("#listName"); if(ln) ln.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>{ shopMode=false; optOpen=false; render(); };
