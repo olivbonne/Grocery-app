@@ -32,10 +32,15 @@ No build step, no framework. Firebase Firestore for live household sync, Vercel 
   This is the standing default, not an "only when asked" — plan on the main thread, spawn
   `executor` (via the Agent tool with `subagent_type: executor`) to do the edits, then
   review its diff on the main thread. Give it a thorough, self-contained brief (files,
-  exact edits with exact anchors, conventions, version bump, verification bar); it applies
-  the edits, **verifies before returning** (`node --check` + a headless smoke check), and
-  does **not** commit/push/PR — the main thread ships. Trivial one-line touch-ups can stay
-  in the main thread; anything larger goes to `executor`.
+  exact edits with exact anchors, conventions, version bump, self-check bar); it applies
+  the edits and runs a **cheap syntax self-check only** (`node --check` + sanity greps),
+  then hands the diff back. It does **not** commit/push/PR.
+- **RULE — verification runs on the main thread (Opus 4.8, high effort).** Behavioral
+  verification is *not* the low-effort executor's job. After the executor returns, the main
+  thread reviews the diff and runs the **authoritative** check itself — `/verify-app` +
+  the headless-Chromium smoke (and any change-specific browser assertions) — before
+  shipping. High effort is spent where regressions are caught, not on the grind. Trivial
+  one-line touch-ups can stay in the main thread; anything larger goes to `executor`.
 - **Always end a task by reporting what each agent did** — which subagent made which
   changes, and what the main thread did (plan/review/ship).
 - Run `/verify-app` before opening or updating a PR. Use `/release` for the
