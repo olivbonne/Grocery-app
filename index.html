@@ -113,7 +113,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     color:var(--ink); font-weight:700; font-size:12px; min-width:38px; }
   .swt.on{ background:var(--accent); border-color:var(--accent); color:#fff; }
   /* B3 recipe → list */
-  .rechint{ margin:6px 2px 0; font-size:12px; font-weight:600; color:var(--muted); line-height:1.4; }
+  .rechint{ margin:6px 2px 0; font-size:12px; font-weight:600; color:var(--muted); line-height:1.4;
+    display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
   .rechint b{ color:var(--ink); font-weight:800; }
   .servrow{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 12px; padding:10px 12px;
     border-radius:13px; background:var(--chip); }
@@ -468,10 +469,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     padding:6px 0; line-height:1; }
   .navstat-n { font-size:17px; font-weight:900; color:var(--accent); font-variant-numeric:tabular-nums; }
   .navstat-l { font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.2px; }
-  /* A20 cart bounce when a flying item lands; A23 cart lifts up-right + doubles when an item is received */
+  /* A20 cart bounce when a flying item lands; A24 cart lifts straight up + doubles when an item is received */
   @keyframes cartbounce { 0%{transform:scale(1)} 35%{transform:scale(1.12)} 70%{transform:scale(.97)} 100%{transform:scale(1)} }
   .cartpulse { animation:cartbounce .42s ease; }
-  @keyframes cartpop { 0%{transform:translate(0,0) scale(1)} 30%{transform:translate(5px,-12px) scale(2)} 62%{transform:translate(2px,-4px) scale(1.05)} 100%{transform:translate(0,0) scale(1)} }
+  @keyframes cartpop { 0%{transform:translate(0,0) scale(1)} 30%{transform:translate(0,-12px) scale(2)} 62%{transform:translate(0,-4px) scale(1.05)} 100%{transform:translate(0,0) scale(1)} }
   .cartpop { animation:cartpop .75s cubic-bezier(.34,1.56,.64,1); transform-origin:center; }
   /* A22 flying item → cart: a live clone of the checked tile arcs down into the cart */
   .tilefly { position:fixed; z-index:60; margin:0 !important; pointer-events:none; box-sizing:border-box;
@@ -500,7 +501,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.79";
+const APP_VERSION = "v0.80";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1723,6 +1724,7 @@ function renderMain(){
         </div>
       </header>
       <div class="addbar">
+        <button class="smartbtn" id="smartBtn" aria-label="Smart add" title="Smart add — turn a list or a whole recipe into items">✨</button>
         <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Add items to ${esc(state.name||'your list')}…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
         <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
       </div>
@@ -1752,6 +1754,7 @@ function renderMain(){
   ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:true})}
   ${optOpen?optionsSheet():""}
   ${listsOpen?listsSheet():""}
+  ${smartOpen?smartSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -1906,7 +1909,7 @@ function renderPlanPage(){
         <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
       </div>
       <div class="suggest" id="suggest"></div>
-      <div class="rechint">✨ Smart add reads a plain list <b>or</b> a whole recipe — paste one to scale &amp; add.</div>
+      ${!localStorage.getItem("ml_hint_rechint")?`<div class="rechint"><span>✨ Smart add reads a plain list <b>or</b> a whole recipe — paste one to scale &amp; add.</span><button class="iconmini" id="rechintX" aria-label="Dismiss">×</button></div>`:""}
       ${hasAny?`<div class="shopbar" style="margin-top:8px;background:var(--btn)"><span><span class="cartglyph">${CART_SVG}</span>At the store?</span><button id="startShop">Start shopping</button></div>`:""}
     </div>
     <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
@@ -1962,6 +1965,7 @@ function wirePlanPage(){
   if(pcab){ pcab.onpointerdown=e=>e.preventDefault(); pcab.onclick=()=>{ const v=app.querySelector("#catInput").value; addEntries(v,catEntry); draftCatText=""; render(); const x=app.querySelector("#catInput"); if(x){ x.focus(); grow(x); } }; }
   const acp=app.querySelector("#addCatPlan"); if(acp) acp.onclick=addCategory;
   const hcx=app.querySelector("#hintChooseX"); if(hcx) hcx.onclick=()=>{ localStorage.setItem("ml_hint_choose","1"); render(); };
+  const rhx=app.querySelector("#rechintX"); if(rhx) rhx.onclick=()=>{ localStorage.setItem("ml_hint_rechint","1"); render(); };
   // B4 restock suggestions
   app.querySelectorAll("[data-pred-add]").forEach(b=>b.onclick=()=>predictAdd(b.dataset.predAdd));
   app.querySelectorAll("[data-pred-rm]").forEach(b=>b.onclick=()=>predictDismiss(b.dataset.predRm));
@@ -1973,20 +1977,7 @@ function wirePlanPage(){
   const mHide=app.querySelector("[data-merge-hide]"); if(mHide) mHide.onclick=mergeHideAll;
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const ss=app.querySelector("#startShop"); if(ss) ss.onclick=toggleShop;
-  // A18 ✨ Smart add sheet
-  const sBg=app.querySelector("#smartBg"); if(sBg) sBg.onclick=e=>{ if(e.target===sBg){ smartOpen=false; render(); } };
-  const sOk=app.querySelector("#smartOk"); if(sOk) sOk.onclick=()=>{ smartOpen=false; smartError=""; render(); };
-  const sCancel=app.querySelector("#smartCancel"); if(sCancel) sCancel.onclick=()=>{ smartOpen=false; smartItems=[]; smartEdit=null; smartServings=null; render(); };
-  const sConfirm=app.querySelector("#smartConfirm"); if(sConfirm) sConfirm.onclick=commitSmartItems;
-  app.querySelectorAll("[data-recipe-serv]").forEach(b=>{ b.onclick=()=>recipeScale(+b.dataset.recipeServ); });   // B3 servings scaler
-  // B3 📖 recipe sheet
-  app.querySelectorAll("[data-smart-rm]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartRm; smartItems.splice(i,1); if(smartEdit===i) smartEdit=null; else if(smartEdit>i) smartEdit--; if(!smartItems.length){ smartOpen=false; smartItems=[]; smartEdit=null; } render(); }; });
-  // B1 edit a parsed chip's category / qty / weight before committing
-  app.querySelectorAll("[data-smart-edit]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartEdit; smartEdit = (smartEdit===i ? null : i); render(); }; });
-  app.querySelectorAll("[data-smart-q]").forEach(b=>{ b.onclick=()=>{ const [i,d]=b.dataset.smartQ.split("|"); const it=smartItems[+i]; if(it){ it.qty=Math.max(1,Math.min(999,(it.qty||1)+(+d))); render(); } }; });
-  app.querySelectorAll("[data-smart-cat]").forEach(b=>{ b.onclick=()=>{ const [i,cid]=b.dataset.smartCat.split("|"); const it=smartItems[+i]; if(it){ if(it.category!==cid) it.sub=""; it.category=cid; render(); } }; });
-  app.querySelectorAll("[data-smart-sub]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartSub.split("|"); const it=smartItems[+p[0]]; if(it){ it.sub=(it.sub===(p[1]||"")?"":(p[1]||"")); render(); } }; });
-  app.querySelectorAll("[data-smart-wt]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartWt.split("|"); const i=+p[0], w=p[1]||""; const it=smartItems[i]; if(it){ it.weight = (it.weight===w ? "" : w); render(); } }; });
+  wireSmartSheet();
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireOptions();
@@ -2077,6 +2068,19 @@ function recipeScale(delta){
   const f=t/smartServings.src;
   for(const it of smartItems){ const b=(it.baseQty!=null?it.baseQty:it.qty); it.qty=Math.max(1,Math.round(b*f)); }
   render();
+}
+function wireSmartSheet(){
+  const sBg=app.querySelector("#smartBg"); if(sBg) sBg.onclick=e=>{ if(e.target===sBg){ smartOpen=false; render(); } };
+  const sOk=app.querySelector("#smartOk"); if(sOk) sOk.onclick=()=>{ smartOpen=false; smartError=""; render(); };
+  const sCancel=app.querySelector("#smartCancel"); if(sCancel) sCancel.onclick=()=>{ smartOpen=false; smartItems=[]; smartEdit=null; smartServings=null; render(); };
+  const sConfirm=app.querySelector("#smartConfirm"); if(sConfirm) sConfirm.onclick=commitSmartItems;
+  app.querySelectorAll("[data-recipe-serv]").forEach(b=>{ b.onclick=()=>recipeScale(+b.dataset.recipeServ); });
+  app.querySelectorAll("[data-smart-rm]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartRm; smartItems.splice(i,1); if(smartEdit===i) smartEdit=null; else if(smartEdit>i) smartEdit--; if(!smartItems.length){ smartOpen=false; smartItems=[]; smartEdit=null; } render(); }; });
+  app.querySelectorAll("[data-smart-edit]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartEdit; smartEdit = (smartEdit===i ? null : i); render(); }; });
+  app.querySelectorAll("[data-smart-q]").forEach(b=>{ b.onclick=()=>{ const [i,d]=b.dataset.smartQ.split("|"); const it=smartItems[+i]; if(it){ it.qty=Math.max(1,Math.min(999,(it.qty||1)+(+d))); render(); } }; });
+  app.querySelectorAll("[data-smart-cat]").forEach(b=>{ b.onclick=()=>{ const [i,cid]=b.dataset.smartCat.split("|"); const it=smartItems[+i]; if(it){ if(it.category!==cid) it.sub=""; it.category=cid; render(); } }; });
+  app.querySelectorAll("[data-smart-sub]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartSub.split("|"); const it=smartItems[+p[0]]; if(it){ it.sub=(it.sub===(p[1]||"")?"":(p[1]||"")); render(); } }; });
+  app.querySelectorAll("[data-smart-wt]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartWt.split("|"); const i=+p[0], w=p[1]||""; const it=smartItems[i]; if(it){ it.weight = (it.weight===w ? "" : w); render(); } }; });
 }
 function smartSheet(){
   let inner;
@@ -2337,6 +2341,7 @@ function wireAddBar(){
 }
 function wire(){
   wireAddBar();
+  wireSmartSheet();
   const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>i.cat===c.id)).map(c=>c.id);
     const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);
