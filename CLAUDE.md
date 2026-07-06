@@ -22,17 +22,20 @@ No build step, no framework. Firebase Firestore for live household sync, Vercel 
   PR into `main` without asking for confirmation, then restart `claude/review` from the
   updated `main` for the next change. (Standing user instruction — merging deploys to prod.)
 - **Model split (10-80-10):** plan and review on the **main thread (Opus 4.8, high
-  effort)**; run execution in a **spawned Opus 4.8 low-effort subagent** (Opus for the
-  thinking, low-effort Opus for the grind). Project settings default the main thread to
+  effort)**; run execution in the **`executor` subagent (Opus 4.8, low effort)** (Opus for
+  the thinking, low-effort Opus for the grind). Project settings default the main thread to
   `model: opus` / `effortLevel: high`. See the RULE under **Workflow** below.
-- **RULE — execution runs in a spawned Opus 4.8 low-effort subagent.** Reserve the main
-  thread's high-effort budget for planning and review; hand the heavy code-editing (the
-  "80%") to a **subagent on `model: opus`, low effort**. This is the standing default, not
-  an "only when asked" — plan on the main thread, spawn the low-effort Opus subagent to do
-  the edits, then review its diff on the main thread. Give the subagent a thorough,
-  self-contained brief (files, exact changes, conventions, version bump, verification bar)
-  and have it **verify before returning** (`node --check` + `/verify-app`). Trivial one-line
-  touch-ups can stay in the main thread; anything larger goes to the subagent.
+- **RULE — execution runs in the `executor` subagent.** Reserve the main thread's
+  high-effort budget for planning and review; hand the heavy code-editing (the "80%") to
+  the **`executor`** agent (`.claude/agents/executor.md` — pinned to `model: opus`,
+  `effort: low`, so the effort level is guaranteed, not left to the Agent-tool defaults).
+  This is the standing default, not an "only when asked" — plan on the main thread, spawn
+  `executor` (via the Agent tool with `subagent_type: executor`) to do the edits, then
+  review its diff on the main thread. Give it a thorough, self-contained brief (files,
+  exact edits with exact anchors, conventions, version bump, verification bar); it applies
+  the edits, **verifies before returning** (`node --check` + a headless smoke check), and
+  does **not** commit/push/PR — the main thread ships. Trivial one-line touch-ups can stay
+  in the main thread; anything larger goes to `executor`.
 - **Always end a task by reporting what each agent did** — which subagent made which
   changes, and what the main thread did (plan/review/ship).
 - Run `/verify-app` before opening or updating a PR. Use `/release` for the
