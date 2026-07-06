@@ -171,6 +171,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     display:flex; flex-direction:column; max-height:42vh; padding:6px 14px 10px; box-sizing:border-box; }
   .checkedbarhead { flex:none; border:none; background:transparent; color:var(--muted); font-weight:800; font-size:13px;
     display:flex; align-items:center; justify-content:space-between; padding:4px 2px; }
+  .checkedbarhead .chk-in { display:inline-flex; align-items:center; gap:7px; color:var(--ink); }
+  .checkedbarhead .chk-tick { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px;
+    border-radius:50%; background:#2F9E44; color:#fff; font-size:11px; font-weight:900; line-height:1; }
   .checkedscroll { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:2px 0 8px; }
   .checkedbar .sweepbanner { flex:none; margin-top:0; }
   .listrows { display:flex; flex-direction:column; gap:8px; max-height:46vh; overflow:auto; }
@@ -443,6 +446,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     border:2px solid var(--muted2); display:inline-flex; align-items:center; justify-content:center;
     font-size:14px; font-weight:900; line-height:1; color:transparent; box-sizing:border-box; }
   .pill.done .pcheck { border-color:var(--done-edge); background:var(--done-edge); color:#fff; }
+  .pill.picking .pcheck { border-color:var(--done-edge); background:var(--done-edge); color:#fff; transform:scale(1.08); transition:transform .12s ease; }
   /* A20 redesigned shopping-mode banner (mirrors the bottom cart) */
   .shopbar2 { gap:12px; padding:12px 14px; }
   .shopbar2 .sb-cart { flex:none; width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.22);
@@ -464,11 +468,13 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     padding:6px 0; line-height:1; }
   .navstat-n { font-size:17px; font-weight:900; color:var(--accent); font-variant-numeric:tabular-nums; }
   .navstat-l { font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.2px; }
-  /* A20 cart bounce when a flying item lands; A22 cart doubles when an item is received */
+  /* A20 cart bounce when a flying item lands; A23 cart lifts up-right + doubles, with a sparkle burst */
   @keyframes cartbounce { 0%{transform:scale(1)} 35%{transform:scale(1.12)} 70%{transform:scale(.97)} 100%{transform:scale(1)} }
   .cartpulse { animation:cartbounce .42s ease; }
-  @keyframes cartpop { 0%{transform:scale(1)} 30%{transform:scale(2)} 62%{transform:scale(.9)} 100%{transform:scale(1)} }
-  .cartpop { animation:cartpop .5s cubic-bezier(.34,1.56,.64,1); transform-origin:center; }
+  @keyframes cartpop { 0%{transform:translate(0,0) scale(1)} 30%{transform:translate(5px,-12px) scale(2)} 62%{transform:translate(2px,-4px) scale(1.05)} 100%{transform:translate(0,0) scale(1)} }
+  .cartpop { animation:cartpop .75s cubic-bezier(.34,1.56,.64,1); transform-origin:center; }
+  .sparkle { position:fixed; z-index:61; width:3px; height:12px; border-radius:2px; background:#7ED957;
+    box-shadow:0 0 6px rgba(126,217,87,.85); pointer-events:none; will-change:transform,opacity; }
   /* A22 flying item → cart: a live clone of the checked tile arcs down into the cart */
   .tilefly { position:fixed; z-index:60; margin:0 !important; pointer-events:none; box-sizing:border-box;
     transform-origin:center; box-shadow:0 12px 26px rgba(0,0,0,.30); will-change:transform,opacity; }
@@ -496,7 +502,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.77";
+const APP_VERSION = "v0.78";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -905,17 +911,20 @@ function toggleShop(){ shopMode=!shopMode; if(shopMode) aiResetTrip(); localStor
 function optMode(){ return view==="lists" ? "lists" : (shopMode ? "shop" : "plan"); }
 let _prevPlanned=null, _prevChecked=null;
 function cartBadgeHTML(iconHTML){
-  const checked = state.items.filter(i=>i.checked).length;
-  const checkedChanged = _prevChecked!==null && _prevChecked!==checked;
-  _prevChecked = checked;
-  return `<span class="cartwrap" id="cartWrap">${iconHTML}${checked>0?`<span class="cartbadge${checkedChanged?' justpop':''}">${checked}</span>`:""}</span>`;
+  return `<span class="cartwrap" id="cartWrap">${iconHTML}</span>`;
 }
-// A22 bottom-nav "N left" stat (sits beside the cart) — pops when it changes
+// A23 bottom-nav stats flanking the cart: "N to buy" (left) and "N in cart" (right)
 function navStatHTML(){
   const planned = state.items.filter(i=>!i.checked).length;
   const changed = _prevPlanned!==null && _prevPlanned!==planned;
   _prevPlanned = planned;
-  return `<div class="navstat"><span class="navstat-n${changed?' justpop':''}">${planned}</span><span class="navstat-l">left</span></div>`;
+  return `<div class="navstat"><span class="navstat-n${changed?' justpop':''}">${planned}</span><span class="navstat-l">to buy</span></div>`;
+}
+function navCartStatHTML(){
+  const inCart = state.items.filter(i=>i.checked).length;
+  const changed = _prevChecked!==null && _prevChecked!==inCart;
+  _prevChecked = inCart;
+  return `<div class="navstat navstat-cart"><span class="navstat-n${changed?' justpop':''}">${inCart}</span><span class="navstat-l">in cart</span></div>`;
 }
 // A22 shared glyphs + bottom-nav builder (Lists left · "N left" | divider | Cart, grouped right)
 const CART_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>';
@@ -927,6 +936,7 @@ function bottomNav(o){
       ${navStatHTML()}
       <span class="navdiv" aria-hidden="true"></span>
       <button class="navbtn ${o.cartActive?'active':''}" id="${o.cartId}">${cartBadgeHTML(CART_SVG)}<span>Cart</span></button>
+      ${navCartStatHTML()}
     </div>
   </nav>`;
 }
@@ -955,7 +965,8 @@ function flyItemToCart(srcEl, it){
 function launchTileFlyer(clone, P0, P2){
   document.body.appendChild(clone);
   // control point stays between the tile and the cart — a gentle sideways bow, never rising above the start
-  const P1 = { x:P0.x + (P2.x-P0.x)*0.18, y:P0.y + (P2.y-P0.y)*0.62 };
+  const dx=P2.x-P0.x, dy=P2.y-P0.y;
+  const P1 = { x:P2.x + Math.max(30, Math.abs(dx)*0.22), y:P0.y + dy*0.28 };   // bow out to the right, then sweep into the cart
   const N = 20, frames = [];
   for(let k=0;k<=N;k++){ const t=k/N, mt=1-t;
     const x = mt*mt*P0.x + 2*mt*t*P1.x + t*t*P2.x;
@@ -964,19 +975,36 @@ function launchTileFlyer(clone, P0, P2){
     const op = t>0.8 ? Math.max(0,(1-t)/0.2) : 1;
     frames.push({ transform:`translate(${(x-P0.x).toFixed(1)}px,${(y-P0.y).toFixed(1)}px) scale(${sc.toFixed(3)})`, opacity:op });
   }
-  const anim = clone.animate(frames, { duration:560, easing:"cubic-bezier(.4,0,.2,1)" });
+  const anim = clone.animate(frames, { duration:728, easing:"cubic-bezier(.4,0,.2,1)" });  // 30% slower
   let fired = false;
   const done = ()=>{ if(fired) return; fired = true; clone.remove(); bumpCart(); };
   anim.onfinish = done; anim.oncancel = done;
-  setTimeout(done, 720);   // safety net if WAAPI events don't fire
+  setTimeout(done, 940);   // safety net if WAAPI events don't fire
 }
 function bumpCart(){
   const cart = document.querySelector("#cartWrap");
-  if(cart){ cart.classList.remove("cartpop"); void cart.offsetWidth; cart.classList.add("cartpop"); setTimeout(()=>cart.classList.remove("cartpop"), 520); }
+  if(cart){ cart.classList.remove("cartpop"); void cart.offsetWidth; cart.classList.add("cartpop"); setTimeout(()=>cart.classList.remove("cartpop"), 800); spawnSparkles(cart); }
   document.querySelectorAll(".sb-incart").forEach(el=>{
     el.classList.remove("cartpulse"); void el.offsetWidth; el.classList.add("cartpulse");
     setTimeout(()=>el.classList.remove("cartpulse"), 460);
   });
+}
+// A23 green sparkle burst radiating from the cart when an item lands
+function spawnSparkles(cartEl){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const c=cartEl.getBoundingClientRect(), cx=c.left+c.width/2, cy=c.top+c.height/2, N=6;
+  for(let i=0;i<N;i++){
+    const ang=(-90 + (i-(N-1)/2)*32) * Math.PI/180;   // fan upward/outward
+    const sp=document.createElement("div"); sp.className="sparkle";
+    sp.style.left=cx+"px"; sp.style.top=cy+"px"; document.body.appendChild(sp);
+    const d=24+Math.random()*10, rot=ang+Math.PI/2;
+    sp.animate([
+      { transform:`translate(-50%,-50%) rotate(${rot}rad) translateY(0) scale(.4)`, opacity:0 },
+      { transform:`translate(-50%,-50%) rotate(${rot}rad) translateY(-${(d*0.55).toFixed(1)}px) scale(1)`, opacity:1, offset:.4 },
+      { transform:`translate(-50%,-50%) rotate(${rot}rad) translateY(-${d.toFixed(1)}px) scale(.3)`, opacity:0 }
+    ], { duration:680, easing:"cubic-bezier(.2,.7,.3,1)" });
+    setTimeout(()=>sp.remove(), 720);
+  }
 }
 let sorts = {}; try{ sorts = JSON.parse(localStorage.getItem("ml_sorts")||"null") || {}; }catch(e){ sorts={}; }
 const _legacySort = localStorage.getItem("ml_sort")||"cat";
@@ -1697,7 +1725,7 @@ function renderMain(){
   else { const unchecked=state.items.filter(i=>!i.checked).slice().sort(bySortKey); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
   const listBody = bodyBlocks.join("");
   const checkedBar = done>0 ? `<div class="checkedbar" id="checkedbar">
-      <button class="checkedbarhead" id="checkedHead"><span>✓ ${done} checked</span><span>${checkedOpen?"▾":"▸"}</span></button>
+      <button class="checkedbarhead" id="checkedHead"><span class="chk-in"><span class="chk-tick">✓</span>${done} in cart</span><span>${checkedOpen?"▾":"▸"}</span></button>
       ${checkedOpen?`<div class="checkedscroll">${pillsMixed(checkedItems.slice().sort((a,b)=>(b.checkedAt||0)-(a.checkedAt||0)))}</div>`:""}
       <button id="sweepBtn" class="sweepbtn sweepbanner">Clear ${done} checked → Buy again</button>
     </div>` : "";
@@ -2343,7 +2371,13 @@ function wire(){
       if(longFired){ quickEdit=null; editing={kind:"item", ...it}; render(); return; }
       if(e.target.closest("[data-qmore]")){ quickEdit = (quickEdit===id ? null : id); render(); return; }
       quickEdit=null;
-      if(shopMode && !it.checked) flyItemToCart(b, it);   // A20 fly a mini-item into the cart on check
+      if(shopMode && !it.checked){                        // A23 show the tick first, pause, then fly into the cart
+        if(b.classList.contains("picking")) return;
+        const circle=b.querySelector(".pcheck"); if(circle) circle.textContent="✓";
+        b.classList.add("picking");
+        setTimeout(()=>{ flyItemToCart(b, it); toggleItem(id); }, 260);
+        return;
+      }
       toggleItem(id); }; });
 
   /* category header: tap = collapse, hold = edit/reorder/remove */
