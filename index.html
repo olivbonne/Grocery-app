@@ -308,6 +308,25 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .aiprop-btns button { flex:1; padding:9px; border-radius:11px; font-weight:800; font-size:13px; }
   .aiprop-keep { border:1.5px solid var(--line); background:transparent; color:var(--ink); }
   .aiprop-apply { border:none; background:var(--accent); color:#fff; }
+  /* B4 restock prediction card */
+  .predict { margin:0 0 14px; padding:12px 13px; border-radius:16px; border:1.5px solid var(--line);
+    background:var(--card); display:flex; flex-direction:column; gap:9px; }
+  .predict-top { display:flex; align-items:center; justify-content:space-between; }
+  .predict-ttl { font-size:14px; font-weight:800; color:var(--ink); }
+  .predict-why { border:none; background:transparent; color:var(--accent); font-size:12px; font-weight:800; padding:2px 4px; }
+  .predict-whytxt { font-size:11.5px; font-weight:600; color:var(--muted); line-height:1.5; }
+  .predict-list { display:flex; flex-wrap:wrap; gap:7px; }
+  .predchip { display:inline-flex; align-items:stretch; border-radius:999px; overflow:hidden; border:1.5px solid var(--accent); }
+  .predchip-add { border:none; background:transparent; color:var(--ink); font-weight:700; font-size:13px;
+    padding:8px 4px 8px 12px; display:inline-flex; align-items:center; gap:6px; }
+  .predchip-plus { color:var(--accent); font-weight:900; font-size:15px; }
+  .predchip-cad { color:var(--muted2); font-weight:700; font-size:11px; }
+  .predchip-x { border:none; background:transparent; color:var(--muted2); font-size:15px; font-weight:800; padding:0 10px 0 6px; }
+  .predict-hide { align-self:flex-start; border:none; background:transparent; color:var(--muted); font-size:12px; font-weight:700; padding:2px 2px; }
+  .daychips { display:flex; gap:5px; }
+  .daychip { flex:1; padding:8px 0; border-radius:10px; border:1.5px solid var(--line); background:var(--card);
+    color:var(--ink); font-weight:700; font-size:12px; }
+  .daychip.on { background:var(--btn); border-color:var(--btn); color:#fff; }
   .botbar { position:fixed; left:0; right:0; bottom:0; z-index:40; max-width:480px; margin:0 auto;
     padding:8px 14px calc(8px + env(safe-area-inset-bottom));
     background:linear-gradient(to top, var(--paper) 76%, transparent); }
@@ -454,7 +473,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.73";
+const APP_VERSION = "v0.74";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -722,6 +741,86 @@ function aiApplyProposal(){
 function aiDismissProposal(){
   const p=aiProposal(); if(p){ aiDismiss[p.key]=p.propKey; try{ localStorage.setItem("ml_aidismiss", JSON.stringify(aiDismiss)); }catch(e){} }
   render();
+}
+
+/* B4 predictive replenishment — on-device. Logs a purchase whenever items are
+   swept (bought), estimates each item's typical interval, and on the user's
+   chosen cadence proposes restocking items that are due. Adds only on tap;
+   global on/off; explainable; nothing leaves the device. */
+const DAY_MS = 86400000;
+let purch = {}; try{ purch = JSON.parse(localStorage.getItem("ml_purch")||"null") || {}; }catch(e){ purch={}; }
+let predictCfg = { on:true, freq:"weekly", day:1 };                 // day: 0=Sun..6=Sat (JS getDay); default Mon
+try{ const p=JSON.parse(localStorage.getItem("ml_predict")||"null"); if(p&&typeof p==="object") predictCfg=Object.assign(predictCfg,p); }catch(e){}
+let predictSeen = {}; try{ predictSeen = JSON.parse(localStorage.getItem("ml_predict_seen")||"null") || {}; }catch(e){ predictSeen={}; }
+let predictWhyOpen = false;
+function savePredictCfg(){ try{ localStorage.setItem("ml_predict", JSON.stringify(predictCfg)); }catch(e){} }
+function savePredictSeen(){ try{ localStorage.setItem("ml_predict_seen", JSON.stringify(predictSeen)); }catch(e){} }
+function recordPurchase(items){
+  const now=Date.now();
+  for(const it of items){ const nm=(it.name||"").trim(); if(!nm) continue; const key=nm.toLowerCase()+"|"+it.cat;
+    const rec = purch[key] || (purch[key]={name:nm,cat:it.cat,qty:it.qty||1,weight:it.weight||"",sub:it.sub||"",ts:[]});
+    rec.name=nm; rec.cat=it.cat; if(it.qty) rec.qty=it.qty; if(it.weight!=null) rec.weight=it.weight; if(it.sub!=null) rec.sub=it.sub;
+    if(!rec.ts.length || now-rec.ts[rec.ts.length-1] > 6*3600000) rec.ts.push(now);   // ignore same-day re-sweeps
+    rec.ts = rec.ts.slice(-8);
+  }
+  try{ localStorage.setItem("ml_purch", JSON.stringify(purch)); }catch(e){}
+}
+function _median(a){ if(!a.length) return 0; const s=a.slice().sort((x,y)=>x-y); const m=Math.floor(s.length/2); return s.length%2?s[m]:(s[m-1]+s[m])/2; }
+function cadenceOf(rec){ const ts=(rec&&rec.ts)||[]; if(ts.length<2) return 0; const g=[]; for(let i=1;i<ts.length;i++) g.push(ts[i]-ts[i-1]); return _median(g); }
+function predictPeriod(d){ d=d||new Date();
+  if(predictCfg.freq==="monthly") return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+  const t=new Date(d.getFullYear(),d.getMonth(),d.getDate()); const days=Math.floor(t.getTime()/DAY_MS);
+  return "W"+Math.floor((days+3)/7);                                 // Monday-aligned week bucket
+}
+function predictStarted(d){ d=d||new Date();
+  if(predictCfg.freq==="monthly") return true;                       // any day in the month
+  const idx=(d.getDay()+6)%7, chosen=((predictCfg.day+6)%7);         // Mon=0..Sun=6
+  return idx>=chosen;                                                // on/after the chosen weekday, same week
+}
+function predictDue(){
+  const now=Date.now(), out=[], period=predictPeriod();
+  const dz=(predictSeen[period]&&predictSeen[period].dismissed)||[];
+  for(const key in purch){ const rec=purch[key]; const cad=cadenceOf(rec); if(!cad) continue;
+    const days=cad/DAY_MS; if(days<1.5 || days>75) continue;         // ignore implausible cadences
+    const last=rec.ts[rec.ts.length-1], elapsed=now-last;
+    if(elapsed < cad*0.85) continue;                                 // not due yet
+    if(dz.includes(key)) continue;                                   // dismissed this period
+    if(state.items.some(i=>!i.checked && (i.name||"").toLowerCase()===rec.name.toLowerCase() && i.cat===rec.cat)) continue;   // already on list
+    out.push({ key, name:rec.name, cat:rec.cat, qty:rec.qty||1, weight:rec.weight||"", sub:rec.sub||"", cadenceDays:Math.max(1,Math.round(days)), last, over:elapsed/cad });
+  }
+  out.sort((a,b)=>b.over-a.over);
+  return out.slice(0,6);
+}
+function predictActive(){
+  if(!predictCfg.on || !predictStarted()) return null;
+  const period=predictPeriod();
+  if(predictSeen[period] && predictSeen[period].hidden) return null; // whole batch dismissed this period
+  const due=predictDue(); return due.length ? due : null;
+}
+function predictAdd(key){ const rec=purch[key]; if(!rec) return;
+  if(!state.items.some(i=>!i.checked && (i.name||"").toLowerCase()===rec.name.toLowerCase() && i.cat===rec.cat)){
+    state.items.push({id:uid(),name:rec.name,qty:rec.qty||1,cat:rec.cat,weight:rec.weight||"",sub:rec.sub||"",checked:false,by:me}); playPlan(true); }
+  save(); predictDismiss(key);
+}
+function predictDismiss(key){ const period=predictPeriod();
+  const s=predictSeen[period]||(predictSeen[period]={dismissed:[],hidden:false});
+  if(!s.dismissed.includes(key)) s.dismissed.push(key); savePredictSeen(); render();
+}
+function predictHideAll(){ const period=predictPeriod();
+  const s=predictSeen[period]||(predictSeen[period]={dismissed:[],hidden:false}); s.hidden=true; savePredictSeen(); render();
+}
+function predictCardHTML(){
+  const due=predictActive(); if(!due) return "";
+  const chips=due.map(d=>`<div class="predchip">
+      <button class="predchip-add" data-pred-add="${esc(d.key)}"><span class="predchip-plus">+</span>${esc(cap(d.name))}<span class="predchip-cad">~${d.cadenceDays}d</span></button>
+      <button class="predchip-x" data-pred-rm="${esc(d.key)}" aria-label="Dismiss">×</button>
+    </div>`).join("");
+  return `<div class="predict">
+    <div class="predict-top"><span class="predict-ttl">🔁 Time to restock?</span><button class="predict-why" data-pred-why>${predictWhyOpen?'Hide':'Why?'}</button></div>
+    ${predictWhyOpen?`<div class="predict-whytxt">Based on how often you've bought these before — estimated on your device, nothing leaves your phone. Adds only when you tap. Change the schedule or turn this off in <b>Settings › Predictions</b>.</div>`:""}
+    <div class="predict-list">${chips}</div>
+    <button class="predict-hide" data-pred-hide>Not now</button>
+  </div>`;
 }
 applyTheme();
 let shopMode = false;
@@ -1092,6 +1191,7 @@ function moveToBuyAgain(entries){
 }
 function sweep(){ const checked=state.items.filter(i=>i.checked); if(!checked.length) return;
   const prev=snapState();
+  recordPurchase(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||""})));   // B4 log purchase cadence
   moveToBuyAgain(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||""})));
   state.items = state.items.filter(i=>!i.checked);
   save(); render(); showUndo(prev, checked.length+" cleared → Buy again"); }
@@ -1717,6 +1817,7 @@ function renderPlanPage(){
       ${hasAny?`<div class="shopbar" style="margin-top:8px;background:var(--btn)"><span>🛒 At the store?</span><button id="startShop">Start shopping</button></div>`:""}
     </div>
     <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
+      ${predictCardHTML()}
       ${(hasAny && !localStorage.getItem("ml_hint_choose")) ? `<div class="subrow" style="justify-content:space-between;gap:8px;margin-bottom:8px">
         <span style="font-size:12px;color:var(--muted);font-weight:600">Plan your shop here — solid items are on the list, faded ones were bought before. Tap to add or remove.</span>
         <button class="iconmini" id="hintChooseX" aria-label="Dismiss">×</button></div>` : ""}
@@ -1771,6 +1872,11 @@ function wirePlanPage(){
   if(pcab){ pcab.onpointerdown=e=>e.preventDefault(); pcab.onclick=()=>{ const v=app.querySelector("#catInput").value; addEntries(v,catEntry); draftCatText=""; render(); const x=app.querySelector("#catInput"); if(x){ x.focus(); grow(x); } }; }
   const acp=app.querySelector("#addCatPlan"); if(acp) acp.onclick=addCategory;
   const hcx=app.querySelector("#hintChooseX"); if(hcx) hcx.onclick=()=>{ localStorage.setItem("ml_hint_choose","1"); render(); };
+  // B4 restock suggestions
+  app.querySelectorAll("[data-pred-add]").forEach(b=>b.onclick=()=>predictAdd(b.dataset.predAdd));
+  app.querySelectorAll("[data-pred-rm]").forEach(b=>b.onclick=()=>predictDismiss(b.dataset.predRm));
+  const pHide=app.querySelector("[data-pred-hide]"); if(pHide) pHide.onclick=predictHideAll;
+  const pWhy=app.querySelector("[data-pred-why]"); if(pWhy) pWhy.onclick=()=>{ predictWhyOpen=!predictWhyOpen; render(); };
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const ss=app.querySelector("#startShop"); if(ss) ss.onclick=toggleShop;
   // A18 ✨ Smart add sheet
@@ -1809,6 +1915,9 @@ function wireOptions(){
   const ozm=app.querySelector("#optZoomMinus"); if(ozm) ozm.onclick=()=>setDensity(dens()-0.1);
   const ozp=app.querySelector("#optZoomPlus"); if(ozp) ozp.onclick=()=>setDensity(dens()+0.1);
   app.querySelectorAll("[data-opt-sound]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optSound==="1"; if(soundOn!==want) toggleSound(); });
+  app.querySelectorAll("[data-pred-on]").forEach(b=>b.onclick=()=>{ predictCfg.on=(b.dataset.predOn==="1"); savePredictCfg(); render(); });   // B4 predictions
+  app.querySelectorAll("[data-pred-freq]").forEach(b=>b.onclick=()=>{ predictCfg.freq=b.dataset.predFreq; savePredictCfg(); render(); });
+  app.querySelectorAll("[data-pred-day]").forEach(b=>b.onclick=()=>{ predictCfg.day=+b.dataset.predDay; savePredictCfg(); render(); });
   app.querySelectorAll("[data-opt-sort]").forEach(b=>b.onclick=()=>setSort(b.dataset.optSort));
   app.querySelectorAll("[data-opt-display]").forEach(b=>b.onclick=()=>{ if(displayFor()!==b.dataset.optDisplay) setDisplay(b.dataset.optDisplay); });
   app.querySelectorAll("[data-opt-useloc]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optUseloc==="1"; if(useLoc!==want){ useLoc=want; localStorage.setItem("ml_useloc", want?"1":"0"); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(want) ensureLocCheck(); render(); } });
@@ -1934,6 +2043,11 @@ function optionsSheet(){
     ${(storeSel==="home" || STORES.some(s=>s.id===storeSel)) ? `<button class="optaction" id="optSetStore" style="margin-top:2px">📍 Set ${esc((storeById(storeSel)||{}).name||"store")} location here</button>` : ""}
     <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${esc(storeLabel())}</div>` : ""}` : ""}
     ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
+    ${(view!=="lists") ? `${row("Predictions", `<div class="seg"><button data-pred-on="1" class="${predictCfg.on?'on':''}">On</button><button data-pred-on="0" class="${!predictCfg.on?'on':''}">Off</button></div>`)}
+    ${predictCfg.on ? `${row("Remind me", `<div class="seg"><button data-pred-freq="weekly" class="${predictCfg.freq==='weekly'?'on':''}">Weekly</button><button data-pred-freq="monthly" class="${predictCfg.freq==='monthly'?'on':''}">Monthly</button></div>`)}
+    ${predictCfg.freq==='weekly' ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px"><span class="optlabel">Day</span>
+      <div class="daychips">${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d,i)=>{ const dv=(i+1)%7; return `<button class="daychip ${predictCfg.day===dv?'on':''}" data-pred-day="${dv}">${d}</button>`; }).join("")}</div></div>` : ""}
+    <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">Suggests restocking items on your schedule, from how often you buy them — on your device. Adds only when you tap.</div>` : ""}` : ""}
     ${state.members.length ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
       <span class="optlabel">Users</span>
       <div class="userlist">${state.members.map(m=>`<button class="userchip ${m===me?'on':''}" data-switch-user="${esc(m)}">${esc(m)}${m===me?`<span class="ucur">you</span>`:""}</button>`).join("")}</div>
