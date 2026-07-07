@@ -501,7 +501,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.80";
+const APP_VERSION = "v0.82";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -535,10 +535,10 @@ const DICT = {
   fruit:["banana","apple","orange","berries","berry","strawberr","blueberr","raspberr","kiwi","grape","mango","melon","watermelon","pineapple","peach","pear","plum","lemon","lime","avocado","cherry","papaya","dragonfruit","lychee","longan"],
   vegetable:["ginger","broccoli","brocollini","broccolini","choysum","choy sum","bok choy","pak choi","kailan","kangkung","tomato","spinach","mushroom","pumpkin","squash","green bean","bean sprout","taugeh","cabbage","chilli","chili","carrot","potato","onion","garlic","shallot","lettuce","cucumber","capsicum","zucchini","corn","celery","kale","leek","eggplant","cauliflower","radish","beetroot","asparagus","coriander","cilantro","basil","spring onion","scallion","lemongrass"],
   fresh:["milk","egg","yogurt","yoghurt","cheese","parmesan","butter","bread","cream","juice","hummus","margarine","croissant","bagel","baguette"],
-  bulk:["floss","sparkling water","water","salt","sugar","flour","rice","pasta","spaghetti","oil","vinegar","shampoo","conditioner","soap","toothpaste","toothbrush","tissue","toilet paper","paper towel","kitchen towel","detergent","sponge","cereal","oats","coffee","tea","honey","peanut butter","jam","ketchup","mayo","mustard","stock","canned","chickpea","lentil","battery","foil","popcorn","chocolate chip"],
+  bulk:["sparkling water","water","salt","sugar","flour","rice","pasta","spaghetti","oil","vinegar","tissue","toilet paper","paper towel","kitchen towel","detergent","sponge","cereal","oats","coffee","tea","honey","peanut butter","jam","ketchup","mayo","mustard","stock","canned","chickpea","lentil","battery","foil","popcorn","chocolate chip"],
   asian:["kimchi","ramen","noodle","noodles","udon","soba","soy sauce","miso","gochujang","gochugaru","nori","seaweed","dumpling","gyoza","wonton","fish sauce","oyster sauce","sesame oil","sesame","curry paste","tofu","tempeh","mirin","dashi","wasabi","sriracha","sambal","laksa","pho","jin ramen","shin ramen"],
   alcohol:["wine","beer","vodka","whisky","whiskey","gin","rum","soju","sake","cider","champagne","prosecco","tequila"],
-  health:["vitamin","panadol","paracetamol","ibuprofen","medicine","bandage","band-aid","plaster","supplement","probiotic","sunscreen","cough","lozenge","melatonin","fish oil","magnesium"],
+  health:["shampoo","conditioner","soap","toothpaste","toothbrush","floss","vitamin","panadol","paracetamol","ibuprofen","medicine","bandage","band-aid","plaster","supplement","probiotic","sunscreen","cough","lozenge","melatonin","fish oil","magnesium"],
 };
 /* A16 remember the full entry (category AND subcategory), not just the category,
    so re-typing a cleared item puts it back exactly where it lived before */
@@ -1845,20 +1845,18 @@ function renderPlanPage(){
     const html = all.map(({it,isBa})=> isBa?planOutlineChip(it,CAT(it.cat)):planFilledPill(it,CAT(it.cat)) ).join("");
     planBody = all.length ? `<section class="cat"><div class="pills">${html}</div></section>` : "";
   } else if(displayFor()==="cat"){
-    const alpha = sortModeFor()==="alpha";                                   // A–Z sorts items within each category by name
+    const alpha = sortModeFor()==="alpha";                                   // A–Z sorts ALL items in each category by name (ignoring subcategory)
     const byName = (a,b)=>(a.name||"").localeCompare(b.name||"");
     planBody = catList().map(cat=>{
       let inList = state.items.filter(i=>i.cat===cat.id);
-      if(alpha) inList = inList.sort(byName);
       let ba = state.buyAgain.filter(e=>e.cat===cat.id && !inList.some(i=>i.name.toLowerCase()===e.name.toLowerCase()));
-      if(alpha) ba = ba.sort(byName);
       const total = inList.length+ba.length;
       if(!total && !cat.custom) return "";
       const collapsed = (collapse.planCats||[]).includes(cat.id);
       const catAdd = catEntry===cat.id ? `<div class="catadd">
           <div class="inwrap"><textarea id="catInput" rows="1" placeholder="Add to ${esc(cat.label)}" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="Clear">×</button></div>
           <button id="catAddBtn" style="background:${cat.color}">+</button></div>` : "";
-      const merged = [ ...inList.map(i=>({it:i,isBa:false})), ...ba.map(e=>({it:e,isBa:true})) ].sort((A,B)=>bySortKey(A.it,B.it));
+      const merged = [ ...inList.map(i=>({it:i,isBa:false})), ...ba.map(e=>({it:e,isBa:true})) ].sort((A,B)=> alpha ? byName(A.it,B.it) : bySortKey(A.it,B.it));
       const pills = merged.map(({it,isBa})=> isBa?planOutlineChip(it,cat):planFilledPill(it,cat)).join("");
       return `<section class="cat"><div class="chead"><button class="lbl catheadchip" data-planc="${cat.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;width:100%"><span class="cemoji">${catIcon(cat,16)}</span><span class="cname" style="color:#fff">${esc(cat.label)}</span><span class="cnum" style="color:#fff;opacity:.85">${inList.length}/${total}${collapsed?' ▸':''}</span></button>
         <button class="plus" data-add="${cat.id}" style="${catEntry===cat.id?`background:${cat.color};color:#fff`:''}">${catEntry===cat.id?'×':'+'}</button></div>${catAdd}
