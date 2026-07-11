@@ -501,7 +501,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.91";
+const APP_VERSION = "v0.92";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -758,14 +758,14 @@ let aiApplied = {}; try{ aiApplied = JSON.parse(localStorage.getItem("ml_aiappli
 let aiDismiss = {}; try{ aiDismiss = JSON.parse(localStorage.getItem("ml_aidismiss")||"null") || {}; }catch(e){ aiDismiss={}; }
 function aiItemPos(it){ const ap=aiItemsApplied[aiStoreKey()]; if(!ap) return null; const v=ap[aiItemKey(it.name,it.cat)]; return (v==null)?null:v; }
 function aiRank(it){
-  const p = aiItemPos(it); if(p!=null) return p;    // learned ITEM position (primary — item-level order)
   const ap = aiItemsApplied[aiStoreKey()];
-  if(ap){ const sib = state.items.filter(x=>x.cat===it.cat && aiItemKey(x.name,x.cat)!==aiItemKey(it.name,it.cat))
-            .map(x=>ap[aiItemKey(x.name,x.cat)]).filter(v=>v!=null);
-    if(sib.length) return sib.reduce((a,b)=>a+b,0)/sib.length + 0.5; }   // unseen item → sit with its known siblings
-  return aisleRank(it);                                                  // cold → store layout
+  if(!ap || !Object.keys(ap).length) return catIndexOf(it.cat);         // reset/cold → CATEGORY order until it learns
+  const p = aiItemPos(it); if(p!=null) return p;                        // learned ITEM position (item-level order)
+  const catPos = Object.keys(ap).filter(k=>k.slice(k.lastIndexOf("|")+1)===it.cat).map(k=>ap[k]);
+  if(catPos.length) return catPos.reduce((a,b)=>a+b,0)/catPos.length + 0.5;   // unseen item → near its learned category-mates
+  return 900 + catIndexOf(it.cat);                                      // brand-new category → after learned ones, in category order
 }
-function byAI(a,b){ const ra=aiRank(a),rb=aiRank(b); if(ra!==rb) return ra-rb; return byAisle(a,b); }
+function byAI(a,b){ const ra=aiRank(a),rb=aiRank(b); if(ra!==rb) return ra-rb; return bySortKey(a,b); }
 function aiSeenCount(){ return Object.keys(aiOrder[aiStoreKey()]||{}).length; }
 function aiSeq(map,key){ const s=map[key]||{}; return Object.keys(s).sort((a,b)=>s[a]-s[b]); }   // categories in learned/accepted order
 // B7: is there a freshly-learned order that reorders the current list vs what's shown, and not yet dismissed?
@@ -784,7 +784,7 @@ function aiProposal(){
 function aiResetStore(){ const key=aiStoreKey();
   delete aiOrder[key]; delete aiApplied[key]; delete aiDismiss[key]; delete aiItems[key]; delete aiItemsApplied[key]; _aiTripCats=[]; _aiTripItems=[];
   try{ localStorage.setItem("ml_aiorder",JSON.stringify(aiOrder)); localStorage.setItem("ml_aiapplied",JSON.stringify(aiApplied)); localStorage.setItem("ml_aidismiss",JSON.stringify(aiDismiss)); localStorage.setItem("ml_aiitems",JSON.stringify(aiItems)); localStorage.setItem("ml_aiitemsapplied",JSON.stringify(aiItemsApplied)); }catch(e){}
-  showToast("AI reset — sorting by category"); setSort("cat"); }   // clear learning AND switch back to category order
+  showToast("AI reset — category order until it relearns"); render(); }   // stay in AI sort; cold AI = category order
 function aiApplyProposal(){
   const key=aiStoreKey();
   aiApplied[key]=Object.assign({}, aiOrder[key]);                                   // snapshot the learned order as accepted
@@ -1758,7 +1758,7 @@ function renderMain(){
   else if(sm==="ai"){ ensureLocCheck(); const unchecked=state.items.filter(i=>!i.checked).slice().sort(byAI);   // AI = accepted per-store check order
     // A25 item-level order, frozen at trip start (aiResetTrip) — learns per item, applies next trip, never reshuffles mid-shop
     const seenItems = Object.keys(aiItemsApplied[aiStoreKey()]||{}).length;
-    const note = `<div class="aihint">✨ AI order · ${seenItems?`following your learned item route · frozen for this trip`:`starting from store layout — learns each item as you check it`}</div>`;
+    const note = `<div class="aihint">✨ AI order · ${seenItems?`following your learned item route · frozen for this trip`:`sorted by category — learns each item as you check it`}</div>`;
     bodyBlocks = [ `<section class="cat">${note}${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
   else if(sm==="location"){ ensureLocCheck(); const useStore=locActive(); const cmp=useStore?byAisle:bySortKey;
     let unchecked=state.items.filter(i=>!i.checked); const n0=unchecked.length;
@@ -2311,7 +2311,7 @@ function optionsSheet(){
       <div class="seg segfull">${(displayFor()==="flat" && shopMode && aiSortOK())?`<button data-opt-sort="ai" class="${curSort==='ai'?'on':''}">✨ AI</button>`:""}${displayFor()==="flat"?`<button data-opt-sort="location" class="${curSort==='location'?'on':''}">Location</button>`:""}<button data-opt-sort="cat" class="${curSort==='cat'?'on':''}">Subcategory</button><button data-opt-sort="alpha" class="${curSort==='alpha'?'on':''}">A–Z</button></div>
     </div>
     ${(displayFor()==="flat" && curSort==="ai") ? `<div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">✨ AI learns the order you check things off at ${esc((activeStore()||{}).name||"each store")} and reorders your next trip. Pick the store below so it learns per shop.</div>` : ""}
-    ${(displayFor()==="flat" && curSort==="ai" && aiSeenCount()>0) ? `<button class="optaction" id="optResetAI" style="margin:-2px 0 10px">♻︎ Reset AI — sort by category</button>` : ""}
+    ${(displayFor()==="flat" && curSort==="ai" && aiSeenCount()>0) ? `<button class="optaction" id="optResetAI" style="margin:-2px 0 10px">♻︎ Reset AI — restart from category</button>` : ""}
     ${(displayFor()==="flat" && (curSort==="location"||curSort==="ai")) ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
       <span class="optlabel">Store</span>
       <div class="storegrid">${[{id:"auto",name:"Auto-detect"},{id:"home",name:"🏠 Home"},...STORES.filter(s=>!storeOverride(s.id).hidden).map(s=>storeById(s.id)),...(state.stores||[]).filter(s=>!storeOverride(s.id).hidden),{id:"other",name:"Other"}].map(s=>`<button data-opt-store="${s.id}" class="storechip ${storeSel===s.id?'on':''}">${esc(s.name)}</button>`).join("")}<button data-store-add class="storechip" style="border-style:dashed">＋ Add store</button></div>
