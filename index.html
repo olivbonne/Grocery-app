@@ -501,7 +501,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.84";
+const APP_VERSION = "v0.85";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1065,7 +1065,7 @@ function switchList(code){ listsOpen=false; if(code===listCode){ render(); retur
   listCode=code; localStorage.setItem(LS_LASTLIST, code);
   LS = { me:"ml_me", collapse:"ml_collapse_"+code, cache:"ml_cache_"+code };
   try{ collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}'); }catch(e){ collapse={cats:[],ba:false}; }
-  state = { items:[], buyAgain:[], members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99} };
+  state = { items:[], buyAgain:[], baTomb:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99} };
   try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state=c; }catch(e){}
   ensureCats(); editing=null; quickEdit=null; view="detail"; shopMode=false;
   if(typeof history!=="undefined" && history.replaceState){ try{ history.replaceState(null, "", location.pathname+"?list="+code); }catch(e){} }
@@ -1100,7 +1100,7 @@ function playPlan(add){ if(!soundOn) return;
   } catch(e){} }
 let lastPop=null;
 
-let state = { items:[], buyAgain:[], members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99} };
+let state = { items:[], buyAgain:[], baTomb:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99} };
 rememberList(listCode);
 try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state = c; } catch(e){}
 let toast=null, toastAction=null, undoSnap=null, _toastT=null, catEntry=null, editing=null, configured=false;
@@ -1218,9 +1218,12 @@ function subscribe(){
     fromCache = snap.metadata.fromCache;
     if(!syncing && !fromCache) dirtyIds.clear();
     if(snap.exists() && !snap.metadata.hasPendingWrites){ const d = snap.data();
-      state = { items:d.items||[], buyAgain:d.buyAgain||[], members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99} };
+      const mg = baMerge(d.buyAgain||[], d.baTomb||{}, state.buyAgain||[], state.baTomb||{});   // A24 conflict-free Buy-again
+      state = { items:d.items||[], buyAgain:mg.list, baTomb:mg.tomb, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99} };
       if(!state.name){ const ln=(getLists().find(l=>l.code===listCode)||{}).name; if(ln){ state.name=ln; save(); } }
-      if(state.name) rememberList(listCode, state.name); }
+      if(state.name) rememberList(listCode, state.name);
+      // converge: if our merged view holds Buy-again the server was missing, write it back once
+      if(baSig(mg.list, mg.tomb) !== baSig(d.buyAgain||[], d.baTomb||{})) save(); }
     else if(snap.exists() && snap.metadata.hasPendingWrites){ /* keep local optimistic state */ }
     ensureCats();
     try { localStorage.setItem(LS.cache, JSON.stringify(state)); } catch(e){}
@@ -1296,11 +1299,38 @@ function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){
   if(!it.checked){ lastPop=id; playTick(true); if(navigator.vibrate) navigator.vibrate(8); setTimeout(()=>{ if(lastPop===id) lastPop=null; },350); }
   else { playTick(false); if(navigator.vibrate) navigator.vibrate(5); }
   it.checked=!it.checked; if(it.checked){ it.checkedBy=me; it.checkedAt=Date.now(); if(shopMode) aiRecordCheck(it.cat); } markDirty(id); save(); render(); } }
+/* A24 shared Buy-again is conflict-free across devices. Each entry carries a `ts`
+   (last-touched) and deletions are recorded as tombstones in `state.baTomb`
+   ({key: ts}). On every server snapshot we LWW-merge remote+local instead of
+   letting the whole-doc write clobber the other person's additions — so items
+   checked off on one phone can't silently vanish from another. Cap 250. */
+const BA_CAP = 250;
+function baKey(e){ return (e.name||"").toLowerCase()+"|"+e.cat; }
+function baForget(name,cat){ (state.baTomb||(state.baTomb={}))[(name||"").toLowerCase()+"|"+cat] = Date.now(); }
+function baMerge(listA, tombA, listB, tombB){
+  const tomb = Object.assign({}, tombA||{});
+  for(const k in (tombB||{})) tomb[k] = Math.max(tomb[k]||0, tombB[k]);
+  const best = {};
+  for(const e of (listA||[]).concat(listB||[])){ const k=baKey(e), ts=e.ts||0;
+    if(!best[k] || ts >= (best[k].ts||0)) best[k] = Object.assign({}, e, {ts}); }
+  const out = [];
+  for(const k in best){ const e=best[k]; if((tomb[k]||0) > (e.ts||0)) continue; out.push(e); }
+  out.sort((x,y)=>(y.ts||0)-(x.ts||0));
+  for(const k in tomb){ if(best[k] && (tomb[k]||0) <= (best[k].ts||0)) delete tomb[k]; }   // re-added after delete → drop stale tombstone
+  const cutoff = Date.now() - 120*864e5;                                                    // prune tombstones older than 120 days
+  for(const k in tomb){ if(tomb[k] < cutoff) delete tomb[k]; }
+  return { list: out.slice(0,BA_CAP), tomb };
+}
+function baSig(list, tomb){
+  return (list||[]).map(e=>baKey(e)+"@"+(e.ts||0)).sort().join(";")+"#"+Object.keys(tomb||{}).sort().map(k=>k+"@"+tomb[k]).join(";");
+}
 function moveToBuyAgain(entries){
-  for(const e of entries){ const k=e.name.toLowerCase()+"|"+e.cat;
-    state.buyAgain = state.buyAgain.filter(x=>(x.name.toLowerCase()+"|"+x.cat)!==k);
-    state.buyAgain.unshift({name:e.name,cat:e.cat,qty:e.qty||1,weight:e.weight||"",sub:e.sub||""}); }
-  state.buyAgain = state.buyAgain.slice(0,80);
+  state.baTomb = state.baTomb || {};
+  for(const e of entries){ const k=baKey(e);
+    state.buyAgain = state.buyAgain.filter(x=>baKey(x)!==k);
+    delete state.baTomb[k];
+    state.buyAgain.unshift({name:e.name,cat:e.cat,qty:e.qty||1,weight:e.weight||"",sub:e.sub||"",ts:Date.now()}); }
+  state.buyAgain = state.buyAgain.slice(0,BA_CAP);
 }
 function sweep(){ const checked=state.items.filter(i=>i.checked); if(!checked.length) return;
   const prev=snapState();
@@ -1327,10 +1357,15 @@ function deleteItemEditing(){ const prev=snapState(); const nm=editing.name; sta
 
 /* buy-again edit */
 function saveBA(){ const nm=(editing.name||"").trim(); if(!nm) return; const cat=editing.cat; const qty=Math.max(1,editing.qty||1);
+  state.baTomb = state.baTomb || {};
+  const newK=nm.toLowerCase()+"|"+cat;
   state.buyAgain = state.buyAgain.filter(x=>!(x.name===editing.origName && x.cat===editing.origCat));
-  if(!state.buyAgain.some(x=>x.name.toLowerCase()===nm.toLowerCase() && x.cat===cat)) state.buyAgain.unshift({name:nm,cat,qty,weight:editing.weight||"",sub:editing.sub||""});
+  if(((editing.origName||"").toLowerCase()+"|"+editing.origCat)!==newK) baForget(editing.origName, editing.origCat);   // renamed → forget the old key
+  delete state.baTomb[newK];
+  if(!state.buyAgain.some(x=>baKey(x)===newK)) state.buyAgain.unshift({name:nm,cat,qty,weight:editing.weight||"",sub:editing.sub||"",ts:Date.now()});
   editing=null; save(); render(); }
-function removeBAfromSheet(){ state.buyAgain = state.buyAgain.filter(x=>!(x.name===editing.origName && x.cat===editing.origCat));
+function removeBAfromSheet(){ baForget(editing.origName, editing.origCat);
+  state.buyAgain = state.buyAgain.filter(x=>!(x.name===editing.origName && x.cat===editing.origCat));
   editing=null; save(); render(); }
 function restoreEditingToList(){ const nm=(editing.name||"").trim()||editing.origName; const cat=editing.cat; const qty=Math.max(1,editing.qty||1);
   state.buyAgain = state.buyAgain.filter(x=>!(x.name===editing.origName && x.cat===editing.origCat));
@@ -1939,8 +1974,10 @@ function renderPlanPage(){
   ${toast?`<div class="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
 function planRemove(id){ const it=state.items.find(i=>i.id===id); if(!it) return; playPlan(false);
+  state.baTomb = state.baTomb || {};
   if(!state.buyAgain.some(b=>b.name.toLowerCase()===it.name.toLowerCase() && b.cat===it.cat)){
-    state.buyAgain.push({name:it.name,cat:it.cat,qty:it.qty||1,weight:it.weight||"",sub:it.sub||""}); }
+    delete state.baTomb[baKey(it)];
+    state.buyAgain.push({name:it.name,cat:it.cat,qty:it.qty||1,weight:it.weight||"",sub:it.sub||"",ts:Date.now()}); }
   state.items = state.items.filter(i=>i.id!==id); save(); render(); }
 function wirePlanPage(){
   wireAddBar();
@@ -2412,7 +2449,7 @@ function wire(){
     b.onpointerup=()=>{ pressCancel();
       if(longFired){ const en=state.buyAgain.find(x=>x.name===name && x.cat===cat); editing={kind:"ba", name, cat, qty:(en?en.qty||1:1), weight:(en?en.weight||"":""), sub:(en?en.sub||"":""), origName:name, origCat:cat}; render(); }
       else { restore(name,cat); } }; });
-  const cba=app.querySelector("#clearBA"); if(cba) cba.onclick=()=>{ const prev=snapState(); state.buyAgain=[]; save(); render(); showUndo(prev,"Buy-again cleared"); };
+  const cba=app.querySelector("#clearBA"); if(cba) cba.onclick=()=>{ const prev=snapState(); const now=Date.now(); state.baTomb=state.baTomb||{}; state.buyAgain.forEach(e=>{ state.baTomb[baKey(e)]=now; }); state.buyAgain=[]; save(); render(); showUndo(prev,"Buy-again cleared"); };
 
   const dsh=app.querySelector("#doneShop"); if(dsh) dsh.onclick=toggleShop;
   const ssh=app.querySelector("#startShop"); if(ssh) ssh.onclick=toggleShop;
@@ -2471,7 +2508,7 @@ function wireEditSheet(){
       const persistPos=()=>{ state.baMeta={label:editing.label||"Buy again", emoji:editing.img?"":(editing.emoji||"↩"), img:editing.img||"", pos:editing.pos}; save(); };
       const bu=app.querySelector("#baUp"); if(bu) bu.onclick=()=>{ editing.pos=Math.max(0,(Math.min(editing.pos|0,shown))-1); persistPos(); render(); };
       const bd=app.querySelector("#baDown"); if(bd) bd.onclick=()=>{ editing.pos=Math.min(shown,(Math.min(editing.pos|0,shown))+1); persistPos(); render(); };
-      const bdel=app.querySelector("#baDeleteHist"); if(bdel) bdel.onclick=()=>{ const prev=snapState(); state.buyAgain=[]; editing=null; save(); render(); showUndo(prev,"Buy-again history cleared"); };
+      const bdel=app.querySelector("#baDeleteHist"); if(bdel) bdel.onclick=()=>{ const prev=snapState(); const now=Date.now(); state.baTomb=state.baTomb||{}; state.buyAgain.forEach(e=>{ state.baTomb[baKey(e)]=now; }); state.buyAgain=[]; editing=null; save(); render(); showUndo(prev,"Buy-again history cleared"); };
       const bsv=app.querySelector("#baCatSave"); if(bsv) bsv.onclick=()=>{ state.baMeta={label:(editing.label||"").trim()||"Buy again", emoji:editing.img?"":(editing.emoji||"↩"), img:editing.img||"", pos:editing.pos|0}; rememberList(listCode, state.name); editing=null; save(); render(); };
     } else {
       const en=app.querySelector("#editName"); if(en) en.oninput=e=>editing.name=e.target.value;
