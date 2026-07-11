@@ -501,7 +501,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.88";
+const APP_VERSION = "v0.89";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -593,8 +593,12 @@ function distM(a,b){ const R=6371000, toR=x=>x*Math.PI/180;
 /* A16 Home is a real, rememberable place: it can save a GPS location and be auto-detected,
    but it has no aisles — being at Home always sorts by category. */
 const HOME_STORE = { id:"home", name:"🏠 Home" };
-function storeById(id){ if(id==="home") return HOME_STORE; return STORES.find(s=>s.id===id) || (state.stores||[]).find(s=>s.id===id) || null; }
+function storeOverride(id){ return (state.storeMeta||{})[id] || {}; }   // {name?, hidden?} for built-in stores
+function storeById(id){ if(id==="home") return HOME_STORE;
+  const s = STORES.find(x=>x.id===id) || (state.stores||[]).find(x=>x.id===id); if(!s) return null;
+  const ov=storeOverride(id); return ov.name ? {...s, name:ov.name} : s; }
 function isCustomStore(id){ return (state.stores||[]).some(s=>s.id===id); }
+function isRealStore(id){ return STORES.some(s=>s.id===id) || isCustomStore(id); }   // a pickable store (not auto/home/other)
 function storeCoord(s){ if(!s) return null; if(storeLocs[s.id]) return storeLocs[s.id]; return (s.lat!=null)?{lat:s.lat,lng:s.lng}:null; }
 // Which store's layout is in effect (manual pick wins, else GPS-detected, else none).
 function activeStore(){ if(storeSel!=="auto") return storeById(storeSel); if(useLoc && locState.nearId) return storeById(locState.nearId); return null; }
@@ -722,7 +726,7 @@ function byAisle(a,b){ const ra=aisleRank(a),rb=aisleRank(b); if(ra!==rb) return
 let aiOrder = {}; try{ aiOrder = JSON.parse(localStorage.getItem("ml_aiorder")||"null") || {}; }catch(e){ aiOrder={}; }
 let _aiTripCats = [];   // distinct categories checked so far this shopping trip, in order
 function aiStoreKey(){ const s=activeStore(); if(s&&s.id) return s.id; return storeSel||"default"; }
-function aiSortOK(){ return storeSel!=="home" && storeSel!=="other"; }   // no AI learning/sort at Home or "Other"
+function aiSortOK(){ if(storeSel==="home"||storeSel==="other") return false; const s=activeStore(); return !(s && s.id==="home"); }   // no AI at Home (incl. auto-detected) or "Other" — category default there
 function aiResetTrip(){ _aiTripCats = []; }
 function aiRecordCheck(cat){
   if(!cat || !aiSortOK() || _aiTripCats.includes(cat)) return;   // skip at Home/Other; only first time each category is reached this trip
@@ -1035,6 +1039,7 @@ function duplicateListCode(code){
     items:(src.items||[]).map(i=>({...i, id:uid(), checked:false, checkedBy:null})),
     buyAgain:(src.buyAgain||[]).map(b=>({...b})),
     stores:(src.stores||[]).map(s=>({...s})),
+    storeMeta:src.storeMeta?{...src.storeMeta}:{},
     members:(me?[me]:[]),
     categories:src.categories?JSON.parse(JSON.stringify(src.categories)):null,
     name:newName,
@@ -1067,7 +1072,7 @@ function switchList(code){ listsOpen=false; if(code===listCode){ render(); retur
   listCode=code; localStorage.setItem(LS_LASTLIST, code);
   LS = { me:"ml_me", collapse:"ml_collapse_"+code, cache:"ml_cache_"+code };
   try{ collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}'); }catch(e){ collapse={cats:[],ba:false}; }
-  state = { items:[], buyAgain:[], baTomb:{}, stores:[], members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99} };
+  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99} };
   try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state=c; }catch(e){}
   ensureCats(); editing=null; quickEdit=null; view="detail"; shopMode=false;
   if(typeof history!=="undefined" && history.replaceState){ try{ history.replaceState(null, "", location.pathname+"?list="+code); }catch(e){} }
@@ -1102,7 +1107,7 @@ function playPlan(add){ if(!soundOn) return;
   } catch(e){} }
 let lastPop=null;
 
-let state = { items:[], buyAgain:[], baTomb:{}, stores:[], members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99} };
+let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99} };
 rememberList(listCode);
 try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state = c; } catch(e){}
 let toast=null, toastAction=null, undoSnap=null, _toastT=null, catEntry=null, editing=null, configured=false;
@@ -1221,7 +1226,7 @@ function subscribe(){
     if(!syncing && !fromCache) dirtyIds.clear();
     if(snap.exists() && !snap.metadata.hasPendingWrites){ const d = snap.data();
       const mg = baMerge(d.buyAgain||[], d.baTomb||{}, state.buyAgain||[], state.baTomb||{});   // A24 conflict-free Buy-again
-      state = { items:d.items||[], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99} };
+      state = { items:d.items||[], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99} };
       if(!state.name){ const ln=(getLists().find(l=>l.code===listCode)||{}).name; if(ln){ state.name=ln; save(); } }
       if(state.name) rememberList(listCode, state.name);
       // converge: if our merged view holds Buy-again the server was missing, write it back once
@@ -2060,8 +2065,13 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-useloc]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optUseloc==="1"; if(useLoc!==want){ useLoc=want; localStorage.setItem("ml_useloc", want?"1":"0"); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(want) ensureLocCheck(); render(); } });
   app.querySelectorAll("[data-opt-store]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optStore; if(storeSel!==v){ storeSel=v; localStorage.setItem("ml_store", v); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(v==="auto") ensureLocCheck(); render(); } });
   const sadd=app.querySelector("[data-store-add]"); if(sadd) sadd.onclick=()=>{ const id="c"+uid().slice(0,6); state.stores=state.stores||[]; state.stores.push({id,name:"New store",aisles:[]}); storeSel=id; localStorage.setItem("ml_store", id); save(); render(); };
-  const snm=app.querySelector("#storeName"); if(snm) snm.onchange=()=>{ const s=(state.stores||[]).find(x=>x.id===storeSel); if(s){ s.name=(snm.value||"").trim()||"Store"; save(); render(); } };
-  const srm=app.querySelector("#storeRemove"); if(srm) srm.onclick=()=>{ state.stores=(state.stores||[]).filter(x=>x.id!==storeSel); storeSel="auto"; localStorage.setItem("ml_store","auto"); save(); render(); };
+  const snm=app.querySelector("#storeName"); if(snm) snm.onchange=()=>{ const nm=(snm.value||"").trim()||"Store"; const cs=(state.stores||[]).find(x=>x.id===storeSel);
+    if(cs){ cs.name=nm; } else { state.storeMeta=state.storeMeta||{}; state.storeMeta[storeSel]=Object.assign({}, state.storeMeta[storeSel], {name:nm}); }
+    save(); render(); };
+  const srm=app.querySelector("#storeRemove"); if(srm) srm.onclick=()=>{
+    if((state.stores||[]).some(x=>x.id===storeSel)){ state.stores=(state.stores||[]).filter(x=>x.id!==storeSel); }   // custom → delete
+    else { state.storeMeta=state.storeMeta||{}; state.storeMeta[storeSel]=Object.assign({}, state.storeMeta[storeSel], {hidden:true}); }   // built-in → hide
+    storeSel="auto"; localStorage.setItem("ml_store","auto"); save(); render(); };
   const oss=app.querySelector("#optSetStore"); if(oss) oss.onclick=setStoreHere;
   const rai=app.querySelector("#optResetAI"); if(rai) rai.onclick=aiResetStore;
   app.querySelectorAll("[data-opt-style]").forEach(b=>b.onclick=()=>{ if(styl()!==b.dataset.optStyle) setStyle(b.dataset.optStyle); });
@@ -2289,8 +2299,8 @@ function optionsSheet(){
     ${(displayFor()==="flat" && curSort==="ai" && aiSeenCount()>0) ? `<button class="optaction" id="optResetAI" style="margin:-2px 0 10px">♻︎ Reset AI order for ${esc((activeStore()||{}).name||"this store")}</button>` : ""}
     ${(displayFor()==="flat" && (curSort==="location"||curSort==="ai")) ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
       <span class="optlabel">Store</span>
-      <div class="storegrid">${[{id:"auto",name:"Auto-detect"},{id:"home",name:"🏠 Home"},...STORES,...(state.stores||[]),{id:"other",name:"Other"}].map(s=>`<button data-opt-store="${s.id}" class="storechip ${storeSel===s.id?'on':''}">${esc(s.name)}</button>`).join("")}<button data-store-add class="storechip" style="border-style:dashed">＋ Add store</button></div>
-      ${isCustomStore(storeSel) ? `<div class="optrow" style="gap:7px"><input id="storeName" value="${esc((storeById(storeSel)||{}).name||"")}" placeholder="Store name" style="flex:1;min-width:0;padding:10px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:14px;font-weight:600" /><button id="storeRemove" style="padding:10px 12px;border-radius:12px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:13px">Remove</button></div>` : ""}
+      <div class="storegrid">${[{id:"auto",name:"Auto-detect"},{id:"home",name:"🏠 Home"},...STORES.filter(s=>!storeOverride(s.id).hidden).map(s=>storeById(s.id)),...(state.stores||[]),{id:"other",name:"Other"}].map(s=>`<button data-opt-store="${s.id}" class="storechip ${storeSel===s.id?'on':''}">${esc(s.name)}</button>`).join("")}<button data-store-add class="storechip" style="border-style:dashed">＋ Add store</button></div>
+      ${isRealStore(storeSel) ? `<div class="optrow" style="gap:7px"><input id="storeName" value="${esc((storeById(storeSel)||{}).name||"")}" placeholder="Store name" style="flex:1;min-width:0;padding:10px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:14px;font-weight:600" /><button id="storeRemove" style="padding:10px 12px;border-radius:12px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:13px">${isCustomStore(storeSel)?'Remove':'Hide'}</button></div>` : ""}
     </div>
     ${row("Location", `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">On</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">Off</button></div>`)}
     ${(storeSel==="home" || STORES.some(s=>s.id===storeSel)) ? `<button class="optaction" id="optSetStore" style="margin-top:2px">📍 Set ${esc((storeById(storeSel)||{}).name||"store")} location here</button>` : ""}
