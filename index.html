@@ -501,7 +501,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.89";
+const APP_VERSION = "v0.90";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -725,29 +725,45 @@ function byAisle(a,b){ const ra=aisleRank(a),rb=aisleRank(b); if(ra!==rb) return
    baseline) and diverges as data accumulates. Purely local; no LLM call. */
 let aiOrder = {}; try{ aiOrder = JSON.parse(localStorage.getItem("ml_aiorder")||"null") || {}; }catch(e){ aiOrder={}; }
 let _aiTripCats = [];   // distinct categories checked so far this shopping trip, in order
+/* A25 item-level AI — learns the order you check individual ITEMS (not just
+   categories) at each store, so the walk reorders item-by-item. Frozen per trip
+   at shop-entry (aiResetTrip) so it can't reshuffle mid-shop; applies next trip. */
+let _aiTripItems = [];
+let aiItems = {}; try{ aiItems = JSON.parse(localStorage.getItem("ml_aiitems")||"null") || {}; }catch(e){ aiItems={}; }
+let aiItemsApplied = {}; try{ aiItemsApplied = JSON.parse(localStorage.getItem("ml_aiitemsapplied")||"null") || {}; }catch(e){ aiItemsApplied={}; }
+function aiItemKey(name,cat){ return (name||"").toLowerCase().trim()+"|"+cat; }
 function aiStoreKey(){ const s=activeStore(); if(s&&s.id) return s.id; return storeSel||"default"; }
 function aiSortOK(){ if(storeSel==="home"||storeSel==="other") return false; const s=activeStore(); return !(s && s.id==="home"); }   // no AI at Home (incl. auto-detected) or "Other" — category default there
-function aiResetTrip(){ _aiTripCats = []; }
-function aiRecordCheck(cat){
-  if(!cat || !aiSortOK() || _aiTripCats.includes(cat)) return;   // skip at Home/Other; only first time each category is reached this trip
-  const rank = _aiTripCats.length;                 // 0-based order this category was reached
-  _aiTripCats.push(cat);
-  const key = aiStoreKey();
-  const store = aiOrder[key] || (aiOrder[key] = {});
-  const A = 0.35;                                   // EMA weight — adapts but resists one-off noise
-  store[cat] = (store[cat]==null) ? rank : store[cat]*(1-A) + rank*A;
-  try{ localStorage.setItem("ml_aiorder", JSON.stringify(aiOrder)); }catch(e){}
+function aiResetTrip(){ _aiTripCats = []; _aiTripItems = [];
+  const key = aiStoreKey();                                              // freeze the learned item order for this trip
+  aiItemsApplied[key] = Object.assign({}, aiItems[key]||{});
+  try{ localStorage.setItem("ml_aiitemsapplied", JSON.stringify(aiItemsApplied)); }catch(e){}
+}
+function aiRecordCheck(cat, name){
+  if(!aiSortOK()) return;                                                // skip at Home/Other
+  const key = aiStoreKey(); const A = 0.35;                              // EMA weight — adapts but resists one-off noise
+  const ik = name ? aiItemKey(name,cat) : null;                         // item-level (primary signal)
+  if(ik && !_aiTripItems.includes(ik)){ const r=_aiTripItems.length; _aiTripItems.push(ik);
+    const im = aiItems[key] || (aiItems[key] = {});
+    im[ik] = (im[ik]==null) ? r : im[ik]*(1-A) + r*A;
+    try{ localStorage.setItem("ml_aiitems", JSON.stringify(aiItems)); }catch(e){} }
+  if(cat && !_aiTripCats.includes(cat)){ const r=_aiTripCats.length; _aiTripCats.push(cat);   // category-level (diagnostic + cold-start)
+    const store = aiOrder[key] || (aiOrder[key] = {});
+    store[cat] = (store[cat]==null) ? r : store[cat]*(1-A) + r*A;
+    try{ localStorage.setItem("ml_aiorder", JSON.stringify(aiOrder)); }catch(e){} }
 }
 // B7: display ranks against the ACCEPTED order (aiApplied), never the live EMA —
 // so the list can't silently reshuffle mid-shop while learning keeps updating aiOrder.
 let aiApplied = {}; try{ aiApplied = JSON.parse(localStorage.getItem("ml_aiapplied")||"null") || {}; }catch(e){ aiApplied={}; }
 let aiDismiss = {}; try{ aiDismiss = JSON.parse(localStorage.getItem("ml_aidismiss")||"null") || {}; }catch(e){ aiDismiss={}; }
+function aiItemPos(it){ const ap=aiItemsApplied[aiStoreKey()]; if(!ap) return null; const v=ap[aiItemKey(it.name,it.cat)]; return (v==null)?null:v; }
 function aiRank(it){
-  const store = aiApplied[aiStoreKey()];            // accepted order only; undefined = pure Location baseline
-  const s = store && store[it.cat];
-  // Map the accepted check-order (0..~8) onto aisleRank's ~1..99 scale so
-  // accepted and not-yet-accepted categories interleave sensibly. Unseen = pure location.
-  return (s==null) ? aisleRank(it) : (s*11 + 1);
+  const p = aiItemPos(it); if(p!=null) return p;    // learned ITEM position (primary — item-level order)
+  const ap = aiItemsApplied[aiStoreKey()];
+  if(ap){ const sib = state.items.filter(x=>x.cat===it.cat && aiItemKey(x.name,x.cat)!==aiItemKey(it.name,it.cat))
+            .map(x=>ap[aiItemKey(x.name,x.cat)]).filter(v=>v!=null);
+    if(sib.length) return sib.reduce((a,b)=>a+b,0)/sib.length + 0.5; }   // unseen item → sit with its known siblings
+  return aisleRank(it);                                                  // cold → store layout
 }
 function byAI(a,b){ const ra=aiRank(a),rb=aiRank(b); if(ra!==rb) return ra-rb; return byAisle(a,b); }
 function aiSeenCount(){ return Object.keys(aiOrder[aiStoreKey()]||{}).length; }
@@ -766,8 +782,8 @@ function aiProposal(){
   return { key, propKey };
 }
 function aiResetStore(){ const key=aiStoreKey();
-  delete aiOrder[key]; delete aiApplied[key]; delete aiDismiss[key]; _aiTripCats=[];
-  try{ localStorage.setItem("ml_aiorder",JSON.stringify(aiOrder)); localStorage.setItem("ml_aiapplied",JSON.stringify(aiApplied)); localStorage.setItem("ml_aidismiss",JSON.stringify(aiDismiss)); }catch(e){}
+  delete aiOrder[key]; delete aiApplied[key]; delete aiDismiss[key]; delete aiItems[key]; delete aiItemsApplied[key]; _aiTripCats=[]; _aiTripItems=[];
+  try{ localStorage.setItem("ml_aiorder",JSON.stringify(aiOrder)); localStorage.setItem("ml_aiapplied",JSON.stringify(aiApplied)); localStorage.setItem("ml_aidismiss",JSON.stringify(aiDismiss)); localStorage.setItem("ml_aiitems",JSON.stringify(aiItems)); localStorage.setItem("ml_aiitemsapplied",JSON.stringify(aiItemsApplied)); }catch(e){}
   showToast("AI order reset"); render(); }
 function aiApplyProposal(){
   const key=aiStoreKey();
@@ -1305,7 +1321,7 @@ function addEntries(text, override){
 function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){
   if(!it.checked){ lastPop=id; playTick(true); if(navigator.vibrate) navigator.vibrate(8); setTimeout(()=>{ if(lastPop===id) lastPop=null; },350); }
   else { playTick(false); if(navigator.vibrate) navigator.vibrate(5); }
-  it.checked=!it.checked; if(it.checked){ it.checkedBy=me; it.checkedAt=Date.now(); if(shopMode) aiRecordCheck(it.cat); } markDirty(id); save(); render(); } }
+  it.checked=!it.checked; if(it.checked){ it.checkedBy=me; it.checkedAt=Date.now(); if(shopMode) aiRecordCheck(it.cat, it.name); } markDirty(id); save(); render(); } }
 /* A24 shared Buy-again is conflict-free across devices. Each entry carries a `ts`
    (last-touched) and deletions are recorded as tombstones in `state.baTomb`
    ({key: ts}). On every server snapshot we LWW-merge remote+local instead of
@@ -1740,15 +1756,9 @@ function renderMain(){
   let bodyBlocks;
   if(disp==="cat"){ bodyBlocks = buildCatBlocks(sm==="alpha"); }                       // A–Z = plain alpha within each category
   else if(sm==="ai"){ ensureLocCheck(); const unchecked=state.items.filter(i=>!i.checked).slice().sort(byAI);   // AI = accepted per-store check order
-    const applied=!!aiApplied[aiStoreKey()];
-    // B7: propose a freshly-learned order (accept/revert) only at trip start — never reshuffle mid-shop
-    const prop = (_aiTripCats.length===0) ? aiProposal() : null;
-    const note = prop
-      ? `<div class="aiprop">
-          <div class="aiprop-txt"><b>✨ New aisle order</b> — learned from the order you checked things off on recent trips. Apply it to this list?</div>
-          <div class="aiprop-btns"><button class="aiprop-keep" data-ai-keep>Keep current</button><button class="aiprop-apply" data-ai-apply>Apply</button></div>
-        </div>`
-      : `<div class="aihint">✨ AI order · ${applied?`following your saved aisle order${_aiTripCats.length?` · frozen for this trip`:``}`:`starting from store layout — learns as you shop`}</div>`;
+    // A25 item-level order, frozen at trip start (aiResetTrip) — learns per item, applies next trip, never reshuffles mid-shop
+    const seenItems = Object.keys(aiItemsApplied[aiStoreKey()]||{}).length;
+    const note = `<div class="aihint">✨ AI order · ${seenItems?`following your learned item route · frozen for this trip`:`starting from store layout — learns each item as you check it`}</div>`;
     bodyBlocks = [ `<section class="cat">${note}${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
   else if(sm==="location"){ ensureLocCheck(); const useStore=locActive(); const cmp=useStore?byAisle:bySortKey;
     let unchecked=state.items.filter(i=>!i.checked); const n0=unchecked.length;
@@ -2243,11 +2253,16 @@ function diagProbeHTML(raw){
   </div>`;
 }
 function diagAIHTML(){
-  const keys=Object.keys(aiOrder||{});
+  const keys=[...new Set([...Object.keys(aiItems||{}), ...Object.keys(aiOrder||{})])];
   if(!keys.length) return `<span style="color:var(--muted2)">No AI order learned yet — check items off in shop mode at a store.</span>`;
-  return keys.map(k=>{ const nm=(storeById(k)||{}).name||k; const seq=aiSeq(aiOrder,k);
-    return `<div style="margin:7px 0"><b>${esc(nm)}</b> <span style="color:var(--muted2)">· ${aiApplied[k]?'accepted':'learning'}</span><br>
-      <span style="color:var(--muted)">${seq.map(x=>esc((CAT(x)||{}).label||x)).join(" → ")||"—"}</span></div>`; }).join("");
+  return keys.map(k=>{ const nm=(storeById(k)||{}).name||k;
+    const im=aiItems[k]||{}; const items=Object.keys(im).sort((a,b)=>im[a]-im[b]).map(ik=>esc(cap(ik.split("|")[0])));
+    const catSeq=aiSeq(aiOrder,k).map(x=>esc((CAT(x)||{}).label||x)).join(" → ")||"—";
+    return `<div style="margin:9px 0"><b>${esc(nm)}</b>
+      <div style="color:var(--muted2);font-size:11px;margin-top:2px">Item route (learned check order)</div>
+      <div style="color:var(--muted)">${items.length?items.join(" → "):"—"}</div>
+      <div style="color:var(--muted2);font-size:11px;margin-top:4px">Categories</div>
+      <div style="color:var(--muted)">${catSeq}</div></div>`; }).join("");
 }
 function diagPredictHTML(){
   const keys=Object.keys(purch||{});
