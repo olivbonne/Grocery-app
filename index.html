@@ -501,7 +501,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.83";
+const APP_VERSION = "v0.84";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1603,7 +1603,7 @@ function pillHTML(i, cat){
   const qcol = full ? '#fff' : (checked ? 'var(--muted2)' : cat.color);
   const style = full ? `background:${cat.color};border:1.5px solid ${cat.color};color:#fff` : `border-left:4px solid ${edge}`;
   return `<button class="pill ${checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="${style}">`
-    +`${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}${(!checked&&i.starred)?`<span style="color:${full?'#fff':'#E8A91D'};margin-right:1px">★</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}${shopMode?`<span class="pcheck" aria-hidden="true"${full?' style="border-color:rgba(255,255,255,.85);color:#fff"':''}>${checked?'✓':''}</span>`:""}</button>`;
+    +`${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}${(!checked&&i.starred)?`<span style="color:${full?'#fff':'#E8A91D'};margin-right:1px">★</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:(shopMode?`<span class="qty" style="color:${qcol};opacity:.5">unit </span>`:"")}${esc(cap(i.name))}${shopMode?`<span class="pcheck" aria-hidden="true"${full?' style="border-color:rgba(255,255,255,.85);color:#fff"':''}>${checked?'✓':''}</span>`:""}</button>`;
 }
 function pillRow(items, cat){ return `<div class="pills">${items.map(i=>pillHTML(i,cat)).join("")}</div>`; }
 function pillsMixed(items){ return `<div class="pills">${items.map(i=>pillHTML(i, CAT(i.cat))).join("")}</div>`; }
@@ -1670,7 +1670,7 @@ function renderMain(){
       `<button class="bapill ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="border:1.5px dashed ${cat.color}">`
       +`<span style="color:${cat.color};font-weight:800">+</span>`
       +`${(e.qty||1)>1?`<span style="color:${cat.color};font-weight:800">${e.qty}×</span>`:""}`
-      +`${e.weight?`<span style="color:${cat.color};font-weight:800">${esc(e.weight)} </span>`:""}`
+      +`${e.weight?`<span style="color:${cat.color};font-weight:800">${esc(e.weight)} </span>`:`<span style="color:${cat.color};font-weight:800;opacity:.45">unit </span>`}`
       +`${esc(e.name)}</button>`).join("")}</div>`;
   }).join("");
   const baPills = state.buyAgain.length
@@ -1847,7 +1847,7 @@ function planFilledPill(i, cat){ const checked=i.checked; const full=fillMode()=
   const edge=checked?'var(--done-edge)':cat.color; const qcol=full?'#fff':(checked?'var(--muted2)':cat.color);
   const style=full?`background:${cat.color};border:1.5px solid ${cat.color};color:#fff`:`border-left:4px solid ${edge}`;
   return `<button class="pill plan-in ${checked?'done':''}" data-plan-rm="${i.id}" style="${style}">${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}${checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit"${full?' style="color:rgba(255,255,255,.92)"':''}>▾</span></button>${quickEdit===i.id?qpanelHTML(i,cat):""}`; }
-function planOutlineChip(e, cat){ return `<button class="pill plan-out ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="background:transparent;border:1.5px dashed ${cat.color}">${(e.qty||1)>1?`<span class="qty" style="color:${cat.color}">${e.qty}×</span>`:""}${e.weight?`<span class="qty" style="color:${cat.color}">${esc(e.weight)} </span>`:""}${esc(cap(e.name))}<span class="qmore" style="visibility:hidden" aria-hidden="true">▾</span></button>`; }
+function planOutlineChip(e, cat){ return `<button class="pill plan-out ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="background:transparent;border:1.5px dashed ${cat.color}">${(e.qty||1)>1?`<span class="qty" style="color:${cat.color}">${e.qty}×</span>`:""}${e.weight?`<span class="qty" style="color:${cat.color}">${esc(e.weight)} </span>`:`<span class="qty" style="color:${cat.color};opacity:.45">unit </span>`}${esc(cap(e.name))}<span class="qmore" style="visibility:hidden" aria-hidden="true">▾</span></button>`; }
 function renderPlanPage(){
   const psm = (displayFor()==="cat" && sortModeFor()==="location") ? "cat" : sortModeFor();
   let planBody;
