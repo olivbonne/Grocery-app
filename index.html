@@ -501,7 +501,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.95";
+const APP_VERSION = "v0.96";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -809,10 +809,19 @@ let predictSeen = {}; try{ predictSeen = JSON.parse(localStorage.getItem("ml_pre
 let predictWhyOpen = false;
 function savePredictCfg(){ try{ localStorage.setItem("ml_predict", JSON.stringify(predictCfg)); }catch(e){} }
 function savePredictSeen(){ try{ localStorage.setItem("ml_predict_seen", JSON.stringify(predictSeen)); }catch(e){} }
-function resetPredictions(){                                        // wipe learned restock cadence (on-device only)
+let _predReset = 0; try{ _predReset = +localStorage.getItem("ml_predict_reset")||0; }catch(e){}
+function applyPredictReset(ts){                                     // wipe learned restock cadence on this device
   purch={}; predictSeen={};
-  try{ localStorage.setItem("ml_purch","{}"); savePredictSeen(); }catch(e){}
+  try{ localStorage.setItem("ml_purch","{}"); savePredictSeen(); localStorage.setItem("ml_predict_reset", String(ts)); }catch(e){}
+  _predReset = ts;
+}
+function resetPredictions(){                                        // reset on this device only
+  applyPredictReset(Date.now());
   showToast("Predictions reset — restock suggestions cleared"); render();
+}
+function resetPredictionsServer(){                                  // reset across the whole household via the synced epoch
+  const ts=Date.now(); applyPredictReset(ts); state.predictReset=ts; save();
+  showToast("Predictions reset for all devices"); render();
 }
 function recordPurchase(items){
   const now=Date.now();
@@ -1037,7 +1046,7 @@ let optOpen=false, listsOpen=false;
 let smartOpen=false, smartLoading=false, smartError="", smartItems=[], smartEdit=null;
 // B3 recipe → list (text-first): pours extracted ingredients into the shared Smart-add preview
 let smartServings=null;
-let view="detail", listActOpen=false, listActCode=null, newListOpen=false, newListDraft="", diagOpen=false;
+let view="detail", listActOpen=false, listActCode=null, newListOpen=false, newListDraft="", diagOpen=false, diagPredExpand=null;
 function listCount(code){ try{ const s = (code===listCode) ? state : JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); return (s&&s.items)? s.items.filter(i=>!i.checked).length : 0; }catch(e){ return 0; } }
 function listStats(code){ try{ const s=(code===listCode)?state:JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); const items=(s&&s.items)||[]; const total=items.length, done=items.filter(i=>i.checked).length; return {total, done, pct: total?Math.round(done/total*100):0}; }catch(e){ return {total:0,done:0,pct:0}; } }
 function listURL(code){ return location.origin + location.pathname + "?list=" + code; }
@@ -1093,7 +1102,7 @@ function switchList(code){ listsOpen=false; if(code===listCode){ render(); retur
   listCode=code; localStorage.setItem(LS_LASTLIST, code);
   LS = { me:"ml_me", collapse:"ml_collapse_"+code, cache:"ml_cache_"+code };
   try{ collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}'); }catch(e){ collapse={cats:[],ba:false}; }
-  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99} };
+  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0 };
   try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state=c; }catch(e){}
   ensureCats(); editing=null; quickEdit=null; view="detail"; shopMode=false;
   if(typeof history!=="undefined" && history.replaceState){ try{ history.replaceState(null, "", location.pathname+"?list="+code); }catch(e){} }
@@ -1128,7 +1137,7 @@ function playPlan(add){ if(!soundOn) return;
   } catch(e){} }
 let lastPop=null;
 
-let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99} };
+let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0 };
 rememberList(listCode);
 try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state = c; } catch(e){}
 let toast=null, toastAction=null, undoSnap=null, _toastT=null, catEntry=null, editing=null, configured=false;
@@ -1247,9 +1256,10 @@ function subscribe(){
     if(!syncing && !fromCache) dirtyIds.clear();
     if(snap.exists() && !snap.metadata.hasPendingWrites){ const d = snap.data();
       const mg = baMerge(d.buyAgain||[], d.baTomb||{}, state.buyAgain||[], state.baTomb||{});   // A24 conflict-free Buy-again
-      state = { items:d.items||[], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99} };
+      state = { items:d.items||[], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0 };
       if(!state.name){ const ln=(getLists().find(l=>l.code===listCode)||{}).name; if(ln){ state.name=ln; save(); } }
       if(state.name) rememberList(listCode, state.name);
+      if((state.predictReset||0) > _predReset) applyPredictReset(state.predictReset);   // household-wide predictions reset propagated via the synced epoch
       // converge: if our merged view holds Buy-again the server was missing, write it back once
       if(baSig(mg.list, mg.tomb) !== baSig(d.buyAgain||[], d.baTomb||{})) save(); }
     else if(snap.exists() && snap.metadata.hasPendingWrites){ /* keep local optimistic state */ }
@@ -2104,6 +2114,8 @@ function wireOptions(){
   const dpr=app.querySelector("#diagProbe"); if(dpr) dpr.oninput=()=>{ const o=app.querySelector("#diagProbeOut"); if(o) o.innerHTML=diagProbeHTML(dpr.value); };
   const dsb=app.querySelector("#diagSandbox"); if(dsb) dsb.onclick=openSandbox;
   const drp=app.querySelector("#diagResetPredict"); if(drp) drp.onclick=resetPredictions;
+  const dra=app.querySelector("#diagResetPredictAll"); if(dra) dra.onclick=resetPredictionsServer;
+  app.querySelectorAll("[data-diag-pred]").forEach(el=>el.onclick=()=>{ const k=el.dataset.diagPred; diagPredExpand=(diagPredExpand===k?null:k); render(); });
 }
 /* A18 ✨ Smart add — planning-mode AI parse → preview → confirm.
    Calls the server-side /api/parse (Groq); the API key never touches the client. */
@@ -2246,11 +2258,7 @@ function commitSmartItems(){
 /* B8 hidden AI diagnostics — long-press the version number to inspect the
    on-device learning (read-only): categorisation/sort tester, learned shop
    order per store, restock cadence. Plus a throwaway sandbox list. */
-function diagProbeHTML(raw){
-  const name=(raw||"").trim();
-  if(!name) return `<span style="color:var(--muted2)">Type an item above to see how it's filed and where it sorts.</span>`;
-  const known=knownEntry(name);
-  const cat=(known&&known.cat)||guessCat(name)||"others";
+function diagItemInfo(name, cat, known){
   const c=CAT(cat)||{};
   const sub = cat==="meat" ? meatSub(name) : ((known&&known.sub)||"");
   const it={name,cat};
@@ -2261,6 +2269,13 @@ function diagProbeHTML(raw){
     <div>Aisle rank${st?` @ ${esc(st.name)}`:` <span style="color:var(--muted2)">(category order)</span>`}: <b>${aisleRank(it)}</b></div>
     <div>AI rank: <b>${aiRank(it)}</b>${aiSortOK()?"":` <span style="color:var(--muted2)">— AI off at Home/Other</span>`}</div>
   </div>`;
+}
+function diagProbeHTML(raw){
+  const name=(raw||"").trim();
+  if(!name) return `<span style="color:var(--muted2)">Type an item above to see how it's filed and where it sorts.</span>`;
+  const known=knownEntry(name);
+  const cat=(known&&known.cat)||guessCat(name)||"others";
+  return diagItemInfo(name, cat, known);
 }
 function diagAIHTML(){
   const keys=[...new Set([...Object.keys(aiItems||{}), ...Object.keys(aiOrder||{})])];
@@ -2279,10 +2294,14 @@ function diagPredictHTML(){
   if(!keys.length) return `<span style="color:var(--muted2)">No purchase history yet — clear checked items to log a shop.</span>`;
   const rows=keys.map(k=>{ const r=purch[k]; const cad=cadenceOf(r); const days=cad?Math.round(cad/DAY_MS):0;
     const last=(r.ts&&r.ts.length)?r.ts[r.ts.length-1]:0; const ago=last?Math.round((Date.now()-last)/DAY_MS):null;
-    return {name:r.name,days,ago,buys:(r.ts||[]).length}; }).sort((a,b)=>(b.buys-a.buys)||a.name.localeCompare(b.name));
-  return rows.map(r=>`<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px solid var(--line)">
-    <span>${esc(cap(r.name))}</span>
-    <span style="color:var(--muted);white-space:nowrap">${r.days?`~${r.days}d`:`${r.buys} buy${r.buys===1?'':'s'}`}${r.ago!=null?` · ${r.ago}d ago`:""}</span></div>`).join("");
+    return {key:k,name:r.name,cat:r.cat,days,ago,buys:(r.ts||[]).length}; }).sort((a,b)=>(b.buys-a.buys)||a.name.localeCompare(b.name));
+  return rows.map(r=>{ const open=diagPredExpand===r.key;
+    return `<div data-diag-pred="${esc(r.key)}" style="padding:5px 0;border-bottom:1px solid var(--line);cursor:pointer">
+      <div style="display:flex;justify-content:space-between;gap:8px">
+        <span>${open?"▾ ":"▸ "}${esc(cap(r.name))}</span>
+        <span style="color:var(--muted);white-space:nowrap">${r.days?`~${r.days}d`:`${r.buys} buy${r.buys===1?'':'s'}`}${r.ago!=null?` · ${r.ago}d ago`:""}</span></div>
+      ${open?`<div style="margin-top:6px;padding:8px 10px;background:var(--card);border-radius:10px;font-size:13px">${diagItemInfo(r.name, r.cat, knownEntry(r.name))}</div>`:""}
+    </div>`; }).join("");
 }
 function diagStoreHTML(){
   const n=(state.buyAgain||[]).length; const pct=BA_CAP?Math.round(n/BA_CAP*100):0;
@@ -2304,7 +2323,8 @@ function diagSheet(){ const hd=t=>`<div style="font-size:11px;font-weight:800;te
     ${hd("Buy-again storage")}<div style="font-size:13px">${diagStoreHTML()}</div>
     ${hd("AI shop order — per store")}<div style="font-size:13px">${diagAIHTML()}</div>
     ${hd("Restock cadence")}<div style="font-size:13px">${diagPredictHTML()}</div>
-    ${Object.keys(purch||{}).length ? `<button class="optaction" id="diagResetPredict" style="margin-top:10px">♻︎ Reset predictions</button>` : ""}
+    ${Object.keys(purch||{}).length ? `<button class="optaction" id="diagResetPredict" style="margin-top:10px">♻︎ Reset predictions (this device)</button>` : ""}
+    ${configured ? `<button class="optaction" id="diagResetPredictAll" style="margin-top:8px">☁︎ Reset predictions — all devices</button>` : ""}
     <button class="optaction" id="diagSandbox" style="margin-top:16px">🧪 Open a sandbox list</button>
     <div style="font-size:11px;color:var(--muted2);margin-top:8px;line-height:1.5">A separate throwaway list to test entry, sorting &amp; predictions without touching your real list. Delete it anytime from Lists (press &amp; hold).</div>
   </div></div>`;
