@@ -501,7 +501,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.94";
+const APP_VERSION = "v0.95";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -809,6 +809,11 @@ let predictSeen = {}; try{ predictSeen = JSON.parse(localStorage.getItem("ml_pre
 let predictWhyOpen = false;
 function savePredictCfg(){ try{ localStorage.setItem("ml_predict", JSON.stringify(predictCfg)); }catch(e){} }
 function savePredictSeen(){ try{ localStorage.setItem("ml_predict_seen", JSON.stringify(predictSeen)); }catch(e){} }
+function resetPredictions(){                                        // wipe learned restock cadence (on-device only)
+  purch={}; predictSeen={};
+  try{ localStorage.setItem("ml_purch","{}"); savePredictSeen(); }catch(e){}
+  showToast("Predictions reset — restock suggestions cleared"); render();
+}
 function recordPurchase(items){
   const now=Date.now();
   for(const it of items){ const nm=(it.name||"").trim(); if(!nm) continue; const key=nm.toLowerCase()+"|"+it.cat;
@@ -1327,7 +1332,7 @@ function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){
    ({key: ts}). On every server snapshot we LWW-merge remote+local instead of
    letting the whole-doc write clobber the other person's additions — so items
    checked off on one phone can't silently vanish from another. Cap 250. */
-const BA_CAP = 250;
+const BA_CAP = 500;
 function baKey(e){ return (e.name||"").toLowerCase()+"|"+e.cat; }
 function baForget(name,cat){ (state.baTomb||(state.baTomb={}))[(name||"").toLowerCase()+"|"+cat] = Date.now(); }
 function baMerge(listA, tombA, listB, tombB){
@@ -2098,6 +2103,7 @@ function wireOptions(){
   const dcl=app.querySelector("#diagClose"); if(dcl) dcl.onclick=()=>{ diagOpen=false; render(); };
   const dpr=app.querySelector("#diagProbe"); if(dpr) dpr.oninput=()=>{ const o=app.querySelector("#diagProbeOut"); if(o) o.innerHTML=diagProbeHTML(dpr.value); };
   const dsb=app.querySelector("#diagSandbox"); if(dsb) dsb.onclick=openSandbox;
+  const drp=app.querySelector("#diagResetPredict"); if(drp) drp.onclick=resetPredictions;
 }
 /* A18 ✨ Smart add — planning-mode AI parse → preview → confirm.
    Calls the server-side /api/parse (Groq); the API key never touches the client. */
@@ -2298,6 +2304,7 @@ function diagSheet(){ const hd=t=>`<div style="font-size:11px;font-weight:800;te
     ${hd("Buy-again storage")}<div style="font-size:13px">${diagStoreHTML()}</div>
     ${hd("AI shop order — per store")}<div style="font-size:13px">${diagAIHTML()}</div>
     ${hd("Restock cadence")}<div style="font-size:13px">${diagPredictHTML()}</div>
+    ${Object.keys(purch||{}).length ? `<button class="optaction" id="diagResetPredict" style="margin-top:10px">♻︎ Reset predictions</button>` : ""}
     <button class="optaction" id="diagSandbox" style="margin-top:16px">🧪 Open a sandbox list</button>
     <div style="font-size:11px;color:var(--muted2);margin-top:8px;line-height:1.5">A separate throwaway list to test entry, sorting &amp; predictions without touching your real list. Delete it anytime from Lists (press &amp; hold).</div>
   </div></div>`;
