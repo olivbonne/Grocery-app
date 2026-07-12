@@ -501,7 +501,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.97";
+const APP_VERSION = "v0.98";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1046,7 +1046,7 @@ let optOpen=false, listsOpen=false;
 let smartOpen=false, smartLoading=false, smartError="", smartItems=[], smartEdit=null;
 // B3 recipe → list (text-first): pours extracted ingredients into the shared Smart-add preview
 let smartServings=null;
-let view="detail", listActOpen=false, listActCode=null, newListOpen=false, newListDraft="", diagOpen=false, diagPredExpand=new Set();
+let view="detail", listActOpen=false, listActCode=null, newListOpen=false, newListDraft="", diagOpen=false, diagPredExpand=new Set(), diagPredSort="az";
 function listCount(code){ try{ const s = (code===listCode) ? state : JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); return (s&&s.items)? s.items.filter(i=>!i.checked).length : 0; }catch(e){ return 0; } }
 function listStats(code){ try{ const s=(code===listCode)?state:JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); const items=(s&&s.items)||[]; const total=items.length, done=items.filter(i=>i.checked).length; return {total, done, pct: total?Math.round(done/total*100):0}; }catch(e){ return {total:0,done:0,pct:0}; } }
 function listURL(code){ return location.origin + location.pathname + "?list=" + code; }
@@ -2117,6 +2117,7 @@ function wireOptions(){
   const dra=app.querySelector("#diagResetPredictAll"); if(dra) dra.onclick=resetPredictionsServer;
   const diagKeepScroll=fn=>{ const sc=app.querySelector("#diagSheetEl"); const y=sc?sc.scrollTop:0; fn(); render(); const s2=app.querySelector("#diagSheetEl"); if(s2) s2.scrollTop=y; };
   const dpa=app.querySelector("#diagPredToggleAll"); if(dpa) dpa.onclick=()=>diagKeepScroll(()=>{ const keys=Object.keys(purch||{}); const allOpen=keys.length&&keys.every(k=>diagPredExpand.has(k)); if(allOpen) diagPredExpand.clear(); else keys.forEach(k=>diagPredExpand.add(k)); });
+  app.querySelectorAll("[data-diag-sort]").forEach(el=>el.onclick=()=>diagKeepScroll(()=>{ diagPredSort=el.dataset.diagSort; }));
   app.querySelectorAll("[data-diag-pred]").forEach(el=>el.onclick=()=>diagKeepScroll(()=>{ const k=el.dataset.diagPred; if(diagPredExpand.has(k)) diagPredExpand.delete(k); else diagPredExpand.add(k); }));
 }
 /* A18 ✨ Smart add — planning-mode AI parse → preview → confirm.
@@ -2298,10 +2299,18 @@ function diagPredictHTML(){
   if(!keys.length) return `<span style="color:var(--muted2)">No purchase history yet — clear checked items to log a shop.</span>`;
   const rows=keys.map(k=>{ const r=purch[k]; const cad=cadenceOf(r); const days=cad?Math.round(cad/DAY_MS):0;
     const last=(r.ts&&r.ts.length)?r.ts[r.ts.length-1]:0; const ago=last?Math.round((Date.now()-last)/DAY_MS):null;
-    return {key:k,name:r.name,cat:r.cat,days,ago,buys:(r.ts||[]).length}; }).sort((a,b)=>(b.buys-a.buys)||a.name.localeCompare(b.name));
+    return {key:k,name:r.name,cat:r.cat,days,ago,buys:(r.ts||[]).length}; });
+  rows.sort((a,b)=>{                                                    // unknown cadence (days 0) always sinks to the bottom of cadence sorts
+    if(diagPredSort==="short"||diagPredSort==="long"){ const au=!a.days,bu=!b.days; if(au!==bu) return au?1:-1;
+      if(a.days!==b.days) return diagPredSort==="short"? a.days-b.days : b.days-a.days; return a.name.localeCompare(b.name); }
+    return a.name.localeCompare(b.name);                               // "az" (default)
+  });
   const allOpen=rows.every(r=>diagPredExpand.has(r.key));
-  const toggleAll=`<div style="display:flex;justify-content:flex-end;margin-bottom:2px"><button id="diagPredToggleAll" style="background:none;border:none;color:var(--accent);font-weight:700;font-size:12px;cursor:pointer;padding:2px 2px">${allOpen?"Collapse all":"Expand all"}</button></div>`;
-  return toggleAll + rows.map(r=>{ const open=diagPredExpand.has(r.key);
+  const sortBtn=(m,lbl)=>`<button data-diag-sort="${m}" style="background:${diagPredSort===m?'var(--accent)':'transparent'};color:${diagPredSort===m?'#fff':'var(--muted)'};border:1px solid var(--line);border-radius:999px;font-size:11px;font-weight:700;padding:3px 9px;cursor:pointer">${lbl}</button>`;
+  const controls=`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+    <span style="font-size:11px;color:var(--muted2)">Sort</span>${sortBtn("az","A–Z")}${sortBtn("short","Short")}${sortBtn("long","Long")}
+    <button id="diagPredToggleAll" style="margin-left:auto;background:none;border:none;color:var(--accent);font-weight:700;font-size:12px;cursor:pointer;padding:2px 2px">${allOpen?"Collapse all":"Expand all"}</button></div>`;
+  return controls + rows.map(r=>{ const open=diagPredExpand.has(r.key);
     return `<div data-diag-pred="${esc(r.key)}" style="padding:5px 0;border-bottom:1px solid var(--line);cursor:pointer">
       <div style="display:flex;justify-content:space-between;gap:8px">
         <span>${open?"▾ ":"▸ "}${esc(cap(r.name))}</span>
