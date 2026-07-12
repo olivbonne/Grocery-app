@@ -501,7 +501,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.93";
+const APP_VERSION = "v0.94";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2278,6 +2278,12 @@ function diagPredictHTML(){
     <span>${esc(cap(r.name))}</span>
     <span style="color:var(--muted);white-space:nowrap">${r.days?`~${r.days}d`:`${r.buys} buy${r.buys===1?'':'s'}`}${r.ago!=null?` · ${r.ago}d ago`:""}</span></div>`).join("");
 }
+function diagStoreHTML(){
+  const n=(state.buyAgain||[]).length; const pct=BA_CAP?Math.round(n/BA_CAP*100):0;
+  return `<div>Saved items: <b>${n}</b> of ${BA_CAP} <span style="color:var(--muted2)">(${pct}% full)</span></div>
+    <div style="height:6px;border-radius:3px;background:var(--line);margin-top:6px;overflow:hidden"><div style="height:100%;width:${Math.min(100,pct)}%;background:var(--accent)"></div></div>
+    <div style="font-size:11px;color:var(--muted2);margin-top:6px;line-height:1.5">Shared Buy-again items across the household. ${n>=BA_CAP?"Cap reached — oldest items drop off first.":"Room for "+(BA_CAP-n)+" more."}</div>`;
+}
 function openSandbox(){ const code="sbx-"+(((me||"me").toLowerCase().replace(/[^a-z0-9]/g,"")||"me").slice(0,6));
   rememberList(code,"🧪 Sandbox"); diagOpen=false; optOpen=false; switchList(code); }
 function diagSheet(){ const hd=t=>`<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px">${t}</div>`;
@@ -2289,6 +2295,7 @@ function diagSheet(){ const hd=t=>`<div style="font-size:11px;font-weight:800;te
     ${hd("Entry tester")}
     <input id="diagProbe" placeholder="Type an item…" autocomplete="off" autocapitalize="none" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:14px" />
     <div id="diagProbeOut" style="margin-top:8px;font-size:13px">${diagProbeHTML("")}</div>
+    ${hd("Buy-again storage")}<div style="font-size:13px">${diagStoreHTML()}</div>
     ${hd("AI shop order — per store")}<div style="font-size:13px">${diagAIHTML()}</div>
     ${hd("Restock cadence")}<div style="font-size:13px">${diagPredictHTML()}</div>
     <button class="optaction" id="diagSandbox" style="margin-top:16px">🧪 Open a sandbox list</button>
