@@ -506,7 +506,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   @keyframes cartpop { 0%{transform:scale(1)} 48%{transform:scale(1.25)} 100%{transform:scale(1)} }
   .cartpop { animation:cartpop 1s cubic-bezier(.33,0,.2,1); transform-origin:center; }
   @keyframes cartnumpop { 0%{transform:translate(-50%,-50%) scale(1)} 45%{transform:translate(-50%,-50%) scale(1.4)} 100%{transform:translate(-50%,-50%) scale(1)} }
-  .cartnum { position:absolute; left:56%; top:49%; transform:translate(-50%,-50%); font-size:12px; font-weight:800; color:var(--accent); line-height:1; pointer-events:none; text-align:center; font-variant-numeric:proportional-nums; letter-spacing:-.3px; }
+  .cartnum { position:absolute; left:55%; top:40%; transform:translate(-50%,-50%); font-size:12px; font-weight:800; color:var(--accent); line-height:1; pointer-events:none; text-align:center; font-variant-numeric:proportional-nums; letter-spacing:-.3px; }
+  .cartnum.hide { display:none; }
   .cartnum.pop { animation:cartnumpop 1s cubic-bezier(.33,0,.2,1); }
   .spark { position:fixed; z-index:70; pointer-events:none; line-height:1; animation:spark .66s ease-out forwards; }
   @keyframes spark { 0%{opacity:0; transform:translate(-50%,-50%) scale(.3)} 25%{opacity:1} 100%{opacity:0; transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1)} }
@@ -537,7 +538,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.03";
+const APP_VERSION = "v1.04";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -600,6 +601,13 @@ if(params.get("list") !== listCode){ params.set("list", listCode);
   history.replaceState(null,"",location.pathname+"?"+params.toString()); }
 
 let LS = { me:"ml_me", collapse:"ml_collapse_"+listCode, cache:"ml_cache_"+listCode };
+// Per-list learning stores (AI shop order + restock cadence) live under a list-suffixed key.
+// One-time migration: the first list to load after this upgrade inherits any legacy global
+// data, then the global key is dropped so other lists start their own learning.
+function lkey(base){ return base + "_" + listCode; }
+function loadLearn(base){ const k=lkey(base); let v=localStorage.getItem(k);
+  if(v==null){ const g=localStorage.getItem(base); if(g!=null){ localStorage.setItem(k,g); localStorage.removeItem(base); v=g; } }
+  try{ return JSON.parse(v||"null") || {}; }catch(e){ return {}; } }
 let me = localStorage.getItem(LS.me) || null;
 let collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}');
 let densities = {}; try{ densities = JSON.parse(localStorage.getItem("ml_densities")||"null") || {}; }catch(e){ densities={}; }
@@ -770,21 +778,21 @@ function byAisle(a,b){ const ra=aisleRank(a),rb=aisleRank(b); if(ra!==rb) return
 /* A19 AI shop order — learns the order you actually check categories at each
    store and reorders future trips. Starts identical to Location (aisleRank
    baseline) and diverges as data accumulates. Purely local; no LLM call. */
-let aiOrder = {}; try{ aiOrder = JSON.parse(localStorage.getItem("ml_aiorder")||"null") || {}; }catch(e){ aiOrder={}; }
+let aiOrder = loadLearn("ml_aiorder");
 let _aiTripCats = [];   // distinct categories checked so far this shopping trip, in order
 /* A25 item-level AI — learns the order you check individual ITEMS (not just
    categories) at each store, so the walk reorders item-by-item. Frozen per trip
    at shop-entry (aiResetTrip) so it can't reshuffle mid-shop; applies next trip. */
 let _aiTripItems = [];
-let aiItems = {}; try{ aiItems = JSON.parse(localStorage.getItem("ml_aiitems")||"null") || {}; }catch(e){ aiItems={}; }
-let aiItemsApplied = {}; try{ aiItemsApplied = JSON.parse(localStorage.getItem("ml_aiitemsapplied")||"null") || {}; }catch(e){ aiItemsApplied={}; }
+let aiItems = loadLearn("ml_aiitems");
+let aiItemsApplied = loadLearn("ml_aiitemsapplied");
 function aiItemKey(name,cat){ return (name||"").toLowerCase().trim()+"|"+cat; }
 function aiStoreKey(){ const s=activeStore(); if(s&&s.id) return s.id; return storeSel||"default"; }
 function aiSortOK(){ if(storeSel==="home"||storeSel==="other") return false; const s=activeStore(); return !(s && s.id==="home"); }   // no AI at Home (incl. auto-detected) or "Other" — category default there
 function aiResetTrip(){ _aiTripCats = []; _aiTripItems = [];
   const key = aiStoreKey();                                              // freeze the learned item order for this trip
   aiItemsApplied[key] = Object.assign({}, aiItems[key]||{});
-  try{ localStorage.setItem("ml_aiitemsapplied", JSON.stringify(aiItemsApplied)); }catch(e){}
+  try{ localStorage.setItem(lkey("ml_aiitemsapplied"), JSON.stringify(aiItemsApplied)); }catch(e){}
 }
 function aiRecordCheck(cat, name){
   if(!aiSortOK()) return;                                                // skip at Home/Other
@@ -793,16 +801,16 @@ function aiRecordCheck(cat, name){
   if(ik && !_aiTripItems.includes(ik)){ const r=_aiTripItems.length; _aiTripItems.push(ik);
     const im = aiItems[key] || (aiItems[key] = {});
     im[ik] = (im[ik]==null) ? r : im[ik]*(1-A) + r*A;
-    try{ localStorage.setItem("ml_aiitems", JSON.stringify(aiItems)); }catch(e){} }
+    try{ localStorage.setItem(lkey("ml_aiitems"), JSON.stringify(aiItems)); }catch(e){} }
   if(cat && !_aiTripCats.includes(cat)){ const r=_aiTripCats.length; _aiTripCats.push(cat);   // category-level (diagnostic + cold-start)
     const store = aiOrder[key] || (aiOrder[key] = {});
     store[cat] = (store[cat]==null) ? r : store[cat]*(1-A) + r*A;
-    try{ localStorage.setItem("ml_aiorder", JSON.stringify(aiOrder)); }catch(e){} }
+    try{ localStorage.setItem(lkey("ml_aiorder"), JSON.stringify(aiOrder)); }catch(e){} }
 }
 // B7: display ranks against the ACCEPTED order (aiApplied), never the live EMA —
 // so the list can't silently reshuffle mid-shop while learning keeps updating aiOrder.
-let aiApplied = {}; try{ aiApplied = JSON.parse(localStorage.getItem("ml_aiapplied")||"null") || {}; }catch(e){ aiApplied={}; }
-let aiDismiss = {}; try{ aiDismiss = JSON.parse(localStorage.getItem("ml_aidismiss")||"null") || {}; }catch(e){ aiDismiss={}; }
+let aiApplied = loadLearn("ml_aiapplied");
+let aiDismiss = loadLearn("ml_aidismiss");
 function aiItemPos(it){ const ap=aiItemsApplied[aiStoreKey()]; if(!ap) return null; const v=ap[aiItemKey(it.name,it.cat)]; return (v==null)?null:v; }
 function aiRank(it){
   const ap = aiItemsApplied[aiStoreKey()];
@@ -830,17 +838,17 @@ function aiProposal(){
 }
 function aiResetStore(){ const key=aiStoreKey();
   delete aiOrder[key]; delete aiApplied[key]; delete aiDismiss[key]; delete aiItems[key]; delete aiItemsApplied[key]; _aiTripCats=[]; _aiTripItems=[];
-  try{ localStorage.setItem("ml_aiorder",JSON.stringify(aiOrder)); localStorage.setItem("ml_aiapplied",JSON.stringify(aiApplied)); localStorage.setItem("ml_aidismiss",JSON.stringify(aiDismiss)); localStorage.setItem("ml_aiitems",JSON.stringify(aiItems)); localStorage.setItem("ml_aiitemsapplied",JSON.stringify(aiItemsApplied)); }catch(e){}
+  try{ localStorage.setItem(lkey("ml_aiorder"),JSON.stringify(aiOrder)); localStorage.setItem(lkey("ml_aiapplied"),JSON.stringify(aiApplied)); localStorage.setItem(lkey("ml_aidismiss"),JSON.stringify(aiDismiss)); localStorage.setItem(lkey("ml_aiitems"),JSON.stringify(aiItems)); localStorage.setItem(lkey("ml_aiitemsapplied"),JSON.stringify(aiItemsApplied)); }catch(e){}
   showToast("AI reset — category order until it relearns"); render(); }   // stay in AI sort; cold AI = category order
 function aiApplyProposal(){
   const key=aiStoreKey();
   aiApplied[key]=Object.assign({}, aiOrder[key]);                                   // snapshot the learned order as accepted
   delete aiDismiss[key];
-  try{ localStorage.setItem("ml_aiapplied", JSON.stringify(aiApplied)); localStorage.setItem("ml_aidismiss", JSON.stringify(aiDismiss)); }catch(e){}
+  try{ localStorage.setItem(lkey("ml_aiapplied"), JSON.stringify(aiApplied)); localStorage.setItem(lkey("ml_aidismiss"), JSON.stringify(aiDismiss)); }catch(e){}
   render();
 }
 function aiDismissProposal(){
-  const p=aiProposal(); if(p){ aiDismiss[p.key]=p.propKey; try{ localStorage.setItem("ml_aidismiss", JSON.stringify(aiDismiss)); }catch(e){} }
+  const p=aiProposal(); if(p){ aiDismiss[p.key]=p.propKey; try{ localStorage.setItem(lkey("ml_aidismiss"), JSON.stringify(aiDismiss)); }catch(e){} }
   render();
 }
 
@@ -849,17 +857,17 @@ function aiDismissProposal(){
    chosen cadence proposes restocking items that are due. Adds only on tap;
    global on/off; explainable; nothing leaves the device. */
 const DAY_MS = 86400000;
-let purch = {}; try{ purch = JSON.parse(localStorage.getItem("ml_purch")||"null") || {}; }catch(e){ purch={}; }
+let purch = loadLearn("ml_purch");
 let predictCfg = { on:true, freq:"weekly", day:1 };                 // day: 0=Sun..6=Sat (JS getDay); default Mon
 try{ const p=JSON.parse(localStorage.getItem("ml_predict")||"null"); if(p&&typeof p==="object") predictCfg=Object.assign(predictCfg,p); }catch(e){}
-let predictSeen = {}; try{ predictSeen = JSON.parse(localStorage.getItem("ml_predict_seen")||"null") || {}; }catch(e){ predictSeen={}; }
+let predictSeen = loadLearn("ml_predict_seen");
 let predictWhyOpen = false;
 function savePredictCfg(){ try{ localStorage.setItem("ml_predict", JSON.stringify(predictCfg)); }catch(e){} }
-function savePredictSeen(){ try{ localStorage.setItem("ml_predict_seen", JSON.stringify(predictSeen)); }catch(e){} }
+function savePredictSeen(){ try{ localStorage.setItem(lkey("ml_predict_seen"), JSON.stringify(predictSeen)); }catch(e){} }
 let _predReset = 0; try{ _predReset = +localStorage.getItem("ml_predict_reset")||0; }catch(e){}
 function applyPredictReset(ts){                                     // wipe learned restock cadence on this device
   purch={}; predictSeen={};
-  try{ localStorage.setItem("ml_purch","{}"); savePredictSeen(); localStorage.setItem("ml_predict_reset", String(ts)); }catch(e){}
+  try{ localStorage.setItem(lkey("ml_purch"),"{}"); savePredictSeen(); localStorage.setItem("ml_predict_reset", String(ts)); }catch(e){}
   _predReset = ts;
 }
 function resetPredictions(){                                        // reset on this device only
@@ -878,7 +886,7 @@ function recordPurchase(items){
     if(!rec.ts.length || now-rec.ts[rec.ts.length-1] > 6*3600000) rec.ts.push(now);   // ignore same-day re-sweeps
     rec.ts = rec.ts.slice(-8);
   }
-  try{ localStorage.setItem("ml_purch", JSON.stringify(purch)); }catch(e){}
+  try{ localStorage.setItem(lkey("ml_purch"), JSON.stringify(purch)); }catch(e){}
 }
 function _median(a){ if(!a.length) return 0; const s=a.slice().sort((x,y)=>x-y); const m=Math.floor(s.length/2); return s.length%2?s[m]:(s[m-1]+s[m])/2; }
 function cadenceOf(rec){ const ts=(rec&&rec.ts)||[]; if(ts.length<2) return 0; const g=[]; for(let i=1;i<ts.length;i++) g.push(ts[i]-ts[i-1]); return _median(g); }
@@ -1002,9 +1010,11 @@ let shopMode = false;
 function toggleShop(){ shopMode=!shopMode; if(shopMode) aiResetTrip(); localStorage.setItem("ml_shop", shopMode?"1":"0"); collapse.ba = !shopMode && collapse.ba; render(); }
 function optMode(){ return view==="lists" ? "lists" : (shopMode ? "shop" : "plan"); }
 let _prevPlanned=null, _prevChecked=null;
+let _cartPending = 0;   // items mid-flight to the cart — counted in the badge only once the flyer lands (bumpCart)
+function cartCount(){ return Math.max(0, state.items.filter(i=>i.checked).length - _cartPending); }
 function cartBadgeHTML(iconHTML){
-  const inCart = state.items.filter(i=>i.checked).length;
-  return `<span class="cartwrap" id="cartWrap">${iconHTML}${inCart?`<span class="cartnum" id="cartNum">${inCart}</span>`:""}</span>`;
+  const shown = cartCount();
+  return `<span class="cartwrap" id="cartWrap">${iconHTML}<span class="cartnum${shown?'':' hide'}" id="cartNum">${shown||''}</span></span>`;
 }
 // A23 bottom-nav stats flanking the cart: "N to buy" (left) and "N in cart" (right)
 function navStatHTML(){
@@ -1021,8 +1031,9 @@ function navCartStatHTML(){
 }
 // A22 shared glyphs + bottom-nav builder (Lists left · "N left" | divider | Cart, grouped right)
 const CART_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>';
-// A27 bottom-nav cart: wider, open basket so a double-digit in-cart count sits inside with even spacing (matches the reference art)
-const CART_NAV_SVG = '<svg width="30" height="24" viewBox="0 0 30 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2.6h3.1l1.15 4"/><path d="M6.5 6.6h21.3l-2.45 9.05a1.85 1.85 0 0 1-1.8 1.35H10.75a1.85 1.85 0 0 1-1.8-1.35L6.5 6.6Z"/><circle cx="12" cy="21" r="1.85"/><circle cx="22.3" cy="21" r="1.85"/></svg>';
+// A27 bottom-nav cart: the app cart with an OPEN top (no top rail) and scaled up, so the
+// in-cart count sits inside the open basket with even spacing and fits double-digit numbers (matches the reference art)
+const CART_NAV_SVG = '<svg width="29" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.5"/><circle cx="18" cy="21" r="1.5"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7"/></svg>';
 const LISTS_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>';
 function bottomNav(o){
   return `<nav class="bottomnav" id="bottomnav">
@@ -1038,9 +1049,9 @@ function bottomNav(o){
 let _flyLast = 0;
 function flyItemToCart(srcEl, it){
   try{
-    if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if(matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
     const cartEl = document.querySelector("#cartWrap") || document.querySelector("#cartNav,#cartNavL");
-    if(!srcEl || !cartEl) return;
+    if(!srcEl || !cartEl) return false;
     const s = srcEl.getBoundingClientRect(), c = cartEl.getBoundingClientRect();
     const clone = srcEl.cloneNode(true);
     clone.classList.add("tilefly");
@@ -1054,7 +1065,8 @@ function flyItemToCart(srcEl, it){
     const at = Math.max(now, _flyLast + 90);
     _flyLast = at;
     setTimeout(()=>launchTileFlyer(clone, P0, P2), at-now);
-  }catch(e){}
+    return true;
+  }catch(e){ return false; }
 }
 function launchTileFlyer(clone, P0, P2){
   document.body.appendChild(clone);
@@ -1076,10 +1088,12 @@ function launchTileFlyer(clone, P0, P2){
   setTimeout(done, 940);   // safety net if WAAPI events don't fire
 }
 function bumpCart(){
+  if(_cartPending>0) _cartPending--;                    // this flyer has landed — now count it in the badge
   const cart = document.querySelector("#cartWrap");
-  if(cart){ cart.classList.remove("cartpop"); void cart.offsetWidth; cart.classList.add("cartpop"); setTimeout(()=>cart.classList.remove("cartpop"), 1000); }
   const cnum = cart && cart.querySelector(".cartnum");
-  if(cnum){ cnum.classList.remove("pop"); void cnum.offsetWidth; cnum.classList.add("pop"); setTimeout(()=>cnum.classList.remove("pop"), 1000); }
+  if(cnum){ const shown=cartCount(); cnum.textContent = shown || ''; cnum.classList.toggle("hide", !shown);
+    cnum.classList.remove("pop"); void cnum.offsetWidth; cnum.classList.add("pop"); setTimeout(()=>cnum.classList.remove("pop"), 1000); }
+  if(cart){ cart.classList.remove("cartpop"); void cart.offsetWidth; cart.classList.add("cartpop"); setTimeout(()=>cart.classList.remove("cartpop"), 1000); }
   if(cart) sparkleCart(cart);
   playCartSound();
   document.querySelectorAll(".sb-incart").forEach(el=>{
@@ -1188,9 +1202,18 @@ function newListSheet(){ return `<div class="sheet-bg" id="newListBg"><div class
     </div></div></div>`; }
 function createNewListFromSheet(){ const nm=(newListDraft||"").trim()||"Untitled list"; const code=uid().slice(0,8);
   rememberList(code, nm); newListOpen=false; newListDraft=""; switchList(code); view="detail"; shopMode=false; save(); render(); }
+// Re-load the per-list learning stores after listCode changes, so the AI shop order and
+// restock cadence (and the diagnostics that show them) reflect the now-active list.
+function reloadLearn(){
+  aiOrder=loadLearn("ml_aiorder"); aiItems=loadLearn("ml_aiitems"); aiItemsApplied=loadLearn("ml_aiitemsapplied");
+  aiApplied=loadLearn("ml_aiapplied"); aiDismiss=loadLearn("ml_aidismiss");
+  purch=loadLearn("ml_purch"); predictSeen=loadLearn("ml_predict_seen");
+  _aiTripCats=[]; _aiTripItems=[];
+}
 function switchList(code){ listsOpen=false; if(code===listCode){ render(); return; }
   listCode=code; localStorage.setItem(LS_LASTLIST, code);
   LS = { me:"ml_me", collapse:"ml_collapse_"+code, cache:"ml_cache_"+code };
+  reloadLearn();
   try{ collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}'); }catch(e){ collapse={cats:[],ba:false}; }
   state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0 };
   try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state=c; }catch(e){}
@@ -2673,7 +2696,7 @@ function wire(){
         if(b.classList.contains("picking")) return;
         const circle=b.querySelector(".pcheck"); if(circle) circle.textContent="✓";
         b.classList.add("picking");
-        setTimeout(()=>{ flyItemToCart(b, it); toggleItem(id); }, 260);
+        setTimeout(()=>{ if(flyItemToCart(b, it)) _cartPending++; toggleItem(id); }, 260);
         return;
       }
       toggleItem(id); }; });
