@@ -506,8 +506,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   @keyframes cartpop { 0%{transform:scale(1)} 48%{transform:scale(1.25)} 100%{transform:scale(1)} }
   .cartpop { animation:cartpop 1s cubic-bezier(.33,0,.2,1); transform-origin:center; }
   @keyframes cartnumpop { 0%{transform:translate(-50%,-50%) scale(1)} 45%{transform:translate(-50%,-50%) scale(1.4)} 100%{transform:translate(-50%,-50%) scale(1)} }
-  .cartnum { position:absolute; left:55%; top:40%; transform:translate(-50%,-50%); font-size:12px; font-weight:800; color:var(--accent); line-height:1; pointer-events:none; text-align:center; font-variant-numeric:proportional-nums; letter-spacing:-.3px; }
-  .cartnum.hide { display:none; }
+  .cartnum { position:absolute; left:50%; top:33%; transform:translate(-50%,-50%); font-size:12px; font-weight:800; color:var(--accent); line-height:1; pointer-events:none; text-align:center; font-variant-numeric:proportional-nums; letter-spacing:-.3px; }
   .cartnum.pop { animation:cartnumpop 1s cubic-bezier(.33,0,.2,1); }
   .spark { position:fixed; z-index:70; pointer-events:none; line-height:1; animation:spark .66s ease-out forwards; }
   @keyframes spark { 0%{opacity:0; transform:translate(-50%,-50%) scale(.3)} 25%{opacity:1} 100%{opacity:0; transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1)} }
@@ -538,7 +537,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.04";
+const APP_VERSION = "v1.05";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1013,8 +1012,7 @@ let _prevPlanned=null, _prevChecked=null;
 let _cartPending = 0;   // items mid-flight to the cart — counted in the badge only once the flyer lands (bumpCart)
 function cartCount(){ return Math.max(0, state.items.filter(i=>i.checked).length - _cartPending); }
 function cartBadgeHTML(iconHTML){
-  const shown = cartCount();
-  return `<span class="cartwrap" id="cartWrap">${iconHTML}<span class="cartnum${shown?'':' hide'}" id="cartNum">${shown||''}</span></span>`;
+  return `<span class="cartwrap" id="cartWrap">${iconHTML}<span class="cartnum" id="cartNum">${cartCount()}</span></span>`;
 }
 // A23 bottom-nav stats flanking the cart: "N to buy" (left) and "N in cart" (right)
 function navStatHTML(){
@@ -1091,7 +1089,7 @@ function bumpCart(){
   if(_cartPending>0) _cartPending--;                    // this flyer has landed — now count it in the badge
   const cart = document.querySelector("#cartWrap");
   const cnum = cart && cart.querySelector(".cartnum");
-  if(cnum){ const shown=cartCount(); cnum.textContent = shown || ''; cnum.classList.toggle("hide", !shown);
+  if(cnum){ cnum.textContent = cartCount();
     cnum.classList.remove("pop"); void cnum.offsetWidth; cnum.classList.add("pop"); setTimeout(()=>cnum.classList.remove("pop"), 1000); }
   if(cart){ cart.classList.remove("cartpop"); void cart.offsetWidth; cart.classList.add("cartpop"); setTimeout(()=>cart.classList.remove("cartpop"), 1000); }
   if(cart) sparkleCart(cart);
@@ -1552,6 +1550,11 @@ function createCategoryFromSheet(){ const name=(editing.label||"").trim(); if(!n
   const cs=catList(); const color=editing.color || NEW_CAT_COLORS[cs.length % NEW_CAT_COLORS.length];
   cs.push({ id:uid(), label:name, color, emoji:(editing.img?"":(editing.emoji||"🛒")), img:editing.img||"", subs:[], custom:true });
   editing=null; save(); render(); }
+// Inline category/subcategory creation shared by the item editor and smart-add. Returns the new id.
+function makeCategory(name){ const nm=(name||"").trim(); if(!nm) return null; const cs=catList(); const id=uid();
+  cs.push({ id, label:nm, color:NEW_CAT_COLORS[cs.length % NEW_CAT_COLORS.length], emoji:"🛒", img:"", subs:[], custom:true }); save(); return id; }
+function makeSub(catId, name){ const nm=(name||"").trim(); if(!nm) return null; const c=catList().find(x=>x.id===catId); if(!c) return null;
+  if(!Array.isArray(c.subs)) c.subs=[]; const id=uid(); c.subs.push({ id, label:nm }); save(); return id; }
 const PIC_TAGS = { "milk.png":"milk dairy fresh egg cheese", "cross.png":"health medicine pharmacy supplement vitamin", "ramen.png":"asian noodle ramen rice", "hammer.png":"hardware tool hammer diy" };
 function relevantIcons(ed){ const lab=(ed.label||"").toLowerCase().trim();
   const match=k=> lab && k.split(" ").some(w=>w===lab||lab.includes(w)||w.includes(lab));
@@ -2323,6 +2326,9 @@ function wireSmartSheet(){
   app.querySelectorAll("[data-smart-q]").forEach(b=>{ b.onclick=()=>{ const [i,d]=b.dataset.smartQ.split("|"); const it=smartItems[+i]; if(it){ it.qty=Math.max(1,Math.min(999,(it.qty||1)+(+d))); render(); } }; });
   app.querySelectorAll("[data-smart-cat]").forEach(b=>{ b.onclick=()=>{ const [i,cid]=b.dataset.smartCat.split("|"); const it=smartItems[+i]; if(it){ if(it.category!==cid) it.sub=""; it.category=cid; render(); } }; });
   app.querySelectorAll("[data-smart-sub]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartSub.split("|"); const it=smartItems[+p[0]]; if(it){ it.sub=(it.sub===(p[1]||"")?"":(p[1]||"")); render(); } }; });
+  app.querySelectorAll("[data-smart-name]").forEach(inp=>{ inp.oninput=()=>{ const it=smartItems[+inp.dataset.smartName]; if(it) it.name=inp.value; }; });   // no re-render: keep focus while typing
+  app.querySelectorAll("[data-smart-addcat]").forEach(b=>{ b.onclick=()=>{ const it=smartItems[+b.dataset.smartAddcat]; if(!it) return; const nm=prompt("New category name:",""); if(nm&&nm.trim()){ const id=makeCategory(nm); if(id){ it.category=id; it.sub=""; render(); } } }; });
+  app.querySelectorAll("[data-smart-addsub]").forEach(b=>{ b.onclick=()=>{ const it=smartItems[+b.dataset.smartAddsub]; if(!it) return; const nm=prompt("New subcategory name:",""); if(nm&&nm.trim()){ const id=makeSub(it.category,nm); if(id){ it.sub=id; render(); } } }; });
   app.querySelectorAll("[data-smart-wt]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartWt.split("|"); const i=+p[0], w=p[1]||""; const it=smartItems[i]; if(it){ it.weight = (it.weight===w ? "" : w); render(); } }; });
 }
 function smartSheet(){
@@ -2337,16 +2343,18 @@ function smartSheet(){
     const WOPTS=["","100g","200g","300g","500g","750g","1kg","2kg","5kg"];
     const chips=smartItems.map((it,idx)=>{ const c=CAT(it.category); const open=smartEdit===idx;
       const have=state.items.some(i=>!i.checked && (i.name||"").toLowerCase()===it.name.toLowerCase());
-      const subs=(c.subs&&c.subs.length)?c.subs:null;
+      const subs=(c.subs&&c.subs.length)?c.subs:[];
       const editor = open ? `<div class="smartedit">
+          <div class="smartedit-row"><span class="smartedit-lbl">Name</span>
+            <input class="smartname" data-smart-name="${idx}" value="${esc(cap(it.name))}" autocomplete="off" autocapitalize="words" style="flex:1;min-width:0;padding:8px 11px;border-radius:10px;border:2px solid var(--ink);background:var(--card);color:var(--ink);font-size:14px;font-weight:600" /></div>
           <div class="smartedit-row"><span class="smartedit-lbl">Quantity</span>
             <div class="qstep2"><button data-smart-q="${idx}|-1" aria-label="Less">−</button><span>${it.qty||1}</span><button data-smart-q="${idx}|1" aria-label="More">+</button></div></div>
           <div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">Weight</span>
             <div class="swtrow">${WOPTS.map(w=>`<button class="swt ${((it.weight||"")===w)?'on':''}" data-smart-wt="${idx}|${w}">${w||'unit'}</button>`).join("")}</div></div>
           <div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">Category</span>
-            <div class="scatrow">${catList().map(cc=>`<button class="scat" data-smart-cat="${idx}|${cc.id}" style="${cc.id===it.category?`background:${cc.color};border-color:${cc.color};color:#fff`:''}">${catIcon(cc,13)} ${esc(cc.label)}</button>`).join("")}</div></div>
-          ${subs?`<div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">Subcategory</span>
-            <div class="scatrow"><button class="scat" data-smart-sub="${idx}|" style="${!it.sub?`background:${c.color};border-color:${c.color};color:#fff`:''}">None</button>${subs.map(s=>`<button class="scat" data-smart-sub="${idx}|${s.id}" style="${it.sub===s.id?`background:${c.color};border-color:${c.color};color:#fff`:''}">${esc(s.label)}</button>`).join("")}</div></div>`:""}
+            <div class="scatrow">${catList().map(cc=>`<button class="scat" data-smart-cat="${idx}|${cc.id}" style="${cc.id===it.category?`background:${cc.color};border-color:${cc.color};color:#fff`:''}">${catIcon(cc,13)} ${esc(cc.label)}</button>`).join("")}<button class="scat" data-smart-addcat="${idx}" style="border-style:dashed;font-weight:800">＋ New</button></div></div>
+          <div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">Subcategory</span>
+            <div class="scatrow"><button class="scat" data-smart-sub="${idx}|" style="${!it.sub?`background:${c.color};border-color:${c.color};color:#fff`:''}">None</button>${subs.map(s=>`<button class="scat" data-smart-sub="${idx}|${s.id}" style="${it.sub===s.id?`background:${c.color};border-color:${c.color};color:#fff`:''}">${esc(s.label)}</button>`).join("")}<button class="scat" data-smart-addsub="${idx}" style="border-style:dashed;font-weight:800">＋ New</button></div></div>
         </div>` : "";
       return `<div class="smartchip ${open?'open':''}" style="border-left:4px solid ${c.color}">
         <div class="smartchip-top">
@@ -2631,11 +2639,13 @@ function editSheet(){
   const btnDelStyle = "padding:13px 12px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:14px";
   const btnSaveStyle = "flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px";
   const selCat = CAT(editing.cat);
-  const subChips = (selCat && selCat.subs && selCat.subs.length)
+  const selSubs = (selCat && Array.isArray(selCat.subs)) ? selCat.subs : [];
+  const subChips = selCat
     ? `<div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:14px">Subcategory</div>
        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
          <button class="catchip" data-es="" style="${!editing.sub?`background:var(--btn);border-color:var(--btn);color:#fff`:''}">None</button>
-         ${selCat.subs.map(s=>`<button class="catchip" data-es="${s.id}" style="${editing.sub===s.id?`background:${selCat.color};border-color:${selCat.color};color:#fff`:''}">${esc(s.label)}</button>`).join("")}
+         ${selSubs.map(s=>`<button class="catchip" data-es="${s.id}" style="${editing.sub===s.id?`background:${selCat.color};border-color:${selCat.color};color:#fff`:''}">${esc(s.label)}</button>`).join("")}
+         <button class="catchip" id="esAddSub" style="border-style:dashed;font-weight:800">＋ New</button>
        </div>` : "";
   return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -2650,7 +2660,7 @@ function editSheet(){
       <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:15px" />
     </div>
     <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:14px">Category</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${chipsHTML(editing.cat)}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${chipsHTML(editing.cat)}<button class="catchip" id="ecAddCat" style="border-style:dashed;font-weight:800">＋ New</button></div>
     ${subChips}
     <div style="display:flex;gap:8px;margin-top:16px">
       <button id="secBtn" style="${btnSecStyle}">${secLabel}</button>
@@ -2804,6 +2814,8 @@ function wireEditSheet(){
       const qp=app.querySelector("#qPlus"); if(qp) qp.onclick=()=>{ editing.qty=(editing.qty||1)+1; render(); };
       app.querySelectorAll("[data-ec]").forEach(b=>b.onclick=()=>{ editing.cat=b.dataset.ec; editing.sub=null; render(); });
       app.querySelectorAll("[data-es]").forEach(b=>b.onclick=()=>{ editing.sub=b.dataset.es||null; render(); });
+      const eac=app.querySelector("#ecAddCat"); if(eac) eac.onclick=()=>{ const nm=prompt("New category name:",""); if(nm&&nm.trim()){ const id=makeCategory(nm); if(id){ editing.cat=id; editing.sub=null; render(); } } };
+      const eas=app.querySelector("#esAddSub"); if(eas) eas.onclick=()=>{ if(!editing.cat){ showToast("Pick a category first"); return; } const nm=prompt("New subcategory name:",""); if(nm&&nm.trim()){ const id=makeSub(editing.cat,nm); if(id){ editing.sub=id; render(); } } };
       const sec=app.querySelector("#secBtn"); if(sec) sec.onclick=()=> editing.kind==="item" ? removeEditing() : restoreEditingToList();
       const del=app.querySelector("#delBtn"); if(del) del.onclick=()=> editing.kind==="item" ? deleteItemEditing() : removeBAfromSheet();
       const sv=app.querySelector("#saveBtn"); if(sv) sv.onclick=()=> editing.kind==="item" ? saveEdit() : saveBA();
