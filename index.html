@@ -273,6 +273,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     color:var(--ink) !important; padding:7px 44px 7px 4px !important; }
   .catheadchip.catcalm .cname { color:var(--ink); font-weight:800; }
   .catheadchip.catcalm .cnum { color:var(--muted2); opacity:1; font-weight:700; }
+  .catheadchip.catcalm .cdot { width:9px; height:9px; border-radius:50%; flex:none; }
   .cprog { height:3px; border-radius:3px; background:var(--line); overflow:hidden; margin:3px 2px 4px; }
   .cprog > i { display:block; height:100%; border-radius:3px; transition:width .3s ease; }
   .emojibox { width:54px; text-align:center; padding:12px 0; border-radius:14px; border:2px solid var(--ink);
@@ -536,7 +537,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.01";
+const APP_VERSION = "v1.02";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1790,7 +1791,7 @@ const CALM_THEMES = new Set(["midnight","market","mono"]);
 function calmHead(cat, done, total, collapsed, attr, entryOpen){
   const pct = total ? Math.round(done/total*100) : 0;
   return `<div class="chead"><button class="lbl catheadchip catcalm" ${attr}="${cat.id}">`
-    +`<span class="cemoji">${catIcon(cat,16)}</span>`
+    +`<span class="cdot" style="background:${cat.color}"></span>`
     +`<span class="cname">${esc(cat.label)}</span>`
     +`<span class="cnum">${done}/${total}${collapsed?' ▸':''}</span></button>`
     +`<button class="plus" data-add="${cat.id}" style="${entryOpen?`background:${cat.color};color:#fff`:''}">${entryOpen?'×':'+'}</button></div>`
