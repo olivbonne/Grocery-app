@@ -268,6 +268,14 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .catheadchip { padding:9px 44px 9px 13px !important; border-radius:13px; gap:7px; width:100%; box-sizing:border-box; }
   .catheadchip .cname { font-size:13px; }
   .catheadchip .cnum { margin-left:auto; }
+  /* A26 — calmer category header + per-aisle progress (midnight/market/mono themes only) */
+  .catheadchip.catcalm { width:100%; background:transparent !important; border:1.5px solid transparent !important;
+    color:var(--ink) !important; padding:7px 44px 7px 4px !important; }
+  .catheadchip.catcalm .cname { color:var(--ink); font-weight:800; }
+  .catheadchip.catcalm .cnum { color:var(--muted2); opacity:1; font-weight:700; }
+  .catheadchip.catcalm .cdot { width:9px; height:9px; border-radius:50%; flex:none; }
+  .cprog { height:3px; border-radius:3px; background:var(--line); overflow:hidden; margin:3px 2px 4px; }
+  .cprog > i { display:block; height:100%; border-radius:3px; transition:width .3s ease; }
   .emojibox { width:54px; text-align:center; padding:12px 0; border-radius:14px; border:2px solid var(--ink);
     outline:none; background:var(--card); color:var(--ink); font-size:18px; }
   .iconbox { width:54px; height:48px; border-radius:14px; border:2px solid var(--ink); background:var(--card);
@@ -529,7 +537,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.00";
+const APP_VERSION = "v1.02";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1778,6 +1786,17 @@ function wireQuickPanel(){
   app.querySelectorAll("[data-qm-weight]").forEach(b=>b.onclick=()=>{ const [id,w]=b.dataset.qmWeight.split("|"); const it=state.items.find(i=>i.id===id); if(it){ it.weight=w; markDirty(it.id); save(); render(); } });
   app.querySelectorAll("[data-qm-edit]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.qmEdit); if(it){ quickEdit=null; editing={kind:"item", ...it}; render(); } });
 }
+// A26 — calmer category header + per-aisle progress bar, used only by the midnight/market/mono themes.
+const CALM_THEMES = new Set(["midnight","market","mono"]);
+function calmHead(cat, done, total, collapsed, attr, entryOpen){
+  const pct = total ? Math.round(done/total*100) : 0;
+  return `<div class="chead"><button class="lbl catheadchip catcalm" ${attr}="${cat.id}">`
+    +`<span class="cdot" style="background:${cat.color}"></span>`
+    +`<span class="cname">${esc(cat.label)}</span>`
+    +`<span class="cnum">${done}/${total}${collapsed?' ▸':''}</span></button>`
+    +`<button class="plus" data-add="${cat.id}" style="${entryOpen?`background:${cat.color};color:#fff`:''}">${entryOpen?'×':'+'}</button></div>`
+    +`<div class="cprog" aria-hidden="true"><i style="width:${pct}%;background:${cat.color}"></i></div>`;
+}
 function renderMain(){
   const open = state.items.filter(i=>!i.checked).length;
   const done = state.items.filter(i=>i.checked).length;
@@ -1809,15 +1828,17 @@ function renderMain(){
     const chipText = has ? '#fff' : 'var(--muted2)';
     const chipBg = has ? cat.color : 'transparent';
     const chipBorder = has ? cat.color : 'var(--line)';
-    return `<section class="cat">
-      <div class="chead">
+    const chead = CALM_THEMES.has(theme)
+      ? calmHead(cat, all.filter(i=>i.checked).length, all.length, collapsed, "data-cat", catEntry===cat.id)
+      : `<div class="chead">
         <button class="lbl catheadchip" data-cat="${cat.id}" style="background:${chipBg};border:1.5px solid ${chipBorder};color:${chipText}">
           <span class="cemoji">${catIcon(cat,16)}</span>
           <span class="cname" style="color:${chipText}">${esc(cat.label)}</span>
           ${has?`<span class="cnum" style="color:${chipText};opacity:.85">${list.length}${collapsed?' ▸':''}</span>`:""}
         </button>
         <button class="plus" data-add="${cat.id}" style="${catEntry===cat.id?`background:${cat.color};color:#fff`:''}">${catEntry===cat.id?'×':'+'}</button>
-      </div>${catAdd}${pills}</section>`;
+      </div>`;
+    return `<section class="cat">${chead}${catAdd}${pills}</section>`;
   }).filter(Boolean);
 
   const baGroups = catList().map(cat=>{
@@ -2021,8 +2042,11 @@ function renderPlanPage(){
           <button id="catAddBtn" style="background:${cat.color}">+</button></div>` : "";
       const merged = [ ...inList.map(i=>({it:i,isBa:false})), ...ba.map(e=>({it:e,isBa:true})) ].sort((A,B)=> alpha ? byName(A.it,B.it) : bySortKey(A.it,B.it));
       const pills = merged.map(({it,isBa})=> isBa?planOutlineChip(it,cat):planFilledPill(it,cat)).join("");
-      return `<section class="cat"><div class="chead"><button class="lbl catheadchip" data-planc="${cat.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;width:100%"><span class="cemoji">${catIcon(cat,16)}</span><span class="cname" style="color:#fff">${esc(cat.label)}</span><span class="cnum" style="color:#fff;opacity:.85">${inList.length}/${total}${collapsed?' ▸':''}</span></button>
-        <button class="plus" data-add="${cat.id}" style="${catEntry===cat.id?`background:${cat.color};color:#fff`:''}">${catEntry===cat.id?'×':'+'}</button></div>${catAdd}
+      const chead = CALM_THEMES.has(theme)
+        ? calmHead(cat, inList.filter(i=>i.checked).length, inList.length, collapsed, "data-planc", catEntry===cat.id)
+        : `<div class="chead"><button class="lbl catheadchip" data-planc="${cat.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;width:100%"><span class="cemoji">${catIcon(cat,16)}</span><span class="cname" style="color:#fff">${esc(cat.label)}</span><span class="cnum" style="color:#fff;opacity:.85">${inList.length}/${total}${collapsed?' ▸':''}</span></button>
+        <button class="plus" data-add="${cat.id}" style="${catEntry===cat.id?`background:${cat.color};color:#fff`:''}">${catEntry===cat.id?'×':'+'}</button></div>`;
+      return `<section class="cat">${chead}${catAdd}
         ${collapsed?"":`<div class="pills" style="margin-top:6px">${pills}</div>`}</section>`;
     }).join("");
   } else if(psm==="auto"){
@@ -2037,8 +2061,11 @@ function renderPlanPage(){
           <button id="catAddBtn" style="background:${cat.color}">+</button></div>` : "";
       const combined = [ ...inList.map(i=>({it:i,isBa:false})), ...dotted.map(e=>({it:e,isBa:true})) ].sort((A,B)=>bySortKey(A.it,B.it));
       const html = combined.map(({it,isBa})=> isBa?planOutlineChip(it,CAT(it.cat)):planFilledPill(it,CAT(it.cat)) ).join("");
-      return `<section class="cat"><div class="chead"><button class="lbl catheadchip" data-planc="${cat.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;width:100%"><span class="cemoji">${catIcon(cat,16)}</span><span class="cname" style="color:#fff">${esc(cat.label)}</span><span class="cnum" style="color:#fff;opacity:.85">${inList.length}/${total}${collapsed?' ▸':''}</span></button>
-        <button class="plus" data-add="${cat.id}" style="${catEntry===cat.id?`background:${cat.color};color:#fff`:''}">${catEntry===cat.id?'×':'+'}</button></div>${catAdd}
+      const chead = CALM_THEMES.has(theme)
+        ? calmHead(cat, inList.filter(i=>i.checked).length, inList.length, collapsed, "data-planc", catEntry===cat.id)
+        : `<div class="chead"><button class="lbl catheadchip" data-planc="${cat.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;width:100%"><span class="cemoji">${catIcon(cat,16)}</span><span class="cname" style="color:#fff">${esc(cat.label)}</span><span class="cnum" style="color:#fff;opacity:.85">${inList.length}/${total}${collapsed?' ▸':''}</span></button>
+        <button class="plus" data-add="${cat.id}" style="${catEntry===cat.id?`background:${cat.color};color:#fff`:''}">${catEntry===cat.id?'×':'+'}</button></div>`;
+      return `<section class="cat">${chead}${catAdd}
         ${collapsed?"":`<div class="pills" style="margin-top:6px">${html}</div>`}</section>`;
     }).join("");
   } else if(psm==="location"){
@@ -2193,6 +2220,7 @@ function wireOptions(){
   const vf=app.querySelector("#verFoot"); if(vf){ let _dt; const _cancel=()=>clearTimeout(_dt);
     vf.onpointerdown=()=>{ _dt=setTimeout(()=>{ diagOpen=true; render(); }, 550); };
     vf.onpointerup=_cancel; vf.onpointerleave=_cancel; vf.onpointercancel=_cancel; }
+  const od=app.querySelector("#optDiag"); if(od) od.onclick=()=>{ diagOpen=true; render(); };
   const dbg=app.querySelector("#diagBg"); if(dbg) dbg.onclick=e=>{ if(e.target===dbg){ diagOpen=false; render(); } };
   const dcl=app.querySelector("#diagClose"); if(dcl) dcl.onclick=()=>{ diagOpen=false; render(); };
   const dpr=app.querySelector("#diagProbe"); if(dpr) dpr.oninput=()=>{ const o=app.querySelector("#diagProbeOut"); if(o) o.innerHTML=diagProbeHTML(dpr.value); };
@@ -2469,6 +2497,7 @@ function optionsSheet(){
       <div class="userlist">${state.members.map(m=>`<button class="userchip ${m===me?'on':''}" data-switch-user="${esc(m)}">${esc(m)}${m===me?`<span class="ucur">you</span>`:""}</button>`).join("")}</div>
     </div>` : ""}
     <button class="optaction" id="optShare">Share link</button>
+    <button class="optaction" id="optDiag" style="margin-top:10px">🔬 AI diagnostics</button>
     <div id="verFoot" style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted2);font-weight:600" title="Build: ${APP_BUILD_DATE} · hold for diagnostics">${APP_VERSION}</div>
   </div></div>${diagOpen?diagSheet():""}`;
 }
