@@ -11,7 +11,7 @@
 <meta property="og:title" content="Market List" />
 <meta property="og:description" content="A shared household grocery list, synced live across your household." />
 <meta property="og:type" content="website" />
-<meta property="og:image" content="https://grocery-app-2-sage.vercel.app/icon-512.png" />
+<meta property="og:image" content="https://grocery-app-2-sage.vercel.app/img/icon-512.png" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="512" />
 <meta property="og:image:height" content="512" />
@@ -19,7 +19,7 @@
 <meta name="twitter:card" content="summary" />
 <link rel="canonical" href="https://grocery-app-2-sage.vercel.app/" />
 <link rel="manifest" href="manifest.webmanifest" />
-<link rel="apple-touch-icon" href="icon-180.png" />
+<link rel="apple-touch-icon" href="img/icon-180.png" />
 <title>Market List</title>
 
 <!-- ===================================================================== -->
@@ -77,14 +77,14 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     --card:#ffffff; --line:#DCE5D7; --chip:#E1E9DC; --muted:#5C6C59; --muted2:#66766A;
     --btn:#21351F; --btn-text:#ffffff;
     --done-bg:#E4EBDF; --done-line:#D3DECC; --done-text:#6E7E6A; --done-edge:#ADBFA6;
-    --mic-img:url('mic-light.png');
+    --mic-img:url('img/mic-light.png');
   }
   body.dark, html.dark{
     --ink:#E7EEE5; --paper:#141C18; --accent:#E2502C;
     --card:#1E2B25; --line:#33433B; --chip:#27352E; --muted:#9DB0A4; --muted2:#7E9286;
     --btn:#2F4A2C; --btn-text:#EAF2E7;
     --done-bg:#212E28; --done-line:#33433B; --done-text:#7E9286; --done-edge:#52685C;
-    --mic-img:url('mic-dark.png');
+    --mic-img:url('img/mic-dark.png');
   }
   .micbtn{ width:46px; height:44px; flex:none; border-radius:14px; border:none;
     background:var(--mic-img) center/cover no-repeat; }
@@ -501,7 +501,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v0.98";
+const APP_VERSION = "v0.99";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1166,8 +1166,8 @@ function catList(){ ensureCats(); return state.categories; }
 function CAT(id){ return catList().find(c=>c.id===id) || DEFAULT_CATS.find(c=>c.id===id) || DEFAULT_CATS[DEFAULT_CATS.length-1]; }
 const DARK_VARIANTS = { "ramen.png":"ramen-dark.png" };
 function catIcon(cat, s){ s=s||16;
-  if(cat && cat.img){ let src=cat.img; if(theme==="dark" && DARK_VARIANTS[src]) src=DARK_VARIANTS[src];
-    return `<img class="cicon" src="${esc(src)}" style="width:${s}px;height:${s}px" alt="" />`; }
+  if(cat && cat.img){
+    return `<img class="cicon" src="${esc(dispImg(cat.img))}" style="width:${s}px;height:${s}px" alt="" />`; }
   return `<span style="font-size:${(s-1)}px;line-height:1">${(cat&&cat.emoji)||"🛒"}</span>`; }
 const ICON_PRESETS = [
   {img:"milk.png"},{img:"cross.png"},{img:"ramen.png"},{img:"hammer.png"},
@@ -1199,7 +1199,7 @@ const EMOJI_LIB = [
   {e:"👶",k:"baby kids infant"},{e:"🍼",k:"baby bottle milk infant"},{e:"🐶",k:"pet dog"},{e:"🐱",k:"pet cat"},{e:"🦴",k:"bone pet dog"},{e:"🐾",k:"paw pet"},{e:"🌸",k:"flower garden others"},{e:"🪴",k:"plant garden others"},{e:"🎁",k:"gift present party others"},{e:"🎉",k:"party celebrate others"},{e:"🍴",k:"food dining others"},{e:"🔧",k:"tool hardware spanner diy"},{e:"🔨",k:"hammer tool hardware diy"},{e:"🪛",k:"screwdriver tool hardware diy"},{e:"🔩",k:"screw bolt hardware diy"},
 ];
 function presetHTML(cur){
-  const imgs = ICON_PRESETS.map(p=>`<button class="iconopt ${cur===p.img?'sel':''}" data-icon="${p.img}"><img src="${p.img}" alt=""/></button>`).join("");
+  const imgs = ICON_PRESETS.map(p=>`<button class="iconopt ${cur===p.img?'sel':''}" data-icon="${p.img}"><img src="${esc(dispImg(p.img))}" alt=""/></button>`).join("");
   return imgs;
 }
 function emojiGridHTML(cur, filter){
@@ -1447,7 +1447,11 @@ function relevantIcons(ed){ const lab=(ed.label||"").toLowerCase().trim();
   EMOJI_LIB.forEach(x=>{ if(match(x.k)) out.push({e:x.e}); });
   return out;
 }
-function dispImg(src){ return (theme==="dark" && DARK_VARIANTS[src]) ? DARK_VARIANTS[src] : src; }
+// Built-in icon files live in img/; category .img values are stored bare (e.g. "milk.png")
+// in synced/cached state, so resolve the folder only at render time. Custom uploads (data:),
+// absolute URLs, and already-pathed values pass through untouched.
+function assetURL(src){ return (!src || /^(data:|https?:|\/|img\/)/.test(src)) ? src : "img/"+src; }
+function dispImg(src){ if(theme==="dark" && DARK_VARIANTS[src]) src=DARK_VARIANTS[src]; return assetURL(src); }
 function editColor(){ if(editing.color) return editing.color;
   if(editing.kind==="cat"){ const c=CAT(editing.id); if(c&&c.color) return c.color; }
   return "#6B5CA5"; }
@@ -1530,7 +1534,7 @@ function copyLink(){ const url=location.href;
 
 /* ---- voice input (Web Speech API) ---- */
 let recog=null, listening=false, micFinal="";
-function setMicUI(on){ const b=document.getElementById("micBtn"); if(b) b.style.backgroundImage = on ? "url('mic-on.png')" : "";
+function setMicUI(on){ const b=document.getElementById("micBtn"); if(b) b.style.backgroundImage = on ? "url('img/mic-on.png')" : "";
   const f=micField(); if(f) f.style.color = on ? "var(--accent)" : ""; }
 function micField(){ return document.getElementById("mainInput"); }
 function grow(el){ if(!el) return; el.style.height="auto"; el.style.height=Math.min(el.scrollHeight+4,180)+"px"; syncZoomHeight(); }
