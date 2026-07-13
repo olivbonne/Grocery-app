@@ -506,7 +506,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   @keyframes cartpop { 0%{transform:scale(1)} 48%{transform:scale(1.25)} 100%{transform:scale(1)} }
   .cartpop { animation:cartpop 1s cubic-bezier(.33,0,.2,1); transform-origin:center; }
   @keyframes cartnumpop { 0%{transform:translate(-50%,-50%) scale(1)} 45%{transform:translate(-50%,-50%) scale(1.4)} 100%{transform:translate(-50%,-50%) scale(1)} }
-  .cartnum { position:absolute; left:50%; top:42%; transform:translate(-50%,-50%); font-size:11px; font-weight:800; color:var(--accent); line-height:1; pointer-events:none; text-align:center; font-variant-numeric:proportional-nums; }
+  .cartnum { position:absolute; left:56%; top:49%; transform:translate(-50%,-50%); font-size:12px; font-weight:800; color:var(--accent); line-height:1; pointer-events:none; text-align:center; font-variant-numeric:proportional-nums; letter-spacing:-.3px; }
   .cartnum.pop { animation:cartnumpop 1s cubic-bezier(.33,0,.2,1); }
   .spark { position:fixed; z-index:70; pointer-events:none; line-height:1; animation:spark .66s ease-out forwards; }
   @keyframes spark { 0%{opacity:0; transform:translate(-50%,-50%) scale(.3)} 25%{opacity:1} 100%{opacity:0; transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1)} }
@@ -537,7 +537,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.02";
+const APP_VERSION = "v1.03";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1021,6 +1021,8 @@ function navCartStatHTML(){
 }
 // A22 shared glyphs + bottom-nav builder (Lists left · "N left" | divider | Cart, grouped right)
 const CART_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>';
+// A27 bottom-nav cart: wider, open basket so a double-digit in-cart count sits inside with even spacing (matches the reference art)
+const CART_NAV_SVG = '<svg width="30" height="24" viewBox="0 0 30 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 2.6h3.1l1.15 4"/><path d="M6.5 6.6h21.3l-2.45 9.05a1.85 1.85 0 0 1-1.8 1.35H10.75a1.85 1.85 0 0 1-1.8-1.35L6.5 6.6Z"/><circle cx="12" cy="21" r="1.85"/><circle cx="22.3" cy="21" r="1.85"/></svg>';
 const LISTS_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>';
 function bottomNav(o){
   return `<nav class="bottomnav" id="bottomnav">
@@ -1028,7 +1030,7 @@ function bottomNav(o){
     <div class="navright">
       ${navStatHTML()}
       <span class="navdiv" aria-hidden="true"></span>
-      <button class="navbtn ${o.cartActive?'active':''}" id="${o.cartId}">${cartBadgeHTML(CART_SVG)}<span>Cart</span></button>
+      <button class="navbtn ${o.cartActive?'active':''}" id="${o.cartId}">${cartBadgeHTML(CART_NAV_SVG)}<span>Cart</span></button>
     </div>
   </nav>`;
 }
@@ -2225,6 +2227,7 @@ function wireOptions(){
   const dcl=app.querySelector("#diagClose"); if(dcl) dcl.onclick=()=>{ diagOpen=false; render(); };
   const dpr=app.querySelector("#diagProbe"); if(dpr) dpr.oninput=()=>{ const o=app.querySelector("#diagProbeOut"); if(o) o.innerHTML=diagProbeHTML(dpr.value); };
   const dsb=app.querySelector("#diagSandbox"); if(dsb) dsb.onclick=openSandbox;
+  app.querySelectorAll("[data-diag-list]").forEach(b=>b.onclick=()=>{ const code=b.dataset.diagList; if(code!==listCode){ switchList(code); } });  // keep diagnostics open, inspect the chosen list
   const drp=app.querySelector("#diagResetPredict"); if(drp) drp.onclick=resetPredictions;
   const dra=app.querySelector("#diagResetPredictAll"); if(dra) dra.onclick=resetPredictionsServer;
   const diagKeepScroll=fn=>{ const sc=app.querySelector("#diagSheetEl"); const y=sc?sc.scrollTop:0; fn(); render(); const s2=app.querySelector("#diagSheetEl"); if(s2) s2.scrollTop=y; };
@@ -2444,6 +2447,7 @@ function diagSheet(){ const hd=t=>`<div style="font-size:11px;font-weight:800;te
       <div class="disp" style="font-weight:800;font-size:17px">🔬 AI diagnostics</div>
       <button id="diagClose" class="iconbtn" aria-label="Close">✕</button></div>
     <div style="font-size:11px;color:var(--muted2)">Read-only · ${esc(APP_VERSION)}</div>
+    ${(()=>{ const ls=getLists(); return ls.length>1 ? `${hd("List")}<div class="storegrid">${ls.map(l=>`<button data-diag-list="${esc(l.code)}" class="storechip ${l.code===listCode?'on':''}">${esc(l.name||l.code)}</button>`).join("")}</div><div style="font-size:11px;color:var(--muted2);margin-top:6px">Inspecting this list's items, categories &amp; buy-again. Learned shop order &amp; restock cadence are shared across your lists.</div>` : ""; })()}
     ${hd("Entry tester")}
     <input id="diagProbe" placeholder="Type an item…" autocomplete="off" autocapitalize="none" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:14px" />
     <div id="diagProbeOut" style="margin-top:8px;font-size:13px">${diagProbeHTML("")}</div>
