@@ -537,7 +537,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.05";
+const APP_VERSION = "v1.06";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2484,7 +2484,15 @@ function diagSheet(){ const hd=t=>`<div style="font-size:11px;font-weight:800;te
     <div id="diagProbeOut" style="margin-top:8px;font-size:13px">${diagProbeHTML("")}</div>
     ${hd("Buy-again storage")}<div style="font-size:13px">${diagStoreHTML()}</div>
     ${hd("AI shop order — per store")}<div style="font-size:13px">${diagAIHTML()}</div>
-    ${hd("Restock cadence")}<div style="font-size:13px">${diagPredictHTML()}</div>
+    ${hd("Restock cadence")}
+    <div style="font-size:11.5px;color:var(--muted2);margin:-2px 2px 9px;line-height:1.65">
+      Each row reads <b>cadence · last bought</b>.<br>
+      <b>~5d</b> — estimated restock interval: the typical gap between your buys (median of your last purchases). Needs 2+ buys to estimate.<br>
+      <b>3 buys</b> — shown <i>instead</i> of an interval when there's too little history yet (fewer than 2 buys to compare).<br>
+      <b>· 3d ago</b> — days since you last bought it.<br>
+      An item is suggested to restock once “days ago” reaches about its interval (≈85%), on your reminder day (Settings › Predictions).
+    </div>
+    <div style="font-size:13px">${diagPredictHTML()}</div>
     ${Object.keys(purch||{}).length ? `<button class="optaction" id="diagResetPredict" style="margin-top:10px">♻︎ Reset predictions (this device)</button>` : ""}
     ${configured ? `<button class="optaction" id="diagResetPredictAll" style="margin-top:8px">☁︎ Reset predictions — all devices</button>` : ""}
     <button class="optaction" id="diagSandbox" style="margin-top:16px">🧪 Open a sandbox list</button>
