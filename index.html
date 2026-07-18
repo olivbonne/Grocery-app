@@ -500,6 +500,23 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     padding:6px 0; line-height:1; }
   .navstat-n { font-size:17px; font-weight:900; color:var(--accent); font-variant-numeric:tabular-nums; }
   .navstat-l { font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.2px; }
+  /* v1.08 line-list display — one item per row */
+  .zoomer.linelist .pills { flex-direction:column; align-items:stretch; }
+  .zoomer.linelist .pills .pill, .zoomer.linelist .pills .bapill { width:100%; justify-content:flex-start; }
+  /* v1.08 quantity + weight banner (planning page), fixed above the bottom nav */
+  .qbanner { position:fixed; left:0; right:0; bottom:0; max-width:480px; margin:0 auto; z-index:38;
+    background:var(--paper); border-top:1px solid var(--line); box-shadow:0 -7px 16px -10px rgba(20,30,22,.45);
+    padding:8px 14px calc(8px + env(safe-area-inset-bottom)); box-sizing:border-box; animation:rise .14s ease; }
+  .qbanner-top { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:7px; }
+  .qbanner-name { font-weight:800; font-size:14px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .qbanner-close { flex:none; border:none; background:var(--chip); color:var(--ink); font-weight:800; font-size:13px; padding:6px 14px; border-radius:999px; }
+  .qbanner-row { display:flex; align-items:center; gap:8px; }
+  /* v1.08 floating "+ Add" on the shopping page (returns to planning) */
+  .shopaddfab-wrap { position:fixed; left:0; right:0; bottom:0; margin:0 auto; max-width:480px; z-index:37;
+    display:flex; justify-content:flex-end; padding:0 14px; pointer-events:none; }
+  .shopaddfab { pointer-events:auto; border:none; background:var(--btn); color:var(--btn-text); font-weight:800;
+    font-size:14px; padding:11px 18px; border-radius:999px; box-shadow:0 8px 22px rgba(20,30,22,.28); transition:transform .12s ease; }
+  .shopaddfab:active { transform:scale(.96); }
   /* A20 cart bounce when a flying item lands; A24 cart lifts straight up + doubles when an item is received */
   @keyframes cartbounce { 0%{transform:scale(1)} 35%{transform:scale(1.12)} 70%{transform:scale(.97)} 100%{transform:scale(1)} }
   .cartpulse { animation:cartbounce .42s ease; }
@@ -537,7 +554,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.07";
+const APP_VERSION = "v1.08";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -584,10 +601,22 @@ function guessCat(name){ const n=(name||"").toLowerCase(); let best=null, bestLe
   for(const[c,w] of Object.entries(DICT)) for(const x of w){ if(x.length>bestLen && n.includes(x)){ best=c; bestLen=x.length; } }
   return best; }
 
-function parseEntry(raw){ let s=raw.trim(); let m=s.match(/^(\d+)\s*[x×]?\s+(.+)$/i);
-  if(m) return {qty:parseInt(m[1],10)||1,name:m[2].trim()};
-  m=s.match(/^(.+?)\s*[x×]\s*(\d+)$/i); if(m) return {qty:parseInt(m[2],10)||1,name:m[1].trim()};
-  return {qty:1,name:s}; }
+/* Parse one entry token into qty · weight · name. Handles a leading count ("6 ", "6x",
+   "6 × "), a trailing count ("chicken x6"), and a leading weight ("500g", "2kg", "500 g").
+   Combined forms work too: "6x500g chicken thigh" → qty 6, weight 500g, name "chicken thigh". */
+const WEIGHT_RE = /^(\d+(?:[.,]\d+)?)\s*(kg|g|mg|ml|cl|l|lb|lbs|oz)\b\.?/i;
+function normWeight(num, unit){ unit=unit.toLowerCase(); if(unit==="lbs") unit="lb"; return num.replace(",",".")+unit; }
+function parseEntry(raw){ let s=raw.trim(); let qty=1, weight="";
+  let m=s.match(/^(\d+)\s*[x×]\s*(.+)$/i);                    // "6x …" / "6 × …"
+  if(m){ qty=parseInt(m[1],10)||1; s=m[2].trim(); }
+  else { m=s.match(/^(.+?)\s*[x×]\s*(\d+)$/i);                // "… x6"
+    if(m){ qty=parseInt(m[2],10)||1; s=m[1].trim(); }
+    else { m=s.match(/^(\d+)\s+(.+)$/);                       // "6 apples" — but not "500 g apples"
+      if(m && !WEIGHT_RE.test(s)){ qty=parseInt(m[1],10)||1; s=m[2].trim(); } } }
+  m=s.match(WEIGHT_RE);                                       // leading weight "500g …" / "2kg …"
+  if(m){ weight=normWeight(m[1],m[2]); s=s.slice(m[0].length).trim(); }
+  if(!s) return {qty:1, weight:"", name:raw.trim()};          // weight/qty only, no name → keep raw text
+  return {qty, weight, name:s}; }
 
 const uid = () => Math.random().toString(36).slice(2,9)+Date.now().toString(36);
 
@@ -1008,7 +1037,8 @@ function mergeCardHTML(){
 }
 applyTheme();
 let shopMode = false;
-function toggleShop(){ shopMode=!shopMode; if(shopMode) aiResetTrip(); localStorage.setItem("ml_shop", shopMode?"1":"0"); collapse.ba = !shopMode && collapse.ba; render(); }
+function setShop(on){ if(shopMode===on) return; shopMode=on; if(shopMode) aiResetTrip(); localStorage.setItem("ml_shop", shopMode?"1":"0"); collapse.ba = !shopMode && collapse.ba; }
+function toggleShop(){ setShop(!shopMode); render(); }
 function optMode(){ return view==="lists" ? "lists" : (shopMode ? "shop" : "plan"); }
 let _prevPlanned=null, _prevChecked=null;
 let _cartPending = 0;   // items mid-flight to the cart — counted in the badge only once the flyer lands (bumpCart)
@@ -1035,14 +1065,13 @@ const CART_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" st
 // in-cart count sits inside the open basket with even spacing and fits double-digit numbers (matches the reference art)
 const CART_NAV_SVG = '<svg width="29" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.5"/><circle cx="18" cy="21" r="1.5"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7"/></svg>';
 const LISTS_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>';
+const ADD_SVG = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
 function bottomNav(o){
+  const toBuy = state.items.filter(i=>!i.checked).length;   // "to buy" count now rides on the Add button, not beside the cart
   return `<nav class="bottomnav" id="bottomnav">
     <button class="navbtn ${o.listsActive?'active':''}" id="${o.listsId}">${LISTS_SVG}<span>Lists</span></button>
-    <div class="navright">
-      ${navStatHTML()}
-      <span class="navdiv" aria-hidden="true"></span>
-      <button class="navbtn ${o.cartActive?'active':''}" id="${o.cartId}">${cartBadgeHTML(CART_NAV_SVG)}<span>Cart</span></button>
-    </div>
+    <button class="navbtn ${o.addActive?'active':''}" id="${o.addId}"><span class="cartwrap">${ADD_SVG}${toBuy?`<span class="cartbadge">${toBuy}</span>`:""}</span><span>Add</span></button>
+    <button class="navbtn ${o.cartActive?'active':''}" id="${o.cartId}">${cartBadgeHTML(CART_NAV_SVG)}<span>Shop</span></button>
   </nav>`;
 }
 // A22 fly a live clone of the just-checked tile along a smooth downward arc into the cart
@@ -1143,8 +1172,14 @@ const _legacySort = localStorage.getItem("ml_sort")||"cat";
 function sortModeFor(){ const v=sorts[optMode()]||_legacySort; return v==="auto"?"cat":v; }
 function setSort(m){ sorts[optMode()]=m; localStorage.setItem("ml_sorts", JSON.stringify(sorts)); render(); }
 let displays = {}; try{ displays = JSON.parse(localStorage.getItem("ml_displays")||"null") || {}; }catch(e){ displays={}; }
-function displayFor(){ return displays[optMode()]==="flat" ? "flat" : "cat"; }   // "cat"=grouped sections, "flat"=one flat list
+function displayRaw(){ const d=displays[optMode()]; return (d==="flat"||d==="line") ? d : "cat"; }   // "cat" | "flat" | "line"
+function displayFor(){ return displayRaw()==="cat" ? "cat" : "flat"; }   // "line" groups like "flat"; the difference is one-per-line layout
+function lineList(){ return displayRaw()==="line"; }                     // one item per row (full-width tiles)
 function setDisplay(m){ displays[optMode()]=m; localStorage.setItem("ml_displays", JSON.stringify(displays)); render(); }
+// Smart add (AI ✨) on/off — global; ON keeps the ✨ button by the add box, OFF hides it.
+let _smart = localStorage.getItem("ml_smart");
+function smartOn(){ return _smart===null ? true : _smart==="1"; }
+function setSmart(on){ _smart = on?"1":"0"; localStorage.setItem("ml_smart", _smart); render(); }
 let optOpen=false, listsOpen=false;
 // A18 ✨ Smart add (planning-mode AI parse → preview → confirm)
 let smartOpen=false, smartLoading=false, smartError="", smartItems=[], smartEdit=null;
@@ -1356,7 +1391,7 @@ function parseInput(text){ const map=labelMap();
   for(const raw of norm.split(/\n/)){ const line=raw.trim(); if(!line) continue;
     let forced=null,rest=line; const c=line.indexOf(":");
     if(c!==-1){ const lab=line.slice(0,c).trim().toLowerCase(); if(map[lab]){ forced=map[lab]; rest=line.slice(c+1);} }
-    for(const tok of rest.split(",").map(s=>s.trim()).filter(Boolean)){ const{qty,name}=parseEntry(tok); if(name) out.push({name,qty,cat:forced}); }
+    for(const tok of rest.split(",").map(s=>s.trim()).filter(Boolean)){ const{qty,name,weight}=parseEntry(tok); if(name) out.push({name,qty,weight,cat:forced}); }
   } return out; }
 
 /* ---- Firebase ---- */
@@ -1445,11 +1480,12 @@ function addEntries(text, override){
   for(const e of parsed){
     const cat = override || e.cat;
     const ex = state.items.find(i=>!i.checked && i.name.toLowerCase()===e.name.toLowerCase());
-    if(ex){ if(e.qty>1) ex.qty=(ex.qty||1)+e.qty; markDirty(ex.id); continue; }
+    if(ex){ if(e.qty>1) ex.qty=(ex.qty||1)+e.qty; if(e.weight) ex.weight=e.weight; markDirty(ex.id); continue; }
     const nid=uid();
     const known = knownEntry(e.name);
-    if(cat){ state.items.push({id:nid,name:e.name,qty:e.qty,cat,sub:(known&&known.cat===cat&&known.sub)||"",checked:false,by:me}); }
-    else { const g=(known&&known.cat)||guessCat(e.name); state.items.push({id:nid,name:e.name,qty:e.qty,cat:g||"others",sub:(known&&known.sub)||"",checked:false,by:me}); }
+    const wt = e.weight || (known&&known.weight) || "";
+    if(cat){ state.items.push({id:nid,name:e.name,qty:e.qty,cat,sub:(known&&known.cat===cat&&known.sub)||"",weight:wt,checked:false,by:me}); }
+    else { const g=(known&&known.cat)||guessCat(e.name); state.items.push({id:nid,name:e.name,qty:e.qty,cat:g||"others",sub:(known&&known.sub)||"",weight:wt,checked:false,by:me}); }
     markDirty(nid);
   }
   save(); render();
@@ -1765,7 +1801,10 @@ function syncZoomHeight(){ const z=document.getElementById("zoomer"); const bb=d
   const navH = bb ? (bb.getBoundingClientRect().height||64) : 0;
   if(cb){ cb.style.bottom = Math.ceil(navH) + "px"; }
   const cbH = cb ? cb.getBoundingClientRect().height : 0;
-  if(z){ z.style.paddingBottom = Math.ceil((navH + cbH)/dens() + 24) + "px";
+  const qb=document.getElementById("qbanner"); if(qb) qb.style.bottom = Math.ceil(navH) + "px";   // quantity banner sits on top of the nav
+  const qbH = qb ? qb.getBoundingClientRect().height : 0;
+  const fabw=document.getElementById("shopAddFabWrap"); if(fabw) fabw.style.bottom = Math.ceil(navH + cbH + 12) + "px";   // "+ Add" clears the checked bar
+  if(z){ z.style.paddingBottom = Math.ceil((navH + cbH + qbH)/dens() + 24) + "px";
     if(zw) zw.style.height = Math.ceil(z.getBoundingClientRect().height) + "px"; }
   applyKb(); }
 let kbOffset=0, kbActive=false;
@@ -1958,9 +1997,8 @@ function renderMain(){
         </div>
       </header>
       <div class="addbar">
-        <button class="smartbtn" id="smartBtn" aria-label="Smart add" title="Smart add — turn a list or a whole recipe into items">✨</button>
+        ${smartOn()?`<button class="smartbtn" id="smartBtn" aria-label="Smart add" title="Smart add — turn a list or a whole recipe into items">✨</button>`:""}
         <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Add items to ${esc(state.name||'your list')}…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
-        <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
       </div>
       <div class="suggest" id="suggest"></div>
       ${shopMode?`<div class="shopbar shopbar2" style="margin-top:8px">
@@ -1973,7 +2011,7 @@ function renderMain(){
         </div>`
         :(state.items.length>0?`<div class="shopbar" style="margin-top:8px;background:var(--btn)"><span><span class="cartglyph">${CART_SVG}</span>At the store?</span><button id="startShop">Start shopping</button></div>`:"")}
     </div>
-    <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
+    <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${(state.items.length===0 && !shopMode)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">Your list is empty</p>
@@ -1985,7 +2023,8 @@ function renderMain(){
     </div></div>
   </div>
   ${checkedBar}
-  ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:true})}
+  ${state.items.length>0?`<div class="shopaddfab-wrap" id="shopAddFabWrap"><button class="shopaddfab" id="shopAddFab">+ Add</button></div>`:""}
+  ${bottomNav({listsId:"listsBtn",listsActive:false,addId:"addNav",addActive:false,cartId:"cartNav",cartActive:true})}
   ${optOpen?optionsSheet():""}
   ${listsOpen?listsSheet():""}
   ${smartOpen?smartSheet():""}
@@ -2018,7 +2057,7 @@ function renderListsPage(){
       <p class="hint" style="text-align:center;margin-top:16px">Tap a list to open it · press &amp; hold to rename, share, or delete.</p>
     </div></div>
   </div>
-  ${bottomNav({listsId:"listsBtnL",listsActive:true,cartId:"cartNavL",cartActive:false})}
+  ${bottomNav({listsId:"listsBtnL",listsActive:true,addId:"addNavL",addActive:false,cartId:"cartNavL",cartActive:false})}
   ${optOpen?optionsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
@@ -2051,7 +2090,8 @@ function wireListsPage(){
     nln.oninput=()=>{ newListDraft=nln.value; };
     nln.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); createNewListFromSheet(); } }; }
   const nlc=app.querySelector("#newListCreate"); if(nlc){ nlc.onpointerdown=e=>e.preventDefault(); nlc.onclick=createNewListFromSheet; }
-  const cnl=app.querySelector("#cartNavL"); if(cnl) cnl.onclick=()=>{ view="detail"; shopMode=false; render(); };
+  const cnl=app.querySelector("#cartNavL"); if(cnl) cnl.onclick=()=>{ view="detail"; setShop(true); render(); };   // Shop → straight into shopping
+  const anl=app.querySelector("#addNavL"); if(anl) anl.onclick=gotoPlanFocus;   // Add → planning page, cursor in the box
   const ob=app.querySelector("#optBtnTop"); if(ob) ob.onclick=()=>{ optOpen=true; render(); };
   wireOptions();
   const lbg=app.querySelector("#listActBg"); if(lbg) lbg.onclick=()=>{ listActOpen=false; render(); };
@@ -2068,7 +2108,23 @@ function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
 function planFilledPill(i, cat){ const checked=i.checked; const full=fillMode()==="full"&&!checked;
   const edge=checked?'var(--done-edge)':cat.color; const qcol=full?'#fff':(checked?'var(--muted2)':cat.color);
   const style=full?`background:${cat.color};border:1.5px solid ${cat.color};color:#fff`:`border-left:4px solid ${edge}`;
-  return `<button class="pill plan-in ${checked?'done':''}" data-plan-rm="${i.id}" style="${style}">${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}${checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit"${full?' style="color:rgba(255,255,255,.92)"':''}>▾</span></button>${quickEdit===i.id?qpanelHTML(i,cat):""}`; }
+  return `<button class="pill plan-in ${checked?'done':''}" data-plan-rm="${i.id}" style="${style}">${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}${checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit"${full?' style="color:rgba(255,255,255,.92)"':''}>▾</span></button>`; }
+/* A18/v1.08 — the quantity + weight editor for the selected plan item, shown as a banner
+   fixed above the bottom nav (rather than inline in the list). */
+function planQBannerHTML(){
+  if(quickEdit==null) return "";
+  const it=state.items.find(i=>i.id===quickEdit); if(!it) return "";
+  const cat=CAT(it.cat); const cur=it.weight||"";
+  const W=["","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"];
+  return `<div class="qbanner" id="qbanner" style="border-top:3px solid ${cat.color}">
+    <div class="qbanner-top"><span class="qbanner-name">${(it.qty||1)>1?it.qty+'× ':''}${cur?esc(cur)+' ':''}${esc(cap(it.name))}</span><button class="qbanner-close" id="qbannerClose">Done</button></div>
+    <div class="qbanner-row">
+      <div class="qstep2"><button data-qm-minus="${it.id}" aria-label="Less">−</button><span>${it.qty||1}</span><button data-qm-plus="${it.id}" aria-label="More">+</button></div>
+      <div class="wrowq">${W.map(w=>`<button class="wchipq ${cur===w?'on':''}" data-qm-weight="${it.id}|${w}">${w?(w==="500g"||w==="1kg"?'★'+w:w):'unit'}</button>`).join("")}</div>
+      <button class="qm-edit" data-qm-edit="${it.id}" aria-label="Full edit">⋯</button>
+    </div>
+  </div>`;
+}
 function planOutlineChip(e, cat){ return `<button class="pill plan-out ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="background:transparent;border:1.5px dashed ${cat.color}">${(e.qty||1)>1?`<span class="qty" style="color:${cat.color}">${e.qty}×</span>`:""}${e.weight?`<span class="qty" style="color:${cat.color}">${esc(e.weight)} </span>`:""}${esc(cap(e.name))}<span class="qmore" style="visibility:hidden" aria-hidden="true">▾</span></button>`; }
 function renderPlanPage(){
   const psm = (displayFor()==="cat" && sortModeFor()==="location") ? "cat" : sortModeFor();
@@ -2142,15 +2198,14 @@ function renderPlanPage(){
         <div style="display:flex;align-items:center;gap:8px">${syncChip()}<button id="optBtnTop" class="iconbtn" aria-label="Settings" title="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
       </header>
       <div class="addbar">
-        <button class="smartbtn" id="smartBtn" aria-label="Smart add" title="Smart add — turn a list or a whole recipe into items">✨</button>
+        ${smartOn()?`<button class="smartbtn" id="smartBtn" aria-label="Smart add" title="Smart add — turn a list or a whole recipe into items">✨</button>`:""}
         <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Add items to ${esc(state.name||'your list')}…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
-        <button class="addbtn" id="mainAdd" aria-label="Add"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg></button>
       </div>
       <div class="suggest" id="suggest"></div>
       ${!localStorage.getItem("ml_hint_rechint")?`<div class="rechint"><span>✨ Smart add reads a plain list <b>or</b> a whole recipe — paste one to scale &amp; add.</span><button class="iconmini" id="rechintX" aria-label="Dismiss">×</button></div>`:""}
       ${hasAny?`<div class="shopbar" style="margin-top:8px;background:var(--btn)"><span><span class="cartglyph">${CART_SVG}</span>At the store?</span><button id="startShop">Start shopping</button></div>`:""}
     </div>
-    <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
+    <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${predictCardHTML()}
       ${mergeCardHTML()}
       ${(hasAny && !localStorage.getItem("ml_hint_choose")) ? `<div class="subrow" style="justify-content:space-between;gap:8px;margin-bottom:8px">
@@ -2160,7 +2215,8 @@ function renderPlanPage(){
       <button id="addCatPlan" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
     </div></div>
   </div>
-  ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:true})}
+  ${planQBannerHTML()}
+  ${bottomNav({listsId:"listsBtn",listsActive:false,addId:"addNav",addActive:true,cartId:"cartNav",cartActive:false})}
   ${optOpen?optionsSheet():""}
   ${smartOpen?smartSheet():""}
   ${editing?editSheet():""}
@@ -2217,6 +2273,9 @@ function wirePlanPage(){
   const mHide=app.querySelector("[data-merge-hide]"); if(mHide) mHide.onclick=mergeHideAll;
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const ss=app.querySelector("#startShop"); if(ss) ss.onclick=toggleShop;
+  const an=app.querySelector("#addNav"); if(an) an.onclick=gotoPlanFocus;   // Add tab (already here) → just focus the box
+  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>{ view="detail"; setShop(true); optOpen=false; render(); };
+  const qbc=app.querySelector("#qbannerClose"); if(qbc) qbc.onclick=()=>{ quickEdit=null; render(); };
   wireSmartSheet();
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
@@ -2247,7 +2306,8 @@ function wireOptions(){
   app.querySelectorAll("[data-pred-freq]").forEach(b=>b.onclick=()=>{ predictCfg.freq=b.dataset.predFreq; savePredictCfg(); render(); });
   app.querySelectorAll("[data-pred-day]").forEach(b=>b.onclick=()=>{ predictCfg.day=+b.dataset.predDay; savePredictCfg(); render(); });
   app.querySelectorAll("[data-opt-sort]").forEach(b=>b.onclick=()=>setSort(b.dataset.optSort));
-  app.querySelectorAll("[data-opt-display]").forEach(b=>b.onclick=()=>{ if(displayFor()!==b.dataset.optDisplay) setDisplay(b.dataset.optDisplay); });
+  app.querySelectorAll("[data-opt-display]").forEach(b=>b.onclick=()=>{ if(displayRaw()!==b.dataset.optDisplay) setDisplay(b.dataset.optDisplay); });
+  app.querySelectorAll("[data-opt-smart]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optSmart==="1"; if(smartOn()!==want) setSmart(want); });
   app.querySelectorAll("[data-opt-useloc]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optUseloc==="1"; if(useLoc!==want){ useLoc=want; localStorage.setItem("ml_useloc", want?"1":"0"); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(want) ensureLocCheck(); render(); } });
   app.querySelectorAll("[data-opt-store]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optStore; if(storeSel!==v){ storeSel=v; localStorage.setItem("ml_store", v); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(v==="auto") ensureLocCheck(); render(); } });
   const sadd=app.querySelector("[data-store-add]"); if(sadd) sadd.onclick=()=>{ const id="c"+uid().slice(0,6); state.stores=state.stores||[]; state.stores.push({id,name:"New store",aisles:[]}); storeSel=id; localStorage.setItem("ml_store", id); save(); render(); };
@@ -2533,7 +2593,8 @@ function optionsSheet(){
     ${row("Appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}">Full</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}">Empty</button></div>`)}
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
     ${(view!=="lists") ? row("Style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
-    ${view!=="lists" ? `${row("Display", `<div class="seg"><button data-opt-display="cat" class="${displayFor()==='cat'?'on':''}">Category</button><button data-opt-display="flat" class="${displayFor()==='flat'?'on':''}">Flat list</button></div>`)}
+    ${(view!=="lists") ? row("Smart add", `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">On</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">Off</button></div>`) : ""}
+    ${view!=="lists" ? `${row("Display", `<div class="seg segfull"><button data-opt-display="cat" class="${displayRaw()==='cat'?'on':''}">Category</button><button data-opt-display="flat" class="${displayRaw()==='flat'?'on':''}">Flat list</button><button data-opt-display="line" class="${displayRaw()==='line'?'on':''}">Line list</button></div>`)}
     <div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
       <span class="optlabel">Sort</span>
       <div class="seg segfull">${(displayFor()==="flat" && shopMode && aiSortOK())?`<button data-opt-sort="ai" class="${curSort==='ai'?'on':''}">✨ AI</button>`:""}${displayFor()==="flat"?`<button data-opt-sort="location" class="${curSort==='location'?'on':''}">Location</button>`:""}<button data-opt-sort="cat" class="${curSort==='cat'?'on':''}">Subcategory</button><button data-opt-sort="alpha" class="${curSort==='alpha'?'on':''}">A–Z</button></div>
@@ -2780,7 +2841,10 @@ function wire(){
   const aiKp=app.querySelector("[data-ai-keep]"); if(aiKp) aiKp.onclick=aiDismissProposal;   // B7 revert / keep current
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>{ view="lists"; optOpen=false; render(); };
   const ln=app.querySelector("#listName"); if(ln) ln.onclick=()=>{ view="lists"; optOpen=false; render(); };
-  const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>{ shopMode=false; optOpen=false; render(); };
+  const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>{ setShop(false); optOpen=false; render(); };
+  const an=app.querySelector("#addNav"); if(an) an.onclick=gotoPlanFocus;   // Add tab → planning page, cursor in the box
+  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>{ view="detail"; setShop(true); optOpen=false; render(); };
+  const saf=app.querySelector("#shopAddFab"); if(saf) saf.onclick=gotoPlanFocus;   // floating "+ Add" on the shopping page
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; listsOpen=false; render(); };
   app.querySelectorAll("[data-example]").forEach(b=>b.onclick=()=>{ addEntries(b.dataset.example, null); });
   wireQuickPanel();
@@ -2851,31 +2915,31 @@ function wireEditSheet(){
   }
 }
 
-/* A16 swipe left/right anywhere on the page body to move between Lists ⇄ Plan ⇄ Shop.
-   Ignores swipes that start on sheets, inputs, or horizontally-scrolling rows, and
-   ignores gestures that are slow, short, too vertical, or multi-touch (pinch). */
-const PAGE_ORDER = ["lists","detail"];
+/* Three linear pages: Lists (0) ▸ Plan (1) ▸ Shop (2). Plan and Shop share view="detail",
+   distinguished by shopMode. Right-to-left swipe advances; left-to-right goes back. */
+function curPageIdx(){ if(view==="lists") return 0; return shopMode ? 2 : 1; }
+function gotoPage(idx){ if(idx<0 || idx>2) return;
+  catEntry=null; quickEdit=null; optOpen=false;
+  if(idx===0){ view="lists"; setShop(false); }
+  else if(idx===1){ view="detail"; setShop(false); }
+  else { view="detail"; setShop(true); }
+  render(); }
+function gotoPlanFocus(){ gotoPage(1); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }
 let _swipe = null;
 document.addEventListener("touchstart", e=>{
   _swipe = null;
   if(e.touches.length !== 1) return;
   const t = e.target;
-  if(t && t.closest && t.closest(".sheet-bg, textarea, input, .suggest, .storegrid, .wrowq, .picscroll, .icongrid, .listrows, .checkedscroll")) return;
+  if(t && t.closest && t.closest(".sheet-bg, textarea, input, .suggest, .storegrid, .wrowq, .picscroll, .icongrid, .listrows, .checkedscroll, .qbanner")) return;
   _swipe = { x:e.touches[0].clientX, y:e.touches[0].clientY, t:Date.now() };
 }, {passive:true});
 document.addEventListener("touchend", e=>{
   if(!_swipe) return; const s=_swipe; _swipe=null;
-  if(!me || editing || optOpen || listActOpen || newListOpen) return;
+  if(!me || editing || optOpen || listActOpen || newListOpen || smartOpen) return;
   const c = e.changedTouches && e.changedTouches[0]; if(!c) return;
   const dx = c.clientX - s.x, dy = c.clientY - s.y, dt = Date.now() - s.t;
   if(dt > 600 || Math.abs(dx) < 70 || Math.abs(dy) > 60 || Math.abs(dx) < 1.6*Math.abs(dy)) return;
-  const i = PAGE_ORDER.indexOf(view); if(i < 0) return;
-  const ni = i + (dx < 0 ? 1 : -1);
-  if(ni < 0 || ni >= PAGE_ORDER.length) return;
-  view = PAGE_ORDER[ni];
-  if(view === "detail") shopMode = false;
-  catEntry = null; quickEdit = null;
-  render();
+  gotoPage(curPageIdx() + (dx < 0 ? 1 : -1));
 }, {passive:true});
 
 window.addEventListener("resize", syncZoomHeight);
