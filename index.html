@@ -528,7 +528,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   @keyframes cartpop { 0%{transform:scale(1)} 48%{transform:scale(1.25)} 100%{transform:scale(1)} }
   .cartpop { animation:cartpop 1s cubic-bezier(.33,0,.2,1); transform-origin:center; }
   @keyframes cartnumpop { 0%{transform:translate(-50%,-50%) scale(1)} 45%{transform:translate(-50%,-50%) scale(1.4)} 100%{transform:translate(-50%,-50%) scale(1)} }
-  .cartnum { position:absolute; left:50%; top:33%; transform:translate(-50%,-50%); font-size:12px; font-weight:800; color:var(--accent); line-height:1; pointer-events:none; text-align:center; font-variant-numeric:proportional-nums; letter-spacing:-.3px; }
+  .cartnum { position:absolute; left:54%; top:33%; transform:translate(-50%,-50%); font-size:12px; font-weight:800; color:var(--accent); line-height:1; pointer-events:none; text-align:center; font-variant-numeric:proportional-nums; letter-spacing:-.3px; }
   .cartnum.pop { animation:cartnumpop 1s cubic-bezier(.33,0,.2,1); }
   .spark { position:fixed; z-index:70; pointer-events:none; line-height:1; animation:spark .66s ease-out forwards; }
   @keyframes spark { 0%{opacity:0; transform:translate(-50%,-50%) scale(.3)} 25%{opacity:1} 100%{opacity:0; transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1)} }
@@ -572,6 +572,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .pemoji { flex:none; font-size:15px; margin-right:1px; }
   .wrap.shop .pemoji { font-size:18px; }
   .addrow .pemoji { font-size:17px; }
+  /* v1.16 display picker (2×2) */
+  .dispgrid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .dispopt { border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:12.5px; padding:10px 6px; border-radius:11px; }
+  .dispopt.on { background:var(--accent); border-color:var(--accent); color:#fff; }
   /* v1.15 combined-page planning section (regulars to re-add, below the shopping list) */
   .plansec { margin-top:22px; border-top:1.5px dashed var(--line); padding-top:12px; }
   .plansec-h { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 2px 8px; }
@@ -628,7 +632,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.15";
+const APP_VERSION = "v1.16";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1139,13 +1143,13 @@ const CART_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" st
 // in-cart count sits inside the open basket with even spacing and fits double-digit numbers (matches the reference art)
 const CART_NAV_SVG = '<svg width="29" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.5"/><circle cx="18" cy="21" r="1.5"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7"/></svg>';
 const LISTS_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>';
-const ADD_SVG = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+const GEAR_SVG = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 function bottomNav(o){
-  const toBuy = state.items.filter(i=>!i.checked).length;   // "to buy" count now rides on the Add button, not beside the cart
+  // v1.16 three tabs: Lists · Shop (middle, cart) · Settings (right). Adding is the floating "+ Add" pill.
   return `<nav class="bottomnav" id="bottomnav">
     <button class="navbtn ${o.listsActive?'active':''}" id="${o.listsId}">${LISTS_SVG}<span>Lists</span></button>
-    <button class="navbtn ${o.addActive?'active':''}" id="${o.addId}"><span class="cartwrap">${ADD_SVG}${toBuy?`<span class="cartbadge">${toBuy}</span>`:""}</span><span>Add</span></button>
     <button class="navbtn ${o.cartActive?'active':''}" id="${o.cartId}">${cartBadgeHTML(CART_NAV_SVG)}<span>Shop</span></button>
+    <button class="navbtn" id="${o.setId}">${GEAR_SVG}<span>Settings</span></button>
   </nav>`;
 }
 // A22 fly a live clone of the just-checked tile along a smooth downward arc into the cart
@@ -1246,14 +1250,18 @@ const _legacySort = localStorage.getItem("ml_sort")||"cat";
 function sortModeFor(){ const v=sorts[optMode()]||_legacySort; return v==="auto"?"cat":v; }
 function setSort(m){ sorts[optMode()]=m; localStorage.setItem("ml_sorts", JSON.stringify(sorts)); render(); }
 let displays = {}; try{ displays = JSON.parse(localStorage.getItem("ml_displays")||"null") || {}; }catch(e){ displays={}; }
-function displayRaw(){ const d=displays[optMode()]; return (d==="flat"||d==="line") ? d : "cat"; }   // "cat" | "flat" | "line"
-function displayFor(){ return displayRaw()==="flat" ? "flat" : "cat"; }   // v1.14 "line" = category grouping + one-per-line; only "flat" is ungrouped
-function lineList(){ return displayRaw()==="line"; }                       // one item per row (full-width tiles)
+function displayRaw(){ const d=displays[optMode()]; return ["flat","line","flatline"].includes(d) ? d : "cat"; }   // cat | line | flat | flatline
+function displayFor(){ const d=displayRaw(); return (d==="flat"||d==="flatline") ? "flat" : "cat"; }   // "flat"/"flatline" drop categories; "cat"/"line" keep them
+function lineList(){ const d=displayRaw(); return d==="line" || d==="flatline"; }                        // one item per row
 function setDisplay(m){ displays[optMode()]=m; localStorage.setItem("ml_displays", JSON.stringify(displays)); render(); }
-// v1.14 show-emojis on/off — global; hides per-item emoji icons and category emoji glyphs.
-let _emoji = localStorage.getItem("ml_emoji");
-function emojiOn(){ return _emoji===null ? true : _emoji==="1"; }
-function setEmoji(on){ _emoji = on?"1":"0"; localStorage.setItem("ml_emoji", _emoji); render(); }
+// v1.16 two independent icon switches — category icons (emoji AND images) and item emojis.
+let _emojiCat = localStorage.getItem("ml_emoji_cat");
+let _emojiItem = localStorage.getItem("ml_emoji_item");
+(function(){ const old=localStorage.getItem("ml_emoji"); if(old!==null){ if(_emojiCat===null) _emojiCat=old; if(_emojiItem===null) _emojiItem=old; } })();   // migrate the old single toggle
+function catEmojiOn(){ return _emojiCat===null ? true : _emojiCat==="1"; }
+function itemEmojiOn(){ return _emojiItem===null ? true : _emojiItem==="1"; }
+function setCatEmoji(on){ _emojiCat = on?"1":"0"; localStorage.setItem("ml_emoji_cat", _emojiCat); render(); }
+function setItemEmoji(on){ _emojiItem = on?"1":"0"; localStorage.setItem("ml_emoji_item", _emojiItem); render(); }
 // Smart add (AI ✨) on/off — global; ON keeps the ✨ button by the add box, OFF hides it.
 let _smart = localStorage.getItem("ml_smart");
 function smartOn(){ return _smart===null ? true : _smart==="1"; }
@@ -1403,9 +1411,9 @@ function catList(){ ensureCats(); return state.categories; }
 function CAT(id){ return catList().find(c=>c.id===id) || DEFAULT_CATS.find(c=>c.id===id) || DEFAULT_CATS[DEFAULT_CATS.length-1]; }
 const DARK_VARIANTS = { "ramen.png":"ramen-dark.png" };
 function catIcon(cat, s){ s=s||16;
+  if(!catEmojiOn()) return "";                               // v1.16 hide category icons entirely when off — emoji AND images (fresh/asian)
   if(cat && cat.img){
     return `<img class="cicon" src="${esc(dispImg(cat.img))}" style="width:${s}px;height:${s}px" alt="" />`; }
-  if(!emojiOn()) return "";                                   // v1.14 hide category emoji glyphs when emojis are off
   return `<span style="font-size:${(s-1)}px;line-height:1">${(cat&&cat.emoji)||"🛒"}</span>`; }
 const ICON_PRESETS = [
   {img:"milk.png"},{img:"cross.png"},{img:"ramen.png"},{img:"hammer.png"},
@@ -1824,7 +1832,7 @@ const EMOJI_HINTS = [
   ["chocolate","🍫"],["cookie","🍪"],["biscuit","🍪"],["honey","🍯"],["salt","🧂"],["sugar","🧂"],["flour","🌾"],["oats","🌾"],["cereal","🥣"],["oil","🫒"],["popcorn","🍿"],["pizza","🍕"],
   ["soap","🧼"],["shampoo","🧴"],["conditioner","🧴"],["detergent","🧴"],["sponge","🧽"],["toothpaste","🪥"],["toothbrush","🪥"],["vitamin","💊"],["medicine","💊"],["panadol","💊"],["sunscreen","🧴"],["battery","🔋"],["tissue","🤧"]
 ];
-function itemEmoji(name, cat){ if(!emojiOn()) return "";
+function itemEmoji(name, cat){ if(!itemEmojiOn()) return "";
   const n=(name||"").toLowerCase();
   for(const [k,e] of EMOJI_HINTS){ if(n.includes(k)) return e; }
   const c=CAT(cat); return (c && c.emoji && !c.img) ? c.emoji : ""; }
@@ -2191,7 +2199,6 @@ function renderMain(){
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           ${syncChip()}
-          <button id="optBtnTop" aria-label="Settings" class="iconbtn" title="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
         </div>
       </header>
     </div>
@@ -2210,7 +2217,7 @@ function renderMain(){
   </div>
   ${checkedBar}
   ${(state.items.length>0 && !addOpen)?`<div class="shopaddfab-wrap" id="shopAddFabWrap"><button class="shopaddfab" id="shopAddFab">+ Add</button></div>`:""}
-  ${bottomNav({listsId:"listsBtn",listsActive:false,addId:"addNav",addActive:false,cartId:"cartNav",cartActive:true})}
+  ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:true,setId:"setNav"})}
   ${addOpen?addSheet():""}
   ${finishOpen?finishSheet():""}
   ${optOpen?optionsSheet():""}
@@ -2226,7 +2233,7 @@ function renderListsPage(){
     <div class="topfix" id="topfix">
       <header>
         <div style="display:flex;align-items:center;gap:8px"><span class="title disp">Lists<span class="dot">.</span></span></div>
-        <div style="display:flex;align-items:center;gap:8px">${syncChip()}<button id="optBtnTop" aria-label="Settings" class="iconbtn" title="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
+        <div style="display:flex;align-items:center;gap:8px">${syncChip()}</div>
       </header>
     </div>
     <div class="zoomwrap"><div class="zoomer" id="zoomer">
@@ -2245,7 +2252,7 @@ function renderListsPage(){
       <p class="hint" style="text-align:center;margin-top:16px">Tap a list to open it · press &amp; hold to rename, share, or delete.</p>
     </div></div>
   </div>
-  ${bottomNav({listsId:"listsBtnL",listsActive:true,addId:"addNavL",addActive:false,cartId:"cartNavL",cartActive:false})}
+  ${bottomNav({listsId:"listsBtnL",listsActive:true,cartId:"cartNavL",cartActive:false,setId:"setNavL"})}
   ${optOpen?optionsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
@@ -2279,7 +2286,7 @@ function wireListsPage(){
     nln.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); createNewListFromSheet(); } }; }
   const nlc=app.querySelector("#newListCreate"); if(nlc){ nlc.onpointerdown=e=>e.preventDefault(); nlc.onclick=createNewListFromSheet; }
   const cnl=app.querySelector("#cartNavL"); if(cnl) cnl.onclick=()=>gotoPage(1);   // open the combined list
-  const anl=app.querySelector("#addNavL"); if(anl) anl.onclick=openAdd;   // Add → plan page with the add sheet open
+  const stnl=app.querySelector("#setNavL"); if(stnl) stnl.onclick=()=>{ optOpen=true; render(); };   // Settings tab
   const ob=app.querySelector("#optBtnTop"); if(ob) ob.onclick=()=>{ optOpen=true; render(); };
   wireOptions();
   const lbg=app.querySelector("#listActBg"); if(lbg) lbg.onclick=()=>{ listActOpen=false; render(); };
@@ -2408,7 +2415,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>Add items…</span></button></div>`:""}
-  ${bottomNav({listsId:"listsBtn",listsActive:false,addId:"addNav",addActive:true,cartId:"cartNav",cartActive:false})}
+  ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}
   ${addOpen?addSheet():""}
   ${optOpen?optionsSheet():""}
   ${smartOpen?smartSheet():""}
@@ -2501,7 +2508,8 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-sort]").forEach(b=>b.onclick=()=>setSort(b.dataset.optSort));
   app.querySelectorAll("[data-opt-display]").forEach(b=>b.onclick=()=>{ if(displayRaw()!==b.dataset.optDisplay) setDisplay(b.dataset.optDisplay); });
   app.querySelectorAll("[data-opt-smart]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optSmart==="1"; if(smartOn()!==want) setSmart(want); });
-  app.querySelectorAll("[data-opt-emoji]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optEmoji==="1"; if(emojiOn()!==want) setEmoji(want); });
+  app.querySelectorAll("[data-opt-catemoji]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optCatemoji==="1"; if(catEmojiOn()!==want) setCatEmoji(want); });
+  app.querySelectorAll("[data-opt-itememoji]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optItememoji==="1"; if(itemEmojiOn()!==want) setItemEmoji(want); });
   app.querySelectorAll("[data-opt-useloc]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optUseloc==="1"; if(useLoc!==want){ useLoc=want; localStorage.setItem("ml_useloc", want?"1":"0"); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(want) ensureLocCheck(); render(); } });
   app.querySelectorAll("[data-opt-store]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optStore; if(storeSel!==v){ storeSel=v; localStorage.setItem("ml_store", v); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(v==="auto") ensureLocCheck(); render(); } });
   const sadd=app.querySelector("[data-store-add]"); if(sadd) sadd.onclick=()=>{ const id="c"+uid().slice(0,6); state.stores=state.stores||[]; state.stores.push({id,name:"New store",aisles:[]}); storeSel=id; localStorage.setItem("ml_store", id); save(); render(); };
@@ -2789,11 +2797,18 @@ function optionsSheet(){
     ${row("Theme", `<div class="seg segfull" style="flex-wrap:wrap"><button data-opt-theme="light" class="themebtn ${theme==='light'?'on':''}"><span class="themesw" style="background:#F2F6EE;border-color:#DCE5D7"><i style="background:#E2502C"></i></span>Light</button><button data-opt-theme="dark" class="themebtn ${theme==='dark'?'on':''}"><span class="themesw" style="background:#141C18;border-color:#33433B"><i style="background:#E2502C"></i></span>Dark</button><button data-opt-theme="midnight" class="themebtn ${theme==='midnight'?'on':''}"><span class="themesw" style="background:#0E120F;border-color:#2A322B"><i style="background:#EC5A2C"></i></span>Midnight</button><button data-opt-theme="market" class="themebtn ${theme==='market'?'on':''}"><span class="themesw" style="background:#F6F2E7;border-color:#DAD3C0"><i style="background:#D2542B"></i></span>Market</button><button data-opt-theme="mono" class="themebtn ${theme==='mono'?'on':''}"><span class="themesw" style="background:#16181A;border-color:#2C3136"><i style="background:#5FD0B0"></i></span>Mono</button></div>`)}
     ${row("Appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}">Full</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}">Empty</button></div>`)}
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
-    ${row("Emojis", `<div class="seg"><button data-opt-emoji="1" class="${emojiOn()?'on':''}">On</button><button data-opt-emoji="0" class="${!emojiOn()?'on':''}">Off</button></div>`)}
+    ${row("Category icons", `<div class="seg"><button data-opt-catemoji="1" class="${catEmojiOn()?'on':''}">On</button><button data-opt-catemoji="0" class="${!catEmojiOn()?'on':''}">Off</button></div>`)}
+    ${row("Item emojis", `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}">On</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}">Off</button></div>`)}
     ${(view!=="lists") ? row("Style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
     ${(view!=="lists") ? sect("List") : ""}
     ${(view!=="lists") ? row("Smart add", `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">On</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">Off</button></div>`) : ""}
-    ${view!=="lists" ? `${row("Display", `<div class="seg segfull"><button data-opt-display="cat" class="${displayRaw()==='cat'?'on':''}">Category</button><button data-opt-display="flat" class="${displayRaw()==='flat'?'on':''}">Flat list</button><button data-opt-display="line" class="${displayRaw()==='line'?'on':''}">Category line list</button></div>`)}
+    ${view!=="lists" ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px"><span class="optlabel">Display</span>
+      <div class="dispgrid">
+        <button class="dispopt ${displayRaw()==='cat'?'on':''}" data-opt-display="cat">Category flat list</button>
+        <button class="dispopt ${displayRaw()==='line'?'on':''}" data-opt-display="line">Category line list</button>
+        <button class="dispopt ${displayRaw()==='flat'?'on':''}" data-opt-display="flat">Flat list</button>
+        <button class="dispopt ${displayRaw()==='flatline'?'on':''}" data-opt-display="flatline">Line list</button>
+      </div></div>
     <div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
       <span class="optlabel">Sort</span>
       <div class="seg segfull">${(displayFor()==="flat" && shopMode && aiSortOK())?`<button data-opt-sort="ai" class="${curSort==='ai'?'on':''}">✨ AI</button>`:""}${displayFor()==="flat"?`<button data-opt-sort="location" class="${curSort==='location'?'on':''}">Location</button>`:""}<button data-opt-sort="cat" class="${curSort==='cat'?'on':''}">Subcategory</button><button data-opt-sort="alpha" class="${curSort==='alpha'?'on':''}">A–Z</button></div>
@@ -3051,8 +3066,8 @@ function wire(){
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>gotoPage(0);
   const ln=app.querySelector("#listName"); if(ln) ln.onclick=()=>gotoPage(0);
   const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>gotoPage(0);   // ‹ back to Lists
-  const an=app.querySelector("#addNav"); if(an) an.onclick=openAdd;   // Add tab → add sheet
   const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(1);
+  const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{ optOpen=true; render(); };   // Settings tab (bottom-right)
   const saf=app.querySelector("#shopAddFab"); if(saf) saf.onclick=openAdd;   // floating "+ Add" opens the add sheet
   app.querySelectorAll("[data-regc]").forEach(b=>{ const id=b.dataset.regc;   // v1.15 planning section: expand/collapse a regulars category
     b.onclick=()=>{ if(!collapse.regCats) collapse.regCats=[];
