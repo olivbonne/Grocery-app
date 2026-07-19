@@ -78,6 +78,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     --btn:#21351F; --btn-text:#ffffff;
     --done-bg:#E4EBDF; --done-line:#D3DECC; --done-text:#6E7E6A; --done-edge:#ADBFA6;
     --mic-img:url('img/mic-light.png');
+    --glass-bg:rgba(255,255,255,.58); --glass-brd:rgba(255,255,255,.5); --glass-hi:rgba(255,255,255,.7); --glass-blur:16px;
   }
   body.dark, html.dark{
     --ink:#E7EEE5; --paper:#141C18; --accent:#E2502C;
@@ -85,6 +86,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     --btn:#2F4A2C; --btn-text:#EAF2E7;
     --done-bg:#212E28; --done-line:#33433B; --done-text:#7E9286; --done-edge:#52685C;
     --mic-img:url('img/mic-dark.png');
+    --glass-bg:rgba(22,30,26,.66); --glass-brd:rgba(255,255,255,.12); --glass-hi:rgba(255,255,255,.14);
   }
   /* === Named themes (palette only — dark family also gets the .dark class from applyTheme) === */
   html[data-theme="midnight"], body[data-theme="midnight"]{
@@ -92,18 +94,21 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     --card:#141A15; --line:#2A322B; --chip:#232019; --muted:#8A928A; --muted2:#6C746C;
     --btn:#EC5A2C; --btn-text:#ffffff;
     --done-bg:#171D18; --done-line:#2A322B; --done-text:#6C746C; --done-edge:#3A423B;
+    --glass-bg:rgba(11,15,12,.7); --glass-brd:rgba(255,255,255,.1); --glass-hi:rgba(255,255,255,.12);
   }
   html[data-theme="market"], body[data-theme="market"]{
     --ink:#232019; --paper:#F6F2E7; --accent:#D2542B;
     --card:#FFFDF7; --line:#DAD3C0; --chip:#EDE7D6; --muted:#9A9484; --muted2:#A49E8E;
     --btn:#232019; --btn-text:#ffffff;
     --done-bg:#EDE7D6; --done-line:#E4DDCB; --done-text:#A49E8E; --done-edge:#C9C2AE;
+    --glass-bg:rgba(252,249,240,.62); --glass-brd:rgba(255,255,255,.55); --glass-hi:rgba(255,255,255,.75);
   }
   html[data-theme="mono"], body[data-theme="mono"]{
     --ink:#E9EAEC; --paper:#16181A; --accent:#5FD0B0;
     --card:#1B1E21; --line:#2C3136; --chip:#22262A; --muted:#8B9096; --muted2:#6C7278;
     --btn:#5FD0B0; --btn-text:#0F1113;
     --done-bg:#1B1E21; --done-line:#2C3136; --done-text:#6C7278; --done-edge:#3A4046;
+    --glass-bg:rgba(19,22,24,.7); --glass-brd:rgba(255,255,255,.1); --glass-hi:rgba(255,255,255,.12);
   }
   /* theme picker swatches */
   .themebtn{ display:flex; flex-direction:column; align-items:center; gap:5px; }
@@ -536,6 +541,37 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:14px; }
   .userchip.on { background:var(--btn); border-color:var(--btn); color:#fff; }
   .userchip .ucur { font-size:10px; font-weight:800; opacity:.8; text-transform:uppercase; letter-spacing:.4px; }
+  /* v1.12 "Glasshouse" — Liquid-Glass WEB APPROXIMATION (there is no official Apple web
+     framework for it): backdrop blur + layered border + inset highlight, solid fallbacks. */
+  .topfix, .bottomnav, .checkedbar, .qbanner, .sheet, .addpill {
+    background:var(--glass-bg);
+    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(160%);
+    backdrop-filter:blur(var(--glass-blur)) saturate(160%);
+  }
+  .topfix { box-shadow:none; border-bottom:1px solid var(--glass-brd); }
+  .bottomnav { left:12px; right:12px; bottom:calc(10px + env(safe-area-inset-bottom)); max-width:456px;
+    border:1px solid var(--glass-brd); border-radius:999px; padding:6px 16px;
+    box-shadow: inset 0 1px 0 var(--glass-hi), 0 12px 30px rgba(20,30,22,.25); }
+  .navbtn.active { background:var(--chip); border-radius:999px; }
+  .navbtn.active::before { display:none; }
+  .checkedbar { border-top:1px solid var(--glass-brd); border-radius:22px 22px 0 0;
+    box-shadow: inset 0 1px 0 var(--glass-hi), 0 -8px 22px -10px rgba(20,30,22,.35); }
+  .qbanner { border-radius:18px 18px 0 0; }
+  .sheet { border:1px solid var(--glass-brd); border-bottom:none;
+    box-shadow: inset 0 1px 0 var(--glass-hi), 0 -10px 34px rgba(20,30,22,.28); }
+  .addpill { border:1px solid var(--glass-brd);
+    box-shadow: inset 0 1px 0 var(--glass-hi), 0 10px 26px rgba(20,30,22,.22); }
+  @supports not (backdrop-filter: blur(1px)){
+    .topfix, .bottomnav, .checkedbar, .qbanner, .sheet, .addpill { background:var(--paper); }
+  }
+  @media (prefers-reduced-transparency: reduce){
+    .topfix, .bottomnav, .checkedbar, .qbanner, .sheet, .addpill { background:var(--paper);
+      -webkit-backdrop-filter:none; backdrop-filter:none; }
+  }
+  /* v1.12 per-item emoji icon */
+  .pemoji { flex:none; font-size:15px; margin-right:1px; }
+  .wrap.shop .pemoji { font-size:18px; }
+  .addrow .pemoji { font-size:17px; }
   /* v1.11 shop checklist rows + plan qty-banner remove + finish dialog */
   .wrap.shop .pcheck { margin-left:0; margin-right:11px; width:27px; height:27px; }
   .pill-meta { margin-left:auto; display:inline-flex; align-items:center; gap:5px; padding-left:10px; }
@@ -590,7 +626,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.11";
+const APP_VERSION = "v1.12";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1765,12 +1801,31 @@ function grow(el){ if(!el) return; el.style.height="auto"; el.style.height=Math.
    catalog, one-tap add, live-filtered by whatever is typed. Replaces the old top add bar. */
 const SEARCH_SVG = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>';
 const DICT_HIDE = new Set(["strawberr","blueberr","raspberr","berry","brocollini","choysum","chili","yogurt"]);   // matching stems / dupes, not for display
+/* v1.12 per-item emoji — first keyword match wins (multi-word/specific terms first), else the
+   item's category emoji. Pure lookup, offline. */
+const EMOJI_HINTS = [
+  ["paper towel","🧻"],["kitchen towel","🧻"],["toilet","🧻"],["ice cream","🍦"],["bok choy","🥬"],["spring onion","🧅"],["peanut butter","🥜"],
+  ["chicken","🍗"],["beef","🥩"],["steak","🥩"],["lamb","🥩"],["pork","🥓"],["bacon","🥓"],["sausage","🌭"],["ham","🥓"],["turkey","🍗"],["duck","🍗"],
+  ["salmon","🐟"],["tuna","🐟"],["fish","🐟"],["prawn","🦐"],["shrimp","🦐"],["crab","🦀"],["squid","🦑"],["lobster","🦞"],
+  ["milk","🥛"],["egg","🥚"],["cheese","🧀"],["butter","🧈"],["yoghurt","🥛"],["yogurt","🥛"],["cream","🥛"],["bread","🍞"],["croissant","🥐"],["bagel","🥯"],["baguette","🥖"],
+  ["banana","🍌"],["apple","🍎"],["orange","🍊"],["lemon","🍋"],["lime","🍋"],["grape","🍇"],["strawberr","🍓"],["berr","🫐"],["mango","🥭"],["melon","🍈"],["watermelon","🍉"],
+  ["peach","🍑"],["pear","🍐"],["pineapple","🍍"],["kiwi","🥝"],["cherry","🍒"],["coconut","🥥"],["avocado","🥑"],
+  ["tomato","🍅"],["carrot","🥕"],["potato","🥔"],["onion","🧅"],["garlic","🧄"],["broccoli","🥦"],["broccolini","🥦"],["corn","🌽"],["mushroom","🍄"],
+  ["capsicum","🫑"],["chilli","🌶️"],["cucumber","🥒"],["zucchini","🥒"],["eggplant","🍆"],["lettuce","🥬"],["spinach","🥬"],["cabbage","🥬"],["kale","🥬"],["ginger","🫚"],
+  ["rice","🍚"],["pasta","🍝"],["spaghetti","🍝"],["noodle","🍜"],["ramen","🍜"],["udon","🍜"],["tofu","🍥"],["kimchi","🥬"],["seaweed","🌿"],["nori","🌿"],
+  ["coffee","☕"],["tea","🍵"],["beer","🍺"],["wine","🍷"],["juice","🧃"],["water","💧"],
+  ["chocolate","🍫"],["cookie","🍪"],["biscuit","🍪"],["honey","🍯"],["salt","🧂"],["sugar","🧂"],["flour","🌾"],["oats","🌾"],["cereal","🥣"],["oil","🫒"],["popcorn","🍿"],["pizza","🍕"],
+  ["soap","🧼"],["shampoo","🧴"],["conditioner","🧴"],["detergent","🧴"],["sponge","🧽"],["toothpaste","🪥"],["toothbrush","🪥"],["vitamin","💊"],["medicine","💊"],["panadol","💊"],["sunscreen","🧴"],["battery","🔋"],["tissue","🤧"]
+];
+function itemEmoji(name, cat){ const n=(name||"").toLowerCase();
+  for(const [k,e] of EMOJI_HINTS){ if(n.includes(k)) return e; }
+  const c=CAT(cat); return (c && c.emoji && !c.img) ? c.emoji : ""; }
 function addFrag(){ const v=draftMain||""; const i=Math.max(v.lastIndexOf(","), v.lastIndexOf("\n")); return v.slice(i+1).trim(); }
 function addSheetRows(){
   const frag=addFrag(), f=frag.toLowerCase();
   const onList=(name,cat)=> state.items.find(i=>!i.checked && i.name.toLowerCase()===String(name).toLowerCase() && (cat==null||i.cat===cat));
-  const row=(attrs,name,meta,on,cad)=>`<button class="addrow ${on?'on':''}" ${attrs}>`
-    +`<span class="addrow-plus">${on?'✓':'+'}</span><span class="addrow-name">${name}</span>${cad||""}${meta?`<span class="addrow-meta">${esc(meta)}</span>`:""}</button>`;
+  const row=(attrs,name,meta,on,cad,em)=>`<button class="addrow ${on?'on':''}" ${attrs}>`
+    +`<span class="addrow-plus">${on?'✓':'+'}</span>${em?`<span class="pemoji" aria-hidden="true">${em}</span>`:""}<span class="addrow-name">${name}</span>${cad||""}${meta?`<span class="addrow-meta">${esc(meta)}</span>`:""}</button>`;
   let out="";
   if(frag){
     const segs=(draftMain||"").split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
@@ -1782,14 +1837,14 @@ function addSheetRows(){
     const due=predictDue().filter(d=>!f || d.name.toLowerCase().includes(f));
     if(due.length){ out+=`<div class="addcatlbl">Due soon</div>`+due.map(d=>{
       const on=!!onList(d.name,d.cat);
-      return row(`data-add-pred="${esc(d.key)}"`, esc(cap(d.name)), (d.qty>1?d.qty+"×":""), on, `<span class="addrow-cad">~${d.cadenceDays}d</span>`); }).join(""); }
+      return row(`data-add-pred="${esc(d.key)}"`, esc(cap(d.name)), (d.qty>1?d.qty+"×":""), on, `<span class="addrow-cad">~${d.cadenceDays}d</span>`, itemEmoji(d.name,d.cat)); }).join(""); }
     const bas=state.buyAgain.filter(e=>!f || e.name.toLowerCase().includes(f));
     if(bas.length){ out+=`<div class="addcatlbl">Regulars</div>`+bas.map(e=>{
       const it=onList(e.name,e.cat);
       const q=it?(it.qty||1):(e.qty||1), w=it?(it.weight||""):(e.weight||"");
       const meta=[q>1?q+"×":"", w].filter(Boolean).join(" ");
-      return it? row(`data-add-inc="${it.id}"`, esc(cap(e.name)), meta, true)
-               : row(`data-add-ba="${esc(e.name)}|${e.cat}"`, esc(cap(e.name)), meta, false); }).join(""); }
+      return it? row(`data-add-inc="${it.id}"`, esc(cap(e.name)), meta, true, "", itemEmoji(e.name,e.cat))
+               : row(`data-add-ba="${esc(e.name)}|${e.cat}"`, esc(cap(e.name)), meta, false, "", itemEmoji(e.name,e.cat)); }).join(""); }
     if(!due.length && !bas.length && !frag) out+=`<p class="empty-sub" style="margin:14px 4px">Items you clear after shopping land here for one-tap re-adding.</p>`;
   } else {
     for(const c of catList()){ const words=DICT[c.id]; if(!words) continue;
@@ -1797,8 +1852,8 @@ function addSheetRows(){
       if(!list.length) continue;
       out+=`<div class="addcatlbl">${esc(c.label)}</div>`+list.map(w=>{
         const it=onList(w,null);
-        return it? row(`data-add-inc="${it.id}"`, esc(cap(w)), (it.qty>1?it.qty+"×":""), true)
-                 : row(`data-add-dict="${esc(w)}|${c.id}"`, esc(cap(w)), "", false); }).join("");
+        return it? row(`data-add-inc="${it.id}"`, esc(cap(w)), (it.qty>1?it.qty+"×":""), true, "", itemEmoji(w,c.id))
+                 : row(`data-add-dict="${esc(w)}|${c.id}"`, esc(cap(w)), "", false, "", itemEmoji(w,c.id)); }).join("");
     }
   }
   return out;
@@ -1884,7 +1939,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&
 function syncZoomHeight(){ const z=document.getElementById("zoomer"); const bb=document.getElementById("bottomnav"); const tf=document.getElementById("topfix"); const cb=document.getElementById("checkedbar");
   const zw=z?z.parentElement:null;
   if(zw && tf){ zw.style.marginTop = Math.ceil(tf.getBoundingClientRect().height) + "px"; }
-  const navH = bb ? (bb.getBoundingClientRect().height||64) : 0;
+  const navH = bb ? Math.max(0, Math.ceil(window.innerHeight - bb.getBoundingClientRect().top)) : 0;   // v1.12 floating nav: stack everything above its top edge
   if(cb){ cb.style.bottom = Math.ceil(navH) + "px"; }
   const cbH = cb ? cb.getBoundingClientRect().height : 0;
   const qb=document.getElementById("qbanner"); if(qb) qb.style.bottom = Math.ceil(navH) + "px";   // quantity banner sits on top of the nav
@@ -1947,10 +2002,12 @@ function pillHTML(i, cat){
   const meta = `${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}`;
   const marks = `${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}${(!checked&&i.starred)?`<span style="color:${full?'#fff':'#E8A91D'};margin-right:1px">★</span>`:""}`;
   // v1.11 shop mode reads as a checklist: big check circle LEFT, name, qty/weight right-aligned
+  const em = itemEmoji(i.name, i.cat);
+  const emS = em?`<span class="pemoji" aria-hidden="true">${em}</span>`:"";
   return `<button class="pill ${checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="${style}">`
     +(shopMode
-      ? `<span class="pcheck" aria-hidden="true"${full?' style="border-color:rgba(255,255,255,.85);color:#fff"':''}>${checked?'✓':''}</span>${marks}${esc(cap(i.name))}<span class="pill-meta">${meta}</span>`
-      : `${marks}${meta}${esc(cap(i.name))}`)
+      ? `<span class="pcheck" aria-hidden="true"${full?' style="border-color:rgba(255,255,255,.85);color:#fff"':''}>${checked?'✓':''}</span>${emS}${marks}${esc(cap(i.name))}<span class="pill-meta">${meta}</span>`
+      : `${emS}${marks}${meta}${esc(cap(i.name))}`)
     +`</button>`;
 }
 function pillRow(items, cat){ return `<div class="pills">${items.map(i=>pillHTML(i,cat)).join("")}</div>`; }
@@ -2199,7 +2256,8 @@ function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
 function planFilledPill(i, cat){ const checked=i.checked; const full=fillMode()==="full"&&!checked;
   const edge=checked?'var(--done-edge)':cat.color; const qcol=full?'#fff':(checked?'var(--muted2)':cat.color);
   const style=full?`background:${cat.color};border:1.5px solid ${cat.color};color:#fff`:`border-left:4px solid ${edge}`;
-  return `<button class="pill plan-in ${checked?'done':''}" data-plan-rm="${i.id}" style="${style}">${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}${checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit"${full?' style="color:rgba(255,255,255,.92)"':''}>▾</span></button>`; }
+  const em=itemEmoji(i.name,i.cat);
+  return `<button class="pill plan-in ${checked?'done':''}" data-plan-rm="${i.id}" style="${style}">${em?`<span class="pemoji" aria-hidden="true">${em}</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}${checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit"${full?' style="color:rgba(255,255,255,.92)"':''}>▾</span></button>`; }
 /* A18/v1.08 — the quantity + weight editor for the selected plan item, shown as a banner
    fixed above the bottom nav (rather than inline in the list). */
 function planQBannerHTML(){
@@ -2676,6 +2734,7 @@ function diagSheet(){ const hd=t=>`<div style="font-size:11px;font-weight:800;te
 }
 function optionsSheet(){
   const row=(label,control)=>`<div class="optrow"><span class="optlabel">${label}</span><span class="optctrl">${control}</span></div>`;
+  const sect=t=>`<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 2px">${t}</div>`;   // v1.12 grouped settings
   let curSort = (displayFor()==="cat" && (sortModeFor()==="location"||sortModeFor()==="ai")) ? "cat" : sortModeFor();
   if(curSort==="ai" && !aiSortOK()) curSort="location";
   const anyOpen = (!shopMode)
@@ -2684,10 +2743,12 @@ function optionsSheet(){
   return `<div class="sheet-bg" id="optBg"><div class="sheet" id="optSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:14px">Settings</div>
     ${(view!=="lists" && (state.items.length>0 || state.buyAgain.length>0)) ? `<button class="optaction" id="optCollapseAll" style="margin-bottom:10px">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button>` : ""}
+    ${sect("Appearance")}
     ${row("Theme", `<div class="seg segfull" style="flex-wrap:wrap"><button data-opt-theme="light" class="themebtn ${theme==='light'?'on':''}"><span class="themesw" style="background:#F2F6EE;border-color:#DCE5D7"><i style="background:#E2502C"></i></span>Light</button><button data-opt-theme="dark" class="themebtn ${theme==='dark'?'on':''}"><span class="themesw" style="background:#141C18;border-color:#33433B"><i style="background:#E2502C"></i></span>Dark</button><button data-opt-theme="midnight" class="themebtn ${theme==='midnight'?'on':''}"><span class="themesw" style="background:#0E120F;border-color:#2A322B"><i style="background:#EC5A2C"></i></span>Midnight</button><button data-opt-theme="market" class="themebtn ${theme==='market'?'on':''}"><span class="themesw" style="background:#F6F2E7;border-color:#DAD3C0"><i style="background:#D2542B"></i></span>Market</button><button data-opt-theme="mono" class="themebtn ${theme==='mono'?'on':''}"><span class="themesw" style="background:#16181A;border-color:#2C3136"><i style="background:#5FD0B0"></i></span>Mono</button></div>`)}
     ${row("Appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}">Full</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}">Empty</button></div>`)}
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
     ${(view!=="lists") ? row("Style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
+    ${(view!=="lists") ? sect("List") : ""}
     ${(view!=="lists") ? row("Smart add", `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">On</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">Off</button></div>`) : ""}
     ${view!=="lists" ? `${row("Display", `<div class="seg segfull"><button data-opt-display="cat" class="${displayRaw()==='cat'?'on':''}">Category</button><button data-opt-display="flat" class="${displayRaw()==='flat'?'on':''}">Flat list</button><button data-opt-display="line" class="${displayRaw()==='line'?'on':''}">Line list</button></div>`)}
     <div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
@@ -2705,13 +2766,14 @@ function optionsSheet(){
     ${(storeSel==="home" || isRealStore(storeSel)) ? `<button class="optaction" id="optSetStore" style="margin-top:2px">📍 Set ${esc((storeById(storeSel)||{}).name||"store")} location here</button>` : ""}
     ${(()=>{ const hid=[...STORES,...(state.stores||[])].filter(s=>{ const o=storeOverride(s.id); return o.hidden && !o.removed; }); return hid.length ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:6px"><span class="optlabel" style="font-size:12px;color:var(--muted2)">Hidden stores</span>${hid.map(s=>`<div style="display:flex;gap:7px;align-items:center"><span style="flex:1;min-width:0;color:var(--muted);font-size:13px;font-weight:600">${esc((storeById(s.id)||s).name||s.id)}</span><button class="storechip" data-store-restore="${s.id}" style="flex:0 0 auto">Restore</button><button class="storechip" data-store-delete="${s.id}" aria-label="Delete" style="flex:0 0 auto;border-color:#C24A33;color:#C24A33">✕</button></div>`).join("")}</div>` : ""; })()}
     <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${esc(storeLabel())}</div>` : ""}` : ""}
+    ${sect("Shopping")}
     ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
-    ${(view!=="lists") ? `${row("Predictions", `<div class="seg"><button data-pred-on="1" class="${predictCfg.on?'on':''}">On</button><button data-pred-on="0" class="${!predictCfg.on?'on':''}">Off</button></div>`)}
+    ${(view!=="lists") ? `${sect("Predictions")}${row("Suggest restocks", `<div class="seg"><button data-pred-on="1" class="${predictCfg.on?'on':''}">On</button><button data-pred-on="0" class="${!predictCfg.on?'on':''}">Off</button></div>`)}
     ${predictCfg.on ? `${row("Remind me", `<div class="seg"><button data-pred-freq="weekly" class="${predictCfg.freq==='weekly'?'on':''}">Weekly</button><button data-pred-freq="monthly" class="${predictCfg.freq==='monthly'?'on':''}">Monthly</button></div>`)}
     ${predictCfg.freq==='weekly' ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px"><span class="optlabel">Day</span>
       <div class="daychips">${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d,i)=>{ const dv=(i+1)%7; return `<button class="daychip ${predictCfg.day===dv?'on':''}" data-pred-day="${dv}">${d}</button>`; }).join("")}</div></div>` : ""}
     <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">Suggests restocking items on your schedule, from how often you buy them — on your device. Adds only when you tap.</div>` : ""}` : ""}
-    ${state.members.length ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
+    ${state.members.length ? `${sect("Household")}<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
       <span class="optlabel">Users</span>
       <div class="userlist">${state.members.map(m=>`<button class="userchip ${m===me?'on':''}" data-switch-user="${esc(m)}">${esc(m)}${m===me?`<span class="ucur">you</span>`:""}</button>`).join("")}</div>
     </div>` : ""}
