@@ -578,7 +578,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .dispopt.on { background:var(--accent); border-color:var(--accent); color:#fff; }
   /* v1.15 combined-page planning section (regulars to re-add, below the shopping list) */
   .plansec { margin-top:22px; border-top:1.5px dashed var(--line); padding-top:12px; }
-  .plansec-h { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 2px 8px; }
+  .plansec-h { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 2px 8px; }
+  .plansec-toggle { flex:none; border:none; background:var(--chip); color:var(--ink); font-weight:800; font-size:11px; text-transform:none; letter-spacing:0; padding:5px 11px; border-radius:999px; }
+  .regtick { font-size:19px; font-weight:900; line-height:1; margin-right:2px; }
+  .reg-in .regplus, .regplus { font-weight:900; margin-right:2px; }
   /* v1.11 shop checklist rows + plan qty-banner remove + finish dialog */
   .wrap.shop .pcheck { margin-left:0; margin-right:11px; width:27px; height:27px; }
   .pill-meta { margin-left:auto; display:inline-flex; align-items:center; gap:5px; padding-left:10px; }
@@ -632,7 +635,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.16";
+const APP_VERSION = "v1.17";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2076,13 +2079,29 @@ function calmHead(cat, done, total, collapsed, attr, entryOpen){
    (previously-bought items not currently on the list) as dotted pills, grouped by category and
    COLLAPSED by default; tap one to add it, long-press to edit. Reuses planOutlineChip + the
    .ba-restore wiring. Categories you expand are remembered in collapse.regCats. */
+/* v1.17 one row per regular — selected (on the list) shows a solid pill with a ✓; not-selected
+   shows a dotted pill with a +. Tap toggles; long-press edits. Sorted A-Z. */
+function regPill(entry, cat, it){
+  const selected = !!it;
+  const q = selected ? (it.qty||1) : (entry.qty||1);
+  const w = selected ? (it.weight||"") : (entry.weight||"");
+  const em = itemEmoji(entry.name, cat.id);
+  const emS = em?`<span class="pemoji" aria-hidden="true">${em}</span>`:"";
+  const meta = `${q>1?`<span class="qty" style="color:${cat.color}">${q}×</span>`:""}${w?`<span class="qty" style="color:${cat.color}">${esc(w)} </span>`:""}`;
+  return selected
+    ? `<button class="pill reg-in" data-reg-rm="${it.id}" style="border-left:4px solid ${cat.color}"><span class="regtick" style="color:${cat.color}" aria-hidden="true">✓</span>${emS}${meta}${esc(cap(entry.name))}</button>`
+    : `<button class="pill reg-out" data-reg-add="${esc(entry.name)}|${cat.id}" style="background:transparent;border:1.5px dashed ${cat.color}"><span class="regplus" style="color:${cat.color}" aria-hidden="true">+</span>${emS}${meta}${esc(cap(entry.name))}</button>`;
+}
 function planningSection(){
+  const withRegs = catList().filter(c=> state.buyAgain.some(e=>e.cat===c.id)).map(c=>c.id);
+  const allExp = withRegs.length>0 && withRegs.every(id=>(collapse.regCats||[]).includes(id));
   const blocks = catList().map(cat=>{
-    const regs = state.buyAgain.filter(e=> e.cat===cat.id
-      && !state.items.some(i=>!i.checked && i.name.toLowerCase()===e.name.toLowerCase() && i.cat===cat.id));
+    const regs = state.buyAgain.filter(e=>e.cat===cat.id).slice().sort((a,b)=>a.name.localeCompare(b.name));   // v1.17 always A–Z
     if(!regs.length) return "";
     const exp = (collapse.regCats||[]).includes(cat.id);   // default collapsed
-    const pills = exp ? `<div class="pills" style="margin-top:6px">${regs.map(e=>planOutlineChip(e,cat)).join("")}</div>` : "";
+    const pills = exp ? `<div class="pills" style="margin-top:6px">${regs.map(e=>{
+      const it = state.items.find(i=>!i.checked && i.name.toLowerCase()===e.name.toLowerCase() && i.cat===cat.id);   // v1.17 show selected ones too
+      return regPill(e,cat,it); }).join("")}</div>` : "";
     return `<section class="cat"><div class="chead">
       <button class="lbl catheadchip" data-regc="${cat.id}" style="background:transparent;border:1.5px solid var(--line);color:var(--ink);width:100%">
         <span class="cemoji">${catIcon(cat,16)}</span><span class="cname">${esc(cat.label)}</span>
@@ -2090,7 +2109,7 @@ function planningSection(){
       </button></div>${pills}</section>`;
   }).filter(Boolean).join("");
   if(!blocks) return "";
-  return `<div class="plansec"><div class="plansec-h">＋ Add from your regulars</div>${blocks}</div>`;
+  return `<div class="plansec"><div class="plansec-h"><span>＋ Add from your regulars</span><button class="plansec-toggle" data-reg-toggleall>${allExp?'Collapse all':'Expand all'}</button></div>${blocks}</div>`;
 }
 function renderMain(){
   const open = state.items.filter(i=>!i.checked).length;
@@ -3073,6 +3092,18 @@ function wire(){
     b.onclick=()=>{ if(!collapse.regCats) collapse.regCats=[];
       collapse.regCats = collapse.regCats.includes(id) ? collapse.regCats.filter(x=>x!==id) : [...collapse.regCats, id];
       localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }; });
+  const rta=app.querySelector("[data-reg-toggleall]"); if(rta) rta.onclick=()=>{   // v1.17 expand/collapse ALL regular categories
+    const withRegs=catList().filter(c=>state.buyAgain.some(e=>e.cat===c.id)).map(c=>c.id);
+    const allExp=withRegs.length>0 && withRegs.every(id=>(collapse.regCats||[]).includes(id));
+    collapse.regCats = allExp ? [] : withRegs.slice();
+    localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
+  const regPress=(b,shortFn,longIdFn)=>{ b.oncontextmenu=e=>e.preventDefault();   // v1.17 tap toggles, long-press edits
+    b.onpointerdown=e=>{ e.preventDefault(); pressStart(); }; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
+    b.onpointerup=()=>{ pressCancel(); if(longFired){ const id=longIdFn&&longIdFn(); if(id) editItemById(id); return; } shortFn(); }; };
+  app.querySelectorAll("[data-reg-add]").forEach(b=>{ const p=b.dataset.regAdd.split("|"), cat=p.pop(), name=p.join("|");
+    regPress(b, ()=>addFromRegular(name,cat), ()=>{ addFromRegular(name,cat); const it=findItem(name,cat); return it&&it.id; }); });
+  app.querySelectorAll("[data-reg-rm]").forEach(b=>{ const id=b.dataset.regRm;
+    regPress(b, ()=>removeFromList(id), ()=>id); });
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; listsOpen=false; render(); };
   app.querySelectorAll("[data-example]").forEach(b=>b.onclick=()=>{ addEntries(b.dataset.example, null); });
   wireQuickPanel();
