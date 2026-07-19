@@ -626,7 +626,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.12";
+const APP_VERSION = "v1.13";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2484,6 +2484,7 @@ function wireOptions(){
     vf.onpointerdown=()=>{ _dt=setTimeout(()=>{ diagOpen=true; render(); }, 550); };
     vf.onpointerup=_cancel; vf.onpointerleave=_cancel; vf.onpointercancel=_cancel; }
   const od=app.querySelector("#optDiag"); if(od) od.onclick=()=>{ diagOpen=true; render(); };
+  const oc=app.querySelector("#optConcept"); if(oc) oc.onclick=()=>{ location.href="concept.html?list="+encodeURIComponent(listCode); };
   const dbg=app.querySelector("#diagBg"); if(dbg) dbg.onclick=e=>{ if(e.target===dbg){ diagOpen=false; render(); } };
   const dcl=app.querySelector("#diagClose"); if(dcl) dcl.onclick=()=>{ diagOpen=false; render(); };
   const dpr=app.querySelector("#diagProbe"); if(dpr) dpr.oninput=()=>{ const o=app.querySelector("#diagProbeOut"); if(o) o.innerHTML=diagProbeHTML(dpr.value); };
@@ -2779,6 +2780,7 @@ function optionsSheet(){
     </div>` : ""}
     <button class="optaction" id="optShare">Share link</button>
     <button class="optaction" id="optDiag" style="margin-top:10px">🔬 AI diagnostics</button>
+    <button class="optaction" id="optConcept" style="margin-top:10px">🧪 Try the new concept (sandbox)</button>
     <div id="verFoot" style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted2);font-weight:600" title="Build: ${APP_BUILD_DATE} · hold for diagnostics">${APP_VERSION}</div>
   </div></div>${diagOpen?diagSheet():""}`;
 }
