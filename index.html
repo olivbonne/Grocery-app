@@ -536,6 +536,14 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:14px; }
   .userchip.on { background:var(--btn); border-color:var(--btn); color:#fff; }
   .userchip .ucur { font-size:10px; font-weight:800; opacity:.8; text-transform:uppercase; letter-spacing:.4px; }
+  /* v1.09 page-slide transitions (Lists ▸ Plan ▸ Shop) — outgoing page frozen as a ghost that slides away */
+  .pageghost { position:fixed; inset:0; z-index:38; pointer-events:none; background:var(--paper); overflow:hidden; will-change:transform; }
+  @keyframes tickpop { 0%{transform:scale(.5)} 55%{transform:scale(1.3)} 100%{transform:scale(1)} }
+  .pill.picking .pcheck { animation:tickpop .3s cubic-bezier(.32,.72,.3,1); }
+  @keyframes sheetup { 0%{opacity:0;transform:translateY(28px)} 70%{opacity:1;transform:translateY(-4px)} 100%{opacity:1;transform:translateY(0)} }
+  .sheet { animation:sheetup .24s cubic-bezier(.32,.72,.3,1); }
+  @keyframes toastup { 0%{opacity:0;transform:translate(-50%,10px)} 70%{opacity:1;transform:translate(-50%,-3px)} 100%{opacity:1;transform:translate(-50%,0)} }
+  .toast { animation:toastup .24s cubic-bezier(.32,.72,.3,1); }
   /* A14 respect reduced motion */
   @media (prefers-reduced-motion: reduce){
     *, *::before, *::after { animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
@@ -554,7 +562,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.08";
+const APP_VERSION = "v1.09";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1036,7 +1044,7 @@ function mergeCardHTML(){
   </div>`;
 }
 applyTheme();
-let shopMode = false;
+let shopMode = localStorage.getItem("ml_shop")==="1";   // v1.09 restore the shopper's lens on relaunch
 function setShop(on){ if(shopMode===on) return; shopMode=on; if(shopMode) aiResetTrip(); localStorage.setItem("ml_shop", shopMode?"1":"0"); collapse.ba = !shopMode && collapse.ba; }
 function toggleShop(){ setShop(!shopMode); render(); }
 function optMode(){ return view==="lists" ? "lists" : (shopMode ? "shop" : "plan"); }
@@ -1294,6 +1302,7 @@ try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) stat
 if(!state.purch || typeof state.purch!=="object") state.purch={};
 state.purch = purchMerge(state.purch, purch);   // fold any legacy per-device history into the shared copy
 purch = state.purch;
+if(shopMode && !(state.items||[]).length){ shopMode=false; }   // nothing to shop — open on Plan
 let toast=null, toastAction=null, undoSnap=null, _toastT=null, catEntry=null, editing=null, configured=false;
 let draftMain="", draftCatText="", pendingSubFocus=null, quickEdit=null;
 
@@ -2080,7 +2089,7 @@ function wireListsPage(){
   app.querySelectorAll("[data-open]").forEach(b=>{ const code=b.dataset.open;
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
-    b.onpointerup=()=>{ pressCancel(); if(longFired){ listActCode=code; listActOpen=true; render(); } else { switchList(code); view="detail"; shopMode=false; render(); } };
+    b.onpointerup=()=>{ pressCancel(); if(longFired){ listActCode=code; listActOpen=true; render(); } else if(code===listCode){ gotoPage(1); } else { switchList(code); view="detail"; setShop(false); render(); } };
   });
   const nb=app.querySelector("#newListBubble"); if(nb) nb.onclick=newListPrompt;
   const nlbg=app.querySelector("#newListBg"); if(nlbg) nlbg.onclick=()=>{ newListOpen=false; render(); };
@@ -2090,7 +2099,7 @@ function wireListsPage(){
     nln.oninput=()=>{ newListDraft=nln.value; };
     nln.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); createNewListFromSheet(); } }; }
   const nlc=app.querySelector("#newListCreate"); if(nlc){ nlc.onpointerdown=e=>e.preventDefault(); nlc.onclick=createNewListFromSheet; }
-  const cnl=app.querySelector("#cartNavL"); if(cnl) cnl.onclick=()=>{ view="detail"; setShop(true); render(); };   // Shop → straight into shopping
+  const cnl=app.querySelector("#cartNavL"); if(cnl) cnl.onclick=()=>gotoPage(2);   // Shop → straight into shopping
   const anl=app.querySelector("#addNavL"); if(anl) anl.onclick=gotoPlanFocus;   // Add → planning page, cursor in the box
   const ob=app.querySelector("#optBtnTop"); if(ob) ob.onclick=()=>{ optOpen=true; render(); };
   wireOptions();
@@ -2271,13 +2280,13 @@ function wirePlanPage(){
   app.querySelectorAll("[data-merge-go]").forEach(b=>b.onclick=()=>mergeCluster(b.dataset.mergeGo));
   app.querySelectorAll("[data-merge-x]").forEach(b=>b.onclick=()=>mergeDismiss(b.dataset.mergeX));
   const mHide=app.querySelector("[data-merge-hide]"); if(mHide) mHide.onclick=mergeHideAll;
-  const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>{ view="lists"; optOpen=false; render(); };
-  const ss=app.querySelector("#startShop"); if(ss) ss.onclick=toggleShop;
+  const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>gotoPage(0);
+  const ss=app.querySelector("#startShop"); if(ss) ss.onclick=()=>gotoPage(2);
   const an=app.querySelector("#addNav"); if(an) an.onclick=gotoPlanFocus;   // Add tab (already here) → just focus the box
-  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>{ view="detail"; setShop(true); optOpen=false; render(); };
+  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(2);
   const qbc=app.querySelector("#qbannerClose"); if(qbc) qbc.onclick=()=>{ quickEdit=null; render(); };
   wireSmartSheet();
-  const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>{ view="lists"; optOpen=false; render(); };
+  const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>gotoPage(0);
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireOptions();
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
@@ -2835,15 +2844,15 @@ function wire(){
       else { restore(name,cat); } }; });
   const cba=app.querySelector("#clearBA"); if(cba) cba.onclick=()=>{ const prev=snapState(); const now=Date.now(); state.baTomb=state.baTomb||{}; state.buyAgain.forEach(e=>{ state.baTomb[baKey(e)]=now; }); state.buyAgain=[]; save(); render(); showUndo(prev,"Buy-again cleared"); };
 
-  const dsh=app.querySelector("#doneShop"); if(dsh) dsh.onclick=toggleShop;
-  const ssh=app.querySelector("#startShop"); if(ssh) ssh.onclick=toggleShop;
+  const dsh=app.querySelector("#doneShop"); if(dsh) dsh.onclick=()=>gotoPage(1);
+  const ssh=app.querySelector("#startShop"); if(ssh) ssh.onclick=()=>gotoPage(2);
   const aiAp=app.querySelector("[data-ai-apply]"); if(aiAp) aiAp.onclick=aiApplyProposal;   // B7 accept the proposed aisle order
   const aiKp=app.querySelector("[data-ai-keep]"); if(aiKp) aiKp.onclick=aiDismissProposal;   // B7 revert / keep current
-  const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>{ view="lists"; optOpen=false; render(); };
-  const ln=app.querySelector("#listName"); if(ln) ln.onclick=()=>{ view="lists"; optOpen=false; render(); };
-  const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>{ setShop(false); optOpen=false; render(); };
+  const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>gotoPage(0);
+  const ln=app.querySelector("#listName"); if(ln) ln.onclick=()=>gotoPage(0);
+  const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>gotoPage(1);
   const an=app.querySelector("#addNav"); if(an) an.onclick=gotoPlanFocus;   // Add tab → planning page, cursor in the box
-  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>{ view="detail"; setShop(true); optOpen=false; render(); };
+  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(2);
   const saf=app.querySelector("#shopAddFab"); if(saf) saf.onclick=gotoPlanFocus;   // floating "+ Add" on the shopping page
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; listsOpen=false; render(); };
   app.querySelectorAll("[data-example]").forEach(b=>b.onclick=()=>{ addEntries(b.dataset.example, null); });
@@ -2916,30 +2925,96 @@ function wireEditSheet(){
 }
 
 /* Three linear pages: Lists (0) ▸ Plan (1) ▸ Shop (2). Plan and Shop share view="detail",
-   distinguished by shopMode. Right-to-left swipe advances; left-to-right goes back. */
+   distinguished by shopMode. v1.09: page changes slide (iOS-push style) — the outgoing page is
+   frozen as a full-screen clone (".pageghost") that slides and dims away while the incoming page
+   slides in above it. A horizontal swipe drags the live page with the finger before committing.
+   Works because .topfix is position:fixed INSIDE .wrap: a transformed ancestor becomes the
+   containing block for fixed descendants, so translating .wrap moves header+content together
+   while the bottom nav (a sibling) stays put. */
 function curPageIdx(){ if(view==="lists") return 0; return shopMode ? 2 : 1; }
-function gotoPage(idx){ if(idx<0 || idx>2) return;
+function applyPage(idx){
   catEntry=null; quickEdit=null; optOpen=false;
   if(idx===0){ view="lists"; setShop(false); }
   else if(idx===1){ view="detail"; setShop(false); }
   else { view="detail"; setShop(true); }
-  render(); }
+}
+let _pageAnim=false;
+function makeGhost(){
+  if(!app.querySelector(".wrap")) return null;
+  const g=document.createElement("div"); g.className="pageghost"; g.style.transform="translateX(0)";
+  for(const sel of [".wrap","#checkedbar","#shopAddFabWrap","#qbanner"]){
+    const el=app.querySelector(sel); if(!el) continue;
+    const c=el.cloneNode(true);
+    c.removeAttribute("id"); c.querySelectorAll("[id]").forEach(x=>x.removeAttribute("id"));
+    if(sel===".wrap") c.style.transform="";
+    g.appendChild(c);
+  }
+  const zo=g.querySelector(".zoomer"), sy=window.scrollY||0;      // freeze the scroll position into the clone
+  if(zo && sy) zo.style.transform = "translateY(-"+sy+"px) " + (zo.style.transform||"");
+  return g;
+}
+function transitionTo(idx, fromPx){
+  if(idx<0 || idx>2 || _pageAnim) return;
+  const from=curPageIdx();
+  if(idx===from){ render(); return; }
+  const dir = idx>from ? 1 : -1;                                  // 1 → new page enters from the right
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches){ applyPage(idx); render(); return; }
+  const ghost=makeGhost();
+  applyPage(idx);
+  window.scrollTo(0,0);
+  render();
+  const nw=app.querySelector(".wrap");
+  if(!ghost || !nw) return;
+  document.body.appendChild(ghost);
+  _pageAnim=true;
+  nw.style.position="relative"; nw.style.zIndex="39"; nw.style.willChange="transform";
+  const EASE="cubic-bezier(.32,.72,.30,1)", DUR=300;
+  const na=nw.animate([{transform:"translateX("+(dir>0?100:-100)+"%)"},{transform:"translateX(0)"}],{duration:DUR,easing:EASE});
+  ghost.animate([{transform:"translateX("+(fromPx||0)+"px)",opacity:1},{transform:"translateX("+(dir>0?-28:28)+"%)",opacity:.5}],{duration:DUR,easing:EASE});
+  let done=false;
+  const fin=()=>{ if(done) return; done=true; _pageAnim=false; ghost.remove();
+    if(nw.isConnected){ nw.style.position=""; nw.style.zIndex=""; nw.style.willChange=""; } };
+  na.onfinish=fin; na.oncancel=fin; setTimeout(fin, DUR+140);     // safety net if WAAPI events don't fire
+}
+function gotoPage(idx, fromPx){ transitionTo(idx, fromPx); }
 function gotoPlanFocus(){ gotoPage(1); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }
-let _swipe = null;
+let _swipe=null, _drag=null;
+function _swipeBlocked(){ return (!me || editing || optOpen || listActOpen || newListOpen || smartOpen || _pageAnim); }
 document.addEventListener("touchstart", e=>{
-  _swipe = null;
-  if(e.touches.length !== 1) return;
-  const t = e.target;
+  _swipe=null; _drag=null;
+  if(e.touches.length!==1) return;
+  const t=e.target;
   if(t && t.closest && t.closest(".sheet-bg, textarea, input, .suggest, .storegrid, .wrowq, .picscroll, .icongrid, .listrows, .checkedscroll, .qbanner")) return;
-  _swipe = { x:e.touches[0].clientX, y:e.touches[0].clientY, t:Date.now() };
+  _swipe={ x:e.touches[0].clientX, y:e.touches[0].clientY, t:Date.now() };
+}, {passive:true});
+document.addEventListener("touchmove", e=>{
+  if(!_swipe || _swipeBlocked()) return;
+  const c=e.touches[0]; const dx=c.clientX-_swipe.x, dy=c.clientY-_swipe.y;
+  if(!_drag){
+    if(Math.abs(dx)<24 || Math.abs(dx)<1.5*Math.abs(dy)) return;  // not (yet) a deliberate horizontal drag
+    const w=app.querySelector(".wrap"); if(!w) return;
+    _drag={ w, base:curPageIdx(), dx:0 };
+    w.style.willChange="transform";
+  }
+  const nxt=_drag.base+(dx<0?1:-1);
+  _drag.dx = (nxt<0||nxt>2) ? dx/3 : dx;                          // rubber-band at the ends of the chain
+  _drag.w.style.transform="translateX("+_drag.dx.toFixed(1)+"px)";
 }, {passive:true});
 document.addEventListener("touchend", e=>{
-  if(!_swipe) return; const s=_swipe; _swipe=null;
-  if(!me || editing || optOpen || listActOpen || newListOpen || smartOpen) return;
-  const c = e.changedTouches && e.changedTouches[0]; if(!c) return;
-  const dx = c.clientX - s.x, dy = c.clientY - s.y, dt = Date.now() - s.t;
-  if(dt > 600 || Math.abs(dx) < 70 || Math.abs(dy) > 60 || Math.abs(dx) < 1.6*Math.abs(dy)) return;
-  gotoPage(curPageIdx() + (dx < 0 ? 1 : -1));
+  const s=_swipe, d=_drag; _swipe=null; _drag=null;
+  const clr=()=>{ if(d && d.w && d.w.isConnected){ d.w.style.transform=""; d.w.style.willChange=""; } };
+  if(!s || _swipeBlocked()){ clr(); return; }
+  const c=e.changedTouches && e.changedTouches[0]; if(!c){ clr(); return; }
+  const dx=c.clientX-s.x, dy=c.clientY-s.y, dt=Date.now()-s.t;
+  const commit = d ? (Math.abs(d.dx||0)>70 || (Math.abs(dx)>40 && dt<250))
+                   : (dt<=600 && Math.abs(dx)>=70 && Math.abs(dy)<=60 && Math.abs(dx)>=1.6*Math.abs(dy));
+  const target=curPageIdx()+(dx<0?1:-1);
+  if(commit && target>=0 && target<=2){
+    gotoPage(target, d?d.dx:0); clr();
+  } else if(d && d.w && d.w.isConnected){
+    const w=d.w; const a=w.animate([{transform:"translateX("+(d.dx||0)+"px)"},{transform:"translateX(0)"}],{duration:180,easing:"ease-out"});
+    a.onfinish=clr; a.oncancel=clr; setTimeout(clr,260);
+  }
 }, {passive:true});
 
 window.addEventListener("resize", syncZoomHeight);
