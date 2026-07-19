@@ -536,6 +536,30 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:14px; }
   .userchip.on { background:var(--btn); border-color:var(--btn); color:#fff; }
   .userchip .ucur { font-size:10px; font-weight:800; opacity:.8; text-transform:uppercase; letter-spacing:.4px; }
+  /* v1.10 bottom-first add — floating pill + full-screen add sheet */
+  .addpill-wrap { position:fixed; left:0; right:0; bottom:0; margin:0 auto; max-width:480px; z-index:37; padding:0 14px; display:flex; }
+  .addpill { flex:1; display:flex; align-items:center; gap:9px; border:1.5px solid var(--line); border-radius:999px; padding:13px 18px;
+    background:var(--card); color:var(--muted); font-weight:700; font-size:14.5px; text-align:left;
+    box-shadow:0 10px 26px rgba(20,30,22,.22); }
+  .addpill svg { flex:none; }
+  .addsheet { height:92dvh; max-height:92dvh; display:flex; flex-direction:column; padding-bottom:calc(10px + env(safe-area-inset-bottom)); }
+  .addsheet-head { display:flex; gap:8px; align-items:flex-start; }
+  .addsheet-done { flex:none; border:none; background:var(--btn); color:var(--btn-text); font-weight:800; font-size:14px; padding:11px 16px; border-radius:14px; }
+  .addsheet-tabs { margin:10px 0; }
+  .addsheet-body { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; gap:6px; padding-bottom:12px; }
+  .addcatlbl { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:10px 2px 2px; }
+  .addrow { display:flex; align-items:center; gap:10px; border:1.5px solid var(--line); background:var(--card); color:var(--ink);
+    border-radius:14px; padding:11px 13px; font-weight:700; font-size:14.5px; text-align:left; }
+  .addrow:active { transform:scale(.98); }
+  .addrow.on { border-color:var(--accent); }
+  .addrow.on .addrow-plus { background:var(--accent); color:#fff; }
+  .addrow-plus { flex:none; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:var(--chip); color:var(--ink); font-weight:900; font-size:15px; }
+  .addrow-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .addrow-meta { flex:none; font-size:12.5px; font-weight:800; color:var(--muted2); }
+  .addrow-cad { flex:none; font-size:11px; font-weight:800; color:var(--accent); border:1.5px solid var(--accent); border-radius:999px; padding:2px 8px; }
+  .addrow.addtyped { border-style:dashed; border-color:var(--accent); color:var(--accent); }
+  .addrow.addtyped .addrow-plus { background:var(--accent); color:#fff; }
   /* v1.09 page-slide transitions (Lists ▸ Plan ▸ Shop) — outgoing page frozen as a ghost that slides away */
   .pageghost { position:fixed; inset:0; z-index:38; pointer-events:none; background:var(--paper); overflow:hidden; will-change:transform; }
   @keyframes tickpop { 0%{transform:scale(.5)} 55%{transform:scale(1.3)} 100%{transform:scale(1)} }
@@ -562,7 +586,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.09";
+const APP_VERSION = "v1.10";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1034,7 +1058,7 @@ function mergeDismiss(sig){ mergeX[sig]=1; try{ localStorage.setItem("ml_merge_x
 function mergeHideAll(){ for(const c of mergeClusters()) mergeX[c.sig]=1; try{ localStorage.setItem("ml_merge_x", JSON.stringify(mergeX)); }catch(e){} render(); }
 function mergeCardHTML(){
   const cls=mergeClusters(); if(!cls.length) return "";
-  const rows=cls.slice(0,4).map(c=>`<div class="mergerow">
+  const rows=cls.slice(0,2).map(c=>`<div class="mergerow">
       <div class="mergerow-txt"><span class="mergerow-names">${esc(c.items.map(i=>cap(i.name)).join(", "))}</span><span class="mergerow-into">→ ${esc(cap(c.canon))}</span></div>
       <div class="mergerow-btns"><button class="merge-go" data-merge-go="${esc(c.sig)}">Merge</button><button class="merge-x" data-merge-x="${esc(c.sig)}" aria-label="Keep separate">×</button></div>
     </div>`).join("");
@@ -1189,6 +1213,8 @@ let _smart = localStorage.getItem("ml_smart");
 function smartOn(){ return _smart===null ? true : _smart==="1"; }
 function setSmart(on){ _smart = on?"1":"0"; localStorage.setItem("ml_smart", _smart); render(); }
 let optOpen=false, listsOpen=false;
+// v1.10 bottom-first add sheet
+let addOpen=false, addTab="reg", _addScrollY=0;
 // A18 ✨ Smart add (planning-mode AI parse → preview → confirm)
 let smartOpen=false, smartLoading=false, smartError="", smartItems=[], smartEdit=null;
 // B3 recipe → list (text-first): pours extracted ingredients into the shared Smart-add preview
@@ -1554,6 +1580,14 @@ function sweep(){ const checked=state.items.filter(i=>i.checked); if(!checked.le
   moveToBuyAgain(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||""})));
   state.items = state.items.filter(i=>!i.checked);
   save(); render(); showUndo(prev, checked.length+" cleared → Buy again"); }
+/* v1.10 add-sheet variant of restore(): copies the regular onto the list but KEEPS it in
+   Buy-again, so the sheet row stays put and flips to ✓ (second tap bumps quantity). */
+function addFromRegular(name,cat){ playPlan(true);
+  const entry = state.buyAgain.find(x=>x.name===name && x.cat===cat) || {name,cat,qty:1};
+  const ex = state.items.find(i=>!i.checked && i.name.toLowerCase()===name.toLowerCase() && i.cat===cat);
+  if(!ex) state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",checked:false,by:me});
+  save(); render();
+}
 function restore(name,cat){ playPlan(true);
   const entry = state.buyAgain.find(x=>x.name===name && x.cat===cat) || {name,cat,qty:1};
   const ex = state.items.find(i=>!i.checked && i.name.toLowerCase()===name.toLowerCase() && i.cat===cat);
@@ -1721,52 +1755,89 @@ function setMicUI(on){ const b=document.getElementById("micBtn"); if(b) b.style.
   const f=micField(); if(f) f.style.color = on ? "var(--accent)" : ""; }
 function micField(){ return document.getElementById("mainInput"); }
 function grow(el){ if(!el) return; el.style.height="auto"; el.style.height=Math.min(el.scrollHeight+4,180)+"px"; syncZoomHeight(); }
-function suggestPool(){
-  const seen=new Set(), out=[];
-  const add=n=>{ const k=(n||"").toLowerCase().trim(); if(k && !seen.has(k)){ seen.add(k); out.push(n); } };
-  state.buyAgain.forEach(e=>add(e.name));   // recently bought first
-  state.items.forEach(i=>add(i.name));      // already on the list
-  Object.values(DICT).forEach(arr=>arr.forEach(add)); // common groceries fallback
+/* v1.10 bottom-first add sheet — Regulars (due-soon restock + Buy-again) and a built-in
+   catalog, one-tap add, live-filtered by whatever is typed. Replaces the old top add bar. */
+const SEARCH_SVG = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>';
+const DICT_HIDE = new Set(["strawberr","blueberr","raspberr","berry","brocollini","choysum","chili","yogurt"]);   // matching stems / dupes, not for display
+function addFrag(){ const v=draftMain||""; const i=Math.max(v.lastIndexOf(","), v.lastIndexOf("\n")); return v.slice(i+1).trim(); }
+function addSheetRows(){
+  const frag=addFrag(), f=frag.toLowerCase();
+  const onList=(name,cat)=> state.items.find(i=>!i.checked && i.name.toLowerCase()===String(name).toLowerCase() && (cat==null||i.cat===cat));
+  const row=(attrs,name,meta,on,cad)=>`<button class="addrow ${on?'on':''}" ${attrs}>`
+    +`<span class="addrow-plus">${on?'✓':'+'}</span><span class="addrow-name">${name}</span>${cad||""}${meta?`<span class="addrow-meta">${esc(meta)}</span>`:""}</button>`;
+  let out="";
+  if(frag){
+    const segs=(draftMain||"").split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
+    const p=parseEntry(frag);
+    const lbl= segs.length>1 ? `Add ${segs.length} items` : `Add “${(p.qty>1?p.qty+"× ":"")+(p.weight?esc(p.weight)+" ":"")+esc(cap(p.name))}”`;
+    out+=`<button class="addrow addtyped" data-add-typed><span class="addrow-plus">+</span><span class="addrow-name">${lbl}</span></button>`;
+  }
+  if(addTab==="reg"){
+    const due=predictDue().filter(d=>!f || d.name.toLowerCase().includes(f));
+    if(due.length){ out+=`<div class="addcatlbl">Due soon</div>`+due.map(d=>{
+      const on=!!onList(d.name,d.cat);
+      return row(`data-add-pred="${esc(d.key)}"`, esc(cap(d.name)), (d.qty>1?d.qty+"×":""), on, `<span class="addrow-cad">~${d.cadenceDays}d</span>`); }).join(""); }
+    const bas=state.buyAgain.filter(e=>!f || e.name.toLowerCase().includes(f));
+    if(bas.length){ out+=`<div class="addcatlbl">Regulars</div>`+bas.map(e=>{
+      const it=onList(e.name,e.cat);
+      const q=it?(it.qty||1):(e.qty||1), w=it?(it.weight||""):(e.weight||"");
+      const meta=[q>1?q+"×":"", w].filter(Boolean).join(" ");
+      return it? row(`data-add-inc="${it.id}"`, esc(cap(e.name)), meta, true)
+               : row(`data-add-ba="${esc(e.name)}|${e.cat}"`, esc(cap(e.name)), meta, false); }).join(""); }
+    if(!due.length && !bas.length && !frag) out+=`<p class="empty-sub" style="margin:14px 4px">Items you clear after shopping land here for one-tap re-adding.</p>`;
+  } else {
+    for(const c of catList()){ const words=DICT[c.id]; if(!words) continue;
+      const list=[...new Set(words)].filter(w=>!DICT_HIDE.has(w) && (!f || w.includes(f)));
+      if(!list.length) continue;
+      out+=`<div class="addcatlbl">${esc(c.label)}</div>`+list.map(w=>{
+        const it=onList(w,null);
+        return it? row(`data-add-inc="${it.id}"`, esc(cap(w)), (it.qty>1?it.qty+"×":""), true)
+                 : row(`data-add-dict="${esc(w)}|${c.id}"`, esc(cap(w)), "", false); }).join("");
+    }
+  }
   return out;
 }
-function renderSuggest(){
-  const box=document.getElementById("suggest"), mi=micField(); if(!box||!mi){ return; }
-  const v=mi.value, idx=Math.max(v.lastIndexOf(","), v.lastIndexOf("\n"));
-  const frag=v.slice(idx+1).trim().toLowerCase();
-  let html="";
-  if(frag.length>=1){
-    // Buy-again matches first, shown as the full item (qty / weight / name).
-    const baMatch = state.buyAgain.filter(e=>e.name.toLowerCase().includes(frag))
-      .sort((a,b)=>(b.name.toLowerCase().startsWith(frag)?1:0)-(a.name.toLowerCase().startsWith(frag)?1:0))
-      .slice(0,6);
-    const baNames = new Set(baMatch.map(e=>e.name.toLowerCase()));
-    const baHtml = baMatch.map(e=>{
-      const lbl=`${(e.qty||1)>1?e.qty+'× ':''}${e.weight?esc(e.weight)+' ':''}${esc(cap(e.name))}`;
-      return `<button class="sugchip sugba" data-sugba="${esc(e.name)}|${e.cat}">↩ ${lbl}</button>`;
-    }).join("");
-    const pool=suggestPool();
-    const starts=pool.filter(n=>n.toLowerCase().startsWith(frag));
-    const incl=pool.filter(n=>!n.toLowerCase().startsWith(frag) && n.toLowerCase().includes(frag));
-    const list=[...starts,...incl].filter(n=>n.toLowerCase()!==frag && !baNames.has(n.toLowerCase())).slice(0,8);
-    html=baHtml+list.map(n=>`<button class="sugchip" data-sug="${esc(n)}">${esc(n)}</button>`).join("");
-  }
-  box.innerHTML=html;
-  box.querySelectorAll("[data-sug]").forEach(b=>{
-    b.onpointerdown=e=>e.preventDefault();   // keep keyboard up
-    b.onclick=()=>{ const name=b.dataset.sug; const cur=mi.value;
-      const i=Math.max(cur.lastIndexOf(","), cur.lastIndexOf("\n"));
-      const head=i>=0 ? cur.slice(0,i+1).replace(/\s*$/,"")+" " : "";
-      mi.value=head+name+", "; grow(mi); mi.focus(); box.innerHTML=""; syncZoomHeight(); };
-  });
-  box.querySelectorAll("[data-sugba]").forEach(b=>{
-    b.onpointerdown=e=>e.preventDefault();
-    b.onclick=()=>{ const [name,cat]=b.dataset.sugba.split("|"); const cur=mi.value;
-      const i=Math.max(cur.lastIndexOf(","), cur.lastIndexOf("\n"));
-      draftMain = i>=0 ? cur.slice(0,i+1).replace(/\s*$/,"")+" " : "";   // keep any items typed before
-      restore(name,cat); };   // re-adds with its stored qty / weight / category, then re-renders
-  });
-  syncZoomHeight();
+function addSheet(){
+  return `<div class="sheet-bg" id="addBg"><div class="sheet addsheet" id="addSheet">
+    <div class="addsheet-head">
+      <div class="addbar" style="margin:0;flex:1">
+        ${smartOn()?`<button class="smartbtn" id="smartBtn" aria-label="Smart add" title="Smart add — turn a list or a whole recipe into items">✨</button>`:""}
+        <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Type items, or tap below…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
+      </div>
+      <button class="addsheet-done" id="addDone">Done</button>
+    </div>
+    <div class="seg segfull addsheet-tabs">
+      <button data-addtab="reg" class="${addTab==='reg'?'on':''}">Regulars</button>
+      <button data-addtab="all" class="${addTab==='all'?'on':''}">All items</button>
+    </div>
+    <div class="addsheet-body" id="addSheetBody">${addSheetRows()}</div>
+  </div></div>`;
 }
+function addKeepScroll(fn){ const sb=document.getElementById("addSheetBody"); _addScrollY=sb?sb.scrollTop:0; fn();
+  const s2=document.getElementById("addSheetBody"); if(s2) s2.scrollTop=_addScrollY; }
+function refreshAddBody(){ const sb=document.getElementById("addSheetBody"); if(!sb) return; sb.innerHTML=addSheetRows(); wireAddRows(); }
+function wireAddRows(){
+  const act=(b,fn,refocus)=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ addKeepScroll(fn);
+    if(refocus){ const m=document.getElementById("mainInput"); if(m) m.focus(); } }; };
+  app.querySelectorAll("[data-add-typed]").forEach(b=>act(b,()=>{ const t=(draftMain||"").trim(); if(t){ draftMain=""; playPlan(true); addEntries(t,null); } },true));
+  app.querySelectorAll("[data-add-ba]").forEach(b=>act(b,()=>{ const p=b.dataset.addBa.split("|"), cat=p.pop(), name=p.join("|"); addFromRegular(name,cat); }));
+  app.querySelectorAll("[data-add-dict]").forEach(b=>act(b,()=>{ const p=b.dataset.addDict.split("|"), cat=p.pop(), name=p.join("|"); playPlan(true); addEntries(name,cat); }));
+  app.querySelectorAll("[data-add-inc]").forEach(b=>act(b,()=>{ const it=state.items.find(i=>i.id===b.dataset.addInc);
+    if(it){ it.qty=Math.min(999,(it.qty||1)+1); playPlan(true); markDirty(it.id); save(); render(); } }));
+  app.querySelectorAll("[data-add-pred]").forEach(b=>act(b,()=>predictAdd(b.dataset.addPred)));
+}
+function wireAddSheet(){
+  if(!addOpen) return;
+  wireAddBar();
+  const bg=app.querySelector("#addBg"); if(bg) bg.onclick=e=>{ if(e.target===bg){ addOpen=false; render(); } };
+  const dn=app.querySelector("#addDone"); if(dn) dn.onclick=()=>{ addOpen=false; render(); };
+  app.querySelectorAll("[data-addtab]").forEach(b=>b.onclick=()=>{ if(addTab!==b.dataset.addtab){ addTab=b.dataset.addtab; render();
+    const m=document.getElementById("mainInput"); if(m&&draftMain) m.focus(); } });
+  wireAddRows();
+}
+function openAdd(){ addTab="reg"; addOpen=true;
+  if(curPageIdx()===0){ gotoPage(1); } else { render(); }
+  const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }
 function startMic(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){ showToast("Voice input isn't supported here — tap the 🎤 on your keyboard instead"); return; }
@@ -1813,7 +1884,9 @@ function syncZoomHeight(){ const z=document.getElementById("zoomer"); const bb=d
   const qb=document.getElementById("qbanner"); if(qb) qb.style.bottom = Math.ceil(navH) + "px";   // quantity banner sits on top of the nav
   const qbH = qb ? qb.getBoundingClientRect().height : 0;
   const fabw=document.getElementById("shopAddFabWrap"); if(fabw) fabw.style.bottom = Math.ceil(navH + cbH + 12) + "px";   // "+ Add" clears the checked bar
-  if(z){ z.style.paddingBottom = Math.ceil((navH + cbH + qbH)/dens() + 24) + "px";
+  const apw=document.getElementById("addPillWrap"); if(apw) apw.style.bottom = Math.ceil(navH + 10) + "px";   // floating add pill above the nav
+  const apH = apw ? apw.getBoundingClientRect().height + 10 : 0;
+  if(z){ z.style.paddingBottom = Math.ceil((navH + cbH + qbH + apH)/dens() + 24) + "px";
     if(zw) zw.style.height = Math.ceil(z.getBoundingClientRect().height) + "px"; }
   applyKb(); }
 let kbOffset=0, kbActive=false;
@@ -2005,11 +2078,6 @@ function renderMain(){
           <button id="optBtnTop" aria-label="Settings" class="iconbtn" title="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
         </div>
       </header>
-      <div class="addbar">
-        ${smartOn()?`<button class="smartbtn" id="smartBtn" aria-label="Smart add" title="Smart add — turn a list or a whole recipe into items">✨</button>`:""}
-        <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Add items to ${esc(state.name||'your list')}…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
-      </div>
-      <div class="suggest" id="suggest"></div>
       ${shopMode?`<div class="shopbar shopbar2" style="margin-top:8px">
           <div class="sb-cart" aria-hidden="true">${CART_SVG}</div>
           <div class="sb-mid">
@@ -2032,8 +2100,9 @@ function renderMain(){
     </div></div>
   </div>
   ${checkedBar}
-  ${state.items.length>0?`<div class="shopaddfab-wrap" id="shopAddFabWrap"><button class="shopaddfab" id="shopAddFab">+ Add</button></div>`:""}
+  ${(state.items.length>0 && !addOpen)?`<div class="shopaddfab-wrap" id="shopAddFabWrap"><button class="shopaddfab" id="shopAddFab">+ Add</button></div>`:""}
   ${bottomNav({listsId:"listsBtn",listsActive:false,addId:"addNav",addActive:false,cartId:"cartNav",cartActive:true})}
+  ${addOpen?addSheet():""}
   ${optOpen?optionsSheet():""}
   ${listsOpen?listsSheet():""}
   ${smartOpen?smartSheet():""}
@@ -2100,7 +2169,7 @@ function wireListsPage(){
     nln.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); createNewListFromSheet(); } }; }
   const nlc=app.querySelector("#newListCreate"); if(nlc){ nlc.onpointerdown=e=>e.preventDefault(); nlc.onclick=createNewListFromSheet; }
   const cnl=app.querySelector("#cartNavL"); if(cnl) cnl.onclick=()=>gotoPage(2);   // Shop → straight into shopping
-  const anl=app.querySelector("#addNavL"); if(anl) anl.onclick=gotoPlanFocus;   // Add → planning page, cursor in the box
+  const anl=app.querySelector("#addNavL"); if(anl) anl.onclick=openAdd;   // Add → plan page with the add sheet open
   const ob=app.querySelector("#optBtnTop"); if(ob) ob.onclick=()=>{ optOpen=true; render(); };
   wireOptions();
   const lbg=app.querySelector("#listActBg"); if(lbg) lbg.onclick=()=>{ listActOpen=false; render(); };
@@ -2139,24 +2208,22 @@ function renderPlanPage(){
   const psm = (displayFor()==="cat" && sortModeFor()==="location") ? "cat" : sortModeFor();
   let planBody;
   if(psm==="cat" && displayFor()==="flat"){
-    const dotted = state.buyAgain.filter(e=> !state.items.some(i=>i.name.toLowerCase()===e.name.toLowerCase() && i.cat===e.cat));
-    const all = [ ...state.items.map(i=>({it:i,isBa:false})), ...dotted.map(e=>({it:e,isBa:true})) ].sort((A,B)=>bySortKey(A.it,B.it));
-    const html = all.map(({it,isBa})=> isBa?planOutlineChip(it,CAT(it.cat)):planFilledPill(it,CAT(it.cat)) ).join("");
+    const all = state.items.map(i=>({it:i})).sort((A,B)=>bySortKey(A.it,B.it));
+    const html = all.map(({it})=> planFilledPill(it,CAT(it.cat)) ).join("");
     planBody = all.length ? `<section class="cat"><div class="pills">${html}</div></section>` : "";
   } else if(displayFor()==="cat"){
     const alpha = sortModeFor()==="alpha";                                   // A–Z sorts ALL items in each category by name (ignoring subcategory)
     const byName = (a,b)=>(a.name||"").localeCompare(b.name||"");
     planBody = catList().map(cat=>{
       let inList = state.items.filter(i=>i.cat===cat.id);
-      let ba = state.buyAgain.filter(e=>e.cat===cat.id && !inList.some(i=>i.name.toLowerCase()===e.name.toLowerCase()));
-      const total = inList.length+ba.length;
+      const total = inList.length;
       if(!total && !cat.custom) return "";
       const collapsed = (collapse.planCats||[]).includes(cat.id);
       const catAdd = catEntry===cat.id ? `<div class="catadd">
           <div class="inwrap"><textarea id="catInput" rows="1" placeholder="Add to ${esc(cat.label)}" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="Clear">×</button></div>
           <button id="catAddBtn" style="background:${cat.color}">+</button></div>` : "";
-      const merged = [ ...inList.map(i=>({it:i,isBa:false})), ...ba.map(e=>({it:e,isBa:true})) ].sort((A,B)=> alpha ? byName(A.it,B.it) : bySortKey(A.it,B.it));
-      const pills = merged.map(({it,isBa})=> isBa?planOutlineChip(it,cat):planFilledPill(it,cat)).join("");
+      const merged = inList.map(i=>({it:i})).sort((A,B)=> alpha ? byName(A.it,B.it) : bySortKey(A.it,B.it));
+      const pills = merged.map(({it})=> planFilledPill(it,cat)).join("");
       const chead = CALM_THEMES.has(theme)
         ? calmHead(cat, inList.filter(i=>i.checked).length, inList.length, collapsed, "data-planc", catEntry===cat.id)
         : `<div class="chead"><button class="lbl catheadchip" data-planc="${cat.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;width:100%"><span class="cemoji">${catIcon(cat,16)}</span><span class="cname" style="color:#fff">${esc(cat.label)}</span><span class="cnum" style="color:#fff;opacity:.85">${inList.length}/${total}${collapsed?' ▸':''}</span></button>
@@ -2167,15 +2234,14 @@ function renderPlanPage(){
   } else if(psm==="auto"){
     planBody = catList().map(cat=>{
       const inList = state.items.filter(i=>i.cat===cat.id);
-      const dotted = state.buyAgain.filter(e=>e.cat===cat.id && !inList.some(i=>i.name.toLowerCase()===e.name.toLowerCase()));
-      const total = inList.length+dotted.length;
+      const total = inList.length;
       if(!total && !cat.custom) return "";
       const collapsed = (collapse.planCats||[]).includes(cat.id);
       const catAdd = catEntry===cat.id ? `<div class="catadd">
           <div class="inwrap"><textarea id="catInput" rows="1" placeholder="Add to ${esc(cat.label)}" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="Clear">×</button></div>
           <button id="catAddBtn" style="background:${cat.color}">+</button></div>` : "";
-      const combined = [ ...inList.map(i=>({it:i,isBa:false})), ...dotted.map(e=>({it:e,isBa:true})) ].sort((A,B)=>bySortKey(A.it,B.it));
-      const html = combined.map(({it,isBa})=> isBa?planOutlineChip(it,CAT(it.cat)):planFilledPill(it,CAT(it.cat)) ).join("");
+      const combined = inList.map(i=>({it:i})).sort((A,B)=>bySortKey(A.it,B.it));
+      const html = combined.map(({it})=> planFilledPill(it,CAT(it.cat)) ).join("");
       const chead = CALM_THEMES.has(theme)
         ? calmHead(cat, inList.filter(i=>i.checked).length, inList.length, collapsed, "data-planc", catEntry===cat.id)
         : `<div class="chead"><button class="lbl catheadchip" data-planc="${cat.id}" style="background:${cat.color};border:1.5px solid ${cat.color};color:#fff;width:100%"><span class="cemoji">${catIcon(cat,16)}</span><span class="cname" style="color:#fff">${esc(cat.label)}</span><span class="cnum" style="color:#fff;opacity:.85">${inList.length}/${total}${collapsed?' ▸':''}</span></button>
@@ -2185,18 +2251,15 @@ function renderPlanPage(){
     }).join("");
   } else if(psm==="location"){
     ensureLocCheck(); const cmp=locActive()?byAisle:bySortKey;
-    const dotted = state.buyAgain.filter(e=> !state.items.some(i=>i.name.toLowerCase()===e.name.toLowerCase() && i.cat===e.cat));
-    const all = [ ...state.items.map(i=>({it:i,isBa:false})), ...dotted.map(e=>({it:e,isBa:true})) ].sort((A,B)=>cmp(A.it,B.it));
-    const html = all.map(({it,isBa})=> isBa?planOutlineChip(it,CAT(it.cat)):planFilledPill(it,CAT(it.cat)) ).join("");
+    const all = state.items.map(i=>({it:i})).sort((A,B)=>cmp(A.it,B.it));
+    const html = all.map(({it})=> planFilledPill(it,CAT(it.cat)) ).join("");
     planBody = all.length ? `<section class="cat"><div class="pills">${html}</div></section>` : "";
   } else {
     let inList = state.items.slice().sort((a,b)=>a.name.localeCompare(b.name));
-    let ba = state.buyAgain.filter(e=> !state.items.some(i=>i.name.toLowerCase()===e.name.toLowerCase() && i.cat===e.cat)).sort((a,b)=>a.name.localeCompare(b.name));
     const filled = inList.map(i=>planFilledPill(i, CAT(i.cat))).join("");
-    const outline = ba.map(e=>planOutlineChip(e, CAT(e.cat))).join("");
-    planBody = (filled||outline) ? `<section class="cat"><div class="pills">${filled}${outline}</div></section>` : "";
+    planBody = filled ? `<section class="cat"><div class="pills">${filled}</div></section>` : "";
   }
-  const hasAny = catList().some(c=> state.items.some(i=>i.cat===c.id) || state.buyAgain.some(e=>e.cat===c.id) || c.custom);
+  const hasAny = catList().some(c=> state.items.some(i=>i.cat===c.id) || c.custom);
   app.innerHTML = `<div class="wrap">
     <div class="topfix" id="topfix">
       <header>
@@ -2206,26 +2269,18 @@ function renderPlanPage(){
         </div>
         <div style="display:flex;align-items:center;gap:8px">${syncChip()}<button id="optBtnTop" class="iconbtn" aria-label="Settings" title="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
       </header>
-      <div class="addbar">
-        ${smartOn()?`<button class="smartbtn" id="smartBtn" aria-label="Smart add" title="Smart add — turn a list or a whole recipe into items">✨</button>`:""}
-        <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Add items to ${esc(state.name||'your list')}…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
-      </div>
-      <div class="suggest" id="suggest"></div>
-      ${!localStorage.getItem("ml_hint_rechint")?`<div class="rechint"><span>✨ Smart add reads a plain list <b>or</b> a whole recipe — paste one to scale &amp; add.</span><button class="iconmini" id="rechintX" aria-label="Dismiss">×</button></div>`:""}
       ${hasAny?`<div class="shopbar" style="margin-top:8px;background:var(--btn)"><span><span class="cartglyph">${CART_SVG}</span>At the store?</span><button id="startShop">Start shopping</button></div>`:""}
     </div>
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
-      ${predictCardHTML()}
       ${mergeCardHTML()}
-      ${(hasAny && !localStorage.getItem("ml_hint_choose")) ? `<div class="subrow" style="justify-content:space-between;gap:8px;margin-bottom:8px">
-        <span style="font-size:12px;color:var(--muted);font-weight:600">Plan your shop here — solid items are on the list, faded ones were bought before. Tap to add or remove.</span>
-        <button class="iconmini" id="hintChooseX" aria-label="Dismiss">×</button></div>` : ""}
-      ${hasAny ? planBody : `<div class="empty"><div class="empty-emoji">🛒</div><p class="empty-title">Nothing to plan yet</p><p class="empty-sub">Add items above, or clear items from a list and they'll show here to add again next time.</p></div>`}
+      ${hasAny ? planBody : `<div class="empty"><div class="empty-emoji">🛒</div><p class="empty-title">Nothing planned yet</p><p class="empty-sub">Tap <b>Add</b> below — pick from your Regulars in one tap or type anything new.</p></div>`}
       <button id="addCatPlan" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
     </div></div>
   </div>
   ${planQBannerHTML()}
+  ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>Add items…</span></button></div>`:""}
   ${bottomNav({listsId:"listsBtn",listsActive:false,addId:"addNav",addActive:true,cartId:"cartNav",cartActive:false})}
+  ${addOpen?addSheet():""}
   ${optOpen?optionsSheet():""}
   ${smartOpen?smartSheet():""}
   ${editing?editSheet():""}
@@ -2238,7 +2293,7 @@ function planRemove(id){ const it=state.items.find(i=>i.id===id); if(!it) return
     state.buyAgain.push({name:it.name,cat:it.cat,qty:it.qty||1,weight:it.weight||"",sub:it.sub||"",ts:Date.now()}); }
   state.items = state.items.filter(i=>i.id!==id); save(); render(); }
 function wirePlanPage(){
-  wireAddBar();
+  wireAddSheet();
   app.querySelectorAll(".ba-restore").forEach(b=>{ const _p=b.dataset.restore.split("|"), cat=_p.pop(), name=_p.join("|");
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
@@ -2269,8 +2324,6 @@ function wirePlanPage(){
   if(pcc){ pcc.onpointerdown=e=>e.preventDefault(); pcc.onclick=()=>{ if(pci){ pci.value=""; draftCatText=""; grow(pci); pToggle(); pci.focus(); } }; }
   if(pcab){ pcab.onpointerdown=e=>e.preventDefault(); pcab.onclick=()=>{ const v=app.querySelector("#catInput").value; addEntries(v,catEntry); draftCatText=""; render(); const x=app.querySelector("#catInput"); if(x){ x.focus(); grow(x); } }; }
   const acp=app.querySelector("#addCatPlan"); if(acp) acp.onclick=addCategory;
-  const hcx=app.querySelector("#hintChooseX"); if(hcx) hcx.onclick=()=>{ localStorage.setItem("ml_hint_choose","1"); render(); };
-  const rhx=app.querySelector("#rechintX"); if(rhx) rhx.onclick=()=>{ localStorage.setItem("ml_hint_rechint","1"); render(); };
   // B4 restock suggestions
   app.querySelectorAll("[data-pred-add]").forEach(b=>b.onclick=()=>predictAdd(b.dataset.predAdd));
   app.querySelectorAll("[data-pred-rm]").forEach(b=>b.onclick=()=>predictDismiss(b.dataset.predRm));
@@ -2282,7 +2335,8 @@ function wirePlanPage(){
   const mHide=app.querySelector("[data-merge-hide]"); if(mHide) mHide.onclick=mergeHideAll;
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>gotoPage(0);
   const ss=app.querySelector("#startShop"); if(ss) ss.onclick=()=>gotoPage(2);
-  const an=app.querySelector("#addNav"); if(an) an.onclick=gotoPlanFocus;   // Add tab (already here) → just focus the box
+  const an=app.querySelector("#addNav"); if(an) an.onclick=openAdd;   // Add tab → add sheet
+  const apl=app.querySelector("#addPill"); if(apl) apl.onclick=openAdd;
   const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(2);
   const qbc=app.querySelector("#qbannerClose"); if(qbc) qbc.onclick=()=>{ quickEdit=null; render(); };
   wireSmartSheet();
@@ -2769,21 +2823,23 @@ function editSheet(){
 }
 
 function wireAddBar(){
-  const mi=app.querySelector("#mainInput"), ma=app.querySelector("#mainAdd");
+  const mi=app.querySelector("#mainInput");
   const mc=app.querySelector("#mainClear");
   const toggleClear=(el,btn)=>{ if(btn) btn.classList.toggle("show", !!(el&&el.value.trim())); };
+  const commit=(text)=>{ const t=(text||"").trim(); if(!t) return; draftMain=""; playPlan(true);
+    addKeepScroll(()=>addEntries(t,null));
+    const m2=document.getElementById("mainInput"); if(m2){ m2.value=""; m2.focus(); } };
   if(mi){ mi.value=draftMain; grow(mi); toggleClear(mi,mc);
-    mi.oninput=()=>{ draftMain=mi.value; grow(mi); renderSuggest(); toggleClear(mi,mc); };
-    mi.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); addEntries(mi.value,null); mi.value=""; draftMain=""; grow(mi); document.getElementById("suggest").innerHTML=""; toggleClear(mi,mc); mi.focus(); } };
+    mi.oninput=()=>{ draftMain=mi.value; grow(mi); toggleClear(mi,mc); if(addOpen) refreshAddBody(); };
+    mi.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); commit(mi.value); } };
     mi.onpaste=e=>{ const t=(e.clipboardData||window.clipboardData).getData("text");
       const looksLikeBlock = t && (t.indexOf("\n")>=0 || /\b(meat|fruit|vegetable|veg|fresh|bulk|asian|alcohol|health|others)\s*:/i.test(t) || t.split(",").length>2);
-      if(looksLikeBlock){ e.preventDefault(); addEntries(t,null); mi.value=""; draftMain=""; grow(mi); document.getElementById("suggest").innerHTML=""; toggleClear(mi,mc); } }; }
-  if(mc){ mc.onpointerdown=e=>e.preventDefault(); mc.onclick=()=>{ if(mi){ mi.value=""; draftMain=""; grow(mi); document.getElementById("suggest").innerHTML=""; toggleClear(mi,mc); mi.focus(); } }; }
-  if(ma){ ma.onpointerdown=e=>e.preventDefault(); ma.onclick=()=>{ addEntries(mi.value,null); mi.value=""; draftMain=""; grow(mi); const sg=document.getElementById("suggest"); if(sg) sg.innerHTML=""; toggleClear(mi,mc); mi.focus(); }; }
+      if(looksLikeBlock){ e.preventDefault(); commit(t); } }; }
+  if(mc){ mc.onpointerdown=e=>e.preventDefault(); mc.onclick=()=>{ if(mi){ mi.value=""; draftMain=""; grow(mi); toggleClear(mi,mc); if(addOpen) refreshAddBody(); mi.focus(); } }; }
   const sb=app.querySelector("#smartBtn"); if(sb){ sb.onpointerdown=e=>e.preventDefault(); sb.onclick=smartAdd; }
 }
 function wire(){
-  wireAddBar();
+  wireAddSheet();
   wireSmartSheet();
   const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>i.cat===c.id)).map(c=>c.id);
@@ -2851,9 +2907,9 @@ function wire(){
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>gotoPage(0);
   const ln=app.querySelector("#listName"); if(ln) ln.onclick=()=>gotoPage(0);
   const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>gotoPage(1);
-  const an=app.querySelector("#addNav"); if(an) an.onclick=gotoPlanFocus;   // Add tab → planning page, cursor in the box
+  const an=app.querySelector("#addNav"); if(an) an.onclick=openAdd;   // Add tab → add sheet
   const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(2);
-  const saf=app.querySelector("#shopAddFab"); if(saf) saf.onclick=gotoPlanFocus;   // floating "+ Add" on the shopping page
+  const saf=app.querySelector("#shopAddFab"); if(saf) saf.onclick=openAdd;   // floating "+ Add" opens the add sheet in place (mid-shop adding)
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; listsOpen=false; render(); };
   app.querySelectorAll("[data-example]").forEach(b=>b.onclick=()=>{ addEntries(b.dataset.example, null); });
   wireQuickPanel();
@@ -2977,9 +3033,8 @@ function transitionTo(idx, fromPx){
   na.onfinish=fin; na.oncancel=fin; setTimeout(fin, DUR+140);     // safety net if WAAPI events don't fire
 }
 function gotoPage(idx, fromPx){ transitionTo(idx, fromPx); }
-function gotoPlanFocus(){ gotoPage(1); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }
 let _swipe=null, _drag=null;
-function _swipeBlocked(){ return (!me || editing || optOpen || listActOpen || newListOpen || smartOpen || _pageAnim); }
+function _swipeBlocked(){ return (!me || editing || optOpen || listActOpen || newListOpen || smartOpen || addOpen || _pageAnim); }
 document.addEventListener("touchstart", e=>{
   _swipe=null; _drag=null;
   if(e.touches.length!==1) return;
