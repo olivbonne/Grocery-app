@@ -572,6 +572,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .pemoji { flex:none; font-size:15px; margin-right:1px; }
   .wrap.shop .pemoji { font-size:18px; }
   .addrow .pemoji { font-size:17px; }
+  /* v1.15 combined-page planning section (regulars to re-add, below the shopping list) */
+  .plansec { margin-top:22px; border-top:1.5px dashed var(--line); padding-top:12px; }
+  .plansec-h { font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 2px 8px; }
   /* v1.11 shop checklist rows + plan qty-banner remove + finish dialog */
   .wrap.shop .pcheck { margin-left:0; margin-right:11px; width:27px; height:27px; }
   .pill-meta { margin-left:auto; display:inline-flex; align-items:center; gap:5px; padding-left:10px; }
@@ -625,7 +628,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.14";
+const APP_VERSION = "v1.15";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1981,7 +1984,7 @@ function render(){
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
   if(!me){ renderOnboarding(); window.__mlRendered=true; return; }
   if(view==="lists"){ renderListsPage(); wireListsPage(); window.__mlRendered=true; syncZoomHeight(); return; }
-  if(view!=="lists" && !shopMode){ renderPlanPage(); wirePlanPage(); window.__mlRendered=true; syncZoomHeight(); return; }
+  if(!shopMode) shopMode=true;   // v1.15 Plan and Shop are one page now — the detail page is always the combined, shoppable list
   renderMain(); wire(); window.__mlRendered=true; syncZoomHeight();
 }
 
@@ -2060,6 +2063,26 @@ function calmHead(cat, done, total, collapsed, attr, entryOpen){
     +`<span class="cnum">${done}/${total}${collapsed?' ▸':''}</span></button>`
     +`<button class="plus" data-add="${cat.id}" style="${entryOpen?`background:${cat.color};color:#fff`:''}">${entryOpen?'×':'+'}</button></div>`
     +`<div class="cprog" aria-hidden="true"><i style="width:${pct}%;background:${cat.color}"></i></div>`;
+}
+/* v1.15 combined page — the "planning" section, shown below the shopping list. Your regulars
+   (previously-bought items not currently on the list) as dotted pills, grouped by category and
+   COLLAPSED by default; tap one to add it, long-press to edit. Reuses planOutlineChip + the
+   .ba-restore wiring. Categories you expand are remembered in collapse.regCats. */
+function planningSection(){
+  const blocks = catList().map(cat=>{
+    const regs = state.buyAgain.filter(e=> e.cat===cat.id
+      && !state.items.some(i=>!i.checked && i.name.toLowerCase()===e.name.toLowerCase() && i.cat===cat.id));
+    if(!regs.length) return "";
+    const exp = (collapse.regCats||[]).includes(cat.id);   // default collapsed
+    const pills = exp ? `<div class="pills" style="margin-top:6px">${regs.map(e=>planOutlineChip(e,cat)).join("")}</div>` : "";
+    return `<section class="cat"><div class="chead">
+      <button class="lbl catheadchip" data-regc="${cat.id}" style="background:transparent;border:1.5px solid var(--line);color:var(--ink);width:100%">
+        <span class="cemoji">${catIcon(cat,16)}</span><span class="cname">${esc(cat.label)}</span>
+        <span class="cnum" style="margin-left:auto;color:var(--muted2)">${regs.length}${exp?'':' ▸'}</span>
+      </button></div>${pills}</section>`;
+  }).filter(Boolean).join("");
+  if(!blocks) return "";
+  return `<div class="plansec"><div class="plansec-h">＋ Add from your regulars</div>${blocks}</div>`;
 }
 function renderMain(){
   const open = state.items.filter(i=>!i.checked).length;
@@ -2171,25 +2194,18 @@ function renderMain(){
           <button id="optBtnTop" aria-label="Settings" class="iconbtn" title="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
         </div>
       </header>
-      ${shopMode?`<div class="shopbar shopbar2" style="margin-top:8px">
-          <div class="sb-cart" aria-hidden="true">${CART_SVG}</div>
-          <div class="sb-mid">
-            <div class="sb-title">Shopping mode</div>
-            <div class="sb-stats"><span class="sb-pill">${open} to buy</span>${done?`<span class="sb-pill sb-incart">${done} in cart</span>`:''}</div>
-          </div>
-          <button id="doneShop" class="sb-done">Done</button>
-        </div>`
-        :(state.items.length>0?`<div class="shopbar" style="margin-top:8px;background:var(--btn)"><span><span class="cartglyph">${CART_SVG}</span>At the store?</span><button id="startShop">Start shopping</button></div>`:"")}
     </div>
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
-      ${(state.items.length===0 && !shopMode)?`<div class="empty">
+      ${(state.items.length===0)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">Your list is empty</p>
-          <p class="empty-sub">Add your first item in the bar above — try one of these:</p>
+          <p class="empty-sub">Tap <b>Add</b> below — or start from these:</p>
           <div class="pills" style="justify-content:center">${["Milk","Eggs","Bananas","Bread"].map(x=>`<button class="sugchip" data-example="${x}">+ ${x}</button>`).join("")}</div>
           <p class="empty-sub" style="margin-top:16px">Shared via this link — open <b>Settings › Share link</b> to invite up to 4 people.</p>
         </div>`:""}
+      ${mergeCardHTML()}
       ${listBody}
+      ${planningSection()}
     </div></div>
   </div>
   ${checkedBar}
@@ -2262,7 +2278,7 @@ function wireListsPage(){
     nln.oninput=()=>{ newListDraft=nln.value; };
     nln.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); createNewListFromSheet(); } }; }
   const nlc=app.querySelector("#newListCreate"); if(nlc){ nlc.onpointerdown=e=>e.preventDefault(); nlc.onclick=createNewListFromSheet; }
-  const cnl=app.querySelector("#cartNavL"); if(cnl) cnl.onclick=()=>gotoPage(2);   // Shop → straight into shopping
+  const cnl=app.querySelector("#cartNavL"); if(cnl) cnl.onclick=()=>gotoPage(1);   // open the combined list
   const anl=app.querySelector("#addNavL"); if(anl) anl.onclick=openAdd;   // Add → plan page with the add sheet open
   const ob=app.querySelector("#optBtnTop"); if(ob) ob.onclick=()=>{ optOpen=true; render(); };
   wireOptions();
@@ -3006,6 +3022,9 @@ function wire(){
   if(cab){ cab.onpointerdown=e=>e.preventDefault(); cab.onclick=()=>{ const v=app.querySelector("#catInput").value; addEntries(v,catEntry); draftCatText=""; render(); const x=app.querySelector("#catInput"); if(x){ x.focus(); grow(x); } }; }
 
   const sb=app.querySelector("#sweepBtn"); if(sb) sb.onclick=sweep;
+  app.querySelectorAll("[data-merge-go]").forEach(b=>b.onclick=()=>mergeCluster(b.dataset.mergeGo));   // v1.15 merge-duplicates card now lives on the combined page
+  app.querySelectorAll("[data-merge-x]").forEach(b=>b.onclick=()=>mergeDismiss(b.dataset.mergeX));
+  const mHide=app.querySelector("[data-merge-hide]"); if(mHide) mHide.onclick=mergeHideAll;
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
   const bh=app.querySelector("#baHead"); if(bh){ bh.oncontextmenu=e=>e.preventDefault();
     bh.onpointerdown=pressStart; bh.onpointerleave=pressCancel; bh.onpointercancel=pressCancel;
@@ -3031,10 +3050,14 @@ function wire(){
   const aiKp=app.querySelector("[data-ai-keep]"); if(aiKp) aiKp.onclick=aiDismissProposal;   // B7 revert / keep current
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>gotoPage(0);
   const ln=app.querySelector("#listName"); if(ln) ln.onclick=()=>gotoPage(0);
-  const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>gotoPage(1);
+  const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>gotoPage(0);   // ‹ back to Lists
   const an=app.querySelector("#addNav"); if(an) an.onclick=openAdd;   // Add tab → add sheet
-  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(2);
-  const saf=app.querySelector("#shopAddFab"); if(saf) saf.onclick=openAdd;   // floating "+ Add" opens the add sheet in place (mid-shop adding)
+  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(1);
+  const saf=app.querySelector("#shopAddFab"); if(saf) saf.onclick=openAdd;   // floating "+ Add" opens the add sheet
+  app.querySelectorAll("[data-regc]").forEach(b=>{ const id=b.dataset.regc;   // v1.15 planning section: expand/collapse a regulars category
+    b.onclick=()=>{ if(!collapse.regCats) collapse.regCats=[];
+      collapse.regCats = collapse.regCats.includes(id) ? collapse.regCats.filter(x=>x!==id) : [...collapse.regCats, id];
+      localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }; });
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; listsOpen=false; render(); };
   app.querySelectorAll("[data-example]").forEach(b=>b.onclick=()=>{ addEntries(b.dataset.example, null); });
   wireQuickPanel();
@@ -3108,12 +3131,10 @@ function wireEditSheet(){
 /* Three linear pages: Lists (0) ▸ Plan (1) ▸ Shop (2). Plan and Shop share view="detail",
    distinguished by shopMode. A horizontal swipe drags the live page with the finger before
    committing (see transitionTo for the animation). */
-function curPageIdx(){ if(view==="lists") return 0; return shopMode ? 2 : 1; }
+function curPageIdx(){ return view==="lists" ? 0 : 1; }   // v1.15 two pages: Lists (0) ⇄ List (1)
 function applyPage(idx){
   catEntry=null; quickEdit=null; optOpen=false;
-  if(idx===0){ view="lists"; setShop(false); }
-  else if(idx===1){ view="detail"; setShop(false); }
-  else { view="detail"; setShop(true); }
+  if(idx===0){ view="lists"; } else { view="detail"; shopMode=true; }
 }
 let _pageAnim=false;
 /* v1.14 single-layer transition: render the new page, then slide/fade the incoming .wrap in
@@ -3122,7 +3143,7 @@ let _pageAnim=false;
    position:fixed INSIDE .wrap, transforming .wrap carries the header+content; the bottom nav is a
    sibling and stays put. */
 function transitionTo(idx){
-  if(idx<0 || idx>2 || _pageAnim) return;
+  if(idx<0 || idx>1 || _pageAnim) return;
   const from=curPageIdx();
   if(idx===from){ render(); return; }
   const dir = idx>from ? 1 : -1;                                  // 1 → new page enters from the right
@@ -3159,7 +3180,7 @@ document.addEventListener("touchmove", e=>{
     w.style.willChange="transform";
   }
   const nxt=_drag.base+(dx<0?1:-1);
-  _drag.dx = (nxt<0||nxt>2) ? dx/3 : dx;                          // rubber-band at the ends of the chain
+  _drag.dx = (nxt<0||nxt>1) ? dx/3 : dx;                          // rubber-band at the ends of the chain
   _drag.w.style.transform="translateX("+_drag.dx.toFixed(1)+"px)";
 }, {passive:true});
 document.addEventListener("touchend", e=>{
@@ -3171,7 +3192,7 @@ document.addEventListener("touchend", e=>{
   const commit = d ? (Math.abs(d.dx||0)>70 || (Math.abs(dx)>40 && dt<250))
                    : (dt<=600 && Math.abs(dx)>=70 && Math.abs(dy)<=60 && Math.abs(dx)>=1.6*Math.abs(dy));
   const target=curPageIdx()+(dx<0?1:-1);
-  if(commit && target>=0 && target<=2){
+  if(commit && target>=0 && target<=1){
     gotoPage(target, d?d.dx:0); clr();
   } else if(d && d.w && d.w.isConnected){
     const w=d.w; const a=w.animate([{transform:"translateX("+(d.dx||0)+"px)"},{transform:"translateX(0)"}],{duration:180,easing:"ease-out"});
