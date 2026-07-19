@@ -536,6 +536,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:14px; }
   .userchip.on { background:var(--btn); border-color:var(--btn); color:#fff; }
   .userchip .ucur { font-size:10px; font-weight:800; opacity:.8; text-transform:uppercase; letter-spacing:.4px; }
+  /* v1.11 shop checklist rows + plan qty-banner remove + finish dialog */
+  .wrap.shop .pcheck { margin-left:0; margin-right:11px; width:27px; height:27px; }
+  .pill-meta { margin-left:auto; display:inline-flex; align-items:center; gap:5px; padding-left:10px; }
+  .qbanner-rm { border:1.5px solid #C24A33; color:#C24A33; background:transparent; font-weight:800; font-size:13px; padding:6px 14px; border-radius:999px; }
   /* v1.10 bottom-first add — floating pill + full-screen add sheet */
   .addpill-wrap { position:fixed; left:0; right:0; bottom:0; margin:0 auto; max-width:480px; z-index:37; padding:0 14px; display:flex; }
   .addpill { flex:1; display:flex; align-items:center; gap:9px; border:1.5px solid var(--line); border-radius:999px; padding:13px 18px;
@@ -586,7 +590,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.10";
+const APP_VERSION = "v1.11";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1215,6 +1219,8 @@ function setSmart(on){ _smart = on?"1":"0"; localStorage.setItem("ml_smart", _sm
 let optOpen=false, listsOpen=false;
 // v1.10 bottom-first add sheet
 let addOpen=false, addTab="reg", _addScrollY=0;
+// v1.11 done-shopping dialog
+let finishOpen=false;
 // A18 ✨ Smart add (planning-mode AI parse → preview → confirm)
 let smartOpen=false, smartLoading=false, smartError="", smartItems=[], smartEdit=null;
 // B3 recipe → list (text-first): pours extracted ingredients into the shared Smart-add preview
@@ -1579,7 +1585,7 @@ function sweep(){ const checked=state.items.filter(i=>i.checked); if(!checked.le
   recordPurchase(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||""})));   // B4 log purchase cadence
   moveToBuyAgain(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||""})));
   state.items = state.items.filter(i=>!i.checked);
-  save(); render(); showUndo(prev, checked.length+" cleared → Buy again"); }
+  save(); render(); showUndo(prev, checked.length+" saved to Regulars"); }
 /* v1.10 add-sheet variant of restore(): copies the regular onto the list but KEEPS it in
    Buy-again, so the sheet row stays put and flips to ✓ (second tap bumps quantity). */
 function addFromRegular(name,cat){ playPlan(true);
@@ -1938,8 +1944,14 @@ function pillHTML(i, cat){
   const edge = checked ? 'var(--done-edge)' : cat.color;
   const qcol = full ? '#fff' : (checked ? 'var(--muted2)' : cat.color);
   const style = full ? `background:${cat.color};border:1.5px solid ${cat.color};color:#fff` : `border-left:4px solid ${edge}`;
+  const meta = `${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}`;
+  const marks = `${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}${(!checked&&i.starred)?`<span style="color:${full?'#fff':'#E8A91D'};margin-right:1px">★</span>`:""}`;
+  // v1.11 shop mode reads as a checklist: big check circle LEFT, name, qty/weight right-aligned
   return `<button class="pill ${checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="${style}">`
-    +`${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}${(!checked&&i.starred)?`<span style="color:${full?'#fff':'#E8A91D'};margin-right:1px">★</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}${shopMode?`<span class="pcheck" aria-hidden="true"${full?' style="border-color:rgba(255,255,255,.85);color:#fff"':''}>${checked?'✓':''}</span>`:""}</button>`;
+    +(shopMode
+      ? `<span class="pcheck" aria-hidden="true"${full?' style="border-color:rgba(255,255,255,.85);color:#fff"':''}>${checked?'✓':''}</span>${marks}${esc(cap(i.name))}<span class="pill-meta">${meta}</span>`
+      : `${marks}${meta}${esc(cap(i.name))}`)
+    +`</button>`;
 }
 function pillRow(items, cat){ return `<div class="pills">${items.map(i=>pillHTML(i,cat)).join("")}</div>`; }
 function pillsMixed(items){ return `<div class="pills">${items.map(i=>pillHTML(i, CAT(i.cat))).join("")}</div>`; }
@@ -2064,7 +2076,7 @@ function renderMain(){
   const checkedBar = done>0 ? `<div class="checkedbar" id="checkedbar">
       <button class="checkedbarhead" id="checkedHead"><span class="chk-in"><span class="chk-tick">✓</span>${done} in cart</span><span>${checkedOpen?"▾":"▸"}</span></button>
       ${checkedOpen?`<div class="checkedscroll">${pillsMixed(checkedItems.slice().sort((a,b)=>(b.checkedAt||0)-(a.checkedAt||0)))}</div>`:""}
-      <button id="sweepBtn" class="sweepbtn sweepbanner">Clear ${done} checked → Buy again</button>
+      <button id="sweepBtn" class="sweepbtn sweepbanner">Finish · save ${done} to Regulars</button>
     </div>` : "";
   app.innerHTML = `<div class="wrap ${shopMode?'shop':''}">
     <div class="topfix" id="topfix">
@@ -2088,7 +2100,7 @@ function renderMain(){
         </div>`
         :(state.items.length>0?`<div class="shopbar" style="margin-top:8px;background:var(--btn)"><span><span class="cartglyph">${CART_SVG}</span>At the store?</span><button id="startShop">Start shopping</button></div>`:"")}
     </div>
-    <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
+    <div class="zoomwrap"><div class="zoomer ${styl()}${(lineList()||shopMode)?' linelist':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${(state.items.length===0 && !shopMode)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">Your list is empty</p>
@@ -2103,6 +2115,7 @@ function renderMain(){
   ${(state.items.length>0 && !addOpen)?`<div class="shopaddfab-wrap" id="shopAddFabWrap"><button class="shopaddfab" id="shopAddFab">+ Add</button></div>`:""}
   ${bottomNav({listsId:"listsBtn",listsActive:false,addId:"addNav",addActive:false,cartId:"cartNav",cartActive:true})}
   ${addOpen?addSheet():""}
+  ${finishOpen?finishSheet():""}
   ${optOpen?optionsSheet():""}
   ${listsOpen?listsSheet():""}
   ${smartOpen?smartSheet():""}
@@ -2195,7 +2208,7 @@ function planQBannerHTML(){
   const cat=CAT(it.cat); const cur=it.weight||"";
   const W=["","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"];
   return `<div class="qbanner" id="qbanner" style="border-top:3px solid ${cat.color}">
-    <div class="qbanner-top"><span class="qbanner-name">${(it.qty||1)>1?it.qty+'× ':''}${cur?esc(cur)+' ':''}${esc(cap(it.name))}</span><button class="qbanner-close" id="qbannerClose">Done</button></div>
+    <div class="qbanner-top"><span class="qbanner-name">${(it.qty||1)>1?it.qty+'× ':''}${cur?esc(cur)+' ':''}${esc(cap(it.name))}</span><span style="display:flex;gap:8px;flex:none"><button class="qbanner-rm" id="qbannerRemove">Remove</button><button class="qbanner-close" id="qbannerClose">Done</button></span></div>
     <div class="qbanner-row">
       <div class="qstep2"><button data-qm-minus="${it.id}" aria-label="Less">−</button><span>${it.qty||1}</span><button data-qm-plus="${it.id}" aria-label="More">+</button></div>
       <div class="wrowq">${W.map(w=>`<button class="wchipq ${cur===w?'on':''}" data-qm-weight="${it.id}|${w}">${w?(w==="500g"||w==="1kg"?'★'+w:w):'unit'}</button>`).join("")}</div>
@@ -2204,6 +2217,24 @@ function planQBannerHTML(){
   </div>`;
 }
 function planOutlineChip(e, cat){ return `<button class="pill plan-out ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="background:transparent;border:1.5px dashed ${cat.color}">${(e.qty||1)>1?`<span class="qty" style="color:${cat.color}">${e.qty}×</span>`:""}${e.weight?`<span class="qty" style="color:${cat.color}">${esc(e.weight)} </span>`:""}${esc(cap(e.name))}<span class="qmore" style="visibility:hidden" aria-hidden="true">▾</span></button>`; }
+/* v1.11 done-shopping dialog: one step to finish the trip and bank the bought items */
+function finishSheet(){ const n=state.items.filter(i=>i.checked).length;
+  return `<div class="sheet-bg" id="finishBg"><div class="sheet" id="finishSheetEl">
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:6px">Done shopping?</div>
+    <p style="margin:0 0 14px;font-size:13.5px;color:var(--muted);font-weight:600">${n} bought ${n===1?"item":"items"} in the cart. Save ${n===1?"it":"them"} to Regulars for one-tap re-adding next time?</p>
+    <button class="optaction" id="finishSave" style="background:var(--btn);color:var(--btn-text);border-color:var(--btn)">Save ${n} to Regulars &amp; finish</button>
+    <button class="optaction" id="finishKeep">Keep on list &amp; finish</button>
+  </div></div>`; }
+/* v1.11 location-triggered prompt: replaces the always-on "At the store?" banner. Shows only
+   when GPS says you're at a saved store, dismissable for 2h. Reuses the existing geofence. */
+function atStorePrompt(){
+  if(!useLoc || shopMode) return "";
+  ensureLocCheck();
+  const id=locState.nearId; if(!id || !isRealStore(id)) return "";
+  const st=storeById(id); if(!st) return "";
+  try{ if(Date.now()-(+localStorage.getItem("ml_atstore_x")||0) < 2*3600000) return ""; }catch(e){}
+  return `<div class="shopbar" style="margin-top:8px"><span>📍 At ${esc(st.name)}?</span><span style="display:flex;gap:8px"><button id="atstoreGo">Start shopping</button><button id="atstoreX" aria-label="Not now" style="padding:7px 11px">✕</button></span></div>`;
+}
 function renderPlanPage(){
   const psm = (displayFor()==="cat" && sortModeFor()==="location") ? "cat" : sortModeFor();
   let planBody;
@@ -2269,7 +2300,7 @@ function renderPlanPage(){
         </div>
         <div style="display:flex;align-items:center;gap:8px">${syncChip()}<button id="optBtnTop" class="iconbtn" aria-label="Settings" title="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
       </header>
-      ${hasAny?`<div class="shopbar" style="margin-top:8px;background:var(--btn)"><span><span class="cartglyph">${CART_SVG}</span>At the store?</span><button id="startShop">Start shopping</button></div>`:""}
+      ${atStorePrompt()}
     </div>
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${mergeCardHTML()}
@@ -2305,8 +2336,7 @@ function wirePlanPage(){
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
     b.onpointerup=(e)=>{ pressCancel(); const it=state.items.find(i=>i.id===id); if(!it) return;
       if(longFired){ quickEdit=null; editing={kind:"item", ...it}; render(); return; }
-      if(e.target.closest("[data-qmore]")){ quickEdit = (quickEdit===id ? null : id); render(); return; }
-      quickEdit=null; planRemove(id); }; });
+      quickEdit = (quickEdit===id ? null : id); render(); }; });   // v1.11 tap = select (qty banner); removal lives in the banner
   wireQuickPanel();
   app.querySelectorAll("[data-planc]").forEach(b=>{ const id=b.dataset.planc;
     b.oncontextmenu=e=>e.preventDefault();
@@ -2334,11 +2364,13 @@ function wirePlanPage(){
   app.querySelectorAll("[data-merge-x]").forEach(b=>b.onclick=()=>mergeDismiss(b.dataset.mergeX));
   const mHide=app.querySelector("[data-merge-hide]"); if(mHide) mHide.onclick=mergeHideAll;
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>gotoPage(0);
-  const ss=app.querySelector("#startShop"); if(ss) ss.onclick=()=>gotoPage(2);
+  const ag=app.querySelector("#atstoreGo"); if(ag) ag.onclick=()=>gotoPage(2);
+  const ax=app.querySelector("#atstoreX"); if(ax) ax.onclick=()=>{ try{ localStorage.setItem("ml_atstore_x", String(Date.now())); }catch(e){} render(); };
   const an=app.querySelector("#addNav"); if(an) an.onclick=openAdd;   // Add tab → add sheet
   const apl=app.querySelector("#addPill"); if(apl) apl.onclick=openAdd;
   const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(2);
   const qbc=app.querySelector("#qbannerClose"); if(qbc) qbc.onclick=()=>{ quickEdit=null; render(); };
+  const qbr=app.querySelector("#qbannerRemove"); if(qbr) qbr.onclick=()=>{ const it=state.items.find(i=>i.id===quickEdit); const nm=it?cap(it.name):""; const id=quickEdit; quickEdit=null; planRemove(id); if(nm) showToast(nm+" moved to Regulars"); };
   wireSmartSheet();
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>gotoPage(0);
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
@@ -2900,7 +2932,10 @@ function wire(){
       else { restore(name,cat); } }; });
   const cba=app.querySelector("#clearBA"); if(cba) cba.onclick=()=>{ const prev=snapState(); const now=Date.now(); state.baTomb=state.baTomb||{}; state.buyAgain.forEach(e=>{ state.baTomb[baKey(e)]=now; }); state.buyAgain=[]; save(); render(); showUndo(prev,"Buy-again cleared"); };
 
-  const dsh=app.querySelector("#doneShop"); if(dsh) dsh.onclick=()=>gotoPage(1);
+  const dsh=app.querySelector("#doneShop"); if(dsh) dsh.onclick=()=>{ if(state.items.some(i=>i.checked)){ finishOpen=true; render(); } else gotoPage(1); };
+  const fbg=app.querySelector("#finishBg"); if(fbg) fbg.onclick=e=>{ if(e.target===fbg){ finishOpen=false; render(); } };
+  const fsv=app.querySelector("#finishSave"); if(fsv) fsv.onclick=()=>{ finishOpen=false; sweep(); gotoPage(1); };
+  const fkp=app.querySelector("#finishKeep"); if(fkp) fkp.onclick=()=>{ finishOpen=false; gotoPage(1); };
   const ssh=app.querySelector("#startShop"); if(ssh) ssh.onclick=()=>gotoPage(2);
   const aiAp=app.querySelector("[data-ai-apply]"); if(aiAp) aiAp.onclick=aiApplyProposal;   // B7 accept the proposed aisle order
   const aiKp=app.querySelector("[data-ai-keep]"); if(aiKp) aiKp.onclick=aiDismissProposal;   // B7 revert / keep current
@@ -3034,7 +3069,7 @@ function transitionTo(idx, fromPx){
 }
 function gotoPage(idx, fromPx){ transitionTo(idx, fromPx); }
 let _swipe=null, _drag=null;
-function _swipeBlocked(){ return (!me || editing || optOpen || listActOpen || newListOpen || smartOpen || addOpen || _pageAnim); }
+function _swipeBlocked(){ return (!me || editing || optOpen || listActOpen || newListOpen || smartOpen || addOpen || finishOpen || _pageAnim); }
 document.addEventListener("touchstart", e=>{
   _swipe=null; _drag=null;
   if(e.touches.length!==1) return;
