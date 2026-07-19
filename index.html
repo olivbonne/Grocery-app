@@ -600,8 +600,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .addrow-cad { flex:none; font-size:11px; font-weight:800; color:var(--accent); border:1.5px solid var(--accent); border-radius:999px; padding:2px 8px; }
   .addrow.addtyped { border-style:dashed; border-color:var(--accent); color:var(--accent); }
   .addrow.addtyped .addrow-plus { background:var(--accent); color:#fff; }
-  /* v1.09 page-slide transitions (Lists ▸ Plan ▸ Shop) — outgoing page frozen as a ghost that slides away */
-  .pageghost { position:fixed; inset:0; z-index:38; pointer-events:none; background:var(--paper); overflow:hidden; will-change:transform; }
+  /* v1.09/1.14 page-slide transitions (Lists ▸ Plan ▸ Shop) — single-layer slide of the incoming .wrap */
   @keyframes tickpop { 0%{transform:scale(.5)} 55%{transform:scale(1.3)} 100%{transform:scale(1)} }
   .pill.picking .pcheck { animation:tickpop .3s cubic-bezier(.32,.72,.3,1); }
   @keyframes sheetup { 0%{opacity:0;transform:translateY(28px)} 70%{opacity:1;transform:translateY(-4px)} 100%{opacity:1;transform:translateY(0)} }
@@ -626,7 +625,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.13";
+const APP_VERSION = "v1.14";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1245,9 +1244,13 @@ function sortModeFor(){ const v=sorts[optMode()]||_legacySort; return v==="auto"
 function setSort(m){ sorts[optMode()]=m; localStorage.setItem("ml_sorts", JSON.stringify(sorts)); render(); }
 let displays = {}; try{ displays = JSON.parse(localStorage.getItem("ml_displays")||"null") || {}; }catch(e){ displays={}; }
 function displayRaw(){ const d=displays[optMode()]; return (d==="flat"||d==="line") ? d : "cat"; }   // "cat" | "flat" | "line"
-function displayFor(){ return displayRaw()==="cat" ? "cat" : "flat"; }   // "line" groups like "flat"; the difference is one-per-line layout
-function lineList(){ return displayRaw()==="line"; }                     // one item per row (full-width tiles)
+function displayFor(){ return displayRaw()==="flat" ? "flat" : "cat"; }   // v1.14 "line" = category grouping + one-per-line; only "flat" is ungrouped
+function lineList(){ return displayRaw()==="line"; }                       // one item per row (full-width tiles)
 function setDisplay(m){ displays[optMode()]=m; localStorage.setItem("ml_displays", JSON.stringify(displays)); render(); }
+// v1.14 show-emojis on/off — global; hides per-item emoji icons and category emoji glyphs.
+let _emoji = localStorage.getItem("ml_emoji");
+function emojiOn(){ return _emoji===null ? true : _emoji==="1"; }
+function setEmoji(on){ _emoji = on?"1":"0"; localStorage.setItem("ml_emoji", _emoji); render(); }
 // Smart add (AI ✨) on/off — global; ON keeps the ✨ button by the add box, OFF hides it.
 let _smart = localStorage.getItem("ml_smart");
 function smartOn(){ return _smart===null ? true : _smart==="1"; }
@@ -1399,6 +1402,7 @@ const DARK_VARIANTS = { "ramen.png":"ramen-dark.png" };
 function catIcon(cat, s){ s=s||16;
   if(cat && cat.img){
     return `<img class="cicon" src="${esc(dispImg(cat.img))}" style="width:${s}px;height:${s}px" alt="" />`; }
+  if(!emojiOn()) return "";                                   // v1.14 hide category emoji glyphs when emojis are off
   return `<span style="font-size:${(s-1)}px;line-height:1">${(cat&&cat.emoji)||"🛒"}</span>`; }
 const ICON_PRESETS = [
   {img:"milk.png"},{img:"cross.png"},{img:"ramen.png"},{img:"hammer.png"},
@@ -1817,7 +1821,8 @@ const EMOJI_HINTS = [
   ["chocolate","🍫"],["cookie","🍪"],["biscuit","🍪"],["honey","🍯"],["salt","🧂"],["sugar","🧂"],["flour","🌾"],["oats","🌾"],["cereal","🥣"],["oil","🫒"],["popcorn","🍿"],["pizza","🍕"],
   ["soap","🧼"],["shampoo","🧴"],["conditioner","🧴"],["detergent","🧴"],["sponge","🧽"],["toothpaste","🪥"],["toothbrush","🪥"],["vitamin","💊"],["medicine","💊"],["panadol","💊"],["sunscreen","🧴"],["battery","🔋"],["tissue","🤧"]
 ];
-function itemEmoji(name, cat){ const n=(name||"").toLowerCase();
+function itemEmoji(name, cat){ if(!emojiOn()) return "";
+  const n=(name||"").toLowerCase();
   for(const [k,e] of EMOJI_HINTS){ if(n.includes(k)) return e; }
   const c=CAT(cat); return (c && c.emoji && !c.img) ? c.emoji : ""; }
 function addFrag(){ const v=draftMain||""; const i=Math.max(v.lastIndexOf(","), v.lastIndexOf("\n")); return v.slice(i+1).trim(); }
@@ -1877,15 +1882,34 @@ function addSheet(){
 function addKeepScroll(fn){ const sb=document.getElementById("addSheetBody"); _addScrollY=sb?sb.scrollTop:0; fn();
   const s2=document.getElementById("addSheetBody"); if(s2) s2.scrollTop=_addScrollY; }
 function refreshAddBody(){ const sb=document.getElementById("addSheetBody"); if(!sb) return; sb.innerHTML=addSheetRows(); wireAddRows(); }
+function removeFromList(id){ const it=state.items.find(i=>i.id===id); if(!it) return; playPlan(false);   // v1.14 add-sheet "unselect"
+  state.items=state.items.filter(i=>i.id!==id); save(); render(); }
+function editItemById(id){ const it=state.items.find(i=>i.id===id); if(!it) return;                     // open the full edit menu (as on the shopping page)
+  addOpen=false; quickEdit=null; editing={kind:"item", ...it}; render(); }
+function findItem(name,cat){ return state.items.find(i=>!i.checked && i.name.toLowerCase()===String(name).toLowerCase() && i.cat===cat); }
+/* v1.14 add-sheet rows: quick tap = select/unselect (add ⇄ remove); long press = edit menu.
+   Replaces the old "second tap increments qty". */
 function wireAddRows(){
-  const act=(b,fn,refocus)=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ addKeepScroll(fn);
-    if(refocus){ const m=document.getElementById("mainInput"); if(m) m.focus(); } }; };
-  app.querySelectorAll("[data-add-typed]").forEach(b=>act(b,()=>{ const t=(draftMain||"").trim(); if(t){ draftMain=""; playPlan(true); addEntries(t,null); } },true));
-  app.querySelectorAll("[data-add-ba]").forEach(b=>act(b,()=>{ const p=b.dataset.addBa.split("|"), cat=p.pop(), name=p.join("|"); addFromRegular(name,cat); }));
-  app.querySelectorAll("[data-add-dict]").forEach(b=>act(b,()=>{ const p=b.dataset.addDict.split("|"), cat=p.pop(), name=p.join("|"); playPlan(true); addEntries(name,cat); }));
-  app.querySelectorAll("[data-add-inc]").forEach(b=>act(b,()=>{ const it=state.items.find(i=>i.id===b.dataset.addInc);
-    if(it){ it.qty=Math.min(999,(it.qty||1)+1); playPlan(true); markDirty(it.id); save(); render(); } }));
-  app.querySelectorAll("[data-add-pred]").forEach(b=>act(b,()=>predictAdd(b.dataset.addPred)));
+  const press=(b, shortFn, longIdFn, refocus)=>{
+    b.oncontextmenu=e=>e.preventDefault();
+    b.onpointerdown=e=>{ e.preventDefault(); pressStart(); };
+    b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
+    b.onpointerup=()=>{ pressCancel();
+      if(longFired){ const id = longIdFn && longIdFn(); if(id) editItemById(id); return; }
+      addKeepScroll(shortFn);
+      if(refocus){ const m=document.getElementById("mainInput"); if(m) m.focus(); }
+    };
+  };
+  app.querySelectorAll("[data-add-typed]").forEach(b=>press(b,
+    ()=>{ const t=(draftMain||"").trim(); if(t){ draftMain=""; playPlan(true); addEntries(t,null); } }, null, true));
+  app.querySelectorAll("[data-add-ba]").forEach(b=>{ const p=b.dataset.addBa.split("|"), cat=p.pop(), name=p.join("|");
+    press(b, ()=>addFromRegular(name,cat), ()=>{ addFromRegular(name,cat); const it=findItem(name,cat); return it&&it.id; }); });
+  app.querySelectorAll("[data-add-dict]").forEach(b=>{ const p=b.dataset.addDict.split("|"), cat=p.pop(), name=p.join("|");
+    press(b, ()=>{ playPlan(true); addEntries(name,cat); }, ()=>{ playPlan(true); addEntries(name,cat); const it=findItem(name,cat); return it&&it.id; }); });
+  app.querySelectorAll("[data-add-inc]").forEach(b=>{ const id=b.dataset.addInc;
+    press(b, ()=>removeFromList(id), ()=>id); });   // on-list row: tap unselects, long-press edits
+  app.querySelectorAll("[data-add-pred]").forEach(b=>{ const k=b.dataset.addPred;
+    press(b, ()=>predictAdd(k), ()=>{ const rec=purch[k]; if(!rec) return null; predictAdd(k); const it=findItem(rec.name,rec.cat); return it&&it.id; }); });
 }
 function wireAddSheet(){
   if(!addOpen) return;
@@ -2157,7 +2181,7 @@ function renderMain(){
         </div>`
         :(state.items.length>0?`<div class="shopbar" style="margin-top:8px;background:var(--btn)"><span><span class="cartglyph">${CART_SVG}</span>At the store?</span><button id="startShop">Start shopping</button></div>`:"")}
     </div>
-    <div class="zoomwrap"><div class="zoomer ${styl()}${(lineList()||shopMode)?' linelist':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
+    <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${(state.items.length===0 && !shopMode)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">Your list is empty</p>
@@ -2461,6 +2485,7 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-sort]").forEach(b=>b.onclick=()=>setSort(b.dataset.optSort));
   app.querySelectorAll("[data-opt-display]").forEach(b=>b.onclick=()=>{ if(displayRaw()!==b.dataset.optDisplay) setDisplay(b.dataset.optDisplay); });
   app.querySelectorAll("[data-opt-smart]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optSmart==="1"; if(smartOn()!==want) setSmart(want); });
+  app.querySelectorAll("[data-opt-emoji]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optEmoji==="1"; if(emojiOn()!==want) setEmoji(want); });
   app.querySelectorAll("[data-opt-useloc]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optUseloc==="1"; if(useLoc!==want){ useLoc=want; localStorage.setItem("ml_useloc", want?"1":"0"); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(want) ensureLocCheck(); render(); } });
   app.querySelectorAll("[data-opt-store]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optStore; if(storeSel!==v){ storeSel=v; localStorage.setItem("ml_store", v); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(v==="auto") ensureLocCheck(); render(); } });
   const sadd=app.querySelector("[data-store-add]"); if(sadd) sadd.onclick=()=>{ const id="c"+uid().slice(0,6); state.stores=state.stores||[]; state.stores.push({id,name:"New store",aisles:[]}); storeSel=id; localStorage.setItem("ml_store", id); save(); render(); };
@@ -2748,10 +2773,11 @@ function optionsSheet(){
     ${row("Theme", `<div class="seg segfull" style="flex-wrap:wrap"><button data-opt-theme="light" class="themebtn ${theme==='light'?'on':''}"><span class="themesw" style="background:#F2F6EE;border-color:#DCE5D7"><i style="background:#E2502C"></i></span>Light</button><button data-opt-theme="dark" class="themebtn ${theme==='dark'?'on':''}"><span class="themesw" style="background:#141C18;border-color:#33433B"><i style="background:#E2502C"></i></span>Dark</button><button data-opt-theme="midnight" class="themebtn ${theme==='midnight'?'on':''}"><span class="themesw" style="background:#0E120F;border-color:#2A322B"><i style="background:#EC5A2C"></i></span>Midnight</button><button data-opt-theme="market" class="themebtn ${theme==='market'?'on':''}"><span class="themesw" style="background:#F6F2E7;border-color:#DAD3C0"><i style="background:#D2542B"></i></span>Market</button><button data-opt-theme="mono" class="themebtn ${theme==='mono'?'on':''}"><span class="themesw" style="background:#16181A;border-color:#2C3136"><i style="background:#5FD0B0"></i></span>Mono</button></div>`)}
     ${row("Appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}">Full</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}">Empty</button></div>`)}
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
+    ${row("Emojis", `<div class="seg"><button data-opt-emoji="1" class="${emojiOn()?'on':''}">On</button><button data-opt-emoji="0" class="${!emojiOn()?'on':''}">Off</button></div>`)}
     ${(view!=="lists") ? row("Style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
     ${(view!=="lists") ? sect("List") : ""}
     ${(view!=="lists") ? row("Smart add", `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">On</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">Off</button></div>`) : ""}
-    ${view!=="lists" ? `${row("Display", `<div class="seg segfull"><button data-opt-display="cat" class="${displayRaw()==='cat'?'on':''}">Category</button><button data-opt-display="flat" class="${displayRaw()==='flat'?'on':''}">Flat list</button><button data-opt-display="line" class="${displayRaw()==='line'?'on':''}">Line list</button></div>`)}
+    ${view!=="lists" ? `${row("Display", `<div class="seg segfull"><button data-opt-display="cat" class="${displayRaw()==='cat'?'on':''}">Category</button><button data-opt-display="flat" class="${displayRaw()==='flat'?'on':''}">Flat list</button><button data-opt-display="line" class="${displayRaw()==='line'?'on':''}">Category line list</button></div>`)}
     <div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
       <span class="optlabel">Sort</span>
       <div class="seg segfull">${(displayFor()==="flat" && shopMode && aiSortOK())?`<button data-opt-sort="ai" class="${curSort==='ai'?'on':''}">✨ AI</button>`:""}${displayFor()==="flat"?`<button data-opt-sort="location" class="${curSort==='location'?'on':''}">Location</button>`:""}<button data-opt-sort="cat" class="${curSort==='cat'?'on':''}">Subcategory</button><button data-opt-sort="alpha" class="${curSort==='alpha'?'on':''}">A–Z</button></div>
@@ -3080,12 +3106,8 @@ function wireEditSheet(){
 }
 
 /* Three linear pages: Lists (0) ▸ Plan (1) ▸ Shop (2). Plan and Shop share view="detail",
-   distinguished by shopMode. v1.09: page changes slide (iOS-push style) — the outgoing page is
-   frozen as a full-screen clone (".pageghost") that slides and dims away while the incoming page
-   slides in above it. A horizontal swipe drags the live page with the finger before committing.
-   Works because .topfix is position:fixed INSIDE .wrap: a transformed ancestor becomes the
-   containing block for fixed descendants, so translating .wrap moves header+content together
-   while the bottom nav (a sibling) stays put. */
+   distinguished by shopMode. A horizontal swipe drags the live page with the finger before
+   committing (see transitionTo for the animation). */
 function curPageIdx(){ if(view==="lists") return 0; return shopMode ? 2 : 1; }
 function applyPage(idx){
   catEntry=null; quickEdit=null; optOpen=false;
@@ -3094,44 +3116,30 @@ function applyPage(idx){
   else { view="detail"; setShop(true); }
 }
 let _pageAnim=false;
-function makeGhost(){
-  if(!app.querySelector(".wrap")) return null;
-  const g=document.createElement("div"); g.className="pageghost"; g.style.transform="translateX(0)";
-  for(const sel of [".wrap","#checkedbar","#shopAddFabWrap","#qbanner"]){
-    const el=app.querySelector(sel); if(!el) continue;
-    const c=el.cloneNode(true);
-    c.removeAttribute("id"); c.querySelectorAll("[id]").forEach(x=>x.removeAttribute("id"));
-    if(sel===".wrap") c.style.transform="";
-    g.appendChild(c);
-  }
-  const zo=g.querySelector(".zoomer"), sy=window.scrollY||0;      // freeze the scroll position into the clone
-  if(zo && sy) zo.style.transform = "translateY(-"+sy+"px) " + (zo.style.transform||"");
-  return g;
-}
-function transitionTo(idx, fromPx){
+/* v1.14 single-layer transition: render the new page, then slide/fade the incoming .wrap in
+   from the correct side. No cloned "ghost" layer, so the old and new screens can never be on
+   screen at the same time (the earlier ghost overlay glitched on iOS Safari). Because .topfix is
+   position:fixed INSIDE .wrap, transforming .wrap carries the header+content; the bottom nav is a
+   sibling and stays put. */
+function transitionTo(idx){
   if(idx<0 || idx>2 || _pageAnim) return;
   const from=curPageIdx();
   if(idx===from){ render(); return; }
   const dir = idx>from ? 1 : -1;                                  // 1 → new page enters from the right
-  if(matchMedia("(prefers-reduced-motion: reduce)").matches){ applyPage(idx); render(); return; }
-  const ghost=makeGhost();
   applyPage(idx);
   window.scrollTo(0,0);
   render();
-  const nw=app.querySelector(".wrap");
-  if(!ghost || !nw) return;
-  document.body.appendChild(ghost);
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const nw=app.querySelector(".wrap"); if(!nw) return;
   _pageAnim=true;
-  nw.style.position="relative"; nw.style.zIndex="39"; nw.style.willChange="transform";
-  const EASE="cubic-bezier(.32,.72,.30,1)", DUR=300;
-  const na=nw.animate([{transform:"translateX("+(dir>0?100:-100)+"%)"},{transform:"translateX(0)"}],{duration:DUR,easing:EASE});
-  ghost.animate([{transform:"translateX("+(fromPx||0)+"px)",opacity:1},{transform:"translateX("+(dir>0?-28:28)+"%)",opacity:.5}],{duration:DUR,easing:EASE});
-  let done=false;
-  const fin=()=>{ if(done) return; done=true; _pageAnim=false; ghost.remove();
-    if(nw.isConnected){ nw.style.position=""; nw.style.zIndex=""; nw.style.willChange=""; } };
-  na.onfinish=fin; na.oncancel=fin; setTimeout(fin, DUR+140);     // safety net if WAAPI events don't fire
+  nw.style.willChange="transform";
+  const a=nw.animate(
+    [{transform:"translateX("+(dir>0?100:-100)+"%)",opacity:.35},{transform:"translateX(0)",opacity:1}],
+    {duration:270,easing:"cubic-bezier(.32,.72,.30,1)"});
+  const fin=()=>{ _pageAnim=false; if(nw.isConnected) nw.style.willChange=""; };
+  a.onfinish=fin; a.oncancel=fin; setTimeout(fin, 360);           // safety net if WAAPI events don't fire
 }
-function gotoPage(idx, fromPx){ transitionTo(idx, fromPx); }
+function gotoPage(idx){ transitionTo(idx); }
 let _swipe=null, _drag=null;
 function _swipeBlocked(){ return (!me || editing || optOpen || listActOpen || newListOpen || smartOpen || addOpen || finishOpen || _pageAnim); }
 document.addEventListener("touchstart", e=>{
