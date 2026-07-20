@@ -480,10 +480,18 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .wrap.shop .catheadchip .cname { font-size:18px; font-weight:600; letter-spacing:normal; text-transform:none; }
   .wrap.shop .zoomer.compact .catheadchip .cname { font-size:14px; }
   /* v1.22 "Grid" display — equal-width tiles, 3 per row, qty/weight stacked below the name */
-  .wrap.shop .zoomer.gridmode .pills { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .wrap.shop .zoomer.gridmode .pills { display:grid; gap:8px; }
+  .wrap.shop .zoomer.grid3 .pills { grid-template-columns:repeat(3,1fr); }
+  .wrap.shop .zoomer.grid4 .pills { grid-template-columns:repeat(4,1fr); }
+  .wrap.shop .zoomer.grid5 .pills { grid-template-columns:repeat(5,1fr); }
   .wrap.shop .zoomer.gridmode .pill { flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:82px; padding:10px 6px; gap:2px; }
   .wrap.shop .zoomer.gridmode .pill .pemoji { margin:0; }
   .wrap.shop .zoomer.gridmode .pill .pill-meta { margin-left:0; padding-left:0; justify-content:center; }
+  .wrap.shop .zoomer.grid4 .pill { font-size:13px; min-height:74px; padding:8px 4px; }
+  .wrap.shop .zoomer.grid4 .pill .pemoji { font-size:16px; }
+  .wrap.shop .zoomer.grid5 .pill { font-size:11.5px; min-height:66px; padding:7px 3px; gap:1px; }
+  .wrap.shop .zoomer.grid5 .pill .pemoji { font-size:14px; }
+  .wrap.shop .zoomer.grid5 .pill .pill-meta { font-size:11px; }
   /* v1.22 item 6 — settings rows with a wide control laid out label-left / control-right (like Theme) */
   .optrow-wide { align-items:center; }
   .optwide { flex:1; min-width:0; }
@@ -491,8 +499,16 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.22 item 5 — single collapsed "Regulars" header */
   .plansec-h[data-reg-showall] { width:100%; border:none; background:transparent; cursor:pointer; }
   .plansec-count { color:var(--muted); }
+  /* v1.23 wallpaper — fixed full-screen backdrop with a theme-tinted readability scrim; default none */
+  body.haswall { background:transparent; }
+  body.haswall::before { content:""; position:fixed; inset:0; z-index:-2; background:var(--wall) top center / cover no-repeat; }
+  body.haswall::after { content:""; position:fixed; inset:0; z-index:-1; background:var(--paper); opacity:.32; }
+  .wallrow { display:flex; flex-wrap:wrap; gap:6px; width:100%; }
+  .wallbtn { flex:1 1 0; min-width:46px; height:40px; border-radius:11px; border:1.5px solid var(--line); background-position:top center; background-size:cover; color:var(--ink); font-weight:700; font-size:12px; }
+  .wallbtn.on { border-color:var(--accent); border-width:2px; }
   .regcat { margin-top:2px; }
-  .regcatlbl { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:8px 2px 0; }
+  .regcatlbl { display:flex; align-items:center; justify-content:space-between; width:100%; border:none; background:transparent; cursor:pointer; font-size:18px; font-weight:600; color:var(--ink); letter-spacing:normal; text-transform:none; margin:10px 2px 0; padding:0; }
+  .regcnum { color:var(--muted); font-weight:700; font-size:15px; }
   /* A15 bigger effective touch targets on small controls, no visual change (~44px hit areas) */
   .qmore, .iconbtn, .iconmini { position:relative; }
   .plus::after { content:""; position:absolute; inset:-10px; }
@@ -660,7 +676,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.22";
+const APP_VERSION = "v1.23";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -763,12 +779,17 @@ if(!THEMES[theme]) theme = "light";
 function applyTheme(){ const t = THEMES[theme] || THEMES.light;
   document.documentElement.setAttribute("data-theme", theme); document.body.setAttribute("data-theme", theme);
   document.body.classList.toggle("dark", t.dark); document.documentElement.classList.toggle("dark", t.dark);
-  const tc=document.getElementById("themeColor"); if(tc) tc.content = t.tc; }
+  const tc=document.getElementById("themeColor"); if(tc) tc.content = t.tc;
+  document.body.classList.toggle("haswall", !!(typeof wall!=="undefined" && wall));
+  document.body.style.setProperty("--wall", (typeof wall!=="undefined" && wall) ? `url('img/${wall}.jpg')` : "none"); }
 function setTheme(v){ if(!THEMES[v]) return; theme = v; localStorage.setItem("ml_theme", theme); applyTheme(); render(); }
 function toggleTheme(){ setTheme(theme==="dark" ? "light" : "dark"); }   // kept for back-compat
 let fill = localStorage.getItem("ml_fill")||"empty";
 function fillMode(){ return fill; }
 function setFill(m){ fill=m; localStorage.setItem("ml_fill", m); render(); }
+// v1.23 wallpaper — "" (none, default) or wall-1..wall-4, applied as a fixed full-screen backdrop via applyTheme()
+let wall = localStorage.getItem("ml_wall") || "";
+function setWall(v){ wall = v; localStorage.setItem("ml_wall", v); applyTheme(); render(); }
 // ---- Location / at-store detection ----
 let useLoc = localStorage.getItem("ml_useloc"); useLoc = (useLoc===null ? true : useLoc==="1");
 let storeSel = localStorage.getItem("ml_store") || "auto";      // "auto" | store id
@@ -1278,9 +1299,15 @@ const _legacySort = localStorage.getItem("ml_sort")||"cat";
 function sortModeFor(){ const v=sorts[optMode()]||_legacySort; return v==="auto"?"cat":v; }
 function setSort(m){ sorts[optMode()]=m; localStorage.setItem("ml_sorts", JSON.stringify(sorts)); render(); }
 let displays = {}; try{ displays = JSON.parse(localStorage.getItem("ml_displays")||"null") || {}; }catch(e){ displays={}; }
-function displayRaw(){ const d=displays[optMode()]; return ["flat","line","flatline","grid"].includes(d) ? d : "cat"; }   // cat | line | flat | flatline | grid
-function displayFor(){ const d=displayRaw(); return (d==="flat"||d==="flatline"||d==="grid") ? "flat" : "cat"; }   // flat/flatline/grid drop categories; cat/line keep them
-function lineList(){ const d=displayRaw(); return d==="line" || d==="flatline"; }                        // one item per row
+// v1.23 display model: base layout (tile/list/grid3/grid4/grid5) + independent Category / Subcategory grouping toggles
+function displayRaw(){ const d=displays[optMode()]; return ["tile","list","grid3","grid4","grid5"].includes(d) ? d : "tile"; }
+function displayFor(){ return catOn ? "cat" : "flat"; }
+function lineList(){ return displayRaw()==="list"; }
+function gridCols(){ const d=displayRaw(); return d==="grid3"?3 : d==="grid4"?4 : d==="grid5"?5 : 0; }
+let _co=localStorage.getItem("ml_caton"); let catOn = _co===null ? true : _co==="1";
+let _so=localStorage.getItem("ml_subon"); let subOn = _so===null ? false : _so==="1";
+function setCatOn(v){ catOn=!!v; localStorage.setItem("ml_caton", catOn?"1":"0"); render(); }
+function setSubOn(v){ subOn=!!v; localStorage.setItem("ml_subon", subOn?"1":"0"); render(); }
 function setDisplay(m){ displays[optMode()]=m; localStorage.setItem("ml_displays", JSON.stringify(displays)); render(); }
 // v1.16 two independent icon switches — category icons (emoji AND images) and item emojis.
 let _emojiCat = localStorage.getItem("ml_emoji_cat");
@@ -2146,10 +2173,11 @@ function planningSection(){
   const groups = catList().map(cat=>{
     const regs = state.buyAgain.filter(e=>e.cat===cat.id).slice().sort((a,b)=>a.name.localeCompare(b.name));   // A–Z
     if(!regs.length) return "";
-    const pills = `<div class="pills" style="margin-top:6px">${regs.map(e=>{
+    const ccol = (collapse.regCats||[]).includes(cat.id);   // v1.23 per-category collapse
+    const pills = ccol ? "" : `<div class="pills" style="margin-top:6px">${regs.map(e=>{
       const it = state.items.find(i=>!i.checked && i.name.toLowerCase()===e.name.toLowerCase() && i.cat===cat.id);   // show selected ones too
       return regPill(e,cat,it); }).join("")}</div>`;
-    return `<div class="regcat"><div class="regcatlbl">${esc(cat.label)}</div>${pills}</div>`;
+    return `<div class="regcat"><button class="regcatlbl" data-regc="${cat.id}"><span>${esc(cat.label)}</span><span class="regcnum">${regs.length}${ccol?' ▸':' ▾'}</span></button>${pills}</div>`;
   }).filter(Boolean).join("");
   if(!groups) return "";
   const open = !!collapse.regAll;   // default collapsed
@@ -2232,7 +2260,7 @@ function renderMain(){
   let sm = (disp==="cat" && (sortModeFor()==="location"||sortModeFor()==="ai")) ? "cat" : sortModeFor();   // Location & AI need flat display
   if(sm==="ai" && !aiSortOK()) sm="location";   // Home/Other: AI unavailable → fall back to Location
   let bodyBlocks;
-  if(disp==="cat"){ bodyBlocks = buildCatBlocks(sm==="alpha"); }                       // A–Z = plain alpha within each category
+  if(disp==="cat"){ bodyBlocks = buildCatBlocks(!subOn); }                              // v1.23 Subcategory toggle controls sub-grouping
   else if(sm==="ai"){ ensureLocCheck(); const unchecked=state.items.filter(i=>!i.checked).slice().sort(byAI);   // AI = accepted per-store check order
     // A25 item-level order, frozen at trip start (aiResetTrip) — learns per item, applies next trip, never reshuffles mid-shop
     const seenItems = Object.keys(aiItemsApplied[aiStoreKey()]||{}).length;
@@ -2267,7 +2295,7 @@ function renderMain(){
       </header>
     </div>
     <div class="wrap ${shopMode?'shop':''}">
-    <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${displayRaw()==='grid'?' gridmode':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
+    <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${(state.items.length===0)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">Your list is empty</p>
@@ -2471,7 +2499,7 @@ function renderPlanPage(){
       </header>
       ${atStorePrompt()}
     </div>
-    <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${displayRaw()==='grid'?' gridmode':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
+    <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${mergeCardHTML()}
       ${hasAny ? planBody : `<div class="empty"><div class="empty-emoji">🛒</div><p class="empty-title">Nothing planned yet</p><p class="empty-sub">Tap <b>Add</b> below — pick from your Regulars in one tap or type anything new.</p></div>`}
       <button id="addCatPlan" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
@@ -2579,6 +2607,9 @@ function wireOptions(){
   app.querySelectorAll("[data-pred-day]").forEach(b=>b.onclick=()=>{ predictCfg.day=+b.dataset.predDay; savePredictCfg(); render(); });
   app.querySelectorAll("[data-opt-sort]").forEach(b=>b.onclick=()=>setSort(b.dataset.optSort));
   app.querySelectorAll("[data-opt-display]").forEach(b=>b.onclick=()=>{ if(displayRaw()!==b.dataset.optDisplay) setDisplay(b.dataset.optDisplay); });
+  app.querySelectorAll("[data-opt-wall]").forEach(b=>b.onclick=()=>{ if(wall!==b.dataset.optWall) setWall(b.dataset.optWall); });
+  app.querySelectorAll("[data-opt-caton]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optCaton==="1"; if(catOn!==v) setCatOn(v); });
+  app.querySelectorAll("[data-opt-subon]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optSubon==="1"; if(subOn!==v) setSubOn(v); });
   app.querySelectorAll("[data-opt-smart]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optSmart==="1"; if(smartOn()!==want) setSmart(want); });
   app.querySelectorAll("[data-opt-catemoji]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optCatemoji==="1"; if(catEmojiOn()!==want) setCatEmoji(want); });
   app.querySelectorAll("[data-opt-itememoji]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optItememoji==="1"; if(itemEmojiOn()!==want) setItemEmoji(want); });
@@ -2862,6 +2893,7 @@ function optionsBody(){
   return `
     ${sect("Appearance")}
     ${row("Theme", `<div class="seg segfull" style="flex-wrap:wrap"><button data-opt-theme="light" class="themebtn ${theme==='light'?'on':''}"><span class="themesw" style="background:#F2F6EE;border-color:#DCE5D7"><i style="background:#E2502C"></i></span>Light</button><button data-opt-theme="dark" class="themebtn ${theme==='dark'?'on':''}"><span class="themesw" style="background:#141C18;border-color:#33433B"><i style="background:#E2502C"></i></span>Dark</button><button data-opt-theme="midnight" class="themebtn ${theme==='midnight'?'on':''}"><span class="themesw" style="background:#0E120F;border-color:#2A322B"><i style="background:#EC5A2C"></i></span>Midnight</button><button data-opt-theme="market" class="themebtn ${theme==='market'?'on':''}"><span class="themesw" style="background:#F6F2E7;border-color:#DAD3C0"><i style="background:#D2542B"></i></span>Market</button><button data-opt-theme="mono" class="themebtn ${theme==='mono'?'on':''}"><span class="themesw" style="background:#16181A;border-color:#2C3136"><i style="background:#5FD0B0"></i></span>Mono</button></div>`)}
+    ${row("Wallpaper", `<div class="wallrow">${[{v:"",label:"None"},{v:"wall-1"},{v:"wall-2"},{v:"wall-3"},{v:"wall-4"}].map(w=>`<button data-opt-wall="${w.v}" class="wallbtn ${wall===w.v?'on':''}" style="${w.v?`background-image:url('img/${w.v}.jpg')`:''}">${w.label||''}</button>`).join("")}</div>`)}
     ${row("Tile appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}">Full</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}">Empty</button></div>`)}
     ${(view!=="lists") ? row("Tile style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
@@ -2869,14 +2901,16 @@ function optionsBody(){
     ${row("Item icons", `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}">On</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}">Off</button></div>`)}
     ${view!=="lists" ? `<div class="optrow optrow-wide"><span class="optlabel">Display</span><div class="optwide">
       <div class="dispgrid">
-        <button class="dispopt ${displayRaw()==='cat'?'on':''}" data-opt-display="cat">Category tiles</button>
-        <button class="dispopt ${displayRaw()==='line'?'on':''}" data-opt-display="line">Category list</button>
-        <button class="dispopt ${displayRaw()==='flat'?'on':''}" data-opt-display="flat">Tiles</button>
-        <button class="dispopt ${displayRaw()==='flatline'?'on':''}" data-opt-display="flatline">List</button>
-        <button class="dispopt ${displayRaw()==='grid'?'on':''}" data-opt-display="grid">Grid</button>
+        <button class="dispopt ${displayRaw()==='grid3'?'on':''}" data-opt-display="grid3">Grid 3×</button>
+        <button class="dispopt ${displayRaw()==='grid4'?'on':''}" data-opt-display="grid4">Grid 4×</button>
+        <button class="dispopt ${displayRaw()==='grid5'?'on':''}" data-opt-display="grid5">Grid 5×</button>
+        <button class="dispopt ${displayRaw()==='tile'?'on':''}" data-opt-display="tile">Tile</button>
+        <button class="dispopt ${displayRaw()==='list'?'on':''}" data-opt-display="list">List</button>
       </div></div></div>
+    ${row("Category", `<div class="seg"><button data-opt-caton="1" class="${catOn?'on':''}">On</button><button data-opt-caton="0" class="${!catOn?'on':''}">Off</button></div>`)}
+    ${catOn ? row("Subcategory", `<div class="seg"><button data-opt-subon="1" class="${subOn?'on':''}">On</button><button data-opt-subon="0" class="${!subOn?'on':''}">Off</button></div>`) : ""}
     <div class="optrow optrow-wide"><span class="optlabel">Sort</span><div class="optwide">
-      <div class="seg segfull">${(displayFor()==="flat" && shopMode && aiSortOK())?`<button data-opt-sort="ai" class="${curSort==='ai'?'on':''}">✨ AI</button>`:""}${displayFor()==="flat"?`<button data-opt-sort="location" class="${curSort==='location'?'on':''}">Location</button>`:""}<button data-opt-sort="cat" class="${curSort==='cat'?'on':''}">Subcategory</button><button data-opt-sort="alpha" class="${curSort==='alpha'?'on':''}">A–Z</button></div>
+      <div class="seg segfull">${(displayFor()==="flat" && shopMode && aiSortOK())?`<button data-opt-sort="ai" class="${curSort==='ai'?'on':''}">✨ AI</button>`:""}${displayFor()==="flat"?`<button data-opt-sort="location" class="${curSort==='location'?'on':''}">Location</button>`:""}<button data-opt-sort="cat" class="${curSort==='cat'?'on':''}">Aisle</button><button data-opt-sort="alpha" class="${curSort==='alpha'?'on':''}">A–Z</button></div>
     </div></div>
     ${(displayFor()==="flat" && curSort==="ai") ? `<div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">✨ AI learns the order you check things off at ${esc((activeStore()||{}).name||"each store")} and reorders your next trip. Pick the store in Location so it learns per shop.</div>` : ""}
     ${(displayFor()==="flat" && curSort==="ai" && aiSeenCount()>0) ? `<button class="optaction" id="optResetAI" style="margin:-2px 0 10px">♻︎ Reset AI — restart from category</button>` : ""}` : ""}
@@ -3156,6 +3190,10 @@ function wire(){
   const saf=app.querySelector("#shopAddFab"); if(saf) saf.onclick=openAdd;   // floating "+ Add" opens the add sheet
   const rsa=app.querySelector("[data-reg-showall]"); if(rsa) rsa.onclick=()=>{   // v1.22 single "Regulars" header — expand reveals every category
     collapse.regAll=!collapse.regAll; localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
+  app.querySelectorAll("[data-regc]").forEach(b=>{ const id=b.dataset.regc;   // v1.23 collapse each regulars category on its own
+    b.onclick=()=>{ if(!collapse.regCats) collapse.regCats=[];
+      collapse.regCats = collapse.regCats.includes(id) ? collapse.regCats.filter(x=>x!==id) : [...collapse.regCats, id];
+      localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }; });
   const regPress=(b,shortFn,longIdFn)=>{ b.oncontextmenu=e=>e.preventDefault();   // v1.17 tap toggles, long-press edits
     b.onpointerdown=e=>{ e.preventDefault(); pressStart(); }; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
     b.onpointerup=()=>{ pressCancel(); if(longFired){ const id=longIdFn&&longIdFn(); if(id) editItemById(id); return; } shortFn(); }; };
