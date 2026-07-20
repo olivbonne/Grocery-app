@@ -637,7 +637,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.18";
+const APP_VERSION = "v1.19";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1154,7 +1154,7 @@ function bottomNav(o){
   return `<nav class="bottomnav" id="bottomnav">
     <button class="navbtn ${o.listsActive?'active':''}" id="${o.listsId}">${LISTS_SVG}<span>Lists</span></button>
     <button class="navbtn ${o.cartActive?'active':''}" id="${o.cartId}">${cartBadgeHTML(CART_NAV_SVG)}<span>Shop</span></button>
-    <button class="navbtn" id="${o.setId}">${GEAR_SVG}<span>Settings</span></button>
+    <button class="navbtn ${o.setActive?'active':''}" id="${o.setId}">${GEAR_SVG}<span>Settings</span></button>
   </nav>`;
 }
 // A22 fly a live clone of the just-checked tile along a smooth downward arc into the cart
@@ -1859,17 +1859,29 @@ function addSheetRows(){
     if(due.length){ out+=`<div class="addcatlbl">Due soon</div>`+due.map(d=>{
       const on=!!onList(d.name,d.cat);
       return row(`data-add-pred="${esc(d.key)}"`, esc(cap(d.name)), (d.qty>1?d.qty+"×":""), on, `<span class="addrow-cad">~${d.cadenceDays}d</span>`, itemEmoji(d.name,d.cat)); }).join(""); }
-    const bas=state.buyAgain.filter(e=>!f || e.name.toLowerCase().includes(f));
-    if(bas.length){ out+=`<div class="addcatlbl">Regulars</div>`+bas.map(e=>{
+    const dueKeys=new Set(due.map(d=>d.name.toLowerCase()+"|"+d.cat));
+    const baRow=e=>{
       const it=onList(e.name,e.cat);
       const q=it?(it.qty||1):(e.qty||1), w=it?(it.weight||""):(e.weight||"");
       const meta=[q>1?q+"×":"", w].filter(Boolean).join(" ");
       return it? row(`data-add-inc="${it.id}"`, esc(cap(e.name)), meta, true, "", itemEmoji(e.name,e.cat))
-               : row(`data-add-ba="${esc(e.name)}|${e.cat}"`, esc(cap(e.name)), meta, false, "", itemEmoji(e.name,e.cat)); }).join(""); }
+               : row(`data-add-ba="${esc(e.name)}|${e.cat}"`, esc(cap(e.name)), meta, false, "", itemEmoji(e.name,e.cat)); };
+    const bas=state.buyAgain.filter(e=>(!f || e.name.toLowerCase().includes(f)) && !dueKeys.has(e.name.toLowerCase()+"|"+e.cat));
+    if(bas.length){
+      const seen=new Set();
+      for(const c of catList()){
+        const grp=bas.filter(e=>e.cat===c.id).sort((a,b)=>a.name.localeCompare(b.name));
+        if(!grp.length) continue;
+        grp.forEach(e=>seen.add(e));
+        out+=`<div class="addcatlbl">${esc(c.label)}</div>`+grp.map(baRow).join("");
+      }
+      const rest=bas.filter(e=>!seen.has(e)).sort((a,b)=>a.name.localeCompare(b.name));
+      if(rest.length) out+=`<div class="addcatlbl">Other</div>`+rest.map(baRow).join("");
+    }
     if(!due.length && !bas.length && !frag) out+=`<p class="empty-sub" style="margin:14px 4px">Items you clear after shopping land here for one-tap re-adding.</p>`;
   } else {
     for(const c of catList()){ const words=DICT[c.id]; if(!words) continue;
-      const list=[...new Set(words)].filter(w=>!DICT_HIDE.has(w) && (!f || w.includes(f)));
+      const list=[...new Set(words)].filter(w=>!DICT_HIDE.has(w) && (!f || w.includes(f))).sort((a,b)=>a.localeCompare(b));
       if(!list.length) continue;
       out+=`<div class="addcatlbl">${esc(c.label)}</div>`+list.map(w=>{
         const it=onList(w,null);
@@ -1996,6 +2008,7 @@ function render(){
   ensureCats();
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
   if(!me){ renderOnboarding(); window.__mlRendered=true; return; }
+  if(optOpen){ renderSettingsPage(); wireSettingsPage(); window.__mlRendered=true; syncZoomHeight(); return; }
   if(view==="lists"){ renderListsPage(); wireListsPage(); window.__mlRendered=true; syncZoomHeight(); return; }
   if(!shopMode) shopMode=true;   // v1.15 Plan and Shop are one page now — the detail page is always the combined, shoppable list
   renderMain(); wire(); window.__mlRendered=true; syncZoomHeight();
@@ -2243,7 +2256,6 @@ function renderMain(){
   ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:true,setId:"setNav"})}
   ${addOpen?addSheet():""}
   ${finishOpen?finishSheet():""}
-  ${optOpen?optionsSheet():""}
   ${listsOpen?listsSheet():""}
   ${smartOpen?smartSheet():""}
   ${editing?editSheet():""}
@@ -2277,7 +2289,6 @@ function renderListsPage(){
     </div></div>
   </div>
   ${bottomNav({listsId:"listsBtnL",listsActive:true,cartId:"cartNavL",cartActive:false,setId:"setNavL"})}
-  ${optOpen?optionsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
   ${toast?`<div class="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
@@ -2441,7 +2452,6 @@ function renderPlanPage(){
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>Add items…</span></button></div>`:""}
   ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}
   ${addOpen?addSheet():""}
-  ${optOpen?optionsSheet():""}
   ${smartOpen?smartSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
@@ -2506,6 +2516,15 @@ function wirePlanPage(){
   wireOptions();
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
   wireEditSheet();
+}
+function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay sheet)
+  const bk=app.querySelector("#setBack"); if(bk) bk.onclick=()=>{ optOpen=false; render(); };   // ‹ back to where we were
+  const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>gotoPage(0);
+  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>{ optOpen=false; gotoPage(1); };
+  const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{};   // already on Settings
+  wireOptions();
+  wireEditSheet();
+  const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 function wireOptions(){
   const optBg=app.querySelector("#optBg"); if(optBg) optBg.onclick=()=>{ optOpen=false; render(); };
@@ -2806,7 +2825,7 @@ function diagSheet(){ const hd=t=>`<div style="font-size:11px;font-weight:800;te
     <div style="font-size:11px;color:var(--muted2);margin-top:8px;line-height:1.5">A separate throwaway list to test entry, sorting &amp; predictions without touching your real list. Delete it anytime from Lists (press &amp; hold).</div>
   </div></div>`;
 }
-function optionsSheet(){
+function optionsBody(){
   const row=(label,control)=>`<div class="optrow"><span class="optlabel">${label}</span><span class="optctrl">${control}</span></div>`;
   const sect=t=>`<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 2px">${t}</div>`;   // v1.12 grouped settings
   let curSort = (displayFor()==="cat" && (sortModeFor()==="location"||sortModeFor()==="ai")) ? "cat" : sortModeFor();
@@ -2814,8 +2833,7 @@ function optionsSheet(){
   const anyOpen = (!shopMode)
     ? catList().some(c=> (state.items.some(i=>i.cat===c.id)||state.buyAgain.some(e=>e.cat===c.id)||c.custom) && !(collapse.planCats||[]).includes(c.id))
     : (catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id)) || (state.buyAgain.length>0 && collapse.ba));
-  return `<div class="sheet-bg" id="optBg"><div class="sheet" id="optSheet">
-    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:14px">Settings</div>
+  return `
     ${(view!=="lists" && (state.items.length>0 || state.buyAgain.length>0)) ? `<button class="optaction" id="optCollapseAll" style="margin-bottom:10px">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button>` : ""}
     ${sect("Appearance")}
     ${row("Theme", `<div class="seg segfull" style="flex-wrap:wrap"><button data-opt-theme="light" class="themebtn ${theme==='light'?'on':''}"><span class="themesw" style="background:#F2F6EE;border-color:#DCE5D7"><i style="background:#E2502C"></i></span>Light</button><button data-opt-theme="dark" class="themebtn ${theme==='dark'?'on':''}"><span class="themesw" style="background:#141C18;border-color:#33433B"><i style="background:#E2502C"></i></span>Dark</button><button data-opt-theme="midnight" class="themebtn ${theme==='midnight'?'on':''}"><span class="themesw" style="background:#0E120F;border-color:#2A322B"><i style="background:#EC5A2C"></i></span>Midnight</button><button data-opt-theme="market" class="themebtn ${theme==='market'?'on':''}"><span class="themesw" style="background:#F6F2E7;border-color:#DAD3C0"><i style="background:#D2542B"></i></span>Market</button><button data-opt-theme="mono" class="themebtn ${theme==='mono'?'on':''}"><span class="themesw" style="background:#16181A;border-color:#2C3136"><i style="background:#5FD0B0"></i></span>Mono</button></div>`)}
@@ -2862,8 +2880,29 @@ function optionsSheet(){
     <button class="optaction" id="optShare">Share link</button>
     <button class="optaction" id="optDiag" style="margin-top:10px">🔬 AI diagnostics</button>
     <button class="optaction" id="optConcept" style="margin-top:10px">🧪 Try the new concept (sandbox)</button>
-    <div id="verFoot" style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted2);font-weight:600" title="Build: ${APP_BUILD_DATE} · hold for diagnostics">${APP_VERSION}</div>
-  </div></div>${diagOpen?diagSheet():""}`;
+    <div id="verFoot" style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted2);font-weight:600" title="Build: ${APP_BUILD_DATE} · hold for diagnostics">${APP_VERSION}</div>`;
+}
+function renderSettingsPage(){
+  app.innerHTML = `
+    <div class="topfix" id="topfix">
+      <header>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button class="backbtn" id="setBack" aria-label="Back" style="font-size:20px;line-height:1;padding:4px 12px">‹</button>
+          <span class="title disp">Settings<span class="dot">.</span></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">${syncChip()}</div>
+      </header>
+    </div>
+    <div class="wrap">
+    <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
+      <div class="optpage">${optionsBody()}</div>
+    </div></div>
+    </div>
+    ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}
+    ${diagOpen?diagSheet():""}
+    ${listsOpen?listsSheet():""}
+    ${editing?editSheet():""}
+    ${toast?`<div class="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
 function listsSheet(){
   const lists=getLists();
