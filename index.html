@@ -117,8 +117,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .micbtn{ width:46px; height:44px; flex:none; border-radius:14px; border:none;
     background:var(--mic-img) center/cover no-repeat; }
   /* A18 ✨ Smart add */
-  .smartbtn{ width:46px; height:44px; flex:none; border-radius:14px; border:2px solid var(--ink);
-    background:var(--card); color:var(--ink); font-size:20px; line-height:1; padding:0;
+  .smartbtn{ width:46px; height:44px; flex:none; border-radius:14px; border:none;
+    background:var(--chip); color:var(--ink); font-size:20px; line-height:1; padding:0;
     display:flex; align-items:center; justify-content:center; }
   .smartbtn:active{ transform:scale(0.96); }
   .smartchips{ display:flex; flex-direction:column; gap:8px; }
@@ -201,7 +201,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .checkedbarhead { flex:none; border:none; background:transparent; color:var(--muted); font-weight:800; font-size:13px;
     display:flex; align-items:center; justify-content:space-between; padding:4px 2px; }
   .checkedbarhead .chk-in { display:inline-flex; align-items:center; gap:7px; color:var(--ink); }
-  .checkedbarhead .chk-tick { display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px;
+  .checkedbarhead .chk-tick { display:inline-flex; align-items:center; justify-content:center; font-size:14px; width:22px; height:22px;
     border-radius:50%; background:#2F9E44; color:#fff; font-size:11px; font-weight:900; line-height:1; }
   .checkedscroll { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:2px 0 8px; }
   .checkedbar .sweepbanner { flex:none; margin-top:0; }
@@ -225,14 +225,15 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .title { font-weight:800; font-size:20px; letter-spacing:-.02em; }
   .dot { color:var(--accent); }
   .count { font-size:12px; color:var(--muted); font-weight:600; }
+  .hcount { font-size:12px; font-weight:800; color:var(--accent); background:var(--chip); border-radius:999px; padding:3px 10px; white-space:nowrap; }
   .avatars { display:flex; }
   .av { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center;
     font-size:11px; font-weight:700; border:2px solid var(--paper); background:var(--chip); color:var(--ink); }
   .av.me { background:var(--btn); color:#fff; }
   .addbar { display:flex; gap:6px; margin-bottom:10px; align-items:flex-start; }
-  .addbar textarea { flex:1; min-width:0; height:44px; min-height:44px; padding:10px 14px; border-radius:14px; border:2px solid var(--ink);
+  .addbar textarea { flex:1; min-width:0; height:44px; min-height:44px; padding:10px 14px; border-radius:14px; border:none;
     outline:none; background:var(--card); color:var(--ink); resize:none; overflow:hidden; line-height:1.2;
-    white-space:pre-wrap; word-break:break-word; }
+    white-space:pre-wrap; word-break:break-word; box-shadow:inset 0 0 0 1px var(--line); }
   .addbtn { width:46px; height:44px; flex:none; border-radius:14px; border:none; background:var(--accent); color:#fff;
     display:flex; align-items:center; justify-content:center; padding:0; }
   section.cat { margin-bottom:7px; }
@@ -432,7 +433,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .sharebtn { border:none; background:var(--chip); color:var(--ink); font-weight:700; font-size:12px;
     padding:6px 12px; border-radius:999px; }
   .iconbtn.on { background:var(--accent); color:#fff; }
-  .backbtn { border:none; background:var(--chip); color:var(--ink); font-weight:800; font-size:13px; border-radius:10px; padding:5px 11px; }
+  .backbtn { border:none; background:transparent; color:var(--ink); font-weight:800; font-size:13px; border-radius:10px; padding:5px 11px; }
   .listgrid { display:flex; flex-direction:column; gap:12px; margin-top:6px; }
   .listbubble { display:flex; flex-direction:column; align-items:flex-start; gap:4px; width:100%; text-align:left;
     background:var(--card); border:1.5px solid var(--line); border-radius:20px; padding:20px 18px; }
@@ -482,8 +483,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .pcheck { margin-left:8px; flex:none; width:24px; height:24px; border-radius:50%;
     border:2px solid var(--muted2); display:inline-flex; align-items:center; justify-content:center;
     font-size:14px; font-weight:900; line-height:1; color:transparent; box-sizing:border-box; }
-  .pill.done .pcheck { border-color:var(--done-edge); background:var(--done-edge); color:#fff; }
-  .pill.picking .pcheck { border-color:var(--done-edge); background:var(--done-edge); color:#fff; transform:scale(1.08); transition:transform .12s ease; }
+  .pill.done .pcheck { border-color:var(--done-edge); background:var(--done-edge); color:#fff; font-size:18px; }
+  .pill.picking .pcheck { border-color:var(--done-edge); background:var(--done-edge); color:#fff; font-size:18px; transform:scale(1.08); transition:transform .12s ease; }
+  .wrap.shop .pill.done .pcheck, .wrap.shop .pill.picking .pcheck { font-size:20px; }   /* v1.18 bigger checked tick */
   /* A20 redesigned shopping-mode banner (mirrors the bottom cart) */
   .shopbar2 { gap:12px; padding:12px 14px; }
   .shopbar2 .sb-cart { flex:none; width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.22);
@@ -635,7 +637,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.17";
+const APP_VERSION = "v1.18";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2209,18 +2211,20 @@ function renderMain(){
       ${checkedOpen?`<div class="checkedscroll">${pillsMixed(checkedItems.slice().sort((a,b)=>(b.checkedAt||0)-(a.checkedAt||0)))}</div>`:""}
       <button id="sweepBtn" class="sweepbtn sweepbanner">Finish · save ${done} to Regulars</button>
     </div>` : "";
-  app.innerHTML = `<div class="wrap ${shopMode?'shop':''}">
+  app.innerHTML = `
     <div class="topfix" id="topfix">
       <header>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <button class="backbtn" id="toLists" aria-label="Back to lists" style="font-size:20px;line-height:1;padding:4px 12px">‹</button>
           <span class="title disp">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="dot">.</span></span>
+          ${open>0?`<span class="hcount">${open} to buy</span>`:""}
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           ${syncChip()}
         </div>
       </header>
     </div>
+    <div class="wrap ${shopMode?'shop':''}">
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${(state.items.length===0)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
@@ -2248,13 +2252,14 @@ function renderMain(){
 
 function renderListsPage(){
   const lists=getLists();
-  app.innerHTML = `<div class="wrap">
+  app.innerHTML = `
     <div class="topfix" id="topfix">
       <header>
         <div style="display:flex;align-items:center;gap:8px"><span class="title disp">Lists<span class="dot">.</span></span></div>
         <div style="display:flex;align-items:center;gap:8px">${syncChip()}</div>
       </header>
     </div>
+    <div class="wrap">
     <div class="zoomwrap"><div class="zoomer" id="zoomer">
       <div class="listgrid">
         ${lists.map(l=>{ const st=listStats(l.code); const cur=l.code===listCode;
@@ -3183,11 +3188,11 @@ function applyPage(idx){
   if(idx===0){ view="lists"; } else { view="detail"; shopMode=true; }
 }
 let _pageAnim=false;
-/* v1.14 single-layer transition: render the new page, then slide/fade the incoming .wrap in
+/* v1.14/1.18 single-layer transition: render the new page, then slide/fade the incoming .wrap in
    from the correct side. No cloned "ghost" layer, so the old and new screens can never be on
-   screen at the same time (the earlier ghost overlay glitched on iOS Safari). Because .topfix is
-   position:fixed INSIDE .wrap, transforming .wrap carries the header+content; the bottom nav is a
-   sibling and stays put. */
+   screen at the same time. As of v1.18 the fixed header (.topfix) lives OUTSIDE .wrap (so an
+   ancestor transform can never unpin it on iOS Safari); only the scrolling content (.wrap) slides,
+   the header and bottom nav stay put — native-tab style. */
 function transitionTo(idx){
   if(idx<0 || idx>1 || _pageAnim) return;
   const from=curPageIdx();
