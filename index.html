@@ -486,6 +486,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .pill.done .pcheck { border-color:var(--done-edge); background:var(--done-edge); color:#fff; font-size:18px; }
   .pill.picking .pcheck { border-color:var(--done-edge); background:var(--done-edge); color:#fff; font-size:18px; transform:scale(1.08); transition:transform .12s ease; }
   .wrap.shop .pill.done .pcheck, .wrap.shop .pill.picking .pcheck { font-size:20px; }   /* v1.18 bigger checked tick */
+  /* v1.20 no check circle — the whole row fills green briefly when tapped, then flies to the cart */
+  .pill.picking { background:var(--done-edge) !important; border-color:var(--done-edge) !important; color:#fff !important; }
+  .pill.picking .qty, .pill.picking .pemoji { color:#fff !important; }
   /* A20 redesigned shopping-mode banner (mirrors the bottom cart) */
   .shopbar2 { gap:12px; padding:12px 14px; }
   .shopbar2 .sb-cart { flex:none; width:38px; height:38px; border-radius:50%; background:rgba(255,255,255,.22);
@@ -637,7 +640,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.19";
+const APP_VERSION = "v1.20";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1271,7 +1274,7 @@ function setItemEmoji(on){ _emojiItem = on?"1":"0"; localStorage.setItem("ml_emo
 let _smart = localStorage.getItem("ml_smart");
 function smartOn(){ return _smart===null ? true : _smart==="1"; }
 function setSmart(on){ _smart = on?"1":"0"; localStorage.setItem("ml_smart", _smart); render(); }
-let optOpen=false, listsOpen=false;
+let optOpen=false, listsOpen=false, settingsFrom=1;   // settingsFrom: page the Settings tab was opened from (for the ‹ back slide)
 // v1.10 bottom-first add sheet
 let addOpen=false, addTab="reg", _addScrollY=0;
 // v1.11 done-shopping dialog
@@ -2052,15 +2055,14 @@ function pillHTML(i, cat){
   const edge = checked ? 'var(--done-edge)' : cat.color;
   const qcol = full ? '#fff' : (checked ? 'var(--muted2)' : cat.color);
   const style = full ? `background:${cat.color};border:1.5px solid ${cat.color};color:#fff` : `border-left:4px solid ${edge}`;
-  const meta = `${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}`;
+  const meta = `${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)}</span>`:""}`;
   const marks = `${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}${(!checked&&i.starred)?`<span style="color:${full?'#fff':'#E8A91D'};margin-right:1px">★</span>`:""}`;
-  // v1.11 shop mode reads as a checklist: big check circle LEFT, name, qty/weight right-aligned
+  // v1.20 unified row anatomy (shared with regPill): emoji · name, then qty/weight pushed to the right.
+  // No check circle — tapping the whole row checks it. Selected/on-list uses the Full/Empty tile look.
   const em = itemEmoji(i.name, i.cat);
   const emS = em?`<span class="pemoji" aria-hidden="true">${em}</span>`:"";
   return `<button class="pill ${checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="${style}">`
-    +(shopMode
-      ? `<span class="pcheck" aria-hidden="true"${full?' style="border-color:rgba(255,255,255,.85);color:#fff"':''}>${checked?'✓':''}</span>${emS}${marks}${esc(cap(i.name))}<span class="pill-meta">${meta}</span>`
-      : `${emS}${marks}${meta}${esc(cap(i.name))}`)
+    +`${emS}${marks}${esc(cap(i.name))}${meta?`<span class="pill-meta">${meta}</span>`:""}`
     +`</button>`;
 }
 function pillRow(items, cat){ return `<div class="pills">${items.map(i=>pillHTML(i,cat)).join("")}</div>`; }
@@ -2097,15 +2099,24 @@ function calmHead(cat, done, total, collapsed, attr, entryOpen){
 /* v1.17 one row per regular — selected (on the list) shows a solid pill with a ✓; not-selected
    shows a dotted pill with a +. Tap toggles; long-press edits. Sorted A-Z. */
 function regPill(entry, cat, it){
+  // v1.20 regulars look identical to shopping-list rows: emoji · name, qty/weight on the right.
+  // Selected (already on the list) uses the Full/Empty tile look; not-selected keeps the dotted
+  // outline (no "+"). No tick on selected — the solid/filled look already reads as "on the list".
   const selected = !!it;
   const q = selected ? (it.qty||1) : (entry.qty||1);
   const w = selected ? (it.weight||"") : (entry.weight||"");
+  const full = selected && fillMode()==="full";
+  const qcol = full ? '#fff' : cat.color;
   const em = itemEmoji(entry.name, cat.id);
   const emS = em?`<span class="pemoji" aria-hidden="true">${em}</span>`:"";
-  const meta = `${q>1?`<span class="qty" style="color:${cat.color}">${q}×</span>`:""}${w?`<span class="qty" style="color:${cat.color}">${esc(w)} </span>`:""}`;
-  return selected
-    ? `<button class="pill reg-in" data-reg-rm="${it.id}" style="border-left:4px solid ${cat.color}"><span class="regtick" style="color:${cat.color}" aria-hidden="true">✓</span>${emS}${meta}${esc(cap(entry.name))}</button>`
-    : `<button class="pill reg-out" data-reg-add="${esc(entry.name)}|${cat.id}" style="background:transparent;border:1.5px dashed ${cat.color}"><span class="regplus" style="color:${cat.color}" aria-hidden="true">+</span>${emS}${meta}${esc(cap(entry.name))}</button>`;
+  const meta = `${q>1?`<span class="qty" style="color:${qcol}">${q}×</span>`:""}${w?`<span class="qty" style="color:${qcol}">${esc(w)}</span>`:""}`;
+  const metaS = meta?`<span class="pill-meta">${meta}</span>`:"";
+  const name = esc(cap(entry.name));
+  if(selected){
+    const style = full ? `background:${cat.color};border:1.5px solid ${cat.color};color:#fff` : `border-left:4px solid ${cat.color}`;
+    return `<button class="pill reg-in" data-reg-rm="${it.id}" style="${style}">${emS}${name}${metaS}</button>`;
+  }
+  return `<button class="pill reg-out" data-reg-add="${esc(entry.name)}|${cat.id}" style="background:transparent;border:1.5px dashed ${cat.color}">${emS}${name}${metaS}</button>`;
 }
 function planningSection(){
   const withRegs = catList().filter(c=> state.buyAgain.some(e=>e.cat===c.id)).map(c=>c.id);
@@ -2321,7 +2332,7 @@ function wireListsPage(){
     nln.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); createNewListFromSheet(); } }; }
   const nlc=app.querySelector("#newListCreate"); if(nlc){ nlc.onpointerdown=e=>e.preventDefault(); nlc.onclick=createNewListFromSheet; }
   const cnl=app.querySelector("#cartNavL"); if(cnl) cnl.onclick=()=>gotoPage(1);   // open the combined list
-  const stnl=app.querySelector("#setNavL"); if(stnl) stnl.onclick=()=>{ optOpen=true; render(); };   // Settings tab
+  const stnl=app.querySelector("#setNavL"); if(stnl) stnl.onclick=()=>{ settingsFrom=0; gotoPage(2); };   // Settings tab
   const ob=app.querySelector("#optBtnTop"); if(ob) ob.onclick=()=>{ optOpen=true; render(); };
   wireOptions();
   const lbg=app.querySelector("#listActBg"); if(lbg) lbg.onclick=()=>{ listActOpen=false; render(); };
@@ -2517,10 +2528,10 @@ function wirePlanPage(){
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
   wireEditSheet();
 }
-function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay sheet)
-  const bk=app.querySelector("#setBack"); if(bk) bk.onclick=()=>{ optOpen=false; render(); };   // ‹ back to where we were
+function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay sheet); v1.20 slides in/out
+  const bk=app.querySelector("#setBack"); if(bk) bk.onclick=()=>gotoPage(settingsFrom);   // ‹ back slides to where we came from
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>gotoPage(0);
-  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>{ optOpen=false; gotoPage(1); };
+  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(1);   // Shop lies to the left → slides in from the left
   const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{};   // already on Settings
   wireOptions();
   wireEditSheet();
@@ -2830,44 +2841,41 @@ function optionsBody(){
   const sect=t=>`<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 2px">${t}</div>`;   // v1.12 grouped settings
   let curSort = (displayFor()==="cat" && (sortModeFor()==="location"||sortModeFor()==="ai")) ? "cat" : sortModeFor();
   if(curSort==="ai" && !aiSortOK()) curSort="location";
-  const anyOpen = (!shopMode)
-    ? catList().some(c=> (state.items.some(i=>i.cat===c.id)||state.buyAgain.some(e=>e.cat===c.id)||c.custom) && !(collapse.planCats||[]).includes(c.id))
-    : (catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id)) || (state.buyAgain.length>0 && collapse.ba));
   return `
-    ${(view!=="lists" && (state.items.length>0 || state.buyAgain.length>0)) ? `<button class="optaction" id="optCollapseAll" style="margin-bottom:10px">${anyOpen?'⊟ Collapse all':'⊞ Expand all'}</button>` : ""}
     ${sect("Appearance")}
     ${row("Theme", `<div class="seg segfull" style="flex-wrap:wrap"><button data-opt-theme="light" class="themebtn ${theme==='light'?'on':''}"><span class="themesw" style="background:#F2F6EE;border-color:#DCE5D7"><i style="background:#E2502C"></i></span>Light</button><button data-opt-theme="dark" class="themebtn ${theme==='dark'?'on':''}"><span class="themesw" style="background:#141C18;border-color:#33433B"><i style="background:#E2502C"></i></span>Dark</button><button data-opt-theme="midnight" class="themebtn ${theme==='midnight'?'on':''}"><span class="themesw" style="background:#0E120F;border-color:#2A322B"><i style="background:#EC5A2C"></i></span>Midnight</button><button data-opt-theme="market" class="themebtn ${theme==='market'?'on':''}"><span class="themesw" style="background:#F6F2E7;border-color:#DAD3C0"><i style="background:#D2542B"></i></span>Market</button><button data-opt-theme="mono" class="themebtn ${theme==='mono'?'on':''}"><span class="themesw" style="background:#16181A;border-color:#2C3136"><i style="background:#5FD0B0"></i></span>Mono</button></div>`)}
-    ${row("Appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}">Full</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}">Empty</button></div>`)}
+    ${row("Tile appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}">Full</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}">Empty</button></div>`)}
+    ${(view!=="lists") ? row("Tile style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
     ${row("Category icons", `<div class="seg"><button data-opt-catemoji="1" class="${catEmojiOn()?'on':''}">On</button><button data-opt-catemoji="0" class="${!catEmojiOn()?'on':''}">Off</button></div>`)}
-    ${row("Item emojis", `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}">On</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}">Off</button></div>`)}
-    ${(view!=="lists") ? row("Style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
+    ${row("Item icons", `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}">On</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}">Off</button></div>`)}
     ${(view!=="lists") ? sect("List") : ""}
     ${(view!=="lists") ? row("Smart add", `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">On</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">Off</button></div>`) : ""}
-    ${view!=="lists" ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px"><span class="optlabel">Display</span>
+    ${view!=="lists" ? `${sect("Shopping appearance")}<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px"><span class="optlabel">Display</span>
       <div class="dispgrid">
-        <button class="dispopt ${displayRaw()==='cat'?'on':''}" data-opt-display="cat">Category flat list</button>
-        <button class="dispopt ${displayRaw()==='line'?'on':''}" data-opt-display="line">Category line list</button>
-        <button class="dispopt ${displayRaw()==='flat'?'on':''}" data-opt-display="flat">Flat list</button>
-        <button class="dispopt ${displayRaw()==='flatline'?'on':''}" data-opt-display="flatline">Line list</button>
+        <button class="dispopt ${displayRaw()==='cat'?'on':''}" data-opt-display="cat">Category tiles</button>
+        <button class="dispopt ${displayRaw()==='line'?'on':''}" data-opt-display="line">Category list</button>
+        <button class="dispopt ${displayRaw()==='flat'?'on':''}" data-opt-display="flat">Tiles</button>
+        <button class="dispopt ${displayRaw()==='flatline'?'on':''}" data-opt-display="flatline">List</button>
       </div></div>
     <div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
       <span class="optlabel">Sort</span>
       <div class="seg segfull">${(displayFor()==="flat" && shopMode && aiSortOK())?`<button data-opt-sort="ai" class="${curSort==='ai'?'on':''}">✨ AI</button>`:""}${displayFor()==="flat"?`<button data-opt-sort="location" class="${curSort==='location'?'on':''}">Location</button>`:""}<button data-opt-sort="cat" class="${curSort==='cat'?'on':''}">Subcategory</button><button data-opt-sort="alpha" class="${curSort==='alpha'?'on':''}">A–Z</button></div>
     </div>
-    ${(displayFor()==="flat" && curSort==="ai") ? `<div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">✨ AI learns the order you check things off at ${esc((activeStore()||{}).name||"each store")} and reorders your next trip. Pick the store below so it learns per shop.</div>` : ""}
-    ${(displayFor()==="flat" && curSort==="ai" && aiSeenCount()>0) ? `<button class="optaction" id="optResetAI" style="margin:-2px 0 10px">♻︎ Reset AI — restart from category</button>` : ""}
-    ${(displayFor()==="flat" && (curSort==="location"||curSort==="ai")) ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
+    ${(displayFor()==="flat" && curSort==="ai") ? `<div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">✨ AI learns the order you check things off at ${esc((activeStore()||{}).name||"each store")} and reorders your next trip. Pick the store in Location so it learns per shop.</div>` : ""}
+    ${(displayFor()==="flat" && curSort==="ai" && aiSeenCount()>0) ? `<button class="optaction" id="optResetAI" style="margin:-2px 0 10px">♻︎ Reset AI — restart from category</button>` : ""}` : ""}
+    ${sect("Shopping")}
+    ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
+    ${sect("Location")}
+    ${row("Location", `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">On</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">Off</button></div>`)}
+    <div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
       <span class="optlabel">Store</span>
       <div class="storegrid">${[{id:"auto",name:"Auto-detect"},{id:"home",name:"🏠 Home"},...STORES.filter(s=>!storeOverride(s.id).hidden).map(s=>storeById(s.id)),...(state.stores||[]).filter(s=>!storeOverride(s.id).hidden),{id:"other",name:"Other"}].map(s=>`<button data-opt-store="${s.id}" class="storechip ${storeSel===s.id?'on':''}">${esc(s.name)}</button>`).join("")}<button data-store-add class="storechip" style="border-style:dashed">＋ Add store</button></div>
       ${isRealStore(storeSel) ? `<div class="optrow" style="gap:7px"><input id="storeName" value="${esc((storeById(storeSel)||{}).name||"")}" placeholder="Store name" style="flex:1;min-width:0;padding:10px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:14px;font-weight:600" /><button id="storeRemove" style="padding:10px 12px;border-radius:12px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:13px">Remove</button></div>` : ""}
     </div>
-    ${row("Location", `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">On</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">Off</button></div>`)}
     ${(storeSel==="home" || isRealStore(storeSel)) ? `<button class="optaction" id="optSetStore" style="margin-top:2px">📍 Set ${esc((storeById(storeSel)||{}).name||"store")} location here</button>` : ""}
     ${(()=>{ const hid=[...STORES,...(state.stores||[])].filter(s=>{ const o=storeOverride(s.id); return o.hidden && !o.removed; }); return hid.length ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:6px"><span class="optlabel" style="font-size:12px;color:var(--muted2)">Hidden stores</span>${hid.map(s=>`<div style="display:flex;gap:7px;align-items:center"><span style="flex:1;min-width:0;color:var(--muted);font-size:13px;font-weight:600">${esc((storeById(s.id)||s).name||s.id)}</span><button class="storechip" data-store-restore="${s.id}" style="flex:0 0 auto">Restore</button><button class="storechip" data-store-delete="${s.id}" aria-label="Delete" style="flex:0 0 auto;border-color:#C24A33;color:#C24A33">✕</button></div>`).join("")}</div>` : ""; })()}
-    <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${esc(storeLabel())}</div>` : ""}` : ""}
-    ${sect("Shopping")}
-    ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
+    <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${esc(storeLabel())}</div>
     ${(view!=="lists") ? `${sect("Predictions")}${row("Suggest restocks", `<div class="seg"><button data-pred-on="1" class="${predictCfg.on?'on':''}">On</button><button data-pred-on="0" class="${!predictCfg.on?'on':''}">Off</button></div>`)}
     ${predictCfg.on ? `${row("Remind me", `<div class="seg"><button data-pred-freq="weekly" class="${predictCfg.freq==='weekly'?'on':''}">Weekly</button><button data-pred-freq="monthly" class="${predictCfg.freq==='monthly'?'on':''}">Monthly</button></div>`)}
     ${predictCfg.freq==='weekly' ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px"><span class="optlabel">Day</span>
@@ -3130,7 +3138,7 @@ function wire(){
   const ln=app.querySelector("#listName"); if(ln) ln.onclick=()=>gotoPage(0);
   const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>gotoPage(0);   // ‹ back to Lists
   const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(1);
-  const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{ optOpen=true; render(); };   // Settings tab (bottom-right)
+  const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{ settingsFrom=1; gotoPage(2); };   // Settings tab (bottom-right) — slides in from the right
   const saf=app.querySelector("#shopAddFab"); if(saf) saf.onclick=openAdd;   // floating "+ Add" opens the add sheet
   app.querySelectorAll("[data-regc]").forEach(b=>{ const id=b.dataset.regc;   // v1.15 planning section: expand/collapse a regulars category
     b.onclick=()=>{ if(!collapse.regCats) collapse.regCats=[];
@@ -3221,9 +3229,11 @@ function wireEditSheet(){
 /* Three linear pages: Lists (0) ▸ Plan (1) ▸ Shop (2). Plan and Shop share view="detail",
    distinguished by shopMode. A horizontal swipe drags the live page with the finger before
    committing (see transitionTo for the animation). */
-function curPageIdx(){ return view==="lists" ? 0 : 1; }   // v1.15 two pages: Lists (0) ⇄ List (1)
+function curPageIdx(){ return optOpen ? 2 : (view==="lists" ? 0 : 1); }   // v1.20 linear pages: Lists(0) · Shop(1) · Settings(2)
 function applyPage(idx){
-  catEntry=null; quickEdit=null; optOpen=false;
+  catEntry=null; quickEdit=null;
+  if(idx===2){ optOpen=true; return; }   // Settings sits to the right of Shop
+  optOpen=false;
   if(idx===0){ view="lists"; } else { view="detail"; shopMode=true; }
 }
 let _pageAnim=false;
@@ -3233,10 +3243,10 @@ let _pageAnim=false;
    ancestor transform can never unpin it on iOS Safari); only the scrolling content (.wrap) slides,
    the header and bottom nav stay put — native-tab style. */
 function transitionTo(idx){
-  if(idx<0 || idx>1 || _pageAnim) return;
+  if(idx<0 || idx>2 || _pageAnim) return;
   const from=curPageIdx();
   if(idx===from){ render(); return; }
-  const dir = idx>from ? 1 : -1;                                  // 1 → new page enters from the right
+  const dir = idx>from ? 1 : -1;                                  // 1 → new page enters from the right (it lies to the right)
   applyPage(idx);
   window.scrollTo(0,0);
   render();
@@ -3246,49 +3256,15 @@ function transitionTo(idx){
   nw.style.willChange="transform";
   const a=nw.animate(
     [{transform:"translateX("+(dir>0?100:-100)+"%)",opacity:.35},{transform:"translateX(0)",opacity:1}],
-    {duration:270,easing:"cubic-bezier(.32,.72,.30,1)"});
+    {duration:378,easing:"cubic-bezier(.32,.72,.30,1)"});   // v1.20 slowed 40% (270→378)
   const fin=()=>{ _pageAnim=false; if(nw.isConnected) nw.style.willChange=""; };
-  a.onfinish=fin; a.oncancel=fin; setTimeout(fin, 360);           // safety net if WAAPI events don't fire
+  a.onfinish=fin; a.oncancel=fin; setTimeout(fin, 500);           // safety net if WAAPI events don't fire
 }
 function gotoPage(idx){ transitionTo(idx); }
+// v1.20 swipe-between-pages is disabled — navigation is via the bottom nav only (the transition
+// still animates, sliding in the logical direction based on the pages' relative positions).
 let _swipe=null, _drag=null;
-function _swipeBlocked(){ return (!me || editing || optOpen || listActOpen || newListOpen || smartOpen || addOpen || finishOpen || _pageAnim); }
-document.addEventListener("touchstart", e=>{
-  _swipe=null; _drag=null;
-  if(e.touches.length!==1) return;
-  const t=e.target;
-  if(t && t.closest && t.closest(".sheet-bg, textarea, input, .suggest, .storegrid, .wrowq, .picscroll, .icongrid, .listrows, .checkedscroll, .qbanner")) return;
-  _swipe={ x:e.touches[0].clientX, y:e.touches[0].clientY, t:Date.now() };
-}, {passive:true});
-document.addEventListener("touchmove", e=>{
-  if(!_swipe || _swipeBlocked()) return;
-  const c=e.touches[0]; const dx=c.clientX-_swipe.x, dy=c.clientY-_swipe.y;
-  if(!_drag){
-    if(Math.abs(dx)<24 || Math.abs(dx)<1.5*Math.abs(dy)) return;  // not (yet) a deliberate horizontal drag
-    const w=app.querySelector(".wrap"); if(!w) return;
-    _drag={ w, base:curPageIdx(), dx:0 };
-    w.style.willChange="transform";
-  }
-  const nxt=_drag.base+(dx<0?1:-1);
-  _drag.dx = (nxt<0||nxt>1) ? dx/3 : dx;                          // rubber-band at the ends of the chain
-  _drag.w.style.transform="translateX("+_drag.dx.toFixed(1)+"px)";
-}, {passive:true});
-document.addEventListener("touchend", e=>{
-  const s=_swipe, d=_drag; _swipe=null; _drag=null;
-  const clr=()=>{ if(d && d.w && d.w.isConnected){ d.w.style.transform=""; d.w.style.willChange=""; } };
-  if(!s || _swipeBlocked()){ clr(); return; }
-  const c=e.changedTouches && e.changedTouches[0]; if(!c){ clr(); return; }
-  const dx=c.clientX-s.x, dy=c.clientY-s.y, dt=Date.now()-s.t;
-  const commit = d ? (Math.abs(d.dx||0)>70 || (Math.abs(dx)>40 && dt<250))
-                   : (dt<=600 && Math.abs(dx)>=70 && Math.abs(dy)<=60 && Math.abs(dx)>=1.6*Math.abs(dy));
-  const target=curPageIdx()+(dx<0?1:-1);
-  if(commit && target>=0 && target<=1){
-    gotoPage(target, d?d.dx:0); clr();
-  } else if(d && d.w && d.w.isConnected){
-    const w=d.w; const a=w.animate([{transform:"translateX("+(d.dx||0)+"px)"},{transform:"translateX(0)"}],{duration:180,easing:"ease-out"});
-    a.onfinish=clr; a.oncancel=clr; setTimeout(clr,260);
-  }
-}, {passive:true});
+function _swipeBlocked(){ return true; }
 
 window.addEventListener("resize", syncZoomHeight);
 render();
