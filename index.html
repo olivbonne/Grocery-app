@@ -640,7 +640,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.20";
+const APP_VERSION = "v1.21";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1284,6 +1284,8 @@ let smartOpen=false, smartLoading=false, smartError="", smartItems=[], smartEdit
 // B3 recipe → list (text-first): pours extracted ingredients into the shared Smart-add preview
 let smartServings=null;
 let view="detail", listActOpen=false, listActCode=null, newListOpen=false, newListDraft="", diagOpen=false, diagPredExpand=new Set(), diagPredSort="az";
+// v1.21 restore the last page the user was on across app restarts (item 5). optOpen is declared above; view/optOpen are ignored until onboarding completes.
+(()=>{ try{ const lv=localStorage.getItem("ml_lastview"); if(lv==="0") view="lists"; else if(lv==="2") optOpen=true; else view="detail"; }catch(e){} })();
 function listCount(code){ try{ const s = (code===listCode) ? state : JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); return (s&&s.items)? s.items.filter(i=>!i.checked).length : 0; }catch(e){ return 0; } }
 function listStats(code){ try{ const s=(code===listCode)?state:JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); const items=(s&&s.items)||[]; const total=items.length, done=items.filter(i=>i.checked).length; return {total, done, pct: total?Math.round(done/total*100):0}; }catch(e){ return {total:0,done:0,pct:0}; } }
 function listURL(code){ return location.origin + location.pathname + "?list=" + code; }
@@ -2011,6 +2013,7 @@ function render(){
   ensureCats();
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
   if(!me){ renderOnboarding(); window.__mlRendered=true; return; }
+  try{ localStorage.setItem("ml_lastview", String(curPageIdx())); }catch(e){}   // v1.21 remember the page across restarts (item 5)
   if(optOpen){ renderSettingsPage(); wireSettingsPage(); window.__mlRendered=true; syncZoomHeight(); return; }
   if(view==="lists"){ renderListsPage(); wireListsPage(); window.__mlRendered=true; syncZoomHeight(); return; }
   if(!shopMode) shopMode=true;   // v1.15 Plan and Shop are one page now — the detail page is always the combined, shoppable list
@@ -2849,9 +2852,7 @@ function optionsBody(){
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
     ${row("Category icons", `<div class="seg"><button data-opt-catemoji="1" class="${catEmojiOn()?'on':''}">On</button><button data-opt-catemoji="0" class="${!catEmojiOn()?'on':''}">Off</button></div>`)}
     ${row("Item icons", `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}">On</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}">Off</button></div>`)}
-    ${(view!=="lists") ? sect("List") : ""}
-    ${(view!=="lists") ? row("Smart add", `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">On</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">Off</button></div>`) : ""}
-    ${view!=="lists" ? `${sect("Shopping appearance")}<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px"><span class="optlabel">Display</span>
+    ${view!=="lists" ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px"><span class="optlabel">Display</span>
       <div class="dispgrid">
         <button class="dispopt ${displayRaw()==='cat'?'on':''}" data-opt-display="cat">Category tiles</button>
         <button class="dispopt ${displayRaw()==='line'?'on':''}" data-opt-display="line">Category list</button>
@@ -2864,9 +2865,6 @@ function optionsBody(){
     </div>
     ${(displayFor()==="flat" && curSort==="ai") ? `<div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">✨ AI learns the order you check things off at ${esc((activeStore()||{}).name||"each store")} and reorders your next trip. Pick the store in Location so it learns per shop.</div>` : ""}
     ${(displayFor()==="flat" && curSort==="ai" && aiSeenCount()>0) ? `<button class="optaction" id="optResetAI" style="margin:-2px 0 10px">♻︎ Reset AI — restart from category</button>` : ""}` : ""}
-    ${sect("Shopping")}
-    ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
-    ${sect("Location")}
     ${row("Location", `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">On</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">Off</button></div>`)}
     <div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
       <span class="optlabel">Store</span>
@@ -2876,13 +2874,15 @@ function optionsBody(){
     ${(storeSel==="home" || isRealStore(storeSel)) ? `<button class="optaction" id="optSetStore" style="margin-top:2px">📍 Set ${esc((storeById(storeSel)||{}).name||"store")} location here</button>` : ""}
     ${(()=>{ const hid=[...STORES,...(state.stores||[])].filter(s=>{ const o=storeOverride(s.id); return o.hidden && !o.removed; }); return hid.length ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:6px"><span class="optlabel" style="font-size:12px;color:var(--muted2)">Hidden stores</span>${hid.map(s=>`<div style="display:flex;gap:7px;align-items:center"><span style="flex:1;min-width:0;color:var(--muted);font-size:13px;font-weight:600">${esc((storeById(s.id)||s).name||s.id)}</span><button class="storechip" data-store-restore="${s.id}" style="flex:0 0 auto">Restore</button><button class="storechip" data-store-delete="${s.id}" aria-label="Delete" style="flex:0 0 auto;border-color:#C24A33;color:#C24A33">✕</button></div>`).join("")}</div>` : ""; })()}
     <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${esc(storeLabel())}</div>
+    ${sect("Sound")}
+    ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
+    ${(view!=="lists") ? `${sect("Smart add")}${row("Smart add", `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">On</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">Off</button></div>`)}` : ""}
     ${(view!=="lists") ? `${sect("Predictions")}${row("Suggest restocks", `<div class="seg"><button data-pred-on="1" class="${predictCfg.on?'on':''}">On</button><button data-pred-on="0" class="${!predictCfg.on?'on':''}">Off</button></div>`)}
     ${predictCfg.on ? `${row("Remind me", `<div class="seg"><button data-pred-freq="weekly" class="${predictCfg.freq==='weekly'?'on':''}">Weekly</button><button data-pred-freq="monthly" class="${predictCfg.freq==='monthly'?'on':''}">Monthly</button></div>`)}
     ${predictCfg.freq==='weekly' ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px"><span class="optlabel">Day</span>
       <div class="daychips">${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d,i)=>{ const dv=(i+1)%7; return `<button class="daychip ${predictCfg.day===dv?'on':''}" data-pred-day="${dv}">${d}</button>`; }).join("")}</div></div>` : ""}
     <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">Suggests restocking items on your schedule, from how often you buy them — on your device. Adds only when you tap.</div>` : ""}` : ""}
-    ${state.members.length ? `${sect("Household")}<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
-      <span class="optlabel">Users</span>
+    ${state.members.length ? `${sect("Users")}<div class="optrow" style="flex-direction:column;align-items:stretch;gap:7px">
       <div class="userlist">${state.members.map(m=>`<button class="userchip ${m===me?'on':''}" data-switch-user="${esc(m)}">${esc(m)}${m===me?`<span class="ucur">you</span>`:""}</button>`).join("")}</div>
     </div>` : ""}
     <button class="optaction" id="optShare">Share link</button>
