@@ -506,6 +506,14 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .wallrow { display:flex; flex-wrap:wrap; gap:6px; width:100%; }
   .wallbtn { flex:1 1 0; min-width:46px; height:40px; border-radius:11px; border:1.5px solid var(--line); background-position:top center; background-size:cover; color:var(--ink); font-weight:700; font-size:12px; }
   .wallbtn.on { border-color:var(--accent); border-width:2px; }
+  /* v1.26 edit-sheet flag bubbles (Urgent / If discounted / If convenient) */
+  .flagchip { display:inline-flex; align-items:center; gap:6px; padding:9px 14px; border-radius:999px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:14px; }
+  .flagchip.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  /* v1.26 collapsible Category / Subcategory rows in the edit sheet */
+  .editsec { width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; border:none; border-top:1px solid var(--line); background:transparent; padding:11px 0 4px; margin-top:10px; cursor:pointer; }
+  .editsec-l { font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+  .editsec-v { font-size:14px; font-weight:700; color:var(--ink); display:inline-flex; align-items:center; gap:6px; }
+  .editsec-ch { color:var(--muted2); font-size:13px; }
   .regcat { margin-top:2px; }
   .regcatlbl { display:flex; align-items:center; justify-content:space-between; width:100%; border:none; background:transparent; cursor:pointer; font-size:18px; font-weight:600; color:var(--ink); letter-spacing:normal; text-transform:none; margin:10px 2px 0; padding:0; }
   .regcnum { color:var(--muted); font-weight:700; font-size:15px; }
@@ -676,7 +684,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.25";
+const APP_VERSION = "v1.26";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1446,6 +1454,7 @@ state.purch = purchMerge(state.purch, purch);   // fold any legacy per-device hi
 purch = state.purch;
 if(shopMode && !(state.items||[]).length){ shopMode=false; }   // nothing to shop — open on Plan
 let toast=null, toastAction=null, undoSnap=null, _toastT=null, catEntry=null, editing=null, configured=false;
+let editCatOpen=false, editSubOpen=false;   // v1.26 collapsible Category / Subcategory sections in the edit sheet
 let draftMain="", draftCatText="", pendingSubFocus=null, quickEdit=null;
 
 const DEFAULT_CAT_IMG = { fresh:"milk.png", health:"cross.png", asian:"ramen.png" };
@@ -1716,7 +1725,7 @@ function restore(name,cat){ playPlan(true);
 /* item edit */
 function saveEdit(){ if(!editing||!editing.name.trim()) return;
   const it=state.items.find(i=>i.id===editing.id);
-  if(it){ it.name=editing.name.trim(); it.qty=Math.max(1,editing.qty||1); it.cat=editing.cat; it.sub=editing.sub||null; it.starred=!!editing.starred; it.weight=editing.weight||""; }
+  if(it){ it.name=editing.name.trim(); it.qty=Math.max(1,editing.qty||1); it.cat=editing.cat; it.sub=editing.sub||null; it.starred=!!editing.starred; it.weight=editing.weight||""; it.tags=Array.isArray(editing.tags)?editing.tags:[]; }
   editing=null; save(); render(); }
 function removeEditing(){ moveToBuyAgain([{name:editing.name,cat:editing.cat,qty:editing.qty||1,weight:editing.weight||"",sub:editing.sub||""}]);
   state.items = state.items.filter(i=>i.id!==editing.id); editing=null; save(); render(); }
@@ -2897,7 +2906,7 @@ function optionsBody(){
   return `
     ${sect("Appearance")}
     ${row("Theme", `<div class="seg segfull" style="flex-wrap:wrap"><button data-opt-theme="light" class="themebtn ${theme==='light'?'on':''}"><span class="themesw" style="background:#F2F6EE;border-color:#DCE5D7"><i style="background:#E2502C"></i></span>Light</button><button data-opt-theme="dark" class="themebtn ${theme==='dark'?'on':''}"><span class="themesw" style="background:#141C18;border-color:#33433B"><i style="background:#E2502C"></i></span>Dark</button><button data-opt-theme="midnight" class="themebtn ${theme==='midnight'?'on':''}"><span class="themesw" style="background:#0E120F;border-color:#2A322B"><i style="background:#EC5A2C"></i></span>Midnight</button><button data-opt-theme="market" class="themebtn ${theme==='market'?'on':''}"><span class="themesw" style="background:#F6F2E7;border-color:#DAD3C0"><i style="background:#D2542B"></i></span>Market</button><button data-opt-theme="mono" class="themebtn ${theme==='mono'?'on':''}"><span class="themesw" style="background:#16181A;border-color:#2C3136"><i style="background:#5FD0B0"></i></span>Mono</button></div>`)}
-    ${row("Wallpaper", `<div class="wallrow">${[{v:"",label:"None"},{v:"wall-1"},{v:"wall-2"},{v:"wall-3"},{v:"wall-4"}].map(w=>`<button data-opt-wall="${w.v}" class="wallbtn ${wall===w.v?'on':''}" style="${w.v?`background-image:url('img/${w.v}-${wallPos}.jpg')`:''}">${w.label||''}</button>`).join("")}</div>`)}
+    ${row("Wallpaper", `<div class="wallrow">${[{v:"",label:"None"},{v:"wall-1"},{v:"wall-2"},{v:"wall-3"},{v:"wall-4"}].map(w=>`<button data-opt-wall="${w.v}" class="wallbtn ${wall===w.v?'on':''}" style="${w.v?`background-image:url('img/${w.v}-${wallPos}.jpg');background-position:center ${wallPos==='bottom'?'bottom':'top'}`:''}">${w.label||''}</button>`).join("")}</div>`)}
     ${wall ? row("Wallpaper items", `<div class="seg"><button data-opt-wallpos="top" class="${wallPos==='top'?'on':''}">Top</button><button data-opt-wallpos="bottom" class="${wallPos==='bottom'?'on':''}">Bottom</button></div>`) : ""}
     ${row("Tile appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}">Full</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}">Empty</button></div>`)}
     ${(view!=="lists") ? row("Tile style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
@@ -3069,27 +3078,29 @@ function editSheet(){
   const btnSaveStyle = "flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px";
   const selCat = CAT(editing.cat);
   const selSubs = (selCat && Array.isArray(selCat.subs)) ? selCat.subs : [];
+  const selSubLabel = (()=>{ if(!editing.sub) return "None"; const s=selSubs.find(x=>x.id===editing.sub); return s?s.label:"None"; })();
   const subChips = selCat
-    ? `<div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:14px">Subcategory</div>
-       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+    ? `<button class="editsec" id="esHead"><span class="editsec-l">Subcategory</span><span class="editsec-v">${esc(selSubLabel)}<span class="editsec-ch">${editSubOpen?'▾':'▸'}</span></span></button>
+       ${editSubOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
          <button class="catchip" data-es="" style="${!editing.sub?`background:var(--btn);border-color:var(--btn);color:#fff`:''}">None</button>
          ${selSubs.map(s=>`<button class="catchip" data-es="${s.id}" style="${editing.sub===s.id?`background:${selCat.color};border-color:${selCat.color};color:#fff`:''}">${esc(s.label)}</button>`).join("")}
          <button class="catchip" id="esAddSub" style="border-style:dashed;font-weight:800">＋ New</button>
-       </div>` : "";
+       </div>` : ""}` : "";
   return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div class="disp" style="font-weight:800;font-size:17px">${isItem?"Edit item":"Buy again"}</div>
       ${isItem?`<button id="starBtn" aria-label="Star" style="border:none;background:transparent;font-size:24px;line-height:1;padding:2px;color:${editing.starred?'#E8A91D':'var(--muted2)'}">${editing.starred?'★':'☆'}</button>`:""}
     </div>
     <div style="display:flex;gap:6px;align-items:stretch">
-      <div class="qstep" style="height:46px;align-items:center;flex:none"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>
-      <select id="weightSel" style="width:80px;flex:none;height:46px;padding:0 4px;border-radius:14px;border:2px solid var(--ink);background:var(--card);color:var(--ink);font-size:14px;font-weight:600;text-align:center;text-align-last:center">
+      <div class="qstep" style="height:46px;align-items:center;flex:none;border:none;background:var(--chip)"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>
+      <select id="weightSel" style="width:80px;flex:none;height:46px;padding:0 4px;border-radius:14px;border:none;background:var(--chip);color:var(--ink);font-size:14px;font-weight:600;text-align:center;text-align-last:center">
         ${["","cup","tsp","Tbsp","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"].map(w=>{ const hl=(w==="500g"||w==="1kg"); return `<option value="${w}" ${(editing.weight||"")===w?'selected':''}>${w?(hl?'★ '+w:w):'unit'}</option>`; }).join("")}
       </select>
-      <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:15px" />
+      <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:none;outline:none;background:var(--chip);color:var(--ink);font-size:15px" />
     </div>
-    <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-top:14px">Category</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${chipsHTML(editing.cat)}<button class="catchip" id="ecAddCat" style="border-style:dashed;font-weight:800">＋ New</button></div>
+    ${isItem ? `<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:12px">${[{k:"urgent",label:"Urgent",emoji:"🏃"},{k:"discount",label:"If discounted",emoji:"🏷️"},{k:"convenient",label:"If convenient",emoji:"🕒"}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${f.emoji}</span>${f.label}</button>`; }).join("")}</div>` : ""}
+    <button class="editsec" id="ecHead"><span class="editsec-l">Category</span><span class="editsec-v">${selCat?`${catIcon(selCat,14)} ${esc(selCat.label)}`:'—'}<span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></button>
+    ${editCatOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${chipsHTML(editing.cat)}<button class="catchip" id="ecAddCat" style="border-style:dashed;font-weight:800">＋ New</button></div>` : ""}
     ${subChips}
     <div style="display:flex;gap:8px;margin-top:16px">
       <button id="secBtn" style="${btnSecStyle}">${secLabel}</button>
@@ -3267,6 +3278,9 @@ function wireEditSheet(){
       const qp=app.querySelector("#qPlus"); if(qp) qp.onclick=()=>{ editing.qty=(editing.qty||1)+1; render(); };
       app.querySelectorAll("[data-ec]").forEach(b=>b.onclick=()=>{ editing.cat=b.dataset.ec; editing.sub=null; render(); });
       app.querySelectorAll("[data-es]").forEach(b=>b.onclick=()=>{ editing.sub=b.dataset.es||null; render(); });
+      app.querySelectorAll("[data-flag]").forEach(b=>b.onclick=()=>{ const k=b.dataset.flag; const t=Array.isArray(editing.tags)?editing.tags.slice():[]; const i=t.indexOf(k); if(i<0)t.push(k); else t.splice(i,1); editing.tags=t; render(); });
+      const ech=app.querySelector("#ecHead"); if(ech) ech.onclick=()=>{ editCatOpen=!editCatOpen; render(); };
+      const esh=app.querySelector("#esHead"); if(esh) esh.onclick=()=>{ editSubOpen=!editSubOpen; render(); };
       const eac=app.querySelector("#ecAddCat"); if(eac) eac.onclick=()=>{ const nm=prompt("New category name:",""); if(nm&&nm.trim()){ const id=makeCategory(nm); if(id){ editing.cat=id; editing.sub=null; render(); } } };
       const eas=app.querySelector("#esAddSub"); if(eas) eas.onclick=()=>{ if(!editing.cat){ showToast("Pick a category first"); return; } const nm=prompt("New subcategory name:",""); if(nm&&nm.trim()){ const id=makeSub(editing.cat,nm); if(id){ editing.sub=id; render(); } } };
       const sec=app.querySelector("#secBtn"); if(sec) sec.onclick=()=> editing.kind==="item" ? removeEditing() : restoreEditingToList();
