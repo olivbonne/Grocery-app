@@ -468,30 +468,35 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .empty-title { font-size:18px; font-weight:800; color:var(--ink); margin:10px 0 4px; }
   .empty-sub { font-size:13px; color:var(--muted); margin:4px 0; }
   /* A3 Shopping mode: bigger glanceable targets, editing chrome hidden */
-  .wrap.shop .pill { min-height:60px; font-size:18px; padding:0 16px; }
-  .wrap.shop .catheadchip { font-size:15px; padding:8px 14px; }
-  .wrap.shop .plus, .wrap.shop .catadd, .wrap.shop #addCat, .wrap.shop .hint,
-  .wrap.shop #collapseAll { display:none !important; }
-  .wrap.shop .pill.done { opacity:.5; }
-  /* v1.22 compact tiles actually shrink in shop mode (previously overridden by .wrap.shop .pill) */
-  .wrap.shop .zoomer.compact .pill { min-height:42px; font-size:14px; padding:0 12px; }
-  .wrap.shop .zoomer.compact .pemoji { font-size:15px; }
+  .shop .pill { min-height:60px; font-size:18px; padding:0 16px; }
+  .shop .catheadchip { font-size:15px; padding:8px 14px; }
+  .shop .plus, .shop .catadd, .shop #addCat, .shop .hint,
+  .shop #collapseAll { display:none !important; }
+  .shop .pill.done { opacity:.5; }
+  /* v1.22 compact tiles actually shrink in shop mode (previously overridden by .shop .pill) */
+  .shop .zoomer.compact .pill { min-height:42px; font-size:14px; padding:0 12px; }
+  .shop .zoomer.compact .pemoji { font-size:15px; }
   /* v1.22 category label reads in the same font as item text (identical weight / size / spacing) */
-  .wrap.shop .catheadchip .cname { font-size:18px; font-weight:600; letter-spacing:normal; text-transform:none; }
-  .wrap.shop .zoomer.compact .catheadchip .cname { font-size:14px; }
+  .shop .catheadchip .cname { font-size:18px; font-weight:600; letter-spacing:normal; text-transform:none; }
+  .shop .zoomer.compact .catheadchip .cname { font-size:14px; }
   /* v1.22 "Grid" display — equal-width tiles, 3 per row, qty/weight stacked below the name */
-  .wrap.shop .zoomer.gridmode .pills { display:grid; gap:8px; }
-  .wrap.shop .zoomer.grid3 .pills { grid-template-columns:repeat(3,1fr); }
-  .wrap.shop .zoomer.grid4 .pills { grid-template-columns:repeat(4,1fr); }
-  .wrap.shop .zoomer.grid5 .pills { grid-template-columns:repeat(5,1fr); }
-  .wrap.shop .zoomer.gridmode .pill { flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:82px; padding:10px 6px; gap:2px; }
-  .wrap.shop .zoomer.gridmode .pill .pemoji { margin:0; }
-  .wrap.shop .zoomer.gridmode .pill .pill-meta { margin-left:0; padding-left:0; justify-content:center; }
-  .wrap.shop .zoomer.grid4 .pill { font-size:13px; min-height:74px; padding:8px 4px; }
-  .wrap.shop .zoomer.grid4 .pill .pemoji { font-size:16px; }
-  .wrap.shop .zoomer.grid5 .pill { font-size:11.5px; min-height:66px; padding:7px 3px; gap:1px; }
-  .wrap.shop .zoomer.grid5 .pill .pemoji { font-size:14px; }
-  .wrap.shop .zoomer.grid5 .pill .pill-meta { font-size:11px; }
+  .shop .zoomer.gridmode .pills { display:grid; gap:8px; }
+  .shop .zoomer.grid3 .pills { grid-template-columns:repeat(3,1fr); }
+  .shop .zoomer.grid4 .pills { grid-template-columns:repeat(4,1fr); }
+  .shop .zoomer.grid5 .pills { grid-template-columns:repeat(5,1fr); }
+  .shop .zoomer.gridmode .pill { flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:82px; padding:10px 6px; gap:2px; }
+  .shop .zoomer.gridmode .pill .pemoji { margin:0; }
+  .shop .zoomer.gridmode .pill .pill-meta { margin-left:0; padding-left:0; justify-content:center; }
+  .shop .zoomer.grid4 .pill { font-size:13px; min-height:74px; padding:8px 4px; }
+  .shop .zoomer.grid4 .pill .pemoji { font-size:16px; }
+  .shop .zoomer.grid5 .pill { font-size:11.5px; min-height:66px; padding:7px 3px; gap:1px; }
+  .shop .zoomer.grid5 .pill .pemoji { font-size:14px; }
+  .shop .zoomer.grid5 .pill .pill-meta { font-size:11px; }
+  .shop .zoomer.grid2 .pills { grid-template-columns:repeat(2,1fr); }
+  .shop .zoomer.grid6 .pills { grid-template-columns:repeat(6,1fr); }
+  .shop .zoomer.grid6 .pill { font-size:10.5px; min-height:60px; padding:6px 2px; gap:1px; }
+  .shop .zoomer.grid6 .pill .pemoji { font-size:13px; }
+  .shop .zoomer.grid6 .pill .pill-meta { font-size:10px; }
   /* v1.22 item 6 — settings rows with a wide control laid out label-left / control-right (like Theme) */
   .optrow-wide { align-items:center; }
   .optwide { flex:1; min-width:0; }
@@ -507,7 +512,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .wallbtn { flex:1 1 0; min-width:46px; height:40px; border-radius:11px; border:1.5px solid var(--line); background-position:top center; background-size:cover; color:var(--ink); font-weight:700; font-size:12px; }
   .wallbtn.on { border-color:var(--accent); border-width:2px; }
   /* v1.26 edit-sheet flag bubbles (Urgent / If discounted / If convenient) */
-  .flagchip { display:inline-flex; align-items:center; gap:6px; padding:9px 14px; border-radius:999px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:14px; }
+  .flagchip { flex:1 1 0; min-width:0; display:inline-flex; align-items:center; justify-content:center; gap:5px; padding:9px 6px; border-radius:999px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:12.5px; white-space:nowrap; overflow:hidden; }
   .flagchip.on { background:var(--accent); border-color:var(--accent); color:#fff; }
   /* v1.26 collapsible Category / Subcategory rows in the edit sheet */
   .editsec { width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; border:none; border-top:1px solid var(--line); background:transparent; padding:11px 0 4px; margin-top:10px; cursor:pointer; }
@@ -529,7 +534,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     font-size:14px; font-weight:900; line-height:1; color:transparent; box-sizing:border-box; }
   .pill.done .pcheck { border-color:var(--done-edge); background:var(--done-edge); color:#fff; font-size:18px; }
   .pill.picking .pcheck { border-color:var(--done-edge); background:var(--done-edge); color:#fff; font-size:18px; transform:scale(1.08); transition:transform .12s ease; }
-  .wrap.shop .pill.done .pcheck, .wrap.shop .pill.picking .pcheck { font-size:20px; }   /* v1.18 bigger checked tick */
+  .shop .pill.done .pcheck, .shop .pill.picking .pcheck { font-size:20px; }   /* v1.18 bigger checked tick */
   /* v1.20 no check circle — the whole row fills green briefly when tapped, then flies to the cart */
   .pill.picking { background:var(--done-edge) !important; border-color:var(--done-edge) !important; color:#fff !important; }
   .pill.picking .qty, .pill.picking .pemoji { color:#fff !important; }
@@ -565,12 +570,18 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .qbanner-name { font-weight:800; font-size:14px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .qbanner-close { flex:none; border:none; background:var(--chip); color:var(--ink); font-weight:800; font-size:13px; padding:6px 14px; border-radius:999px; }
   .qbanner-row { display:flex; align-items:center; gap:8px; }
-  /* v1.08 floating "+ Add" on the shopping page (returns to planning) */
-  .shopaddfab-wrap { position:fixed; left:0; right:0; bottom:0; margin:0 auto; max-width:480px; z-index:37;
-    display:flex; justify-content:flex-end; padding:0 14px; pointer-events:none; }
-  .shopaddfab { pointer-events:auto; border:none; background:var(--btn); color:var(--btn-text); font-weight:800;
-    font-size:14px; padding:11px 18px; border-radius:999px; box-shadow:0 8px 22px rgba(20,30,22,.28); transition:transform .12s ease; }
-  .shopaddfab:active { transform:scale(.96); }
+  /* v1.27 floating search bubble replaces the "+ Add" pill; ✨ AI sits to its right. (.addpill also
+     gets the glass bg/border/shadow from the Glasshouse grouping below.) */
+  .addpill-wrap { position:fixed; left:0; right:0; bottom:0; margin:0 auto; max-width:480px; z-index:37;
+    display:flex; gap:8px; padding:0 14px; pointer-events:none; }
+  .addpill { pointer-events:auto; flex:1; min-width:0; display:flex; align-items:center; gap:10px;
+    color:var(--muted); font-weight:600; font-size:15px; padding:14px 18px; border-radius:999px; transition:transform .12s ease; }
+  .addpill:active { transform:scale(.98); }
+  .addpill-ic { flex:none; font-size:16px; }
+  .addpill-ph { flex:1; min-width:0; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .addpill-ai { pointer-events:auto; flex:none; width:54px; border:none; background:var(--btn); color:var(--btn-text);
+    font-size:20px; border-radius:999px; box-shadow:0 8px 22px rgba(20,30,22,.22); transition:transform .12s ease; }
+  .addpill-ai:active { transform:scale(.96); }
   /* A20 cart bounce when a flying item lands; A24 cart lifts straight up + doubles when an item is received */
   @keyframes cartbounce { 0%{transform:scale(1)} 35%{transform:scale(1.12)} 70%{transform:scale(.97)} 100%{transform:scale(1)} }
   .cartpulse { animation:cartbounce .42s ease; }
@@ -619,12 +630,19 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   }
   /* v1.12 per-item emoji icon */
   .pemoji { flex:none; font-size:15px; margin-right:1px; }
-  .wrap.shop .pemoji { font-size:18px; }
+  .shop .pemoji { font-size:18px; }
   .addrow .pemoji { font-size:17px; }
   /* v1.16 display picker (2×2) */
   .dispgrid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
   .dispopt { border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:12.5px; padding:10px 6px; border-radius:11px; }
   .dispopt.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  /* v1.27 Display: List / Large Tile (2–6 cols) / Small Tile, stacked */
+  .displist { display:flex; flex-direction:column; gap:6px; width:100%; }
+  .dispopt2 { border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:13.5px; padding:11px 14px; border-radius:12px; text-align:left; }
+  .dispopt2.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .dispcols { display:flex; gap:6px; margin:1px 0 3px; }
+  .colbtn { flex:1; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:800; font-size:14px; padding:9px 0; border-radius:10px; }
+  .colbtn.on { background:var(--accent); border-color:var(--accent); color:#fff; }
   /* v1.15 combined-page planning section (regulars to re-add, below the shopping list) */
   .plansec { margin-top:22px; border-top:1.5px dashed var(--line); padding-top:12px; }
   .plansec-h { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 2px 8px; }
@@ -632,7 +650,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .regtick { font-size:19px; font-weight:900; line-height:1; margin-right:2px; }
   .reg-in .regplus, .regplus { font-weight:900; margin-right:2px; }
   /* v1.11 shop checklist rows + plan qty-banner remove + finish dialog */
-  .wrap.shop .pcheck { margin-left:0; margin-right:11px; width:27px; height:27px; }
+  .shop .pcheck { margin-left:0; margin-right:11px; width:27px; height:27px; }
   .pill-meta { margin-left:auto; display:inline-flex; align-items:center; gap:5px; padding-left:10px; }
   .qbanner-rm { border:1.5px solid #C24A33; color:#C24A33; background:transparent; font-weight:800; font-size:13px; padding:6px 14px; border-radius:999px; }
   /* v1.10 bottom-first add — floating pill + full-screen add sheet */
@@ -647,6 +665,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .addsheet-tabs { margin:10px 0; }
   .addsheet-body { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; gap:6px; padding-bottom:12px; }
   .addcatlbl { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:10px 2px 2px; }
+  .searchbar { flex:1; min-width:0; display:flex; align-items:center; gap:8px; background:var(--chip); border:1px solid var(--line); border-radius:999px; padding:3px 8px 3px 14px; }
+  .searchbar-ic { flex:none; font-size:15px; }
+  .searchbar .inwrap { flex:1; min-width:0; }
+  .searchbar textarea { width:100%; height:40px; min-height:40px; padding:9px 34px 9px 2px; border:none; background:transparent; color:var(--ink); font-size:15px; font-family:inherit; line-height:22px; resize:none; outline:none; }
+  .searchbar .smartbtn { flex:none; width:40px; height:40px; border-radius:999px; }
+  .addcatlbl-sep { margin-top:16px; border-top:1px solid var(--line); padding-top:12px; }
   .addrow { display:flex; align-items:center; gap:10px; border:1.5px solid var(--line); background:var(--card); color:var(--ink);
     border-radius:14px; padding:11px 13px; font-weight:700; font-size:14.5px; text-align:left; }
   .addrow:active { transform:scale(.98); }
@@ -684,7 +708,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.26";
+const APP_VERSION = "v1.27";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1310,16 +1334,23 @@ const _legacySort = localStorage.getItem("ml_sort")||"cat";
 function sortModeFor(){ const v=sorts[optMode()]||_legacySort; return v==="auto"?"cat":v; }
 function setSort(m){ sorts[optMode()]=m; localStorage.setItem("ml_sorts", JSON.stringify(sorts)); render(); }
 let displays = {}; try{ displays = JSON.parse(localStorage.getItem("ml_displays")||"null") || {}; }catch(e){ displays={}; }
-// v1.23 display model: base layout (tile/list/grid3/grid4/grid5) + independent Category / Subcategory grouping toggles
-function displayRaw(){ const d=displays[optMode()]; return ["tile","list","grid3","grid4","grid5"].includes(d) ? d : "tile"; }
+// v1.27 display model: List / Large Tile (2–6 cols) / Small Tile flow + independent Category / Subcategory toggles
+function dispBase(){ const d=displays[optMode()];
+  if(d==="list") return "list";
+  if(d==="large"||d==="grid3"||d==="grid4"||d==="grid5") return "large";
+  return "small"; }                                   // "small"/"tile"/null → small-tile flow
+function largeCols(){ const d=displays[optMode()];
+  if(d==="grid3") return 3; if(d==="grid4") return 4; if(d==="grid5") return 5;
+  const v=parseInt(localStorage.getItem("ml_largecols")||"3",10); return (v>=2&&v<=6)?v:3; }
 function displayFor(){ return catOn ? "cat" : "flat"; }
-function lineList(){ return displayRaw()==="list"; }
-function gridCols(){ const d=displayRaw(); return d==="grid3"?3 : d==="grid4"?4 : d==="grid5"?5 : 0; }
+function lineList(){ return dispBase()==="list"; }
+function gridCols(){ return dispBase()==="large" ? largeCols() : 0; }
 let _co=localStorage.getItem("ml_caton"); let catOn = _co===null ? true : _co==="1";
 let _so=localStorage.getItem("ml_subon"); let subOn = _so===null ? false : _so==="1";
 function setCatOn(v){ catOn=!!v; localStorage.setItem("ml_caton", catOn?"1":"0"); render(); }
 function setSubOn(v){ subOn=!!v; localStorage.setItem("ml_subon", subOn?"1":"0"); render(); }
-function setDisplay(m){ displays[optMode()]=m; localStorage.setItem("ml_displays", JSON.stringify(displays)); render(); }
+function setDispBase(b){ displays[optMode()]=b; localStorage.setItem("ml_displays", JSON.stringify(displays)); render(); }
+function setLargeCols(n){ localStorage.setItem("ml_largecols", String(n)); displays[optMode()]="large"; localStorage.setItem("ml_displays", JSON.stringify(displays)); render(); }
 // v1.16 two independent icon switches — category icons (emoji AND images) and item emojis.
 let _emojiCat = localStorage.getItem("ml_emoji_cat");
 let _emojiItem = localStorage.getItem("ml_emoji_item");
@@ -1918,55 +1949,56 @@ function addSheetRows(){
     const lbl= segs.length>1 ? `Add ${segs.length} items` : `Add “${(p.qty>1?p.qty+"× ":"")+(p.weight?esc(p.weight)+" ":"")+esc(cap(p.name))}”`;
     out+=`<button class="addrow addtyped" data-add-typed><span class="addrow-plus">+</span><span class="addrow-name">${lbl}</span></button>`;
   }
-  if(addTab==="reg"){
-    const due=predictDue().filter(d=>!f || d.name.toLowerCase().includes(f));
-    if(due.length){ out+=`<div class="addcatlbl">Due soon</div>`+due.map(d=>{
-      const on=!!onList(d.name,d.cat);
-      return row(`data-add-pred="${esc(d.key)}"`, esc(cap(d.name)), (d.qty>1?d.qty+"×":""), on, `<span class="addrow-cad">~${d.cadenceDays}d</span>`, itemEmoji(d.name,d.cat)); }).join(""); }
-    const dueKeys=new Set(due.map(d=>d.name.toLowerCase()+"|"+d.cat));
-    const baRow=e=>{
-      const it=onList(e.name,e.cat);
-      const q=it?(it.qty||1):(e.qty||1), w=it?(it.weight||""):(e.weight||"");
-      const meta=[q>1?q+"×":"", w].filter(Boolean).join(" ");
-      return it? row(`data-add-inc="${it.id}"`, esc(cap(e.name)), meta, true, "", itemEmoji(e.name,e.cat))
-               : row(`data-add-ba="${esc(e.name)}|${e.cat}"`, esc(cap(e.name)), meta, false, "", itemEmoji(e.name,e.cat)); };
-    const bas=state.buyAgain.filter(e=>(!f || e.name.toLowerCase().includes(f)) && !dueKeys.has(e.name.toLowerCase()+"|"+e.cat));
-    if(bas.length){
-      const seen=new Set();
-      for(const c of catList()){
-        const grp=bas.filter(e=>e.cat===c.id).sort((a,b)=>a.name.localeCompare(b.name));
-        if(!grp.length) continue;
-        grp.forEach(e=>seen.add(e));
-        out+=`<div class="addcatlbl">${esc(c.label)}</div>`+grp.map(baRow).join("");
-      }
-      const rest=bas.filter(e=>!seen.has(e)).sort((a,b)=>a.name.localeCompare(b.name));
-      if(rest.length) out+=`<div class="addcatlbl">Other</div>`+rest.map(baRow).join("");
+  // Your regulars: due-soon pinned first, then buy-again grouped by category.
+  const seenReg=new Set();
+  const due=predictDue().filter(d=>!f || d.name.toLowerCase().includes(f));
+  if(due.length){ out+=`<div class="addcatlbl">Due soon</div>`+due.map(d=>{
+    seenReg.add(d.name.toLowerCase()+"|"+d.cat);
+    const on=!!onList(d.name,d.cat);
+    return row(`data-add-pred="${esc(d.key)}"`, esc(cap(d.name)), (d.qty>1?d.qty+"×":""), on, `<span class="addrow-cad">~${d.cadenceDays}d</span>`, itemEmoji(d.name,d.cat)); }).join(""); }
+  const dueKeys=new Set(due.map(d=>d.name.toLowerCase()+"|"+d.cat));
+  const baRow=e=>{
+    seenReg.add(e.name.toLowerCase()+"|"+e.cat);
+    const it=onList(e.name,e.cat);
+    const q=it?(it.qty||1):(e.qty||1), w=it?(it.weight||""):(e.weight||"");
+    const meta=[q>1?q+"×":"", w].filter(Boolean).join(" ");
+    return it? row(`data-add-inc="${it.id}"`, esc(cap(e.name)), meta, true, "", itemEmoji(e.name,e.cat))
+             : row(`data-add-ba="${esc(e.name)}|${e.cat}"`, esc(cap(e.name)), meta, false, "", itemEmoji(e.name,e.cat)); };
+  const bas=state.buyAgain.filter(e=>(!f || e.name.toLowerCase().includes(f)) && !dueKeys.has(e.name.toLowerCase()+"|"+e.cat));
+  if(bas.length){
+    const seen=new Set();
+    for(const c of catList()){
+      const grp=bas.filter(e=>e.cat===c.id).sort((a,b)=>a.name.localeCompare(b.name));
+      if(!grp.length) continue;
+      grp.forEach(e=>seen.add(e));
+      out+=`<div class="addcatlbl">${esc(c.label)}</div>`+grp.map(baRow).join("");
     }
-    if(!due.length && !bas.length && !frag) out+=`<p class="empty-sub" style="margin:14px 4px">Items you clear after shopping land here for one-tap re-adding.</p>`;
-  } else {
-    for(const c of catList()){ const words=DICT[c.id]; if(!words) continue;
-      const list=[...new Set(words)].filter(w=>!DICT_HIDE.has(w) && (!f || w.includes(f))).sort((a,b)=>a.localeCompare(b));
-      if(!list.length) continue;
-      out+=`<div class="addcatlbl">${esc(c.label)}</div>`+list.map(w=>{
-        const it=onList(w,null);
-        return it? row(`data-add-inc="${it.id}"`, esc(cap(w)), (it.qty>1?it.qty+"×":""), true, "", itemEmoji(w,c.id))
-                 : row(`data-add-dict="${esc(w)}|${c.id}"`, esc(cap(w)), "", false, "", itemEmoji(w,c.id)); }).join("");
-    }
+    const rest=bas.filter(e=>!seen.has(e)).sort((a,b)=>a.name.localeCompare(b.name));
+    if(rest.length) out+=`<div class="addcatlbl">Other</div>`+rest.map(baRow).join("");
   }
+  // Common items from the full catalogue (excluding anything already shown above as a regular).
+  let common="";
+  for(const c of catList()){ const words=DICT[c.id]; if(!words) continue;
+    const list=[...new Set(words)].filter(w=>!DICT_HIDE.has(w) && (!f || w.includes(f)) && !seenReg.has(w.toLowerCase()+"|"+c.id)).sort((a,b)=>a.localeCompare(b));
+    if(!list.length) continue;
+    common+=`<div class="addcatlbl">${esc(c.label)}</div>`+list.map(w=>{
+      const it=onList(w,null);
+      return it? row(`data-add-inc="${it.id}"`, esc(cap(w)), (it.qty>1?it.qty+"×":""), true, "", itemEmoji(w,c.id))
+               : row(`data-add-dict="${esc(w)}|${c.id}"`, esc(cap(w)), "", false, "", itemEmoji(w,c.id)); }).join("");
+  }
+  if(common){ out+=`<div class="addcatlbl addcatlbl-sep">Common items</div>`+common; }
+  if(!out) out+=`<p class="empty-sub" style="margin:14px 4px">Type above to add an item.</p>`;
   return out;
 }
 function addSheet(){
   return `<div class="sheet-bg" id="addBg"><div class="sheet addsheet" id="addSheet">
     <div class="addsheet-head">
-      <div class="addbar" style="margin:0;flex:1">
+      <div class="searchbar">
+        <span class="searchbar-ic" aria-hidden="true">🔍</span>
+        <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Add item…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
         ${smartOn()?`<button class="smartbtn" id="smartBtn" aria-label="Smart add" title="Smart add — turn a list or a whole recipe into items">✨</button>`:""}
-        <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Type items, or tap below…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
       </div>
       <button class="addsheet-done" id="addDone">Done</button>
-    </div>
-    <div class="seg segfull addsheet-tabs">
-      <button data-addtab="reg" class="${addTab==='reg'?'on':''}">Regulars</button>
-      <button data-addtab="all" class="${addTab==='all'?'on':''}">All items</button>
     </div>
     <div class="addsheet-body" id="addSheetBody">${addSheetRows()}</div>
   </div></div>`;
@@ -1995,21 +2027,22 @@ function wireAddRows(){
   app.querySelectorAll("[data-add-typed]").forEach(b=>press(b,
     ()=>{ const t=(draftMain||"").trim(); if(t){ draftMain=""; playPlan(true); addEntries(t,null); } }, null, true));
   app.querySelectorAll("[data-add-ba]").forEach(b=>{ const p=b.dataset.addBa.split("|"), cat=p.pop(), name=p.join("|");
-    press(b, ()=>addFromRegular(name,cat), ()=>{ addFromRegular(name,cat); const it=findItem(name,cat); return it&&it.id; }); });
+    const go=()=>{ addFromRegular(name,cat); const it=findItem(name,cat); if(it) editItemById(it.id); };   // v1.27 select → open Edit
+    press(b, go, ()=>{ addFromRegular(name,cat); const it=findItem(name,cat); return it&&it.id; }); });
   app.querySelectorAll("[data-add-dict]").forEach(b=>{ const p=b.dataset.addDict.split("|"), cat=p.pop(), name=p.join("|");
-    press(b, ()=>{ playPlan(true); addEntries(name,cat); }, ()=>{ playPlan(true); addEntries(name,cat); const it=findItem(name,cat); return it&&it.id; }); });
+    const go=()=>{ playPlan(true); addEntries(name,cat); const it=findItem(name,cat); if(it) editItemById(it.id); };
+    press(b, go, ()=>{ playPlan(true); addEntries(name,cat); const it=findItem(name,cat); return it&&it.id; }); });
   app.querySelectorAll("[data-add-inc]").forEach(b=>{ const id=b.dataset.addInc;
     press(b, ()=>removeFromList(id), ()=>id); });   // on-list row: tap unselects, long-press edits
   app.querySelectorAll("[data-add-pred]").forEach(b=>{ const k=b.dataset.addPred;
-    press(b, ()=>predictAdd(k), ()=>{ const rec=purch[k]; if(!rec) return null; predictAdd(k); const it=findItem(rec.name,rec.cat); return it&&it.id; }); });
+    const go=()=>{ predictAdd(k); const rec=purch[k]; const it=rec&&findItem(rec.name,rec.cat); if(it) editItemById(it.id); };
+    press(b, go, ()=>{ const rec=purch[k]; if(!rec) return null; predictAdd(k); const it=findItem(rec.name,rec.cat); return it&&it.id; }); });
 }
 function wireAddSheet(){
   if(!addOpen) return;
   wireAddBar();
   const bg=app.querySelector("#addBg"); if(bg) bg.onclick=e=>{ if(e.target===bg){ addOpen=false; render(); } };
   const dn=app.querySelector("#addDone"); if(dn) dn.onclick=()=>{ addOpen=false; render(); };
-  app.querySelectorAll("[data-addtab]").forEach(b=>b.onclick=()=>{ if(addTab!==b.dataset.addtab){ addTab=b.dataset.addtab; render();
-    const m=document.getElementById("mainInput"); if(m&&draftMain) m.focus(); } });
   wireAddRows();
 }
 function openAdd(){ addTab="reg"; addOpen=true;
@@ -2178,7 +2211,7 @@ function regPill(entry, cat, it){
     const style = full ? `background:${cat.color};border:1.5px solid ${cat.color};color:#fff` : `border-left:4px solid ${cat.color}`;
     return `<button class="pill reg-in" data-reg-rm="${it.id}" style="${style}">${emS}${name}${metaS}</button>`;
   }
-  return `<button class="pill reg-out" data-reg-add="${esc(entry.name)}|${cat.id}" style="background:transparent;border:1.5px dashed ${cat.color}">${emS}${name}${metaS}</button>`;
+  return `<button class="pill reg-out" data-reg-add="${esc(entry.name)}|${cat.id}" style="background:transparent;border:1.5px solid ${cat.color}">${emS}${name}${metaS}</button>`;
 }
 function planningSection(){
   // v1.24 the "Regulars" section shows its categories by default; each category is collapsed by default.
@@ -2288,9 +2321,9 @@ function renderMain(){
   else if(sm==="alpha"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(sortList(unchecked)) : "" }</section>` ]; }
   else { const unchecked=state.items.filter(i=>!i.checked).slice().sort(bySortKey); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
   const listBody = bodyBlocks.join("");
-  const checkedBar = done>0 ? `<div class="checkedbar" id="checkedbar">
+  const checkedBar = done>0 ? `<div class="checkedbar shop" id="checkedbar">
       <button class="checkedbarhead" id="checkedHead"><span class="chk-in"><span class="chk-tick">✓</span>${done} in cart</span><span>${checkedOpen?"▾":"▸"}</span></button>
-      ${checkedOpen?`<div class="checkedscroll">${pillsMixed(checkedItems.slice().sort((a,b)=>(b.checkedAt||0)-(a.checkedAt||0)))}</div>`:""}
+      ${checkedOpen?`<div class="checkedscroll"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}">${pillsMixed(checkedItems.slice().sort((a,b)=>(b.checkedAt||0)-(a.checkedAt||0)))}</div></div>`:""}
       <button id="sweepBtn" class="sweepbtn sweepbanner">Finish · save ${done} to Regulars</button>
     </div>` : "";
   app.innerHTML = `
@@ -2321,7 +2354,7 @@ function renderMain(){
     </div></div>
   </div>
   ${checkedBar}
-  ${(state.items.length>0 && !addOpen)?`<div class="shopaddfab-wrap" id="shopAddFabWrap"><button class="shopaddfab" id="shopAddFab">+ Add</button></div>`:""}
+  ${(state.items.length>0 && !addOpen)?`<div class="addpill-wrap" id="shopAddFabWrap"><button class="addpill" id="shopAddFab"><span class="addpill-ic" aria-hidden="true">🔍</span><span class="addpill-ph">Add item…</span></button>${smartOn()?`<button class="addpill-ai" id="addPillAi" aria-label="Smart add">✨</button>`:""}</div>`:""}
   ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:true,setId:"setNav"})}
   ${addOpen?addSheet():""}
   ${finishOpen?finishSheet():""}
@@ -2618,7 +2651,8 @@ function wireOptions(){
   app.querySelectorAll("[data-pred-freq]").forEach(b=>b.onclick=()=>{ predictCfg.freq=b.dataset.predFreq; savePredictCfg(); render(); });
   app.querySelectorAll("[data-pred-day]").forEach(b=>b.onclick=()=>{ predictCfg.day=+b.dataset.predDay; savePredictCfg(); render(); });
   app.querySelectorAll("[data-opt-sort]").forEach(b=>b.onclick=()=>setSort(b.dataset.optSort));
-  app.querySelectorAll("[data-opt-display]").forEach(b=>b.onclick=()=>{ if(displayRaw()!==b.dataset.optDisplay) setDisplay(b.dataset.optDisplay); });
+  app.querySelectorAll("[data-opt-display]").forEach(b=>b.onclick=()=>{ if(dispBase()!==b.dataset.optDisplay) setDispBase(b.dataset.optDisplay); });
+  app.querySelectorAll("[data-opt-cols]").forEach(b=>b.onclick=()=>{ const n=+b.dataset.optCols; if(!(dispBase()==="large" && largeCols()===n)) setLargeCols(n); });
   app.querySelectorAll("[data-opt-wall]").forEach(b=>b.onclick=()=>{ if(wall!==b.dataset.optWall) setWall(b.dataset.optWall); });
   app.querySelectorAll("[data-opt-wallpos]").forEach(b=>b.onclick=()=>{ if(wallPos!==b.dataset.optWallpos) setWallPos(b.dataset.optWallpos); });
   app.querySelectorAll("[data-opt-caton]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optCaton==="1"; if(catOn!==v) setCatOn(v); });
@@ -2914,12 +2948,11 @@ function optionsBody(){
     ${row("Category icons", `<div class="seg"><button data-opt-catemoji="1" class="${catEmojiOn()?'on':''}">On</button><button data-opt-catemoji="0" class="${!catEmojiOn()?'on':''}">Off</button></div>`)}
     ${row("Item icons", `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}">On</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}">Off</button></div>`)}
     ${view!=="lists" ? `<div class="optrow optrow-wide"><span class="optlabel">Display</span><div class="optwide">
-      <div class="dispgrid">
-        <button class="dispopt ${displayRaw()==='grid3'?'on':''}" data-opt-display="grid3">Grid 3×</button>
-        <button class="dispopt ${displayRaw()==='grid4'?'on':''}" data-opt-display="grid4">Grid 4×</button>
-        <button class="dispopt ${displayRaw()==='grid5'?'on':''}" data-opt-display="grid5">Grid 5×</button>
-        <button class="dispopt ${displayRaw()==='tile'?'on':''}" data-opt-display="tile">Tile</button>
-        <button class="dispopt ${displayRaw()==='list'?'on':''}" data-opt-display="list">List</button>
+      <div class="displist">
+        <button class="dispopt2 ${dispBase()==='list'?'on':''}" data-opt-display="list">List</button>
+        <button class="dispopt2 ${dispBase()==='large'?'on':''}" data-opt-display="large">Large Tile</button>
+        <div class="dispcols">${[2,3,4,5,6].map(n=>`<button class="colbtn ${dispBase()==='large'&&largeCols()===n?'on':''}" data-opt-cols="${n}">${n}</button>`).join("")}</div>
+        <button class="dispopt2 ${dispBase()==='small'?'on':''}" data-opt-display="small">Small Tile</button>
       </div></div></div>
     ${row("Category", `<div class="seg"><button data-opt-caton="1" class="${catOn?'on':''}">On</button><button data-opt-caton="0" class="${!catOn?'on':''}">Off</button></div>`)}
     ${catOn ? row("Subcategory", `<div class="seg"><button data-opt-subon="1" class="${subOn?'on':''}">On</button><button data-opt-subon="0" class="${!subOn?'on':''}">Off</button></div>`) : ""}
@@ -3098,7 +3131,7 @@ function editSheet(){
       </select>
       <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:none;outline:none;background:var(--chip);color:var(--ink);font-size:15px" />
     </div>
-    ${isItem ? `<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:12px">${[{k:"urgent",label:"Urgent",emoji:"🏃"},{k:"discount",label:"If discounted",emoji:"🏷️"},{k:"convenient",label:"If convenient",emoji:"🕒"}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${f.emoji}</span>${f.label}</button>`; }).join("")}</div>` : ""}
+    ${isItem ? `<div style="display:flex;flex-wrap:nowrap;gap:6px;margin-top:12px">${[{k:"urgent",label:"Urgent",emoji:"🏃"},{k:"discount",label:"If discounted",emoji:"🏷️"},{k:"convenient",label:"If convenient",emoji:"🕒"}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${f.emoji}</span>${f.label}</button>`; }).join("")}</div>` : ""}
     <button class="editsec" id="ecHead"><span class="editsec-l">Category</span><span class="editsec-v">${selCat?`${catIcon(selCat,14)} ${esc(selCat.label)}`:'—'}<span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></button>
     ${editCatOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${chipsHTML(editing.cat)}<button class="catchip" id="ecAddCat" style="border-style:dashed;font-weight:800">＋ New</button></div>` : ""}
     ${subChips}
@@ -3203,7 +3236,8 @@ function wire(){
   const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>gotoPage(0);   // ‹ back to Lists
   const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(1);
   const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{ settingsFrom=1; gotoPage(2); };   // Settings tab (bottom-right) — slides in from the right
-  const saf=app.querySelector("#shopAddFab"); if(saf) saf.onclick=openAdd;   // floating "+ Add" opens the add sheet
+  const saf=app.querySelector("#shopAddFab"); if(saf) saf.onclick=openAdd;   // floating search bubble opens the add sheet
+  const sai=app.querySelector("#addPillAi"); if(sai) sai.onclick=openAdd;     // ✨ also opens the add sheet (smart add lives inside)
   const rsa=app.querySelector("[data-reg-showall]"); if(rsa) rsa.onclick=()=>{   // v1.24 "Regulars" header — shown by default; tap to hide/show the categories
     collapse.regAll = (collapse.regAll===false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   app.querySelectorAll("[data-regc]").forEach(b=>{ const id=b.dataset.regc;   // v1.24 each regulars category collapsed by default; tap to open (tracked in regOpen)
