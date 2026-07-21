@@ -73,12 +73,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     src:url('outfit-latin-ext.woff2') format('woff2');
     unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
   :root{
-    --ink:#21351F; --paper:#F2F6EE; --accent:#E2502C;
-    --card:#ffffff; --line:#DCE5D7; --chip:#E1E9DC; --muted:#5C6C59; --muted2:#66766A;
-    --btn:#21351F; --btn-text:#ffffff;
-    --done-bg:#E4EBDF; --done-line:#D3DECC; --done-text:#6E7E6A; --done-edge:#ADBFA6;
+    --ink:#232019; --paper:#F6F2E7; --accent:#D2542B;
+    --card:#FFFDF7; --line:#DAD3C0; --chip:#EDE7D6; --muted:#9A9484; --muted2:#A49E8E;
+    --btn:#232019; --btn-text:#ffffff;
+    --done-bg:#EDE7D6; --done-line:#E4DDCB; --done-text:#A49E8E; --done-edge:#C9C2AE;
     --mic-img:url('img/mic-light.png');
-    --glass-bg:rgba(255,255,255,.58); --glass-brd:rgba(255,255,255,.5); --glass-hi:rgba(255,255,255,.7); --glass-blur:16px;
+    --glass-bg:rgba(252,249,240,.62); --glass-brd:rgba(255,255,255,.55); --glass-hi:rgba(255,255,255,.75); --glass-blur:16px;
   }
   body.dark, html.dark{
     --ink:#E7EEE5; --paper:#141C18; --accent:#E2502C;
@@ -89,20 +89,6 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     --glass-bg:rgba(22,30,26,.66); --glass-brd:rgba(255,255,255,.12); --glass-hi:rgba(255,255,255,.14);
   }
   /* === Named themes (palette only — dark family also gets the .dark class from applyTheme) === */
-  html[data-theme="midnight"], body[data-theme="midnight"]{
-    --ink:#ECEAE1; --paper:#0E120F; --accent:#EC5A2C;
-    --card:#141A15; --line:#2A322B; --chip:#232019; --muted:#8A928A; --muted2:#6C746C;
-    --btn:#EC5A2C; --btn-text:#ffffff;
-    --done-bg:#171D18; --done-line:#2A322B; --done-text:#6C746C; --done-edge:#3A423B;
-    --glass-bg:rgba(11,15,12,.7); --glass-brd:rgba(255,255,255,.1); --glass-hi:rgba(255,255,255,.12);
-  }
-  html[data-theme="market"], body[data-theme="market"]{
-    --ink:#232019; --paper:#F6F2E7; --accent:#D2542B;
-    --card:#FFFDF7; --line:#DAD3C0; --chip:#EDE7D6; --muted:#9A9484; --muted2:#A49E8E;
-    --btn:#232019; --btn-text:#ffffff;
-    --done-bg:#EDE7D6; --done-line:#E4DDCB; --done-text:#A49E8E; --done-edge:#C9C2AE;
-    --glass-bg:rgba(252,249,240,.62); --glass-brd:rgba(255,255,255,.55); --glass-hi:rgba(255,255,255,.75);
-  }
   html[data-theme="mono"], body[data-theme="mono"]{
     --ink:#E9EAEC; --paper:#16181A; --accent:#5FD0B0;
     --card:#1B1E21; --line:#2C3136; --chip:#22262A; --muted:#8B9096; --muted2:#6C7278;
@@ -509,7 +495,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   body.haswall::before { content:""; position:fixed; inset:0; z-index:-2; background:var(--wall) top center / cover no-repeat; }
   body.haswall::after { content:""; position:fixed; inset:0; z-index:-1; background:var(--paper); opacity:.32; }
   .wallrow { display:flex; flex-wrap:wrap; gap:6px; width:100%; }
-  .wallbtn { flex:1 1 0; min-width:46px; height:40px; border-radius:11px; border:1.5px solid var(--line); background-position:top center; background-size:cover; color:var(--ink); font-weight:700; font-size:12px; }
+  .wallbtn { flex:1 1 0; min-width:46px; height:40px; border-radius:11px; border:1.5px solid var(--line); background-position:top center; background-size:cover; color:var(--ink); font-weight:700; font-size:12px; display:flex; align-items:center; justify-content:center; text-align:center; }
   .wallbtn.on { border-color:var(--accent); border-width:2px; }
   /* v1.26 edit-sheet flag bubbles (Urgent / If discounted / If convenient) */
   .flagchip { flex:1 1 0; min-width:0; display:inline-flex; align-items:center; justify-content:center; gap:5px; padding:9px 6px; border-radius:999px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:12.5px; white-space:nowrap; overflow:hidden; }
@@ -643,6 +629,20 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .dispcols { display:flex; gap:6px; margin:1px 0 3px; }
   .colbtn { flex:1; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:800; font-size:14px; padding:9px 0; border-radius:10px; }
   .colbtn.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  /* v1.28 Tile display picker with mini layout previews */
+  .tdlist { display:flex; flex-direction:column; gap:8px; width:100%; }
+  .tdopt { display:flex; align-items:center; gap:12px; width:100%; border:1.5px solid var(--line); background:var(--card); border-radius:12px; padding:9px 12px; text-align:left; }
+  .tdopt.on { border-color:var(--accent); box-shadow:inset 0 0 0 1.5px var(--accent); }
+  .tdlabel { font-weight:700; font-size:13.5px; color:var(--ink); }
+  .tdprev { flex:none; width:52px; height:40px; border-radius:7px; background:var(--chip); padding:5px; box-sizing:border-box; display:flex; overflow:hidden; }
+  .tdprev-list { flex-direction:column; justify-content:center; gap:4px; }
+  .tdprev-list i { display:block; height:5px; border-radius:3px; background:var(--muted2); opacity:.55; }
+  .tdprev-listcat { flex-direction:column; justify-content:center; gap:3px; }
+  .tdprev-listcat b { display:block; height:4px; width:55%; border-radius:2px; background:var(--accent); opacity:.85; }
+  .tdprev-listcat i { display:block; height:4px; border-radius:2px; background:var(--muted2); opacity:.5; }
+  .tdprev-grid, .tdprev-small { display:grid; gap:3px; align-content:center; }
+  .tdprev-small { grid-template-columns:repeat(4,1fr); }
+  .tdprev-grid u, .tdprev-small u { display:block; border-radius:2.5px; background:var(--muted2); opacity:.55; aspect-ratio:1; }
   /* v1.15 combined-page planning section (regulars to re-add, below the shopping list) */
   .plansec { margin-top:22px; border-top:1.5px dashed var(--line); padding-top:12px; }
   .plansec-h { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 2px 8px; }
@@ -708,7 +708,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.27";
+const APP_VERSION = "v1.28";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -800,14 +800,14 @@ let styles = {}; try{ styles = JSON.parse(localStorage.getItem("ml_styles")||"nu
 function styl(){ return styles[optMode()] || (shopMode ? "normal" : "compact"); }
 function setStyle(s){ styles[optMode()]=s; localStorage.setItem("ml_styles", JSON.stringify(styles)); render(); }
 const THEMES = {
-  light:    { dark:false, tc:"#F2F6EE" },
+  light:    { dark:false, tc:"#F6F2E7" },
   dark:     { dark:true,  tc:"#141C18" },
-  midnight: { dark:true,  tc:"#0E120F" },
-  market:   { dark:false, tc:"#F6F2E7" },
   mono:     { dark:true,  tc:"#16181A" }
 };
 let theme = localStorage.getItem("ml_theme") || ((typeof window!=="undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark");
+if(theme==="market") theme="light"; else if(theme==="midnight") theme="dark";   // v1.28 removed themes migrate
 if(!THEMES[theme]) theme = "light";
+try{ localStorage.setItem("ml_theme", theme); }catch(e){}
 function applyTheme(){ const t = THEMES[theme] || THEMES.light;
   document.documentElement.setAttribute("data-theme", theme); document.body.setAttribute("data-theme", theme);
   document.body.classList.toggle("dark", t.dark); document.documentElement.classList.toggle("dark", t.dark);
@@ -869,8 +869,15 @@ function setStoreHere(){
   if(typeof navigator==="undefined" || !navigator.geolocation){ showToast("Location not available here"); return; }
   showToast("Getting location…");
   navigator.geolocation.getCurrentPosition(
-    pos=>{ storeLocs[storeSel]={lat:pos.coords.latitude,lng:pos.coords.longitude}; localStorage.setItem("ml_storelocs", JSON.stringify(storeLocs));
-      showToast("Saved "+((storeById(storeSel)||{}).name||"store")+" ✓"); render(); },
+    pos=>{ const here={lat:pos.coords.latitude,lng:pos.coords.longitude};
+      // v1.28 a confirmed location takes over its spot: clear the saved GPS of any OTHER place within
+      // ~120 m so auto-detect stops flip-flopping. Labels stay (only the stored coordinate is removed),
+      // so those places can be re-pinned to their own real location later.
+      let cleared=0; for(const id in storeLocs){ if(id===storeSel) continue; const c=storeLocs[id]; if(c && distM(here,c)<=120){ delete storeLocs[id]; cleared++; } }
+      storeLocs[storeSel]=here; localStorage.setItem("ml_storelocs", JSON.stringify(storeLocs));
+      locState={ checked:false, busy:false, ts:0, err:0, nearId:null, dist:Infinity };   // force a fresh detection against the deduped set
+      showToast(cleared ? `Saved ${(storeById(storeSel)||{}).name||"store"} ✓ · cleared ${cleared} duplicate${cleared>1?"s":""}` : ("Saved "+((storeById(storeSel)||{}).name||"store")+" ✓"));
+      render(); },
     err=>{ showToast("Couldn’t get location — check permissions"); },
     { enableHighAccuracy:true, maximumAge:0, timeout:10000 });
 }
@@ -2177,7 +2184,7 @@ function wireQuickPanel(){
   app.querySelectorAll("[data-qm-edit]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.qmEdit); if(it){ quickEdit=null; editing={kind:"item", ...it}; render(); } });
 }
 // A26 — calmer category header + per-aisle progress bar, used only by the midnight/market/mono themes.
-const CALM_THEMES = new Set(["light","dark","midnight","market","mono"]);   // v1.22 every theme uses the calm category header
+const CALM_THEMES = new Set(["light","dark","mono"]);   // v1.28 the three remaining themes
 function calmHead(cat, done, total, collapsed, attr, entryOpen){
   const pct = total ? Math.round(done/total*100) : 0;
   return `<div class="chead"><button class="lbl catheadchip catcalm" ${attr}="${cat.id}">`
@@ -2651,8 +2658,10 @@ function wireOptions(){
   app.querySelectorAll("[data-pred-freq]").forEach(b=>b.onclick=()=>{ predictCfg.freq=b.dataset.predFreq; savePredictCfg(); render(); });
   app.querySelectorAll("[data-pred-day]").forEach(b=>b.onclick=()=>{ predictCfg.day=+b.dataset.predDay; savePredictCfg(); render(); });
   app.querySelectorAll("[data-opt-sort]").forEach(b=>b.onclick=()=>setSort(b.dataset.optSort));
-  app.querySelectorAll("[data-opt-display]").forEach(b=>b.onclick=()=>{ if(dispBase()!==b.dataset.optDisplay) setDispBase(b.dataset.optDisplay); });
-  app.querySelectorAll("[data-opt-cols]").forEach(b=>b.onclick=()=>{ const n=+b.dataset.optCols; if(!(dispBase()==="large" && largeCols()===n)) setLargeCols(n); });
+  app.querySelectorAll("[data-tiledisp]").forEach(b=>b.onclick=()=>{ const v=b.dataset.tiledisp;   // v1.28 picker sets layout + category grouping together
+    const cat = v!=="list"; catOn=cat; localStorage.setItem("ml_caton", cat?"1":"0");
+    setDispBase(v==="listcat" ? "list" : v); });
+  app.querySelectorAll("[data-opt-cols]").forEach(b=>b.onclick=()=>{ const n=+b.dataset.optCols; catOn=true; localStorage.setItem("ml_caton","1"); setLargeCols(n); });
   app.querySelectorAll("[data-opt-wall]").forEach(b=>b.onclick=()=>{ if(wall!==b.dataset.optWall) setWall(b.dataset.optWall); });
   app.querySelectorAll("[data-opt-wallpos]").forEach(b=>b.onclick=()=>{ if(wallPos!==b.dataset.optWallpos) setWallPos(b.dataset.optWallpos); });
   app.querySelectorAll("[data-opt-caton]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optCaton==="1"; if(catOn!==v) setCatOn(v); });
@@ -2939,24 +2948,24 @@ function optionsBody(){
   if(curSort==="ai" && !aiSortOK()) curSort="location";
   return `
     ${sect("Appearance")}
-    ${row("Theme", `<div class="seg segfull" style="flex-wrap:wrap"><button data-opt-theme="light" class="themebtn ${theme==='light'?'on':''}"><span class="themesw" style="background:#F2F6EE;border-color:#DCE5D7"><i style="background:#E2502C"></i></span>Light</button><button data-opt-theme="dark" class="themebtn ${theme==='dark'?'on':''}"><span class="themesw" style="background:#141C18;border-color:#33433B"><i style="background:#E2502C"></i></span>Dark</button><button data-opt-theme="midnight" class="themebtn ${theme==='midnight'?'on':''}"><span class="themesw" style="background:#0E120F;border-color:#2A322B"><i style="background:#EC5A2C"></i></span>Midnight</button><button data-opt-theme="market" class="themebtn ${theme==='market'?'on':''}"><span class="themesw" style="background:#F6F2E7;border-color:#DAD3C0"><i style="background:#D2542B"></i></span>Market</button><button data-opt-theme="mono" class="themebtn ${theme==='mono'?'on':''}"><span class="themesw" style="background:#16181A;border-color:#2C3136"><i style="background:#5FD0B0"></i></span>Mono</button></div>`)}
+    ${row("Theme", `<div class="seg segfull" style="flex-wrap:wrap"><button data-opt-theme="light" class="themebtn ${theme==='light'?'on':''}"><span class="themesw" style="background:#F6F2E7;border-color:#DAD3C0"><i style="background:#D2542B"></i></span>Light</button><button data-opt-theme="dark" class="themebtn ${theme==='dark'?'on':''}"><span class="themesw" style="background:#141C18;border-color:#33433B"><i style="background:#E2502C"></i></span>Dark</button><button data-opt-theme="mono" class="themebtn ${theme==='mono'?'on':''}"><span class="themesw" style="background:#16181A;border-color:#2C3136"><i style="background:#5FD0B0"></i></span>Mono</button></div>`)}
     ${row("Wallpaper", `<div class="wallrow">${[{v:"",label:"None"},{v:"wall-1"},{v:"wall-2"},{v:"wall-3"},{v:"wall-4"}].map(w=>`<button data-opt-wall="${w.v}" class="wallbtn ${wall===w.v?'on':''}" style="${w.v?`background-image:url('img/${w.v}-${wallPos}.jpg');background-position:center ${wallPos==='bottom'?'bottom':'top'}`:''}">${w.label||''}</button>`).join("")}</div>`)}
     ${wall ? row("Wallpaper items", `<div class="seg"><button data-opt-wallpos="top" class="${wallPos==='top'?'on':''}">Top</button><button data-opt-wallpos="bottom" class="${wallPos==='bottom'?'on':''}">Bottom</button></div>`) : ""}
+    ${view!=="lists" ? `<div class="optrow optrow-wide"><span class="optlabel">Tile display</span><div class="optwide">
+      <div class="tdlist">
+        <button class="tdopt ${dispBase()==='list'&&!catOn?'on':''}" data-tiledisp="list"><span class="tdprev tdprev-list"><i></i><i></i><i></i></span><span class="tdlabel">List</span></button>
+        <button class="tdopt ${dispBase()==='list'&&catOn?'on':''}" data-tiledisp="listcat"><span class="tdprev tdprev-listcat"><b></b><i></i><i></i><b></b><i></i></span><span class="tdlabel">List · by category</span></button>
+        <button class="tdopt ${dispBase()==='large'?'on':''}" data-tiledisp="large"><span class="tdprev tdprev-grid" style="grid-template-columns:repeat(${largeCols()},1fr)">${Array.from({length:largeCols()*2},()=>'<u></u>').join("")}</span><span class="tdlabel">Large tiles</span></button>
+        <div class="dispcols">${[2,3,4,5,6].map(n=>`<button class="colbtn ${dispBase()==='large'&&largeCols()===n?'on':''}" data-opt-cols="${n}">${n}</button>`).join("")}</div>
+        <button class="tdopt ${dispBase()==='small'?'on':''}" data-tiledisp="small"><span class="tdprev tdprev-small">${Array.from({length:12},()=>'<u></u>').join("")}</span><span class="tdlabel">Small tiles</span></button>
+      </div></div></div>
+    ${catOn ? row("Subcategory", `<div class="seg"><button data-opt-subon="1" class="${subOn?'on':''}">On</button><button data-opt-subon="0" class="${!subOn?'on':''}">Off</button></div>`) : ""}` : ""}
     ${row("Tile appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}">Full</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}">Empty</button></div>`)}
     ${(view!=="lists") ? row("Tile style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
     ${row("Category icons", `<div class="seg"><button data-opt-catemoji="1" class="${catEmojiOn()?'on':''}">On</button><button data-opt-catemoji="0" class="${!catEmojiOn()?'on':''}">Off</button></div>`)}
     ${row("Item icons", `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}">On</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}">Off</button></div>`)}
-    ${view!=="lists" ? `<div class="optrow optrow-wide"><span class="optlabel">Display</span><div class="optwide">
-      <div class="displist">
-        <button class="dispopt2 ${dispBase()==='list'?'on':''}" data-opt-display="list">List</button>
-        <button class="dispopt2 ${dispBase()==='large'?'on':''}" data-opt-display="large">Large Tile</button>
-        <div class="dispcols">${[2,3,4,5,6].map(n=>`<button class="colbtn ${dispBase()==='large'&&largeCols()===n?'on':''}" data-opt-cols="${n}">${n}</button>`).join("")}</div>
-        <button class="dispopt2 ${dispBase()==='small'?'on':''}" data-opt-display="small">Small Tile</button>
-      </div></div></div>
-    ${row("Category", `<div class="seg"><button data-opt-caton="1" class="${catOn?'on':''}">On</button><button data-opt-caton="0" class="${!catOn?'on':''}">Off</button></div>`)}
-    ${catOn ? row("Subcategory", `<div class="seg"><button data-opt-subon="1" class="${subOn?'on':''}">On</button><button data-opt-subon="0" class="${!subOn?'on':''}">Off</button></div>`) : ""}
-    <div class="optrow optrow-wide"><span class="optlabel">Sort</span><div class="optwide">
+    ${view!=="lists" ? `<div class="optrow optrow-wide"><span class="optlabel">Sort</span><div class="optwide">
       <div class="seg segfull">${(displayFor()==="flat" && shopMode && aiSortOK())?`<button data-opt-sort="ai" class="${curSort==='ai'?'on':''}">✨ AI</button>`:""}${displayFor()==="flat"?`<button data-opt-sort="location" class="${curSort==='location'?'on':''}">Location</button>`:""}<button data-opt-sort="cat" class="${curSort==='cat'?'on':''}">Aisle</button><button data-opt-sort="alpha" class="${curSort==='alpha'?'on':''}">A–Z</button></div>
     </div></div>
     ${(displayFor()==="flat" && curSort==="ai") ? `<div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">✨ AI learns the order you check things off at ${esc((activeStore()||{}).name||"each store")} and reorders your next trip. Pick the store in Location so it learns per shop.</div>` : ""}
