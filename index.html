@@ -694,6 +694,16 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .addsheet-cancel { flex:none; border:none; background:transparent; color:var(--ink); font-weight:700; font-size:15px; padding:8px 6px; }   /* v1.31 plain Cancel (was a filled Done) */
   .addresults { width:100%; }   /* v1.31 typed matches rendered as literal shop pills */
   .addresults .pills { margin-top:2px; }
+  /* v1.32 inline "Item Details" panel above the search bar */
+  .addedit { display:flex; flex-direction:column; gap:12px; padding:4px 2px 2px; }
+  .addedit-h { font-weight:800; font-size:16px; color:var(--ink); display:flex; align-items:center; gap:8px; }
+  .qpanel-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .addedit-flags { display:flex; gap:6px; }
+  .addedit-subs { display:flex; flex-wrap:wrap; gap:6px; }
+  .addedit-actions { display:flex; gap:8px; margin-top:4px; }
+  .addedit-more { flex:none; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:14px; padding:11px 14px; border-radius:12px; }
+  .addedit-remove { flex:none; border:1.5px solid #C24A33; background:transparent; color:#C24A33; font-weight:700; font-size:14px; padding:11px 14px; border-radius:12px; }
+  .addedit-done { flex:1; border:none; background:var(--btn); color:var(--btn-text); font-weight:800; font-size:15px; border-radius:12px; padding:11px; }
   .searchbar .inwrap { flex:1; min-width:0; }
   .searchbar textarea { width:100%; height:40px; min-height:40px; padding:9px 34px 9px 2px; border:none; background:transparent; color:var(--ink); font-size:15px; font-family:inherit; line-height:22px; resize:none; outline:none; }
   .searchbar .smartbtn { flex:none; width:40px; height:40px; border-radius:999px; }
@@ -735,7 +745,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.31";
+const APP_VERSION = "v1.32";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1400,6 +1410,8 @@ function setSmart(on){ _smart = on?"1":"0"; localStorage.setItem("ml_smart", _sm
 let optOpen=false, listsOpen=false, settingsFrom=1;   // settingsFrom: page the Settings tab was opened from (for the ‹ back slide)
 // v1.10 bottom-first add sheet
 let addOpen=false, addTab="reg", _addScrollY=0;
+// v1.32 inline "Item Details" panel shown above the search bar after picking an item
+let addEditId=null;
 // v1.11 done-shopping dialog
 let finishOpen=false;
 // A18 ✨ Smart add (planning-mode AI parse → preview → confirm)
@@ -2058,13 +2070,13 @@ function addSheetRows(){
 }
 function addSheet(){
   return `<div class="sheet-bg" id="addBg"><div class="sheet addsheet" id="addSheet">
-    <div class="addsheet-body" id="addSheetBody">${addSheetRows()}</div>
+    <div class="addsheet-body" id="addSheetBody">${addEditId?addEditPanel():addSheetRows()}</div>
     <div class="addsheet-foot">
       ${smartOn()?`<button class="addsheet-ai" id="smartBtn" aria-label="Smart add" title="Smart add — turn a list or a whole recipe into items">✨ Smart add</button>`:""}
       <div class="addsheet-barrow">
         <div class="searchbar">
           <span class="searchbar-ic" aria-hidden="true">${SEARCH_SVG}</span>
-          <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Add item…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
+          <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="${addEditId?'Next item…':'Add item…'}"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
         </div>
         <button class="addsheet-cancel" id="addDone">Cancel</button>
       </div>
@@ -2073,11 +2085,16 @@ function addSheet(){
 }
 function addKeepScroll(fn){ const sb=document.getElementById("addSheetBody"); _addScrollY=sb?sb.scrollTop:0; fn();
   const s2=document.getElementById("addSheetBody"); if(s2) s2.scrollTop=_addScrollY; }
-function refreshAddBody(){ const sb=document.getElementById("addSheetBody"); if(!sb) return; sb.innerHTML=addSheetRows(); wireAddRows(); }
+function refreshAddBody(){ const sb=document.getElementById("addSheetBody"); if(!sb) return; sb.innerHTML=addEditId?addEditPanel():addSheetRows(); wireAddRows(); wireAddEdit();
+  const inp=document.getElementById("mainInput"); if(inp){ inp.placeholder = addEditId?"Next item…":"Add item…"; } }
 function removeFromList(id){ const it=state.items.find(i=>i.id===id); if(!it) return; playPlan(false);   // v1.14 add-sheet "unselect"
   state.items=state.items.filter(i=>i.id!==id); save(); render(); }
 function editItemById(id){ const it=state.items.find(i=>i.id===id); if(!it) return;                     // open the full edit menu (as on the shopping page)
   addOpen=false; quickEdit=null; editing={kind:"item", ...it}; render(); }
+// v1.32 item 3: after picking a result, show its details inline above the search bar (keyboard stays up).
+function openAddEdit(id){ if(!state.items.some(i=>i.id===id)) return; addEditId=id; draftMain="";
+  const mi=document.getElementById("mainInput"); if(mi){ mi.value=""; grow(mi); }
+  refreshAddBody(); if(mi) mi.focus(); }
 function findItem(name,cat){ return state.items.find(i=>!i.checked && i.name.toLowerCase()===String(name).toLowerCase() && i.cat===cat); }
 /* v1.14 add-sheet rows: quick tap = select/unselect (add ⇄ remove); long press = edit menu.
    Replaces the old "second tap increments qty". */
@@ -2095,25 +2112,63 @@ function wireAddRows(){
   app.querySelectorAll("[data-add-typed]").forEach(b=>press(b,
     ()=>{ const t=(draftMain||"").trim(); if(t){ draftMain=""; playPlan(true); addEntries(t,null); } }, null, true));
   app.querySelectorAll("[data-add-ba]").forEach(b=>{ const p=b.dataset.addBa.split("|"), cat=p.pop(), name=p.join("|");
-    const go=()=>{ addFromRegular(name,cat); const it=findItem(name,cat); if(it) editItemById(it.id); };   // v1.27 select → open Edit
+    const go=()=>{ addFromRegular(name,cat); const it=findItem(name,cat); if(it) openAddEdit(it.id); };   // v1.32 select → inline details above the bar
     press(b, go, ()=>{ addFromRegular(name,cat); const it=findItem(name,cat); return it&&it.id; }); });
   app.querySelectorAll("[data-add-dict]").forEach(b=>{ const p=b.dataset.addDict.split("|"), cat=p.pop(), name=p.join("|");
-    const go=()=>{ playPlan(true); addEntries(name,cat); const it=findItem(name,cat); if(it) editItemById(it.id); };
+    const go=()=>{ playPlan(true); addEntries(name,cat); const it=findItem(name,cat); if(it) openAddEdit(it.id); };
     press(b, go, ()=>{ playPlan(true); addEntries(name,cat); const it=findItem(name,cat); return it&&it.id; }); });
   app.querySelectorAll("[data-add-inc]").forEach(b=>{ const id=b.dataset.addInc;
-    press(b, ()=>removeFromList(id), ()=>id); });   // on-list row: tap unselects, long-press edits
+    press(b, ()=>openAddEdit(id), ()=>id); });   // v1.32 on-list result: tap opens its details, long-press full edit
   app.querySelectorAll("[data-add-pred]").forEach(b=>{ const k=b.dataset.addPred;
-    const go=()=>{ predictAdd(k); const rec=purch[k]; const it=rec&&findItem(rec.name,rec.cat); if(it) editItemById(it.id); };
+    const go=()=>{ predictAdd(k); const rec=purch[k]; const it=rec&&findItem(rec.name,rec.cat); if(it) openAddEdit(it.id); };
     press(b, go, ()=>{ const rec=purch[k]; if(!rec) return null; predictAdd(k); const it=findItem(rec.name,rec.cat); return it&&it.id; }); });
+}
+// v1.32 the inline "Item Details" panel (shown above the search bar after a pick). Edits mutate the
+// real item and refresh only the results body, so the keyboard stays up for the next item.
+function addEditPanel(){
+  const it=state.items.find(i=>i.id===addEditId);
+  if(!it){ addEditId=null; return addSheetRows(); }
+  const cat=CAT(it.cat)||{color:"var(--muted2)",subs:[]};
+  const subs=(cat&&Array.isArray(cat.subs))?cat.subs:[];
+  const W=["","cup","tsp","Tbsp","100g","200g","300g","400g","500g","1kg","2kg"];
+  const flags=[{k:"urgent",label:"Urgent",emoji:"🏃"},{k:"discount",label:"If discounted",emoji:"🏷️"},{k:"convenient",label:"If convenient",emoji:"🕒"}];
+  const em=itemEmoji(it.name,it.cat);
+  return `<div class="addedit">
+    <div class="addedit-h">${em?`<span class="pemoji" aria-hidden="true">${em}</span>`:""}Item Details for ${esc(cap(it.name))}</div>
+    <div class="qpanel-row">
+      <div class="qstep2"><button data-ae-minus="${it.id}" aria-label="Less">−</button><span>${it.qty||1}</span><button data-ae-plus="${it.id}" aria-label="More">+</button></div>
+      <div class="wrowq">${W.map(w=>`<button class="wchipq ${(it.weight||"")===w?'on':''}" data-ae-weight="${it.id}|${w}">${w?(w==="500g"||w==="1kg"?'★'+w:w):'unit'}</button>`).join("")}</div>
+    </div>
+    <div class="addedit-flags">${flags.map(f=>{ const on=(it.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-ae-flag="${it.id}|${f.k}"><span aria-hidden="true">${f.emoji}</span>${f.label}</button>`; }).join("")}</div>
+    ${subs.length?`<div class="addedit-subs"><button class="catchip" data-ae-sub="${it.id}|" style="${!it.sub?`background:var(--btn);border-color:var(--btn);color:#fff`:''}">None</button>${subs.map(s=>`<button class="catchip" data-ae-sub="${it.id}|${s.id}" style="${it.sub===s.id?`background:${cat.color};border-color:${cat.color};color:#fff`:''}">${esc(s.label)}</button>`).join("")}</div>`:""}
+    <div class="addedit-actions">
+      <button class="addedit-more" data-ae-more="${it.id}">⋯ More</button>
+      <button class="addedit-remove" data-ae-remove="${it.id}">Remove</button>
+      <button class="addedit-done" id="addEditDone">Done</button>
+    </div>
+  </div>`;
+}
+function wireAddEdit(){
+  const cur=()=>state.items.find(i=>i.id===addEditId);
+  app.querySelectorAll("[data-ae-minus]").forEach(b=>b.onpointerdown=e=>e.preventDefault());
+  app.querySelectorAll("[data-ae-minus]").forEach(b=>b.onclick=()=>{ const it=cur(); if(it){ it.qty=Math.max(1,(it.qty||1)-1); markDirty(it.id); save(); refreshAddBody(); } });
+  app.querySelectorAll("[data-ae-plus]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=cur(); if(it){ it.qty=(it.qty||1)+1; markDirty(it.id); save(); refreshAddBody(); } }; });
+  app.querySelectorAll("[data-ae-weight]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const [id,w]=b.dataset.aeWeight.split("|"); const it=state.items.find(i=>i.id===id); if(it){ it.weight=w; markDirty(it.id); save(); refreshAddBody(); } }; });
+  app.querySelectorAll("[data-ae-flag]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const [id,k]=b.dataset.aeFlag.split("|"); const it=state.items.find(i=>i.id===id); if(it){ const t=Array.isArray(it.tags)?it.tags.slice():[]; const i=t.indexOf(k); if(i<0)t.push(k); else t.splice(i,1); it.tags=t; markDirty(it.id); save(); refreshAddBody(); } }; });
+  app.querySelectorAll("[data-ae-sub]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const p=b.dataset.aeSub.split("|"), id=p[0], sub=p[1]||null; const it=state.items.find(i=>i.id===id); if(it){ it.sub=sub; markDirty(it.id); save(); refreshAddBody(); } }; });
+  app.querySelectorAll("[data-ae-remove]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const id=b.dataset.aeRemove; state.items=state.items.filter(i=>i.id!==id); addEditId=null; save(); refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }; });
+  app.querySelectorAll("[data-ae-more]").forEach(b=>b.onclick=()=>{ editItemById(b.dataset.aeMore); });   // full edit sheet
+  const dn=app.querySelector("#addEditDone"); if(dn){ dn.onpointerdown=e=>e.preventDefault(); dn.onclick=()=>{ addEditId=null; refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }; }
 }
 function wireAddSheet(){
   if(!addOpen) return;
   wireAddBar();
-  const bg=app.querySelector("#addBg"); if(bg) bg.onclick=e=>{ if(e.target===bg){ addOpen=false; render(); } };
-  const dn=app.querySelector("#addDone"); if(dn) dn.onclick=()=>{ addOpen=false; render(); };
+  const bg=app.querySelector("#addBg"); if(bg) bg.onclick=e=>{ if(e.target===bg){ addOpen=false; addEditId=null; render(); } };
+  const dn=app.querySelector("#addDone"); if(dn) dn.onclick=()=>{ addOpen=false; addEditId=null; render(); };
   wireAddRows();
+  wireAddEdit();
 }
-function openAdd(){ addTab="reg"; addOpen=true;
+function openAdd(){ addTab="reg"; addOpen=true; addEditId=null;
   if(curPageIdx()===0){ gotoPage(1); } else { render(); }
   const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }
 function startMic(){
@@ -3226,7 +3281,7 @@ function wireAddBar(){
     addKeepScroll(()=>addEntries(t,null));
     const m2=document.getElementById("mainInput"); if(m2){ m2.value=""; m2.focus(); } };
   if(mi){ mi.value=draftMain; grow(mi); toggleClear(mi,mc);
-    mi.oninput=()=>{ draftMain=mi.value; grow(mi); toggleClear(mi,mc); if(addOpen) refreshAddBody(); };
+    mi.oninput=()=>{ draftMain=mi.value; grow(mi); toggleClear(mi,mc); if(addEditId) addEditId=null; if(addOpen) refreshAddBody(); };   // v1.32 typing returns from the details panel to search
     mi.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); commit(mi.value); } };
     mi.onpaste=e=>{ const t=(e.clipboardData||window.clipboardData).getData("text");
       const looksLikeBlock = t && (t.indexOf("\n")>=0 || /\b(meat|fruit|vegetable|veg|fresh|bulk|asian|alcohol|health|others)\s*:/i.test(t) || t.split(",").length>2);
