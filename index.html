@@ -670,6 +670,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     box-shadow:0 10px 26px rgba(20,30,22,.22); }
   .addpill svg { flex:none; }
   .addsheet { height:92dvh; max-height:92dvh; display:flex; flex-direction:column; padding-bottom:calc(10px + env(safe-area-inset-bottom)); }
+  .addsheet.kbup { padding-bottom:0; }   /* v1.31 with the keyboard up, the search bar sits flush on it (no dark gap) */
   .addsheet-head { display:flex; gap:8px; align-items:flex-start; }
   .addsheet-done { flex:none; border:none; background:var(--btn); color:var(--btn-text); font-weight:800; font-size:14px; padding:11px 16px; border-radius:14px; }
   .addsheet-tabs { margin:10px 0; }
@@ -683,13 +684,16 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     color:var(--ink); font-weight:800; font-size:14px; padding:9px 15px; border-radius:999px; box-shadow: inset 0 1px 0 var(--glass-hi), 0 8px 22px rgba(20,30,22,.22); }
   .addsheet-foot.kbon .addsheet-ai { display:inline-flex; }
   .addcatlbl { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:10px 2px 2px; }
-  /* v1.30 item 9: the search bar uses the same glass as the bottom banner */
-  .searchbar { flex:1; min-width:0; display:flex; align-items:center; gap:8px; background:var(--glass-bg);
-    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(160%); backdrop-filter:blur(var(--glass-blur)) saturate(160%);
-    border:1px solid var(--glass-brd); border-radius:999px; padding:3px 8px 3px 14px; box-shadow: inset 0 1px 0 var(--glass-hi), 0 8px 22px rgba(20,30,22,.18); }
-  @supports not (backdrop-filter: blur(1px)){ .searchbar, .addsheet-ai { background:var(--card); } }
-  @media (prefers-reduced-transparency: reduce){ .searchbar, .addsheet-ai { background:var(--card); -webkit-backdrop-filter:none; backdrop-filter:none; } }
-  .searchbar-ic { flex:none; font-size:15px; }
+  /* v1.31 clean solid search pill (matches the reference) — sits flush above the keyboard */
+  .searchbar { flex:1; min-width:0; display:flex; align-items:center; gap:9px; background:var(--card);
+    border:1px solid var(--line); border-radius:999px; padding:3px 8px 3px 15px; box-shadow:0 6px 18px rgba(20,30,22,.14); }
+  @supports not (backdrop-filter: blur(1px)){ .addsheet-ai { background:var(--card); } }
+  @media (prefers-reduced-transparency: reduce){ .addsheet-ai { background:var(--card); -webkit-backdrop-filter:none; backdrop-filter:none; } }
+  .searchbar-ic { flex:none; display:flex; align-items:center; color:var(--muted); }
+  .searchbar-ic svg { display:block; }
+  .addsheet-cancel { flex:none; border:none; background:transparent; color:var(--ink); font-weight:700; font-size:15px; padding:8px 6px; }   /* v1.31 plain Cancel (was a filled Done) */
+  .addresults { width:100%; }   /* v1.31 typed matches rendered as literal shop pills */
+  .addresults .pills { margin-top:2px; }
   .searchbar .inwrap { flex:1; min-width:0; }
   .searchbar textarea { width:100%; height:40px; min-height:40px; padding:9px 34px 9px 2px; border:none; background:transparent; color:var(--ink); font-size:15px; font-family:inherit; line-height:22px; resize:none; outline:none; }
   .searchbar .smartbtn { flex:none; width:40px; height:40px; border-radius:999px; }
@@ -731,7 +735,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.30";
+const APP_VERSION = "v1.31";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1967,6 +1971,32 @@ function itemEmoji(name, cat){ if(!itemEmojiOn()) return "";
   for(const [k,e] of EMOJI_HINTS){ if(n.includes(k)) return e; }
   const c=CAT(cat); return (c && c.emoji && !c.img) ? c.emoji : ""; }
 function addFrag(){ const v=draftMain||""; const i=Math.max(v.lastIndexOf(","), v.lastIndexOf("\n")); return v.slice(i+1).trim(); }
+// v1.31 item 2: gather search matches (due → regulars → catalogue), deduped, for literal shop-pill rendering.
+function addMatches(f){
+  const onList=(name,cat)=> state.items.find(i=>!i.checked && i.name.toLowerCase()===String(name).toLowerCase() && (cat==null||i.cat===cat));
+  const out=[], seen=new Set();
+  const push=(m)=>{ const k=m.name.toLowerCase()+"|"+m.cat; if(seen.has(k)) return; seen.add(k); out.push(m); };
+  predictDue().filter(d=>!f || d.name.toLowerCase().includes(f)).forEach(d=>{ const it=onList(d.name,d.cat);
+    push({name:d.name, cat:d.cat, qty:it?(it.qty||1):(d.qty||1), weight:it?(it.weight||""):"", onId:it&&it.id, predKey:it?null:d.key}); });
+  state.buyAgain.filter(e=>!f || e.name.toLowerCase().includes(f)).forEach(e=>{ const it=onList(e.name,e.cat);
+    push({name:e.name, cat:e.cat, qty:it?(it.qty||1):(e.qty||1), weight:it?(it.weight||""):(e.weight||""), onId:it&&it.id, ba:!it}); });
+  for(const c of catList()){ const words=DICT[c.id]; if(!words) continue;
+    for(const w of [...new Set(words)]){ if(DICT_HIDE.has(w) || (f && !w.includes(f))) continue; const it=onList(w,c.id);
+      push({name:w, cat:c.id, qty:it?(it.qty||1):1, weight:it?(it.weight||""):"", onId:it&&it.id, dict:!it}); } }
+  return out;
+}
+// v1.31 item 2: render a match as the app's literal shop pill (empty = card + colored edge; already-on-list = filled).
+function addPillHTML(m){
+  const cat=CAT(m.cat)||{color:"var(--muted2)"};
+  const on=!!m.onId;
+  const style = on ? `background:${cat.color};border:1.5px solid ${cat.color};color:#fff` : `border-left:4px solid ${cat.color}`;
+  const qcol = on?'#fff':cat.color;
+  const meta=[(m.qty>1?m.qty+"×":""), m.weight].filter(Boolean).join(" ");
+  const metaS = meta?`<span class="pill-meta"><span class="qty" style="color:${qcol}">${esc(meta)}</span></span>`:"";
+  const em=itemEmoji(m.name,m.cat); const emS=em?`<span class="pemoji" aria-hidden="true">${em}</span>`:"";
+  const attr = on ? `data-add-inc="${m.onId}"` : (m.predKey?`data-add-pred="${esc(m.predKey)}"` : m.ba?`data-add-ba="${esc(m.name)}|${m.cat}"` : `data-add-dict="${esc(m.name)}|${m.cat}"`);
+  return `<button class="pill${on?' addon':''}" ${attr} style="${style}">${emS}${esc(cap(m.name))}${metaS}</button>`;
+}
 function addSheetRows(){
   const frag=addFrag(), f=frag.toLowerCase();
   const onList=(name,cat)=> state.items.find(i=>!i.checked && i.name.toLowerCase()===String(name).toLowerCase() && (cat==null||i.cat===cat));
@@ -1979,6 +2009,11 @@ function addSheetRows(){
     const p=parseEntry(frag);
     const lbl= segs.length>1 ? `Add ${segs.length} items` : `Add “${(p.qty>1?p.qty+"× ":"")+(p.weight?esc(p.weight)+" ":"")+esc(cap(p.name))}”`;
     out+=`<button class="addrow addtyped" data-add-typed><span class="addrow-plus">+</span><span class="addrow-name">${lbl}</span></button>`;
+  }
+  if(flat){   // v1.31 item 2: typed search → matches render as the app's literal shop pills (respecting the display mode), no category headers
+    const ms=addMatches(f);
+    if(ms.length) out+=`<div class="shop addresults"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}"><div class="pills">${ms.map(addPillHTML).join("")}</div></div></div>`;
+    return out;
   }
   // Your regulars: due-soon pinned first, then buy-again grouped by category.
   const seenReg=new Set();
@@ -2028,10 +2063,10 @@ function addSheet(){
       ${smartOn()?`<button class="addsheet-ai" id="smartBtn" aria-label="Smart add" title="Smart add — turn a list or a whole recipe into items">✨ Smart add</button>`:""}
       <div class="addsheet-barrow">
         <div class="searchbar">
-          <span class="searchbar-ic" aria-hidden="true">🔍</span>
+          <span class="searchbar-ic" aria-hidden="true">${SEARCH_SVG}</span>
           <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Add item…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
         </div>
-        <button class="addsheet-done" id="addDone">Done</button>
+        <button class="addsheet-cancel" id="addDone">Cancel</button>
       </div>
     </div>
   </div></div>`;
@@ -2135,7 +2170,7 @@ function syncZoomHeight(){ const z=document.getElementById("zoomer"); const bb=d
   applyKb(); }
 let kbOffset=0, kbActive=false;
 function applyKb(){ const bar=document.getElementById("botbar"); if(bar) bar.style.transform = kbOffset>1 ? `translateY(${-kbOffset}px)` : "";
-  const as=document.getElementById("addSheet"); if(as) as.style.setProperty("--kb", (kbOffset>1?kbOffset:0)+"px"); }
+  const as=document.getElementById("addSheet"); if(as){ as.style.setProperty("--kb", (kbOffset>1?kbOffset:0)+"px"); as.classList.toggle("kbup", kbOffset>1); } }
 function render(){
   ensureCats();
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
