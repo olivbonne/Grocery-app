@@ -170,11 +170,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .sweepbanner { background:#2F9E44; color:#fff; margin-top:12px; }
   .optrow { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px solid var(--line); }
   .optrow.optnl { border-bottom:none; }
-  /* v1.29 group-by toggles live inside the Tile display block, no dividing lines */
-  .tdgroup { display:flex; flex-direction:column; gap:9px; width:100%; margin-bottom:11px; }
-  .tdgrouprow { display:flex; align-items:center; justify-content:space-between; gap:10px; }
-  .tdgrouplbl { font-weight:700; font-size:13.5px; color:var(--ink); }
   .optlabel { font-weight:700; font-size:14px; }
+  /* v1.33 tiny preview swatches inline in seg buttons (Tile appearance, Category/Item icons) */
+  .tdswatch { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:5px; margin-right:6px; vertical-align:-3px; box-sizing:border-box; font-size:11px; line-height:1; }
+  .tdswatch-ico { background:var(--chip); }
+  .tdswatch-ico.off { opacity:.35; }
   .seg { display:inline-flex; border:1.5px solid var(--line); border-radius:11px; overflow:hidden; }
   .seg button { border:none; background:var(--card); color:var(--ink); font-weight:700; font-size:13px; padding:8px 12px; min-width:40px; }
   .seg button.on { background:var(--accent); color:#fff; }
@@ -568,12 +568,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .qbanner-row { display:flex; align-items:center; gap:8px; }
   /* v1.27 floating search bubble replaces the "+ Add" pill; ✨ AI sits to its right. (.addpill also
      gets the glass bg/border/shadow from the Glasshouse grouping below.) */
-  .addpill-wrap { position:fixed; left:0; right:0; bottom:0; margin:0 auto; max-width:480px; z-index:37;
+  .addpill-wrap { position:fixed; left:0; right:0; bottom:0; margin:0 auto; max-width:480px; z-index:41;
     display:flex; gap:8px; padding:0 14px; pointer-events:none; }
   .addpill { pointer-events:auto; flex:1; min-width:0; display:flex; align-items:center; gap:10px;
     color:var(--muted); font-weight:600; font-size:15px; padding:14px 18px; border-radius:999px; transition:transform .12s ease; }
   .addpill:active { transform:scale(.98); }
-  .addpill-ic { flex:none; font-size:16px; }
+  .addpill-ic { flex:none; display:flex; align-items:center; } .addpill-ic svg { display:block; }
   .addpill-ph { flex:1; min-width:0; text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .addpill-ai { pointer-events:auto; flex:none; width:54px; border:none; background:var(--btn); color:var(--btn-text);
     font-size:20px; border-radius:999px; box-shadow:0 8px 22px rgba(20,30,22,.22); transition:transform .12s ease; }
@@ -653,6 +653,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .tdprev-grid, .tdprev-small { display:grid; gap:3px; align-content:center; }
   .tdprev-small { grid-template-columns:repeat(4,1fr); }
   .tdprev-grid u, .tdprev-small u { display:block; border-radius:2.5px; background:var(--muted2); opacity:.55; aspect-ratio:1; }
+  .tdprev-grid b, .tdprev-small b { grid-column:1/-1; display:block; height:4px; border-radius:2px; background:var(--accent); opacity:.85; }
   /* v1.15 combined-page planning section (regulars to re-add, below the shopping list) */
   .plansec { margin-top:22px; border-top:1.5px dashed var(--line); padding-top:12px; }
   .plansec-h { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 2px 8px; }
@@ -664,7 +665,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .pill-meta { margin-left:auto; display:inline-flex; align-items:center; gap:5px; padding-left:10px; }
   .qbanner-rm { border:1.5px solid #C24A33; color:#C24A33; background:transparent; font-weight:800; font-size:13px; padding:6px 14px; border-radius:999px; }
   /* v1.10 bottom-first add — floating pill + full-screen add sheet */
-  .addpill-wrap { position:fixed; left:0; right:0; bottom:0; margin:0 auto; max-width:480px; z-index:37; padding:0 14px; display:flex; }
+  .addpill-wrap { position:fixed; left:0; right:0; bottom:0; margin:0 auto; max-width:480px; z-index:41; padding:0 14px; display:flex; }
   .addpill { flex:1; display:flex; align-items:center; gap:9px; border:1.5px solid var(--line); border-radius:999px; padding:13px 18px;
     background:var(--card); color:var(--muted); font-weight:700; font-size:14.5px; text-align:left;
     box-shadow:0 10px 26px rgba(20,30,22,.22); }
@@ -745,7 +746,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.32";
+const APP_VERSION = "v1.33";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2479,7 +2480,7 @@ function renderMain(){
     </div></div>
   </div>
   ${checkedBar}
-  ${(state.items.length>0 && !addOpen)?`<div class="addpill-wrap" id="shopAddFabWrap"><button class="addpill" id="shopAddFab"><span class="addpill-ic" aria-hidden="true">🔍</span><span class="addpill-ph">Add item…</span></button>${smartOn()?`<button class="addpill-ai" id="addPillAi" aria-label="Smart add">✨</button>`:""}</div>`:""}
+  ${(state.items.length>0 && !addOpen)?`<div class="addpill-wrap" id="shopAddFabWrap"><button class="addpill" id="shopAddFab"><span class="addpill-ic" aria-hidden="true">${SEARCH_SVG}</span><span class="addpill-ph">Add item…</span></button></div>`:""}
   ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:true,setId:"setNav"})}
   ${addOpen?addSheet():""}
   ${finishOpen?finishSheet():""}
@@ -3069,21 +3070,19 @@ function optionsBody(){
     ${row("Theme", `<div class="seg segfull" style="flex-wrap:wrap"><button data-opt-theme="light" class="themebtn ${theme==='light'?'on':''}"><span class="themesw" style="background:#F6F2E7;border-color:#DAD3C0"><i style="background:#D2542B"></i></span>Light</button><button data-opt-theme="dark" class="themebtn ${theme==='dark'?'on':''}"><span class="themesw" style="background:#141C18;border-color:#33433B"><i style="background:#E2502C"></i></span>Dark</button><button data-opt-theme="mono" class="themebtn ${theme==='mono'?'on':''}"><span class="themesw" style="background:#16181A;border-color:#2C3136"><i style="background:#5FD0B0"></i></span>Mono</button></div>`)}
     ${row("Wallpaper", `<div class="wallrow">${[{v:"",label:"None"},{v:"wall-1"},{v:"wall-2"},{v:"wall-3"},{v:"wall-4"}].map(w=>`<button data-opt-wall="${w.v}" class="wallbtn ${wall===w.v?'on':''}" style="${w.v?`background-image:url('img/${w.v}-${wallPos}.jpg');background-position:center ${wallPos==='bottom'?'bottom':'top'}`:''}">${w.label||''}</button>`).join("")}</div>`)}
     ${wall ? row("Wallpaper items", `<div class="seg"><button data-opt-wallpos="top" class="${wallPos==='top'?'on':''}">Top</button><button data-opt-wallpos="bottom" class="${wallPos==='bottom'?'on':''}">Bottom</button></div>`) : ""}
-    ${view!=="lists" ? `<div class="optrow optrow-wide"><span class="optlabel">Tile display</span><div class="optwide">
-      <div class="tdgroup">
-        <div class="tdgrouprow"><span class="tdgrouplbl">Group by category</span><div class="seg"><button data-opt-caton="1" class="${catOn?'on':''}">On</button><button data-opt-caton="0" class="${!catOn?'on':''}">Off</button></div></div>
-        <div class="tdgrouprow"><span class="tdgrouplbl">Group by subcategory</span><div class="seg"><button data-opt-subon="1" class="${subOn?'on':''}">On</button><button data-opt-subon="0" class="${!subOn?'on':''}">Off</button></div></div>
-      </div>
+    ${view!=="lists" ? `<div class="optrow optrow-wide optnl"><span class="optlabel">Tile display</span><div class="optwide">
       <div class="tdlist">
-        <button class="tdopt ${dispBase()==='list'?'on':''}" data-tiledisp="list"><span class="tdprev tdprev-list"><i></i><i></i><i></i></span><span class="tdlabel">List</span></button>
-        <button class="tdopt ${dispBase()==='large'?'on':''}" data-tiledisp="large"><span class="tdprev tdprev-grid" style="grid-template-columns:repeat(${largeCols()},1fr)">${Array.from({length:largeCols()*2},()=>'<u></u>').join("")}</span><span class="tdlabel">Large tiles</span></button>
+        <button class="tdopt ${dispBase()==='list'?'on':''}" data-tiledisp="list"><span class="tdprev ${catOn?'tdprev-listcat':'tdprev-list'}">${catOn?'<b></b><i></i><i></i>':'<i></i><i></i><i></i>'}</span><span class="tdlabel">List</span></button>
+        <button class="tdopt ${dispBase()==='large'?'on':''}" data-tiledisp="large"><span class="tdprev tdprev-grid" style="grid-template-columns:repeat(${largeCols()},1fr)">${catOn?'<b></b>':''}${Array.from({length:catOn?largeCols():largeCols()*2},()=>'<u></u>').join("")}</span><span class="tdlabel">Large tiles</span></button>
         <div class="dispcols">${[2,3,4,5,6].map(n=>`<button class="colbtn ${dispBase()==='large'&&largeCols()===n?'on':''}" data-opt-cols="${n}">${n}</button>`).join("")}</div>
-        <button class="tdopt ${dispBase()==='small'?'on':''}" data-tiledisp="small"><span class="tdprev tdprev-small">${Array.from({length:12},()=>'<u></u>').join("")}</span><span class="tdlabel">Small tiles</span></button>
-      </div></div></div>` : ""}
-    ${row("Tile appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}">Full</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}">Empty</button></div>`)}
-    ${(view!=="lists") ? row("Tile style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
-    ${row("Category icons", `<div class="seg"><button data-opt-catemoji="1" class="${catEmojiOn()?'on':''}">On</button><button data-opt-catemoji="0" class="${!catEmojiOn()?'on':''}">Off</button></div>`)}
-    ${row("Item icons", `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}">On</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}">Off</button></div>`)}
+        <button class="tdopt ${dispBase()==='small'?'on':''}" data-tiledisp="small"><span class="tdprev tdprev-small">${catOn?'<b></b>':''}${Array.from({length:catOn?8:12},()=>'<u></u>').join("")}</span><span class="tdlabel">Small tiles</span></button>
+      </div></div></div>
+    ${rowNL("Group by category", `<div class="seg"><button data-opt-caton="1" class="${catOn?'on':''}">On</button><button data-opt-caton="0" class="${!catOn?'on':''}">Off</button></div>`)}
+    ${catOn ? rowNL("Group by subcategory", `<div class="seg"><button data-opt-subon="1" class="${subOn?'on':''}">On</button><button data-opt-subon="0" class="${!subOn?'on':''}">Off</button></div>`) : ""}` : ""}
+    ${rowNL("Tile appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}"><span class="tdswatch" style="background:var(--accent)"></span>Full</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}"><span class="tdswatch" style="border:1.5px solid var(--muted2)"></span>Empty</button></div>`)}
+    ${(view!=="lists") ? rowNL("Tile style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
+    ${rowNL("Category icons", `<div class="seg"><button data-opt-catemoji="1" class="${catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">🥦</span>On</button><button data-opt-catemoji="0" class="${!catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
+    ${row("Item icons", `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">🍞</span>On</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
     ${sect("Sort")}
     ${rowNL("Location", `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">On</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">Off</button></div>`)}
@@ -3369,7 +3368,6 @@ function wire(){
   const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(1);
   const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{ settingsFrom=1; gotoPage(2); };   // Settings tab (bottom-right) — slides in from the right
   const saf=app.querySelector("#shopAddFab"); if(saf) saf.onclick=openAdd;   // floating search bubble opens the add sheet
-  const sai=app.querySelector("#addPillAi"); if(sai) sai.onclick=openAdd;     // ✨ also opens the add sheet (smart add lives inside)
   const rsa=app.querySelector("[data-reg-showall]"); if(rsa) rsa.onclick=()=>{   // v1.24 "Regulars" header — shown by default; tap to hide/show the categories
     collapse.regAll = (collapse.regAll===false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   app.querySelectorAll("[data-regc]").forEach(b=>{ const id=b.dataset.regc;   // v1.24 each regulars category collapsed by default; tap to open (tracked in regOpen)

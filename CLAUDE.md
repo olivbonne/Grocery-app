@@ -21,13 +21,14 @@ No build step, no framework. Firebase Firestore for live household sync, Vercel 
 - **Auto-merge is authorized.** Once a change is verified (`/verify-app` + syntax), merge its
   PR into `main` without asking for confirmation, then restart `claude/review` from the
   updated `main` for the next change. (Standing user instruction — merging deploys to prod.)
-- **Model split (10-80-10):** plan and review on the **main thread (Opus 4.8, high
-  effort)**; run execution in the **`executor` subagent (Opus 4.8, low effort)** (Opus for
-  the thinking, low-effort Opus for the grind). Project settings default the main thread to
-  `model: opus` / `effortLevel: high`. See the RULE under **Workflow** below.
+- **Model split (10-80-10):** plan and review on the **main thread (Sonnet 5, max
+  effort)**; run execution in the **`executor` subagent (Sonnet 5, low effort)** (max-effort
+  Sonnet for the thinking, low-effort Sonnet for the grind). Project settings default the
+  main thread to `model: sonnet` / `effortLevel: max`. See the RULE under **Workflow** below.
+  (Standing user instruction — was Opus 4.8 high/low, switched to Sonnet 5 max/low.)
 - **RULE — execution runs in the `executor` subagent.** Reserve the main thread's
-  high-effort budget for planning and review; hand the heavy code-editing (the "80%") to
-  the **`executor`** agent (`.claude/agents/executor.md` — pinned to `model: opus`,
+  max-effort budget for planning and review; hand the heavy code-editing (the "80%") to
+  the **`executor`** agent (`.claude/agents/executor.md` — pinned to `model: sonnet`,
   `effort: low`, so the effort level is guaranteed, not left to the Agent-tool defaults).
   This is the standing default, not an "only when asked" — plan on the main thread, spawn
   `executor` (via the Agent tool with `subagent_type: executor`) to do the edits, then
@@ -35,11 +36,11 @@ No build step, no framework. Firebase Firestore for live household sync, Vercel 
   exact edits with exact anchors, conventions, version bump, self-check bar); it applies
   the edits and runs a **cheap syntax self-check only** (`node --check` + sanity greps),
   then hands the diff back. It does **not** commit/push/PR.
-- **RULE — verification runs on the main thread (Opus 4.8, high effort).** Behavioral
+- **RULE — verification runs on the main thread (Sonnet 5, max effort).** Behavioral
   verification is *not* the low-effort executor's job. After the executor returns, the main
   thread reviews the diff and runs the **authoritative** check itself — `/verify-app` +
   the headless-Chromium smoke (and any change-specific browser assertions) — before
-  shipping. High effort is spent where regressions are caught, not on the grind. Trivial
+  shipping. Max effort is spent where regressions are caught, not on the grind. Trivial
   one-line touch-ups can stay in the main thread; anything larger goes to `executor`.
 - **Always end a task by reporting what each agent did** — which subagent made which
   changes, and what the main thread did (plan/review/ship).
