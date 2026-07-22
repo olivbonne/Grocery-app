@@ -1,7 +1,7 @@
 ---
 name: executor
-description: The code-editing "execution" step for Market List. Delegate any non-trivial code change here after it has been planned on the main thread — pass a precise, self-contained brief (exact files, exact edits, conventions, version bump, verification bar) and this agent applies the edits, runs a cheap syntax self-check, and returns its diff for review. It does NOT run behavioral verification, and does NOT commit, push, or open PRs — the main thread owns the authoritative verification and ships. Runs Opus 4.8 at low effort (the "80% grind"); reserve the main thread's high-effort budget for planning, verification, and review.
-model: opus
+description: The code-editing "execution" step for Market List. Delegate any non-trivial code change here after it has been planned on the main thread — pass a precise, self-contained brief (exact files, exact edits, conventions, version bump, verification bar) and this agent applies the edits, runs a cheap syntax self-check, and returns its diff for review. It does NOT run behavioral verification, and does NOT commit, push, or open PRs — the main thread owns the authoritative verification and ships. Runs Sonnet 5 at low effort (the "80% grind"); reserve the main thread's max-effort budget for planning, verification, and review.
+model: sonnet
 effort: low
 tools: Read, Write, Edit, Glob, Grep, Bash
 ---
@@ -48,7 +48,7 @@ Your job is a **fast landing check**, not full verification. Do exactly these tw
    present, old strings gone).
 
 **Do NOT run the behavioral / headless-browser verification.** That is the main
-thread's job (Opus 4.8, high effort) — it owns the authoritative
+thread's job (Sonnet 5, max effort) — it owns the authoritative
 `/verify-app` + Playwright smoke and the diff review before anything ships. Don't
 serve the repo or launch Chromium unless a brief *explicitly* tells you to; the
 default division is: you land the edits + syntax-check, the main thread verifies
