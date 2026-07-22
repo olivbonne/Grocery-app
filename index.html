@@ -673,9 +673,22 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .addsheet-head { display:flex; gap:8px; align-items:flex-start; }
   .addsheet-done { flex:none; border:none; background:var(--btn); color:var(--btn-text); font-weight:800; font-size:14px; padding:11px 16px; border-radius:14px; }
   .addsheet-tabs { margin:10px 0; }
-  .addsheet-body { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; gap:6px; padding-bottom:12px; }
+  /* v1.30 results scroll above; the search bar (foot) pins at the bottom and rises with the keyboard (--kb) */
+  .addsheet-body { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; gap:6px; padding-bottom:calc(12px + var(--kb,0px)); }
+  .addsheet-foot { flex:none; display:flex; flex-direction:column; gap:8px; transform:translateY(calc(-1 * var(--kb,0px))); transition:transform .18s ease; }
+  .addsheet-barrow { display:flex; gap:8px; align-items:center; }
+  /* ✨ Smart add sits ABOVE the bar and only shows while the input is focused (.kbon toggled on focus) */
+  .addsheet-ai { display:none; align-self:flex-start; align-items:center; gap:7px; border:1px solid var(--glass-brd); background:var(--glass-bg);
+    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(160%); backdrop-filter:blur(var(--glass-blur)) saturate(160%);
+    color:var(--ink); font-weight:800; font-size:14px; padding:9px 15px; border-radius:999px; box-shadow: inset 0 1px 0 var(--glass-hi), 0 8px 22px rgba(20,30,22,.22); }
+  .addsheet-foot.kbon .addsheet-ai { display:inline-flex; }
   .addcatlbl { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:10px 2px 2px; }
-  .searchbar { flex:1; min-width:0; display:flex; align-items:center; gap:8px; background:var(--chip); border:1px solid var(--line); border-radius:999px; padding:3px 8px 3px 14px; }
+  /* v1.30 item 9: the search bar uses the same glass as the bottom banner */
+  .searchbar { flex:1; min-width:0; display:flex; align-items:center; gap:8px; background:var(--glass-bg);
+    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(160%); backdrop-filter:blur(var(--glass-blur)) saturate(160%);
+    border:1px solid var(--glass-brd); border-radius:999px; padding:3px 8px 3px 14px; box-shadow: inset 0 1px 0 var(--glass-hi), 0 8px 22px rgba(20,30,22,.18); }
+  @supports not (backdrop-filter: blur(1px)){ .searchbar, .addsheet-ai { background:var(--card); } }
+  @media (prefers-reduced-transparency: reduce){ .searchbar, .addsheet-ai { background:var(--card); -webkit-backdrop-filter:none; backdrop-filter:none; } }
   .searchbar-ic { flex:none; font-size:15px; }
   .searchbar .inwrap { flex:1; min-width:0; }
   .searchbar textarea { width:100%; height:40px; min-height:40px; padding:9px 34px 9px 2px; border:none; background:transparent; color:var(--ink); font-size:15px; font-family:inherit; line-height:22px; resize:none; outline:none; }
@@ -718,7 +731,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.29";
+const APP_VERSION = "v1.30";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1960,6 +1973,7 @@ function addSheetRows(){
   const row=(attrs,name,meta,on,cad,em)=>`<button class="addrow ${on?'on':''}" ${attrs}>`
     +`<span class="addrow-plus">${on?'✓':'+'}</span>${em?`<span class="pemoji" aria-hidden="true">${em}</span>`:""}<span class="addrow-name">${name}</span>${cad||""}${meta?`<span class="addrow-meta">${esc(meta)}</span>`:""}</button>`;
   let out="";
+  const flat = !!frag;   // v1.30 item 11: while searching, show a flat list with no category headers
   if(frag){
     const segs=(draftMain||"").split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
     const p=parseEntry(frag);
@@ -1969,7 +1983,7 @@ function addSheetRows(){
   // Your regulars: due-soon pinned first, then buy-again grouped by category.
   const seenReg=new Set();
   const due=predictDue().filter(d=>!f || d.name.toLowerCase().includes(f));
-  if(due.length){ out+=`<div class="addcatlbl">Due soon</div>`+due.map(d=>{
+  if(due.length){ out+=(flat?"":`<div class="addcatlbl">Due soon</div>`)+due.map(d=>{
     seenReg.add(d.name.toLowerCase()+"|"+d.cat);
     const on=!!onList(d.name,d.cat);
     return row(`data-add-pred="${esc(d.key)}"`, esc(cap(d.name)), (d.qty>1?d.qty+"×":""), on, `<span class="addrow-cad">~${d.cadenceDays}d</span>`, itemEmoji(d.name,d.cat)); }).join(""); }
@@ -1988,36 +2002,38 @@ function addSheetRows(){
       const grp=bas.filter(e=>e.cat===c.id).sort((a,b)=>a.name.localeCompare(b.name));
       if(!grp.length) continue;
       grp.forEach(e=>seen.add(e));
-      out+=`<div class="addcatlbl">${esc(c.label)}</div>`+grp.map(baRow).join("");
+      out+=(flat?"":`<div class="addcatlbl">${esc(c.label)}</div>`)+grp.map(baRow).join("");
     }
     const rest=bas.filter(e=>!seen.has(e)).sort((a,b)=>a.name.localeCompare(b.name));
-    if(rest.length) out+=`<div class="addcatlbl">Other</div>`+rest.map(baRow).join("");
+    if(rest.length) out+=(flat?"":`<div class="addcatlbl">Other</div>`)+rest.map(baRow).join("");
   }
   // Common items from the full catalogue (excluding anything already shown above as a regular).
   let common="";
   for(const c of catList()){ const words=DICT[c.id]; if(!words) continue;
     const list=[...new Set(words)].filter(w=>!DICT_HIDE.has(w) && (!f || w.includes(f)) && !seenReg.has(w.toLowerCase()+"|"+c.id)).sort((a,b)=>a.localeCompare(b));
     if(!list.length) continue;
-    common+=`<div class="addcatlbl">${esc(c.label)}</div>`+list.map(w=>{
+    common+=(flat?"":`<div class="addcatlbl">${esc(c.label)}</div>`)+list.map(w=>{
       const it=onList(w,null);
       return it? row(`data-add-inc="${it.id}"`, esc(cap(w)), (it.qty>1?it.qty+"×":""), true, "", itemEmoji(w,c.id))
                : row(`data-add-dict="${esc(w)}|${c.id}"`, esc(cap(w)), "", false, "", itemEmoji(w,c.id)); }).join("");
   }
-  if(common){ out+=`<div class="addcatlbl addcatlbl-sep">Common items</div>`+common; }
+  if(common){ out+=(flat?"":`<div class="addcatlbl addcatlbl-sep">Common items</div>`)+common; }
   if(!out) out+=`<p class="empty-sub" style="margin:14px 4px">Type above to add an item.</p>`;
   return out;
 }
 function addSheet(){
   return `<div class="sheet-bg" id="addBg"><div class="sheet addsheet" id="addSheet">
-    <div class="addsheet-head">
-      <div class="searchbar">
-        <span class="searchbar-ic" aria-hidden="true">🔍</span>
-        <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Add item…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
-        ${smartOn()?`<button class="smartbtn" id="smartBtn" aria-label="Smart add" title="Smart add — turn a list or a whole recipe into items">✨</button>`:""}
-      </div>
-      <button class="addsheet-done" id="addDone">Done</button>
-    </div>
     <div class="addsheet-body" id="addSheetBody">${addSheetRows()}</div>
+    <div class="addsheet-foot">
+      ${smartOn()?`<button class="addsheet-ai" id="smartBtn" aria-label="Smart add" title="Smart add — turn a list or a whole recipe into items">✨ Smart add</button>`:""}
+      <div class="addsheet-barrow">
+        <div class="searchbar">
+          <span class="searchbar-ic" aria-hidden="true">🔍</span>
+          <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="Add item…"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
+        </div>
+        <button class="addsheet-done" id="addDone">Done</button>
+      </div>
+    </div>
   </div></div>`;
 }
 function addKeepScroll(fn){ const sb=document.getElementById("addSheetBody"); _addScrollY=sb?sb.scrollTop:0; fn();
@@ -2118,7 +2134,8 @@ function syncZoomHeight(){ const z=document.getElementById("zoomer"); const bb=d
     if(zw) zw.style.height = Math.ceil(z.getBoundingClientRect().height) + "px"; }
   applyKb(); }
 let kbOffset=0, kbActive=false;
-function applyKb(){ const bar=document.getElementById("botbar"); if(bar) bar.style.transform = kbOffset>1 ? `translateY(${-kbOffset}px)` : ""; }
+function applyKb(){ const bar=document.getElementById("botbar"); if(bar) bar.style.transform = kbOffset>1 ? `translateY(${-kbOffset}px)` : "";
+  const as=document.getElementById("addSheet"); if(as) as.style.setProperty("--kb", (kbOffset>1?kbOffset:0)+"px"); }
 function render(){
   ensureCats();
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
@@ -3181,6 +3198,8 @@ function wireAddBar(){
       if(looksLikeBlock){ e.preventDefault(); commit(t); } }; }
   if(mc){ mc.onpointerdown=e=>e.preventDefault(); mc.onclick=()=>{ if(mi){ mi.value=""; draftMain=""; grow(mi); toggleClear(mi,mc); if(addOpen) refreshAddBody(); mi.focus(); } }; }
   const sb=app.querySelector("#smartBtn"); if(sb){ sb.onpointerdown=e=>e.preventDefault(); sb.onclick=smartAdd; }
+  const foot=app.querySelector(".addsheet-foot");   // v1.30: reveal ✨ above the bar only while the input is focused
+  if(mi && foot){ mi.addEventListener("focus", ()=>foot.classList.add("kbon")); mi.addEventListener("blur", ()=>foot.classList.remove("kbon")); }
 }
 function wire(){
   wireAddSheet();
