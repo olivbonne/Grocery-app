@@ -692,7 +692,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   @media (prefers-reduced-transparency: reduce){ .addsheet-ai { background:var(--card); -webkit-backdrop-filter:none; backdrop-filter:none; } }
   .searchbar-ic { flex:none; display:flex; align-items:center; color:var(--muted); }
   .searchbar-ic svg { display:block; }
-  .addsheet-cancel { flex:none; border:none; background:transparent; color:var(--ink); font-weight:700; font-size:15px; padding:8px 6px; }   /* v1.31 plain Cancel (was a filled Done) */
+  .addsheet-donebtn { flex:none; border:none; background:transparent; color:var(--ink); font-weight:700; font-size:15px; padding:8px 6px; }   /* v1.34 plain Done (closes the sheet) */
+  /* v1.34 item 4: search matches — one horizontally-scrolling row, no wrap/grouping */
+  .addstrip-wrap { overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; margin:0 -2px; }
+  .addstrip { display:flex; align-items:center; flex-wrap:nowrap; gap:8px; width:max-content; padding:2px; }
+  .addstrip .pill { flex:none; white-space:nowrap; }
   .addresults { width:100%; }   /* v1.31 typed matches rendered as literal shop pills */
   .addresults .pills { margin-top:2px; }
   /* v1.32 inline "Item Details" panel above the search bar */
@@ -746,7 +750,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.33";
+const APP_VERSION = "v1.34";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1998,76 +2002,34 @@ function addMatches(f){
       push({name:w, cat:c.id, qty:it?(it.qty||1):1, weight:it?(it.weight||""):"", onId:it&&it.id, dict:!it}); } }
   return out;
 }
-// v1.31 item 2: render a match as the app's literal shop pill (empty = card + colored edge; already-on-list = filled).
+// v1.34 item 4: render a match as the app's literal shop pill, following Tile appearance
+// (Full/Empty) exactly like a real unchecked list item — no special "selected" override;
+// the picked item's persistence is shown via the Item Details panel, not the pill itself.
 function addPillHTML(m){
   const cat=CAT(m.cat)||{color:"var(--muted2)"};
   const on=!!m.onId;
-  const style = on ? `background:${cat.color};border:1.5px solid ${cat.color};color:#fff` : `border-left:4px solid ${cat.color}`;
-  const qcol = on?'#fff':cat.color;
+  const full=fillMode()==='full';
+  const style = full ? `background:${cat.color};border:1.5px solid ${cat.color};color:#fff` : `border-left:4px solid ${cat.color}`;
+  const qcol = full?'#fff':cat.color;
   const meta=[(m.qty>1?m.qty+"×":""), m.weight].filter(Boolean).join(" ");
   const metaS = meta?`<span class="pill-meta"><span class="qty" style="color:${qcol}">${esc(meta)}</span></span>`:"";
   const em=itemEmoji(m.name,m.cat); const emS=em?`<span class="pemoji" aria-hidden="true">${em}</span>`:"";
   const attr = on ? `data-add-inc="${m.onId}"` : (m.predKey?`data-add-pred="${esc(m.predKey)}"` : m.ba?`data-add-ba="${esc(m.name)}|${m.cat}"` : `data-add-dict="${esc(m.name)}|${m.cat}"`);
-  return `<button class="pill${on?' addon':''}" ${attr} style="${style}">${emS}${esc(cap(m.name))}${metaS}</button>`;
+  return `<button class="pill" ${attr} style="${style}">${emS}${esc(cap(m.name))}${metaS}</button>`;
 }
+// v1.34 item 4: nothing typed → nothing shown (no browsing). Typing shows matches as a
+// single horizontally-scrolling row of the app's literal item pills — same look as the real
+// list (tile appearance / style / icons / text size), no category grouping.
 function addSheetRows(){
   const frag=addFrag(), f=frag.toLowerCase();
-  const onList=(name,cat)=> state.items.find(i=>!i.checked && i.name.toLowerCase()===String(name).toLowerCase() && (cat==null||i.cat===cat));
-  const row=(attrs,name,meta,on,cad,em)=>`<button class="addrow ${on?'on':''}" ${attrs}>`
-    +`<span class="addrow-plus">${on?'✓':'+'}</span>${em?`<span class="pemoji" aria-hidden="true">${em}</span>`:""}<span class="addrow-name">${name}</span>${cad||""}${meta?`<span class="addrow-meta">${esc(meta)}</span>`:""}</button>`;
-  let out="";
-  const flat = !!frag;   // v1.30 item 11: while searching, show a flat list with no category headers
-  if(frag){
-    const segs=(draftMain||"").split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
-    const p=parseEntry(frag);
-    const lbl= segs.length>1 ? `Add ${segs.length} items` : `Add “${(p.qty>1?p.qty+"× ":"")+(p.weight?esc(p.weight)+" ":"")+esc(cap(p.name))}”`;
-    out+=`<button class="addrow addtyped" data-add-typed><span class="addrow-plus">+</span><span class="addrow-name">${lbl}</span></button>`;
-  }
-  if(flat){   // v1.31 item 2: typed search → matches render as the app's literal shop pills (respecting the display mode), no category headers
-    const ms=addMatches(f);
-    if(ms.length) out+=`<div class="shop addresults"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}"><div class="pills">${ms.map(addPillHTML).join("")}</div></div></div>`;
-    return out;
-  }
-  // Your regulars: due-soon pinned first, then buy-again grouped by category.
-  const seenReg=new Set();
-  const due=predictDue().filter(d=>!f || d.name.toLowerCase().includes(f));
-  if(due.length){ out+=(flat?"":`<div class="addcatlbl">Due soon</div>`)+due.map(d=>{
-    seenReg.add(d.name.toLowerCase()+"|"+d.cat);
-    const on=!!onList(d.name,d.cat);
-    return row(`data-add-pred="${esc(d.key)}"`, esc(cap(d.name)), (d.qty>1?d.qty+"×":""), on, `<span class="addrow-cad">~${d.cadenceDays}d</span>`, itemEmoji(d.name,d.cat)); }).join(""); }
-  const dueKeys=new Set(due.map(d=>d.name.toLowerCase()+"|"+d.cat));
-  const baRow=e=>{
-    seenReg.add(e.name.toLowerCase()+"|"+e.cat);
-    const it=onList(e.name,e.cat);
-    const q=it?(it.qty||1):(e.qty||1), w=it?(it.weight||""):(e.weight||"");
-    const meta=[q>1?q+"×":"", w].filter(Boolean).join(" ");
-    return it? row(`data-add-inc="${it.id}"`, esc(cap(e.name)), meta, true, "", itemEmoji(e.name,e.cat))
-             : row(`data-add-ba="${esc(e.name)}|${e.cat}"`, esc(cap(e.name)), meta, false, "", itemEmoji(e.name,e.cat)); };
-  const bas=state.buyAgain.filter(e=>(!f || e.name.toLowerCase().includes(f)) && !dueKeys.has(e.name.toLowerCase()+"|"+e.cat));
-  if(bas.length){
-    const seen=new Set();
-    for(const c of catList()){
-      const grp=bas.filter(e=>e.cat===c.id).sort((a,b)=>a.name.localeCompare(b.name));
-      if(!grp.length) continue;
-      grp.forEach(e=>seen.add(e));
-      out+=(flat?"":`<div class="addcatlbl">${esc(c.label)}</div>`)+grp.map(baRow).join("");
-    }
-    const rest=bas.filter(e=>!seen.has(e)).sort((a,b)=>a.name.localeCompare(b.name));
-    if(rest.length) out+=(flat?"":`<div class="addcatlbl">Other</div>`)+rest.map(baRow).join("");
-  }
-  // Common items from the full catalogue (excluding anything already shown above as a regular).
-  let common="";
-  for(const c of catList()){ const words=DICT[c.id]; if(!words) continue;
-    const list=[...new Set(words)].filter(w=>!DICT_HIDE.has(w) && (!f || w.includes(f)) && !seenReg.has(w.toLowerCase()+"|"+c.id)).sort((a,b)=>a.localeCompare(b));
-    if(!list.length) continue;
-    common+=(flat?"":`<div class="addcatlbl">${esc(c.label)}</div>`)+list.map(w=>{
-      const it=onList(w,null);
-      return it? row(`data-add-inc="${it.id}"`, esc(cap(w)), (it.qty>1?it.qty+"×":""), true, "", itemEmoji(w,c.id))
-               : row(`data-add-dict="${esc(w)}|${c.id}"`, esc(cap(w)), "", false, "", itemEmoji(w,c.id)); }).join("");
-  }
-  if(common){ out+=(flat?"":`<div class="addcatlbl addcatlbl-sep">Common items</div>`)+common; }
-  if(!out) out+=`<p class="empty-sub" style="margin:14px 4px">Type above to add an item.</p>`;
-  return out;
+  if(!frag) return "";
+  const segs=(draftMain||"").split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
+  const p=parseEntry(frag);
+  const lbl= segs.length>1 ? `Add ${segs.length} items` : `Add “${(p.qty>1?p.qty+"× ":"")+(p.weight?esc(p.weight)+" ":"")+esc(cap(p.name))}”`;
+  const typed = `<button class="pill" data-add-typed style="border:1.5px dashed var(--accent);color:var(--accent);background:transparent">${esc(lbl)}</button>`;
+  const ms=addMatches(f);
+  const cells = typed + ms.map(addPillHTML).join("");
+  return `<div class="shop addstrip-wrap"><div class="zoomer ${styl()}${dispBase()==='small'?' smalltile':''}${dispBase()==='large'?(' gridmode grid'+largeCols()):''}" style="transform:scale(${dens()});transform-origin:top left"><div class="addstrip">${cells}</div></div></div>`;
 }
 function addSheet(){
   return `<div class="sheet-bg" id="addBg"><div class="sheet addsheet" id="addSheet">
@@ -2077,9 +2039,9 @@ function addSheet(){
       <div class="addsheet-barrow">
         <div class="searchbar">
           <span class="searchbar-ic" aria-hidden="true">${SEARCH_SVG}</span>
-          <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="${addEditId?'Next item…':'Add item…'}"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
+          <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="${addEditId?'Next item…':'Add item…'}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
         </div>
-        <button class="addsheet-cancel" id="addDone">Cancel</button>
+        <button class="addsheet-donebtn" id="addDone">Done</button>
       </div>
     </div>
   </div></div>`;
@@ -2092,9 +2054,13 @@ function removeFromList(id){ const it=state.items.find(i=>i.id===id); if(!it) re
   state.items=state.items.filter(i=>i.id!==id); save(); render(); }
 function editItemById(id){ const it=state.items.find(i=>i.id===id); if(!it) return;                     // open the full edit menu (as on the shopping page)
   addOpen=false; quickEdit=null; editing={kind:"item", ...it}; render(); }
-// v1.32 item 3: after picking a result, show its details inline above the search bar (keyboard stays up).
-function openAddEdit(id){ if(!state.items.some(i=>i.id===id)) return; addEditId=id; draftMain="";
-  const mi=document.getElementById("mainInput"); if(mi){ mi.value=""; grow(mi); }
+// v1.32/v1.34: after picking a result, show its details inline above the search bar (keyboard
+// stays up). The picked item's name + ", " is appended to the input so typing continues the
+// next fragment (addFrag() already parses text after the last comma/newline).
+function openAddEdit(id){ const it=state.items.find(i=>i.id===id); if(!it) return; addEditId=id;
+  const v=draftMain||""; const i=Math.max(v.lastIndexOf(","), v.lastIndexOf("\n"));
+  draftMain = (i>=0 ? v.slice(0,i+1)+" " : "") + cap(it.name) + ", ";
+  const mi=document.getElementById("mainInput"); if(mi){ mi.value=draftMain; grow(mi); }
   refreshAddBody(); if(mi) mi.focus(); }
 function findItem(name,cat){ return state.items.find(i=>!i.checked && i.name.toLowerCase()===String(name).toLowerCase() && i.cat===cat); }
 /* v1.14 add-sheet rows: quick tap = select/unselect (add ⇄ remove); long press = edit menu.
