@@ -115,16 +115,44 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     --mic-img:url('img/mic-light.png');
     --glass-bg:rgba(255,255,255,.78); --glass-brd:rgba(0,0,0,.10); --glass-hi:rgba(255,255,255,.9); --glass-blur:16px;
   }
-  /* v1.37 "Ink" is strictly two colours. Per-category colours live in the list data (not in theme
-     tokens) and the Finish CTA is a hardcoded green, so desaturate those specific elements. Scoped
-     to NON-fixed elements only — a filter on a fixed element's ancestor would become its containing
-     block and unpin the header/nav/sheets. The theme + wallpaper swatches stay colourful on purpose,
-     so you can still tell the pickers apart. */
-  html[data-theme="ink"] .pill, html[data-theme="ink"] .bapill, html[data-theme="ink"] .catheadchip,
-  html[data-theme="ink"] .cdot, html[data-theme="ink"] .cprog, html[data-theme="ink"] .cprog > i,
-  html[data-theme="ink"] .catchip, html[data-theme="ink"] .storechip,
-  html[data-theme="ink"] .sweepbtn, html[data-theme="ink"] .sweepbanner,
-  html[data-theme="ink"] .chk-tick, html[data-theme="ink"] .syncdot { filter:grayscale(1); }
+  /* v1.39 "Noir" — Ink inverted: white on black, greys only. */
+  html[data-theme="noir"], body[data-theme="noir"]{
+    --ink:#FFFFFF; --paper:#000000; --accent:#FFFFFF;
+    --card:#0E0E0E; --line:#333333; --chip:#1A1A1A; --muted:#9A9A9A; --muted2:#767676;
+    --btn:#FFFFFF; --btn-text:#000000;
+    --done-bg:#141414; --done-line:#2A2A2A; --done-text:#767676; --done-edge:#4A4A4A;
+    --mic-img:url('img/mic-dark.png');
+    --glass-bg:rgba(0,0,0,.78); --glass-brd:rgba(255,255,255,.14); --glass-hi:rgba(255,255,255,.12); --glass-blur:16px;
+  }
+  /* v1.39 "Ink" / "Noir" are strictly TWO colours. Per-category colours live in the list data, and
+     v1.37's grayscale() mapped each hue to a DIFFERENT grey — the reported "gradient" between
+     categories. These hard overrides make every category render identically instead. Scoped to
+     non-fixed elements so no filter/containing-block can unpin the fixed chrome. */
+  html[data-theme="ink"] .pill, html[data-theme="noir"] .pill,
+  html[data-theme="ink"] .bapill, html[data-theme="noir"] .bapill {
+    background:var(--card) !important; border-color:var(--line) !important;
+    border-left-color:var(--ink) !important; color:var(--ink) !important; filter:none !important; }
+  html[data-theme="ink"] .pill .qty, html[data-theme="noir"] .pill .qty,
+  html[data-theme="ink"] .pill .pill-meta, html[data-theme="noir"] .pill .pill-meta { color:var(--muted) !important; }
+  html[data-theme="ink"] .pill.done, html[data-theme="noir"] .pill.done {
+    background:var(--done-bg) !important; color:var(--done-text) !important; border-left-color:var(--done-edge) !important; }
+  html[data-theme="ink"] .cdot, html[data-theme="noir"] .cdot,
+  html[data-theme="ink"] .cprog > i, html[data-theme="noir"] .cprog > i { background:var(--ink) !important; }
+  html[data-theme="ink"] .catheadchip, html[data-theme="noir"] .catheadchip {
+    background:transparent !important; border-color:transparent !important; color:var(--ink) !important; }
+  html[data-theme="ink"] .catchip, html[data-theme="noir"] .catchip,
+  html[data-theme="ink"] .storechip, html[data-theme="noir"] .storechip { filter:grayscale(1); }
+  html[data-theme="ink"] .sweepbtn, html[data-theme="noir"] .sweepbtn,
+  html[data-theme="ink"] .sweepbanner, html[data-theme="noir"] .sweepbanner {
+    background:var(--btn) !important; color:var(--btn-text) !important; }
+  html[data-theme="ink"] .chk-tick, html[data-theme="noir"] .chk-tick {
+    background:var(--btn) !important; color:var(--btn-text) !important; }
+  html[data-theme="ink"] .syncdot, html[data-theme="noir"] .syncdot { filter:grayscale(1); }
+  /* v1.39 "Calm": keep each category distinguishable but pastel — one uniform softening of the
+     data-driven colours, so nothing shouts. */
+  html[data-theme="calm"] .pill, html[data-theme="calm"] .bapill,
+  html[data-theme="calm"] .cdot, html[data-theme="calm"] .cprog > i,
+  html[data-theme="calm"] .catchip { filter:saturate(.5) brightness(1.1); }
   /* theme picker swatches */
   .themebtn{ display:flex; flex-direction:column; align-items:center; gap:5px; }
   .themesw{ width:100%; height:18px; border-radius:6px; border:1.5px solid; display:flex; align-items:center; justify-content:center; }
@@ -518,6 +546,13 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .shop .zoomer.grid5 .pill { font-size:11.5px; min-height:66px; padding:7px 3px; gap:1px; }
   .shop .zoomer.grid5 .pill .pemoji { font-size:14px; }
   .shop .zoomer.grid5 .pill .pill-meta { font-size:11px; }
+  .shop .zoomer.grid1 .pills { grid-template-columns:1fr; }
+  /* v1.39 item 5: Large tiles at VARIABLE width — big tiles that size to the word, no fixed columns */
+  .shop .zoomer.largevar .pills { display:flex; flex-wrap:wrap; gap:8px; }
+  .shop .zoomer.largevar .pill { flex:none; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; min-height:82px; padding:10px 14px; gap:2px; }
+  .shop .zoomer.largevar .pill .pemoji { margin:0; }
+  .shop .zoomer.largevar .pill .pill-meta { margin-left:0; padding-left:0; justify-content:center; }
   .shop .zoomer.grid2 .pills { grid-template-columns:repeat(2,1fr); }
   .shop .zoomer.grid6 .pills { grid-template-columns:repeat(6,1fr); }
   .shop .zoomer.grid6 .pill { font-size:10.5px; min-height:60px; padding:6px 2px; gap:1px; }
@@ -688,7 +723,14 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .tdprev-grid, .tdprev-small { display:grid; gap:3px; align-content:center; }
   .tdprev-small { grid-template-columns:repeat(4,1fr); }
   .tdprev-grid u, .tdprev-small u { display:block; border-radius:2.5px; background:var(--muted2); opacity:.55; aspect-ratio:1; }
+  /* v1.39 item 5: the variable-width preview draws tiles of DIFFERENT lengths instead of a fixed grid */
+  .tdprev-var { display:flex; flex-wrap:wrap; align-content:center; gap:3px; }
+  .tdprev-var u { display:block; height:8px; border-radius:2.5px; background:var(--muted2); opacity:.55; aspect-ratio:auto; }
+  .tdprev-var u:nth-child(1){ width:60%; } .tdprev-var u:nth-child(2){ width:32%; }
+  .tdprev-var u:nth-child(3){ width:28%; } .tdprev-var u:nth-child(4){ width:44%; }
+  .tdprev-var u:nth-child(5){ width:20%; }
   .tdprev-grid b, .tdprev-small b { grid-column:1/-1; display:block; height:4px; border-radius:2px; background:var(--accent); opacity:.85; }
+  .tdprev-var b { width:100%; display:block; height:4px; border-radius:2px; background:var(--accent); opacity:.85; }
   /* v1.15 combined-page planning section (regulars to re-add, below the shopping list) */
   .plansec { margin-top:22px; border-top:1.5px dashed var(--line); padding-top:12px; }
   .plansec-h { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 2px 8px; }
@@ -792,7 +834,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.38";
+const APP_VERSION = "v1.39";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -887,6 +929,7 @@ const THEMES = {
   light:    { dark:false, tc:"#F6F2E7" },
   calm:     { dark:false, tc:"#FDFBF7" },   // v1.37 light, 3 colours
   ink:      { dark:false, tc:"#FFFFFF" },   // v1.37 true black & white
+  noir:     { dark:true,  tc:"#000000" },   // v1.39 Ink inverted
   dark:     { dark:true,  tc:"#141C18" },
   mono:     { dark:true,  tc:"#16181A" }
 };
@@ -1434,10 +1477,11 @@ function dispBase(){ const d=displays[optMode()];
   return "small"; }                                   // "small"/"tile"/null → small-tile flow
 function largeCols(){ const d=displays[optMode()];
   if(d==="grid3") return 3; if(d==="grid4") return 4; if(d==="grid5") return 5;
-  const v=parseInt(localStorage.getItem("ml_largecols")||"3",10); return (v>=2&&v<=6)?v:3; }
+  const v=parseInt(localStorage.getItem("ml_largecols")||"3",10);
+  return (v>=0&&v<=6)?v:3; }   // v1.39: 0 = variable width (tiles size to the word), 1..6 = fixed columns
 function displayFor(){ return catOn ? "cat" : "flat"; }
 function lineList(){ return dispBase()==="list"; }
-function gridCols(){ return dispBase()==="large" ? largeCols() : 0; }
+function gridCols(){ return dispBase()==="large" ? largeCols() : 0; }   // 0 → no gridmode class → natural flow (variable width)
 let _co=localStorage.getItem("ml_caton"); let catOn = _co===null ? true : _co==="1";
 let _so=localStorage.getItem("ml_subon"); let subOn = _so===null ? false : _so==="1";
 function setCatOn(v){ catOn=!!v; localStorage.setItem("ml_caton", catOn?"1":"0"); render(); }
@@ -2088,7 +2132,7 @@ function addSheetRows(){
   const typed = addEditId ? "" : `<button class="pill" data-add-typed style="border:1.5px dashed var(--accent);color:var(--accent);background:transparent">${esc(lbl)}</button>`;
   const ms=addMatches(f);
   const cells = typed + ms.map(addPillHTML).join("");
-  return `<div class="shop addstrip-wrap"><div class="zoomer ${styl()}${dispBase()==='small'?' smalltile':''}${dispBase()==='large'?(' gridmode grid'+largeCols()):''}" style="transform:scale(${dens()});transform-origin:top left"><div class="addstrip">${cells}</div></div></div>`;
+  return `<div class="shop addstrip-wrap"><div class="zoomer ${styl()}${dispBase()==='small'?' smalltile':''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}${(dispBase()==='large'&&largeCols()>0)?(' gridmode grid'+largeCols()):''}" style="transform:scale(${dens()});transform-origin:top left"><div class="addstrip">${cells}</div></div></div>`;
 }
 /* v1.36 item 9: when an item is picked, the "Edit item" panel stacks ABOVE the result pills and the
    pills stay on screen (until Done), instead of the panel replacing them. Order top→bottom:
@@ -2436,7 +2480,7 @@ function wireQuickPanel(){
   app.querySelectorAll("[data-qm-edit]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.qmEdit); if(it){ quickEdit=null; editing={kind:"item", ...it}; render(); } });
 }
 // A26 — calmer category header + per-aisle progress bar, used only by the midnight/market/mono themes.
-const CALM_THEMES = new Set(["light","calm","ink","dark","mono"]);   // v1.37 all themes use the calm header
+const CALM_THEMES = new Set(["light","calm","ink","noir","dark","mono"]);   // v1.39 all themes use the calm header
 function calmHead(cat, done, total, collapsed, attr, entryOpen){
   const pct = total ? Math.round(done/total*100) : 0;
   // v1.38 item 6: show the category ICON when Category icons is on (every theme uses this header
@@ -2585,7 +2629,7 @@ function renderMain(){
   const listBody = bodyBlocks.join("");
   const checkedBar = done>0 ? `<div class="checkedbar shop" id="checkedbar">
       <button class="checkedbarhead" id="checkedHead"><span class="chk-in"><span class="chk-tick">✓</span>${done} in cart</span><span>${checkedOpen?"▾":"▸"}</span></button>
-      ${checkedOpen?`<div class="checkedscroll"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}">${pillsMixed(checkedItems.slice().sort((a,b)=>(b.checkedAt||0)-(a.checkedAt||0)))}</div></div>`:""}
+      ${checkedOpen?`<div class="checkedscroll"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">${pillsMixed(checkedItems.slice().sort((a,b)=>(b.checkedAt||0)-(a.checkedAt||0)))}</div></div>`:""}
       <button id="sweepBtn" class="sweepbtn sweepbanner">Finish · save ${done} to Regulars</button>
     </div>` : "";
   app.innerHTML = `
@@ -2602,7 +2646,7 @@ function renderMain(){
       </header>
     </div>
     <div class="wrap ${shopMode?'shop':''}">
-    <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
+    <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${(state.items.length===0)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">Your list is empty</p>
@@ -2806,7 +2850,7 @@ function renderPlanPage(){
       </header>
       ${atStorePrompt()}
     </div>
-    <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
+    <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${mergeCardHTML()}
       ${hasAny ? planBody : `<div class="empty"><div class="empty-emoji">🛒</div><p class="empty-title">Nothing planned yet</p><p class="empty-sub">Tap <b>Add</b> below — pick from your Regulars in one tap or type anything new.</p></div>`}
       <button id="addCatPlan" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
@@ -3203,16 +3247,16 @@ function optionsBody(){
   if(curSort==="ai" && !aiSortOK()) curSort="location";
   return `
     ${sect("Appearance")}
-    ${rowNL("Theme", `<div class="seg segfull" style="flex-wrap:wrap"><button data-opt-theme="light" class="themebtn ${theme==='light'?'on':''}"><span class="themesw" style="background:#F6F2E7;border-color:#DAD3C0"><i style="background:#D2542B"></i></span>Light</button><button data-opt-theme="calm" class="themebtn ${theme==='calm'?'on':''}"><span class="themesw" style="background:#FDFBF7;border-color:#ECE7E0"><i style="background:#F2825C"></i></span>Calm</button><button data-opt-theme="ink" class="themebtn ${theme==='ink'?'on':''}"><span class="themesw" style="background:#FFFFFF;border-color:#D8D8D8"><i style="background:#000000"></i></span>Ink</button><button data-opt-theme="dark" class="themebtn ${theme==='dark'?'on':''}"><span class="themesw" style="background:#141C18;border-color:#33433B"><i style="background:#E2502C"></i></span>Dark</button><button data-opt-theme="mono" class="themebtn ${theme==='mono'?'on':''}"><span class="themesw" style="background:#16181A;border-color:#2C3136"><i style="background:#5FD0B0"></i></span>Mono</button></div>`)}
+    ${rowNL("Theme", `<div class="seg segfull" style="flex-wrap:wrap"><button data-opt-theme="light" class="themebtn ${theme==='light'?'on':''}"><span class="themesw" style="background:#F6F2E7;border-color:#DAD3C0"><i style="background:#D2542B"></i></span>Light</button><button data-opt-theme="calm" class="themebtn ${theme==='calm'?'on':''}"><span class="themesw" style="background:#FDFBF7;border-color:#ECE7E0"><i style="background:#F2825C"></i></span>Calm</button><button data-opt-theme="ink" class="themebtn ${theme==='ink'?'on':''}"><span class="themesw" style="background:#FFFFFF;border-color:#D8D8D8"><i style="background:#000000"></i></span>Ink</button><button data-opt-theme="noir" class="themebtn ${theme==='noir'?'on':''}"><span class="themesw" style="background:#000000;border-color:#333333"><i style="background:#FFFFFF"></i></span>Noir</button><button data-opt-theme="dark" class="themebtn ${theme==='dark'?'on':''}"><span class="themesw" style="background:#141C18;border-color:#33433B"><i style="background:#E2502C"></i></span>Dark</button><button data-opt-theme="mono" class="themebtn ${theme==='mono'?'on':''}"><span class="themesw" style="background:#16181A;border-color:#2C3136"><i style="background:#5FD0B0"></i></span>Mono</button></div>`)}
     ${row("Wallpaper", `<div class="wallrow">${[{v:"",label:"None"},{v:"wall-1"},{v:"wall-2"},{v:"wall-3"},{v:"wall-4"}].map(w=>`<button data-opt-wall="${w.v}" class="wallbtn ${wall===w.v?'on':''}" style="${w.v?`background-image:url('img/${w.v}-${wallPos}.jpg');background-position:center ${wallPos==='bottom'?'bottom':'top'}`:''}">${w.label||''}</button>`).join("")}</div>`)}
     ${wall ? row("Wallpaper items", `<div class="seg"><button data-opt-wallpos="top" class="${wallPos==='top'?'on':''}">Top</button><button data-opt-wallpos="bottom" class="${wallPos==='bottom'?'on':''}">Bottom</button></div>`) : ""}
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
     ${view!=="lists" ? `<div class="optrow optrow-wide optnl"><span class="optlabel">Tile display</span><div class="optwide">
       <div class="tdlist">
         <button class="tdopt ${dispBase()==='list'?'on':''}" data-tiledisp="list"><span class="tdprev ${catOn?'tdprev-listcat':'tdprev-list'}">${catOn?'<b></b><i></i><i></i>':'<i></i><i></i><i></i>'}</span><span class="tdlabel">List</span></button>
-        <button class="tdopt ${dispBase()==='large'?'on':''}" data-tiledisp="large"><span class="tdprev tdprev-grid" style="grid-template-columns:repeat(${largeCols()},1fr)">${catOn?'<b></b>':''}${Array.from({length:catOn?largeCols():largeCols()*2},()=>'<u></u>').join("")}</span><span class="tdlabel">Large tiles</span></button>
-        <div class="dispcols">${[2,3,4,5,6].map(n=>`<button class="colbtn ${dispBase()==='large'&&largeCols()===n?'on':''}" data-opt-cols="${n}">${n}</button>`).join("")}</div>
-        <button class="tdopt ${dispBase()==='small'?'on':''}" data-tiledisp="small"><span class="tdprev tdprev-small">${catOn?'<b></b>':''}${Array.from({length:catOn?8:12},()=>'<u></u>').join("")}</span><span class="tdlabel">Small tiles</span></button>
+        <button class="tdopt ${dispBase()==='large'?'on':''}" data-tiledisp="large">${largeCols()===0?`<span class="tdprev tdprev-var">${catOn?'<b></b>':''}${Array.from({length:5},()=>'<u></u>').join("")}</span>`:`<span class="tdprev tdprev-grid" style="grid-template-columns:repeat(${largeCols()},1fr)">${catOn?'<b></b>':''}${Array.from({length:catOn?largeCols():largeCols()*2},()=>'<u></u>').join("")}</span>`}<span class="tdlabel">Large tiles${largeCols()===0?' · variable':''}</span></button>
+        <div class="dispcols">${[1,2,3,4,5,6].map(n=>`<button class="colbtn ${dispBase()==='large'&&largeCols()===n?'on':''}" data-opt-cols="${n}">${n}</button>`).join("")}<button class="colbtn ${dispBase()==='large'&&largeCols()===0?'on':''}" data-opt-cols="0" title="Variable width — tiles size to the word">↔</button></div>
+        <button class="tdopt ${dispBase()==='small'?'on':''}" data-tiledisp="small"><span class="tdprev tdprev-var">${catOn?'<b></b>':''}${Array.from({length:5},()=>'<u></u>').join("")}</span><span class="tdlabel">Small tiles · variable</span></button>
       </div></div></div>
     ${rowNL("Group by category", `<div class="seg"><button data-opt-caton="1" class="${catOn?'on':''}">On</button><button data-opt-caton="0" class="${!catOn?'on':''}">Off</button></div>`)}
     ${catOn ? rowNL("Group by subcategory", `<div class="seg"><button data-opt-subon="1" class="${subOn?'on':''}">On</button><button data-opt-subon="0" class="${!subOn?'on':''}">Off</button></div>`) : ""}` : ""}
