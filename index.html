@@ -345,13 +345,13 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .none { font-size:12px; color:var(--muted2); }
   .pills { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
   .pill { display:inline-flex; align-items:center; gap:5px; background:var(--card); border:1.5px solid var(--line);
-    border-radius:12px; padding:0 13px; min-height:48px; font-size:15px; font-weight:600; color:var(--ink);
+    border-radius:12px; padding:0 13px; min-height:48px; font-size:15px; font-weight:700; color:var(--ink);   /* v1.38 item 4: the item name is the bold element (qty/weight are 500) */
     transition:transform .06s ease, filter .06s ease; }
   .pill:active { transform:scale(.96); filter:brightness(.9); }
   .penddot { width:7px; height:7px; border-radius:50%; background:#E0A800; flex:none; margin-right:1px; }
   .pill.done { background:var(--done-bg); border-color:var(--done-line); border-left-color:var(--done-edge) !important;
     color:var(--done-text); text-decoration:line-through; }
-  .qty { font-weight:800; font-size:13px; }
+  .qty { font-weight:500; font-size:13px; }   /* v1.38 item 4: only the item NAME is bold — qty/weight are not */
   .ba { margin-top:14px; border-top:1.5px dashed var(--line); padding-top:10px; }
   .bahead { display:flex; align-items:center; gap:6px; width:100%; border:none; background:transparent; padding:0; }
   .bapill { display:inline-flex; align-items:center; gap:5px; background:transparent; border-radius:10px;
@@ -503,7 +503,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .shop .zoomer.compact .pill { min-height:42px; font-size:14px; padding:0 12px; }
   .shop .zoomer.compact .pemoji { font-size:15px; }
   /* v1.22 category label reads in the same font as item text (identical weight / size / spacing) */
-  .shop .catheadchip .cname { font-size:18px; font-weight:600; letter-spacing:normal; text-transform:none; }
+  .shop .catheadchip .cname { font-size:18px; font-weight:700; letter-spacing:normal; text-transform:none; }   /* v1.38: tracks the pill weight so category label == item text (v1.22 rule) */
   .shop .zoomer.compact .catheadchip .cname { font-size:14px; }
   /* v1.22 "Grid" display — equal-width tiles, 3 per row, qty/weight stacked below the name */
   .shop .zoomer.gridmode .pills { display:grid; gap:8px; }
@@ -705,14 +705,17 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     background:var(--card); color:var(--muted); font-weight:700; font-size:14.5px; text-align:left;
     box-shadow:0 10px 26px rgba(20,30,22,.22); }
   .addpill svg { flex:none; }
-  /* v1.36 item 3 — THE fix for "can't see the top of the sheet": the sheet must fit ENTIRELY in the
-     space above the keyboard. Previously it stayed 92dvh tall and bottom-anchored, so with the keyboard
-     up its lower half sat behind the keyboard; iOS then force-scrolled the whole visual viewport to
-     reveal the focused input, dragging the sheet's top off-screen. Shrinking by --kb AND lifting by
-     --kb keeps the input inside the visible band, so iOS has no reason to scroll at all. */
-  .addsheet { height:calc(92dvh - var(--kb,0px)); max-height:calc(92dvh - var(--kb,0px)); margin-bottom:var(--kb,0px);
+  /* v1.38 item 3 — the sheet is PINNED to the visual viewport by JS (pinAddSheet), not by CSS units.
+     v1.36 sized it with dvh math, which is correct until iOS scrolls the *visual* viewport to reveal
+     the focused input: position:fixed tracks the LAYOUT viewport, so the whole sheet slid up and only
+     its foot stayed on screen. pinAddSheet writes explicit top/height that include
+     visualViewport.offsetTop, which cancels that scroll exactly. These are fallbacks for the
+     no-visualViewport case only. */
+  .addsheet { height:92dvh; max-height:92dvh;
     display:flex; flex-direction:column; padding-bottom:calc(10px + env(safe-area-inset-bottom)); }
   .addsheet.kbup { padding-bottom:0; }   /* v1.31 with the keyboard up, the search bar sits flush on it (no dark gap) */
+  /* when JS pins it, the sheet positions itself rather than being laid out by the flex scrim */
+  .addsheet.vvpin { position:fixed; left:0; right:0; margin:0 auto; }
   .addsheet-head { display:flex; gap:8px; align-items:flex-start; }
   .addsheet-done { flex:none; border:none; background:var(--btn); color:var(--btn-text); font-weight:800; font-size:14px; padding:11px 16px; border-radius:14px; }
   .addsheet-tabs { margin:10px 0; }
@@ -723,7 +726,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      v1.35 item 3: justify-content:flex-end docks short content (search strip / edit panel) flush above the bar. */
   /* v1.36: the sheet itself is now sized/lifted for the keyboard (above), so the body no longer pads
      by --kb and the foot no longer translates — it just sits at the bottom of the shrunken sheet. */
-  .addsheet-body { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; justify-content:flex-end; gap:6px; padding-bottom:12px; }
+  /* v1.38 item 3: results hug the search bar. `justify-content:flex-end` only bottom-aligns when the
+     content is SHORTER than the box; the box is flex:1 so a tall empty area still pushed the strip up.
+     Sizing to content (flex:0 1 auto + margin-top:auto) parks it directly on top of the bar. */
+  .addsheet-body { flex:0 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; justify-content:flex-end; gap:6px; padding-bottom:8px; margin-top:auto; }
   .addsheet-foot { flex:none; display:flex; flex-direction:column; gap:8px; }
   .addsheet-barrow { display:flex; gap:8px; align-items:center; }
   .addcatlbl { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:10px 2px 2px; }
@@ -786,7 +792,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.37";
+const APP_VERSION = "v1.38";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1727,8 +1733,9 @@ if(typeof window!=="undefined"){
     const onVV=()=>{ kbOffset = kbActive ? Math.max(0, window.innerHeight - vv.height) : 0; applyKb(); };
     vv.addEventListener("resize", onVV); vv.addEventListener("scroll", onVV);
     document.addEventListener("focusin", e=>{ const t=e.target; if(t && (t.tagName==="TEXTAREA" || t.tagName==="INPUT")){ kbActive=true; onVV();
-      // belt-and-braces: if iOS still scrolled the page to reveal the input, undo it — the sheet is already fully visible.
-      setTimeout(()=>{ window.scrollTo(0,0); onVV(); }, 60); } });
+      // v1.38: iOS settles the keyboard/viewport over a few frames — re-pin across that window so the
+      // sheet lands correctly however long the animation takes (a single scrollTo was too weak).
+      [60,160,320,500].forEach(ms=>setTimeout(onVV, ms)); } });
     document.addEventListener("focusout", ()=>{ kbActive=false; kbOffset=0; applyKb(); });
   }
   document.addEventListener("click", (e)=>{
@@ -2197,9 +2204,9 @@ function addEditPanel(){
       <button class="catchip" data-ae-addsub="${it.id}" style="border-style:dashed;font-weight:800">＋ New</button>
     </div>` : ""}` : ""}
     <div class="addedit-actions">
-      <button class="addedit-more" data-ae-more="${it.id}">⋯ More</button>
+      <button class="addedit-more" data-ae-again="${it.id}">Buy again</button>
       <button class="addedit-remove" data-ae-remove="${it.id}">Remove</button>
-      <button class="addedit-done" id="addEditDone">Done</button>
+      <button class="addedit-done" id="addEditDone">Save</button>
     </div>
   </div>`;
 }
@@ -2223,10 +2230,26 @@ function wireAddEdit(){
   app.querySelectorAll("[data-ae-remove]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const id=b.dataset.aeRemove; const it=state.items.find(i=>i.id===id);
     if(it){ baForget(it.name, it.cat); state.buyAgain=state.buyAgain.filter(x=>!(x.name===it.name && x.cat===it.cat)); }   // v1.37 item 6
     state.items=state.items.filter(i=>i.id!==id); addEditId=null; save(); refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }; });
-  app.querySelectorAll("[data-ae-more]").forEach(b=>b.onclick=()=>{ editItemById(b.dataset.aeMore); });   // v1.32: full edit sheet for anything deeper
+  // v1.38 item 3: "Buy again" adds the item to Regulars without leaving the add flow (replaces "⋯ More").
+  app.querySelectorAll("[data-ae-again]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{
+    const it=state.items.find(i=>i.id===b.dataset.aeAgain); if(!it) return;
+    const k=(it.name||"").toLowerCase()+"|"+it.cat;
+    if(state.baTomb) delete state.baTomb[k];
+    if(!state.buyAgain.some(x=>(x.name||"").toLowerCase()===(it.name||"").toLowerCase() && x.cat===it.cat)){
+      state.buyAgain.unshift({name:it.name, cat:it.cat, qty:it.qty||1, weight:it.weight||"", sub:it.sub||"", ts:Date.now()}); }
+    save(); showToast(cap(it.name)+" saved to Regulars");
+    const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }; });
   // v1.36 item 2: Done finishes the whole add flow and returns to the shop page — it no longer
   // just dismisses the panel back to another search view that needs a second Done.
-  const dn=app.querySelector("#addEditDone"); if(dn){ dn.onpointerdown=e=>e.preventDefault(); dn.onclick=()=>{ closeAddSheet(); }; }
+  // v1.38 item 3: Save closes the panel but STAYS in the add flow — the keyboard never drops and the
+  // caret lands after the trailing comma so the next item can be typed straight away.
+  const dn=app.querySelector("#addEditDone"); if(dn){ dn.onpointerdown=e=>e.preventDefault(); dn.onclick=()=>{
+    addEditId=null; addLastQuery="";
+    const mi=document.getElementById("mainInput");
+    if(mi){ mi.value=draftMain; grow(mi); mi.focus(); const end=(draftMain||"").length; try{ mi.setSelectionRange(end,end); }catch(e){} }
+    refreshAddBody();
+    const m2=document.getElementById("mainInput"); if(m2){ m2.focus(); const end=(draftMain||"").length; try{ m2.setSelectionRange(end,end); }catch(e){} }
+  }; }
 }
 // v1.35 item 2: drag the grab handle down to dismiss the add sheet (same feel as a native sheet).
 function wireAddSheetDrag(){
@@ -2310,7 +2333,28 @@ function syncZoomHeight(){ const z=document.getElementById("zoomer"); const bb=d
   applyKb(); }
 let kbOffset=0, kbActive=false;
 function applyKb(){ const bar=document.getElementById("botbar"); if(bar) bar.style.transform = kbOffset>1 ? `translateY(${-kbOffset}px)` : "";
-  const as=document.getElementById("addSheet"); if(as){ as.style.setProperty("--kb", (kbOffset>1?kbOffset:0)+"px"); as.classList.toggle("kbup", kbOffset>1); } }
+  const as=document.getElementById("addSheet"); if(as){ as.style.setProperty("--kb", (kbOffset>1?kbOffset:0)+"px"); as.classList.toggle("kbup", kbOffset>1); }
+  pinAddSheet(); }
+/* v1.38 item 3 — pin the add sheet to the VISUAL viewport.
+   Why JS and not CSS: position:fixed is resolved against the LAYOUT viewport. When the keyboard opens,
+   iOS scrolls the *visual* viewport to bring the focused input into view; the layout viewport doesn't
+   move, so every fixed element (our sheet and its scrim) slides up off the top of the screen — that is
+   precisely the reported bug (only the sheet's foot stayed visible, near the top). visualViewport
+   .offsetTop reports how far iOS scrolled, so adding it back into an explicit `top` cancels the shift.
+   Writing explicit top/height also sidesteps iOS's inconsistent dvh behaviour with the keyboard up. */
+function pinAddSheet(){
+  const as=document.getElementById("addSheet"); if(!as) return;
+  const bg=document.getElementById("addBg");
+  const vv=(typeof window!=="undefined") ? window.visualViewport : null;
+  if(!vv){ as.classList.remove("vvpin"); return; }             // no support → CSS fallback above
+  const gap=Math.max(20, Math.round(vv.height*0.06));          // sliver of the page left visible at the top
+  as.classList.add("vvpin");
+  as.style.top    = Math.round(vv.offsetTop + gap) + "px";
+  as.style.height = Math.max(180, Math.round(vv.height - gap)) + "px";
+  as.style.maxHeight = "none";
+  as.style.maxWidth = "480px";
+  if(bg){ bg.style.top = Math.round(vv.offsetTop) + "px"; bg.style.height = Math.round(vv.height) + "px"; }
+}
 function render(){
   ensureCats();
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
@@ -2395,8 +2439,11 @@ function wireQuickPanel(){
 const CALM_THEMES = new Set(["light","calm","ink","dark","mono"]);   // v1.37 all themes use the calm header
 function calmHead(cat, done, total, collapsed, attr, entryOpen){
   const pct = total ? Math.round(done/total*100) : 0;
+  // v1.38 item 6: show the category ICON when Category icons is on (every theme uses this header
+  // since v1.28, so the icon was never rendered anywhere); fall back to the colour dot when off.
+  const ic = catIcon(cat,16);
   return `<div class="chead"><button class="lbl catheadchip catcalm" ${attr}="${cat.id}">`
-    +`<span class="cdot" style="background:${cat.color}"></span>`
+    +(ic ? `<span class="cemoji">${ic}</span>` : `<span class="cdot" style="background:${cat.color}"></span>`)
     +`<span class="cname">${esc(cat.label)}</span>`
     +`<span class="cnum">${done}/${total}${collapsed?' ▸':''}</span></button>`
     +`<button class="plus" data-add="${cat.id}" style="${entryOpen?`background:${cat.color};color:#fff`:''}">${entryOpen?'×':'+'}</button></div>`
