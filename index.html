@@ -96,6 +96,35 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     --done-bg:#1B1E21; --done-line:#2C3136; --done-text:#6C7278; --done-edge:#3A4046;
     --glass-bg:rgba(19,22,24,.7); --glass-brd:rgba(255,255,255,.1); --glass-hi:rgba(255,255,255,.12);
   }
+  /* v1.37 "Calm" — light and happy, deliberately only three colours: warm white paper,
+     near-black bold ink, one warm coral accent. Everything else is a neutral grey. */
+  html[data-theme="calm"], body[data-theme="calm"]{
+    --ink:#22242A; --paper:#FDFBF7; --accent:#F2825C;
+    --card:#FFFFFF; --line:#ECE7E0; --chip:#F4F0EA; --muted:#8C8880; --muted2:#A5A099;
+    --btn:#22242A; --btn-text:#FFFFFF;
+    --done-bg:#F4F0EA; --done-line:#ECE7E0; --done-text:#A5A099; --done-edge:#CFC9C0;
+    --mic-img:url('img/mic-light.png');
+    --glass-bg:rgba(253,251,247,.72); --glass-brd:rgba(255,255,255,.7); --glass-hi:rgba(255,255,255,.85); --glass-blur:16px;
+  }
+  /* v1.37 "Ink" — true two-colour monochrome: black on white, greys only, no hue anywhere. */
+  html[data-theme="ink"], body[data-theme="ink"]{
+    --ink:#000000; --paper:#FFFFFF; --accent:#000000;
+    --card:#FFFFFF; --line:#D8D8D8; --chip:#F0F0F0; --muted:#6B6B6B; --muted2:#8E8E8E;
+    --btn:#000000; --btn-text:#FFFFFF;
+    --done-bg:#F4F4F4; --done-line:#E2E2E2; --done-text:#8E8E8E; --done-edge:#BDBDBD;
+    --mic-img:url('img/mic-light.png');
+    --glass-bg:rgba(255,255,255,.78); --glass-brd:rgba(0,0,0,.10); --glass-hi:rgba(255,255,255,.9); --glass-blur:16px;
+  }
+  /* v1.37 "Ink" is strictly two colours. Per-category colours live in the list data (not in theme
+     tokens) and the Finish CTA is a hardcoded green, so desaturate those specific elements. Scoped
+     to NON-fixed elements only — a filter on a fixed element's ancestor would become its containing
+     block and unpin the header/nav/sheets. The theme + wallpaper swatches stay colourful on purpose,
+     so you can still tell the pickers apart. */
+  html[data-theme="ink"] .pill, html[data-theme="ink"] .bapill, html[data-theme="ink"] .catheadchip,
+  html[data-theme="ink"] .cdot, html[data-theme="ink"] .cprog, html[data-theme="ink"] .cprog > i,
+  html[data-theme="ink"] .catchip, html[data-theme="ink"] .storechip,
+  html[data-theme="ink"] .sweepbtn, html[data-theme="ink"] .sweepbanner,
+  html[data-theme="ink"] .chk-tick, html[data-theme="ink"] .syncdot { filter:grayscale(1); }
   /* theme picker swatches */
   .themebtn{ display:flex; flex-direction:column; align-items:center; gap:5px; }
   .themesw{ width:100%; height:18px; border-radius:6px; border:1.5px solid; display:flex; align-items:center; justify-content:center; }
@@ -217,6 +246,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .dot { color:var(--accent); }
   .count { font-size:12px; color:var(--muted); font-weight:600; }
   .hcount { font-size:12px; font-weight:800; color:var(--accent); background:var(--chip); border-radius:999px; padding:3px 10px; white-space:nowrap; }
+  /* v1.37 item 7: the total sits dead-centre of the banner, independent of the title/sync widths */
+  .hcount-mid { position:absolute; left:50%; transform:translateX(-50%); }
+  header { position:relative; }
   .avatars { display:flex; }
   .av { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center;
     font-size:11px; font-weight:700; border:2px solid var(--paper); background:var(--chip); color:var(--ink); }
@@ -463,7 +495,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .shop .catheadchip { font-size:15px; padding:8px 14px; }
   .shop .plus, .shop .catadd, .shop #addCat, .shop .hint,
   .shop #collapseAll { display:none !important; }
-  .shop .pill.done { opacity:.5; }
+  /* v1.37 item 5: an in-cart tile keeps its shop-list identity (category edge + fill) and is simply
+     muted and struck through — it no longer collapses into an anonymous empty grey tile. The
+     more specific selector beats the base `.pill.done` !important border override. */
+  .shop .pill.done { opacity:.58; filter:grayscale(.45); border-left-color:var(--edge, var(--done-edge)) !important; }
   /* v1.22 compact tiles actually shrink in shop mode (previously overridden by .shop .pill) */
   .shop .zoomer.compact .pill { min-height:42px; font-size:14px; padding:0 12px; }
   .shop .zoomer.compact .pemoji { font-size:15px; }
@@ -751,7 +786,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.36";
+const APP_VERSION = "v1.37";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -844,6 +879,8 @@ function styl(){ return styles[optMode()] || (shopMode ? "normal" : "compact"); 
 function setStyle(s){ styles[optMode()]=s; localStorage.setItem("ml_styles", JSON.stringify(styles)); render(); }
 const THEMES = {
   light:    { dark:false, tc:"#F6F2E7" },
+  calm:     { dark:false, tc:"#FDFBF7" },   // v1.37 light, 3 colours
+  ink:      { dark:false, tc:"#FFFFFF" },   // v1.37 true black & white
   dark:     { dark:true,  tc:"#141C18" },
   mono:     { dark:true,  tc:"#16181A" }
 };
@@ -1819,7 +1856,10 @@ function saveEdit(){ if(!editing||!editing.name.trim()) return;
   editing=null; save(); render(); }
 function removeEditing(){ moveToBuyAgain([{name:editing.name,cat:editing.cat,qty:editing.qty||1,weight:editing.weight||"",sub:editing.sub||""}]);
   state.items = state.items.filter(i=>i.id!==editing.id); editing=null; save(); render(); }
-function deleteItemEditing(){ const prev=snapState(); const nm=editing.name; state.items = state.items.filter(i=>i.id!==editing.id); editing=null; save(); render(); showUndo(prev, esc(nm)+" deleted"); }
+function deleteItemEditing(){ const prev=snapState(); const nm=editing.name; const ct=editing.cat;
+  state.items = state.items.filter(i=>i.id!==editing.id);
+  baForget(nm, ct); state.buyAgain = state.buyAgain.filter(x=>!(x.name===nm && x.cat===ct));   // v1.37 item 6: Delete also drops it from Regulars ("Buy again" is the keep-it button)
+  editing=null; save(); render(); showUndo(prev, esc(nm)+" deleted"); }
 
 /* buy-again edit */
 function saveBA(){ const nm=(editing.name||"").trim(); if(!nm) return; const cat=editing.cat; const qty=Math.max(1,editing.qty||1);
@@ -2180,7 +2220,9 @@ function wireAddEdit(){
   app.querySelectorAll("[data-ae-sub]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const p=b.dataset.aeSub.split("|"), id=p[0], sub=p[1]||null; const it=state.items.find(i=>i.id===id); if(it){ it.sub=sub; touch(it); refreshAddBody(); } }; });
   app.querySelectorAll("[data-ae-addcat]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.aeAddcat); if(!it) return; const nm=prompt("New category name:",""); if(nm&&nm.trim()){ const cid=makeCategory(nm); if(cid){ it.cat=cid; it.sub=null; touch(it); refreshAddBody(); } } });
   app.querySelectorAll("[data-ae-addsub]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.aeAddsub); if(!it) return; const nm=prompt("New subcategory name:",""); if(nm&&nm.trim()){ const sid=makeSub(it.cat,nm); if(sid){ it.sub=sid; touch(it); refreshAddBody(); } } });
-  app.querySelectorAll("[data-ae-remove]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const id=b.dataset.aeRemove; state.items=state.items.filter(i=>i.id!==id); addEditId=null; save(); refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }; });
+  app.querySelectorAll("[data-ae-remove]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const id=b.dataset.aeRemove; const it=state.items.find(i=>i.id===id);
+    if(it){ baForget(it.name, it.cat); state.buyAgain=state.buyAgain.filter(x=>!(x.name===it.name && x.cat===it.cat)); }   // v1.37 item 6
+    state.items=state.items.filter(i=>i.id!==id); addEditId=null; save(); refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }; });
   app.querySelectorAll("[data-ae-more]").forEach(b=>b.onclick=()=>{ editItemById(b.dataset.aeMore); });   // v1.32: full edit sheet for anything deeper
   // v1.36 item 2: Done finishes the whole add flow and returns to the shop page — it no longer
   // just dismisses the panel back to another search view that needs a second Done.
@@ -2314,10 +2356,15 @@ function subIndexOf(it){ const c=CAT(it.cat); if(!c||!c.subs||!c.subs.length) re
 function bySortKey(a,b){ const ca=catIndexOf(a.cat), cb=catIndexOf(b.cat); if(ca!==cb) return ca-cb; const sa=subIndexOf(a), sb=subIndexOf(b); if(sa!==sb) return sa-sb; return (a.name||"").localeCompare(b.name||""); }
 function subKey(it){ return it.cat + "|" + subIndexOf(it); }
 function pillHTML(i, cat){
-  const checked=i.checked; const full=fillMode()==="full"&&!checked;
-  const edge = checked ? 'var(--done-edge)' : cat.color;
-  const qcol = full ? '#fff' : (checked ? 'var(--muted2)' : cat.color);
-  const style = full ? `background:${cat.color};border:1.5px solid ${cat.color};color:#fff` : `border-left:4px solid ${edge}`;
+  // v1.37 item 5: a checked (in-cart) item renders EXACTLY like it does on the shop list — same
+  // fill, same category edge, same meta colour. `.pill.done` then greys + strikes it, so it reads
+  // as "bought" without collapsing into an anonymous empty tile.
+  const checked=i.checked; const full=fillMode()==="full";
+  const edge = cat.color;
+  const qcol = full ? '#fff' : cat.color;
+  // --edge carries the category colour so `.shop .pill.done` can keep it (the base `.pill.done`
+  // rule forces border-left-color to grey with !important, which is what flattened cart tiles).
+  const style = `--edge:${cat.color};` + (full ? `background:${cat.color};border:1.5px solid ${cat.color};color:#fff` : `border-left:4px solid ${edge}`);
   const meta = `${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)}</span>`:""}`;
   const marks = `${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}${(!checked&&i.starred)?`<span style="color:${full?'#fff':'#E8A91D'};margin-right:1px">★</span>`:""}`;
   // v1.20 unified row anatomy (shared with regPill): emoji · name, then qty/weight pushed to the right.
@@ -2345,7 +2392,7 @@ function wireQuickPanel(){
   app.querySelectorAll("[data-qm-edit]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.qmEdit); if(it){ quickEdit=null; editing={kind:"item", ...it}; render(); } });
 }
 // A26 — calmer category header + per-aisle progress bar, used only by the midnight/market/mono themes.
-const CALM_THEMES = new Set(["light","dark","mono"]);   // v1.28 the three remaining themes
+const CALM_THEMES = new Set(["light","calm","ink","dark","mono"]);   // v1.37 all themes use the calm header
 function calmHead(cat, done, total, collapsed, attr, entryOpen){
   const pct = total ? Math.round(done/total*100) : 0;
   return `<div class="chead"><button class="lbl catheadchip catcalm" ${attr}="${cat.id}">`
@@ -2500,8 +2547,8 @@ function renderMain(){
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <button class="backbtn" id="toLists" aria-label="Back to lists" style="font-size:20px;line-height:1;padding:4px 12px">‹</button>
           <span class="title disp">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="dot">.</span></span>
-          ${open>0?`<span class="hcount">${open} to buy</span>`:""}
         </div>
+        ${open>0?`<span class="hcount hcount-mid">${open} to buy</span>`:""}
         <div style="display:flex;align-items:center;gap:8px">
           ${syncChip()}
         </div>
@@ -3109,9 +3156,10 @@ function optionsBody(){
   if(curSort==="ai" && !aiSortOK()) curSort="location";
   return `
     ${sect("Appearance")}
-    ${row("Theme", `<div class="seg segfull" style="flex-wrap:wrap"><button data-opt-theme="light" class="themebtn ${theme==='light'?'on':''}"><span class="themesw" style="background:#F6F2E7;border-color:#DAD3C0"><i style="background:#D2542B"></i></span>Light</button><button data-opt-theme="dark" class="themebtn ${theme==='dark'?'on':''}"><span class="themesw" style="background:#141C18;border-color:#33433B"><i style="background:#E2502C"></i></span>Dark</button><button data-opt-theme="mono" class="themebtn ${theme==='mono'?'on':''}"><span class="themesw" style="background:#16181A;border-color:#2C3136"><i style="background:#5FD0B0"></i></span>Mono</button></div>`)}
+    ${rowNL("Theme", `<div class="seg segfull" style="flex-wrap:wrap"><button data-opt-theme="light" class="themebtn ${theme==='light'?'on':''}"><span class="themesw" style="background:#F6F2E7;border-color:#DAD3C0"><i style="background:#D2542B"></i></span>Light</button><button data-opt-theme="calm" class="themebtn ${theme==='calm'?'on':''}"><span class="themesw" style="background:#FDFBF7;border-color:#ECE7E0"><i style="background:#F2825C"></i></span>Calm</button><button data-opt-theme="ink" class="themebtn ${theme==='ink'?'on':''}"><span class="themesw" style="background:#FFFFFF;border-color:#D8D8D8"><i style="background:#000000"></i></span>Ink</button><button data-opt-theme="dark" class="themebtn ${theme==='dark'?'on':''}"><span class="themesw" style="background:#141C18;border-color:#33433B"><i style="background:#E2502C"></i></span>Dark</button><button data-opt-theme="mono" class="themebtn ${theme==='mono'?'on':''}"><span class="themesw" style="background:#16181A;border-color:#2C3136"><i style="background:#5FD0B0"></i></span>Mono</button></div>`)}
     ${row("Wallpaper", `<div class="wallrow">${[{v:"",label:"None"},{v:"wall-1"},{v:"wall-2"},{v:"wall-3"},{v:"wall-4"}].map(w=>`<button data-opt-wall="${w.v}" class="wallbtn ${wall===w.v?'on':''}" style="${w.v?`background-image:url('img/${w.v}-${wallPos}.jpg');background-position:center ${wallPos==='bottom'?'bottom':'top'}`:''}">${w.label||''}</button>`).join("")}</div>`)}
     ${wall ? row("Wallpaper items", `<div class="seg"><button data-opt-wallpos="top" class="${wallPos==='top'?'on':''}">Top</button><button data-opt-wallpos="bottom" class="${wallPos==='bottom'?'on':''}">Bottom</button></div>`) : ""}
+    ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
     ${view!=="lists" ? `<div class="optrow optrow-wide optnl"><span class="optlabel">Tile display</span><div class="optwide">
       <div class="tdlist">
         <button class="tdopt ${dispBase()==='list'?'on':''}" data-tiledisp="list"><span class="tdprev ${catOn?'tdprev-listcat':'tdprev-list'}">${catOn?'<b></b><i></i><i></i>':'<i></i><i></i><i></i>'}</span><span class="tdlabel">List</span></button>
@@ -3122,10 +3170,8 @@ function optionsBody(){
     ${rowNL("Group by category", `<div class="seg"><button data-opt-caton="1" class="${catOn?'on':''}">On</button><button data-opt-caton="0" class="${!catOn?'on':''}">Off</button></div>`)}
     ${catOn ? rowNL("Group by subcategory", `<div class="seg"><button data-opt-subon="1" class="${subOn?'on':''}">On</button><button data-opt-subon="0" class="${!subOn?'on':''}">Off</button></div>`) : ""}` : ""}
     ${rowNL("Tile appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}"><span class="tdswatch" style="background:var(--accent)"></span>Full</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}"><span class="tdswatch" style="border:1.5px solid var(--muted2)"></span>Empty</button></div>`)}
-    ${(view!=="lists") ? rowNL("Tile style", `<div class="seg"><button data-opt-style="compact" class="${styl()==='compact'?'on':''}">Compact</button><button data-opt-style="normal" class="${styl()==='normal'?'on':''}">Normal</button></div>`) : ""}
     ${rowNL("Category icons", `<div class="seg"><button data-opt-catemoji="1" class="${catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">🥦</span>On</button><button data-opt-catemoji="0" class="${!catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
     ${row("Item icons", `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">🍞</span>On</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
-    ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
     ${sect("Sort")}
     ${rowNL("Location", `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">On</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">Off</button></div>`)}
     <div class="optrow optrow-wide optnl"><span class="optlabel">Store</span><div class="optwide">
