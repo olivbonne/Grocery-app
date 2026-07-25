@@ -670,7 +670,13 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     background:var(--card); color:var(--muted); font-weight:700; font-size:14.5px; text-align:left;
     box-shadow:0 10px 26px rgba(20,30,22,.22); }
   .addpill svg { flex:none; }
-  .addsheet { height:92dvh; max-height:92dvh; display:flex; flex-direction:column; padding-bottom:calc(10px + env(safe-area-inset-bottom)); }
+  /* v1.36 item 3 — THE fix for "can't see the top of the sheet": the sheet must fit ENTIRELY in the
+     space above the keyboard. Previously it stayed 92dvh tall and bottom-anchored, so with the keyboard
+     up its lower half sat behind the keyboard; iOS then force-scrolled the whole visual viewport to
+     reveal the focused input, dragging the sheet's top off-screen. Shrinking by --kb AND lifting by
+     --kb keeps the input inside the visible band, so iOS has no reason to scroll at all. */
+  .addsheet { height:calc(92dvh - var(--kb,0px)); max-height:calc(92dvh - var(--kb,0px)); margin-bottom:var(--kb,0px);
+    display:flex; flex-direction:column; padding-bottom:calc(10px + env(safe-area-inset-bottom)); }
   .addsheet.kbup { padding-bottom:0; }   /* v1.31 with the keyboard up, the search bar sits flush on it (no dark gap) */
   .addsheet-head { display:flex; gap:8px; align-items:flex-start; }
   .addsheet-done { flex:none; border:none; background:var(--btn); color:var(--btn-text); font-weight:800; font-size:14px; padding:11px 16px; border-radius:14px; }
@@ -680,8 +686,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .addsheet-grab .grabbar { width:36px; height:5px; border-radius:3px; background:var(--line); }
   /* v1.30 results scroll above; the search bar (foot) pins at the bottom and rises with the keyboard (--kb).
      v1.35 item 3: justify-content:flex-end docks short content (search strip / edit panel) flush above the bar. */
-  .addsheet-body { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; justify-content:flex-end; gap:6px; padding-bottom:calc(12px + var(--kb,0px)); }
-  .addsheet-foot { flex:none; display:flex; flex-direction:column; gap:8px; transform:translateY(calc(-1 * var(--kb,0px))); transition:transform .18s ease; }
+  /* v1.36: the sheet itself is now sized/lifted for the keyboard (above), so the body no longer pads
+     by --kb and the foot no longer translates — it just sits at the bottom of the shrunken sheet. */
+  .addsheet-body { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; justify-content:flex-end; gap:6px; padding-bottom:12px; }
+  .addsheet-foot { flex:none; display:flex; flex-direction:column; gap:8px; }
   .addsheet-barrow { display:flex; gap:8px; align-items:center; }
   .addcatlbl { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:10px 2px 2px; }
   /* v1.31 clean solid search pill (matches the reference) — sits flush above the keyboard */
@@ -743,7 +751,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.35";
+const APP_VERSION = "v1.36";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1411,7 +1419,7 @@ let addOpen=false, addTab="reg", _addScrollY=0;
 // v1.32 inline edit-item panel shown above the search bar after picking an item.
 // addEditPrefix (v1.35) is the fixed text before this pick's contribution, so the search
 // bar can be re-synced to "Name qty× weight, " on every live edit without re-parsing.
-let addEditId=null, addEditPrefix="";
+let addEditId=null, addEditPrefix="", addLastQuery="";
 // v1.11 done-shopping dialog
 let finishOpen=false;
 // A18 ✨ Smart add (planning-mode AI parse → preview → confirm)
@@ -1676,9 +1684,14 @@ if(typeof window!=="undefined"){
   window.addEventListener("offline", ()=>{ netOnline=false; render(); });
   if(window.visualViewport){
     const vv=window.visualViewport;
-    const onVV=()=>{ kbOffset = kbActive ? Math.max(0, window.innerHeight - (vv.height + vv.offsetTop)) : 0; applyKb(); };
+    // v1.36 item 3: the keyboard's height is innerHeight - vv.height. The old formula also subtracted
+    // vv.offsetTop (how far iOS has scrolled the visual viewport), which UNDER-reported the keyboard
+    // exactly when iOS had scrolled — so the sheet never got lifted far enough and its top stayed off-screen.
+    const onVV=()=>{ kbOffset = kbActive ? Math.max(0, window.innerHeight - vv.height) : 0; applyKb(); };
     vv.addEventListener("resize", onVV); vv.addEventListener("scroll", onVV);
-    document.addEventListener("focusin", e=>{ const t=e.target; if(t && (t.tagName==="TEXTAREA" || t.tagName==="INPUT")){ kbActive=true; onVV(); } });
+    document.addEventListener("focusin", e=>{ const t=e.target; if(t && (t.tagName==="TEXTAREA" || t.tagName==="INPUT")){ kbActive=true; onVV();
+      // belt-and-braces: if iOS still scrolled the page to reveal the input, undo it — the sheet is already fully visible.
+      setTimeout(()=>{ window.scrollTo(0,0); onVV(); }, 60); } });
     document.addEventListener("focusout", ()=>{ kbActive=false; kbOffset=0; applyKb(); });
   }
   document.addEventListener("click", (e)=>{
@@ -2016,20 +2029,32 @@ function addPillHTML(m){
 // single horizontally-scrolling row of the app's literal item pills — same look as the real
 // list (tile appearance / style / icons / text size), no category grouping.
 function addSheetRows(){
-  const frag=addFrag(), f=frag.toLowerCase();
+  // v1.36 item 9: while the edit panel is open the live fragment is empty (the bar shows the picked
+  // item), so fall back to the query that produced these results — the pills stay put until Done.
+  const frag = addEditId ? addLastQuery : addFrag();
+  const f = frag.toLowerCase();
   if(!frag) return "";
   const segs=(draftMain||"").split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
   const p=parseEntry(frag);
   const lbl= segs.length>1 ? `Add ${segs.length} items` : `Add “${(p.qty>1?p.qty+"× ":"")+(p.weight?esc(p.weight)+" ":"")+esc(cap(p.name))}”`;
-  const typed = `<button class="pill" data-add-typed style="border:1.5px dashed var(--accent);color:var(--accent);background:transparent">${esc(lbl)}</button>`;
+  // the "Add …" pill is a commit action for what's typed — meaningless while the edit panel owns the bar
+  const typed = addEditId ? "" : `<button class="pill" data-add-typed style="border:1.5px dashed var(--accent);color:var(--accent);background:transparent">${esc(lbl)}</button>`;
   const ms=addMatches(f);
   const cells = typed + ms.map(addPillHTML).join("");
   return `<div class="shop addstrip-wrap"><div class="zoomer ${styl()}${dispBase()==='small'?' smalltile':''}${dispBase()==='large'?(' gridmode grid'+largeCols()):''}" style="transform:scale(${dens()});transform-origin:top left"><div class="addstrip">${cells}</div></div></div>`;
 }
+/* v1.36 item 9: when an item is picked, the "Edit item" panel stacks ABOVE the result pills and the
+   pills stay on screen (until Done), instead of the panel replacing them. Order top→bottom:
+   [edit panel] [pill strip] [search bar]. */
+function addBodyHTML(){
+  const strip = addSheetRows();
+  if(!addEditId) return strip;
+  return addEditPanel() + strip;
+}
 function addSheet(){
   return `<div class="sheet-bg" id="addBg"><div class="sheet addsheet" id="addSheet">
     <div class="addsheet-grab" id="addGrab" aria-hidden="true"><span class="grabbar"></span></div>
-    <div class="addsheet-body" id="addSheetBody">${addEditId?addEditPanel():addSheetRows()}</div>
+    <div class="addsheet-body" id="addSheetBody">${addBodyHTML()}</div>
     <div class="addsheet-foot">
       <div class="addsheet-barrow">
         ${smartOn()?`<button class="smartbtn" id="smartBtn" aria-label="Smart add" title="Smart add — turn a list or a whole recipe into items">✨</button>`:""}
@@ -2044,7 +2069,7 @@ function addSheet(){
 }
 function addKeepScroll(fn){ const sb=document.getElementById("addSheetBody"); _addScrollY=sb?sb.scrollTop:0; fn();
   const s2=document.getElementById("addSheetBody"); if(s2) s2.scrollTop=_addScrollY; }
-function refreshAddBody(){ const sb=document.getElementById("addSheetBody"); if(!sb) return; sb.innerHTML=addEditId?addEditPanel():addSheetRows(); wireAddRows(); wireAddEdit();
+function refreshAddBody(){ const sb=document.getElementById("addSheetBody"); if(!sb) return; sb.innerHTML=addBodyHTML(); wireAddRows(); wireAddEdit();
   const inp=document.getElementById("mainInput"); if(inp){ inp.placeholder = addEditId?"Next item…":"Add item…"; } }
 function removeFromList(id){ const it=state.items.find(i=>i.id===id); if(!it) return; playPlan(false);   // v1.14 add-sheet "unselect"
   state.items=state.items.filter(i=>i.id!==id); save(); render(); }
@@ -2053,7 +2078,9 @@ function editItemById(id){ const it=state.items.find(i=>i.id===id); if(!it) retu
 // v1.32/v1.34/v1.35: after picking a result, show its full edit-item details inline above the
 // search bar (keyboard stays up). The bar mirrors "Name qty× weight, " and re-syncs on every
 // live edit (syncAddEditInput) so typing after it continues the next fragment.
-function openAddEdit(id){ const it=state.items.find(i=>i.id===id); if(!it) return; addEditId=id;
+function openAddEdit(id){ const it=state.items.find(i=>i.id===id); if(!it) return;
+  addLastQuery = addEditId ? addLastQuery : addFrag();   // v1.36 item 9: keep the pills that produced this pick
+  addEditId=id;
   const v=draftMain||""; const i=Math.max(v.lastIndexOf(","), v.lastIndexOf("\n"));
   addEditPrefix = i>=0 ? v.slice(0,i+1)+" " : "";
   syncAddEditInput(it);
@@ -2155,7 +2182,9 @@ function wireAddEdit(){
   app.querySelectorAll("[data-ae-addsub]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.aeAddsub); if(!it) return; const nm=prompt("New subcategory name:",""); if(nm&&nm.trim()){ const sid=makeSub(it.cat,nm); if(sid){ it.sub=sid; touch(it); refreshAddBody(); } } });
   app.querySelectorAll("[data-ae-remove]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const id=b.dataset.aeRemove; state.items=state.items.filter(i=>i.id!==id); addEditId=null; save(); refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }; });
   app.querySelectorAll("[data-ae-more]").forEach(b=>b.onclick=()=>{ editItemById(b.dataset.aeMore); });   // v1.32: full edit sheet for anything deeper
-  const dn=app.querySelector("#addEditDone"); if(dn){ dn.onpointerdown=e=>e.preventDefault(); dn.onclick=()=>{ addEditId=null; refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }; }
+  // v1.36 item 2: Done finishes the whole add flow and returns to the shop page — it no longer
+  // just dismisses the panel back to another search view that needs a second Done.
+  const dn=app.querySelector("#addEditDone"); if(dn){ dn.onpointerdown=e=>e.preventDefault(); dn.onclick=()=>{ closeAddSheet(); }; }
 }
 // v1.35 item 2: drag the grab handle down to dismiss the add sheet (same feel as a native sheet).
 function wireAddSheetDrag(){
@@ -2170,18 +2199,21 @@ function wireAddSheetDrag(){
     dy=0; };
   grab.onpointerup=end; grab.onpointercancel=end;
 }
+// v1.36: one exit path for the add flow — always lands back on the shop page with nothing left over.
+function closeAddSheet(){ addOpen=false; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain=""; render(); }
 function wireAddSheet(){
   if(!addOpen) return;
   wireAddBar();
-  const bg=app.querySelector("#addBg"); if(bg) bg.onclick=e=>{ if(e.target===bg){ addOpen=false; addEditId=null; render(); } };
-  const dn=app.querySelector("#addDone"); if(dn) dn.onclick=()=>{ addOpen=false; addEditId=null; render(); };
+  const bg=app.querySelector("#addBg"); if(bg) bg.onclick=e=>{ if(e.target===bg) closeAddSheet(); };
+  const dn=app.querySelector("#addDone"); if(dn) dn.onclick=()=>closeAddSheet();
   wireAddRows();
   wireAddEdit();
   wireAddSheetDrag();
 }
-function openAdd(){ addTab="reg"; addOpen=true; addEditId=null;
+// v1.36 item 10: reopening the search bar always starts blank — no leftover text from the last session.
+function openAdd(){ addTab="reg"; addOpen=true; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain="";
   if(curPageIdx()===0){ gotoPage(1); } else { render(); }
-  const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }
+  const mi=document.getElementById("mainInput"); if(mi){ mi.value=""; mi.focus(); } }
 function startMic(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if(!SR){ showToast("Voice input isn't supported here — tap the 🎤 on your keyboard instead"); return; }
@@ -2490,7 +2522,7 @@ function renderMain(){
     </div></div>
   </div>
   ${checkedBar}
-  ${(state.items.length>0 && !addOpen)?`<div class="addpill-wrap" id="shopAddFabWrap"><button class="addpill" id="shopAddFab"><span class="addpill-ic" aria-hidden="true">${SEARCH_SVG}</span><span class="addpill-ph">Add item…</span></button></div>`:""}
+  ${!addOpen?`<div class="addpill-wrap" id="shopAddFabWrap"><button class="addpill" id="shopAddFab"><span class="addpill-ic" aria-hidden="true">${SEARCH_SVG}</span><span class="addpill-ph">Add item…</span></button></div>`:""}${/* v1.36 item 4: search bar shows even on an empty list */""}
   ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:true,setId:"setNav"})}
   ${addOpen?addSheet():""}
   ${finishOpen?finishSheet():""}
