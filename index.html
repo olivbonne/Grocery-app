@@ -873,6 +873,17 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.32/v1.35 inline "Edit item" panel above the search bar */
   .addedit { display:flex; flex-direction:column; gap:12px; padding:4px 2px 2px; }
   .addedit-flags { display:flex; gap:6px; }
+  /* v1.44 item 5: a native <select> opens the iOS picker wheel, which dismisses the keyboard and
+     reflows the whole sheet mid-edit. A scrolling chip row keeps focus — and the keyboard — where it is. */
+  .wsel { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px; scrollbar-width:none; }
+  .wsel::-webkit-scrollbar { display:none; }
+  .wchip { flex:none; border:1.5px solid var(--line); background:var(--chip); color:var(--text);
+    font-weight:700; font-size:13px; padding:8px 12px; border-radius:999px; white-space:nowrap; }
+  /* the two common weights the old <select> starred. An accent-tinted border marks them without
+     stealing the "selected" look — dashed would have read as provisional, which is what a dashed
+     line means everywhere else in this app. */
+  .wchip-hl { border-color:var(--accent); }
+  .wchip.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
   .addedit-actions { display:flex; gap:8px; margin-top:4px; }
   .addedit-more { flex:none; border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:14px; padding:11px 14px; border-radius:12px; }
   .addedit-remove { flex:none; border:1.5px solid #C24A33; background:transparent; color:#C24A33; font-weight:700; font-size:14px; padding:11px 14px; border-radius:12px; }
@@ -919,7 +930,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.43";
+const APP_VERSION = "v1.44";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1652,6 +1663,28 @@ function setSmart(on){ _smart = on?"1":"0"; localStorage.setItem("ml_smart", _sm
 let optOpen=false, listsOpen=false, settingsFrom=1;   // settingsFrom: page the Settings tab was opened from (for the ‹ back slide)
 // v1.10 bottom-first add sheet
 let addOpen=false, addTab="reg", _addScrollY=0;
+/* v1.44 item 5: focusing the search bar makes iOS scroll the page underneath to reveal the input, so
+   the shop list is somewhere else when the sheet closes. position:fixed on <body> freezes it; the
+   saved offset is restored on close. The fixed chrome still resolves against the viewport (body is
+   not transformed), so nothing else moves. */
+let _lockY=0, _locked=false;
+function lockPageScroll(){ if(_locked) return; _locked=true; _lockY=window.scrollY||window.pageYOffset||0;
+  const b=document.body.style; b.position="fixed"; b.top=(-_lockY)+"px"; b.left="0"; b.right="0"; b.width="100%"; }
+function unlockPageScroll(){ if(!_locked) return; _locked=false;
+  const b=document.body.style; b.position=""; b.top=""; b.left=""; b.right=""; b.width="";
+  window.scrollTo(0,_lockY); }
+/* v1.44 item 5: everything added while the sheet is open is provisional. The return key keeps it;
+   Cancel (button, scrim tap, swipe-down) takes it all back off the list. Only ids CREATED during this
+   session are tracked, so an item that was already on the list before you opened the sheet is never
+   removed by a cancel.
+   Tradeoff: addEntries/addFromRegular call save(), so a staged item does sync to the household
+   briefly and a cancel syncs the removal. Deferring save() would be a state-schema change. */
+let addStaged=[];
+function stageAdds(fn){
+  const before=new Set(state.items.map(i=>i.id));
+  fn();
+  state.items.forEach(i=>{ if(!before.has(i.id) && !addStaged.includes(i.id)) addStaged.push(i.id); });
+}
 // v1.32 inline edit-item panel shown above the search bar after picking an item.
 // addEditPrefix (v1.35) is the fixed text before this pick's contribution, so the search
 // bar can be re-synced to "Name qty× weight, " on every live edit without re-parsing.
@@ -2328,12 +2361,23 @@ function addSheet(){
 }
 function addKeepScroll(fn){ const sb=document.getElementById("addSheetBody"); _addScrollY=sb?sb.scrollTop:0; fn();
   const s2=document.getElementById("addSheetBody"); if(s2) s2.scrollTop=_addScrollY; }
-function refreshAddBody(){ const sb=document.getElementById("addSheetBody"); if(!sb) return; sb.innerHTML=addBodyHTML(); wireAddRows(); wireAddEdit();
-  const inp=document.getElementById("mainInput"); if(inp){ inp.placeholder = addEditId?"Next item…":"Add item…"; } }
+/* v1.44 item 5: a qty/weight tap re-renders the body, which used to reset the panel's scroll to the
+   top and blur the search bar — the panel jumped and the keyboard dropped. Keep both: restore the
+   scroll offset, and re-focus the bar only if it held focus before the write. */
+function refreshAddBody(){ const sb=document.getElementById("addSheetBody"); if(!sb) return;
+  const keepY=sb.scrollTop;
+  const wasFocused = document.activeElement && document.activeElement.id==="mainInput";
+  sb.innerHTML=addBodyHTML(); wireAddRows(); wireAddEdit();
+  const s2=document.getElementById("addSheetBody"); if(s2) s2.scrollTop=keepY;
+  const inp=document.getElementById("mainInput"); if(inp){ inp.placeholder = addEditId?"Next item…":"Add item…";
+    if(wasFocused){ inp.focus(); const end=(inp.value||"").length; try{ inp.setSelectionRange(end,end); }catch(e){} } } }
 function removeFromList(id){ const it=state.items.find(i=>i.id===id); if(!it) return; playPlan(false);   // v1.14 add-sheet "unselect"
   state.items=state.items.filter(i=>i.id!==id); save(); render(); }
 function editItemById(id){ const it=state.items.find(i=>i.id===id); if(!it) return;                     // open the full edit menu (as on the shopping page)
-  addOpen=false; quickEdit=null; editing={kind:"item", ...it}; render(); }
+  /* v1.44 item 5: leaving the sheet for the full edit menu is not a Cancel — keep what was added, and
+     go through the shared teardown so the body scroll lock is released. */
+  if(addOpen) commitAddSheet(); else addOpen=false;
+  quickEdit=null; editing={kind:"item", ...it}; render(); }
 // v1.32/v1.34/v1.35: after picking a result, show its full edit-item details inline above the
 // search bar (keyboard stays up). The bar mirrors "Name qty× weight, " and re-syncs on every
 // live edit (syncAddEditInput) so typing after it continues the next fragment.
@@ -2369,18 +2413,18 @@ function wireAddRows(){
     };
   };
   app.querySelectorAll("[data-add-typed]").forEach(b=>press(b,
-    ()=>{ const t=(draftMain||"").trim(); if(t){ draftMain=""; playPlan(true); addEntries(t,null); } }, null, true));
+    ()=>{ const t=(draftMain||"").trim(); if(t){ draftMain=""; playPlan(true); stageAdds(()=>addEntries(t,null)); } }, null, true));
   app.querySelectorAll("[data-add-ba]").forEach(b=>{ const p=b.dataset.addBa.split("|"), cat=p.pop(), name=p.join("|");
-    const go=()=>{ addFromRegular(name,cat); const it=findItem(name,cat); if(it) openAddEdit(it.id); };   // v1.32 select → inline details above the bar
-    press(b, go, ()=>{ addFromRegular(name,cat); const it=findItem(name,cat); return it&&it.id; }); });
+    const go=()=>{ stageAdds(()=>addFromRegular(name,cat)); const it=findItem(name,cat); if(it) openAddEdit(it.id); };   // v1.32 select → inline details above the bar
+    press(b, go, ()=>{ stageAdds(()=>addFromRegular(name,cat)); const it=findItem(name,cat); return it&&it.id; }); });
   app.querySelectorAll("[data-add-dict]").forEach(b=>{ const p=b.dataset.addDict.split("|"), cat=p.pop(), name=p.join("|");
-    const go=()=>{ playPlan(true); addEntries(name,cat); const it=findItem(name,cat); if(it) openAddEdit(it.id); };
-    press(b, go, ()=>{ playPlan(true); addEntries(name,cat); const it=findItem(name,cat); return it&&it.id; }); });
+    const go=()=>{ playPlan(true); stageAdds(()=>addEntries(name,cat)); const it=findItem(name,cat); if(it) openAddEdit(it.id); };
+    press(b, go, ()=>{ playPlan(true); stageAdds(()=>addEntries(name,cat)); const it=findItem(name,cat); return it&&it.id; }); });
   app.querySelectorAll("[data-add-inc]").forEach(b=>{ const id=b.dataset.addInc;
     press(b, ()=>openAddEdit(id), ()=>id); });   // v1.32 on-list result: tap opens its details, long-press full edit
   app.querySelectorAll("[data-add-pred]").forEach(b=>{ const k=b.dataset.addPred;
-    const go=()=>{ predictAdd(k); const rec=purch[k]; const it=rec&&findItem(rec.name,rec.cat); if(it) openAddEdit(it.id); };
-    press(b, go, ()=>{ const rec=purch[k]; if(!rec) return null; predictAdd(k); const it=findItem(rec.name,rec.cat); return it&&it.id; }); });
+    const go=()=>{ stageAdds(()=>predictAdd(k)); const rec=purch[k]; const it=rec&&findItem(rec.name,rec.cat); if(it) openAddEdit(it.id); };
+    press(b, go, ()=>{ const rec=purch[k]; if(!rec) return null; stageAdds(()=>predictAdd(k)); const it=findItem(rec.name,rec.cat); return it&&it.id; }); });
 }
 // v1.32 the inline "Item Details" panel (shown above the search bar after a pick). Edits mutate the
 // real item and refresh only the results body, so the keyboard stays up for the next item.
@@ -2403,11 +2447,14 @@ function addEditPanel(){
     </div>
     <div style="display:flex;gap:6px;align-items:stretch">
       <div class="qstep" style="height:46px;align-items:center;flex:none;border:none;background:var(--chip)"><button data-ae-minus="${it.id}" aria-label="Less">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${it.qty||1}</span><button data-ae-plus="${it.id}" aria-label="More">+</button></div>
-      <select data-ae-weightsel="${it.id}" style="width:80px;flex:none;height:46px;padding:0 4px;border-radius:14px;border:none;background:var(--chip);color:var(--text);font-size:14px;font-weight:600;text-align:center;text-align-last:center">
-        ${W.map(w=>{ const hl=(w==="500g"||w==="1kg"); return `<option value="${w}" ${(it.weight||"")===w?'selected':''}>${w?(hl?'★ '+w:w):'unit'}</option>`; }).join("")}
-      </select>
       <input data-ae-name="${it.id}" value="${esc(it.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:15px" />
     </div>
+    ${/* v1.44 item 5: 500g and 1kg lead the row (after "unit"). The old <select> starred them because
+          they are the two people actually pick; in a scrolling row they would otherwise sit off-screen
+          to the right and need a swipe to reach. */""}
+    <div class="wsel" role="group" aria-label="Weight">${
+      ["","500g","1kg"].concat(W.filter(w=>w!=="" && w!=="500g" && w!=="1kg"))
+      .map(w=>`<button class="wchip ${(w==="500g"||w==="1kg")?'wchip-hl ':''}${(it.weight||"")===w?'on':''}" data-ae-weight="${it.id}|${esc(w)}">${w?esc(w):'unit'}</button>`).join("")}</div>
     <div class="addedit-flags">${flags.map(f=>{ const on=(it.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-ae-flag="${it.id}|${f.k}"><span aria-hidden="true">${f.emoji}</span>${f.label}</button>`; }).join("")}</div>
     <button class="editsec" data-ae-sechead="cat"><span class="editsec-l">Category</span><span class="editsec-v">${cat?`${catIcon(cat,14)} ${esc(cat.label)}`:'—'}<span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></button>
     ${editCatOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${catChips}<button class="catchip" data-ae-addcat="${it.id}" style="border-style:dashed;font-weight:800">＋ New</button></div>` : ""}
@@ -2430,13 +2477,18 @@ function wireAddEdit(){
   app.querySelectorAll("[data-ae-minus]").forEach(b=>b.onpointerdown=e=>e.preventDefault());
   app.querySelectorAll("[data-ae-minus]").forEach(b=>b.onclick=()=>{ const it=cur(); if(it){ it.qty=Math.max(1,(it.qty||1)-1); touch(it); refreshAddBody(); } });
   app.querySelectorAll("[data-ae-plus]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=cur(); if(it){ it.qty=(it.qty||1)+1; touch(it); refreshAddBody(); } }; });
-  app.querySelectorAll("[data-ae-weightsel]").forEach(s=>{ s.onchange=()=>{ const it=state.items.find(i=>i.id===s.dataset.aeWeightsel); if(it){ it.weight=s.value; touch(it); } }; });
+  app.querySelectorAll("[data-ae-weight]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{
+    const p=b.dataset.aeWeight.split("|"), id=p[0], w=p.slice(1).join("|");
+    const it=state.items.find(i=>i.id===id); if(it){ it.weight=w; touch(it); refreshAddBody(); } }; });
   app.querySelectorAll("[data-ae-flag]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const [id,k]=b.dataset.aeFlag.split("|"); const it=state.items.find(i=>i.id===id); if(it){ const t=Array.isArray(it.tags)?it.tags.slice():[]; const i=t.indexOf(k); if(i<0)t.push(k); else t.splice(i,1); it.tags=t; touch(it); refreshAddBody(); } }; });
   app.querySelectorAll("[data-ae-star]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=cur(); if(it){ it.starred=!it.starred; touch(it); refreshAddBody(); } }; });
   app.querySelectorAll("[data-ae-name]").forEach(inp=>{   // no refreshAddBody() per keystroke — would blur the input mid-typing
     inp.oninput=()=>{ const it=state.items.find(i=>i.id===inp.dataset.aeName); if(it){ it.name=inp.value; touch(it); } };
     inp.onblur=()=>refreshAddBody(); });
-  app.querySelectorAll("[data-ae-sechead]").forEach(b=>b.onclick=()=>{ if(b.dataset.aeSechead==='cat') editCatOpen=!editCatOpen; else editSubOpen=!editSubOpen; refreshAddBody(); });
+  /* v1.44 item 5: without the preventDefault the section header steals focus from #mainInput and the
+     keyboard drops mid-edit — every sibling control already guards against this. */
+  app.querySelectorAll("[data-ae-sechead]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
+    b.onclick=()=>{ if(b.dataset.aeSechead==='cat') editCatOpen=!editCatOpen; else editSubOpen=!editSubOpen; refreshAddBody(); }; });
   app.querySelectorAll("[data-ae-cat]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const [id,cid]=b.dataset.aeCat.split("|"); const it=state.items.find(i=>i.id===id); if(it){ it.cat=cid; it.sub=null; touch(it); refreshAddBody(); } }; });
   app.querySelectorAll("[data-ae-sub]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const p=b.dataset.aeSub.split("|"), id=p[0], sub=p[1]||null; const it=state.items.find(i=>i.id===id); if(it){ it.sub=sub; touch(it); refreshAddBody(); } }; });
   app.querySelectorAll("[data-ae-addcat]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.aeAddcat); if(!it) return; const nm=prompt("New category name:",""); if(nm&&nm.trim()){ const cid=makeCategory(nm); if(cid){ it.cat=cid; it.sub=null; touch(it); refreshAddBody(); } } });
@@ -2473,17 +2525,30 @@ function wireAddSheetDrag(){
   grab.onpointerdown=e=>{ dragging=true; startY=e.clientY; dy=0; sheet.style.transition="none"; try{ grab.setPointerCapture(e.pointerId); }catch(err){} };
   grab.onpointermove=e=>{ if(!dragging) return; dy=Math.max(0, e.clientY-startY); sheet.style.transform=`translateY(${dy}px)`; };
   const end=()=>{ if(!dragging) return; dragging=false; sheet.style.transition="transform .22s ease";
-    if(dy>90){ addOpen=false; addEditId=null; render(); }
+    if(dy>90){ closeAddSheet(); }   // v1.44 item 5: a swipe-down is a Cancel, same as the button
     else { sheet.style.transform="translateY(0)"; setTimeout(()=>{ if(sheet){ sheet.style.transition=""; sheet.style.transform=""; } },220); }
     dy=0; };
   grab.onpointerup=end; grab.onpointercancel=end;
 }
 // v1.36: one exit path for the add flow — always lands back on the shop page with nothing left over.
-function closeAddSheet(){ addOpen=false; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain="";
+/* v1.44 item 5: two ways out, and they mean opposite things. commitAddSheet() keeps what you added;
+   closeAddSheet() is Cancel and takes it back off. Everything else about the teardown is shared. */
+function commitAddSheet(){ addStaged=[]; endAddSheet(); }
+function closeAddSheet(){
+  if(addStaged.length){
+    const drop=new Set(addStaged);
+    state.items = state.items.filter(i=>!drop.has(i.id));
+    addStaged=[];
+    save();
+  }
+  endAddSheet();
+}
+function endAddSheet(){ addOpen=false; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain=""; addStaged=[];
   /* v1.40 item 1: the keyboard state and the pin cache belong to the sheet. Leaving kbOffset set meant
      the shop page's floating search pill stayed positioned for a keyboard that is no longer there —
      the reported "search bar is not always fixed to the correct position after going back". */
   kbActive=false; kbOffset=0; _pinLast="";
+  unlockPageScroll();
   render(); applyKb(); syncZoomHeight(); }
 function wireAddSheet(){
   if(!addOpen) return;
@@ -2495,7 +2560,7 @@ function wireAddSheet(){
   wireAddSheetDrag();
 }
 // v1.36 item 10: reopening the search bar always starts blank — no leftover text from the last session.
-function openAdd(){ addTab="reg"; addOpen=true; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain=""; _pinLast="";
+function openAdd(){ addTab="reg"; addOpen=true; lockPageScroll(); addStaged=[]; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain=""; _pinLast="";
   if(curPageIdx()===0){ gotoPage(1); } else { render(); }
   const mi=document.getElementById("mainInput"); if(mi){ mi.value=""; mi.focus(); } }
 function startMic(){
@@ -3681,16 +3746,21 @@ function wireAddBar(){
   const mc=app.querySelector("#mainClear");
   const toggleClear=(el,btn)=>{ if(btn) btn.classList.toggle("show", !!(el&&el.value.trim())); };
   const commit=(text)=>{ const t=(text||"").trim(); if(!t) return; draftMain=""; playPlan(true);
-    addKeepScroll(()=>addEntries(t,null));
+    addKeepScroll(()=>stageAdds(()=>addEntries(t,null)));
     const m2=document.getElementById("mainInput"); if(m2){ m2.value=""; m2.focus(); } };
   if(mi){ mi.value=draftMain; grow(mi); toggleClear(mi,mc);
     mi.oninput=()=>{ draftMain=mi.value; grow(mi); toggleClear(mi,mc); if(addEditId) addEditId=null; if(addOpen) refreshAddBody(); };   // v1.32 typing returns from the details panel to search
     mi.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault();
       /* v1.40 item 1: the keyboard's blue tick now finishes the whole add flow — commit whatever is
          typed, then land back on the shop page. It used to only commit and leave the sheet open. */
-      if(addOpen){ const t=(mi.value||"").trim();
-        if(t){ draftMain=""; playPlan(true); addEntries(t,null); }
-        closeAddSheet(); return; }
+      if(addOpen){
+        /* v1.44 item 5: the return key is the "I'm done" gesture — commit what's typed and land back on
+           the shop page. With the edit panel open the bar only MIRRORS the item that is already on the
+           list, so committing its text would add a duplicate; only the prefix typed before it is real. */
+        const raw = addEditId ? (addEditPrefix||"") : (mi.value||"");
+        const t = raw.trim().replace(/,\s*$/,"");
+        if(t){ draftMain=""; playPlan(true); stageAdds(()=>addEntries(t,null)); }
+        commitAddSheet(); return; }
       commit(mi.value); } };
     mi.onpaste=e=>{ const t=(e.clipboardData||window.clipboardData).getData("text");
       const looksLikeBlock = t && (t.indexOf("\n")>=0 || /\b(meat|fruit|vegetable|veg|fresh|bulk|asian|alcohol|health|others)\s*:/i.test(t) || t.split(",").length>2);
