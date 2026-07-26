@@ -821,7 +821,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      its foot stayed on screen. pinAddSheet writes explicit top/height that include
      visualViewport.offsetTop, which cancels that scroll exactly. These are fallbacks for the
      no-visualViewport case only. */
-  .addsheet { height:92dvh; max-height:92dvh;
+  /* v1.46: no fixed height — the sheet HUGS its content and only caps out at 92dvh. The fixed height
+     is what produced the big empty grey slab above the search bar whenever the keyboard was down or
+     the content was short. The scrim `.sheet-bg` is display:flex/align-items:flex-end, so with
+     height:auto the un-pinned fallback still sits on the bottom edge. */
+  .addsheet { max-height:92dvh;
     display:flex; flex-direction:column; padding-bottom:calc(10px + env(safe-area-inset-bottom)); }
   .addsheet.kbup { padding-bottom:0; }   /* v1.31 with the keyboard up, the search bar sits flush on it (no dark gap) */
   /* when JS pins it, the sheet positions itself rather than being laid out by the flex scrim */
@@ -834,7 +838,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      height (the shared `sheetup` only nudges 28px, which reads as sluggish stretched over 0.8s). */
   @keyframes addsheetup { from{ opacity:.4; transform:translateY(100%) } to{ opacity:1; transform:translateY(0) } }
   .sheet.addsheet { animation:addsheetup .8s cubic-bezier(.22,.61,.36,1) both; }
-  .addsheet.vvpin { transition:top .28s cubic-bezier(.22,.61,.36,1), height .28s cubic-bezier(.22,.61,.36,1); }
+  /* v1.46: pinAddSheet now writes bottom/max-height (bottom-anchored, content-sized), so those are
+     the properties that need easing — transitioning top/height no longer matches what JS writes. */
+  .addsheet.vvpin { transition:bottom .28s cubic-bezier(.22,.61,.36,1), max-height .28s cubic-bezier(.22,.61,.36,1); }
   @media (prefers-reduced-motion: reduce){ .sheet.addsheet { animation-duration:.01ms; } .addsheet.vvpin { transition:none; } }
   .addsheet-head { display:flex; gap:8px; align-items:flex-start; }
   .addsheet-done { flex:none; border:none; background:var(--btn); color:var(--btn-text); font-weight:800; font-size:14px; padding:11px 16px; border-radius:14px; }
@@ -851,7 +857,22 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      Sizing to content (flex:0 1 auto + margin-top:auto) parks it directly on top of the bar. */
   /* v1.40 item 1: overscroll-behavior:contain stops the sheet's scroll chaining out to the page,
      which is what made the sheet itself move; the tighter gap/padding pulls results closer to the bar. */
-  .addsheet-body { flex:0 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; display:flex; flex-direction:column; justify-content:flex-end; gap:4px; padding-bottom:4px; margin-top:auto; }
+  /* v1.46: with the sheet capped by max-height (not fixed height), this box scrolls on its own as
+     soon as the edit panel outgrows the sheet. scrollbar-width:thin makes that visible where
+     scrollbars render; `> * { flex:none }` stops flex from shrinking children, which combined with
+     justify-content:flex-end is what can make the TOP of overflowing content unreachable. */
+  /* v1.46: justify-content is flex-START, not flex-end. In a SCROLLING flex container, content that
+     overflows past flex-end spills off the TOP where it is unreachable and does not even extend
+     scrollHeight — measured 308px of box against a 322px panel, 14px silently clipped, which is the
+     reported "Save row hidden behind the search bar with no way to scroll to it". Bottom-docking is
+     already handled by this box's own margin-top:auto, which sizes it to content and parks it on the
+     bar, so flex-end was doing nothing except breaking overflow. */
+  .addsheet-body { flex:0 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; display:flex; flex-direction:column; justify-content:flex-start; gap:4px; padding-bottom:4px; margin-top:auto; scrollbar-width:thin; }
+  .addsheet-body > * { flex:none; }
+  /* …and the panel is itself a flex column, so its ROWS shrink too unless told not to. That is what
+     squashed the weight/flag rows and pushed the Save row under the search bar instead of letting the
+     panel overflow and scroll — the reported "cut off with no way to reach it". */
+  .addedit > * { flex:none; }
   .addsheet-foot { flex:none; display:flex; flex-direction:column; gap:8px; }
   .addsheet-barrow { display:flex; gap:8px; align-items:center; }
   .addcatlbl { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:10px 2px 2px; }
@@ -871,23 +892,30 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .addresults { width:100%; }   /* v1.31 typed matches rendered as literal shop pills */
   .addresults .pills { margin-top:2px; }
   /* v1.32/v1.35 inline "Edit item" panel above the search bar */
-  .addedit { display:flex; flex-direction:column; gap:12px; padding:4px 2px 2px; }
+  /* v1.46 item 2: density pass on the inline Edit panel — same controls, less air, so more of it
+     fits above the keyboard. Rules shared with the full-screen edit sheet (.flagchip, .editsec) are
+     tightened under a `.addedit` scope instead of at the base, so the other screens are unchanged. */
+  .addedit { display:flex; flex-direction:column; gap:7px; padding:2px 2px 0; }
   .addedit-flags { display:flex; gap:6px; }
   /* v1.44 item 5: a native <select> opens the iOS picker wheel, which dismisses the keyboard and
      reflows the whole sheet mid-edit. A scrolling chip row keeps focus — and the keyboard — where it is. */
-  .wsel { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px; scrollbar-width:none; }
+  .wsel { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:0; scrollbar-width:none; }
   .wsel::-webkit-scrollbar { display:none; }
   .wchip { flex:none; border:1.5px solid var(--line); background:var(--chip); color:var(--text);
-    font-weight:700; font-size:13px; padding:8px 12px; border-radius:999px; white-space:nowrap; }
+    font-weight:700; font-size:12.5px; padding:5px 10px; border-radius:999px; white-space:nowrap; }
   /* the two common weights the old <select> starred. An accent-tinted border marks them without
      stealing the "selected" look — dashed would have read as provisional, which is what a dashed
      line means everywhere else in this app. */
   .wchip-hl { border-color:var(--accent); }
   .wchip.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
-  .addedit-actions { display:flex; gap:8px; margin-top:4px; }
-  .addedit-more { flex:none; border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:14px; padding:11px 14px; border-radius:12px; }
-  .addedit-remove { flex:none; border:1.5px solid #C24A33; background:transparent; color:#C24A33; font-weight:700; font-size:14px; padding:11px 14px; border-radius:12px; }
-  .addedit-done { flex:1; border:none; background:var(--btn); color:var(--btn-text); font-weight:800; font-size:15px; border-radius:12px; padding:11px; }
+  .addedit-actions { display:flex; gap:8px; margin-top:2px; }
+  .addedit-more { flex:none; border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:14px; padding:8px 12px; border-radius:12px; }
+  .addedit-remove { flex:none; border:1.5px solid #C24A33; background:transparent; color:#C24A33; font-weight:700; font-size:14px; padding:8px 12px; border-radius:12px; }
+  .addedit-done { flex:1; border:none; background:var(--btn); color:var(--btn-text); font-weight:800; font-size:15px; border-radius:12px; padding:9px; }
+  /* v1.46: .flagchip and .editsec are shared with the full-screen edit sheet — tighten them only
+     inside the inline panel. Two classes beat the single-class base rules on specificity. */
+  .addedit .flagchip { padding:6px 5px; font-size:12px; }
+  .addedit .editsec { padding:7px 0 3px; margin-top:4px; }
   .searchbar .inwrap { flex:1; min-width:0; }
   /* display:block matters — a textarea is inline-level by default, so its .inwrap parent reserved a
      line box with descender space under it and the bar measured 51px instead of the shop pill's 47px. */
@@ -930,7 +958,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.45";
+const APP_VERSION = "v1.46";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1978,7 +2006,30 @@ async function save(){
   catch(e){ console.error(e);
     if(Date.now()-__saveWarned > 5000){ __saveWarned = Date.now(); showToast("⚠︎ Not syncing — check Firestore rules"); } }
 }
-function showToast(msg){ toast=msg; toastAction=null; render(); clearTimeout(_toastT); _toastT=setTimeout(()=>{ toast=null; render(); },1700); }
+function showToast(msg){
+  toast=msg; toastAction=null;
+  /* v1.46: a full render() would tear the focused search bar out of the document and drop the
+     keyboard mid-add (reported for "Buy again"). While the sheet owns the screen, put the toast
+     straight into the DOM instead — no re-render, so focus is never disturbed. */
+  const as=document.getElementById("addSheet");
+  if(addOpen && as){
+    let t=document.getElementById("toast");
+    if(!t || t.parentNode!==as){ t=document.createElement("div"); t.className="toast"; t.id="toast"; as.appendChild(t); }
+    t.innerHTML=`<span>${esc(msg)}</span>`;
+    /* .toast is position:fixed with left:50%/transform:translate(-50%,0) and a keyframe animation
+       that also translates -50%. .addsheet.vvpin is position:fixed, so position:absolute anchors
+       here to the sheet — but the centering has to be fully cancelled: the animation would beat the
+       inline transform, hence animation:none, and width:fit-content keeps the pill shape now that
+       left:0/right:0 would otherwise stretch it edge to edge. */
+    t.style.position="absolute"; t.style.left="0"; t.style.right="0"; t.style.bottom="auto";
+    t.style.top="14px"; t.style.margin="0 auto"; t.style.transform="none"; t.style.zIndex="60";
+    t.style.animation="none"; t.style.width="fit-content"; t.style.maxWidth="calc(100% - 28px)";
+    clearTimeout(_toastT);
+    _toastT=setTimeout(()=>{ toast=null; const e=document.getElementById("toast"); if(e && e.parentNode) e.parentNode.removeChild(e); },1700);
+    return;
+  }
+  render(); clearTimeout(_toastT); _toastT=setTimeout(()=>{ toast=null; render(); },1700);
+}
 function snapState(){ return JSON.parse(JSON.stringify(state)); }
 function syncChip(){
   if(!configured) return "";
@@ -2453,13 +2504,15 @@ function addEditPanel(){
   const selSubLabel = (()=>{ if(!it.sub) return "None"; const s=subs.find(x=>x.id===it.sub); return s?s.label:"None"; })();
   const catChips = catList().map(c=>`<button class="catchip" data-ae-cat="${it.id}|${c.id}" style="${it.cat===c.id?`background:${c.color};border-color:${c.color};color:#fff`:''}">${catIcon(c,15)} ${esc(c.label)}</button>`).join("");
   return `<div class="addedit">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
-      <div class="disp" style="font-weight:800;font-size:17px">Edit item</div>
+    ${/* v1.46 item 2: tighter heading + 40px controls — the panel has to share the screen with the
+          keyboard, so every row it saves is a row you don't have to scroll to. */""}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
+      <div class="disp" style="font-weight:800;font-size:15px">Edit item</div>
       <button data-ae-star="${it.id}" aria-label="Star" style="border:none;background:transparent;font-size:24px;line-height:1;padding:2px;color:${it.starred?'#E8A91D':'var(--muted2)'}">${it.starred?'★':'☆'}</button>
     </div>
     <div style="display:flex;gap:6px;align-items:stretch">
-      <div class="qstep" style="height:46px;align-items:center;flex:none;border:none;background:var(--chip)"><button data-ae-minus="${it.id}" aria-label="Less">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${it.qty||1}</span><button data-ae-plus="${it.id}" aria-label="More">+</button></div>
-      <input data-ae-name="${it.id}" value="${esc(it.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:15px" />
+      <div class="qstep" style="height:40px;align-items:center;flex:none;border:none;background:var(--chip)"><button data-ae-minus="${it.id}" aria-label="Less" style="width:32px">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:15px">${it.qty||1}</span><button data-ae-plus="${it.id}" aria-label="More" style="width:32px">+</button></div>
+      <input data-ae-name="${it.id}" value="${esc(it.name)}" style="flex:1;min-width:0;height:40px;padding:0 12px;border-radius:14px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:15px" />
     </div>
     ${/* v1.44 item 5: 500g and 1kg lead the row (after "unit"). The old <select> starred them because
           they are the two people actually pick; in a scrolling row they would otherwise sit off-screen
@@ -2561,7 +2614,14 @@ function endAddSheet(){ addOpen=false; addEditId=null; addEditPrefix=""; addLast
      the reported "search bar is not always fixed to the correct position after going back". */
   kbActive=false; kbOffset=0; _pinLast="";
   unlockPageScroll();
-  render(); applyKb(); syncZoomHeight(); }
+  /* v1.46: removing position:fixed from <body> does not reflow synchronously, so the very next
+     syncZoomHeight() measured #bottomnav at its collapsed-layout position — navH came out 0 and the
+     floating search pill was placed at bottom:12px, i.e. UNDERNEATH the nav. Force the reflow, then
+     re-measure after the frame and again once the keyboard has finished retracting. */
+  void document.body.offsetHeight;
+  render(); applyKb(); syncZoomHeight();
+  requestAnimationFrame(()=>syncZoomHeight());
+  setTimeout(syncZoomHeight, 350); }
 function wireAddSheet(){
   if(!addOpen) return;
   wireAddBar();
@@ -2651,19 +2711,36 @@ function pinAddSheet(){
   const bg=document.getElementById("addBg");
   const vv=(typeof window!=="undefined") ? window.visualViewport : null;
   if(!vv){ as.classList.remove("vvpin"); return; }             // no support → CSS fallback above
-  const gap=Math.max(20, Math.round(vv.height*0.06));          // sliver of the page left visible at the top
-  const top=Math.round(vv.offsetTop + gap), h=Math.max(180, Math.round(vv.height - gap));
+  /* v1.46: position:fixed on <body> stops the layout scroll, but iOS still scrolls the VISUAL
+     viewport to reveal the focused input — that is the background visibly sliding up behind the
+     scrim. Snap it back; the sheet is already sized to sit above the keyboard, so nothing is hidden.
+     Only fires while offsetTop is non-zero, so it settles in one pass rather than looping. */
+  if(addOpen && vv.offsetTop > 0){ window.scrollTo(0,0); }
+  const kbUp  = (window.innerHeight - vv.height) > 120;          // keyboard actually occupying space
+  const gap   = Math.max(20, Math.round(vv.height*0.06));        // sliver of page left visible at the top
+  const bot   = Math.max(0, Math.round(window.innerHeight - (vv.offsetTop + vv.height)));
+  const maxH  = Math.max(180, Math.round(vv.height - gap));
   /* v1.40 item 1: the visualViewport resize/scroll handlers fire in bursts while scrolling. Re-writing
-     identical top/height forces a layout every time, and that churn is what read as jerky scrolling
+     identical geometry forces a layout every time, and that churn is what read as jerky scrolling
      and the sheet sliding about. Write only when something actually changed. */
-  const key=top+"|"+h+"|"+Math.round(vv.offsetTop)+"|"+Math.round(vv.height);
+  const key=bot+"|"+maxH+"|"+kbUp+"|"+Math.round(vv.offsetTop)+"|"+Math.round(vv.height);
   if(key===_pinLast) return;
   _pinLast=key;
   as.classList.add("vvpin");
-  as.style.top    = top + "px";
-  as.style.height = h + "px";
-  as.style.maxHeight = "none";
-  as.style.maxWidth = "480px";
+  /* v1.46: anchor the sheet's BOTTOM to the visual viewport's bottom and let it grow upward to fit
+     its content, instead of forcing a near-full-screen height. The fixed height is what produced the
+     large empty grey area above the search bar, and the "full height focus area" whenever the
+     keyboard went away (blur) while the sheet stayed open. */
+  as.style.top       = "auto";
+  as.style.bottom    = bot + "px";
+  as.style.height    = "auto";
+  as.style.maxHeight = maxH + "px";
+  as.style.maxWidth  = "480px";
+  /* With the keyboard up the visual viewport already ends above the keyboard and its accessory bar,
+     so the safe-area bottom padding is dead space between the search bar and the keyboard. This
+     inline write is the authoritative one — `.addsheet.kbup` (driven by kbActive, which focusout
+     clears) could go stale and is left in place only because applyKb still toggles it. */
+  as.style.paddingBottom = kbUp ? "0px" : "";
   if(bg){ bg.style.top = Math.round(vv.offsetTop) + "px"; bg.style.height = Math.round(vv.height) + "px"; }
 }
 function render(){
