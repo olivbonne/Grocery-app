@@ -930,7 +930,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.44";
+const APP_VERSION = "v1.45";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1400,7 +1400,7 @@ function predictAdd(key){ const rec=purch[key]; if(!rec) return;
 }
 function predictDismiss(key){ const period=predictPeriod();
   const s=predictSeen[period]||(predictSeen[period]={dismissed:[],hidden:false});
-  if(!s.dismissed.includes(key)) s.dismissed.push(key); savePredictSeen(); render();
+  if(!s.dismissed.includes(key)) s.dismissed.push(key); savePredictSeen(); renderKeepingAdd();
 }
 function predictHideAll(){ const period=predictPeriod();
   const s=predictSeen[period]||(predictSeen[period]={dismissed:[],hidden:false}); s.hidden=true; savePredictSeen(); render();
@@ -1936,7 +1936,7 @@ function subscribe(){
     else if(snap.exists() && snap.metadata.hasPendingWrites){ /* keep local optimistic state */ }
     ensureCats();
     try { localStorage.setItem(LS.cache, JSON.stringify(state)); } catch(e){}
-    applyingRemote = true; render(); applyingRemote = false;
+    applyingRemote = true; renderKeepingAdd(); applyingRemote = false;   // v1.45: never tear down a focused search bar mid-add
   }, err => { console.error(err); showToast("⚠︎ Can't read database — publish Firestore rules"); });
 }
 try {
@@ -2015,7 +2015,7 @@ function addEntries(text, override){
     else { const g=(known&&known.cat)||guessCat(e.name); state.items.push({id:nid,name:e.name,qty:e.qty,cat:g||"others",sub:(known&&known.sub)||"",weight:wt,checked:false,by:me}); }
     markDirty(nid);
   }
-  save(); render();
+  save(); renderKeepingAdd();
 }
 function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){
   if(!it.checked){ lastPop=id; playTick(true); if(navigator.vibrate) navigator.vibrate(8); setTimeout(()=>{ if(lastPop===id) lastPop=null; },350); }
@@ -2078,7 +2078,7 @@ function addFromRegular(name,cat){ playPlan(true);
   const entry = state.buyAgain.find(x=>x.name===name && x.cat===cat) || {name,cat,qty:1};
   const ex = state.items.find(i=>!i.checked && i.name.toLowerCase()===name.toLowerCase() && i.cat===cat);
   if(!ex) state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",checked:false,by:me});
-  save(); render();
+  save(); renderKeepingAdd();
 }
 function restore(name,cat){ playPlan(true);
   const entry = state.buyAgain.find(x=>x.name===name && x.cat===cat) || {name,cat,qty:1};
@@ -2371,8 +2371,20 @@ function refreshAddBody(){ const sb=document.getElementById("addSheetBody"); if(
   const s2=document.getElementById("addSheetBody"); if(s2) s2.scrollTop=keepY;
   const inp=document.getElementById("mainInput"); if(inp){ inp.placeholder = addEditId?"Next item…":"Add item…";
     if(wasFocused){ inp.focus(); const end=(inp.value||"").length; try{ inp.setSelectionRange(end,end); }catch(e){} } } }
+/* v1.45: THE reason picking an item closed the keyboard. A full render() rebuilds app.innerHTML,
+   which removes the focused #mainInput from the document — and iOS dismisses the keyboard the
+   instant that happens, which also un-pins the sheet to full height. While the add sheet owns the
+   screen the page behind it is not even visible, so refresh only the sheet body: #mainInput lives
+   in .addsheet-foot, outside #addSheetBody, so it is never touched and focus survives.
+   Two separate call paths were doing it — the add itself (addEntries/addFromRegular/predictDismiss)
+   and the Firestore snapshot that echoes our own write back. The second one is why this reproduced
+   on a real phone but never in the headless tests, where Firebase is stubbed out. */
+function renderKeepingAdd(){
+  if(addOpen && document.getElementById("addSheet")){ refreshAddBody(); return; }
+  render();
+}
 function removeFromList(id){ const it=state.items.find(i=>i.id===id); if(!it) return; playPlan(false);   // v1.14 add-sheet "unselect"
-  state.items=state.items.filter(i=>i.id!==id); save(); render(); }
+  state.items=state.items.filter(i=>i.id!==id); save(); renderKeepingAdd(); }
 function editItemById(id){ const it=state.items.find(i=>i.id===id); if(!it) return;                     // open the full edit menu (as on the shopping page)
   /* v1.44 item 5: leaving the sheet for the full edit menu is not a Cancel — keep what was added, and
      go through the shared teardown so the body scroll lock is released. */
