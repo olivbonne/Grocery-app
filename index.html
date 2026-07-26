@@ -45,7 +45,7 @@
    Ignores opaque cross-origin "Script error." noise and anything after first render. */
 window.__mlRendered = false;
 function __mlShow(msg){ var el=document.getElementById('app');
-  if(el) el.innerHTML='<div style="padding:28px 22px;font:15px/1.5 -apple-system,system-ui,sans-serif;color:var(--ink)">'
+  if(el) el.innerHTML='<div style="padding:28px 22px;font:15px/1.5 -apple-system,system-ui,sans-serif;color:var(--text)">'
    +'<b>Still loading…</b><br><br>If this keeps happening, re-check your Firebase setup: make sure <b>only the config values</b> were pasted '
    +'(no line with <code>getAnalytics</code>, <code>firebase/analytics</code>, or a second <code>const app</code>), '
    +'and that the <b>Firestore database rules were published</b>.<br><br>'
@@ -74,6 +74,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
   :root{
     --ink:#232019; --paper:#F6F2E7; --accent:#D2542B;
+    /* v1.42 item 8: text colour is user-selectable, but --ink is also load-bearing for borders and
+       box edges. --text is the READABLE-TEXT half of it; the picker overrides only this. */
+    --text:var(--ink);
     --card:#FFFDF7; --line:#DAD3C0; --chip:#EDE7D6; --muted:#9A9484; --muted2:#A49E8E;
     --btn:#232019; --btn-text:#ffffff;
     /* v1.41 item 4: the readable text colour on an accent-filled surface. Every theme's accent is
@@ -93,23 +96,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     --glass-bg:rgba(22,30,26,.66); --glass-brd:rgba(255,255,255,.12); --glass-hi:rgba(255,255,255,.14);
   }
   /* === Named themes (palette only — dark family also gets the .dark class from applyTheme) === */
-  html[data-theme="mono"], body[data-theme="mono"]{
-    --ink:#E9EAEC; --paper:#16181A; --accent:#5FD0B0;
-    --card:#1B1E21; --line:#2C3136; --chip:#22262A; --muted:#8B9096; --muted2:#6C7278;
-    --btn:#5FD0B0; --btn-text:#0F1113;
-    --done-bg:#1B1E21; --done-line:#2C3136; --done-text:#6C7278; --done-edge:#3A4046;
-    --glass-bg:rgba(19,22,24,.7); --glass-brd:rgba(255,255,255,.1); --glass-hi:rgba(255,255,255,.12);
-  }
-  /* v1.37 "Calm" — light and happy, deliberately only three colours: warm white paper,
-     near-black bold ink, one warm coral accent. Everything else is a neutral grey. */
-  html[data-theme="calm"], body[data-theme="calm"]{
-    --ink:#22242A; --paper:#FDFBF7; --accent:#F2825C;
-    --card:#FFFFFF; --line:#ECE7E0; --chip:#F4F0EA; --muted:#8C8880; --muted2:#A5A099;
-    --btn:#22242A; --btn-text:#FFFFFF;
-    --done-bg:#F4F0EA; --done-line:#ECE7E0; --done-text:#A5A099; --done-edge:#CFC9C0;
-    --mic-img:url('img/mic-light.png');
-    --glass-bg:rgba(253,251,247,.72); --glass-brd:rgba(255,255,255,.7); --glass-hi:rgba(255,255,255,.85); --glass-blur:16px;
-  }
+  /* v1.42 item 6: the "mono" and "calm" token blocks lived here. Both themes were removed — calm
+     became light + the new Calm colours option, mono became dark — so data-theme can no longer take
+     either value and the blocks were unreachable. */
   /* v1.37 "Ink" — true two-colour monochrome: black on white, greys only, no hue anywhere. */
   html[data-theme="ink"], body[data-theme="ink"]{
     --ink:#000000; --paper:#FFFFFF; --accent:#000000;
@@ -135,7 +124,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   html[data-theme="ink"] .pill, html[data-theme="noir"] .pill,
   html[data-theme="ink"] .bapill, html[data-theme="noir"] .bapill {
     background:var(--card) !important; border-color:var(--line) !important;
-    border-left-color:var(--ink) !important; color:var(--ink) !important; filter:none !important; }
+    border-left-color:var(--ink) !important; color:var(--text) !important; filter:none !important; }
   html[data-theme="ink"] .pill .qty, html[data-theme="noir"] .pill .qty,
   html[data-theme="ink"] .pill .pill-meta, html[data-theme="noir"] .pill .pill-meta { color:var(--muted) !important; }
   html[data-theme="ink"] .pill.done, html[data-theme="noir"] .pill.done {
@@ -143,7 +132,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   html[data-theme="ink"] .cdot, html[data-theme="noir"] .cdot,
   html[data-theme="ink"] .cprog > i, html[data-theme="noir"] .cprog > i { background:var(--ink) !important; }
   html[data-theme="ink"] .catheadchip, html[data-theme="noir"] .catheadchip {
-    background:transparent !important; border-color:transparent !important; color:var(--ink) !important; }
+    background:transparent !important; border-color:transparent !important; color:var(--text) !important; }
   html[data-theme="ink"] .catchip, html[data-theme="noir"] .catchip,
   html[data-theme="ink"] .storechip, html[data-theme="noir"] .storechip { filter:grayscale(1); }
   html[data-theme="ink"] .sweepbtn, html[data-theme="noir"] .sweepbtn,
@@ -161,12 +150,14 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     background:transparent !important; color:var(--muted) !important; }
   html[data-theme="ink"] .pill.reg-in, html[data-theme="noir"] .pill.reg-in {
     border:1.5px solid var(--ink) !important; border-left:4px solid var(--ink) !important;
-    background:var(--card) !important; color:var(--ink) !important; }
+    background:var(--card) !important; color:var(--text) !important; }
   /* v1.39 "Calm": keep each category distinguishable but pastel — one uniform softening of the
      data-driven colours, so nothing shouts. */
-  html[data-theme="calm"] .pill, html[data-theme="calm"] .bapill,
-  html[data-theme="calm"] .cdot, html[data-theme="calm"] .cprog > i,
-  html[data-theme="calm"] .catchip { filter:saturate(.5) brightness(1.1); }
+  /* v1.42 item 7: "Calm colours" softens the data-driven category colours to pastel on ANY theme.
+     This was the Calm theme's defining trait; it is now an option instead of a whole theme. */
+  body.calmcol .pill, body.calmcol .bapill,
+  body.calmcol .cdot, body.calmcol .cprog > i,
+  body.calmcol .catchip { filter:saturate(.5) brightness(1.1); }
   /* theme picker swatches */
   .themebtn{ display:flex; flex-direction:column; align-items:center; gap:5px; }
   .themesw{ width:100%; height:18px; border-radius:6px; border:1.5px solid; display:flex; align-items:center; justify-content:center; }
@@ -175,7 +166,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     background:var(--mic-img) center/cover no-repeat; }
   /* A18 ✨ Smart add */
   .smartbtn{ width:46px; height:44px; flex:none; border-radius:14px; border:none;
-    background:var(--chip); color:var(--ink); font-size:20px; line-height:1; padding:0;
+    background:var(--chip); color:var(--text); font-size:20px; line-height:1; padding:0;
     display:flex; align-items:center; justify-content:center; }
   .smartbtn:active{ transform:scale(0.96); }
   .smartchips{ display:flex; flex-direction:column; gap:8px; }
@@ -183,7 +174,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .smartchip.open{ border-color:var(--ink); }
   .smartchip-top{ display:flex; align-items:center; gap:8px; padding:9px 10px 9px 12px; }
   .smartchip-head{ flex:1; min-width:0; display:flex; align-items:center; gap:8px; border:none; background:transparent;
-    color:var(--ink); text-align:left; padding:0; cursor:pointer; }
+    color:var(--text); text-align:left; padding:0; cursor:pointer; }
   .smartchip-name{ flex:1; min-width:0; font-weight:700; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .smartchip-cat{ font-size:11px; font-weight:700; color:var(--muted2); flex:none; display:inline-flex; align-items:center; gap:3px; }
   .smartchip-caret{ flex:none; color:var(--muted2); font-size:12px; font-weight:800; transition:transform .15s ease; }
@@ -193,28 +184,28 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .smartedit-lbl{ font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.3px; flex:none; width:74px; }
   .scatrow, .swtrow{ display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px; }
   .scat{ flex:none; display:inline-flex; align-items:center; gap:4px; padding:7px 11px; border-radius:999px;
-    border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:12px; white-space:nowrap; }
+    border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:12px; white-space:nowrap; }
   .swt{ flex:none; padding:7px 11px; border-radius:999px; border:1.5px solid var(--line); background:var(--card);
-    color:var(--ink); font-weight:700; font-size:12px; min-width:38px; }
+    color:var(--text); font-weight:700; font-size:12px; min-width:38px; }
   .swt.on{ background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
   /* B3 recipe → list */
   .rechint{ margin:6px 2px 0; font-size:12px; font-weight:600; color:var(--muted); line-height:1.4;
     display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
-  .rechint b{ color:var(--ink); font-weight:800; }
+  .rechint b{ color:var(--text); font-weight:800; }
   .servrow{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 12px; padding:10px 12px;
     border-radius:13px; background:var(--chip); }
-  .servlbl{ font-size:12px; font-weight:800; color:var(--ink); text-transform:uppercase; letter-spacing:.4px; }
+  .servlbl{ font-size:12px; font-weight:800; color:var(--text); text-transform:uppercase; letter-spacing:.4px; }
   .servnote{ font-size:11px; font-weight:600; color:var(--muted2); flex:1; min-width:100%; }
   .smartchip-have{ flex:none; font-size:10px; font-weight:800; color:var(--muted2); background:var(--chip);
     border-radius:999px; padding:2px 7px; text-transform:uppercase; letter-spacing:.3px; }
   .iconbtn{ width:30px; height:30px; border-radius:9px; border:none; background:var(--chip);
-    color:var(--ink); font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; }
+    color:var(--text); font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   .qty, .lb-badge, .cartcount, .cnum { font-variant-numeric: tabular-nums; }
   .pill, .bapill, .listbubble, .navbtn, .iconbtn, .micbtn, .optaction, .seg button, .lb-badge { transition: transform .15s ease, background-color .15s ease, border-color .15s ease, color .15s ease; }
   .pill:active, .bapill:active, .listbubble:active, .navbtn:active, .iconbtn:active, .micbtn:active, .optaction:active { transform: scale(0.97); }
   button:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
-  html,body { margin:0; background:var(--paper); color:var(--ink); min-height:100vh; min-height:100dvh;
+  html,body { margin:0; background:var(--paper); color:var(--text); min-height:100vh; min-height:100dvh;
     font-family:'Outfit',-apple-system,'SF Pro Text',system-ui,sans-serif; }
   .wrap { max-width:480px; margin:0 auto; }
   .topfix { position:fixed; top:0; left:0; right:0; margin:0 auto; max-width:480px; z-index:30; background:var(--paper); padding:calc(8px + env(safe-area-inset-top)) 14px 8px; box-shadow:0 6px 16px -10px rgba(20,30,22,.45); }
@@ -225,15 +216,15 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      (the reported "items appear in the middle of the page"). The strip is a single row; it needs none. */
   .addstrip-wrap .zoomer { padding:0; }
   .ctrlrow { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px; }
-  .listname { border:none; background:transparent; color:var(--ink); font-weight:800; font-size:15px; padding:2px 0; display:inline-flex; align-items:center; gap:5px; max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .listname { border:none; background:transparent; color:var(--text); font-weight:800; font-size:15px; padding:2px 0; display:inline-flex; align-items:center; gap:5px; max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .listname .caret { color:var(--muted); font-size:11px; }
   .collapseall { border:none; background:transparent; color:var(--muted); font-size:12px; font-weight:700; padding:2px 0; }
   .bottomnav { position:fixed; left:0; right:0; bottom:0; z-index:40; display:flex; max-width:480px; margin:0 auto;
     background:var(--paper); border-top:1px solid var(--line); padding:6px 18px calc(8px + env(safe-area-inset-bottom)); justify-content:space-between; }
   .navbtn { position:relative; flex:1; border:none; background:transparent; color:var(--muted); display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px; font-weight:700; padding:6px 0; }
-  .navbtn:active { color:var(--ink); }
+  .navbtn:active { color:var(--text); }
   .navbtn span { letter-spacing:.2px; }
-  .navbtn.active { color:var(--ink); }
+  .navbtn.active { color:var(--text); }
   .navbtn.active::before { content:""; position:absolute; top:-6px; left:50%; transform:translateX(-50%); width:42px; height:3px; border-radius:0 0 6px 6px; background:var(--accent); }
   .cartwrap { position:relative; display:inline-flex; align-items:center; justify-content:center; }
   .cartcount { position:absolute; left:100%; top:50%; transform:translateY(-50%); margin-left:3px; font-size:11px; font-weight:800; color:var(--accent); line-height:1; white-space:nowrap; }
@@ -251,22 +242,22 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .tdswatch-ico { background:var(--chip); }
   .tdswatch-ico.off { opacity:.35; }
   .seg { display:inline-flex; border:1.5px solid var(--line); border-radius:11px; overflow:hidden; }
-  .seg button { border:none; background:var(--card); color:var(--ink); font-weight:700; font-size:13px; padding:8px 12px; min-width:40px; }
+  .seg button { border:none; background:var(--card); color:var(--text); font-weight:700; font-size:13px; padding:8px 12px; min-width:40px; }
   .seg button.on { background:var(--accent); color:var(--on-accent); }
   .seg.seg-wrap { flex-wrap:wrap; overflow:visible; max-width:74%; justify-content:flex-end; }
   .seg.seg-wrap button { padding:8px 9px; min-width:0; }
   .seg.segfull { display:flex; width:100%; }
   .seg.segfull button { flex:1 1 0; min-width:0; padding:9px 6px; }
-  .optaction { width:100%; margin-top:10px; padding:12px; border-radius:13px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:14px; }
+  .optaction { width:100%; margin-top:10px; padding:12px; border-radius:13px; border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:14px; }
   .storegrid { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px; }
-  .storechip { border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:13px; padding:8px 12px; border-radius:11px; white-space:nowrap; flex:0 0 auto; }
+  .storechip { border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:13px; padding:8px 12px; border-radius:11px; white-space:nowrap; flex:0 0 auto; }
   .storechip.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
   .checkedbar { position:fixed; left:0; right:0; bottom:0; max-width:480px; margin:0 auto; z-index:35;
     background:var(--paper); border-top:1px solid var(--line); box-shadow:0 -7px 16px -10px rgba(20,30,22,.45);
     display:flex; flex-direction:column; max-height:42vh; padding:6px 14px 10px; box-sizing:border-box; }
   .checkedbarhead { flex:none; border:none; background:transparent; color:var(--muted); font-weight:800; font-size:13px;
     display:flex; align-items:center; justify-content:space-between; padding:4px 2px; }
-  .checkedbarhead .chk-in { display:inline-flex; align-items:center; gap:7px; color:var(--ink); }
+  .checkedbarhead .chk-in { display:inline-flex; align-items:center; gap:7px; color:var(--text); }
   .checkedbarhead .chk-tick { display:inline-flex; align-items:center; justify-content:center; font-size:14px; width:22px; height:22px;
     border-radius:50%; background:#2F9E44; color:#fff; font-size:11px; font-weight:900; line-height:1; }
   .checkedscroll { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:2px 0 8px; }
@@ -274,7 +265,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .listrows { display:flex; flex-direction:column; gap:8px; max-height:46vh; overflow:auto; }
   .listrow { display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:13px; border:1.5px solid var(--line); background:var(--card); }
   .listrow.cur { border-color:var(--accent); }
-  .listrow-name { flex:1; min-width:0; text-align:left; border:none; background:transparent; color:var(--ink); font-weight:700; font-size:15px; padding:6px 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .listrow-name { flex:1; min-width:0; text-align:left; border:none; background:transparent; color:var(--text); font-weight:700; font-size:15px; padding:6px 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .listrow .iconmini { width:30px; height:34px; flex:none; }
   .listrow-cur { font-size:11px; color:var(--accent); font-weight:800; margin-left:6px; }
   .listrow-go { color:var(--muted); font-size:18px; }
@@ -297,11 +288,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   header { position:relative; }
   .avatars { display:flex; }
   .av { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-    font-size:11px; font-weight:700; border:2px solid var(--paper); background:var(--chip); color:var(--ink); }
+    font-size:11px; font-weight:700; border:2px solid var(--paper); background:var(--chip); color:var(--text); }
   .av.me { background:var(--btn); color:var(--btn-text); }
   .addbar { display:flex; gap:6px; margin-bottom:10px; align-items:flex-start; }
   .addbar textarea { flex:1; min-width:0; height:44px; min-height:44px; padding:10px 14px; border-radius:14px; border:none;
-    outline:none; background:var(--card); color:var(--ink); resize:none; overflow:hidden; line-height:1.2;
+    outline:none; background:var(--card); color:var(--text); resize:none; overflow:hidden; line-height:1.2;
     white-space:pre-wrap; word-break:break-word; box-shadow:inset 0 0 0 1px var(--line); }
   .addbtn { width:46px; height:44px; flex:none; border-radius:14px; border:none; background:var(--accent); color:var(--on-accent);
     display:flex; align-items:center; justify-content:center; padding:0; }
@@ -311,17 +302,17 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .sq { width:8px; height:8px; border-radius:2px; }
   .cname { font-family:'Outfit',system-ui,sans-serif; font-weight:700; font-size:12px; letter-spacing:.02em; }
   .cnum { font-size:11px; color:var(--muted2); font-weight:700; }
-  .plus { position:absolute; right:8px; top:50%; transform:translateY(-50%); width:24px; height:24px; border-radius:8px; border:none; background:var(--chip); color:var(--ink);
+  .plus { position:absolute; right:8px; top:50%; transform:translateY(-50%); width:24px; height:24px; border-radius:8px; border:none; background:var(--chip); color:var(--text);
     font-size:15px; font-weight:800; line-height:1; display:flex; align-items:center; justify-content:center; z-index:1; }
   .catadd { display:flex; gap:6px; margin:6px 0; animation:rise .15s ease; align-items:flex-start; }
   .catadd textarea { flex:1; min-width:0; height:38px; min-height:38px; padding:8px 36px 8px 12px; border-radius:12px; outline:none;
-    background:var(--card); color:var(--ink); resize:none; overflow:hidden; line-height:1.2;
+    background:var(--card); color:var(--text); resize:none; overflow:hidden; line-height:1.2;
     white-space:pre-wrap; word-break:break-word; }
   .catadd > button { width:40px; height:38px; flex:none; border-radius:12px; border:none; color:#fff; font-size:19px; font-weight:700; line-height:1; }
   .suggest { display:flex; gap:6px; overflow-x:auto; margin:-4px 0 10px; -webkit-overflow-scrolling:touch; }
   .suggest:empty { display:none; }
   .sugchip { flex:none; padding:7px 12px; border-radius:999px; border:1.5px solid var(--line); background:var(--card);
-    color:var(--ink); font-size:13px; font-weight:600; white-space:nowrap; }
+    color:var(--text); font-size:13px; font-weight:600; white-space:nowrap; }
   .sugchip.sugba { border-color:var(--accent); color:var(--accent); font-weight:800; }
   .prog { height:5px; background:var(--line); border-radius:999px; margin:0 0 10px; overflow:hidden; }
   .prog-fill { height:100%; background:var(--accent); border-radius:999px; transition:width .25s ease; }
@@ -345,14 +336,14 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .catheadchip .cnum { margin-left:auto; }
   /* A26 — calmer category header + per-aisle progress (midnight/market/mono themes only) */
   .catheadchip.catcalm { width:100%; background:transparent !important; border:1.5px solid transparent !important;
-    color:var(--ink) !important; padding:7px 44px 7px 4px !important; }
-  .catheadchip.catcalm .cname { color:var(--ink); font-weight:800; }
+    color:var(--text) !important; padding:7px 44px 7px 4px !important; }
+  .catheadchip.catcalm .cname { color:var(--text); font-weight:800; }
   .catheadchip.catcalm .cnum { color:var(--muted2); opacity:1; font-weight:700; }
   .catheadchip.catcalm .cdot { width:9px; height:9px; border-radius:50%; flex:none; }
   .cprog { height:3px; border-radius:3px; background:var(--line); overflow:hidden; margin:3px 2px 4px; }
   .cprog > i { display:block; height:100%; border-radius:3px; transition:width .3s ease; }
   .emojibox { width:54px; text-align:center; padding:12px 0; border-radius:14px; border:2px solid var(--ink);
-    outline:none; background:var(--card); color:var(--ink); font-size:18px; }
+    outline:none; background:var(--card); color:var(--text); font-size:18px; }
   .iconbox { width:54px; height:48px; border-radius:14px; border:2px solid var(--ink); background:var(--card);
     display:flex; align-items:center; justify-content:center; padding:0; flex:none; }
   .iconbox img { width:28px; height:28px; object-fit:contain; }
@@ -362,7 +353,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .picscroll .picopt { flex:none; scroll-snap-align:start; }
   .picfix { flex:none; }
   .picopt { flex:none; width:40px; height:40px; border-radius:11px; border:2px solid var(--line); background:var(--card);
-    display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--ink); font-size:20px; }
+    display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--text); font-size:20px; }
   .picopt.colorbtn { margin-left:6px; padding:0; border:2px solid var(--line);
     background:
       radial-gradient(circle at center, var(--cc) 0 45%, rgba(255,255,255,0) 47%),
@@ -382,16 +373,16 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     border-radius:12px; margin-bottom:5px; background:var(--card); }
   .subname { flex:1; min-width:0; font-size:13px; font-weight:600; }
   .iconmini { width:28px; height:28px; flex:none; border-radius:9px; border:none; background:var(--chip);
-    color:var(--ink); font-size:13px; font-weight:800; line-height:1; }
+    color:var(--text); font-size:13px; font-weight:800; line-height:1; }
   .subrow2 { display:flex; align-items:center; gap:5px; padding:5px 8px; border:1px solid var(--line);
     border-radius:10px; margin-bottom:4px; background:var(--card); }
-  .subedit { flex:1; min-width:0; border:none; background:transparent; color:var(--ink); font-size:12px;
+  .subedit { flex:1; min-width:0; border:none; background:transparent; color:var(--text); font-size:12px;
     font-weight:600; outline:none; padding:3px 2px; }
   .hint2 { margin-top:8px; font-size:12px; color:var(--muted); }
   .none { font-size:12px; color:var(--muted2); }
   .pills { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
   .pill { display:inline-flex; align-items:center; gap:5px; background:var(--card); border:1.5px solid var(--line);
-    border-radius:12px; padding:0 13px; min-height:48px; font-size:15px; font-weight:700; color:var(--ink);   /* v1.38 item 4: the item name is the bold element (qty/weight are 500) */
+    border-radius:12px; padding:0 13px; min-height:48px; font-size:15px; font-weight:700; color:var(--text);   /* v1.38 item 4: the item name is the bold element (qty/weight are 500) */
     transition:transform .06s ease, filter .06s ease; }
   .pill:active { transform:scale(.96); filter:brightness(.9); }
   .penddot { width:7px; height:7px; border-radius:50%; background:#E0A800; flex:none; margin-right:1px; }
@@ -401,12 +392,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .ba { margin-top:14px; border-top:1.5px dashed var(--line); padding-top:10px; }
   .bahead { display:flex; align-items:center; gap:6px; width:100%; border:none; background:transparent; padding:0; }
   .bapill { display:inline-flex; align-items:center; gap:5px; background:transparent; border-radius:10px;
-    padding:6px 10px; font-size:13px; font-weight:600; color:var(--ink); }
+    padding:6px 10px; font-size:13px; font-weight:600; color:var(--text); }
   #rotate-lock { display:none; }
   @media (orientation:landscape) and (max-height:520px){
     #app { display:none !important; }
     #rotate-lock { display:flex; position:fixed; inset:0; z-index:9999; flex-direction:column; align-items:center; justify-content:center;
-      gap:12px; background:var(--paper); color:var(--ink); text-align:center; padding:24px; }
+      gap:12px; background:var(--paper); color:var(--text); text-align:center; padding:24px; }
     #rotate-lock .rl-emoji { font-size:40px; }
     #rotate-lock .rl-title { font-family:'Outfit',system-ui,sans-serif; font-weight:800; font-size:18px; }
     #rotate-lock .rl-sub { font-size:13px; color:var(--muted); max-width:260px; }
@@ -421,22 +412,22 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* B7 AI aisle-order proposal (accept/revert) */
   .aiprop { margin:0 0 12px; padding:12px 13px; border-radius:14px; border:1.5px solid var(--accent);
     background:var(--card); display:flex; flex-direction:column; gap:10px; }
-  .aiprop-txt { font-size:12.5px; font-weight:600; color:var(--ink); line-height:1.45; }
+  .aiprop-txt { font-size:12.5px; font-weight:600; color:var(--text); line-height:1.45; }
   .aiprop-txt b { font-weight:800; }
   .aiprop-btns { display:flex; gap:8px; }
   .aiprop-btns button { flex:1; padding:9px; border-radius:11px; font-weight:800; font-size:13px; }
-  .aiprop-keep { border:1.5px solid var(--line); background:transparent; color:var(--ink); }
+  .aiprop-keep { border:1.5px solid var(--line); background:transparent; color:var(--text); }
   .aiprop-apply { border:none; background:var(--accent); color:var(--on-accent); }
   /* B4 restock prediction card */
   .predict { margin:0 0 14px; padding:12px 13px; border-radius:16px; border:1.5px solid var(--line);
     background:var(--card); display:flex; flex-direction:column; gap:9px; }
   .predict-top { display:flex; align-items:center; justify-content:space-between; }
-  .predict-ttl { font-size:14px; font-weight:800; color:var(--ink); }
+  .predict-ttl { font-size:14px; font-weight:800; color:var(--text); }
   .predict-why { border:none; background:transparent; color:var(--accent); font-size:12px; font-weight:800; padding:2px 4px; }
   .predict-whytxt { font-size:11.5px; font-weight:600; color:var(--muted); line-height:1.5; }
   .predict-list { display:flex; flex-wrap:wrap; gap:7px; }
   .predchip { display:inline-flex; align-items:stretch; border-radius:999px; overflow:hidden; border:1.5px solid var(--accent); }
-  .predchip-add { border:none; background:transparent; color:var(--ink); font-weight:700; font-size:13px;
+  .predchip-add { border:none; background:transparent; color:var(--text); font-weight:700; font-size:13px;
     padding:8px 4px 8px 12px; display:inline-flex; align-items:center; gap:6px; }
   .predchip-plus { color:var(--accent); font-weight:900; font-size:15px; }
   .predchip-cad { color:var(--muted2); font-weight:700; font-size:11px; }
@@ -444,13 +435,13 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .predict-hide { align-self:flex-start; border:none; background:transparent; color:var(--muted); font-size:12px; font-weight:700; padding:2px 2px; }
   .daychips { display:flex; gap:5px; }
   .daychip { flex:1; padding:8px 0; border-radius:10px; border:1.5px solid var(--line); background:var(--card);
-    color:var(--ink); font-weight:700; font-size:12px; }
+    color:var(--text); font-weight:700; font-size:12px; }
   .daychip.on { background:var(--btn); border-color:var(--btn); color:var(--btn-text); }
   /* B5 merge-duplicates card */
   .mergelist { display:flex; flex-direction:column; gap:8px; }
   .mergerow { display:flex; align-items:center; gap:10px; }
   .mergerow-txt { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
-  .mergerow-names { font-size:13px; font-weight:700; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mergerow-names { font-size:13px; font-weight:700; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .mergerow-into { font-size:11px; font-weight:700; color:var(--muted); }
   .mergerow-btns { flex:none; display:flex; align-items:center; gap:4px; }
   .merge-go { border:none; background:var(--accent); color:var(--on-accent); font-weight:800; font-size:12px; padding:7px 13px; border-radius:10px; }
@@ -478,10 +469,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     padding:18px 18px calc(28px + env(safe-area-inset-bottom)); animation:rise .18s ease;
     max-height:88dvh; overflow-y:auto; -webkit-overflow-scrolling:touch; }
   .qstep { display:flex; align-items:center; background:var(--card); border:2px solid var(--ink); border-radius:14px; }
-  .qstep button { width:36px; border:none; background:transparent; font-size:20px; font-weight:700; color:var(--ink); }
-  .catchip { padding:7px 11px; border-radius:999px; border:2px solid var(--line); background:var(--card); color:var(--ink);
+  .qstep button { width:36px; border:none; background:transparent; font-size:20px; font-weight:700; color:var(--text); }
+  .catchip { padding:7px 11px; border-radius:999px; border:2px solid var(--line); background:var(--card); color:var(--text);
     font-size:12px; font-weight:700; }
-  .movebtn { flex:1; padding:12px; border-radius:14px; border:2px solid var(--ink); background:var(--card); color:var(--ink);
+  .movebtn { flex:1; padding:12px; border-radius:14px; border:2px solid var(--ink); background:var(--card); color:var(--text);
     font-weight:700; font-size:14px; }
   .toast { position:fixed; bottom:calc(92px + env(safe-area-inset-bottom)); left:50%; transform:translate(-50%,0); background:var(--btn); color:var(--btn-text);
     padding:8px 16px; border-radius:999px; font-size:13px; font-weight:700; animation:toastrise .2s ease; z-index:60; display:flex; align-items:center; max-width:92vw; }
@@ -492,22 +483,22 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .onb p { margin-top:12px; font-size:14px; line-height:1.5; color:var(--muted); }
   .lbl-cap { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
   .namebtn { padding:12px 18px; border-radius:14px; border:2px solid var(--ink); background:var(--card);
-    font-size:15px; font-weight:700; color:var(--ink); }
+    font-size:15px; font-weight:700; color:var(--text); }
   .joinrow { display:flex; gap:8px; margin-top:8px; }
   .joinrow input { flex:1; min-width:0; padding:12px 14px; border-radius:14px; border:2px solid var(--ink);
-    outline:none; background:var(--card); color:var(--ink); }
+    outline:none; background:var(--card); color:var(--text); }
   .joinrow button { padding:12px 18px; border-radius:14px; border:none; background:var(--btn); color:var(--btn-text);
     font-weight:700; font-size:15px; }
   .share { margin-top:8px; font-size:12px; color:var(--muted); }
-  .sharebtn { border:none; background:var(--chip); color:var(--ink); font-weight:700; font-size:12px;
+  .sharebtn { border:none; background:var(--chip); color:var(--text); font-weight:700; font-size:12px;
     padding:6px 12px; border-radius:999px; }
   .iconbtn.on { background:var(--accent); color:var(--on-accent); }
-  .backbtn { border:none; background:transparent; color:var(--ink); font-weight:800; font-size:13px; border-radius:10px; padding:5px 11px; }
+  .backbtn { border:none; background:transparent; color:var(--text); font-weight:800; font-size:13px; border-radius:10px; padding:5px 11px; }
   .listgrid { display:flex; flex-direction:column; gap:12px; margin-top:6px; }
   .listbubble { display:flex; flex-direction:column; align-items:flex-start; gap:4px; width:100%; text-align:left;
     background:var(--card); border:1.5px solid var(--line); border-radius:20px; padding:20px 18px; }
   .listbubble.cur { border-color:var(--accent); }
-  .listbubble .lb-name { font-family:'Outfit',system-ui,sans-serif; font-weight:800; font-size:20px; color:var(--ink); }
+  .listbubble .lb-name { font-family:'Outfit',system-ui,sans-serif; font-weight:800; font-size:20px; color:var(--text); }
   .listbubble .lb-count { font-size:13px; color:var(--muted); font-weight:700; }
   .lb-badge { flex:none; font-size:13px; font-weight:800; color:var(--on-accent); background:var(--accent); border-radius:999px; padding:3px 10px; white-space:nowrap; }
   .lb-chevron { flex:none; color:var(--muted); font-size:24px; line-height:1; font-weight:700; margin-left:-2px; }
@@ -520,10 +511,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .qpanel { flex-basis:100%; width:100%; display:flex; align-items:center; gap:10px; margin:2px 0 4px;
     background:var(--chip); border-radius:14px; padding:8px 10px; animation:rise .15s ease; }
   .qstep2 { display:inline-flex; align-items:center; flex:none; border:1.5px solid var(--line); border-radius:11px; overflow:hidden; background:var(--card); }
-  .qstep2 button { width:38px; height:40px; border:none; background:transparent; color:var(--ink); font-size:20px; font-weight:800; }
+  .qstep2 button { width:38px; height:40px; border:none; background:transparent; color:var(--text); font-size:20px; font-weight:800; }
   .qstep2 span { min-width:30px; text-align:center; font-weight:800; font-size:16px; }
   .wrowq { display:flex; gap:6px; flex:1; min-width:0; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px; }
-  .wchipq { flex:none; padding:8px 12px; border-radius:999px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:13px; }
+  .wchipq { flex:none; padding:8px 12px; border-radius:999px; border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:13px; }
   .wchipq.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
   .qm-edit { flex:none; width:40px; height:40px; border:none; border-radius:11px; background:var(--card); color:var(--muted); font-size:20px; font-weight:800; }
   .shopbar { display:flex; align-items:center; justify-content:space-between;
@@ -534,7 +525,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .pill.done .byinit { background:var(--done-line); color:var(--done-text); }
   .empty { text-align:center; padding:36px 12px 12px; color:var(--muted); }
   .empty-emoji { font-size:44px; }
-  .empty-title { font-size:18px; font-weight:800; color:var(--ink); margin:10px 0 4px; }
+  .empty-title { font-size:18px; font-weight:800; color:var(--text); margin:10px 0 4px; }
   .empty-sub { font-size:13px; color:var(--muted); margin:4px 0; }
   /* A3 Shopping mode: bigger glanceable targets, editing chrome hidden */
   .shop .pill { min-height:60px; font-size:18px; padding:0 16px; }
@@ -605,6 +596,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.22 item 6 — settings rows with a wide control laid out label-left / control-right (like Theme) */
   .optrow-wide { align-items:center; }
   .optwide { flex:1; min-width:0; }
+  /* v1.42 items 5/8: the colour pickers need the FULL row width — 8 and 10 swatches cannot fit in
+     the value column beside a label, and wrapped to a ragged second row when they tried. Stacking
+     the label above the swatches gives them the whole width. */
+  .optrow-stack { flex-direction:column; align-items:stretch; gap:7px; }
+  .optrow-stack > .optlabel { align-self:flex-start; }
   .optwide > .dispgrid, .optwide > .seg.segfull, .optwide > .daychips, .optwide > .storegrid { width:100%; }
   /* v1.22 item 5 — single collapsed "Regulars" header */
   .plansec-h[data-reg-showall] { width:100%; border:none; background:transparent; cursor:pointer; }
@@ -614,18 +610,25 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   body.haswall::before { content:""; position:fixed; inset:0; z-index:-2; background:var(--wall) top center / cover no-repeat; }
   body.haswall::after { content:""; position:fixed; inset:0; z-index:-1; background:var(--paper); opacity:.32; }
   .wallrow { display:flex; flex-wrap:wrap; gap:6px; width:100%; }
-  .wallbtn { flex:1 1 0; min-width:46px; height:40px; border-radius:11px; border:1.5px solid var(--line); background-color:var(--chip); background-position:top center; background-size:cover; color:var(--ink); font-weight:700; font-size:12px; display:flex; align-items:center; justify-content:center; text-align:center; }
+  .wallbtn { flex:1 1 0; min-width:46px; height:40px; border-radius:11px; border:1.5px solid var(--line); background-color:var(--chip); background-position:top center; background-size:cover; color:var(--text); font-weight:700; font-size:12px; display:flex; align-items:center; justify-content:center; text-align:center; }
   .wallbtn.on { border-color:var(--accent); border-width:2px; }
+  /* v1.42 items 5/8 — colour swatch pickers. Wraps to two rows on a narrow phone. */
+  .colrow { display:flex; flex-wrap:wrap; gap:6px; align-items:center; justify-content:flex-start; }
+  .colsw { width:26px; height:26px; flex:none; border-radius:50%; border:2px solid var(--line); padding:0; }
+  .colsw.on { border-color:var(--ink); box-shadow:0 0 0 2px var(--paper) inset; }
+  .colbtn2 { flex:none; border:1.5px solid var(--line); background:var(--card); color:var(--text);
+    font-weight:800; font-size:12px; padding:5px 10px; border-radius:999px; }
+  .colbtn2.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
   /* v1.26 edit-sheet flag bubbles (Urgent / If discounted / If convenient) */
-  .flagchip { flex:1 1 0; min-width:0; display:inline-flex; align-items:center; justify-content:center; gap:5px; padding:9px 6px; border-radius:999px; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:12.5px; white-space:nowrap; overflow:hidden; }
+  .flagchip { flex:1 1 0; min-width:0; display:inline-flex; align-items:center; justify-content:center; gap:5px; padding:9px 6px; border-radius:999px; border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:12.5px; white-space:nowrap; overflow:hidden; }
   .flagchip.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
   /* v1.26 collapsible Category / Subcategory rows in the edit sheet */
   .editsec { width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; border:none; border-top:1px solid var(--line); background:transparent; padding:11px 0 4px; margin-top:10px; cursor:pointer; }
   .editsec-l { font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
-  .editsec-v { font-size:14px; font-weight:700; color:var(--ink); display:inline-flex; align-items:center; gap:6px; }
+  .editsec-v { font-size:14px; font-weight:700; color:var(--text); display:inline-flex; align-items:center; gap:6px; }
   .editsec-ch { color:var(--muted2); font-size:13px; }
   .regcat { margin-top:2px; }
-  .regcatlbl { display:flex; align-items:center; justify-content:space-between; width:100%; border:none; background:transparent; cursor:pointer; font-size:18px; font-weight:600; color:var(--ink); letter-spacing:normal; text-transform:none; margin:10px 2px 0; padding:0; }
+  .regcatlbl { display:flex; align-items:center; justify-content:space-between; width:100%; border:none; background:transparent; cursor:pointer; font-size:18px; font-weight:600; color:var(--text); letter-spacing:normal; text-transform:none; margin:10px 2px 0; padding:0; }
   .regcnum { color:var(--muted); font-weight:700; font-size:15px; }
   /* A15 bigger effective touch targets on small controls, no visual change (~44px hit areas) */
   .qmore, .iconbtn, .iconmini { position:relative; }
@@ -672,8 +675,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     background:var(--paper); border-top:1px solid var(--line); box-shadow:0 -7px 16px -10px rgba(20,30,22,.45);
     padding:8px 14px calc(8px + env(safe-area-inset-bottom)); box-sizing:border-box; animation:rise .14s ease; }
   .qbanner-top { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:7px; }
-  .qbanner-name { font-weight:800; font-size:14px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .qbanner-close { flex:none; border:none; background:var(--chip); color:var(--ink); font-weight:800; font-size:13px; padding:6px 14px; border-radius:999px; }
+  .qbanner-name { font-weight:800; font-size:14px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .qbanner-close { flex:none; border:none; background:var(--chip); color:var(--text); font-weight:800; font-size:13px; padding:6px 14px; border-radius:999px; }
   .qbanner-row { display:flex; align-items:center; gap:8px; }
   /* v1.27 floating search bubble replaces the "+ Add" pill; ✨ AI sits to its right. (.addpill also
      gets the glass bg/border/shadow from the Glasshouse grouping below.) */
@@ -703,7 +706,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* A20 Users list in Settings */
   .userlist { display:flex; flex-wrap:wrap; gap:8px; }
   .userchip { display:inline-flex; align-items:center; gap:6px; padding:9px 14px; border-radius:999px;
-    border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:14px; }
+    border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:14px; }
   .userchip.on { background:var(--btn); border-color:var(--btn); color:#fff; }
   .userchip .ucur { font-size:10px; font-weight:800; opacity:.8; text-transform:uppercase; letter-spacing:.4px; }
   /* v1.12 "Glasshouse" — Liquid-Glass WEB APPROXIMATION (there is no official Apple web
@@ -739,23 +742,23 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .addrow .pemoji { font-size:17px; }
   /* v1.16 display picker (2×2) */
   .dispgrid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
-  .dispopt { border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:12.5px; padding:10px 6px; border-radius:11px; }
+  .dispopt { border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:12.5px; padding:10px 6px; border-radius:11px; }
   .dispopt.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
   /* v1.27 Display: List / Large Tile (2–6 cols) / Small Tile, stacked */
   .displist { display:flex; flex-direction:column; gap:6px; width:100%; }
-  .dispopt2 { border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:13.5px; padding:11px 14px; border-radius:12px; text-align:left; }
+  .dispopt2 { border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:13.5px; padding:11px 14px; border-radius:12px; text-align:left; }
   .dispopt2.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
   .dispcols { display:flex; gap:6px; margin:1px 0 3px; }
-  .colbtn { flex:1; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:800; font-size:14px; padding:9px 0; border-radius:10px; }
+  .colbtn { flex:1; border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:800; font-size:14px; padding:9px 0; border-radius:10px; }
   .colbtn.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
   /* v1.28 Tile display picker with mini layout previews */
   .tdlist { display:flex; flex-direction:column; gap:8px; width:100%; }
   /* v1.41 item 4: this never set a text colour, so the button fell back to the UA default (black).
      That is invisible on Noir's near-black card — one of the reported "white text does not display"
      rows in Settings. Bind it to the ink token like every other control. */
-  .tdopt { display:flex; align-items:center; gap:12px; width:100%; border:1.5px solid var(--line); background:var(--card); color:var(--ink); border-radius:12px; padding:9px 12px; text-align:left; }
+  .tdopt { display:flex; align-items:center; gap:12px; width:100%; border:1.5px solid var(--line); background:var(--card); color:var(--text); border-radius:12px; padding:9px 12px; text-align:left; }
   .tdopt.on { border-color:var(--accent); box-shadow:inset 0 0 0 1.5px var(--accent); }
-  .tdlabel { font-weight:700; font-size:13.5px; color:var(--ink); }
+  .tdlabel { font-weight:700; font-size:13.5px; color:var(--text); }
   .tdprev { flex:none; width:52px; height:40px; border-radius:7px; background:var(--chip); padding:5px; box-sizing:border-box; display:flex; overflow:hidden; }
   .tdprev-list { flex-direction:column; justify-content:center; gap:4px; }
   .tdprev-list i { display:block; height:5px; border-radius:3px; background:var(--muted2); opacity:.55; }
@@ -776,7 +779,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.15 combined-page planning section (regulars to re-add, below the shopping list) */
   .plansec { margin-top:22px; border-top:1.5px dashed var(--line); padding-top:12px; }
   .plansec-h { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 2px 8px; }
-  .plansec-toggle { flex:none; border:none; background:var(--chip); color:var(--ink); font-weight:800; font-size:11px; text-transform:none; letter-spacing:0; padding:5px 11px; border-radius:999px; }
+  .plansec-toggle { flex:none; border:none; background:var(--chip); color:var(--text); font-weight:800; font-size:11px; text-transform:none; letter-spacing:0; padding:5px 11px; border-radius:999px; }
   .regtick { font-size:19px; font-weight:900; line-height:1; margin-right:2px; }
   .reg-in .regplus, .regplus { font-weight:900; margin-right:2px; }
   /* v1.11 shop checklist rows + plan qty-banner remove + finish dialog */
@@ -837,7 +840,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     box-shadow:0 6px 18px rgba(20,30,22,.14); }
   .searchbar-ic { flex:none; display:flex; align-items:center; color:var(--muted); }
   .searchbar-ic svg { display:block; }
-  .addsheet-donebtn { flex:none; border:none; background:transparent; color:var(--ink); font-weight:700; font-size:15px; padding:8px 6px; }   /* v1.34 plain Done (closes the sheet) */
+  .addsheet-donebtn { flex:none; border:none; background:transparent; color:var(--text); font-weight:700; font-size:15px; padding:8px 6px; }   /* v1.34 plain Done (closes the sheet) */
   /* v1.34 item 4: search matches — one horizontally-scrolling row, no wrap/grouping */
   .addstrip-wrap { overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; margin:0 -2px; }
   .addstrip { display:flex; align-items:center; flex-wrap:nowrap; gap:8px; width:max-content; padding:2px; }
@@ -848,21 +851,21 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .addedit { display:flex; flex-direction:column; gap:12px; padding:4px 2px 2px; }
   .addedit-flags { display:flex; gap:6px; }
   .addedit-actions { display:flex; gap:8px; margin-top:4px; }
-  .addedit-more { flex:none; border:1.5px solid var(--line); background:var(--card); color:var(--ink); font-weight:700; font-size:14px; padding:11px 14px; border-radius:12px; }
+  .addedit-more { flex:none; border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:14px; padding:11px 14px; border-radius:12px; }
   .addedit-remove { flex:none; border:1.5px solid #C24A33; background:transparent; color:#C24A33; font-weight:700; font-size:14px; padding:11px 14px; border-radius:12px; }
   .addedit-done { flex:1; border:none; background:var(--btn); color:var(--btn-text); font-weight:800; font-size:15px; border-radius:12px; padding:11px; }
   .searchbar .inwrap { flex:1; min-width:0; }
   /* display:block matters — a textarea is inline-level by default, so its .inwrap parent reserved a
      line box with descender space under it and the bar measured 51px instead of the shop pill's 47px. */
-  .searchbar textarea { display:block; width:100%; height:45px; min-height:45px; max-height:110px; padding:12px 34px 12px 2px; border:none; background:transparent; color:var(--ink); font-size:15px; font-family:inherit; line-height:21px; resize:none; outline:none; }
+  .searchbar textarea { display:block; width:100%; height:45px; min-height:45px; max-height:110px; padding:12px 34px 12px 2px; border:none; background:transparent; color:var(--text); font-size:15px; font-family:inherit; line-height:21px; resize:none; outline:none; }
   .addcatlbl-sep { margin-top:16px; border-top:1px solid var(--line); padding-top:12px; }
-  .addrow { display:flex; align-items:center; gap:10px; border:1.5px solid var(--line); background:var(--card); color:var(--ink);
+  .addrow { display:flex; align-items:center; gap:10px; border:1.5px solid var(--line); background:var(--card); color:var(--text);
     border-radius:14px; padding:11px 13px; font-weight:700; font-size:14.5px; text-align:left; }
   .addrow:active { transform:scale(.98); }
   .addrow.on { border-color:var(--accent); }
   .addrow.on .addrow-plus { background:var(--accent); color:var(--on-accent); }
   .addrow-plus { flex:none; width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-    background:var(--chip); color:var(--ink); font-weight:900; font-size:15px; }
+    background:var(--chip); color:var(--text); font-weight:900; font-size:15px; }
   .addrow-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .addrow-meta { flex:none; font-size:12.5px; font-weight:800; color:var(--muted2); }
   .addrow-cad { flex:none; font-size:11px; font-weight:800; color:var(--accent); border:1.5px solid var(--accent); border-radius:999px; padding:2px 8px; }
@@ -893,7 +896,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.41";
+const APP_VERSION = "v1.42";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -984,15 +987,30 @@ function setDensity(d){ const nd=Math.min(1.3,Math.max(0.7,Math.round(d*10)/10))
 let styles = {}; try{ styles = JSON.parse(localStorage.getItem("ml_styles")||"null") || {}; }catch(e){ styles={}; }
 function styl(){ return styles[optMode()] || (shopMode ? "normal" : "compact"); }
 function setStyle(s){ styles[optMode()]=s; localStorage.setItem("ml_styles", JSON.stringify(styles)); render(); }
+/* v1.42 items 5 & 8 — the palettes. "auto" means "whatever the theme says", which is how every
+   existing install behaves, so it stays the default and nothing changes until the user picks. */
+const ACCENTS = { red:"#C62828", orange:"#E2502C", yellow:"#D9A404", green:"#2F9E44",
+                  blue:"#1E6FD9", purple:"#7B4FBF", pink:"#D6478A" };
+const TEXTCOLS = { white:"#FFFFFF", black:"#000000", red:"#C62828", orange:"#E2502C", yellow:"#D9A404",
+                   green:"#2F9E44", blue:"#1E6FD9", purple:"#7B4FBF", pink:"#D6478A" };
+let accent   = localStorage.getItem("ml_accent")  || "auto";
+let textCol  = localStorage.getItem("ml_textcol") || "auto";
+let calmCol  = localStorage.getItem("ml_calmcol") === "1";
+function setAccent(v){ accent=v; localStorage.setItem("ml_accent",v); applyTheme(); render(); }
+function setTextCol(v){ textCol=v; localStorage.setItem("ml_textcol",v); applyTheme(); render(); }
+function setCalmCol(v){ calmCol=!!v; localStorage.setItem("ml_calmcol", calmCol?"1":"0"); applyTheme(); render(); }
 const THEMES = {
   light:    { dark:false, tc:"#F6F2E7" },
-  calm:     { dark:false, tc:"#FDFBF7" },   // v1.37 light, 3 colours
   ink:      { dark:false, tc:"#FFFFFF" },   // v1.37 true black & white
   noir:     { dark:true,  tc:"#000000" },   // v1.39 Ink inverted
-  dark:     { dark:true,  tc:"#141C18" },
-  mono:     { dark:true,  tc:"#16181A" }
+  dark:     { dark:true,  tc:"#141C18" }
 };
 let theme = localStorage.getItem("ml_theme") || ((typeof window!=="undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark");
+/* v1.42 item 6: the theme list is now just light / ink / noir / dark. Calm was a light theme whose
+   whole point was pastel category colours — that is exactly what the new "Calm colours" option does,
+   so a Calm user becomes light + calm colours and keeps their look. Mono was a dark theme. */
+if(theme==="calm"){ theme="light"; calmCol=true; localStorage.setItem("ml_theme","light"); localStorage.setItem("ml_calmcol","1"); }
+else if(theme==="mono"){ theme="dark"; localStorage.setItem("ml_theme","dark"); }
 if(theme==="market") theme="light"; else if(theme==="midnight") theme="dark";   // v1.28 removed themes migrate
 if(!THEMES[theme]) theme = "light";
 try{ localStorage.setItem("ml_theme", theme); }catch(e){}
@@ -1002,6 +1020,22 @@ function applyTheme(){ const t = THEMES[theme] || THEMES.light;
   const tc=document.getElementById("themeColor"); if(tc) tc.content = t.tc;
   document.body.classList.toggle("haswall", !!(typeof wall!=="undefined" && wall));
   const _wp = (typeof wallPos!=="undefined" && wallPos==="top") ? "top" : "bottom";
+  /* v1.42 items 5/7/8 — user colour overrides, written as inline custom properties on <html> so they
+     beat the theme's own token block. "auto" removes the override and falls back to the theme.
+     Every accent in the palette is dark enough for white text, so --on-accent is forced white
+     whenever one is active — otherwise Noir's black-on-accent rule would make it unreadable. */
+  /* Write to <html> AND <body>: every theme block targets `html[data-theme=…], body[data-theme=…]`,
+     so a body-level declaration re-defines the token for everything inside <body>. An inline
+     override on <html> alone loses to it — the accent silently did nothing on dark/ink/noir. */
+  const els=[document.documentElement.style, document.body.style];
+  const ac=ACCENTS[accent];
+  const tx=TEXTCOLS[textCol];
+  els.forEach(rs=>{
+    if(ac){ rs.setProperty("--accent", ac); rs.setProperty("--on-accent", "#fff"); }
+    else  { rs.removeProperty("--accent"); rs.removeProperty("--on-accent"); }
+    if(tx) rs.setProperty("--text", tx); else rs.removeProperty("--text");
+  });
+  document.body.classList.toggle("calmcol", !!calmCol);
   document.body.style.setProperty("--wall", (typeof wall!=="undefined" && wall) ? `url('img/${wall}-${_wp}.jpg')` : "none"); }
 function setTheme(v){ if(!THEMES[v]) return; theme = v; localStorage.setItem("ml_theme", theme); applyTheme(); render(); }
 function toggleTheme(){ setTheme(theme==="dark" ? "light" : "dark"); }   // kept for back-compat
@@ -1633,7 +1667,7 @@ function newListPrompt(){ newListOpen=true; newListDraft=""; render(); }
 function newListSheet(){ return `<div class="sheet-bg" id="newListBg"><div class="sheet" id="newListSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">New list</div>
     <div style="display:flex;gap:8px;align-items:stretch">
-      <input id="newListName" placeholder="List name" value="${esc(newListDraft)}" autocomplete="off" style="flex:1;min-width:0;height:48px;padding:0 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:16px" />
+      <input id="newListName" placeholder="List name" value="${esc(newListDraft)}" autocomplete="off" style="flex:1;min-width:0;height:48px;padding:0 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:16px" />
       <button id="newListCreate" style="flex:none;padding:0 18px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">Create</button>
     </div></div></div>`; }
 function createNewListFromSheet(){ const nm=(newListDraft||"").trim()||"Untitled list"; const code=uid().slice(0,8);
@@ -1771,7 +1805,7 @@ function iconPickerHTML(){
     <div class="icongrid" id="presetRow">${presetHTML(curImg)}
       <button class="iconopt" id="uploadOpt" title="Upload">⬆️</button>
     </div>
-    <input id="iconSearch" placeholder="Search emoji (milk, tool, wine…)" style="width:100%;margin-top:8px;padding:9px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:14px" />
+    <input id="iconSearch" placeholder="Search emoji (milk, tool, wine…)" style="width:100%;margin-top:8px;padding:9px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:14px" />
     <div class="icongrid" id="emojiGrid">${emojiGridHTML(curEmoji,"")}</div>
     <input id="iconFile" type="file" accept="image/*" style="display:none" />`;
 }
@@ -2316,10 +2350,10 @@ function addEditPanel(){
     </div>
     <div style="display:flex;gap:6px;align-items:stretch">
       <div class="qstep" style="height:46px;align-items:center;flex:none;border:none;background:var(--chip)"><button data-ae-minus="${it.id}" aria-label="Less">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${it.qty||1}</span><button data-ae-plus="${it.id}" aria-label="More">+</button></div>
-      <select data-ae-weightsel="${it.id}" style="width:80px;flex:none;height:46px;padding:0 4px;border-radius:14px;border:none;background:var(--chip);color:var(--ink);font-size:14px;font-weight:600;text-align:center;text-align-last:center">
+      <select data-ae-weightsel="${it.id}" style="width:80px;flex:none;height:46px;padding:0 4px;border-radius:14px;border:none;background:var(--chip);color:var(--text);font-size:14px;font-weight:600;text-align:center;text-align-last:center">
         ${W.map(w=>{ const hl=(w==="500g"||w==="1kg"); return `<option value="${w}" ${(it.weight||"")===w?'selected':''}>${w?(hl?'★ '+w:w):'unit'}</option>`; }).join("")}
       </select>
-      <input data-ae-name="${it.id}" value="${esc(it.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:none;outline:none;background:var(--chip);color:var(--ink);font-size:15px" />
+      <input data-ae-name="${it.id}" value="${esc(it.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:15px" />
     </div>
     <div class="addedit-flags">${flags.map(f=>{ const on=(it.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-ae-flag="${it.id}|${f.k}"><span aria-hidden="true">${f.emoji}</span>${f.label}</button>`; }).join("")}</div>
     <button class="editsec" data-ae-sechead="cat"><span class="editsec-l">Category</span><span class="editsec-v">${cat?`${catIcon(cat,14)} ${esc(cat.label)}`:'—'}<span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></button>
@@ -2576,7 +2610,7 @@ function wireQuickPanel(){
   app.querySelectorAll("[data-qm-edit]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.qmEdit); if(it){ quickEdit=null; editing={kind:"item", ...it}; render(); } });
 }
 // A26 — calmer category header + per-aisle progress bar, used only by the midnight/market/mono themes.
-const CALM_THEMES = new Set(["light","calm","ink","noir","dark","mono"]);   // v1.39 all themes use the calm header
+const CALM_THEMES = new Set(["light","ink","noir","dark"]);   // v1.39 all themes use the calm header
 function calmHead(cat, done, total, collapsed, attr, entryOpen){
   const pct = total ? Math.round(done/total*100) : 0;
   // v1.38 item 6: show the category ICON when Category icons is on (every theme uses this header
@@ -3056,6 +3090,9 @@ function wireOptions(){
   app.querySelectorAll("[data-tiledisp]").forEach(b=>b.onclick=()=>setDispBase(b.dataset.tiledisp));   // v1.29 sets the display base only; grouping is separate
   app.querySelectorAll("[data-opt-cols]").forEach(b=>b.onclick=()=>setLargeCols(+b.dataset.optCols));
   app.querySelectorAll("[data-opt-smallcols]").forEach(b=>b.onclick=()=>setSmallCols(+b.dataset.optSmallcols));
+  app.querySelectorAll("[data-opt-accent]").forEach(b=>b.onclick=()=>setAccent(b.dataset.optAccent));
+  app.querySelectorAll("[data-opt-textcol]").forEach(b=>b.onclick=()=>setTextCol(b.dataset.optTextcol));
+  app.querySelectorAll("[data-opt-calmcol]").forEach(b=>b.onclick=()=>setCalmCol(b.dataset.optCalmcol==="1"));
   app.querySelectorAll("[data-opt-wall]").forEach(b=>b.onclick=()=>{ if(wall!==b.dataset.optWall) setWall(b.dataset.optWall); });
   app.querySelectorAll("[data-opt-wallpos]").forEach(b=>b.onclick=()=>{ if(wallPos!==b.dataset.optWallpos) setWallPos(b.dataset.optWallpos); });
   app.querySelectorAll("[data-opt-caton]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optCaton==="1"; if(catOn!==v) setCatOn(v); });
@@ -3173,7 +3210,7 @@ function smartSheet(){
   if(smartLoading){
     inner=`<div style="padding:22px 4px;text-align:center;color:var(--muted);font-weight:700">✨ Reading your list…</div>`;
   } else if(smartError){
-    inner=`<div style="padding:6px 2px 16px;color:var(--ink);font-weight:600;line-height:1.5">${esc(smartError)}</div>
+    inner=`<div style="padding:6px 2px 16px;color:var(--text);font-weight:600;line-height:1.5">${esc(smartError)}</div>
       <button class="optaction" id="smartOk">OK</button>`;
   } else {
     const n=smartItems.length;
@@ -3183,7 +3220,7 @@ function smartSheet(){
       const subs=(c.subs&&c.subs.length)?c.subs:[];
       const editor = open ? `<div class="smartedit">
           <div class="smartedit-row"><span class="smartedit-lbl">Name</span>
-            <input class="smartname" data-smart-name="${idx}" value="${esc(cap(it.name))}" autocomplete="off" autocapitalize="words" style="flex:1;min-width:0;padding:8px 11px;border-radius:10px;border:2px solid var(--ink);background:var(--card);color:var(--ink);font-size:14px;font-weight:600" /></div>
+            <input class="smartname" data-smart-name="${idx}" value="${esc(cap(it.name))}" autocomplete="off" autocapitalize="words" style="flex:1;min-width:0;padding:8px 11px;border-radius:10px;border:2px solid var(--ink);background:var(--card);color:var(--text);font-size:14px;font-weight:600" /></div>
           <div class="smartedit-row"><span class="smartedit-lbl">Quantity</span>
             <div class="qstep2"><button data-smart-q="${idx}|-1" aria-label="Less">−</button><span>${it.qty||1}</span><button data-smart-q="${idx}|1" aria-label="More">+</button></div></div>
           <div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">Weight</span>
@@ -3317,7 +3354,7 @@ function diagSheet(){ const hd=t=>`<div style="font-size:11px;font-weight:800;te
     <div style="font-size:11px;color:var(--muted2)">Read-only · ${esc(APP_VERSION)}</div>
     ${(()=>{ const ls=getLists(); return ls.length>1 ? `${hd("List")}<div class="storegrid">${ls.map(l=>`<button data-diag-list="${esc(l.code)}" class="storechip ${l.code===listCode?'on':''}">${esc(l.name||l.code)}</button>`).join("")}</div><div style="font-size:11px;color:var(--muted2);margin-top:6px">Inspecting this list's items, categories &amp; buy-again. Learned shop order is per-device; restock history is shared with everyone on this list.</div>` : ""; })()}
     ${hd("Entry tester")}
-    <input id="diagProbe" placeholder="Type an item…" autocomplete="off" autocapitalize="none" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:14px" />
+    <input id="diagProbe" placeholder="Type an item…" autocomplete="off" autocapitalize="none" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:14px" />
     <div id="diagProbeOut" style="margin-top:8px;font-size:13px">${diagProbeHTML("")}</div>
     ${hd("Buy-again storage")}<div style="font-size:13px">${diagStoreHTML()}</div>
     ${hd("AI shop order — per store")}<div style="font-size:13px">${diagAIHTML()}</div>
@@ -3344,9 +3381,24 @@ function optionsBody(){
   if(curSort==="ai" && !aiSortOK()) curSort="location";
   return `
     ${sect("Appearance")}
-    ${rowNL("Theme", `<div class="seg segfull" style="flex-wrap:wrap"><button data-opt-theme="light" class="themebtn ${theme==='light'?'on':''}"><span class="themesw" style="background:#F6F2E7;border-color:#DAD3C0"><i style="background:#D2542B"></i></span>Light</button><button data-opt-theme="calm" class="themebtn ${theme==='calm'?'on':''}"><span class="themesw" style="background:#FDFBF7;border-color:#ECE7E0"><i style="background:#F2825C"></i></span>Calm</button><button data-opt-theme="ink" class="themebtn ${theme==='ink'?'on':''}"><span class="themesw" style="background:#FFFFFF;border-color:#D8D8D8"><i style="background:#000000"></i></span>Ink</button><button data-opt-theme="noir" class="themebtn ${theme==='noir'?'on':''}"><span class="themesw" style="background:#000000;border-color:#333333"><i style="background:#FFFFFF"></i></span>Noir</button><button data-opt-theme="dark" class="themebtn ${theme==='dark'?'on':''}"><span class="themesw" style="background:#141C18;border-color:#33433B"><i style="background:#E2502C"></i></span>Dark</button><button data-opt-theme="mono" class="themebtn ${theme==='mono'?'on':''}"><span class="themesw" style="background:#16181A;border-color:#2C3136"><i style="background:#5FD0B0"></i></span>Mono</button></div>`)}
+    ${rowNL("Theme", `<div class="seg segfull" style="flex-wrap:wrap">${
+      [{k:"light",label:"Light",bg:"#F6F2E7",br:"#DAD3C0",dot:"#D2542B"},
+       {k:"ink",  label:"Ink",  bg:"#FFFFFF",br:"#D8D8D8",dot:"#000000"},
+       {k:"noir", label:"Noir", bg:"#000000",br:"#333333",dot:"#FFFFFF"},
+       {k:"dark", label:"Dark", bg:"#141C18",br:"#33433B",dot:"#E2502C"}]
+      .map(t=>`<button data-opt-theme="${t.k}" class="themebtn ${theme===t.k?'on':''}"><span class="themesw" style="background:${t.bg};border-color:${t.br}"><i style="background:${ACCENTS[accent]||t.dot}"></i></span>${t.label}</button>`).join("")
+    }</div>`)}
     ${row("Wallpaper", `<div class="wallrow">${[{v:"",label:"None"},{v:"wall-1"},{v:"wall-2"},{v:"wall-3"},{v:"wall-4"}].map(w=>`<button data-opt-wall="${w.v}" class="wallbtn ${wall===w.v?'on':''}" style="${w.v?`background-image:url('img/${w.v}-${wallPos}.jpg');background-position:center ${wallPos==='bottom'?'bottom':'top'}`:''}">${w.label||''}</button>`).join("")}</div>`)}
     ${wall ? row("Wallpaper items", `<div class="seg"><button data-opt-wallpos="top" class="${wallPos==='top'?'on':''}">Top</button><button data-opt-wallpos="bottom" class="${wallPos==='bottom'?'on':''}">Bottom</button></div>`) : ""}
+    ${/* v1.42 items 5/8: full-width rows (like Tile display) — 8 and 10 swatches will not fit in the
+          narrow value column beside a label, and wrapped to a ragged second row when they tried. */""}
+    <div class="optrow optrow-stack optnl"><span class="optlabel">Colour accent</span><div class="optwide">
+      <div class="colrow"><button data-opt-accent="auto" class="colbtn2 ${accent==='auto'?'on':''}">Auto</button>${
+      Object.keys(ACCENTS).map(k=>`<button data-opt-accent="${k}" class="colsw ${accent===k?'on':''}" style="background:${ACCENTS[k]}" aria-label="${k}" title="${k}"></button>`).join("")}</div></div></div>
+    <div class="optrow optrow-stack optnl"><span class="optlabel">Text colour</span><div class="optwide">
+      <div class="colrow"><button data-opt-textcol="auto" class="colbtn2 ${textCol==='auto'?'on':''}">Auto</button>${
+      Object.keys(TEXTCOLS).map(k=>`<button data-opt-textcol="${k}" class="colsw ${textCol===k?'on':''}" style="background:${TEXTCOLS[k]}" aria-label="${k}" title="${k}"></button>`).join("")}</div></div></div>
+    ${rowNL("Calm colours", `<div class="seg"><button data-opt-calmcol="1" class="${calmCol?'on':''}">On</button><button data-opt-calmcol="0" class="${!calmCol?'on':''}">Off</button></div>`)}
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
     ${view!=="lists" ? `<div class="optrow optrow-wide optnl"><span class="optlabel">Tile display</span><div class="optwide">
       <div class="tdlist">
@@ -3365,7 +3417,7 @@ function optionsBody(){
     ${rowNL("Location", `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">On</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">Off</button></div>`)}
     <div class="optrow optrow-wide optnl"><span class="optlabel">Store</span><div class="optwide">
       <div class="storegrid">${[{id:"auto",name:"Auto-detect"},{id:"home",name:"🏠 Home"},...STORES.filter(s=>!storeOverride(s.id).hidden).map(s=>storeById(s.id)),...(state.stores||[]).filter(s=>!storeOverride(s.id).hidden),{id:"other",name:"Other"}].map(s=>`<button data-opt-store="${s.id}" class="storechip ${storeSel===s.id?'on':''}">${esc(s.name)}</button>`).join("")}<button data-store-add class="storechip" style="border-style:dashed">＋ Add store</button></div>
-      ${isRealStore(storeSel) ? `<div class="optrow" style="gap:7px"><input id="storeName" value="${esc((storeById(storeSel)||{}).name||"")}" placeholder="Store name" style="flex:1;min-width:0;padding:10px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink);font-size:14px;font-weight:600" /><button id="storeRemove" style="padding:10px 12px;border-radius:12px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:13px">Remove</button></div>` : ""}
+      ${isRealStore(storeSel) ? `<div class="optrow" style="gap:7px"><input id="storeName" value="${esc((storeById(storeSel)||{}).name||"")}" placeholder="Store name" style="flex:1;min-width:0;padding:10px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:14px;font-weight:600" /><button id="storeRemove" style="padding:10px 12px;border-radius:12px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:13px">Remove</button></div>` : ""}
     </div></div>
     ${(storeSel==="home" || isRealStore(storeSel)) ? `<button class="optaction" id="optSetStore" style="margin-top:2px">📍 Set ${esc((storeById(storeSel)||{}).name||"store")} location here</button>` : ""}
     ${(()=>{ const hid=[...STORES,...(state.stores||[])].filter(s=>{ const o=storeOverride(s.id); return o.hidden && !o.removed; }); return hid.length ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:6px"><span class="optlabel" style="font-size:12px;color:var(--muted2)">Hidden stores</span>${hid.map(s=>`<div style="display:flex;gap:7px;align-items:center"><span style="flex:1;min-width:0;color:var(--muted);font-size:13px;font-weight:600">${esc((storeById(s.id)||s).name||s.id)}</span><button class="storechip" data-store-restore="${s.id}" style="flex:0 0 auto">Restore</button><button class="storechip" data-store-delete="${s.id}" aria-label="Delete" style="flex:0 0 auto;border-color:#C24A33;color:#C24A33">✕</button></div>`).join("")}</div>` : ""; })()}
@@ -3439,13 +3491,13 @@ function editSheet(){
       <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">New category</div>
       <div style="display:flex;gap:8px;align-items:center">
         ${iconEditorHTML()}
-        <input id="catName" value="${esc(editing.label)}" placeholder="Category name" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
+        <input id="catName" value="${esc(editing.label)}" placeholder="Category name" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text)" />
       </div>
       <div id="stripWrap">${iconStripHTML()}</div>
       <input id="iconFile" type="file" accept="image/*" style="display:none" />
       <input id="emojiKbd" inputmode="text" autocomplete="off" style="position:absolute;opacity:0;height:1px;width:1px;pointer-events:none;left:-9999px" />
       <div style="display:flex;gap:8px;margin-top:16px">
-        <button id="newCancel" style="padding:13px 16px;border-radius:14px;border:2px solid var(--ink);background:transparent;color:var(--ink);font-weight:700;font-size:15px">Cancel</button>
+        <button id="newCancel" style="padding:13px 16px;border-radius:14px;border:2px solid var(--ink);background:transparent;color:var(--text);font-weight:700;font-size:15px">Cancel</button>
         <button id="newCreate" style="flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">Create</button>
       </div>
     </div></div>`;
@@ -3464,7 +3516,7 @@ function editSheet(){
       <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">Edit category</div>
       <div style="display:flex;gap:8px;align-items:center">
         ${iconEditorHTML()}
-        <input id="catName" value="${esc(editing.label)}" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
+        <input id="catName" value="${esc(editing.label)}" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text)" />
         <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
           <div style="font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap">${idx+1} of ${n}</div>
           <div style="display:flex;gap:4px">
@@ -3476,7 +3528,7 @@ function editSheet(){
       <div id="stripWrap">${iconStripHTML()}</div>
       <input id="iconFile" type="file" accept="image/*" style="display:none" />
       <input id="emojiKbd" inputmode="text" autocomplete="off" style="position:absolute;opacity:0;height:1px;width:1px;pointer-events:none;left:-9999px" />
-      <div style="margin-top:16px"><button id="addSubBtn" style="border:none;background:var(--chip);color:var(--ink);font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px">+ Add subcategory</button></div>
+      <div style="margin-top:16px"><button id="addSubBtn" style="border:none;background:var(--chip);color:var(--text);font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px">+ Add subcategory</button></div>
       <div style="margin-top:8px">${subRows}</div>
       <div style="display:flex;gap:8px;margin-top:16px">
         <button id="catRemove" style="padding:13px 16px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:15px">Delete</button>
@@ -3491,7 +3543,7 @@ function editSheet(){
       <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">Edit “Buy again”</div>
       <div style="display:flex;gap:8px;align-items:center">
         ${iconEditorHTML()}
-        <input id="catName" value="${esc(editing.label)}" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--ink)" />
+        <input id="catName" value="${esc(editing.label)}" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text)" />
         <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
           <div style="font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap">${idx+1} of ${n}</div>
           <div style="display:flex;gap:4px">
@@ -3512,7 +3564,7 @@ function editSheet(){
   const isItem = editing.kind==="item";
   const qtyBlock = `<div class="qstep"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>`;
   const secLabel = isItem ? "Buy again" : "Add to list";
-  const btnSecStyle = "padding:13px 12px;border-radius:14px;border:2px solid var(--ink);background:transparent;color:var(--ink);font-weight:700;font-size:14px";
+  const btnSecStyle = "padding:13px 12px;border-radius:14px;border:2px solid var(--ink);background:transparent;color:var(--text);font-weight:700;font-size:14px";
   const btnDelStyle = "padding:13px 12px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:14px";
   const btnSaveStyle = "flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px";
   const selCat = CAT(editing.cat);
@@ -3532,10 +3584,10 @@ function editSheet(){
     </div>
     <div style="display:flex;gap:6px;align-items:stretch">
       <div class="qstep" style="height:46px;align-items:center;flex:none;border:none;background:var(--chip)"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>
-      <select id="weightSel" style="width:80px;flex:none;height:46px;padding:0 4px;border-radius:14px;border:none;background:var(--chip);color:var(--ink);font-size:14px;font-weight:600;text-align:center;text-align-last:center">
+      <select id="weightSel" style="width:80px;flex:none;height:46px;padding:0 4px;border-radius:14px;border:none;background:var(--chip);color:var(--text);font-size:14px;font-weight:600;text-align:center;text-align-last:center">
         ${["","cup","tsp","Tbsp","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"].map(w=>{ const hl=(w==="500g"||w==="1kg"); return `<option value="${w}" ${(editing.weight||"")===w?'selected':''}>${w?(hl?'★ '+w:w):'unit'}</option>`; }).join("")}
       </select>
-      <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:none;outline:none;background:var(--chip);color:var(--ink);font-size:15px" />
+      <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:15px" />
     </div>
     ${isItem ? `<div style="display:flex;flex-wrap:nowrap;gap:6px;margin-top:12px">${[{k:"urgent",label:"Urgent",emoji:"🏃"},{k:"discount",label:"If discounted",emoji:"🏷️"},{k:"convenient",label:"If convenient",emoji:"🕒"}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${f.emoji}</span>${f.label}</button>`; }).join("")}</div>` : ""}
     <button class="editsec" id="ecHead"><span class="editsec-l">Category</span><span class="editsec-v">${selCat?`${catIcon(selCat,14)} ${esc(selCat.label)}`:'—'}<span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></button>
