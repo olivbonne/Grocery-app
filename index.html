@@ -206,6 +206,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .topfix { position:fixed; top:0; left:0; right:0; margin:0 auto; max-width:480px; z-index:30; background:var(--paper); padding:calc(8px + env(safe-area-inset-top)) 14px 8px; box-shadow:0 6px 16px -10px rgba(20,30,22,.45); }
   .zoomwrap { overflow:hidden; }
   .zoomer { padding:6px 14px 96px; box-sizing:border-box; }
+  /* v1.40 item 1: the search-result strip reuses .zoomer for its tile styling and so inherited the
+     list's 6px/96px padding — 102px of dead space that shoved the results far above the search bar
+     (the reported "items appear in the middle of the page"). The strip is a single row; it needs none. */
+  .addstrip-wrap .zoomer { padding:0; }
   .ctrlrow { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px; }
   .listname { border:none; background:transparent; color:var(--ink); font-weight:800; font-size:15px; padding:2px 0; display:inline-flex; align-items:center; gap:5px; max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .listname .caret { color:var(--muted); font-size:11px; }
@@ -758,6 +762,16 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .addsheet.kbup { padding-bottom:0; }   /* v1.31 with the keyboard up, the search bar sits flush on it (no dark gap) */
   /* when JS pins it, the sheet positions itself rather than being laid out by the flex scrim */
   .addsheet.vvpin { position:fixed; left:0; right:0; margin:0 auto; }
+  /* v1.40 item 1: the add sheet now deploys slowly and smoothly (0.8s) instead of snapping up in
+     0.24s. pinAddSheet() re-writes top/height several times across the keyboard's animation window,
+     so those are transitioned too — otherwise each re-pin lands as a visible jump. */
+  /* `.sheet` sets `animation:sheetup .24s` further down the stylesheet at equal specificity, so it
+     would win on source order — hence `.sheet.addsheet` here. Its own keyframe travels the full sheet
+     height (the shared `sheetup` only nudges 28px, which reads as sluggish stretched over 0.8s). */
+  @keyframes addsheetup { from{ opacity:.4; transform:translateY(100%) } to{ opacity:1; transform:translateY(0) } }
+  .sheet.addsheet { animation:addsheetup .8s cubic-bezier(.22,.61,.36,1) both; }
+  .addsheet.vvpin { transition:top .28s cubic-bezier(.22,.61,.36,1), height .28s cubic-bezier(.22,.61,.36,1); }
+  @media (prefers-reduced-motion: reduce){ .sheet.addsheet { animation-duration:.01ms; } .addsheet.vvpin { transition:none; } }
   .addsheet-head { display:flex; gap:8px; align-items:flex-start; }
   .addsheet-done { flex:none; border:none; background:var(--btn); color:var(--btn-text); font-weight:800; font-size:14px; padding:11px 16px; border-radius:14px; }
   .addsheet-tabs { margin:10px 0; }
@@ -771,13 +785,18 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.38 item 3: results hug the search bar. `justify-content:flex-end` only bottom-aligns when the
      content is SHORTER than the box; the box is flex:1 so a tall empty area still pushed the strip up.
      Sizing to content (flex:0 1 auto + margin-top:auto) parks it directly on top of the bar. */
-  .addsheet-body { flex:0 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; justify-content:flex-end; gap:6px; padding-bottom:8px; margin-top:auto; }
+  /* v1.40 item 1: overscroll-behavior:contain stops the sheet's scroll chaining out to the page,
+     which is what made the sheet itself move; the tighter gap/padding pulls results closer to the bar. */
+  .addsheet-body { flex:0 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; display:flex; flex-direction:column; justify-content:flex-end; gap:4px; padding-bottom:4px; margin-top:auto; }
   .addsheet-foot { flex:none; display:flex; flex-direction:column; gap:8px; }
   .addsheet-barrow { display:flex; gap:8px; align-items:center; }
   .addcatlbl { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:10px 2px 2px; }
   /* v1.31 clean solid search pill (matches the reference) — sits flush above the keyboard */
+  /* v1.40 item 1: sized to match the shop page's floating .addpill (47px) so tapping the bar doesn't
+     change its height. box-sizing keeps the border inside that 47px. */
   .searchbar { flex:1; min-width:0; display:flex; align-items:center; gap:9px; background:var(--card);
-    border:1px solid var(--line); border-radius:999px; padding:3px 8px 3px 15px; box-shadow:0 6px 18px rgba(20,30,22,.14); }
+    border:1px solid var(--line); border-radius:999px; padding:0 8px 0 15px; min-height:47px; box-sizing:border-box;
+    box-shadow:0 6px 18px rgba(20,30,22,.14); }
   .searchbar-ic { flex:none; display:flex; align-items:center; color:var(--muted); }
   .searchbar-ic svg { display:block; }
   .addsheet-donebtn { flex:none; border:none; background:transparent; color:var(--ink); font-weight:700; font-size:15px; padding:8px 6px; }   /* v1.34 plain Done (closes the sheet) */
@@ -795,7 +814,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .addedit-remove { flex:none; border:1.5px solid #C24A33; background:transparent; color:#C24A33; font-weight:700; font-size:14px; padding:11px 14px; border-radius:12px; }
   .addedit-done { flex:1; border:none; background:var(--btn); color:var(--btn-text); font-weight:800; font-size:15px; border-radius:12px; padding:11px; }
   .searchbar .inwrap { flex:1; min-width:0; }
-  .searchbar textarea { width:100%; height:40px; min-height:40px; padding:9px 34px 9px 2px; border:none; background:transparent; color:var(--ink); font-size:15px; font-family:inherit; line-height:22px; resize:none; outline:none; }
+  /* display:block matters — a textarea is inline-level by default, so its .inwrap parent reserved a
+     line box with descender space under it and the bar measured 51px instead of the shop pill's 47px. */
+  .searchbar textarea { display:block; width:100%; height:45px; min-height:45px; max-height:110px; padding:12px 34px 12px 2px; border:none; background:transparent; color:var(--ink); font-size:15px; font-family:inherit; line-height:21px; resize:none; outline:none; }
   .addcatlbl-sep { margin-top:16px; border-top:1px solid var(--line); padding-top:12px; }
   .addrow { display:flex; align-items:center; gap:10px; border:1.5px solid var(--line); background:var(--card); color:var(--ink);
     border-radius:14px; padding:11px 13px; font-weight:700; font-size:14.5px; text-align:left; }
@@ -834,7 +855,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.39";
+const APP_VERSION = "v1.40";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2061,7 +2082,17 @@ let recog=null, listening=false, micFinal="";
 function setMicUI(on){ const b=document.getElementById("micBtn"); if(b) b.style.backgroundImage = on ? "url('img/mic-on.png')" : "";
   const f=micField(); if(f) f.style.color = on ? "var(--accent)" : ""; }
 function micField(){ return document.getElementById("mainInput"); }
-function grow(el){ if(!el) return; el.style.height="auto"; el.style.height=Math.min(el.scrollHeight+4,180)+"px"; syncZoomHeight(); }
+function grow(el){ if(!el) return; el.style.height="auto";
+  /* v1.40 item 1: the +4px breathing room is what pushed the sheet's search bar to 55px when it must
+     match the shop page's 47px pill. The search bar has its own padding already, so size it to the
+     content exactly; every other growable field keeps the fudge. */
+  const pad = (el.id==="mainInput") ? 0 : 4;
+  el.style.height=Math.min(el.scrollHeight+pad,180)+"px";
+  /* v1.40 item 1: syncZoomHeight() is a whole-page geometry pass — it re-measures the nav, the bars
+     and re-pins the add sheet. Running it on every keystroke while the add sheet is open is what made
+     typing and scrolling feel jerky and nudged the sheet around. The sheet pins itself; skip it. */
+  if(addOpen && el.id==="mainInput") return;
+  syncZoomHeight(); }
 /* v1.10 bottom-first add sheet — Regulars (due-soon restock + Buy-again) and a built-in
    catalog, one-tap add, live-filtered by whatever is typed. Replaces the old top add bar. */
 const SEARCH_SVG = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>';
@@ -2153,7 +2184,7 @@ function addSheet(){
           <span class="searchbar-ic" aria-hidden="true">${SEARCH_SVG}</span>
           <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="${addEditId?'Next item…':'Add item…'}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
         </div>
-        <button class="addsheet-donebtn" id="addDone">Done</button>
+        <button class="addsheet-donebtn" id="addDone" aria-label="Cancel and return to the shop page">Cancel</button>
       </div>
     </div>
   </div></div>`;
@@ -2193,7 +2224,9 @@ function wireAddRows(){
     b.onpointerdown=e=>{ e.preventDefault(); pressStart(); };
     b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
     b.onpointerup=()=>{ pressCancel();
-      if(longFired){ const id = longIdFn && longIdFn(); if(id) editItemById(id); return; }
+      /* v1.40 item 1: a long press on a search result now opens the SAME inline "Edit item" panel a
+         tap does. It used to jump to the full-screen edit sheet, which closed the keyboard. */
+      if(longFired){ const id = longIdFn && longIdFn(); if(id) openAddEdit(id); return; }
       addKeepScroll(shortFn);
       if(refocus){ const m=document.getElementById("mainInput"); if(m) m.focus(); }
     };
@@ -2309,7 +2342,12 @@ function wireAddSheetDrag(){
   grab.onpointerup=end; grab.onpointercancel=end;
 }
 // v1.36: one exit path for the add flow — always lands back on the shop page with nothing left over.
-function closeAddSheet(){ addOpen=false; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain=""; render(); }
+function closeAddSheet(){ addOpen=false; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain="";
+  /* v1.40 item 1: the keyboard state and the pin cache belong to the sheet. Leaving kbOffset set meant
+     the shop page's floating search pill stayed positioned for a keyboard that is no longer there —
+     the reported "search bar is not always fixed to the correct position after going back". */
+  kbActive=false; kbOffset=0; _pinLast="";
+  render(); applyKb(); syncZoomHeight(); }
 function wireAddSheet(){
   if(!addOpen) return;
   wireAddBar();
@@ -2320,7 +2358,7 @@ function wireAddSheet(){
   wireAddSheetDrag();
 }
 // v1.36 item 10: reopening the search bar always starts blank — no leftover text from the last session.
-function openAdd(){ addTab="reg"; addOpen=true; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain="";
+function openAdd(){ addTab="reg"; addOpen=true; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain=""; _pinLast="";
   if(curPageIdx()===0){ gotoPage(1); } else { render(); }
   const mi=document.getElementById("mainInput"); if(mi){ mi.value=""; mi.focus(); } }
 function startMic(){
@@ -2386,15 +2424,23 @@ function applyKb(){ const bar=document.getElementById("botbar"); if(bar) bar.sty
    precisely the reported bug (only the sheet's foot stayed visible, near the top). visualViewport
    .offsetTop reports how far iOS scrolled, so adding it back into an explicit `top` cancels the shift.
    Writing explicit top/height also sidesteps iOS's inconsistent dvh behaviour with the keyboard up. */
+let _pinLast="";
 function pinAddSheet(){
-  const as=document.getElementById("addSheet"); if(!as) return;
+  const as=document.getElementById("addSheet"); if(!as){ _pinLast=""; return; }
   const bg=document.getElementById("addBg");
   const vv=(typeof window!=="undefined") ? window.visualViewport : null;
   if(!vv){ as.classList.remove("vvpin"); return; }             // no support → CSS fallback above
   const gap=Math.max(20, Math.round(vv.height*0.06));          // sliver of the page left visible at the top
+  const top=Math.round(vv.offsetTop + gap), h=Math.max(180, Math.round(vv.height - gap));
+  /* v1.40 item 1: the visualViewport resize/scroll handlers fire in bursts while scrolling. Re-writing
+     identical top/height forces a layout every time, and that churn is what read as jerky scrolling
+     and the sheet sliding about. Write only when something actually changed. */
+  const key=top+"|"+h+"|"+Math.round(vv.offsetTop)+"|"+Math.round(vv.height);
+  if(key===_pinLast) return;
+  _pinLast=key;
   as.classList.add("vvpin");
-  as.style.top    = Math.round(vv.offsetTop + gap) + "px";
-  as.style.height = Math.max(180, Math.round(vv.height - gap)) + "px";
+  as.style.top    = top + "px";
+  as.style.height = h + "px";
   as.style.maxHeight = "none";
   as.style.maxWidth = "480px";
   if(bg){ bg.style.top = Math.round(vv.offsetTop) + "px"; bg.style.height = Math.round(vv.height) + "px"; }
@@ -3460,7 +3506,13 @@ function wireAddBar(){
     const m2=document.getElementById("mainInput"); if(m2){ m2.value=""; m2.focus(); } };
   if(mi){ mi.value=draftMain; grow(mi); toggleClear(mi,mc);
     mi.oninput=()=>{ draftMain=mi.value; grow(mi); toggleClear(mi,mc); if(addEditId) addEditId=null; if(addOpen) refreshAddBody(); };   // v1.32 typing returns from the details panel to search
-    mi.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); commit(mi.value); } };
+    mi.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault();
+      /* v1.40 item 1: the keyboard's blue tick now finishes the whole add flow — commit whatever is
+         typed, then land back on the shop page. It used to only commit and leave the sheet open. */
+      if(addOpen){ const t=(mi.value||"").trim();
+        if(t){ draftMain=""; playPlan(true); addEntries(t,null); }
+        closeAddSheet(); return; }
+      commit(mi.value); } };
     mi.onpaste=e=>{ const t=(e.clipboardData||window.clipboardData).getData("text");
       const looksLikeBlock = t && (t.indexOf("\n")>=0 || /\b(meat|fruit|vegetable|veg|fresh|bulk|asian|alcohol|health|others)\s*:/i.test(t) || t.split(",").length>2);
       if(looksLikeBlock){ e.preventDefault(); commit(t); } }; }
