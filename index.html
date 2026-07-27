@@ -964,7 +964,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.47";
+const APP_VERSION = "v1.48";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1702,11 +1702,20 @@ let addOpen=false, addTab="reg", _addScrollY=0;
    saved offset is restored on close. The fixed chrome still resolves against the viewport (body is
    not transformed), so nothing else moves. */
 let _lockY=0, _locked=false;
-function lockPageScroll(){ if(_locked) return; _locked=true; _lockY=window.scrollY||window.pageYOffset||0;
+/* v1.48: the offset has to be CAPTURED before the sheet's own render runs and APPLIED after it.
+   pinAddSheet() calls window.scrollTo(0,0) to undo iOS's visual-viewport scroll, and since v1.47
+   moved the lock to after the render, the lock was reading a scroll position that had already been
+   zeroed — so closing the sheet dumped you at the top of the list instead of where you were. */
+function lockPageScroll(y){ if(_locked) return; _locked=true;
+  _lockY = (typeof y==="number") ? y : (window.scrollY||window.pageYOffset||0);
   const b=document.body.style; b.position="fixed"; b.top=(-_lockY)+"px"; b.left="0"; b.right="0"; b.width="100%"; }
-function unlockPageScroll(){ if(!_locked) return; _locked=false;
+/* v1.48: clearing the styles and RESTORING the scroll are two separate steps. Scrolling here would
+   land while the document is still the collapsed one the fixed <body> left behind — the browser
+   clamps to whatever fits, which is why the page came back at the top. Return the offset and let the
+   caller apply it after its render has put the full-height page back. */
+function unlockPageScroll(){ if(!_locked) return 0; _locked=false;
   const b=document.body.style; b.position=""; b.top=""; b.left=""; b.right=""; b.width="";
-  window.scrollTo(0,_lockY); }
+  return _lockY; }
 /* v1.44 item 5: everything added while the sheet is open is provisional. The return key keeps it;
    Cancel (button, scrim tap, swipe-down) takes it all back off the list. Only ids CREATED during this
    session are tracked, so an item that was already on the list before you opened the sheet is never
@@ -2661,14 +2670,15 @@ function endAddSheet(){ addOpen=false; addEditId=null; addEditPrefix=""; addLast
      the shop page's floating search pill stayed positioned for a keyboard that is no longer there —
      the reported "search bar is not always fixed to the correct position after going back". */
   kbActive=false; kbOffset=0; _pinLast="";
-  unlockPageScroll();
+  const restoreY = unlockPageScroll();
   /* v1.46: removing position:fixed from <body> does not reflow synchronously, so the very next
      syncZoomHeight() measured #bottomnav at its collapsed-layout position — navH came out 0 and the
      floating search pill was placed at bottom:12px, i.e. UNDERNEATH the nav. Force the reflow, then
      re-measure after the frame and again once the keyboard has finished retracting. */
   void document.body.offsetHeight;
   render(); applyKb(); syncZoomHeight();
-  requestAnimationFrame(()=>syncZoomHeight());
+  if(restoreY>0) window.scrollTo(0,restoreY);   // v1.48: now that the full-height page is back
+  requestAnimationFrame(()=>{ if(restoreY>0) window.scrollTo(0,restoreY); syncZoomHeight(); });
   setTimeout(syncZoomHeight, 350); }
 function wireAddSheet(){
   if(!addOpen) return;
@@ -2681,10 +2691,11 @@ function wireAddSheet(){
 }
 // v1.36 item 10: reopening the search bar always starts blank — no leftover text from the last session.
 function openAdd(){ addTab="reg"; addOpen=true; addStaged=[]; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain=""; _pinLast="";
+  const y0 = window.scrollY||window.pageYOffset||0;   // v1.48: read it here, before anything can scroll the page
   if(curPageIdx()===0){ gotoPage(1); } else { render(); }
   /* v1.47: lock AFTER the render. position:fixed on <body> collapses the document height, and doing
      that before the re-render painted let the collapsed page flash through as a blank frame. */
-  lockPageScroll();
+  lockPageScroll(y0);
   const mi=document.getElementById("mainInput"); if(mi){ mi.value=""; mi.focus(); } }
 function startMic(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
