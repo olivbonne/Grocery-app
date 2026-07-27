@@ -143,12 +143,13 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   html[data-theme="ink"] .chk-tick, html[data-theme="noir"] .chk-tick {
     background:var(--btn) !important; color:var(--btn-text) !important; }
   html[data-theme="ink"] .syncdot, html[data-theme="noir"] .syncdot { filter:grayscale(1); }
-  /* v1.41 item 3: Ink and Noir deliberately strip the category colours, which is exactly what told
-     a selected regular from an unselected one. Fall back to line STYLE instead of hue — dashed
-     outline + muted text for "not on the list", solid for "on the list". Style reads on any
-     wallpaper, unlike a colour or a background tint. */
+  /* v1.41 item 3 / v1.47 item 2: Ink and Noir deliberately strip the category colours, which is exactly
+     what told a selected regular from an unselected one. The signal is now FILL and TEXT WEIGHT, not
+     line style — both states use the same solid geometry as a shop pill, and "not on the list" reads
+     from the transparent fill + muted text. (The old dashed outline made one setting look like two
+     different things.) */
   html[data-theme="ink"] .pill.reg-out, html[data-theme="noir"] .pill.reg-out {
-    border:1.5px dashed var(--muted2) !important; border-left:1.5px dashed var(--muted2) !important;
+    border:1.5px solid var(--line) !important; border-left:4px solid var(--ink) !important;
     background:transparent !important; color:var(--muted) !important; }
   html[data-theme="ink"] .pill.reg-in, html[data-theme="noir"] .pill.reg-in {
     border:1.5px solid var(--ink) !important; border-left:4px solid var(--ink) !important;
@@ -207,6 +208,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .pill, .bapill, .listbubble, .navbtn, .iconbtn, .micbtn, .optaction, .seg button, .lb-badge { transition: transform .15s ease, background-color .15s ease, border-color .15s ease, color .15s ease; }
   .pill:active, .bapill:active, .listbubble:active, .navbtn:active, .iconbtn:active, .micbtn:active, .optaction:active { transform: scale(0.97); }
   button:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+  /* v1.47: belt-and-braces against the white flash — when position:fixed collapses <body>, whatever
+     shows through is the ROOT element's background, so it must be paper, never the UA white. */
+  html { background:var(--paper); }
   html,body { margin:0; background:var(--paper); color:var(--text); min-height:100vh; min-height:100dvh;
     font-family:'Outfit',-apple-system,'SF Pro Text',system-ui,sans-serif; }
   .wrap { max-width:480px; margin:0 auto; }
@@ -837,10 +841,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      would win on source order — hence `.sheet.addsheet` here. Its own keyframe travels the full sheet
      height (the shared `sheetup` only nudges 28px, which reads as sluggish stretched over 0.8s). */
   @keyframes addsheetup { from{ opacity:.4; transform:translateY(100%) } to{ opacity:1; transform:translateY(0) } }
-  .sheet.addsheet { animation:addsheetup .8s cubic-bezier(.22,.61,.36,1) both; }
+  /* v1.47: deliberately slow deploy (2s) requested for debugging — it makes the opening frames
+     watchable. One-line change back to .8s when we are done looking. */
+  .sheet.addsheet { animation:addsheetup 2s cubic-bezier(.22,.61,.36,1) both; }
   /* v1.46: pinAddSheet now writes bottom/max-height (bottom-anchored, content-sized), so those are
      the properties that need easing — transitioning top/height no longer matches what JS writes. */
-  .addsheet.vvpin { transition:bottom .28s cubic-bezier(.22,.61,.36,1), max-height .28s cubic-bezier(.22,.61,.36,1); }
+  .addsheet.vvpin { transition:bottom .28s cubic-bezier(.22,.61,.36,1), max-height .28s cubic-bezier(.22,.61,.36,1), min-height .28s cubic-bezier(.22,.61,.36,1); }
   @media (prefers-reduced-motion: reduce){ .sheet.addsheet { animation-duration:.01ms; } .addsheet.vvpin { transition:none; } }
   .addsheet-head { display:flex; gap:8px; align-items:flex-start; }
   .addsheet-done { flex:none; border:none; background:var(--btn); color:var(--btn-text); font-weight:800; font-size:14px; padding:11px 16px; border-radius:14px; }
@@ -958,7 +964,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.46";
+const APP_VERSION = "v1.47";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1990,7 +1996,21 @@ if(typeof window!=="undefined"){
       // v1.38: iOS settles the keyboard/viewport over a few frames — re-pin across that window so the
       // sheet lands correctly however long the animation takes (a single scrollTo was too weak).
       [60,160,320,500].forEach(ms=>setTimeout(onVV, ms)); } });
-    document.addEventListener("focusout", ()=>{ kbActive=false; kbOffset=0; applyKb(); });
+    document.addEventListener("focusout", (e)=>{ kbActive=false; kbOffset=0; applyKb();
+      /* v1.47: the accessory bar's ✓ blurs the field instead of firing Enter, so the sheet used to sit
+         there with no keyboard — a stub of the focus area stuck to the bottom of the screen. Treat it
+         as the same "done" gesture the return key is. Deferred a frame because focus moving BETWEEN
+         controls inside the sheet (the name field, a chip) also fires focusout, and only a blur that
+         lands outside the sheet means the user is finished. */
+      if(!addOpen) return;
+      setTimeout(()=>{
+        if(!addOpen) return;
+        const sheet=document.getElementById("addSheet"); if(!sheet) return;
+        const a=document.activeElement;
+        if(a && a!==document.body && sheet.contains(a)) return;   // moved to another control in the sheet
+        commitAddSheet();
+      }, 120);
+    });
   }
   document.addEventListener("click", (e)=>{
     if(quickEdit && !e.target.closest(".qpanel") && !e.target.closest("[data-qmore]")){ quickEdit=null; render(); }
@@ -2386,13 +2406,12 @@ function addSheetRows(){
      grid. The list look wants the base shop-pill sizing, exactly as the old "list" mode did. */
   return `<div class="shop addstrip-wrap"><div class="zoomer ${styl()}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}${(dispBase()==='large'&&largeCols()>1)?(' gridmode grid'+largeCols()):''}" style="transform:scale(${dens()});transform-origin:top left"><div class="addstrip">${cells}</div></div></div>`;
 }
-/* v1.36 item 9: when an item is picked, the "Edit item" panel stacks ABOVE the result pills and the
-   pills stay on screen (until Done), instead of the panel replacing them. Order top→bottom:
-   [edit panel] [pill strip] [search bar]. */
 function addBodyHTML(){
-  const strip = addSheetRows();
-  if(!addEditId) return strip;
-  return addEditPanel() + strip;
+  /* v1.47: once an item is picked, its Edit panel is the whole point of the sheet — the leftover
+     result pills under it were clutter (and pushed the panel up out of reach). Show one or the
+     other, never both. */
+  if(addEditId) return addEditPanel();
+  return addSheetRows();
 }
 function addSheet(){
   return `<div class="sheet-bg" id="addBg"><div class="sheet addsheet" id="addSheet">
@@ -2415,13 +2434,37 @@ function addKeepScroll(fn){ const sb=document.getElementById("addSheetBody"); _a
 /* v1.44 item 5: a qty/weight tap re-renders the body, which used to reset the panel's scroll to the
    top and blur the search bar — the panel jumped and the keyboard dropped. Keep both: restore the
    scroll offset, and re-focus the bar only if it held focus before the write. */
+/* v1.47: the body it rebuilds contains the Edit panel's name field, so restoring focus only to
+   #mainInput meant typing in the name (or any save() echo arriving mid-edit) destroyed the focused
+   element and iOS dropped the keyboard. Remember which field had focus and where the caret was, and
+   put both back. */
+let _refreshingAddBody=false;
 function refreshAddBody(){ const sb=document.getElementById("addSheetBody"); if(!sb) return;
+  /* v1.47: re-entrancy guard. Rewriting the body REMOVES the focused name field, which fires its own
+     blur handler, which calls straight back in here — and that nested call captures activeElement as
+     <body> and so restores focus to nothing, undoing the restore the outer call had just done. That
+     is why typing a letter in the name still dropped the keyboard. */
+  if(_refreshingAddBody) return;
+  _refreshingAddBody=true;
+  try{
   const keepY=sb.scrollTop;
-  const wasFocused = document.activeElement && document.activeElement.id==="mainInput";
+  const a=document.activeElement;
+  let sel=null;
+  const key = (a && a.id==="mainInput") ? "#mainInput"
+            : (a && a.dataset && a.dataset.aeName) ? `[data-ae-name="${a.dataset.aeName}"]`
+            : null;
+  if(key){ try{ sel=[a.selectionStart, a.selectionEnd]; }catch(e){ sel=null; } }
   sb.innerHTML=addBodyHTML(); wireAddRows(); wireAddEdit();
   const s2=document.getElementById("addSheetBody"); if(s2) s2.scrollTop=keepY;
-  const inp=document.getElementById("mainInput"); if(inp){ inp.placeholder = addEditId?"Next item…":"Add item…";
-    if(wasFocused){ inp.focus(); const end=(inp.value||"").length; try{ inp.setSelectionRange(end,end); }catch(e){} } } }
+  const inp=document.getElementById("mainInput"); if(inp) inp.placeholder = addEditId?"Next item…":"Add item…";
+  if(key){
+    const el=document.querySelector(key);
+    if(el){ el.focus();
+      const end=(el.value||"").length;
+      const s0 = sel ? Math.min(sel[0], end) : end, s1 = sel ? Math.min(sel[1], end) : end;
+      try{ el.setSelectionRange(s0,s1); }catch(e){} }
+  }
+  } finally { _refreshingAddBody=false; } }
 /* v1.45: THE reason picking an item closed the keyboard. A full render() rebuilds app.innerHTML,
    which removes the focused #mainInput from the document — and iOS dismisses the keyboard the
    instant that happens, which also un-pins the sheet to full height. While the add sheet owns the
@@ -2531,7 +2574,7 @@ function addEditPanel(){
     </div>` : ""}` : ""}
     <div class="addedit-actions">
       <button class="addedit-more" data-ae-again="${it.id}">Buy again</button>
-      <button class="addedit-remove" data-ae-remove="${it.id}">Remove</button>
+      <button class="addedit-remove" data-ae-remove="${it.id}">Delete</button>
       <button class="addedit-done" id="addEditDone">Save</button>
     </div>
   </div>`;
@@ -2549,15 +2592,20 @@ function wireAddEdit(){
   app.querySelectorAll("[data-ae-star]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=cur(); if(it){ it.starred=!it.starred; touch(it); refreshAddBody(); } }; });
   app.querySelectorAll("[data-ae-name]").forEach(inp=>{   // no refreshAddBody() per keystroke — would blur the input mid-typing
     inp.oninput=()=>{ const it=state.items.find(i=>i.id===inp.dataset.aeName); if(it){ it.name=inp.value; touch(it); } };
-    inp.onblur=()=>refreshAddBody(); });
+    /* v1.47: only refresh when the field is still in the document — a blur fired BY its removal is
+       just the rebuild we are already inside of, never a real "user left the field". */
+    inp.onblur=()=>{ if(inp.isConnected) refreshAddBody(); }; });
   /* v1.44 item 5: without the preventDefault the section header steals focus from #mainInput and the
      keyboard drops mid-edit — every sibling control already guards against this. */
   app.querySelectorAll("[data-ae-sechead]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
     b.onclick=()=>{ if(b.dataset.aeSechead==='cat') editCatOpen=!editCatOpen; else editSubOpen=!editSubOpen; refreshAddBody(); }; });
   app.querySelectorAll("[data-ae-cat]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const [id,cid]=b.dataset.aeCat.split("|"); const it=state.items.find(i=>i.id===id); if(it){ it.cat=cid; it.sub=null; touch(it); refreshAddBody(); } }; });
   app.querySelectorAll("[data-ae-sub]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const p=b.dataset.aeSub.split("|"), id=p[0], sub=p[1]||null; const it=state.items.find(i=>i.id===id); if(it){ it.sub=sub; touch(it); refreshAddBody(); } }; });
-  app.querySelectorAll("[data-ae-addcat]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.aeAddcat); if(!it) return; const nm=prompt("New category name:",""); if(nm&&nm.trim()){ const cid=makeCategory(nm); if(cid){ it.cat=cid; it.sub=null; touch(it); refreshAddBody(); } } });
-  app.querySelectorAll("[data-ae-addsub]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.aeAddsub); if(!it) return; const nm=prompt("New subcategory name:",""); if(nm&&nm.trim()){ const sid=makeSub(it.cat,nm); if(sid){ it.sub=sid; touch(it); refreshAddBody(); } } });
+  /* v1.47: prompt() blurs the page and focus never comes back on its own, so the keyboard stayed
+     down after adding a category. Guard the pointerdown like every sibling control, and hand focus
+     back to the search bar once the body has been rebuilt. */
+  app.querySelectorAll("[data-ae-addcat]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.aeAddcat); if(!it) return; const nm=prompt("New category name:",""); if(nm&&nm.trim()){ const cid=makeCategory(nm); if(cid){ it.cat=cid; it.sub=null; touch(it); refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); } } }; });
+  app.querySelectorAll("[data-ae-addsub]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.aeAddsub); if(!it) return; const nm=prompt("New subcategory name:",""); if(nm&&nm.trim()){ const sid=makeSub(it.cat,nm); if(sid){ it.sub=sid; touch(it); refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); } } }; });
   app.querySelectorAll("[data-ae-remove]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const id=b.dataset.aeRemove; const it=state.items.find(i=>i.id===id);
     if(it){ baForget(it.name, it.cat); state.buyAgain=state.buyAgain.filter(x=>!(x.name===it.name && x.cat===it.cat)); }   // v1.37 item 6
     state.items=state.items.filter(i=>i.id!==id); addEditId=null; save(); refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }; });
@@ -2632,8 +2680,11 @@ function wireAddSheet(){
   wireAddSheetDrag();
 }
 // v1.36 item 10: reopening the search bar always starts blank — no leftover text from the last session.
-function openAdd(){ addTab="reg"; addOpen=true; lockPageScroll(); addStaged=[]; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain=""; _pinLast="";
+function openAdd(){ addTab="reg"; addOpen=true; addStaged=[]; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain=""; _pinLast="";
   if(curPageIdx()===0){ gotoPage(1); } else { render(); }
+  /* v1.47: lock AFTER the render. position:fixed on <body> collapses the document height, and doing
+     that before the re-render painted let the collapsed page flash through as a blank frame. */
+  lockPageScroll();
   const mi=document.getElementById("mainInput"); if(mi){ mi.value=""; mi.focus(); } }
 function startMic(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -2720,10 +2771,13 @@ function pinAddSheet(){
   const gap   = Math.max(20, Math.round(vv.height*0.06));        // sliver of page left visible at the top
   const bot   = Math.max(0, Math.round(window.innerHeight - (vv.offsetTop + vv.height)));
   const maxH  = Math.max(180, Math.round(vv.height - gap));
+  /* v1.47: reserve the height the Edit panel will need, so picking an item does not make the sheet
+     jump upward. The sheet opens at the size it will settle at. Capped by maxH on small screens. */
+  const minH = Math.min(maxH, 470);
   /* v1.40 item 1: the visualViewport resize/scroll handlers fire in bursts while scrolling. Re-writing
      identical geometry forces a layout every time, and that churn is what read as jerky scrolling
      and the sheet sliding about. Write only when something actually changed. */
-  const key=bot+"|"+maxH+"|"+kbUp+"|"+Math.round(vv.offsetTop)+"|"+Math.round(vv.height);
+  const key=bot+"|"+maxH+"|"+minH+"|"+kbUp+"|"+Math.round(vv.offsetTop)+"|"+Math.round(vv.height);
   if(key===_pinLast) return;
   _pinLast=key;
   as.classList.add("vvpin");
@@ -2732,16 +2786,18 @@ function pinAddSheet(){
      large empty grey area above the search bar, and the "full height focus area" whenever the
      keyboard went away (blur) while the sheet stayed open. */
   as.style.top       = "auto";
-  as.style.bottom    = bot + "px";
-  as.style.height    = "auto";
-  as.style.maxHeight = maxH + "px";
+  as.style.bottom    = "0px";                    // v1.47: reach the screen bottom so the sheet's own
+  as.style.height    = "auto";                   // background covers the strip behind the accessory bar
+  as.style.maxHeight = (maxH + bot) + "px";      // content area stays maxH once the padding is added
+  as.style.minHeight = (minH + bot) + "px";
   as.style.maxWidth  = "480px";
-  /* With the keyboard up the visual viewport already ends above the keyboard and its accessory bar,
-     so the safe-area bottom padding is dead space between the search bar and the keyboard. This
-     inline write is the authoritative one — `.addsheet.kbup` (driven by kbActive, which focusout
-     clears) could go stale and is left in place only because applyKb still toggles it. */
-  as.style.paddingBottom = kbUp ? "0px" : "";
-  if(bg){ bg.style.top = Math.round(vv.offsetTop) + "px"; bg.style.height = Math.round(vv.height) + "px"; }
+  /* the content still has to sit above the keyboard — `bot` is exactly the keyboard+accessory height,
+     so pad by it instead of moving the box up. With the keyboard down `bot` is 0 and the empty string
+     hands the padding back to the CSS `calc(10px + env(safe-area-inset-bottom))`. This inline write is
+     the authoritative one — `.addsheet.kbup` (driven by kbActive, which focusout clears) could go
+     stale and is left in place only because applyKb still toggles it. */
+  as.style.paddingBottom = bot > 0 ? bot + "px" : "";
+  if(bg){ bg.style.top = Math.round(vv.offsetTop) + "px"; bg.style.height = Math.round(window.innerHeight - vv.offsetTop) + "px"; }
 }
 function render(){
   ensureCats();
@@ -2863,10 +2919,13 @@ function regPill(entry, cat, it){
   }
   /* v1.43 item 4: the unselected regular hard-coded a full category outline, so "Accent" gave you a
      left bar in the shop area and a full outline here — one setting, two looks. Follow fillMode() like
-     everything else, but keep the lines DASHED: dashed still means "not on the list" (v1.41 item 3). */
-  const outStyle = fillMode()==="full" ? `background:transparent;border:1.5px solid ${cat.color}`
-    : fillMode()==="accent" ? `background:transparent;border:1.5px dashed var(--line);border-left:4px dashed ${cat.color}`
-    : `background:transparent;border:1.5px dashed var(--line)`;
+     everything else. */
+  /* v1.47 item 2: same accent bar as the shop list, solid — the dashed variant made one setting look
+     like two different things. "Not on the list yet" now reads from the transparent fill and muted
+     text instead of the line style. */
+  const outStyle = fillMode()==="full" ? `background:transparent;border:1.5px solid ${cat.color};color:var(--muted)`
+    : fillMode()==="empty" ? `background:transparent;border:1.5px solid var(--line);color:var(--muted)`
+    : `background:transparent;border:1.5px solid var(--line);border-left:4px solid ${cat.color};color:var(--muted)`;
   return `<button class="pill reg-out" data-reg-add="${esc(entry.name)}|${cat.id}" style="${outStyle}">${emS}${name}${metaS}</button>`;
 }
 function planningSection(){
