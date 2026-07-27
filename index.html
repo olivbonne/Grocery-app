@@ -841,12 +841,22 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      would win on source order — hence `.sheet.addsheet` here. Its own keyframe travels the full sheet
      height (the shared `sheetup` only nudges 28px, which reads as sluggish stretched over 0.8s). */
   @keyframes addsheetup { from{ opacity:.4; transform:translateY(100%) } to{ opacity:1; transform:translateY(0) } }
-  /* v1.47: deliberately slow deploy (2s) requested for debugging — it makes the opening frames
-     watchable. One-line change back to .8s when we are done looking. */
-  .sheet.addsheet { animation:addsheetup 2s cubic-bezier(.22,.61,.36,1) both; }
+  /* v1.49: 1.5s is the chosen deploy speed — the sheet is meant to glide up. This is a product
+     decision, not a debugging aid; do not "optimise" it back down. */
+  .sheet.addsheet { animation:addsheetup 1.5s cubic-bezier(.22,.61,.36,1) both; }
   /* v1.46: pinAddSheet now writes bottom/max-height (bottom-anchored, content-sized), so those are
      the properties that need easing — transitioning top/height no longer matches what JS writes. */
-  .addsheet.vvpin { transition:bottom .28s cubic-bezier(.22,.61,.36,1), max-height .28s cubic-bezier(.22,.61,.36,1), min-height .28s cubic-bezier(.22,.61,.36,1); }
+  /* v1.49: .34s (was .28s) so keyboard-driven re-pins glide rather than snap. */
+  /* v1.49: only `bottom` is eased. Transitioning the heights meant the box ANIMATED its growth,
+     which is half of what made the deploy read as a moving slab; the size should just be right. */
+  .addsheet.vvpin { transition:bottom .34s cubic-bezier(.22,.61,.36,1); }
+  /* v1.49: the strip the keyboard and its accessory bar occupy gets its own fixed filler. v1.47
+     covered it by inflating the SHEET instead — which made the sheet ~820px of paper on an 844px
+     screen, and the deploy then swept that near-full-screen slab up the display. White on Ink,
+     black on Dark: that was the reported flash. This filler never moves, never slides, and is only
+     ever as tall as the keyboard strip it hides behind. */
+  .addsheet-under { position:fixed; left:0; right:0; bottom:0; height:0; display:none;
+    background:var(--paper); z-index:1; pointer-events:none; }
   @media (prefers-reduced-motion: reduce){ .sheet.addsheet { animation-duration:.01ms; } .addsheet.vvpin { transition:none; } }
   .addsheet-head { display:flex; gap:8px; align-items:flex-start; }
   .addsheet-done { flex:none; border:none; background:var(--btn); color:var(--btn-text); font-weight:800; font-size:14px; padding:11px 16px; border-radius:14px; }
@@ -964,7 +974,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.48";
+const APP_VERSION = "v1.49";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2423,7 +2433,7 @@ function addBodyHTML(){
   return addSheetRows();
 }
 function addSheet(){
-  return `<div class="sheet-bg" id="addBg"><div class="sheet addsheet" id="addSheet">
+  return `<div class="sheet-bg" id="addBg"><div class="addsheet-under" id="addUnder" aria-hidden="true"></div><div class="sheet addsheet" id="addSheet">
     <div class="addsheet-grab" id="addGrab" aria-hidden="true"><span class="grabbar"></span></div>
     <div class="addsheet-body" id="addSheetBody">${addBodyHTML()}</div>
     <div class="addsheet-foot">
@@ -2527,17 +2537,17 @@ function wireAddRows(){
       if(refocus){ const m=document.getElementById("mainInput"); if(m) m.focus(); }
     };
   };
-  app.querySelectorAll("[data-add-typed]").forEach(b=>press(b,
+  document.querySelectorAll("[data-add-typed]").forEach(b=>press(b,
     ()=>{ const t=(draftMain||"").trim(); if(t){ draftMain=""; playPlan(true); stageAdds(()=>addEntries(t,null)); } }, null, true));
-  app.querySelectorAll("[data-add-ba]").forEach(b=>{ const p=b.dataset.addBa.split("|"), cat=p.pop(), name=p.join("|");
+  document.querySelectorAll("[data-add-ba]").forEach(b=>{ const p=b.dataset.addBa.split("|"), cat=p.pop(), name=p.join("|");
     const go=()=>{ stageAdds(()=>addFromRegular(name,cat)); const it=findItem(name,cat); if(it) openAddEdit(it.id); };   // v1.32 select → inline details above the bar
     press(b, go, ()=>{ stageAdds(()=>addFromRegular(name,cat)); const it=findItem(name,cat); return it&&it.id; }); });
-  app.querySelectorAll("[data-add-dict]").forEach(b=>{ const p=b.dataset.addDict.split("|"), cat=p.pop(), name=p.join("|");
+  document.querySelectorAll("[data-add-dict]").forEach(b=>{ const p=b.dataset.addDict.split("|"), cat=p.pop(), name=p.join("|");
     const go=()=>{ playPlan(true); stageAdds(()=>addEntries(name,cat)); const it=findItem(name,cat); if(it) openAddEdit(it.id); };
     press(b, go, ()=>{ playPlan(true); stageAdds(()=>addEntries(name,cat)); const it=findItem(name,cat); return it&&it.id; }); });
-  app.querySelectorAll("[data-add-inc]").forEach(b=>{ const id=b.dataset.addInc;
+  document.querySelectorAll("[data-add-inc]").forEach(b=>{ const id=b.dataset.addInc;
     press(b, ()=>openAddEdit(id), ()=>id); });   // v1.32 on-list result: tap opens its details, long-press full edit
-  app.querySelectorAll("[data-add-pred]").forEach(b=>{ const k=b.dataset.addPred;
+  document.querySelectorAll("[data-add-pred]").forEach(b=>{ const k=b.dataset.addPred;
     const go=()=>{ stageAdds(()=>predictAdd(k)); const rec=purch[k]; const it=rec&&findItem(rec.name,rec.cat); if(it) openAddEdit(it.id); };
     press(b, go, ()=>{ const rec=purch[k]; if(!rec) return null; stageAdds(()=>predictAdd(k)); const it=findItem(rec.name,rec.cat); return it&&it.id; }); });
 }
@@ -2591,35 +2601,35 @@ function addEditPanel(){
 function wireAddEdit(){
   const cur=()=>state.items.find(i=>i.id===addEditId);
   const touch=it=>{ markDirty(it.id); save(); syncAddEditInput(it); };   // v1.35 item 5/6: persist + re-sync the search bar, keyboard/bar untouched
-  app.querySelectorAll("[data-ae-minus]").forEach(b=>b.onpointerdown=e=>e.preventDefault());
-  app.querySelectorAll("[data-ae-minus]").forEach(b=>b.onclick=()=>{ const it=cur(); if(it){ it.qty=Math.max(1,(it.qty||1)-1); touch(it); refreshAddBody(); } });
-  app.querySelectorAll("[data-ae-plus]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=cur(); if(it){ it.qty=(it.qty||1)+1; touch(it); refreshAddBody(); } }; });
-  app.querySelectorAll("[data-ae-weight]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{
+  document.querySelectorAll("[data-ae-minus]").forEach(b=>b.onpointerdown=e=>e.preventDefault());
+  document.querySelectorAll("[data-ae-minus]").forEach(b=>b.onclick=()=>{ const it=cur(); if(it){ it.qty=Math.max(1,(it.qty||1)-1); touch(it); refreshAddBody(); } });
+  document.querySelectorAll("[data-ae-plus]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=cur(); if(it){ it.qty=(it.qty||1)+1; touch(it); refreshAddBody(); } }; });
+  document.querySelectorAll("[data-ae-weight]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{
     const p=b.dataset.aeWeight.split("|"), id=p[0], w=p.slice(1).join("|");
     const it=state.items.find(i=>i.id===id); if(it){ it.weight=w; touch(it); refreshAddBody(); } }; });
-  app.querySelectorAll("[data-ae-flag]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const [id,k]=b.dataset.aeFlag.split("|"); const it=state.items.find(i=>i.id===id); if(it){ const t=Array.isArray(it.tags)?it.tags.slice():[]; const i=t.indexOf(k); if(i<0)t.push(k); else t.splice(i,1); it.tags=t; touch(it); refreshAddBody(); } }; });
-  app.querySelectorAll("[data-ae-star]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=cur(); if(it){ it.starred=!it.starred; touch(it); refreshAddBody(); } }; });
-  app.querySelectorAll("[data-ae-name]").forEach(inp=>{   // no refreshAddBody() per keystroke — would blur the input mid-typing
+  document.querySelectorAll("[data-ae-flag]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const [id,k]=b.dataset.aeFlag.split("|"); const it=state.items.find(i=>i.id===id); if(it){ const t=Array.isArray(it.tags)?it.tags.slice():[]; const i=t.indexOf(k); if(i<0)t.push(k); else t.splice(i,1); it.tags=t; touch(it); refreshAddBody(); } }; });
+  document.querySelectorAll("[data-ae-star]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=cur(); if(it){ it.starred=!it.starred; touch(it); refreshAddBody(); } }; });
+  document.querySelectorAll("[data-ae-name]").forEach(inp=>{   // no refreshAddBody() per keystroke — would blur the input mid-typing
     inp.oninput=()=>{ const it=state.items.find(i=>i.id===inp.dataset.aeName); if(it){ it.name=inp.value; touch(it); } };
     /* v1.47: only refresh when the field is still in the document — a blur fired BY its removal is
        just the rebuild we are already inside of, never a real "user left the field". */
     inp.onblur=()=>{ if(inp.isConnected) refreshAddBody(); }; });
   /* v1.44 item 5: without the preventDefault the section header steals focus from #mainInput and the
      keyboard drops mid-edit — every sibling control already guards against this. */
-  app.querySelectorAll("[data-ae-sechead]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
+  document.querySelectorAll("[data-ae-sechead]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
     b.onclick=()=>{ if(b.dataset.aeSechead==='cat') editCatOpen=!editCatOpen; else editSubOpen=!editSubOpen; refreshAddBody(); }; });
-  app.querySelectorAll("[data-ae-cat]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const [id,cid]=b.dataset.aeCat.split("|"); const it=state.items.find(i=>i.id===id); if(it){ it.cat=cid; it.sub=null; touch(it); refreshAddBody(); } }; });
-  app.querySelectorAll("[data-ae-sub]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const p=b.dataset.aeSub.split("|"), id=p[0], sub=p[1]||null; const it=state.items.find(i=>i.id===id); if(it){ it.sub=sub; touch(it); refreshAddBody(); } }; });
+  document.querySelectorAll("[data-ae-cat]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const [id,cid]=b.dataset.aeCat.split("|"); const it=state.items.find(i=>i.id===id); if(it){ it.cat=cid; it.sub=null; touch(it); refreshAddBody(); } }; });
+  document.querySelectorAll("[data-ae-sub]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const p=b.dataset.aeSub.split("|"), id=p[0], sub=p[1]||null; const it=state.items.find(i=>i.id===id); if(it){ it.sub=sub; touch(it); refreshAddBody(); } }; });
   /* v1.47: prompt() blurs the page and focus never comes back on its own, so the keyboard stayed
      down after adding a category. Guard the pointerdown like every sibling control, and hand focus
      back to the search bar once the body has been rebuilt. */
-  app.querySelectorAll("[data-ae-addcat]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.aeAddcat); if(!it) return; const nm=prompt("New category name:",""); if(nm&&nm.trim()){ const cid=makeCategory(nm); if(cid){ it.cat=cid; it.sub=null; touch(it); refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); } } }; });
-  app.querySelectorAll("[data-ae-addsub]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.aeAddsub); if(!it) return; const nm=prompt("New subcategory name:",""); if(nm&&nm.trim()){ const sid=makeSub(it.cat,nm); if(sid){ it.sub=sid; touch(it); refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); } } }; });
-  app.querySelectorAll("[data-ae-remove]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const id=b.dataset.aeRemove; const it=state.items.find(i=>i.id===id);
+  document.querySelectorAll("[data-ae-addcat]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.aeAddcat); if(!it) return; const nm=prompt("New category name:",""); if(nm&&nm.trim()){ const cid=makeCategory(nm); if(cid){ it.cat=cid; it.sub=null; touch(it); refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); } } }; });
+  document.querySelectorAll("[data-ae-addsub]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.aeAddsub); if(!it) return; const nm=prompt("New subcategory name:",""); if(nm&&nm.trim()){ const sid=makeSub(it.cat,nm); if(sid){ it.sub=sid; touch(it); refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); } } }; });
+  document.querySelectorAll("[data-ae-remove]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const id=b.dataset.aeRemove; const it=state.items.find(i=>i.id===id);
     if(it){ baForget(it.name, it.cat); state.buyAgain=state.buyAgain.filter(x=>!(x.name===it.name && x.cat===it.cat)); }   // v1.37 item 6
     state.items=state.items.filter(i=>i.id!==id); addEditId=null; save(); refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }; });
   // v1.38 item 3: "Buy again" adds the item to Regulars without leaving the add flow (replaces "⋯ More").
-  app.querySelectorAll("[data-ae-again]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{
+  document.querySelectorAll("[data-ae-again]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{
     const it=state.items.find(i=>i.id===b.dataset.aeAgain); if(!it) return;
     const k=(it.name||"").toLowerCase()+"|"+it.cat;
     if(state.baTomb) delete state.baTomb[k];
@@ -2631,7 +2641,7 @@ function wireAddEdit(){
   // just dismisses the panel back to another search view that needs a second Done.
   // v1.38 item 3: Save closes the panel but STAYS in the add flow — the keyboard never drops and the
   // caret lands after the trailing comma so the next item can be typed straight away.
-  const dn=app.querySelector("#addEditDone"); if(dn){ dn.onpointerdown=e=>e.preventDefault(); dn.onclick=()=>{
+  const dn=document.querySelector("#addEditDone"); if(dn){ dn.onpointerdown=e=>e.preventDefault(); dn.onclick=()=>{
     addEditId=null; addLastQuery="";
     const mi=document.getElementById("mainInput");
     if(mi){ mi.value=draftMain; grow(mi); mi.focus(); const end=(draftMain||"").length; try{ mi.setSelectionRange(end,end); }catch(e){} }
@@ -2676,15 +2686,60 @@ function endAddSheet(){ addOpen=false; addEditId=null; addEditPrefix=""; addLast
      floating search pill was placed at bottom:12px, i.e. UNDERNEATH the nav. Force the reflow, then
      re-measure after the frame and again once the keyboard has finished retracting. */
   void document.body.offsetHeight;
-  render(); applyKb(); syncZoomHeight();
+  /* v1.49: render the page BEFORE the sheet goes away. The sheet is in <body>, so it survives
+     app.innerHTML and hides the empty frame; then it slides out over a repainted page. */
+  render();
+  syncAddChrome();
   if(restoreY>0) window.scrollTo(0,restoreY);   // v1.48: now that the full-height page is back
-  requestAnimationFrame(()=>{ if(restoreY>0) window.scrollTo(0,restoreY); syncZoomHeight(); });
-  setTimeout(syncZoomHeight, 350); }
+  dismissAddSheet(()=>{ applyKb(); syncZoomHeight();
+    requestAnimationFrame(()=>{ if(restoreY>0) window.scrollTo(0,restoreY); syncZoomHeight(); });
+    setTimeout(syncZoomHeight, 350); }); }
+/* v1.49: the sheet lives in <body>, not inside #app. render() rebuilds app.innerHTML wholesale, and
+   for one frame that leaves the page empty — what shows through is the page background, which is
+   white on Ink and near-black on Dark. That frame IS the reported flash. Keeping the sheet outside
+   #app means opening it never re-renders the page at all, and closing can re-render underneath the
+   sheet while it still covers the screen. */
+function mountAddSheet(){
+  if(document.getElementById("addBg")) return;
+  const host=document.createElement("div");
+  host.innerHTML = addSheet();
+  const node=host.firstElementChild;
+  if(!node) return;
+  document.body.appendChild(node);
+  _pinInstant=true;   // v1.49: first pin after mount is written without a transition (see pinAddSheet)
+  syncAddChrome();
+  wireAddSheet();
+  syncZoomHeight();
+}
+/* the page's own floating pill would otherwise stay visible under the scrim: the templates hide it
+   with `!addOpen`, but we are deliberately not re-rendering them any more. */
+function syncAddChrome(){
+  const fab=document.getElementById("shopAddFabWrap"); if(fab) fab.style.display = addOpen ? "none" : "";
+  const apw=document.getElementById("addPillWrap");    if(apw) apw.style.display = addOpen ? "none" : "";
+}
+function unmountAddSheet(){
+  const bg=document.getElementById("addBg"); if(bg && bg.parentNode) bg.parentNode.removeChild(bg);
+}
+/* v1.49: slide the sheet out instead of having it vanish on the same frame the page repaints —
+   two abrupt changes at once is what read as a jolt. */
+function dismissAddSheet(done){
+  const bg=document.getElementById("addBg"), as=document.getElementById("addSheet");
+  if(!bg){ if(done) done(); return; }
+  const finish=()=>{ unmountAddSheet(); if(done) done(); };
+  const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(reduce || !as){ finish(); return; }
+  bg.style.transition="opacity .34s ease"; bg.style.opacity="0";
+  as.style.transition=(as.style.transition?as.style.transition+", ":"")+"transform .34s cubic-bezier(.4,0,.6,1)";
+  as.style.transform="translateY(100%)";
+  let fired=false; const once=()=>{ if(fired) return; fired=true; finish(); };
+  as.addEventListener("transitionend", once, {once:true});
+  setTimeout(once, 420);   // safety net: transitionend does not fire if the element is display:none
+}
 function wireAddSheet(){
   if(!addOpen) return;
   wireAddBar();
-  const bg=app.querySelector("#addBg"); if(bg) bg.onclick=e=>{ if(e.target===bg) closeAddSheet(); };
-  const dn=app.querySelector("#addDone"); if(dn) dn.onclick=()=>closeAddSheet();
+  const bg=document.getElementById("addBg"); if(bg) bg.onclick=e=>{ if(e.target===bg) closeAddSheet(); };
+  const dn=document.getElementById("addDone"); if(dn) dn.onclick=()=>closeAddSheet();
   wireAddRows();
   wireAddEdit();
   wireAddSheetDrag();
@@ -2692,9 +2747,11 @@ function wireAddSheet(){
 // v1.36 item 10: reopening the search bar always starts blank — no leftover text from the last session.
 function openAdd(){ addTab="reg"; addOpen=true; addStaged=[]; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain=""; _pinLast="";
   const y0 = window.scrollY||window.pageYOffset||0;   // v1.48: read it here, before anything can scroll the page
-  if(curPageIdx()===0){ gotoPage(1); } else { render(); }
+  if(curPageIdx()===0){ gotoPage(1); }   // coming from Lists: the page slide has to happen first
   /* v1.47: lock AFTER the render. position:fixed on <body> collapses the document height, and doing
-     that before the re-render painted let the collapsed page flash through as a blank frame. */
+     that before the re-render painted let the collapsed page flash through as a blank frame.
+     v1.49: there is no render here any more — mounting the sheet into <body> is what replaced it. */
+  mountAddSheet();
   lockPageScroll(y0);
   const mi=document.getElementById("mainInput"); if(mi){ mi.value=""; mi.focus(); } }
 function startMic(){
@@ -2768,6 +2825,10 @@ function applyKb(){ const bar=document.getElementById("botbar"); if(bar) bar.sty
    .offsetTop reports how far iOS scrolled, so adding it back into an explicit `top` cancels the shift.
    Writing explicit top/height also sidesteps iOS's inconsistent dvh behaviour with the keyboard up. */
 let _pinLast="";
+/* v1.49: the burst of re-pins after focusin ([60,160,320,500]) each restarts the .34s transition, so
+   the sheet visibly re-settled several times. The FIRST pin after mount is written with the
+   transition off, so the sheet starts at the right size instead of animating in from a wrong one. */
+let _pinInstant=false;
 function pinAddSheet(){
   const as=document.getElementById("addSheet"); if(!as){ _pinLast=""; return; }
   const bg=document.getElementById("addBg");
@@ -2791,34 +2852,47 @@ function pinAddSheet(){
   const key=bot+"|"+maxH+"|"+minH+"|"+kbUp+"|"+Math.round(vv.offsetTop)+"|"+Math.round(vv.height);
   if(key===_pinLast) return;
   _pinLast=key;
+  const instant=_pinInstant; _pinInstant=false;
+  const prevTrans=as.style.transition;
+  if(instant) as.style.transition="none";
   as.classList.add("vvpin");
   /* v1.46: anchor the sheet's BOTTOM to the visual viewport's bottom and let it grow upward to fit
      its content, instead of forcing a near-full-screen height. The fixed height is what produced the
      large empty grey area above the search bar, and the "full height focus area" whenever the
      keyboard went away (blur) while the sheet stayed open. */
+  /* v1.49: the box is CONTENT-sized again and sits directly above the keyboard. v1.47 stretched it to
+     the screen bottom and padded it back up, which inflated it to nearly the full screen height — a
+     paper rectangle that the deploy animation then swept across the display. The strip below is
+     covered by #addUnder instead, which does not move. */
   as.style.top       = "auto";
-  as.style.bottom    = "0px";                    // v1.47: reach the screen bottom so the sheet's own
-  as.style.height    = "auto";                   // background covers the strip behind the accessory bar
-  as.style.maxHeight = (maxH + bot) + "px";      // content area stays maxH once the padding is added
-  as.style.minHeight = (minH + bot) + "px";
+  as.style.bottom    = bot + "px";
+  as.style.height    = "auto";
+  as.style.maxHeight = maxH + "px";
+  as.style.minHeight = minH + "px";
   as.style.maxWidth  = "480px";
+  const und=document.getElementById("addUnder");
+  if(und){ und.style.height = bot + "px"; und.style.display = bot>0 ? "block" : "none"; }
   /* the content still has to sit above the keyboard — `bot` is exactly the keyboard+accessory height,
      so pad by it instead of moving the box up. With the keyboard down `bot` is 0 and the empty string
      hands the padding back to the CSS `calc(10px + env(safe-area-inset-bottom))`. This inline write is
      the authoritative one — `.addsheet.kbup` (driven by kbActive, which focusout clears) could go
      stale and is left in place only because applyKb still toggles it. */
-  as.style.paddingBottom = bot > 0 ? bot + "px" : "";
+  as.style.paddingBottom = bot > 0 ? "0px" : "";   // v1.49: the keyboard strip is #addUnder's job now
   if(bg){ bg.style.top = Math.round(vv.offsetTop) + "px"; bg.style.height = Math.round(window.innerHeight - vv.offsetTop) + "px"; }
+  if(instant){ void as.offsetHeight; as.style.transition = prevTrans; }   // reflow before the transition comes back
 }
 function render(){
   ensureCats();
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
   if(!me){ renderOnboarding(); window.__mlRendered=true; return; }
   try{ localStorage.setItem("ml_lastview", String(curPageIdx())); }catch(e){}   // v1.21 remember the page across restarts (item 5)
-  if(optOpen){ renderSettingsPage(); wireSettingsPage(); window.__mlRendered=true; syncZoomHeight(); return; }
-  if(view==="lists"){ renderListsPage(); wireListsPage(); window.__mlRendered=true; syncZoomHeight(); return; }
+  if(optOpen){ renderSettingsPage(); wireSettingsPage(); window.__mlRendered=true; syncZoomHeight(); syncAddChrome(); return; }
+  if(view==="lists"){ renderListsPage(); wireListsPage(); window.__mlRendered=true; syncZoomHeight(); syncAddChrome(); return; }
   if(!shopMode) shopMode=true;   // v1.15 Plan and Shop are one page now — the detail page is always the combined, shoppable list
   renderMain(); wire(); window.__mlRendered=true; syncZoomHeight();
+  /* v1.49: the sheet is outside #app now, so a render while it is open must re-hide the page's
+     floating pill itself — the templates can no longer be trusted to have done it. */
+  syncAddChrome();
 }
 
 function renderSetupNotice(){
@@ -3082,9 +3156,7 @@ function renderMain(){
   </div>
   ${checkedBar}
   ${!addOpen?`<div class="addpill-wrap" id="shopAddFabWrap"><button class="addpill" id="shopAddFab"><span class="addpill-ic" aria-hidden="true">${SEARCH_SVG}</span><span class="addpill-ph">Add item…</span></button></div>`:""}${/* v1.36 item 4: search bar shows even on an empty list */""}
-  ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:true,setId:"setNav"})}
-  ${addOpen?addSheet():""}
-  ${finishOpen?finishSheet():""}
+  ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:true,setId:"setNav"})}  ${finishOpen?finishSheet():""}
   ${listsOpen?listsSheet():""}
   ${smartOpen?smartSheet():""}
   ${editing?editSheet():""}
@@ -3280,9 +3352,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>Add items…</span></button></div>`:""}
-  ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}
-  ${addOpen?addSheet():""}
-  ${smartOpen?smartSheet():""}
+  ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}  ${smartOpen?smartSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -3901,8 +3971,8 @@ function editSheet(){
 }
 
 function wireAddBar(){
-  const mi=app.querySelector("#mainInput");
-  const mc=app.querySelector("#mainClear");
+  const mi=document.querySelector("#mainInput");   // v1.49: the sheet lives in <body>, not under #app
+  const mc=document.querySelector("#mainClear");
   const toggleClear=(el,btn)=>{ if(btn) btn.classList.toggle("show", !!(el&&el.value.trim())); };
   const commit=(text)=>{ const t=(text||"").trim(); if(!t) return; draftMain=""; playPlan(true);
     addKeepScroll(()=>stageAdds(()=>addEntries(t,null)));
@@ -3925,7 +3995,7 @@ function wireAddBar(){
       const looksLikeBlock = t && (t.indexOf("\n")>=0 || /\b(meat|fruit|vegetable|veg|fresh|bulk|asian|alcohol|health|others)\s*:/i.test(t) || t.split(",").length>2);
       if(looksLikeBlock){ e.preventDefault(); commit(t); } }; }
   if(mc){ mc.onpointerdown=e=>e.preventDefault(); mc.onclick=()=>{ if(mi){ mi.value=""; draftMain=""; grow(mi); toggleClear(mi,mc); if(addOpen) refreshAddBody(); mi.focus(); } }; }
-  const sb=app.querySelector("#smartBtn"); if(sb){ sb.onpointerdown=e=>e.preventDefault(); sb.onclick=smartAdd; }
+  const sb=document.querySelector("#smartBtn"); if(sb){ sb.onpointerdown=e=>e.preventDefault(); sb.onclick=smartAdd; }
 }
 function wire(){
   wireAddSheet();
