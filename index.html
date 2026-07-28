@@ -117,47 +117,6 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     --mic-img:url('img/mic-dark.png');
     --glass-bg:rgba(0,0,0,.78); --glass-brd:rgba(255,255,255,.14); --glass-hi:rgba(255,255,255,.12); --glass-blur:16px;
   }
-  /* v1.51 — five tinted light themes. Same token set as Light; only the hue differs. */
-  html[data-theme="red"], body[data-theme="red"]{
-    --ink:#3A1F1B; --paper:#FDF3F1; --accent:#C62828;
-    --card:#FFF9F8; --line:#EBD5D0; --chip:#F7E4E0; --muted:#9C7B76; --muted2:#B09490;
-    --btn:#7A2622; --btn-text:#FFF6F4; --on-accent:#fff;
-    --done-bg:#F7E4E0; --done-line:#EFD9D4; --done-text:#B09490; --done-edge:#DCC0BA;
-    --mic-img:url('img/mic-light.png');
-    --glass-bg:rgba(253,243,241,.66); --glass-brd:rgba(255,255,255,.55); --glass-hi:rgba(255,255,255,.75); --glass-blur:16px;
-  }
-  html[data-theme="blue"], body[data-theme="blue"]{
-    --ink:#17263B; --paper:#F0F5FC; --accent:#1E6FD9;
-    --card:#FAFCFF; --line:#D2DEEE; --chip:#E3ECF8; --muted:#7A8CA3; --muted2:#93A3B7;
-    --btn:#1B3A63; --btn-text:#F2F7FD; --on-accent:#fff;
-    --done-bg:#E3ECF8; --done-line:#DAE5F3; --done-text:#93A3B7; --done-edge:#BCCCE2;
-    --mic-img:url('img/mic-light.png');
-    --glass-bg:rgba(240,245,252,.66); --glass-brd:rgba(255,255,255,.55); --glass-hi:rgba(255,255,255,.75); --glass-blur:16px;
-  }
-  html[data-theme="yellow"], body[data-theme="yellow"]{
-    --ink:#3A3116; --paper:#FDF8E7; --accent:#B8860B;
-    --card:#FFFDF4; --line:#EADFBB; --chip:#F7EDD0; --muted:#998C60; --muted2:#B0A47C;
-    --btn:#6B5713; --btn-text:#FDF8E7; --on-accent:#fff;
-    --done-bg:#F7EDD0; --done-line:#EFE5C6; --done-text:#B0A47C; --done-edge:#DCCE9F;
-    --mic-img:url('img/mic-light.png');
-    --glass-bg:rgba(253,248,231,.66); --glass-brd:rgba(255,255,255,.55); --glass-hi:rgba(255,255,255,.75); --glass-blur:16px;
-  }
-  html[data-theme="pink"], body[data-theme="pink"]{
-    --ink:#3B1B2C; --paper:#FDF1F6; --accent:#D6478A;
-    --card:#FFFAFC; --line:#EED3E0; --chip:#F9E2ED; --muted:#A17C90; --muted2:#B695A6;
-    --btn:#7C2A50; --btn-text:#FDF1F6; --on-accent:#fff;
-    --done-bg:#F9E2ED; --done-line:#F1DAE5; --done-text:#B695A6; --done-edge:#E0BDCF;
-    --mic-img:url('img/mic-light.png');
-    --glass-bg:rgba(253,241,246,.66); --glass-brd:rgba(255,255,255,.55); --glass-hi:rgba(255,255,255,.75); --glass-blur:16px;
-  }
-  html[data-theme="grey"], body[data-theme="grey"]{
-    --ink:#23262A; --paper:#F3F4F5; --accent:#5A6470;
-    --card:#FBFBFC; --line:#DADDE1; --chip:#E8EAED; --muted:#7C848D; --muted2:#969DA5;
-    --btn:#383D44; --btn-text:#F3F4F5; --on-accent:#fff;
-    --done-bg:#E8EAED; --done-line:#E0E3E7; --done-text:#969DA5; --done-edge:#C7CCD2;
-    --mic-img:url('img/mic-light.png');
-    --glass-bg:rgba(243,244,245,.66); --glass-brd:rgba(255,255,255,.55); --glass-hi:rgba(255,255,255,.75); --glass-blur:16px;
-  }
   /* v1.39 "Ink" / "Noir" are strictly TWO colours. Per-category colours live in the list data, and
      v1.37's grayscale() mapped each hue to a DIFFERENT grey — the reported "gradient" between
      categories. These hard overrides make every category render identically instead. Scoped to
@@ -297,8 +256,16 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .seg.segfull button { flex:1 1 0; min-width:0; padding:9px 6px; }
   /* v1.51 history rows — a dense log, so it stays readable at 150 entries without becoming a wall. */
   .histlist { display:flex; flex-direction:column; gap:1px; margin:4px 0 2px; }
-  .histday { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.05em;
-    color:var(--muted2); margin:10px 0 3px; }
+  /* v1.52: a period header is the whole tap target — the count tells you what is inside before you
+     open it, which is the point of starting folded. */
+  .histhead { display:flex; align-items:center; gap:8px; width:100%; padding:9px 0; border:none;
+    background:transparent; border-bottom:1px solid var(--line); text-align:left; }
+  .histheadlabel { flex:1; min-width:0; font-size:12.5px; font-weight:800; text-transform:uppercase;
+    letter-spacing:.05em; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .histheadn { flex:none; font-size:12px; font-weight:700; color:var(--muted2); }
+  .histchev { flex:none; font-size:11px; color:var(--muted2); min-width:12px; text-align:right; }
+  .histhead.open .histheadlabel { color:var(--text); }
+  .histrows { display:flex; flex-direction:column; padding-bottom:6px; }
   .histrow { display:flex; align-items:baseline; gap:8px; padding:5px 0; border-bottom:1px solid var(--line); }
   .histname { font-weight:700; font-size:13.5px; color:var(--text); flex:1; min-width:0;
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -696,7 +663,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   body.haswall::before { content:""; position:fixed; inset:0; z-index:-2; background:var(--wall) top center / cover no-repeat; }
   body.haswall::after { content:""; position:fixed; inset:0; z-index:-1; background:var(--paper); opacity:.32; }
   .wallrow { display:flex; flex-wrap:wrap; gap:6px; width:100%; }
-  .wallbtn { flex:1 1 0; min-width:46px; height:40px; border-radius:11px; border:1.5px solid var(--line); background-color:var(--chip); background-position:top center; background-size:cover; color:var(--text); font-weight:700; font-size:12px; display:flex; align-items:center; justify-content:center; text-align:center; }
+  /* v1.52: ten wallpapers now — five per row rather than one ever-thinner strip each. */
+  .wallbtn { flex:1 1 calc(20% - 6px); min-width:46px; height:40px; border-radius:11px; border:1.5px solid var(--line); background-color:var(--chip); background-position:top center; background-size:cover; color:var(--text); font-weight:700; font-size:12px; display:flex; align-items:center; justify-content:center; text-align:center; }
   .wallbtn.on { border-color:var(--accent); border-width:2px; }
   /* v1.42 items 5/8 — colour swatch pickers. Wraps to two rows on a narrow phone. */
   .colrow { display:flex; flex-wrap:wrap; gap:6px; align-items:center; justify-content:flex-start; }
@@ -801,7 +769,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .userlist { display:flex; flex-wrap:wrap; gap:8px; }
   .userchip { display:inline-flex; align-items:center; gap:6px; padding:9px 14px; border-radius:999px;
     border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:14px; }
-  .userchip.on { background:var(--btn); border-color:var(--btn); color:#fff; }
+  /* v1.52: the selected user reads as "highlighted", so it follows the chosen accent like every other
+     selected chip does. It was painted from --btn (the theme's ink), which on Noir with a green accent
+     left one stark white pill in a page of green. --on-accent carries the readable colour, so a white
+     or yellow accent still gets dark text. */
+  .userchip.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
   .userchip .ucur { font-size:10px; font-weight:800; opacity:.8; text-transform:uppercase; letter-spacing:.4px; }
   /* v1.12 "Glasshouse" — Liquid-Glass WEB APPROXIMATION (there is no official Apple web
      framework for it): backdrop blur + layered border + inset highlight, solid fallbacks. */
@@ -922,7 +894,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      classes the JS toggles (`.parked` → `.deploy`) instead. `addsheetup` is kept for the reduced-motion
      path and as the no-JS fallback. */
   .sheet.addsheet { animation:none; }
-  .addsheet.parked { transform:translateY(100%); opacity:.35; transition:none; }
+  /* v1.52: parked means "entirely off the bottom of the SCREEN", which is not the same as translating
+     by its own height. The sheet is now pinned to its final geometry before the stage begins (that is
+     what stops iOS scrolling the viewport at focus), so its box already sits `bot` px up from the
+     bottom edge — translateY(100%) alone left that strip of paper showing while the page was meant to
+     be quietly dimming. --parkoff is the reserved keyboard strip, written by pinAddSheet. */
+  .addsheet.parked { transform:translateY(calc(100% + var(--parkoff, 0px))); opacity:.35; transition:none; }
   /* 1.1s of travel: the user asked for a slow, readable slide, deliberately. Do not "optimise" it down.
      The selector carries `.sheet` purely for specificity: `.addsheet.vvpin` below declares its own
      `transition` at the same weight and later in the sheet, so it silently won and the slide snapped. */
@@ -1069,7 +1046,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.51";
+const APP_VERSION = "v1.52";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1185,15 +1162,7 @@ const THEMES = {
   light:    { dark:false, tc:"#F6F2E7" },
   ink:      { dark:false, tc:"#FFFFFF" },   // v1.37 true black & white
   noir:     { dark:true,  tc:"#000000" },   // v1.39 Ink inverted
-  dark:     { dark:true,  tc:"#141C18" },
-  /* v1.51: five tinted light themes. Each is a full token block (below in the CSS), not a filter —
-     the app reads its colours from tokens, so a hue that is only half-defined shows up as one stray
-     forest-green border on an otherwise pink page. */
-  red:      { dark:false, tc:"#FDF3F1" },
-  blue:     { dark:false, tc:"#F0F5FC" },
-  yellow:   { dark:false, tc:"#FDF8E7" },
-  pink:     { dark:false, tc:"#FDF1F6" },
-  grey:     { dark:false, tc:"#F3F4F5" }
+  dark:     { dark:true,  tc:"#141C18" }
 };
 let theme = localStorage.getItem("ml_theme") || ((typeof window!=="undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark");
 /* v1.42 item 6: the theme list is now just light / ink / noir / dark. Calm was a light theme whose
@@ -1202,6 +1171,13 @@ let theme = localStorage.getItem("ml_theme") || ((typeof window!=="undefined" &&
 if(theme==="calm"){ theme="light"; calmCol=true; localStorage.setItem("ml_theme","light"); localStorage.setItem("ml_calmcol","1"); }
 else if(theme==="mono"){ theme="dark"; localStorage.setItem("ml_theme","dark"); }
 if(theme==="market") theme="light"; else if(theme==="midnight") theme="dark";   // v1.28 removed themes migrate
+/* v1.52: the five tinted themes from v1.51 became WALLPAPERS instead — same colours, but as a
+   backdrop under the Light palette rather than a whole token set. Anyone already on one keeps their
+   colour: the theme falls back to Light and the matching wallpaper is switched on for them. */
+if(["red","blue","yellow","pink","grey"].includes(theme)){
+  try{ if(!localStorage.getItem("ml_wall")) localStorage.setItem("ml_wall", "wall-"+theme); }catch(e){}
+  theme="light"; try{ localStorage.setItem("ml_theme","light"); }catch(e){}
+}
 if(!THEMES[theme]) theme = "light";
 try{ localStorage.setItem("ml_theme", theme); }catch(e){}
 function applyTheme(){ const t = THEMES[theme] || THEMES.light;
@@ -1234,7 +1210,11 @@ function applyTheme(){ const t = THEMES[theme] || THEMES.light;
     }
   });
   document.body.classList.toggle("calmcol", !!calmCol);
-  document.body.style.setProperty("--wall", (typeof wall!=="undefined" && wall) ? `url('img/${wall}-${_wp}.jpg')` : "none");
+  /* v1.52: a tinted wallpaper is a gradient, not a file — and it has no top/bottom variant. */
+  document.body.style.setProperty("--wall",
+    (typeof wall!=="undefined" && wall)
+      ? (WALL_TINTS[wall] || `url('img/${wall}-${_wp}.jpg')`)
+      : "none");
   if(typeof fill!=="undefined") applyFill(); }
 function setTheme(v){ if(!THEMES[v]) return; theme = v; localStorage.setItem("ml_theme", theme); applyTheme(); render(); }
 function toggleTheme(){ setTheme(theme==="dark" ? "light" : "dark"); }   // kept for back-compat
@@ -1255,6 +1235,19 @@ function applyFill(){ try{ document.documentElement.setAttribute("data-fill", fi
 function setFill(m){ fill=m; localStorage.setItem("ml_fill", m); applyFill(); render(); }
 // v1.23 wallpaper — "" (none, default) or wall-1..wall-4, applied as a fixed full-screen backdrop via applyTheme()
 let wall = localStorage.getItem("ml_wall") || "";
+/* v1.52 — the five colour wallpapers. Deliberately CSS gradients rather than image files: the PWA has
+   to work offline with zero external fetches, so every asset ships in the repo, and a flat colour wash
+   is a gradient's natural job anyway. `--wall` feeds `background:var(--wall)`, which takes a gradient
+   exactly as happily as a url(). The `Wallpaper items` top/bottom control is photo-only — there is no
+   subject in a gradient to position — so it hides itself when one of these is picked. */
+const WALL_TINTS = {
+  "wall-red":    "linear-gradient(160deg,#FBE3DC 0%,#EFA994 48%,#C9603F 100%)",
+  "wall-blue":   "linear-gradient(160deg,#DDE9F8 0%,#9CBEE6 48%,#3F6FA8 100%)",
+  "wall-yellow": "linear-gradient(160deg,#FBEFCB 0%,#EDD183 48%,#BE9526 100%)",
+  "wall-pink":   "linear-gradient(160deg,#FBE0EC 0%,#EDA6C4 48%,#C25587 100%)",
+  "wall-grey":   "linear-gradient(160deg,#E9EBEE 0%,#BFC5CC 48%,#7B838C 100%)"
+};
+function isTintWall(v){ return !!WALL_TINTS[v]; }
 let wallPos = localStorage.getItem("ml_wallpos") || "bottom";   // v1.24 food band at "top" or "bottom" of the wallpaper
 function setWall(v){ wall = v; localStorage.setItem("ml_wall", v); applyTheme(); render(); }
 function setWallPos(v){ wallPos = v; localStorage.setItem("ml_wallpos", v); applyTheme(); render(); }
@@ -2904,31 +2897,38 @@ function openAdd(){ addTab="reg"; addOpen=true; addStaged=[]; addEditId=null; ad
      v1.49: there is no render here any more — mounting the sheet into <body> is what replaced it. */
   mountAddSheet();
   lockPageScroll(y0);
-  /* v1.50 — the open is a SEQUENCE, not one simultaneous lurch:
-       phase 1 (0 → 500ms): the shop page stays exactly where it is and simply dims under the scrim.
-                            Nothing slides, nothing resizes, no keyboard.
-       phase 2 (at 500ms):  the sheet is pinned to its FINAL geometry using the remembered keyboard
-                            height, then the input is focused (keyboard starts rising) and the sheet
-                            is released to slide up over 1.1s into the space already reserved for it.
-     Focusing last is what stops iOS scrolling the visual viewport to hunt for the input: by the time
-     it is focused it already sits above where the keyboard is going to be. */
+  /* v1.52 — the open is still staged, but the FOCUS is no longer part of the staging. iOS raises the
+     keyboard only for a focus() that runs inside the task of a real user gesture; v1.50 deferred it by
+     500ms, which discards that activation, so the caret landed in the field and the keyboard simply
+     never came. (The sheet then dropped to the bottom edge 1.4s later — that was the no-keyboard
+     safety net below doing its job.) Keyboard timing is not ours to schedule. What we can stage is
+     everything else:
+       t=0     reserve the keyboard strip, pin the sheet to its final geometry, and focus — the
+               keyboard starts rising and the scrim starts fading in, while the sheet stays parked
+               off the bottom edge, so the page dims rather than lurches.
+       t=300ms the sheet is released and slides up over 1.1s into space already reserved for it.
+     Pinning BEFORE the focus is what still stops iOS scrolling the visual viewport to hunt for the
+     input: by the time it is focused it already sits above where the keyboard is going to be. */
   const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const bg=document.getElementById("addBg");
-  const focusIn=()=>{ const mi=document.getElementById("mainInput"); if(mi){ mi.value=""; mi.focus(); _addFocused=true; } };
+  _botFloor = kbGuess();                 // reserve the keyboard strip before anything is measured
+  _pinLast=""; _pinInstant=true; pinAddSheet();
+  const deployNow=()=>{ const as=document.getElementById("addSheet");
+    if(as){ void as.offsetHeight; as.classList.remove("parked"); as.classList.add("deploy"); } };
   if(reduce){
     if(bg) bg.style.opacity="";
-    const as=document.getElementById("addSheet"); if(as){ as.classList.remove("parked"); as.classList.add("deploy"); }
-    focusIn(); return;
+    deployNow();
+    const mi0=document.getElementById("mainInput"); if(mi0){ mi0.value=""; mi0.focus(); _addFocused=true; }
+    return;
   }
-  requestAnimationFrame(()=>{ if(bg && addOpen) bg.style.opacity="1"; });   // phase 1: the background changes, alone
+  requestAnimationFrame(()=>{ if(bg && addOpen) bg.style.opacity="1"; });   // the background changes first
+  /* SYNCHRONOUS — this line must stay in the gesture's own task. Do not wrap it in a timer, a promise
+     continuation or an await; every one of those loses the user activation and the keyboard with it. */
+  const mi=document.getElementById("mainInput"); if(mi){ mi.value=""; mi.focus(); _addFocused=true; }
   _addPhase2 = setTimeout(()=>{
     _addPhase2=null;
     if(!addOpen) return;
-    _botFloor = kbGuess();                 // reserve the keyboard strip before anything moves
-    _pinLast=""; _pinInstant=true; pinAddSheet();
-    const as=document.getElementById("addSheet");
-    if(as){ void as.offsetHeight; as.classList.remove("parked"); as.classList.add("deploy"); }
-    focusIn();                             // phase 2: keyboard and sheet rise together
+    deployNow();
     /* The floor is a PREDICTION. If no keyboard has actually turned up by the time the slide has
        finished — an iPad with a hardware keyboard, a desktop browser, a focus that was refused —
        give the reserved strip back, or the sheet sits stranded above a band of empty paper. */
@@ -2938,7 +2938,7 @@ function openAdd(){ addTab="reg"; addOpen=true; addStaged=[]; addEditId=null; ad
       if(vv2 && (window.innerHeight - vv2.height) > 120) return;   // the keyboard did arrive
       _botFloor=0; _pinLast=""; pinAddSheet();
     }, 1400);
-  }, 500);
+  }, 300);
 }
 function startMic(){
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -3083,6 +3083,7 @@ function pinAddSheet(){
   as.style.maxWidth  = "480px";
   const und=document.getElementById("addUnder");
   if(und){ und.style.height = bot + "px"; und.style.display = bot>0 ? "block" : "none"; }
+  as.style.setProperty("--parkoff", bot + "px");   // v1.52: how far below the screen edge "parked" has to reach
   /* the content still has to sit above the keyboard — `bot` is exactly the keyboard+accessory height,
      so pad by it instead of moving the box up. With the keyboard down `bot` is 0 and the empty string
      hands the padding back to the CSS `calc(10px + env(safe-area-inset-bottom))`. This inline write is
@@ -3658,7 +3659,10 @@ function wireOptions(){
     localStorage.setItem(LS.collapse, JSON.stringify(collapse)); optOpen=false; render(); };
   app.querySelectorAll("[data-opt-theme]").forEach(b=>b.onclick=()=>{ if(theme!==b.dataset.optTheme) setTheme(b.dataset.optTheme); });
   /* v1.51 history */
-  app.querySelectorAll("[data-hist-list]").forEach(b=>b.onclick=()=>{ histView=b.dataset.histList; render(); });
+  app.querySelectorAll("[data-hist-list]").forEach(b=>b.onclick=()=>{ histView=b.dataset.histList; histOpen=new Set(); render(); });
+  app.querySelectorAll("[data-hist-group]").forEach(b=>b.onclick=()=>{ if(histGroup!==b.dataset.histGroup) setHistGroup(b.dataset.histGroup); });
+  app.querySelectorAll("[data-hist-toggle]").forEach(b=>b.onclick=()=>{ const k=b.dataset.histToggle;
+    if(histOpen.has(k)) histOpen.delete(k); else histOpen.add(k); render(); });
   const hc=app.querySelector("#optHistClear"); if(hc) hc.onclick=()=>{ histClear(histView||listCode); render(); };
   app.querySelectorAll("[data-opt-fill]").forEach(b=>b.onclick=()=>{ if(fillMode()!==b.dataset.optFill) setFill(b.dataset.optFill); });
   const ozm=app.querySelector("#optZoomMinus"); if(ozm) ozm.onclick=()=>setDensity(dens()-0.1);
@@ -3954,6 +3958,27 @@ function diagSheet(){ const hd=t=>`<div style="font-size:11px;font-weight:800;te
   </div></div>`;
 }
 let histView = null;   // v1.51: which list the History section is showing; null = the one you are in
+/* v1.52: the history is grouped into collapsible periods. `histOpen` is deliberately in-memory rather
+   than persisted — "collapse automatically" means every visit starts folded up, so a long log is a
+   short list of periods you open one at a time instead of a wall of rows. */
+let histGroup = localStorage.getItem("ml_histgroup") || "day";   // day | week | month
+let histOpen = new Set();
+function setHistGroup(g){ histGroup=g; try{ localStorage.setItem("ml_histgroup", g); }catch(e){} histOpen=new Set(); render(); }
+/* The period a timestamp belongs to, as a stable key plus the label to show. Weeks start on Monday
+   (getDay() is Sunday-based, hence the +6)/7 shuffle). */
+function histPeriod(ts){
+  const d=new Date(ts||0);
+  if(histGroup==="month") return { k:d.getFullYear()+"-"+d.getMonth(),
+    label:d.toLocaleDateString(undefined,{month:"long",year:"numeric"}) };
+  if(histGroup==="week"){
+    const m=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+    m.setDate(m.getDate() - ((m.getDay()+6)%7));
+    return { k:"w"+m.getFullYear()+"-"+m.getMonth()+"-"+m.getDate(),
+      label:"Week of "+m.toLocaleDateString(undefined,{day:"numeric",month:"short"}) };
+  }
+  return { k:d.getFullYear()+"-"+d.getMonth()+"-"+d.getDate(),
+    label:d.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"}) };
+}
 function optionsBody(){
   const row=(label,control)=>`<div class="optrow"><span class="optlabel">${label}</span><span class="optctrl">${control}</span></div>`;
   const rowNL=(label,control)=>`<div class="optrow optnl"><span class="optlabel">${label}</span><span class="optctrl">${control}</span></div>`;   // v1.29 no dividing line
@@ -3967,16 +3992,15 @@ function optionsBody(){
       [{k:"light",label:"Light",bg:"#F6F2E7",br:"#DAD3C0",dot:"#D2542B"},
        {k:"ink",  label:"Ink",  bg:"#FFFFFF",br:"#D8D8D8",dot:"#000000"},
        {k:"noir", label:"Noir", bg:"#000000",br:"#333333",dot:"#FFFFFF"},
-       {k:"dark", label:"Dark", bg:"#141C18",br:"#33433B",dot:"#E2502C"},
-       {k:"red",   label:"Red",   bg:"#FDF3F1",br:"#EBD5D0",dot:"#C62828"},
-       {k:"blue",  label:"Blue",  bg:"#F0F5FC",br:"#D2DEEE",dot:"#1E6FD9"},
-       {k:"yellow",label:"Yellow",bg:"#FDF8E7",br:"#EADFBB",dot:"#B8860B"},
-       {k:"pink",  label:"Pink",  bg:"#FDF1F6",br:"#EED3E0",dot:"#D6478A"},
-       {k:"grey",  label:"Grey",  bg:"#F3F4F5",br:"#DADDE1",dot:"#5A6470"}]
+       {k:"dark", label:"Dark", bg:"#141C18",br:"#33433B",dot:"#E2502C"}]
       .map(t=>`<button data-opt-theme="${t.k}" class="themebtn ${theme===t.k?'on':''}"><span class="themesw" style="background:${t.bg};border-color:${t.br}"><i style="background:${ACCENTS[accent]||t.dot}"></i></span>${t.label}</button>`).join("")
     }</div>`)}
-    ${row("Wallpaper", `<div class="wallrow">${[{v:"",label:"None"},{v:"wall-1"},{v:"wall-2"},{v:"wall-3"},{v:"wall-4"}].map(w=>`<button data-opt-wall="${w.v}" class="wallbtn ${wall===w.v?'on':''}" style="${w.v?`background-image:url('img/${w.v}-${wallPos}.jpg');background-position:center ${wallPos==='bottom'?'bottom':'top'}`:''}">${w.label||''}</button>`).join("")}</div>`)}
-    ${wall ? row("Wallpaper items", `<div class="seg"><button data-opt-wallpos="top" class="${wallPos==='top'?'on':''}">Top</button><button data-opt-wallpos="bottom" class="${wallPos==='bottom'?'on':''}">Bottom</button></div>`) : ""}
+    ${row("Wallpaper", `<div class="wallrow">${[{v:"",label:"None"},{v:"wall-1"},{v:"wall-2"},{v:"wall-3"},{v:"wall-4"},
+      {v:"wall-red"},{v:"wall-blue"},{v:"wall-yellow"},{v:"wall-pink"},{v:"wall-grey"}]
+      .map(w=>`<button data-opt-wall="${w.v}" class="wallbtn ${wall===w.v?'on':''}" aria-label="${esc(w.label||w.v)}" style="${
+        !w.v ? "" : (WALL_TINTS[w.v] ? `background-image:${WALL_TINTS[w.v]}` : `background-image:url('img/${w.v}-${wallPos}.jpg');background-position:center ${wallPos==='bottom'?'bottom':'top'}`)
+      }">${w.label||''}</button>`).join("")}</div>`)}
+    ${(wall && !isTintWall(wall)) ? row("Wallpaper items", `<div class="seg"><button data-opt-wallpos="top" class="${wallPos==='top'?'on':''}">Top</button><button data-opt-wallpos="bottom" class="${wallPos==='bottom'?'on':''}">Bottom</button></div>`) : ""}
     ${/* v1.42 items 5/8: full-width rows (like Tile display) — 8 and 10 swatches will not fit in the
           narrow value column beside a label, and wrapped to a ragged second row when they tried. */""}
     ${/* v1.51: back on one line with the label, as asked. v1.42 had stacked them because ten swatches
@@ -4045,17 +4069,27 @@ function optionsBody(){
       const pick = lists.length>1 ? `<div class="optrow optnl" style="border-bottom:none;padding-bottom:2px"><div class="storegrid">${
         lists.map(l=>`<button data-hist-list="${esc(l.code)}" class="storechip ${code===l.code?'on':''}">${esc(l.name||l.code)}</button>`).join("")}</div></div>` : "";
       if(!entries.length) return pick + `<div style="margin:6px 2px 10px;font-size:12px;color:var(--muted2);font-weight:600">Nothing recorded yet. Adding, removing and buying items will show up here.</div>`;
-      let last="";
-      const rows = entries.slice(0,150).map(e=>{
-        const d=new Date(e.t||0);
-        const day=d.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"});
-        const head = (day!==last) ? `<div class="histday">${esc(day)}</div>` : "";
-        last=day;
-        const time=d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
-        return head + `<div class="histrow"><span class="histname">${esc(cap(e.n||""))}</span><span class="histact">${esc(HIST_LABEL[e.a]||e.a||"")}</span><span class="histtime">${esc(time)}</span></div>`;
+      const grp = `${rowNL("Group by", `<div class="seg"><button data-hist-group="day" class="${histGroup==='day'?'on':''}">Day</button><button data-hist-group="week" class="${histGroup==='week'?'on':''}">Week</button><button data-hist-group="month" class="${histGroup==='month'?'on':''}">Month</button></div>`)}`;
+      /* v1.52: bucket first, render second. Every bucket is folded unless the user has opened it this
+         visit, so the section is a short index of periods rather than 150 rows of log. */
+      const buckets=[]; const byKey={};
+      for(const e of entries.slice(0,400)){
+        const p=histPeriod(e.t||0);
+        if(!byKey[p.k]){ byKey[p.k]={ k:p.k, label:p.label, rows:[] }; buckets.push(byKey[p.k]); }
+        byKey[p.k].rows.push(e);
+      }
+      const body = buckets.map(b=>{
+        const open = histOpen.has(b.k);
+        const head = `<button class="histhead ${open?'open':''}" data-hist-toggle="${esc(b.k)}" aria-expanded="${open?'true':'false'}"><span class="histheadlabel">${esc(b.label)}</span><span class="histheadn">${b.rows.length}</span><span class="histchev">${open?'▾':'▸'}</span></button>`;
+        if(!open) return head;
+        const rows = b.rows.map(e=>{
+          const time=new Date(e.t||0).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"});
+          return `<div class="histrow"><span class="histname">${esc(cap(e.n||""))}</span><span class="histact">${esc(HIST_LABEL[e.a]||e.a||"")}</span><span class="histtime">${esc(time)}</span></div>`;
+        }).join("");
+        return head + `<div class="histrows">${rows}</div>`;
       }).join("");
-      return pick + `<div class="histlist">${rows}</div>`
-        + (entries.length>150 ? `<div style="margin:4px 2px;font-size:11px;color:var(--muted2);font-weight:600">Showing the most recent 150 of ${entries.length}.</div>` : "")
+      return pick + grp + `<div class="histlist">${body}</div>`
+        + (entries.length>400 ? `<div style="margin:4px 2px;font-size:11px;color:var(--muted2);font-weight:600">Showing the most recent 400 of ${entries.length}.</div>` : "")
         + `<div style="margin:4px 2px 8px;font-size:11px;color:var(--muted2);font-weight:600">Kept on this device only — it is not shared with the rest of the household.</div>`
         + `<button class="optaction" id="optHistClear" style="margin-top:2px">🗑 Clear this list’s history</button>`;
     })()}
