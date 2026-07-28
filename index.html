@@ -413,7 +413,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .hint2 { margin-top:8px; font-size:12px; color:var(--muted); }
   .none { font-size:12px; color:var(--muted2); }
   /* v1.54 item 1: row-gap then column-gap — the two axes are separately settable. */
-  .pills { display:flex; flex-wrap:wrap; gap:var(--tilegapy,8px) var(--tilegapx,8px); margin-top:6px; }
+  .pills { display:flex; flex-wrap:wrap; gap:max(0px, var(--tilegapy,8px)) max(0px, var(--tilegapx,8px)); margin-top:6px; }
+  /* v1.55 item 2: `gap` cannot go below zero, so a negative Tile gap is applied as negative margins
+     on the tiles instead — at -1 the two hairlines slide over each other, which is the point. Both
+     declarations are inert at every value >= 0 (min(0px, 8px) is 0), so the normal case is untouched. */
+  .pills > * { margin-right:min(0px, var(--tilegapx,8px)); margin-bottom:min(0px, var(--tilegapy,8px)); }
   /* v1.54 item 1: fill, line and roundness are all user-settable; the fallbacks are the old literals. */
   .pill { display:inline-flex; align-items:center; gap:5px; background:var(--tilebg, var(--card)); border:1.5px solid var(--tilebrd, var(--line));
     border-radius:var(--tilerad,12px); padding:0 13px; min-height:48px; font-size:15px; font-weight:700; color:var(--text);   /* v1.38 item 4: the item name is the bold element (qty/weight are 500) */
@@ -612,7 +616,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .shop .catheadchip .cname { font-size:18px; font-weight:700; letter-spacing:normal; text-transform:none; }   /* v1.38: tracks the pill weight so category label == item text (v1.22 rule) */
   .shop .zoomer.compact .catheadchip .cname { font-size:14px; }
   /* v1.22 "Grid" display — equal-width tiles, 3 per row, qty/weight stacked below the name */
-  .shop .zoomer.gridmode .pills { display:grid; gap:var(--tilegapy,8px) var(--tilegapx,8px); }
+  .shop .zoomer.gridmode .pills { display:grid; gap:max(0px, var(--tilegapy,8px)) max(0px, var(--tilegapx,8px)); }
   .shop .zoomer.grid3 .pills { grid-template-columns:repeat(3,1fr); }
   .shop .zoomer.grid4 .pills { grid-template-columns:repeat(4,1fr); }
   .shop .zoomer.grid5 .pills { grid-template-columns:repeat(5,1fr); }
@@ -626,7 +630,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .shop .zoomer.grid5 .pill .pill-meta { font-size:11px; }
   .shop .zoomer.grid1 .pills { grid-template-columns:1fr; }
   /* v1.39 item 5: Large tiles at VARIABLE width — big tiles that size to the word, no fixed columns */
-  .shop .zoomer.largevar .pills { display:flex; flex-wrap:wrap; gap:var(--tilegapy,8px) var(--tilegapx,8px); }
+  .shop .zoomer.largevar .pills { display:flex; flex-wrap:wrap; gap:max(0px, var(--tilegapy,8px)) max(0px, var(--tilegapx,8px)); }
   .shop .zoomer.largevar .pill { flex:none; flex-direction:column; align-items:center; justify-content:center;
     text-align:center; min-height:82px; padding:10px 14px; gap:2px; }
   .shop .zoomer.largevar .pill .pemoji { margin:0; }
@@ -664,6 +668,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .shop .zoomer.smalltile .pill .pill-meta { font-size:12px; padding-left:7px; }
   /* v1.22 item 6 — settings rows with a wide control laid out label-left / control-right (like Theme) */
   .optrow-wide { align-items:center; }
+  /* v1.55 item 2: a label beside a multi-row control should head the FIRST row, not float between
+     the rows — the 2×2 margin grid put "Page margins" level with Top/Bottom instead of Left/Right. */
+  .optrow-wide.optrow-top { align-items:flex-start; }
+  .optrow-wide.optrow-top > .optlabel { padding-top:9px; }
   .optwide { flex:1; min-width:0; }
   /* v1.42 items 5/8: the colour pickers need the FULL row width — 8 and 10 swatches cannot fit in
      the value column beside a label, and wrapped to a ragged second row when they tried. Stacking
@@ -690,6 +698,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .colrow { display:flex; flex-wrap:wrap; gap:6px; align-items:center; justify-content:flex-start; }
   /* v1.54 item 1: the spacing steppers. A 2×2 grid of labelled −/value/+ controls — four separate
      full-width rows would have pushed everything below Appearance off the first screen. */
+  /* v1.55 item 2: three short buttons — they wrap rather than shrink to unreadable stubs. */
+  .numbtns { display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; margin-top:9px; }
   .numgrid { display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; width:100%; }
   .numcell { display:flex; align-items:center; justify-content:space-between; gap:8px; }
   .numcell > span { font-size:12px; font-weight:700; color:var(--muted); }
@@ -1081,7 +1091,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.54";
+const APP_VERSION = "v1.55";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1181,6 +1191,18 @@ function onAccent(hex){ const h=String(hex||"").replace("#","");
   if(h.length!==6) return "#fff";
   const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
   return (0.299*r + 0.587*g + 0.114*b) > 150 ? "#000000" : "#FFFFFF"; }
+/* v1.55 item 2: the pastel version of a picked colour. Calm colours elsewhere is a CSS filter, which
+   cannot apply to a custom property — so the softening is done to the value: pull each channel toward
+   the colour's own luminance (that is the desaturation) and then toward white (that is the lift).
+   Deliberately the same two moves, in the same order, as saturate(.5) brightness(1.1). */
+function calmHex(hex){ const h=String(hex||"").replace("#","");
+  if(h.length!==6) return hex;
+  let r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
+  const l=0.299*r + 0.587*g + 0.114*b;
+  r=r+(l-r)*0.5; g=g+(l-g)*0.5; b=b+(l-b)*0.5;                 // desaturate
+  r=r+(255-r)*0.28; g=g+(255-g)*0.28; b=b+(255-b)*0.28;        // lift
+  const p=n=>Math.max(0,Math.min(255,Math.round(n))).toString(16).padStart(2,"0");
+  return "#"+p(r)+p(g)+p(b); }
 const ACCENTS = { white:"#FFFFFF", black:"#000000", red:"#C62828", orange:"#E2502C", yellow:"#D9A404",
                   green:"#2F9E44", blue:"#1E6FD9", purple:"#7B4FBF", pink:"#D6478A" };
 const TEXTCOLS = { white:"#FFFFFF", black:"#000000", red:"#C62828", orange:"#E2502C", yellow:"#D9A404",
@@ -1202,12 +1224,24 @@ let tileBg  = localStorage.getItem("ml_tilebg")  || "auto";
 let tileBrd = localStorage.getItem("ml_tilebrd") || "auto";
 function setTileBg(v){ tileBg=v; localStorage.setItem("ml_tilebg",v); applyTheme(); render(); }
 function setTileBrd(v){ tileBrd=v; localStorage.setItem("ml_tilebrd",v); applyTheme(); render(); }
+/* v1.55 item 2: Calm applies per picker — a soft fill often wants a firm border, and the other way
+   round. Both are inert while their picker is on Auto: there is no chosen colour to soften. */
+let tileBgCalm  = localStorage.getItem("ml_tilebgcalm")==="1";
+let tileBrdCalm = localStorage.getItem("ml_tilebrdcalm")==="1";
+function setTileBgCalm(v){ tileBgCalm=!!v; localStorage.setItem("ml_tilebgcalm", tileBgCalm?"1":"0"); applyTheme(); render(); }
+function setTileBrdCalm(v){ tileBrdCalm=!!v; localStorage.setItem("ml_tilebrdcalm", tileBrdCalm?"1":"0"); applyTheme(); render(); }
+/* one place that answers "what colour is actually painted", so applyTheme and the swatch previews in
+   Settings can never disagree about it. */
+function tileBgHex(){ const c=ACCENTS[tileBg]; return c ? (tileBgCalm?calmHex(c):c) : null; }
+function tileBrdHex(){ const c=ACCENTS[tileBrd]; return c ? (tileBrdCalm?calmHex(c):c) : null; }
 /* v1.54 item 1: the geometry settings. One table so the stepper UI, the clamping and the CSS
    variable stay in one place instead of eight near-identical globals. Defaults are exactly the
    values the stylesheet used before this version, so an untouched install looks unchanged. */
 const NUMOPT = {
-  gapx: { ls:"ml_gapx",    vr:"--tilegapx", def:8,  min:0,  max:28,  step:2, label:"Across" },
-  gapy: { ls:"ml_gapy",    vr:"--tilegapy", def:8,  min:0,  max:28,  step:2, label:"Down" },
+  /* v1.55 item 2: the two gaps alone may go negative (overlapping hairlines) and move a pixel at a
+     time — they are the only settings where a single pixel is visible. */
+  gapx: { ls:"ml_gapx",    vr:"--tilegapx", def:8,  min:-4, max:28,  step:1, label:"Across" },
+  gapy: { ls:"ml_gapy",    vr:"--tilegapy", def:8,  min:-4, max:28,  step:1, label:"Down" },
   rad:  { ls:"ml_tilerad", vr:"--tilerad",  def:12, min:0,  max:28,  step:2, label:"Roundness" },
   padl: { ls:"ml_padl",    vr:"--padl",     def:14, min:0,  max:40,  step:2, label:"Left" },
   padr: { ls:"ml_padr",    vr:"--padr",     def:14, min:0,  max:40,  step:2, label:"Right" },
@@ -1219,15 +1253,32 @@ const NUMOPT = {
      chrome and the last row of tiles can never end up underneath it. */
   padb: { ls:"ml_padb",                     def:24, min:0,  max:120, step:4, label:"Bottom" }
 };
+/* v1.55 item 2: two levels of default. NUMOPT[].def is the FACTORY value — what the stylesheet used
+   before any of this was settable, and the thing to fall back to when an experiment goes wrong.
+   `ml_numdef` is the user's own baseline, saved from whatever is on screen; once it exists, clearing
+   a value returns to THAT rather than to the factory. Stored as one blob because it is one decision
+   ("this is how I like my spacing"), not seven. */
+function numDefs(){ try{ const o=JSON.parse(localStorage.getItem("ml_numdef")||"null"); return (o && typeof o==="object") ? o : null; }catch(e){ return null; } }
+function hasNumDefs(){ return !!numDefs(); }
+function saveNumDefs(){ const o={}; Object.keys(NUMOPT).forEach(k=>o[k]=numVal(k));
+  try{ localStorage.setItem("ml_numdef", JSON.stringify(o)); }catch(e){}
+  render(); }
+function clearNumDefs(){ try{ localStorage.removeItem("ml_numdef"); }catch(e){} }
 function numVal(k){ const o=NUMOPT[k]; if(!o) return 0;
+  const inRange=v=>(isFinite(v) && v>=o.min && v<=o.max);
   const v=parseInt(localStorage.getItem(o.ls),10);
-  return (isFinite(v) && v>=o.min && v<=o.max) ? v : o.def; }
+  if(inRange(v)) return v;
+  const d=numDefs(); if(d){ const dv=parseInt(d[k],10); if(inRange(dv)) return dv; }
+  return o.def; }
 function bumpNum(k,d){ const o=NUMOPT[k]; if(!o) return;
   const v=Math.max(o.min, Math.min(o.max, numVal(k)+d*o.step));
   try{ localStorage.setItem(o.ls, String(v)); }catch(e){}
   applyTheme(); render(); }
 function resetNums(){ Object.keys(NUMOPT).forEach(k=>{ try{ localStorage.removeItem(NUMOPT[k].ls); }catch(e){} });
   applyTheme(); render(); }
+/* v1.55 item 2: the factory reset drops the user's own baseline too, otherwise "factory" would still
+   land on their saved numbers — which is precisely the state they are trying to escape. */
+function factoryNums(){ clearNumDefs(); resetNums(); }
 const THEMES = {
   light:    { dark:false, tc:"#F6F2E7" },
   ink:      { dark:false, tc:"#FFFFFF" },   // v1.37 true black & white
@@ -1282,7 +1333,7 @@ function applyTheme(){ const t = THEMES[theme] || THEMES.light;
        colours are written only when the user picked one, so "auto" falls back to the theme token
        through the var() fallback in the stylesheet. */
     Object.keys(NUMOPT).forEach(k=>{ const vr=NUMOPT[k].vr; if(vr) rs.setProperty(vr, numVal(k)+"px"); });
-    const tbg=ACCENTS[tileBg], tbr=ACCENTS[tileBrd];
+    const tbg=tileBgHex(), tbr=tileBrdHex();
     if(tbg) rs.setProperty("--tilebg", tbg); else rs.removeProperty("--tilebg");
     if(tbr) rs.setProperty("--tilebrd", tbr); else rs.removeProperty("--tilebrd");
     /* A chosen tile background can be black or white, so the tile text has to follow it or the name
@@ -1295,7 +1346,7 @@ function applyTheme(){ const t = THEMES[theme] || THEMES.light;
      barely readable. Publish the fact that a background was picked on <html> (the same trick
      applyFill uses for the same reason) so one late rule can hand the meta the tile's own text
      colour. Nothing changes while Tile background is Auto. */
-  try{ if(ACCENTS[tileBg]) document.documentElement.setAttribute("data-tilebg","1");
+  try{ if(tileBgHex()) document.documentElement.setAttribute("data-tilebg","1");
        else document.documentElement.removeAttribute("data-tilebg"); }catch(e){}
   document.body.classList.toggle("calmcol", !!calmCol);
   /* v1.52: a tinted wallpaper is a gradient, not a file — and it has no top/bottom variant. */
@@ -2890,7 +2941,8 @@ function wireAddSheetDrag(){
   const grab=document.getElementById("addGrab"); const sheet=document.getElementById("addSheet");
   if(!grab || !sheet) return;
   let startY=0, dy=0, dragging=false;
-  grab.onpointerdown=e=>{ dragging=true; startY=e.clientY; dy=0; sheet.style.transition="none"; try{ grab.setPointerCapture(e.pointerId); }catch(err){} };
+  /* v1.55 item 1: dragging the handle must not blur the field either — same reason as the Cancel button. */
+  grab.onpointerdown=e=>{ e.preventDefault(); dragging=true; startY=e.clientY; dy=0; sheet.style.transition="none"; try{ grab.setPointerCapture(e.pointerId); }catch(err){} };
   grab.onpointermove=e=>{ if(!dragging) return; dy=Math.max(0, e.clientY-startY); sheet.style.transform=`translateY(${dy}px)`; };
   const end=()=>{ if(!dragging) return; dragging=false; sheet.style.transition="transform .22s ease";
     if(dy>90){ closeAddSheet(); }   // v1.44 item 5: a swipe-down is a Cancel, same as the button
@@ -2944,6 +2996,12 @@ function endAddSheet(){
   const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if(reduce || !as || !bg){ finishAddTeardown(); unmountAddSheet(); return; }
   _addClosing=true;
+  /* v1.55 item 1: #addUnder is paper-coloured and sized to the keyboard strip — the moment the
+     keyboard is gone it is a bright band, and on the accessory-bar ✓ path iOS has already taken the
+     keyboard away before we hear about it. Hiding it for the close makes all three exits identical:
+     the scrim (which overdraws the whole screen) is what shows under the travelling sheet, whenever
+     the keyboard actually happens to leave. */
+  const und=document.getElementById("addUnder"); if(und) und.style.display="none";
   /* stage 1 — the sheet travels alone. _botFloor is deliberately still held: the reserved keyboard
      strip is the space it is rolling down through, and releasing it here would re-pin the sheet
      upward mid-travel. */
@@ -3006,7 +3064,13 @@ function wireAddSheet(){
   if(!addOpen) return;
   wireAddBar();
   const bg=document.getElementById("addBg"); if(bg) bg.onclick=e=>{ if(e.target===bg) closeAddSheet(); };
-  const dn=document.getElementById("addDone"); if(dn) dn.onclick=()=>closeAddSheet();
+  /* v1.55 item 1: the same pointerdown guard #mainClear and #smartBtn already carry. Without it,
+     tapping Cancel moves focus off the field, iOS begins retracting the keyboard on the spot, and the
+     paper-coloured #addUnder strip flashes up while the sheet is still travelling — the reported
+     "white screen immediately". It also made Cancel unreliable: the focusout handler commits 120ms
+     after the blur, so a slow tap on Cancel KEPT the staged items instead of dropping them. */
+  const dn=document.getElementById("addDone");
+  if(dn){ dn.onpointerdown=e=>e.preventDefault(); dn.onclick=()=>closeAddSheet(); }
   wireAddRows();
   wireAddEdit();
   wireAddSheetDrag();
@@ -3815,8 +3879,12 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-textcol]").forEach(b=>b.onclick=()=>setTextCol(b.dataset.optTextcol));
   app.querySelectorAll("[data-opt-tilebg]").forEach(b=>b.onclick=()=>setTileBg(b.dataset.optTilebg));
   app.querySelectorAll("[data-opt-tilebrd]").forEach(b=>b.onclick=()=>setTileBrd(b.dataset.optTilebrd));
+  app.querySelectorAll("[data-opt-tilebgcalm]").forEach(b=>b.onclick=()=>setTileBgCalm(b.dataset.optTilebgcalm==="1"));
+  app.querySelectorAll("[data-opt-tilebrdcalm]").forEach(b=>b.onclick=()=>setTileBrdCalm(b.dataset.optTilebrdcalm==="1"));
   app.querySelectorAll("[data-opt-num]").forEach(b=>b.onclick=()=>bumpNum(b.dataset.optNum, +b.dataset.optDelta));
   const onr=app.querySelector("#optNumReset"); if(onr) onr.onclick=()=>resetNums();
+  const ons=app.querySelector("#optNumSave"); if(ons) ons.onclick=()=>saveNumDefs();
+  const onf=app.querySelector("#optNumFactory"); if(onf) onf.onclick=()=>factoryNums();
   app.querySelectorAll("[data-opt-textscope]").forEach(b=>b.onclick=()=>setTextScope(b.dataset.optTextscope));
   app.querySelectorAll("[data-opt-calmcol]").forEach(b=>b.onclick=()=>setCalmCol(b.dataset.optCalmcol==="1"));
   app.querySelectorAll("[data-opt-wall]").forEach(b=>b.onclick=()=>{ if(wall!==b.dataset.optWall) setWall(b.dataset.optWall); });
@@ -4182,17 +4250,19 @@ function optionsBody(){
     ${rowNL("Tile appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}"><span class="tdswatch" style="background:var(--accent)"></span>Full</button><button data-opt-fill="accent" class="${fillMode()==='accent'?'on':''}"><span class="tdswatch" style="border:1.5px solid var(--muted2);border-left:4px solid var(--accent)"></span>Accent</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}"><span class="tdswatch" style="border:1.5px solid var(--muted2)"></span>Empty</button></div>`)}
     ${/* v1.54 item 1: the tile's own colours, on the same one-line pattern as Colour accent. */""}
     <div class="optrow optnl"><span class="optlabel">Tile background</span><span class="optctrl">
-      <div class="colrow colrow-inline"><button data-opt-tilebg="auto" class="colbtn2 ${tileBg==='auto'?'on':''}">Auto</button>${
-      Object.keys(ACCENTS).map(k=>`<button data-opt-tilebg="${k}" class="colsw ${tileBg===k?'on':''}" style="background:${ACCENTS[k]}" aria-label="${k}" title="${k}"></button>`).join("")}</div></span></div>
+      <div class="colrow colrow-inline"><button data-opt-tilebg="auto" class="colbtn2 ${tileBg==='auto'?'on':''}">Auto</button><button data-opt-tilebgcalm="${tileBgCalm?'0':'1'}" class="colbtn2 ${tileBgCalm?'on':''}">Calm</button>${
+      Object.keys(ACCENTS).map(k=>`<button data-opt-tilebg="${k}" class="colsw ${tileBg===k?'on':''}" style="background:${tileBgCalm?calmHex(ACCENTS[k]):ACCENTS[k]}" aria-label="${k}" title="${k}"></button>`).join("")}</div></span></div>
     <div class="optrow optnl"><span class="optlabel">Tile border</span><span class="optctrl">
-      <div class="colrow colrow-inline"><button data-opt-tilebrd="auto" class="colbtn2 ${tileBrd==='auto'?'on':''}">Auto</button>${
-      Object.keys(ACCENTS).map(k=>`<button data-opt-tilebrd="${k}" class="colsw ${tileBrd===k?'on':''}" style="background:${ACCENTS[k]}" aria-label="${k}" title="${k}"></button>`).join("")}</div></span></div>
+      <div class="colrow colrow-inline"><button data-opt-tilebrd="auto" class="colbtn2 ${tileBrd==='auto'?'on':''}">Auto</button><button data-opt-tilebrdcalm="${tileBrdCalm?'0':'1'}" class="colbtn2 ${tileBrdCalm?'on':''}">Calm</button>${
+      Object.keys(ACCENTS).map(k=>`<button data-opt-tilebrd="${k}" class="colsw ${tileBrd===k?'on':''}" style="background:${tileBrdCalm?calmHex(ACCENTS[k]):ACCENTS[k]}" aria-label="${k}" title="${k}"></button>`).join("")}</div></span></div>
     ${rowNL("Tile roundness", numCtl("rad"))}
     <div class="optrow optrow-wide optnl"><span class="optlabel">Tile gap</span><div class="optwide">
       <div class="numgrid">${numCell("gapx")}${numCell("gapy")}</div></div></div>
-    <div class="optrow optrow-wide optnl"><span class="optlabel">Page margins</span><div class="optwide">
+    <div class="optrow optrow-wide optrow-top optnl"><span class="optlabel">Page margins</span><div class="optwide">
       <div class="numgrid">${numCell("padl")}${numCell("padr")}${numCell("padt")}${numCell("padb")}</div>
-      <div style="display:flex;justify-content:flex-end;margin-top:8px"><button id="optNumReset" class="colbtn2">Reset spacing</button></div></div></div>
+      <div class="numbtns"><button id="optNumSave" class="colbtn2">Set as my default</button>${
+        hasNumDefs()?`<button id="optNumReset" class="colbtn2">Reset to mine</button>`:""
+      }<button id="optNumFactory" class="colbtn2">Factory default</button></div></div></div>
     ${rowNL("Category icons", `<div class="seg"><button data-opt-catemoji="1" class="${catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">🥦</span>On</button><button data-opt-catemoji="0" class="${!catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
     ${row("Item icons", `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">🍞</span>On</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
     ${sect("Sort")}
