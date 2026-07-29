@@ -148,9 +148,15 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      line style — both states use the same solid geometry as a shop pill, and "not on the list" reads
      from the transparent fill + muted text. (The old dashed outline made one setting look like two
      different things.) */
+  /* v1.57 item 2: these three declarations carry !important (they exist to flatten the category hues
+     Ink and Noir deliberately strip), so they beat the .pill.reg-out rule further down and the new
+     unselected-tile pickers could not reach these two themes at all — a chosen fill silently did
+     nothing on Ink or Noir. They read the same tokens now; the fallbacks are what they used to be,
+     so the flattening still happens whenever no colour has been picked. Note the SELECTED tokens are
+     not usable here: this is the unselected state. */
   html[data-theme="ink"] .pill.reg-out, html[data-theme="noir"] .pill.reg-out {
-    border:1.5px solid var(--tilebrd, var(--line)) !important; border-left:4px solid var(--ink) !important;
-    background:transparent !important; color:var(--muted) !important; }
+    border:1.5px solid var(--utilebrd, var(--line)) !important; border-left:4px solid var(--ink) !important;
+    background:var(--utilebg, transparent) !important; color:var(--utiletext, var(--muted)) !important; }
   /* v1.54 item 2: the full-perimeter var(--ink) outline is what drew a hard black line round a
      selected regular on Ink and a hard white one on Noir — the only tile on the page ringed like
      that. The perimeter now uses the same line token every other tile does; "on the list" still
@@ -158,13 +164,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   html[data-theme="ink"] .pill.reg-in, html[data-theme="noir"] .pill.reg-in {
     border:1.5px solid var(--tilebrd, var(--line)) !important; border-left:4px solid var(--ink) !important;
     background:var(--tilebg, var(--card)) !important; color:var(--tiletext, var(--text)) !important; }
-  /* v1.39 "Calm": keep each category distinguishable but pastel — one uniform softening of the
-     data-driven colours, so nothing shouts. */
-  /* v1.42 item 7: "Calm colours" softens the data-driven category colours to pastel on ANY theme.
-     This was the Calm theme's defining trait; it is now an option instead of a whole theme. */
-  body.calmcol .pill, body.calmcol .bapill,
-  body.calmcol .cdot, body.calmcol .cprog > i,
-  body.calmcol .catchip { filter:saturate(.5) brightness(1.1); }
+  /* v1.57 item 2: the global "Calm colours" switch is gone — every colour the user can choose now has
+     its own Calm, and this one only reached the category-driven hues, which no picker covers. If a
+     pastel category look is wanted back it belongs as its own control, not as a second meaning for a
+     word that already appears four times on this screen. */
   /* theme picker swatches */
   .themebtn{ display:flex; flex-direction:column; align-items:center; gap:5px; }
   .themesw{ width:100%; height:18px; border-radius:6px; border:1.5px solid; display:flex; align-items:center; justify-content:center; }
@@ -426,6 +429,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .penddot { width:7px; height:7px; border-radius:50%; background:#E0A800; flex:none; margin-right:1px; }
   .pill.done { background:var(--done-bg); border-color:var(--done-line); border-left-color:var(--done-edge) !important;
     color:var(--done-text); text-decoration:line-through; }
+  /* v1.57 items 1+2: the two tile STATES, each with its own fill, line and text. "Selected" is a tile
+     that is on the list; "unselected" is a regular that is not. Defaults reproduce exactly what the
+     inline styles used to write, so nothing moves until a colour is picked. */
+  .pill.reg-out { background:var(--utilebg, transparent); border-color:var(--utilebrd, var(--line));
+    color:var(--utiletext, var(--muted)); }
   .qty { font-weight:500; font-size:13px; }   /* v1.38 item 4: only the item NAME is bold — qty/weight are not */
   .ba { margin-top:14px; border-top:1.5px dashed var(--line); padding-top:10px; }
   .bahead { display:flex; align-items:center; gap:6px; width:100%; border:none; background:transparent; padding:0; }
@@ -602,6 +610,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   html[data-fill="empty"] .pill.done, html[data-fill="empty"] .shop .pill.done,
   html[data-fill="empty"] .pill.reg-out, html[data-fill="empty"] .pill.reg-in {
     border-left-color:var(--tilebrd, var(--line)) !important; border-left-width:1.5px !important; border-left-style:solid !important; }
+  /* v1.57 item 1: an unselected tile follows the UNSELECTED border token, not the selected one. */
+  html[data-fill="empty"] .pill.reg-out { border-left-color:var(--utilebrd, var(--line)) !important; }
   /* an in-cart tile draws its other three sides in --done-line, so its left edge has to match that
      one instead — otherwise "no left bar" still left a faintly different hairline down one side. */
   html[data-fill="empty"] .pill.done, html[data-fill="empty"] .shop .pill.done { border-left-color:var(--done-line) !important; }
@@ -700,17 +710,32 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      full-width rows would have pushed everything below Appearance off the first screen. */
   /* v1.55 item 2: three short buttons — they wrap rather than shrink to unreadable stubs. */
   .numbtns { display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; margin-top:9px; }
+  /* v1.57 item 2: the slot rows. A fixed caption column keeps "Use" and "Save to" aligned so the two
+     rows read as one control with two verbs. */
+  .slotrow { display:flex; align-items:center; gap:6px; margin-top:7px; }
+  .slotcap { flex:0 0 62px; font-size:12px; font-weight:700; color:var(--muted); }
+  .slotbtn { min-width:38px; text-align:center; }
+  .slotbtn.empty { opacity:.4; }
   .numgrid { display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; width:100%; }
   .numcell { display:flex; align-items:center; justify-content:space-between; gap:8px; }
   .numcell > span { font-size:12px; font-weight:700; color:var(--muted); }
   .numcell .seg { flex:none; }
   .numcell .seg button { min-width:30px; }
   .numval { min-width:34px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; }
-  /* v1.51: the inline variant wraps inside the value column and right-aligns, so a long palette never
-     squeezes the label. The swatches shrink a little so a nine-colour row still lands in two lines. */
-  .colrow-inline { justify-content:flex-end; gap:5px; }
-  .colrow-inline .colsw { width:23px; height:23px; }
-  .colrow-inline .colbtn2 { padding:4px 9px; font-size:12px; }
+  /* v1.57 item 2: every colour picker shares this grid. Six columns of swatch width; Auto and Calm
+     each span three, so they own the first line and the swatches always start on the second. That is
+     what makes nine pickers line up with one another — not the number of swatches, which differs. */
+  .colgrid { display:grid; grid-template-columns:repeat(6, 26px); gap:5px; justify-content:end; flex:1; }
+  .colspan3 { grid-column:span 3; }
+  .optrow-col { align-items:flex-start; }
+  .optrow-col > .optlabel { padding-top:6px; }
+  /* v1.57 item 2: a caption inside a group — quieter than a section heading, so "Selected tiles" reads
+     as a label for the three rows under it rather than as a new part of Settings. */
+  .optsub { font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--muted2); margin:14px 0 2px; }
+  /* v1.57 item 2: Roundness, Tile gap and Page margins are one family and should read as a block —
+     a shared label column stops their controls stepping in and out by a few pixels per row. */
+  .optrow-num > .optlabel { flex:0 0 30%; min-width:0; }
   .colsw { width:26px; height:26px; flex:none; border-radius:50%; border:2px solid var(--line); padding:0; }
   /* v1.51: white and black swatches sit on paper that is nearly the same colour in one theme or the
      other, so the rim has to be the thing that draws them rather than the fill. */
@@ -1094,7 +1119,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.56";
+const APP_VERSION = "v1.57";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1210,14 +1235,26 @@ const ACCENTS = { white:"#FFFFFF", black:"#000000", red:"#C62828", orange:"#E250
                   green:"#2F9E44", blue:"#1E6FD9", purple:"#7B4FBF", pink:"#D6478A" };
 const TEXTCOLS = { white:"#FFFFFF", black:"#000000", red:"#C62828", orange:"#E2502C", yellow:"#D9A404",
                    green:"#2F9E44", blue:"#1E6FD9", purple:"#7B4FBF", pink:"#D6478A" };
+const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };
+/* v1.57 item 2: "Text colour applies to" is retired — Selected/Unselected tile text and Category text
+   are their own pickers now. Carry the old scoped choice into whichever picker inherited it, then
+   hand the global Text colour back to Auto so it does not repaint everything at once. Runs before the
+   `let`s below so this session reads the migrated values rather than waiting for a reload. */
+(function(){ const sc=localStorage.getItem("ml_textscope"); if(!sc || sc==="all") return;
+  const tc=localStorage.getItem("ml_textcol");
+  if(tc && tc!=="auto" && TEXTCOLS[tc]){
+    if(sc==="tile"){ if(!localStorage.getItem("ml_tiletext")) setLS("ml_tiletext", tc);
+                     if(!localStorage.getItem("ml_utiletext")) setLS("ml_utiletext", tc); }
+    else if(sc==="cat"){ if(!localStorage.getItem("ml_cattext")) setLS("ml_cattext", tc); }
+    setLS("ml_textcol","auto");
+  }
+  try{ localStorage.removeItem("ml_textscope"); }catch(e){} })();
+/* v1.57 item 2: the global "Calm colours" switch is gone; drop any stored value once. */
+try{ localStorage.removeItem("ml_calmcol"); }catch(e){}
 let accent   = localStorage.getItem("ml_accent")  || "auto";
 let textCol  = localStorage.getItem("ml_textcol") || "auto";
-let calmCol  = localStorage.getItem("ml_calmcol") === "1";
-let textScope = localStorage.getItem("ml_textscope") || "all";   // v1.43 item 4: all | tile | cat
 function setAccent(v){ accent=v; localStorage.setItem("ml_accent",v); applyTheme(); render(); }
 function setTextCol(v){ textCol=v; localStorage.setItem("ml_textcol",v); applyTheme(); render(); }
-function setTextScope(v){ textScope=v; localStorage.setItem("ml_textscope",v); applyTheme(); render(); }
-function setCalmCol(v){ calmCol=!!v; localStorage.setItem("ml_calmcol", calmCol?"1":"0"); applyTheme(); render(); }
 /* v1.56 item 1: Calm now applies to all four colour pickers, not just the two tile ones. Same reason
    as v1.55: "Calm colours" is a CSS filter and cannot reach a custom property, so the softening has
    to be applied to the value before it is written. Each picker keeps its own switch — a calm accent
@@ -1228,32 +1265,49 @@ function setAccentCalm(v){ accentCalm=!!v; localStorage.setItem("ml_accentcalm",
 function setTextColCalm(v){ textColCalm=!!v; localStorage.setItem("ml_textcolcalm", textColCalm?"1":"0"); applyTheme(); render(); }
 function accentHex(){ const c=ACCENTS[accent]; return c ? (accentCalm?calmHex(c):c) : null; }
 function textColHex(){ const c=TEXTCOLS[textCol]; return c ? (textColCalm?calmHex(c):c) : null; }
-/* v1.54 item 1: two more surface colours the user can drive. "auto" removes the override and the
-   theme token takes over again, exactly like Colour accent and Text colour. --tilebg is consulted
-   only where a tile currently paints var(--card) — i.e. a tile that is ON the list. In-cart tiles
-   (.done) and not-yet-added regulars (.reg-out, transparent) deliberately keep their own fill:
-   those two states are the only thing that tells them apart from a selected one. */
-let tileBg  = localStorage.getItem("ml_tilebg")  || "auto";
-let tileBrd = localStorage.getItem("ml_tilebrd") || "auto";
-function setTileBg(v){ tileBg=v; localStorage.setItem("ml_tilebg",v); applyTheme(); render(); }
-function setTileBrd(v){ tileBrd=v; localStorage.setItem("ml_tilebrd",v); applyTheme(); render(); }
-/* v1.55 item 2: Calm applies per picker — a soft fill often wants a firm border, and the other way
-   round. Both are inert while their picker is on Auto: there is no chosen colour to soften. */
-let tileBgCalm  = localStorage.getItem("ml_tilebgcalm")==="1";
-let tileBrdCalm = localStorage.getItem("ml_tilebrdcalm")==="1";
-function setTileBgCalm(v){ tileBgCalm=!!v; localStorage.setItem("ml_tilebgcalm", tileBgCalm?"1":"0"); applyTheme(); render(); }
-function setTileBrdCalm(v){ tileBrdCalm=!!v; localStorage.setItem("ml_tilebrdcalm", tileBrdCalm?"1":"0"); applyTheme(); render(); }
+/* v1.57 item 2: tiles have two states and each gets its own three colours. Selected = on the list;
+   unselected = a regular that is not. One Calm switch per state rather than one per picker: six
+   switches would be more chrome than the colours they modify, and nobody wants a calm fill with a
+   loud border on the same tile. */
+let tileBg   = localStorage.getItem("ml_tilebg")   || "auto";
+let tileBrd  = localStorage.getItem("ml_tilebrd")  || "auto";
+let tileTxt  = localStorage.getItem("ml_tiletext") || "auto";
+let uTileBg  = localStorage.getItem("ml_utilebg")   || "auto";
+let uTileBrd = localStorage.getItem("ml_utilebrd")  || "auto";
+let uTileTxt = localStorage.getItem("ml_utiletext") || "auto";
+let catTxt   = localStorage.getItem("ml_cattext")   || "auto";
+/* v1.55/v1.56 had a Calm switch per tile picker. Fold both into one per state, carrying either
+   forward so nobody's calm tiles turn loud on upgrade. */
+let selCalm   = (localStorage.getItem("ml_selcalm")   ?? (((localStorage.getItem("ml_tilebgcalm")==="1")||(localStorage.getItem("ml_tilebrdcalm")==="1"))?"1":"0"))==="1";
+let unselCalm = localStorage.getItem("ml_unselcalm")==="1";
+function setTileBg(v){ tileBg=v; setLS("ml_tilebg",v); applyTheme(); render(); }
+function setTileBrd(v){ tileBrd=v; setLS("ml_tilebrd",v); applyTheme(); render(); }
+function setTileTxt(v){ tileTxt=v; setLS("ml_tiletext",v); applyTheme(); render(); }
+function setUTileBg(v){ uTileBg=v; setLS("ml_utilebg",v); applyTheme(); render(); }
+function setUTileBrd(v){ uTileBrd=v; setLS("ml_utilebrd",v); applyTheme(); render(); }
+function setUTileTxt(v){ uTileTxt=v; setLS("ml_utiletext",v); applyTheme(); render(); }
+function setCatTxt(v){ catTxt=v; setLS("ml_cattext",v); applyTheme(); render(); }
+function setSelCalm(v){ selCalm=!!v; setLS("ml_selcalm", selCalm?"1":"0"); applyTheme(); render(); }
+function setUnselCalm(v){ unselCalm=!!v; setLS("ml_unselcalm", unselCalm?"1":"0"); applyTheme(); render(); }
 /* one place that answers "what colour is actually painted", so applyTheme and the swatch previews in
    Settings can never disagree about it. */
 /* v1.56 item 1: "page" is not a fixed colour — it is whatever the current theme paints the page,
    so it is read back from the token rather than stored as a hex. That also means it follows a theme
-   change for free. Calm is not offered on it: softening the page colour toward white would defeat
-   the entire point, which is to match. */
+   change for free. */
 function paperHex(){ try{ const v=getComputedStyle(document.body).getPropertyValue("--paper").trim(); return v||null; }catch(e){ return null; } }
-function tileBgHex(){ if(tileBg==="page") return paperHex();
-  const c=ACCENTS[tileBg]; return c ? (tileBgCalm?calmHex(c):c) : null; }
-function tileBrdHex(){ if(tileBrd==="page") return paperHex();
-  const c=ACCENTS[tileBrd]; return c ? (tileBrdCalm?calmHex(c):c) : null; }
+/* v1.57 item 2: one resolver for every picker: "page" is the theme's own paper colour (read back, so
+   it follows a theme change), a palette key is a hex, and Calm softens whatever came out. */
+function pickHex(key, calm){
+  if(key==="page") return paperHex();
+  const c=ACCENTS[key]; if(!c) return null;
+  return calm ? calmHex(c) : c; }
+function tileBgHex(){  return pickHex(tileBg,  selCalm); }
+function tileBrdHex(){ return pickHex(tileBrd, selCalm); }
+function tileTxtHex(){ return pickHex(tileTxt, selCalm); }
+function uTileBgHex(){  return pickHex(uTileBg,  unselCalm); }
+function uTileBrdHex(){ return pickHex(uTileBrd, unselCalm); }
+function uTileTxtHex(){ return pickHex(uTileTxt, unselCalm); }
+function catTxtHex(){ const c=TEXTCOLS[catTxt]; return c||null; }
 /* v1.54 item 1: the geometry settings. One table so the stepper UI, the clamping and the CSS
    variable stay in one place instead of eight near-identical globals. Defaults are exactly the
    values the stylesheet used before this version, so an untouched install looks unchanged. */
@@ -1309,7 +1363,7 @@ let theme = localStorage.getItem("ml_theme") || ((typeof window!=="undefined" &&
 /* v1.42 item 6: the theme list is now just light / ink / noir / dark. Calm was a light theme whose
    whole point was pastel category colours — that is exactly what the new "Calm colours" option does,
    so a Calm user becomes light + calm colours and keeps their look. Mono was a dark theme. */
-if(theme==="calm"){ theme="light"; calmCol=true; localStorage.setItem("ml_theme","light"); localStorage.setItem("ml_calmcol","1"); }
+if(theme==="calm"){ theme="light"; localStorage.setItem("ml_theme","light"); }
 else if(theme==="mono"){ theme="dark"; localStorage.setItem("ml_theme","dark"); }
 if(theme==="market") theme="light"; else if(theme==="midnight") theme="dark";   // v1.28 removed themes migrate
 /* v1.52: the five tinted themes from v1.51 became WALLPAPERS instead — same colours, but as a
@@ -1340,26 +1394,22 @@ function applyTheme(){ const t = THEMES[theme] || THEMES.light;
   els.forEach(rs=>{
     if(ac){ rs.setProperty("--accent", ac); rs.setProperty("--on-accent", onAccent(ac)); }
     else  { rs.removeProperty("--accent"); rs.removeProperty("--on-accent"); }
-    /* v1.43 item 4: the chosen text colour can be scoped. --text is the global one; --tiletext and
-       --cattext are consulted (with --text as fallback) by the pill and category-header rules, so
-       "Tile text" / "Category text" recolour only their own surface. */
-    rs.removeProperty("--text"); rs.removeProperty("--tiletext"); rs.removeProperty("--cattext");
-    if(tx){
-      if(textScope==="tile") rs.setProperty("--tiletext", tx);
-      else if(textScope==="cat") rs.setProperty("--cattext", tx);
-      else rs.setProperty("--text", tx);
-    }
+    rs.removeProperty("--text");
+    if(tx) rs.setProperty("--text", tx);
     /* v1.54 item 1: geometry is always written (a number always has a value); the two surface
        colours are written only when the user picked one, so "auto" falls back to the theme token
        through the var() fallback in the stylesheet. */
     Object.keys(NUMOPT).forEach(k=>{ const vr=NUMOPT[k].vr; if(vr) rs.setProperty(vr, numVal(k)+"px"); });
-    const tbg=tileBgHex(), tbr=tileBrdHex();
-    if(tbg) rs.setProperty("--tilebg", tbg); else rs.removeProperty("--tilebg");
-    if(tbr) rs.setProperty("--tilebrd", tbr); else rs.removeProperty("--tilebrd");
-    /* A chosen tile background can be black or white, so the tile text has to follow it or the name
-       vanishes into it. Only when the user has NOT set a Text colour of their own — an explicit
-       pick always wins over this. */
-    if(tbg && !tx) rs.setProperty("--tiletext", onAccent(tbg));
+    /* v1.57 item 2: six tile tokens plus the category one. Each is written only when its picker has a
+       colour, so "auto" falls through to the CSS fallback and the theme keeps deciding. */
+    const T={ "--tilebg":tileBgHex(), "--tilebrd":tileBrdHex(), "--tiletext":tileTxtHex(),
+              "--utilebg":uTileBgHex(), "--utilebrd":uTileBrdHex(), "--utiletext":uTileTxtHex(),
+              "--cattext":catTxtHex() };
+    Object.keys(T).forEach(k=>{ if(T[k]) rs.setProperty(k, T[k]); else rs.removeProperty(k); });
+    /* A chosen tile background can be black or white, so the tile text has to follow it unless the
+       user has picked one. Same for the unselected state. */
+    if(T["--tilebg"] && !T["--tiletext"]) rs.setProperty("--tiletext", onAccent(T["--tilebg"]));
+    if(T["--utilebg"] && !T["--utiletext"]) rs.setProperty("--utiletext", onAccent(T["--utilebg"]));
   });
   /* v1.54 item 1: the qty and weight are painted from the CATEGORY colour by an inline style, which
      no stylesheet rule can outrank without !important — and a category red on a chosen blue tile is
@@ -1368,7 +1418,6 @@ function applyTheme(){ const t = THEMES[theme] || THEMES.light;
      colour. Nothing changes while Tile background is Auto. */
   try{ if(tileBgHex()) document.documentElement.setAttribute("data-tilebg","1");
        else document.documentElement.removeAttribute("data-tilebg"); }catch(e){}
-  document.body.classList.toggle("calmcol", !!calmCol);
   /* v1.52: a tinted wallpaper is a gradient, not a file — and it has no top/bottom variant. */
   /* v1.54 item 1: two layers now, so the `background:` shorthand can no longer carry the position
      and size — a multi-layer shorthand would apply them to the last layer only and leave the photo
@@ -3451,18 +3500,19 @@ function regPill(entry, cat, it){
   const metaS = meta?`<span class="pill-meta">${meta}</span>`:"";
   const name = esc(cap(entry.name));
   if(selected){
-    const style = full ? `background:${cat.color};border:1.5px solid ${cat.color};color:#fff` : (fillMode()==="empty" ? `border-left:1.5px solid var(--line)` : `border-left:4px solid ${cat.color}`);
+    /* v1.57 item 1: only the category-driven parts stay inline. Fill, line and text now come from
+       CSS so that one rule owns all four sides of the border — see .pill.reg-in / .pill.reg-out. */
+    const style = full ? `background:${cat.color};border:1.5px solid ${cat.color};color:#fff`
+      : (fillMode()==="empty" ? "" : `border-left:4px solid ${cat.color}`);
     return `<button class="pill reg-in" data-reg-rm="${it.id}" style="${style}">${emS}${name}${metaS}</button>`;
   }
-  /* v1.43 item 4: the unselected regular hard-coded a full category outline, so "Accent" gave you a
-     left bar in the shop area and a full outline here — one setting, two looks. Follow fillMode() like
-     everything else. */
-  /* v1.47 item 2: same accent bar as the shop list, solid — the dashed variant made one setting look
-     like two different things. "Not on the list yet" now reads from the transparent fill and muted
-     text instead of the line style. */
-  const outStyle = fillMode()==="full" ? `background:transparent;border:1.5px solid ${cat.color};color:var(--muted)`
-    : fillMode()==="empty" ? `background:transparent;border:1.5px solid var(--line);color:var(--muted)`
-    : `background:transparent;border:1.5px solid var(--line);border-left:4px solid ${cat.color};color:var(--muted)`;
+  /* v1.57 item 1: the unselected regular used to hard-code its own border, background and text
+     inline. The Empty-mode rule repaints border-left-color with !important, which beat the inline
+     declaration for that ONE side and left the other three grey — a coloured bar down the left of a
+     tile that is not on the list at all. All four sides come from the same token now. */
+  const outStyle = fillMode()==="full" ? `border:1.5px solid ${cat.color}`
+    : fillMode()==="empty" ? ""
+    : `border-left:4px solid ${cat.color}`;
   return `<button class="pill reg-out" data-reg-add="${esc(entry.name)}|${cat.id}" style="${outStyle}">${emS}${name}${metaS}</button>`;
 }
 function planningSection(){
@@ -3915,20 +3965,23 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-textcol]").forEach(b=>b.onclick=()=>setTextCol(b.dataset.optTextcol));
   app.querySelectorAll("[data-opt-tilebg]").forEach(b=>b.onclick=()=>setTileBg(b.dataset.optTilebg));
   app.querySelectorAll("[data-opt-tilebrd]").forEach(b=>b.onclick=()=>setTileBrd(b.dataset.optTilebrd));
-  app.querySelectorAll("[data-opt-tilebgcalm]").forEach(b=>b.onclick=()=>setTileBgCalm(b.dataset.optTilebgcalm==="1"));
-  app.querySelectorAll("[data-opt-tilebrdcalm]").forEach(b=>b.onclick=()=>setTileBrdCalm(b.dataset.optTilebrdcalm==="1"));
+  app.querySelectorAll("[data-opt-tiletext]").forEach(b=>b.onclick=()=>setTileTxt(b.dataset.optTiletext));
+  app.querySelectorAll("[data-opt-utilebg]").forEach(b=>b.onclick=()=>setUTileBg(b.dataset.optUtilebg));
+  app.querySelectorAll("[data-opt-utilebrd]").forEach(b=>b.onclick=()=>setUTileBrd(b.dataset.optUtilebrd));
+  app.querySelectorAll("[data-opt-utiletext]").forEach(b=>b.onclick=()=>setUTileTxt(b.dataset.optUtiletext));
+  app.querySelectorAll("[data-opt-cattext]").forEach(b=>b.onclick=()=>setCatTxt(b.dataset.optCattext));
+  app.querySelectorAll("[data-opt-selcalm]").forEach(b=>b.onclick=()=>setSelCalm(b.dataset.optSelcalm==="1"));
+  app.querySelectorAll("[data-opt-unselcalm]").forEach(b=>b.onclick=()=>setUnselCalm(b.dataset.optUnselcalm==="1"));
   /* v1.56 item 1: distinct attribute names, so these do not collide with the plain accent/textcol selectors. */
   app.querySelectorAll("[data-opt-accentcalm]").forEach(b=>b.onclick=()=>setAccentCalm(b.dataset.optAccentcalm==="1"));
   app.querySelectorAll("[data-opt-textcolcalm]").forEach(b=>b.onclick=()=>setTextColCalm(b.dataset.optTextcolcalm==="1"));
-  const oas=app.querySelector("#optAppSave"); if(oas) oas.onclick=()=>saveAppDefs();
-  const oar=app.querySelector("#optAppReset"); if(oar) oar.onclick=()=>resetAppearance();
+  app.querySelectorAll("[data-app-use]").forEach(b=>b.onclick=()=>useAppSlot(+b.dataset.appUse));
+  app.querySelectorAll("[data-app-save]").forEach(b=>b.onclick=()=>saveAppSlot(+b.dataset.appSave));
   const oaf=app.querySelector("#optAppFactory"); if(oaf) oaf.onclick=()=>factoryAppearance();
   app.querySelectorAll("[data-opt-num]").forEach(b=>b.onclick=()=>bumpNum(b.dataset.optNum, +b.dataset.optDelta));
   const onr=app.querySelector("#optNumReset"); if(onr) onr.onclick=()=>resetNums();
   const ons=app.querySelector("#optNumSave"); if(ons) ons.onclick=()=>saveNumDefs();
   const onf=app.querySelector("#optNumFactory"); if(onf) onf.onclick=()=>factoryNums();
-  app.querySelectorAll("[data-opt-textscope]").forEach(b=>b.onclick=()=>setTextScope(b.dataset.optTextscope));
-  app.querySelectorAll("[data-opt-calmcol]").forEach(b=>b.onclick=()=>setCalmCol(b.dataset.optCalmcol==="1"));
   app.querySelectorAll("[data-opt-wall]").forEach(b=>b.onclick=()=>{ if(wall!==b.dataset.optWall) setWall(b.dataset.optWall); });
   app.querySelectorAll("[data-opt-wallpos]").forEach(b=>b.onclick=()=>{ if(wallPos!==b.dataset.optWallpos) setWallPos(b.dataset.optWallpos); });
   app.querySelectorAll("[data-opt-caton]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optCaton==="1"; if(catOn!==v) setCatOn(v); });
@@ -4235,20 +4288,32 @@ function histPeriod(ts){
    added to the Appearance section in future belongs in this array. */
 const APPEARANCE_KEYS = [
   "ml_theme", "ml_wall", "ml_wallpos",
-  "ml_accent", "ml_accentcalm", "ml_textcol", "ml_textcolcalm", "ml_textscope", "ml_calmcol",
+  "ml_accent", "ml_accentcalm", "ml_textcol", "ml_textcolcalm", "ml_cattext",
   "ml_densities", "ml_density",
   "ml_displays", "ml_largecols", "ml_smallcols", "ml_caton", "ml_subon",
   "ml_fill", "ml_fill_v141",
-  "ml_tilebg", "ml_tilebrd", "ml_tilebgcalm", "ml_tilebrdcalm",
+  "ml_tilebg", "ml_tilebrd", "ml_tiletext", "ml_utilebg", "ml_utilebrd", "ml_utiletext",
+  "ml_selcalm", "ml_unselcalm",
   "ml_gapx", "ml_gapy", "ml_tilerad", "ml_padl", "ml_padr", "ml_padt", "ml_padb", "ml_numdef",
   "ml_catemoji", "ml_itememoji"
 ];
-function appDefs(){ try{ const o=JSON.parse(localStorage.getItem("ml_appdef")||"null"); return (o && typeof o==="object") ? o : null; }catch(e){ return null; } }
-function hasAppDefs(){ return !!appDefs(); }
-function saveAppDefs(){ const o={};
+/* v1.57 item 2: four saved looks instead of one. Stored as a fixed-length array so a slot's NUMBER is
+   stable — slot 3 stays slot 3 whether or not 2 is filled, which is the whole point of numbered
+   presets. Nulls are empty slots. */
+function appSlots(){ try{ const a=JSON.parse(localStorage.getItem("ml_appslots")||"null");
+    if(Array.isArray(a)) return [0,1,2,3].map(i=>a[i]||null);
+  }catch(e){}
+  /* one-shot carry-forward of v1.56's single preset into slot 1 */
+  try{ const old=JSON.parse(localStorage.getItem("ml_appdef")||"null");
+    if(old && typeof old==="object") return [old,null,null,null];
+  }catch(e){}
+  return [null,null,null,null]; }
+function saveAppSlot(i){ const a=appSlots(); const o={};
   APPEARANCE_KEYS.forEach(k=>{ const v=localStorage.getItem(k); if(v!==null) o[k]=v; });
-  try{ localStorage.setItem("ml_appdef", JSON.stringify(o)); }catch(e){}
-  render(); }
+  a[i]=o; setLS("ml_appslots", JSON.stringify(a));
+  try{ localStorage.removeItem("ml_appdef"); }catch(e){}
+  showToast("Appearance saved to "+(i+1)); render(); }
+function useAppSlot(i){ const a=appSlots(); if(a[i]) applyStoredAppearance(a[i]); }
 /* Restoring reloads rather than reassigning. Roughly twenty module-level `let`s are read once at boot
    from these keys (theme, wall, accent, fill, catOn, densities, displays …); writing the storage and
    hand-patching each global is the kind of list that silently falls out of step the next time a
@@ -4259,8 +4324,10 @@ function applyStoredAppearance(o){
   if(o) Object.keys(o).forEach(k=>{ if(APPEARANCE_KEYS.indexOf(k)>=0){ try{ localStorage.setItem(k, o[k]); }catch(e){} } });
   try{ location.reload(); }catch(e){ render(); }
 }
-function resetAppearance(){ applyStoredAppearance(appDefs()); }
-function factoryAppearance(){ try{ localStorage.removeItem("ml_appdef"); }catch(e){} applyStoredAppearance(null); }
+/* v1.57 item 2: a factory reset resets the LOOK and nothing else — `ml_appslots` is deliberately NOT
+   in APPEARANCE_KEYS, so the four saved looks survive it. v1.56 cleared its single preset here, which
+   made sense while there was only one; throwing away four numbered presets does not. */
+function factoryAppearance(){ applyStoredAppearance(null); }
 function optionsBody(){
   const row=(label,control)=>`<div class="optrow"><span class="optlabel">${label}</span><span class="optctrl">${control}</span></div>`;
   const rowNL=(label,control)=>`<div class="optrow optnl"><span class="optlabel">${label}</span><span class="optctrl">${control}</span></div>`;   // v1.29 no dividing line
@@ -4268,57 +4335,67 @@ function optionsBody(){
      from a single place. */
   const numCtl=k=>`<div class="seg"><button data-opt-num="${k}" data-opt-delta="-1" aria-label="Less">−</button><span class="numval">${numVal(k)}</span><button data-opt-num="${k}" data-opt-delta="1" aria-label="More">+</button></div>`;
   const numCell=k=>`<div class="numcell"><span>${NUMOPT[k].label}</span>${numCtl(k)}</div>`;
+  /* v1.57 item 2: one layout for every colour picker, so Auto/Calm and the swatches land in the same
+     places on every row. Ten swatches cannot fit beside a label at 390px — what makes the rows look
+     aligned is that they all WRAP the same way, which a fixed grid guarantees and a flex row does not. */
+  const colRow=(label, attr, cur, calmAttr, calmOn, opts)=>{
+    const o=opts||{};
+    const pal=o.pal||ACCENTS;
+    const sw=k=>`<button data-${attr}="${k}" class="colsw ${cur===k?'on':''}" style="background:${o.calm?calmHex(pal[k]):pal[k]}" aria-label="${k}" title="${k}"></button>`;
+    return `<div class="optrow optnl optrow-col"><span class="optlabel">${label}</span><div class="colgrid">
+      <button data-${attr}="auto" class="colbtn2 colspan3 ${cur==='auto'?'on':''}">Auto</button>${
+        calmAttr?`<button data-${calmAttr}="${calmOn?'0':'1'}" class="colbtn2 colspan3 ${calmOn?'on':''}">Calm</button>`:`<span class="colspan3"></span>`}${
+        o.page?`<button data-${attr}="page" class="colsw colsw-page ${cur==='page'?'on':''}" aria-label="Page" title="Match the page background"></button>`:""}${
+        Object.keys(pal).map(sw).join("")}</div></div>`;
+  };
+  const subhead=t=>`<div class="optsub">${t}</div>`;
   const sect=t=>`<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 2px">${t}</div>`;   // v1.12 grouped settings
   const sectHR=t=>`<div style="border-top:1px solid var(--line);margin:16px 0 2px;padding-top:14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">${t}</div>`;   // v1.29 section with a rule above
   let curSort = (displayFor()==="cat" && (sortModeFor()==="location"||sortModeFor()==="ai")) ? "cat" : sortModeFor();
   if(curSort==="ai" && !aiSortOK()) curSort="location";
   return `
     ${sect("Appearance")}
-    ${/* v1.56 item 1: above Theme deliberately — it is the control that governs everything below it. */""}
+    ${/* v1.57 item 2: four slots. One saved look was not enough to compare two ideas — which is what
+          anyone actually does with this. Applying is one tap; saving is a deliberate second row, so a
+          mis-tap costs you a preview rather than the look you had. */""}
     <div class="optrow optrow-wide optnl"><span class="optlabel">My appearance</span><div class="optwide">
-      <div class="numbtns"><button id="optAppSave" class="colbtn2">Save current</button>${
-        hasAppDefs()?`<button id="optAppReset" class="colbtn2">Restore mine</button>`:""
-      }<button id="optAppFactory" class="colbtn2">Factory default</button></div></div></div>
+      <div class="slotrow"><span class="slotcap">Use</span>${
+        [0,1,2,3].map(i=>`<button data-app-use="${i}" class="colbtn2 slotbtn ${appSlots()[i]?'':'empty'}" ${appSlots()[i]?'':'disabled'}>${i+1}</button>`).join("")}</div>
+      <div class="slotrow"><span class="slotcap">Save to</span>${
+        [0,1,2,3].map(i=>`<button data-app-save="${i}" class="colbtn2 slotbtn">${i+1}</button>`).join("")}</div>
+      <div class="numbtns"><button id="optAppFactory" class="colbtn2">Factory default</button></div></div></div>
     ${rowNL("Theme", `<div class="seg segfull" style="flex-wrap:wrap">${
       [{k:"light",label:"Light",bg:"#F6F2E7",br:"#DAD3C0",dot:"#D2542B"},
+       {k:"dark", label:"Dark", bg:"#141C18",br:"#33433B",dot:"#E2502C"},
        {k:"ink",  label:"Ink",  bg:"#FFFFFF",br:"#D8D8D8",dot:"#000000"},
-       {k:"noir", label:"Noir", bg:"#000000",br:"#333333",dot:"#FFFFFF"},
-       {k:"dark", label:"Dark", bg:"#141C18",br:"#33433B",dot:"#E2502C"}]
+       {k:"noir", label:"Noir", bg:"#000000",br:"#333333",dot:"#FFFFFF"}]
       .map(t=>`<button data-opt-theme="${t.k}" class="themebtn ${theme===t.k?'on':''}"><span class="themesw" style="background:${t.bg};border-color:${t.br}"><i style="background:${accentHex()||t.dot}"></i></span>${t.label}</button>`).join("")
     }</div>`)}
-    ${/* v1.54 item 1: no rule between Wallpaper and its own Top/Bottom control — they are one setting. */""}
-    ${(wall ? rowNL : row)("Wallpaper", `<div class="wallrow">${[{v:"",label:"None"},{v:"wall-1"},{v:"wall-2"},{v:"wall-3"},{v:"wall-4"},
+    ${/* v1.57 item 2: no rule after Wallpaper in either case. Theme, Wallpaper and Text size are the
+          three controls that change the whole page at once, so they read as one group and nothing
+          separates them — including when there is no wallpaper and Text size follows directly. */""}
+    ${rowNL("Wallpaper", `<div class="wallrow">${[{v:"",label:"None"},{v:"wall-1"},{v:"wall-2"},{v:"wall-3"},{v:"wall-4"},
       {v:"wall-red"},{v:"wall-blue"},{v:"wall-yellow"},{v:"wall-pink"},{v:"wall-grey"}]
       .map(w=>`<button data-opt-wall="${w.v}" class="wallbtn ${wall===w.v?'on':''}" aria-label="${esc(w.label||w.v)}" style="${
         !w.v ? "" : (WALL_TINTS[w.v]
-          /* v1.56 item 1: `luminosity` alone applies to the background-COLOUR too, so the gradient was
-             blending with .wallbtn's grey chip and every colour wallpaper came out the same beige. Only
-             the photo layer should blend; the gradient paints normally underneath it. */
           ? `background-image:url('img/${TINT_BAND[w.v]}-${wallPos}.jpg'), ${WALL_TINTS[w.v]};background-blend-mode:luminosity, normal;background-position:center ${wallPos==='bottom'?'bottom':'top'}`
           : `background-image:url('img/${w.v}-${wallPos}.jpg');background-position:center ${wallPos==='bottom'?'bottom':'top'}`)
       }">${w.label||''}</button>`).join("")}</div>`)}
-    ${wall ? row("Wallpaper items", `<div class="seg"><button data-opt-wallpos="top" class="${wallPos==='top'?'on':''}">Top</button><button data-opt-wallpos="bottom" class="${wallPos==='bottom'?'on':''}">Bottom</button></div>`) : ""}
-    ${/* v1.42 items 5/8: full-width rows (like Tile display) — 8 and 10 swatches will not fit in the
-          narrow value column beside a label, and wrapped to a ragged second row when they tried. */""}
-    ${/* v1.51: back on one line with the label, as asked. v1.42 had stacked them because ten swatches
-          do not fit in the narrow value column — they still do not, so the swatch row wraps to a
-          second line inside that column and right-aligns, rather than pushing the label off. */""}
-    <div class="optrow optnl"><span class="optlabel">Colour accent</span><span class="optctrl">
-      ${/* v1.56 item 1: Calm here previews as well as applies — the swatches show the softened value. */""}
-      <div class="colrow colrow-inline"><button data-opt-accent="auto" class="colbtn2 ${accent==='auto'?'on':''}">Auto</button><button data-opt-accentcalm="${accentCalm?'0':'1'}" class="colbtn2 ${accentCalm?'on':''}">Calm</button>${
-      Object.keys(ACCENTS).map(k=>`<button data-opt-accent="${k}" class="colsw ${accent===k?'on':''}" style="background:${accentCalm?calmHex(ACCENTS[k]):ACCENTS[k]}" aria-label="${k}" title="${k}"></button>`).join("")}</div></span></div>
-    <div class="optrow optnl"><span class="optlabel">Text colour</span><span class="optctrl">
-      <div class="colrow colrow-inline"><button data-opt-textcol="auto" class="colbtn2 ${textCol==='auto'?'on':''}">Auto</button><button data-opt-textcolcalm="${textColCalm?'0':'1'}" class="colbtn2 ${textColCalm?'on':''}">Calm</button>${
-      Object.keys(TEXTCOLS).map(k=>`<button data-opt-textcol="${k}" class="colsw ${textCol===k?'on':''}" style="background:${textColCalm?calmHex(TEXTCOLS[k]):TEXTCOLS[k]}" aria-label="${k}" title="${k}"></button>`).join("")}</div></span></div>
-    ${rowNL("Text colour applies to", `<div class="seg"><button data-opt-textscope="all" class="${textScope==='all'?'on':''}">All text</button><button data-opt-textscope="tile" class="${textScope==='tile'?'on':''}">Tile text</button><button data-opt-textscope="cat" class="${textScope==='cat'?'on':''}">Category text</button></div>`)}
-    ${rowNL("Calm colours", `<div class="seg"><button data-opt-calmcol="1" class="${calmCol?'on':''}">On</button><button data-opt-calmcol="0" class="${!calmCol?'on':''}">Off</button></div>`)}
-    ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
-    ${/* v1.51: one column IS a list, at either tile size — the small-tile preview drew a lone square
-          block instead, which read as "one big tile" rather than "rows". Same preview as Large · list. */""}
+    ${wall ? rowNL("Wallpaper items", `<div class="seg"><button data-opt-wallpos="top" class="${wallPos==='top'?'on':''}">Top</button><button data-opt-wallpos="bottom" class="${wallPos==='bottom'?'on':''}">Bottom</button></div>`) : ""}
+    ${/* v1.57 item 2: Text size sits with the wallpaper and the theme — the three things that change
+          the whole page at once — and with no rule between them, because they are one group. */""}
+    ${rowNL("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
+
+    ${sectHR("Colour")}
+    ${/* v1.57 item 2: "Colour accent" renamed. It has not been only an accent for several versions —
+          it drives the nav highlight, the user chips and the selected states. */""}
+    ${colRow("Colour details", "opt-accent", accent, "opt-accentcalm", accentCalm, {calm:accentCalm})}
+    ${colRow("Text colour", "opt-textcol", textCol, "opt-textcolcalm", textColCalm, {pal:TEXTCOLS, calm:textColCalm})}
+    ${colRow("Category text", "opt-cattext", catTxt, null, false, {pal:TEXTCOLS})}
+
+    ${sectHR("Tiles")}
     ${view!=="lists" ? `<div class="optrow optrow-wide optnl"><span class="optlabel">Tile display</span><div class="optwide">
       <div class="tdlist">
-        ${""/* v1.43 item 4: "List" is no longer its own button — Large tiles at 1 column IS the list,
-              so the preview and label below tell you that instead of offering a duplicate mode. */}
         <div class="tdrow">
         <button class="tdopt ${dispBase()==='large'?'on':''}" data-tiledisp="large">${largeCols()===1?`<span class="tdprev ${catOn?'tdprev-listcat':'tdprev-list'}">${catOn?'<b></b><i></i><i></i>':'<i></i><i></i><i></i>'}</span>`:largeCols()===0?`<span class="tdprev tdprev-var">${catOn?'<b></b>':''}${Array.from({length:5},()=>'<u></u>').join("")}</span>`:`<span class="tdprev tdprev-grid" style="grid-template-columns:repeat(${largeCols()},1fr)">${catOn?'<b></b>':''}${Array.from({length:catOn?largeCols():largeCols()*2},()=>'<u></u>').join("")}</span>`}<span class="tdlabel">Large tiles${largeCols()===0?' · variable':largeCols()===1?' · list':''}</span></button>
         <div class="dispcols">${[1,2,3,4,5,6].map(n=>`<button class="colbtn ${dispBase()==='large'&&largeCols()===n?'on':''}" data-opt-cols="${n}">${n}</button>`).join("")}<button class="colbtn ${dispBase()==='large'&&largeCols()===0?'on':''}" data-opt-cols="0" title="Variable width — tiles size to the word">↔</button></div>
@@ -4331,17 +4408,20 @@ function optionsBody(){
     ${rowNL("Group by category", `<div class="seg"><button data-opt-caton="1" class="${catOn?'on':''}">On</button><button data-opt-caton="0" class="${!catOn?'on':''}">Off</button></div>`)}
     ${catOn ? rowNL("Group by subcategory", `<div class="seg"><button data-opt-subon="1" class="${subOn?'on':''}">On</button><button data-opt-subon="0" class="${!subOn?'on':''}">Off</button></div>`) : ""}` : ""}
     ${rowNL("Tile appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}"><span class="tdswatch" style="background:var(--accent)"></span>Full</button><button data-opt-fill="accent" class="${fillMode()==='accent'?'on':''}"><span class="tdswatch" style="border:1.5px solid var(--muted2);border-left:4px solid var(--accent)"></span>Accent</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}"><span class="tdswatch" style="border:1.5px solid var(--muted2)"></span>Empty</button></div>`)}
-    ${/* v1.54 item 1: the tile's own colours, on the same one-line pattern as Colour accent. */""}
-    <div class="optrow optnl"><span class="optlabel">Tile background</span><span class="optctrl">
-      <div class="colrow colrow-inline"><button data-opt-tilebg="auto" class="colbtn2 ${tileBg==='auto'?'on':''}">Auto</button><button data-opt-tilebgcalm="${tileBgCalm?'0':'1'}" class="colbtn2 ${tileBgCalm?'on':''}">Calm</button><button data-opt-tilebg="page" class="colsw colsw-page ${tileBg==='page'?'on':''}" aria-label="Page" title="Match the page background"></button>${
-      Object.keys(ACCENTS).map(k=>`<button data-opt-tilebg="${k}" class="colsw ${tileBg===k?'on':''}" style="background:${tileBgCalm?calmHex(ACCENTS[k]):ACCENTS[k]}" aria-label="${k}" title="${k}"></button>`).join("")}</div></span></div>
-    <div class="optrow optnl"><span class="optlabel">Tile border</span><span class="optctrl">
-      <div class="colrow colrow-inline"><button data-opt-tilebrd="auto" class="colbtn2 ${tileBrd==='auto'?'on':''}">Auto</button><button data-opt-tilebrdcalm="${tileBrdCalm?'0':'1'}" class="colbtn2 ${tileBrdCalm?'on':''}">Calm</button><button data-opt-tilebrd="page" class="colsw colsw-page ${tileBrd==='page'?'on':''}" aria-label="Page" title="Match the page background"></button>${
-      Object.keys(ACCENTS).map(k=>`<button data-opt-tilebrd="${k}" class="colsw ${tileBrd===k?'on':''}" style="background:${tileBrdCalm?calmHex(ACCENTS[k]):ACCENTS[k]}" aria-label="${k}" title="${k}"></button>`).join("")}</div></span></div>
-    ${rowNL("Tile roundness", numCtl("rad"))}
-    <div class="optrow optrow-wide optnl"><span class="optlabel">Tile gap</span><div class="optwide">
+    ${/* v1.57 item 2: the two tile states, each with the same three colours in the same order, so the
+          two blocks can be read against each other. */""}
+    ${subhead("Selected tiles · on the list")}
+    ${colRow("Text", "opt-tiletext", tileTxt, "opt-selcalm", selCalm, {pal:TEXTCOLS, calm:selCalm})}
+    ${colRow("Background", "opt-tilebg", tileBg, null, false, {page:true, calm:selCalm})}
+    ${colRow("Border", "opt-tilebrd", tileBrd, null, false, {page:true, calm:selCalm})}
+    ${subhead("Unselected tiles · in Regulars")}
+    ${colRow("Text", "opt-utiletext", uTileTxt, "opt-unselcalm", unselCalm, {pal:TEXTCOLS, calm:unselCalm})}
+    ${colRow("Background", "opt-utilebg", uTileBg, null, false, {page:true, calm:unselCalm})}
+    ${colRow("Border", "opt-utilebrd", uTileBrd, null, false, {page:true, calm:unselCalm})}
+    <div class="optrow optnl optrow-num"><span class="optlabel">Tile roundness</span><span class="optctrl">${numCtl("rad")}</span></div>
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Tile gap</span><div class="optwide">
       <div class="numgrid">${numCell("gapx")}${numCell("gapy")}</div></div></div>
-    <div class="optrow optrow-wide optrow-top optnl"><span class="optlabel">Page margins</span><div class="optwide">
+    <div class="optrow optrow-wide optrow-top optnl optrow-num"><span class="optlabel">Page margins</span><div class="optwide">
       <div class="numgrid">${numCell("padl")}${numCell("padr")}${numCell("padt")}${numCell("padb")}</div>
       <div class="numbtns"><button id="optNumSave" class="colbtn2">Set as my default</button>${
         hasNumDefs()?`<button id="optNumReset" class="colbtn2">Reset to mine</button>`:""
