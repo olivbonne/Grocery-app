@@ -121,10 +121,15 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      v1.37's grayscale() mapped each hue to a DIFFERENT grey — the reported "gradient" between
      categories. These hard overrides make every category render identically instead. Scoped to
      non-fixed elements so no filter/containing-block can unpin the fixed chrome. */
+  /* v1.58 item 2: the fallback is --ink, not --text, deliberately. --text is what the global "Text
+     colour" picker overrides; falling back to it meant choosing a global colour also repainted tile
+     and category text, which now have pickers of their own. --ink is the theme's own value and is
+     never overridden, so "Auto" here means "whatever the theme says" rather than "whatever the other
+     picker was set to". They are identical until a global colour is chosen — --text:var(--ink). */
   html[data-theme="ink"] .pill, html[data-theme="noir"] .pill,
   html[data-theme="ink"] .bapill, html[data-theme="noir"] .bapill {
     background:var(--tilebg, var(--card)) !important; border-color:var(--tilebrd, var(--line)) !important;
-    border-left-color:var(--ink) !important; color:var(--tiletext, var(--text)) !important; filter:none !important; }   /* v1.43 item 4: let a "Tile text" scope reach through the !important */
+    border-left-color:var(--ink) !important; color:var(--tiletext, var(--ink)) !important; filter:none !important; }   /* v1.43 item 4: let a "Tile text" scope reach through the !important */
   html[data-theme="ink"] .pill .qty, html[data-theme="noir"] .pill .qty,
   html[data-theme="ink"] .pill .pill-meta, html[data-theme="noir"] .pill .pill-meta { color:var(--muted) !important; }
   html[data-theme="ink"] .pill.done, html[data-theme="noir"] .pill.done {
@@ -132,7 +137,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   html[data-theme="ink"] .cdot, html[data-theme="noir"] .cdot,
   html[data-theme="ink"] .cprog > i, html[data-theme="noir"] .cprog > i { background:var(--ink) !important; }
   html[data-theme="ink"] .catheadchip, html[data-theme="noir"] .catheadchip {
-    background:transparent !important; border-color:transparent !important; color:var(--cattext, var(--text)) !important; }   /* v1.43 item 4: let a "Category text" scope reach through the !important */
+    background:transparent !important; border-color:transparent !important; color:var(--cattext, var(--ink)) !important; }   /* v1.43 item 4: let a "Category text" scope reach through the !important */
   /* v1.43 item 4: .storechip dropped from this list — .storechip.on is painted with var(--accent), and
      grayscale(1) was washing the user's chosen accent out to grey on Ink/Noir. .catchip stays: those
      are data-driven category hues, which Ink and Noir deliberately flatten. */
@@ -163,7 +168,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      reads from the fill and the full-strength text against reg-out's transparent, muted look. */
   html[data-theme="ink"] .pill.reg-in, html[data-theme="noir"] .pill.reg-in {
     border:1.5px solid var(--tilebrd, var(--line)) !important; border-left:4px solid var(--ink) !important;
-    background:var(--tilebg, var(--card)) !important; color:var(--tiletext, var(--text)) !important; }
+    background:var(--tilebg, var(--card)) !important; color:var(--tiletext, var(--ink)) !important; }
   /* v1.57 item 2: the global "Calm colours" switch is gone — every colour the user can choose now has
      its own Calm, and this one only reached the category-driven hues, which no picker covers. If a
      pastel category look is wanted back it belongs as its own control, not as a second meaning for a
@@ -442,8 +447,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.43 item 4: scoped text colours. Default to --text so nothing changes when the scope is "All".
      Placed here deliberately — it must come after the .pill/.bapill/.cnum/.catcalm rules above, which
      set their own colour at equal or higher specificity and would otherwise win. */
-  .pill, .bapill { color:var(--tiletext, var(--text)); }
-  .cname, .catheadchip .cname, .catheadchip.catcalm .cname { color:var(--cattext, var(--text)); }
+  .pill, .bapill { color:var(--tiletext, var(--ink)); }
+  .cname, .catheadchip .cname, .catheadchip.catcalm .cname { color:var(--cattext, var(--ink)); }
   /* the count keeps its muted fallback — only an explicit "Category text" pick should recolour it,
      otherwise this rule would promote it from --muted2 to full ink. */
   .cnum, .catheadchip .cnum, .catheadchip.catcalm .cnum { color:var(--cattext, var(--muted2)); }
@@ -553,7 +558,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .sharebtn { border:none; background:var(--chip); color:var(--text); font-weight:700; font-size:12px;
     padding:6px 12px; border-radius:999px; }
   .iconbtn.on { background:var(--accent); color:var(--on-accent); }
-  .backbtn { border:none; background:transparent; color:var(--text); font-weight:800; font-size:13px; border-radius:10px; padding:5px 11px; }
+  /* v1.58 item 2: the back chevron was a 20px glyph in an 8px pad — a small target for the control
+     that leaves the page. 30px glyph, 44px tall, which is the minimum comfortable touch target. */
+  .backbtn { border:none; background:transparent; color:var(--text); font-weight:800; font-size:30px;
+    line-height:1; border-radius:12px; padding:0 12px; min-height:44px; min-width:44px;
+    display:inline-flex; align-items:center; justify-content:center; }
   .listgrid { display:flex; flex-direction:column; gap:12px; margin-top:6px; }
   .listbubble { display:flex; flex-direction:column; align-items:flex-start; gap:4px; width:100%; text-align:left;
     background:var(--card); border:1.5px solid var(--line); border-radius:20px; padding:20px 18px; }
@@ -605,7 +614,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      tile background needs this to stop "500g" being drawn in category red on a blue tile. A
      not-yet-added regular keeps the category colour: its fill is transparent, so it still reads. */
   html[data-tilebg] .pill:not(.done):not(.reg-out) .qty,
-  html[data-tilebg] .pill:not(.done):not(.reg-out) .pill-meta { color:var(--tiletext, var(--text)) !important; }
+  html[data-tilebg] .pill:not(.done):not(.reg-out) .pill-meta { color:var(--tiletext, var(--ink)) !important; }
   html[data-fill="empty"] .pill, html[data-fill="empty"] .bapill,
   html[data-fill="empty"] .pill.done, html[data-fill="empty"] .shop .pill.done,
   html[data-fill="empty"] .pill.reg-out, html[data-fill="empty"] .pill.reg-in {
@@ -718,17 +727,22 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .slotbtn.empty { opacity:.4; }
   .numgrid { display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; width:100%; }
   .numcell { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-  .numcell > span { font-size:12px; font-weight:700; color:var(--muted); }
+  /* v1.58 item 2: one caption width for every stepper cell, so Across / Left / Corner all start at
+     the same x and the three rows read as one block instead of three near-misses. */
+  .numcell > span { flex:0 0 52px; font-size:12px; font-weight:700; color:var(--muted); }
   .numcell .seg { flex:none; }
   .numcell .seg button { min-width:30px; }
   .numval { min-width:34px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; }
-  /* v1.57 item 2: every colour picker shares this grid. Six columns of swatch width; Auto and Calm
-     each span three, so they own the first line and the swatches always start on the second. That is
-     what makes nine pickers line up with one another — not the number of swatches, which differs. */
-  .colgrid { display:grid; grid-template-columns:repeat(6, 26px); gap:5px; justify-content:end; flex:1; }
+  /* v1.58 item 2: the grid starts at a fixed column rather than after each label, so the swatches all
+     begin at the same x and the block reads as one panel. Ten 22px columns instead of six 26px ones:
+     with Auto and Calm spanning three each, twelve swatches now need two lines rather than three,
+     which is most of the height this section used to spend on itself. */
+  .colgrid { display:grid; grid-template-columns:repeat(10, 22px); gap:4px; justify-content:end; flex:1 1 auto; }
   .colspan3 { grid-column:span 3; }
-  .optrow-col { align-items:flex-start; }
-  .optrow-col > .optlabel { padding-top:6px; }
+  .colgrid .colsw { width:22px; height:22px; }
+  .colgrid .colbtn2 { padding:3px 0; font-size:11.5px; text-align:center; }
+  .optrow-col { align-items:flex-start; padding:7px 0; }
+  .optrow-col > .optlabel { flex:0 0 92px; min-width:0; padding-top:4px; font-size:13.5px; line-height:1.2; }
   /* v1.57 item 2: a caption inside a group — quieter than a section heading, so "Selected tiles" reads
      as a label for the three rows under it rather than as a new part of Settings. */
   .optsub { font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;
@@ -750,6 +764,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.26 edit-sheet flag bubbles (Urgent / If discounted / If convenient) */
   .flagchip { flex:1 1 0; min-width:0; display:inline-flex; align-items:center; justify-content:center; gap:5px; padding:9px 6px; border-radius:999px; border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:12.5px; white-space:nowrap; overflow:hidden; }
   .flagchip.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+  /* v1.58 item 1: the mark sits on the text baseline and inherits the chip's colour. */
+  .flagchip svg { vertical-align:-.14em; }
+  /* the same marks on a shop tile, at the tile's own text colour and a touch smaller than the name */
+  .pmark { display:inline-flex; align-items:center; font-size:.86em; line-height:1; margin-right:2px; flex:none; }
   /* v1.26 collapsible Category / Subcategory rows in the edit sheet */
   .editsec { width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; border:none; border-top:1px solid var(--line); background:transparent; padding:11px 0 4px; margin-top:10px; cursor:pointer; }
   .editsec-l { font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
@@ -1119,7 +1137,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.57";
+const APP_VERSION = "v1.58";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1231,10 +1249,14 @@ function calmHex(hex){ const h=String(hex||"").replace("#","");
   r=r+(255-r)*0.28; g=g+(255-g)*0.28; b=b+(255-b)*0.28;        // lift
   const p=n=>Math.max(0,Math.min(255,Math.round(n))).toString(16).padStart(2,"0");
   return "#"+p(r)+p(g)+p(b); }
+/* v1.58 item 2: a neutral and a warm neutral — the two the palette was missing. Both dark
+   enough for white text, so onAccent() still resolves sensibly. */
 const ACCENTS = { white:"#FFFFFF", black:"#000000", red:"#C62828", orange:"#E2502C", yellow:"#D9A404",
-                  green:"#2F9E44", blue:"#1E6FD9", purple:"#7B4FBF", pink:"#D6478A" };
+                  green:"#2F9E44", blue:"#1E6FD9", purple:"#7B4FBF", pink:"#D6478A",
+                  grey:"#7B838C", sand:"#C2A878" };
 const TEXTCOLS = { white:"#FFFFFF", black:"#000000", red:"#C62828", orange:"#E2502C", yellow:"#D9A404",
-                   green:"#2F9E44", blue:"#1E6FD9", purple:"#7B4FBF", pink:"#D6478A" };
+                   green:"#2F9E44", blue:"#1E6FD9", purple:"#7B4FBF", pink:"#D6478A",
+                   grey:"#7B838C", sand:"#C2A878" };
 const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };
 /* v1.57 item 2: "Text colour applies to" is retired — Selected/Unselected tile text and Category text
    are their own pickers now. Carry the old scoped choice into whichever picker inherited it, then
@@ -1255,16 +1277,21 @@ let accent   = localStorage.getItem("ml_accent")  || "auto";
 let textCol  = localStorage.getItem("ml_textcol") || "auto";
 function setAccent(v){ accent=v; localStorage.setItem("ml_accent",v); applyTheme(); render(); }
 function setTextCol(v){ textCol=v; localStorage.setItem("ml_textcol",v); applyTheme(); render(); }
-/* v1.56 item 1: Calm now applies to all four colour pickers, not just the two tile ones. Same reason
-   as v1.55: "Calm colours" is a CSS filter and cannot reach a custom property, so the softening has
-   to be applied to the value before it is written. Each picker keeps its own switch — a calm accent
-   with firm text is a perfectly reasonable thing to want. */
-let accentCalm  = localStorage.getItem("ml_accentcalm")==="1";
-let textColCalm = localStorage.getItem("ml_textcolcalm")==="1";
-function setAccentCalm(v){ accentCalm=!!v; localStorage.setItem("ml_accentcalm", accentCalm?"1":"0"); applyTheme(); render(); }
-function setTextColCalm(v){ textColCalm=!!v; localStorage.setItem("ml_textcolcalm", textColCalm?"1":"0"); applyTheme(); render(); }
-function accentHex(){ const c=ACCENTS[accent]; return c ? (accentCalm?calmHex(c):c) : null; }
-function textColHex(){ const c=TEXTCOLS[textCol]; return c ? (textColCalm?calmHex(c):c) : null; }
+/* v1.58 item 2: a Calm switch on every colour row. v1.57 coupled them per tile state, which meant a
+   calm fill forced a calm border — and the rows without a switch left a visible gap in the grid where
+   the others have one. Nine independent flags, one per picker. The two v1.57 flags fan out to the
+   three rows each used to govern. */
+const CALM_KEYS = { accent:"ml_accentcalm", text:"ml_textcolcalm", cat:"ml_cattextcalm",
+                    tiletext:"ml_tiletextcalm", tilebg:"ml_tilebgcalm", tilebrd:"ml_tilebrdcalm",
+                    utiletext:"ml_utiletextcalm", utilebg:"ml_utilebgcalm", utilebrd:"ml_utilebrdcalm" };
+(function(){ const sel=localStorage.getItem("ml_selcalm"), un=localStorage.getItem("ml_unselcalm");
+  if(sel==="1") ["tiletext","tilebg","tilebrd"].forEach(k=>{ if(localStorage.getItem(CALM_KEYS[k])===null) setLS(CALM_KEYS[k],"1"); });
+  if(un==="1")  ["utiletext","utilebg","utilebrd"].forEach(k=>{ if(localStorage.getItem(CALM_KEYS[k])===null) setLS(CALM_KEYS[k],"1"); });
+})();
+let calmOn = {}; Object.keys(CALM_KEYS).forEach(k=>{ calmOn[k] = localStorage.getItem(CALM_KEYS[k])==="1"; });
+function setCalm(k,v){ if(!CALM_KEYS[k]) return; calmOn[k]=!!v; setLS(CALM_KEYS[k], calmOn[k]?"1":"0"); applyTheme(); render(); }
+function accentHex(){  const c=ACCENTS[accent];  return c ? (calmOn.accent?calmHex(c):c) : null; }
+function textColHex(){ const c=TEXTCOLS[textCol]; return c ? (calmOn.text?calmHex(c):c) : null; }
 /* v1.57 item 2: tiles have two states and each gets its own three colours. Selected = on the list;
    unselected = a regular that is not. One Calm switch per state rather than one per picker: six
    switches would be more chrome than the colours they modify, and nobody wants a calm fill with a
@@ -1276,10 +1303,6 @@ let uTileBg  = localStorage.getItem("ml_utilebg")   || "auto";
 let uTileBrd = localStorage.getItem("ml_utilebrd")  || "auto";
 let uTileTxt = localStorage.getItem("ml_utiletext") || "auto";
 let catTxt   = localStorage.getItem("ml_cattext")   || "auto";
-/* v1.55/v1.56 had a Calm switch per tile picker. Fold both into one per state, carrying either
-   forward so nobody's calm tiles turn loud on upgrade. */
-let selCalm   = (localStorage.getItem("ml_selcalm")   ?? (((localStorage.getItem("ml_tilebgcalm")==="1")||(localStorage.getItem("ml_tilebrdcalm")==="1"))?"1":"0"))==="1";
-let unselCalm = localStorage.getItem("ml_unselcalm")==="1";
 function setTileBg(v){ tileBg=v; setLS("ml_tilebg",v); applyTheme(); render(); }
 function setTileBrd(v){ tileBrd=v; setLS("ml_tilebrd",v); applyTheme(); render(); }
 function setTileTxt(v){ tileTxt=v; setLS("ml_tiletext",v); applyTheme(); render(); }
@@ -1287,8 +1310,6 @@ function setUTileBg(v){ uTileBg=v; setLS("ml_utilebg",v); applyTheme(); render()
 function setUTileBrd(v){ uTileBrd=v; setLS("ml_utilebrd",v); applyTheme(); render(); }
 function setUTileTxt(v){ uTileTxt=v; setLS("ml_utiletext",v); applyTheme(); render(); }
 function setCatTxt(v){ catTxt=v; setLS("ml_cattext",v); applyTheme(); render(); }
-function setSelCalm(v){ selCalm=!!v; setLS("ml_selcalm", selCalm?"1":"0"); applyTheme(); render(); }
-function setUnselCalm(v){ unselCalm=!!v; setLS("ml_unselcalm", unselCalm?"1":"0"); applyTheme(); render(); }
 /* one place that answers "what colour is actually painted", so applyTheme and the swatch previews in
    Settings can never disagree about it. */
 /* v1.56 item 1: "page" is not a fixed colour — it is whatever the current theme paints the page,
@@ -1301,13 +1322,13 @@ function pickHex(key, calm){
   if(key==="page") return paperHex();
   const c=ACCENTS[key]; if(!c) return null;
   return calm ? calmHex(c) : c; }
-function tileBgHex(){  return pickHex(tileBg,  selCalm); }
-function tileBrdHex(){ return pickHex(tileBrd, selCalm); }
-function tileTxtHex(){ return pickHex(tileTxt, selCalm); }
-function uTileBgHex(){  return pickHex(uTileBg,  unselCalm); }
-function uTileBrdHex(){ return pickHex(uTileBrd, unselCalm); }
-function uTileTxtHex(){ return pickHex(uTileTxt, unselCalm); }
-function catTxtHex(){ const c=TEXTCOLS[catTxt]; return c||null; }
+function tileBgHex(){  return pickHex(tileBg,  calmOn.tilebg); }
+function tileBrdHex(){ return pickHex(tileBrd, calmOn.tilebrd); }
+function tileTxtHex(){ const c=TEXTCOLS[tileTxt]; return c ? (calmOn.tiletext?calmHex(c):c) : null; }
+function uTileBgHex(){  return pickHex(uTileBg,  calmOn.utilebg); }
+function uTileBrdHex(){ return pickHex(uTileBrd, calmOn.utilebrd); }
+function uTileTxtHex(){ const c=TEXTCOLS[uTileTxt]; return c ? (calmOn.utiletext?calmHex(c):c) : null; }
+function catTxtHex(){  const c=TEXTCOLS[catTxt];  return c ? (calmOn.cat?calmHex(c):c) : null; }
 /* v1.54 item 1: the geometry settings. One table so the stepper UI, the clamping and the CSS
    variable stay in one place instead of eight near-identical globals. Defaults are exactly the
    values the stylesheet used before this version, so an untouched install looks unchanged. */
@@ -1316,7 +1337,8 @@ const NUMOPT = {
      time — they are the only settings where a single pixel is visible. */
   gapx: { ls:"ml_gapx",    vr:"--tilegapx", def:8,  min:-4, max:28,  step:1, label:"Across" },
   gapy: { ls:"ml_gapy",    vr:"--tilegapy", def:8,  min:-4, max:28,  step:1, label:"Down" },
-  rad:  { ls:"ml_tilerad", vr:"--tilerad",  def:12, min:0,  max:28,  step:2, label:"Roundness" },
+    /* v1.58 item 2: short enough for the shared caption column. */
+  rad:  { ls:"ml_tilerad", vr:"--tilerad",  def:12, min:0,  max:28,  step:2, label:"Corner" },
   padl: { ls:"ml_padl",    vr:"--padl",     def:14, min:0,  max:40,  step:2, label:"Left" },
   padr: { ls:"ml_padr",    vr:"--padr",     def:14, min:0,  max:40,  step:2, label:"Right" },
   padt: { ls:"ml_padt",    vr:"--padt",     def:6,  min:0,  max:40,  step:2, label:"Top" },
@@ -2725,6 +2747,16 @@ function grow(el){ if(!el) return; el.style.height="auto";
 /* v1.10 bottom-first add sheet — Regulars (due-soon restock + Buy-again) and a built-in
    catalog, one-tap add, live-filtered by whatever is typed. Replaces the old top add bar. */
 const SEARCH_SVG = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.8-3.8"/></svg>';
+/* v1.58 item 1: the three item flags get drawn marks instead of emoji. Emoji are still the app's
+   visual language for CATEGORIES and items — these are status marks, which is a different job: they
+   have to read at 13px next to a name, sit on a coloured tile, and take the tile's own text colour.
+   `currentColor` is the whole point; an emoji cannot do any of that. Inline, so nothing is fetched. */
+const FLAG_STAR_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg>`;
+/* a tag with a % in it — "only if it is on offer" */
+const FLAG_TAG_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 12.9l-7.7 7.7a2 2 0 01-2.8 0L3 13.5V4.5A1.5 1.5 0 014.5 3h9l7.1 7.1a2 2 0 010 2.8z"/><circle cx="7.4" cy="7.4" r="1.15" fill="currentColor" stroke="none"/><path d="M10.6 15.2l4.6-4.6"/><circle cx="10.9" cy="10.9" r="1.05"/><circle cx="14.9" cy="14.9" r="1.05"/></svg>`;
+/* the plainest clock that still reads as one: a ring and two hands, no ticks, no bezel */
+const FLAG_CLOCK_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.4V12l3.3 2"/></svg>`;
+const FLAG_ICON = { urgent:FLAG_STAR_SVG, discount:FLAG_TAG_SVG, convenient:FLAG_CLOCK_SVG };
 const DICT_HIDE = new Set(["strawberr","blueberr","raspberr","berry","brocollini","choysum","chili","yogurt"]);   // matching stems / dupes, not for display
 /* v1.12 per-item emoji — first keyword match wins (multi-word/specific terms first), else the
    item's category emoji. Pure lookup, offline. */
@@ -2934,7 +2966,7 @@ function addEditPanel(){
   const cat=CAT(it.cat)||null;
   const subs=(cat&&Array.isArray(cat.subs))?cat.subs:[];
   const W=["","cup","tsp","Tbsp","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"];
-  const flags=[{k:"urgent",label:"Urgent",emoji:"🏃"},{k:"discount",label:"If discounted",emoji:"🏷️"},{k:"convenient",label:"If convenient",emoji:"🕒"}];
+  const flags=[{k:"urgent",label:"Urgent"},{k:"discount",label:"If discounted"},{k:"convenient",label:"If convenient"}];
   const selSubLabel = (()=>{ if(!it.sub) return "None"; const s=subs.find(x=>x.id===it.sub); return s?s.label:"None"; })();
   const catChips = catList().map(c=>`<button class="catchip" data-ae-cat="${it.id}|${c.id}" style="${it.cat===c.id?`background:${c.color};border-color:${c.color};color:#fff`:''}">${catIcon(c,15)} ${esc(c.label)}</button>`).join("");
   return `<div class="addedit">
@@ -2942,7 +2974,6 @@ function addEditPanel(){
           keyboard, so every row it saves is a row you don't have to scroll to. */""}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
       <div class="disp" style="font-weight:800;font-size:15px">Edit item</div>
-      <button data-ae-star="${it.id}" aria-label="Star" style="border:none;background:transparent;font-size:24px;line-height:1;padding:2px;color:${it.starred?'#E8A91D':'var(--muted2)'}">${it.starred?'★':'☆'}</button>
     </div>
     <div style="display:flex;gap:6px;align-items:stretch">
       <div class="qstep" style="height:40px;align-items:center;flex:none;border:none;background:var(--chip)"><button data-ae-minus="${it.id}" aria-label="Less" style="width:32px">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:15px">${it.qty||1}</span><button data-ae-plus="${it.id}" aria-label="More" style="width:32px">+</button></div>
@@ -2954,7 +2985,7 @@ function addEditPanel(){
     <div class="wsel" role="group" aria-label="Weight">${
       ["","500g","1kg"].concat(W.filter(w=>w!=="" && w!=="500g" && w!=="1kg"))
       .map(w=>`<button class="wchip ${(w==="500g"||w==="1kg")?'wchip-hl ':''}${(it.weight||"")===w?'on':''}" data-ae-weight="${it.id}|${esc(w)}">${w?esc(w):'unit'}</button>`).join("")}</div>
-    <div class="addedit-flags">${flags.map(f=>{ const on=(it.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-ae-flag="${it.id}|${f.k}"><span aria-hidden="true">${f.emoji}</span>${f.label}</button>`; }).join("")}</div>
+    <div class="addedit-flags">${flags.map(f=>{ const on=(it.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-ae-flag="${it.id}|${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>
     <button class="editsec" data-ae-sechead="cat"><span class="editsec-l">Category</span><span class="editsec-v">${cat?`${catIcon(cat,14)} ${esc(cat.label)}`:'—'}<span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></button>
     ${editCatOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${catChips}<button class="catchip" data-ae-addcat="${it.id}" style="border-style:dashed;font-weight:800">＋ New</button></div>` : ""}
     ${cat ? `<button class="editsec" data-ae-sechead="sub"><span class="editsec-l">Subcategory</span><span class="editsec-v">${esc(selSubLabel)}<span class="editsec-ch">${editSubOpen?'▾':'▸'}</span></span></button>
@@ -2979,8 +3010,12 @@ function wireAddEdit(){
   document.querySelectorAll("[data-ae-weight]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{
     const p=b.dataset.aeWeight.split("|"), id=p[0], w=p.slice(1).join("|");
     const it=state.items.find(i=>i.id===id); if(it){ it.weight=w; touch(it); refreshAddBody(); } }; });
-  document.querySelectorAll("[data-ae-flag]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const [id,k]=b.dataset.aeFlag.split("|"); const it=state.items.find(i=>i.id===id); if(it){ const t=Array.isArray(it.tags)?it.tags.slice():[]; const i=t.indexOf(k); if(i<0)t.push(k); else t.splice(i,1); it.tags=t; touch(it); refreshAddBody(); } }; });
-  document.querySelectorAll("[data-ae-star]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=cur(); if(it){ it.starred=!it.starred; touch(it); refreshAddBody(); } }; });
+  document.querySelectorAll("[data-ae-flag]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const [id,k]=b.dataset.aeFlag.split("|"); const it=state.items.find(i=>i.id===id); if(it){ const t=Array.isArray(it.tags)?it.tags.slice():[]; const i=t.indexOf(k); if(i<0)t.push(k); else t.splice(i,1); it.tags=t;
+      /* v1.58 item 1: Urgent and the old ★ were two controls for one idea. The chip is now the only
+         one, and it keeps `starred` in step so the existing "urgent floats to the top" sort and any
+         item saved by an older build both keep working. */
+      it.starred = (it.tags||[]).includes("urgent");
+      touch(it); refreshAddBody(); } }; });
   document.querySelectorAll("[data-ae-name]").forEach(inp=>{   // no refreshAddBody() per keystroke — would blur the input mid-typing
     inp.oninput=()=>{ const it=state.items.find(i=>i.id===inp.dataset.aeName); if(it){ it.name=inp.value; touch(it); } };
     /* v1.47: only refresh when the field is still in the document — a blur fired BY its removal is
@@ -3440,7 +3475,15 @@ function pillHTML(i, cat){
   // rule forces border-left-color to grey with !important, which is what flattened cart tiles).
   const style = `--edge:${cat.color};` + (full ? `background:${cat.color};border:1.5px solid ${cat.color};color:#fff` : (fillMode()==="empty" ? `border-left:1.5px solid var(--line)` : `border-left:4px solid ${edge}`));
   const meta = `${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)}</span>`:""}`;
-  const marks = `${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}${(!checked&&i.starred)?`<span style="color:${full?'#fff':'#E8A91D'};margin-right:1px">★</span>`:""}`;
+  /* v1.58 item 1: all three flags show on the tile now, not just the star. `starred` OR the urgent
+     tag counts — the chip writes both, but an item saved before v1.58 has only `starred`. */
+  const tg = Array.isArray(i.tags) ? i.tags : [];
+  const urgent = !checked && (i.starred || tg.includes("urgent"));
+  const mk = (svg,col,title)=>`<span class="pmark" style="color:${col}" title="${title}">${svg}</span>`;
+  const marks = `${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}`
+    + `${urgent?mk(FLAG_STAR_SVG, full?'#fff':'#E8A91D', 'Urgent'):""}`
+    + `${(!checked&&tg.includes("discount"))?mk(FLAG_TAG_SVG,'currentColor','If discounted'):""}`
+    + `${(!checked&&tg.includes("convenient"))?mk(FLAG_CLOCK_SVG,'currentColor','If convenient'):""}`;
   // v1.20 unified row anatomy (shared with regPill): emoji · name, then qty/weight pushed to the right.
   // No check circle — tapping the whole row checks it. Selected/on-list uses the Full/Empty tile look.
   const em = itemEmoji(i.name, i.cat);
@@ -3632,7 +3675,7 @@ function renderMain(){
     <div class="topfix" id="topfix">
       <header>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <button class="backbtn" id="toLists" aria-label="Back to lists" style="font-size:20px;line-height:1;padding:4px 12px">‹</button>
+          <button class="backbtn" id="toLists" aria-label="Back to lists">‹</button>
           <span class="title disp">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="dot">.</span></span>
         </div>
         ${open>0?`<span class="hcount hcount-mid">${open} to buy</span>`:""}
@@ -3838,7 +3881,7 @@ function renderPlanPage(){
     <div class="topfix" id="topfix">
       <header>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <button class="backbtn" id="planBack" aria-label="Back to lists" style="font-size:20px;line-height:1;padding:4px 12px">‹</button>
+          <button class="backbtn" id="planBack" aria-label="Back to lists">‹</button>
           <span class="title disp">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Choose")}<span class="dot">.</span></span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">${syncChip()}<button id="optBtnTop" class="iconbtn" aria-label="Settings" title="Settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
@@ -3970,11 +4013,9 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-utilebrd]").forEach(b=>b.onclick=()=>setUTileBrd(b.dataset.optUtilebrd));
   app.querySelectorAll("[data-opt-utiletext]").forEach(b=>b.onclick=()=>setUTileTxt(b.dataset.optUtiletext));
   app.querySelectorAll("[data-opt-cattext]").forEach(b=>b.onclick=()=>setCatTxt(b.dataset.optCattext));
-  app.querySelectorAll("[data-opt-selcalm]").forEach(b=>b.onclick=()=>setSelCalm(b.dataset.optSelcalm==="1"));
-  app.querySelectorAll("[data-opt-unselcalm]").forEach(b=>b.onclick=()=>setUnselCalm(b.dataset.optUnselcalm==="1"));
-  /* v1.56 item 1: distinct attribute names, so these do not collide with the plain accent/textcol selectors. */
-  app.querySelectorAll("[data-opt-accentcalm]").forEach(b=>b.onclick=()=>setAccentCalm(b.dataset.optAccentcalm==="1"));
-  app.querySelectorAll("[data-opt-textcolcalm]").forEach(b=>b.onclick=()=>setTextColCalm(b.dataset.optTextcolcalm==="1"));
+  /* v1.58 item 2: one selector for all nine Calm switches — the row's key travels in the attribute,
+     which is why they no longer need an attribute name each. */
+  app.querySelectorAll("[data-opt-calm]").forEach(b=>b.onclick=()=>{ const [k,v]=b.dataset.optCalm.split("|"); setCalm(k, v==="1"); });
   app.querySelectorAll("[data-app-use]").forEach(b=>b.onclick=()=>useAppSlot(+b.dataset.appUse));
   app.querySelectorAll("[data-app-save]").forEach(b=>b.onclick=()=>saveAppSlot(+b.dataset.appSave));
   const oaf=app.querySelector("#optAppFactory"); if(oaf) oaf.onclick=()=>factoryAppearance();
@@ -4288,12 +4329,15 @@ function histPeriod(ts){
    added to the Appearance section in future belongs in this array. */
 const APPEARANCE_KEYS = [
   "ml_theme", "ml_wall", "ml_wallpos",
-  "ml_accent", "ml_accentcalm", "ml_textcol", "ml_textcolcalm", "ml_cattext",
+  "ml_accent", "ml_textcol", "ml_cattext",
   "ml_densities", "ml_density",
   "ml_displays", "ml_largecols", "ml_smallcols", "ml_caton", "ml_subon",
   "ml_fill", "ml_fill_v141",
   "ml_tilebg", "ml_tilebrd", "ml_tiletext", "ml_utilebg", "ml_utilebrd", "ml_utiletext",
-  "ml_selcalm", "ml_unselcalm",
+  /* v1.58 item 2: one Calm flag per colour picker. */
+  "ml_accentcalm", "ml_textcolcalm", "ml_cattextcalm",
+  "ml_tiletextcalm", "ml_tilebgcalm", "ml_tilebrdcalm",
+  "ml_utiletextcalm", "ml_utilebgcalm", "ml_utilebrdcalm",
   "ml_gapx", "ml_gapy", "ml_tilerad", "ml_padl", "ml_padr", "ml_padt", "ml_padb", "ml_numdef",
   "ml_catemoji", "ml_itememoji"
 ];
@@ -4338,15 +4382,18 @@ function optionsBody(){
   /* v1.57 item 2: one layout for every colour picker, so Auto/Calm and the swatches land in the same
      places on every row. Ten swatches cannot fit beside a label at 390px — what makes the rows look
      aligned is that they all WRAP the same way, which a fixed grid guarantees and a flex row does not. */
-  const colRow=(label, attr, cur, calmAttr, calmOn, opts)=>{
+  /* v1.58 item 2: every row now carries its own Calm, so the switch is part of the row rather than
+     an argument some rows pass and others leave a hole for. `ck` is the CALM_KEYS name of the row. */
+  const colRow=(label, attr, cur, ck, opts)=>{
     const o=opts||{};
     const pal=o.pal||ACCENTS;
-    const sw=k=>`<button data-${attr}="${k}" class="colsw ${cur===k?'on':''}" style="background:${o.calm?calmHex(pal[k]):pal[k]}" aria-label="${k}" title="${k}"></button>`;
+    const calm=!!calmOn[ck];
+    const sw=k=>`<button data-${attr}="${k}" class="colsw ${cur===k?'on':''}" style="background:${calm?calmHex(pal[k]):pal[k]}" aria-label="${k}" title="${k}"></button>`;
     return `<div class="optrow optnl optrow-col"><span class="optlabel">${label}</span><div class="colgrid">
-      <button data-${attr}="auto" class="colbtn2 colspan3 ${cur==='auto'?'on':''}">Auto</button>${
-        calmAttr?`<button data-${calmAttr}="${calmOn?'0':'1'}" class="colbtn2 colspan3 ${calmOn?'on':''}">Calm</button>`:`<span class="colspan3"></span>`}${
-        o.page?`<button data-${attr}="page" class="colsw colsw-page ${cur==='page'?'on':''}" aria-label="Page" title="Match the page background"></button>`:""}${
-        Object.keys(pal).map(sw).join("")}</div></div>`;
+      <button data-${attr}="auto" class="colbtn2 colspan3 ${cur==='auto'?'on':''}">Auto</button>`
+      + `<button data-opt-calm="${ck}|${calm?'0':'1'}" class="colbtn2 colspan3 ${calm?'on':''}">Calm</button>`
+      + `${o.page?`<button data-${attr}="page" class="colsw colsw-page ${cur==='page'?'on':''}" aria-label="Page" title="Match the page background"></button>`:""}`
+      + `${Object.keys(pal).map(sw).join("")}</div></div>`;
   };
   const subhead=t=>`<div class="optsub">${t}</div>`;
   const sect=t=>`<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 2px">${t}</div>`;   // v1.12 grouped settings
@@ -4389,9 +4436,9 @@ function optionsBody(){
     ${sectHR("Colour")}
     ${/* v1.57 item 2: "Colour accent" renamed. It has not been only an accent for several versions —
           it drives the nav highlight, the user chips and the selected states. */""}
-    ${colRow("Colour details", "opt-accent", accent, "opt-accentcalm", accentCalm, {calm:accentCalm})}
-    ${colRow("Text colour", "opt-textcol", textCol, "opt-textcolcalm", textColCalm, {pal:TEXTCOLS, calm:textColCalm})}
-    ${colRow("Category text", "opt-cattext", catTxt, null, false, {pal:TEXTCOLS})}
+    ${colRow("Colour details", "opt-accent", accent, "accent", {})}
+    ${colRow("Text colour", "opt-textcol", textCol, "text", {pal:TEXTCOLS})}
+    ${colRow("Category text", "opt-cattext", catTxt, "cat", {pal:TEXTCOLS})}
 
     ${sectHR("Tiles")}
     ${view!=="lists" ? `<div class="optrow optrow-wide optnl"><span class="optlabel">Tile display</span><div class="optwide">
@@ -4411,14 +4458,15 @@ function optionsBody(){
     ${/* v1.57 item 2: the two tile states, each with the same three colours in the same order, so the
           two blocks can be read against each other. */""}
     ${subhead("Selected tiles · on the list")}
-    ${colRow("Text", "opt-tiletext", tileTxt, "opt-selcalm", selCalm, {pal:TEXTCOLS, calm:selCalm})}
-    ${colRow("Background", "opt-tilebg", tileBg, null, false, {page:true, calm:selCalm})}
-    ${colRow("Border", "opt-tilebrd", tileBrd, null, false, {page:true, calm:selCalm})}
+    ${colRow("Text", "opt-tiletext", tileTxt, "tiletext", {pal:TEXTCOLS})}
+    ${colRow("Background", "opt-tilebg", tileBg, "tilebg", {page:true})}
+    ${colRow("Border", "opt-tilebrd", tileBrd, "tilebrd", {page:true})}
     ${subhead("Unselected tiles · in Regulars")}
-    ${colRow("Text", "opt-utiletext", uTileTxt, "opt-unselcalm", unselCalm, {pal:TEXTCOLS, calm:unselCalm})}
-    ${colRow("Background", "opt-utilebg", uTileBg, null, false, {page:true, calm:unselCalm})}
-    ${colRow("Border", "opt-utilebrd", uTileBrd, null, false, {page:true, calm:unselCalm})}
-    <div class="optrow optnl optrow-num"><span class="optlabel">Tile roundness</span><span class="optctrl">${numCtl("rad")}</span></div>
+    ${colRow("Text", "opt-utiletext", uTileTxt, "utiletext", {pal:TEXTCOLS})}
+    ${colRow("Background", "opt-utilebg", uTileBg, "utilebg", {page:true})}
+    ${colRow("Border", "opt-utilebrd", uTileBrd, "utilebrd", {page:true})}
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Tile roundness</span><div class="optwide">
+      <div class="numgrid">${numCell("rad")}</div></div></div>
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Tile gap</span><div class="optwide">
       <div class="numgrid">${numCell("gapx")}${numCell("gapy")}</div></div></div>
     <div class="optrow optrow-wide optrow-top optnl optrow-num"><span class="optlabel">Page margins</span><div class="optwide">
@@ -4495,7 +4543,7 @@ function renderSettingsPage(){
     <div class="topfix" id="topfix">
       <header>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <button class="backbtn" id="setBack" aria-label="Back" style="font-size:20px;line-height:1;padding:4px 12px">‹</button>
+          <button class="backbtn" id="setBack" aria-label="Back">‹</button>
           <span class="title disp">Settings<span class="dot">.</span></span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">${syncChip()}</div>
@@ -4627,7 +4675,6 @@ function editSheet(){
   return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div class="disp" style="font-weight:800;font-size:17px">${isItem?"Edit item":"Buy again"}</div>
-      ${isItem?`<button id="starBtn" aria-label="Star" style="border:none;background:transparent;font-size:24px;line-height:1;padding:2px;color:${editing.starred?'#E8A91D':'var(--muted2)'}">${editing.starred?'★':'☆'}</button>`:""}
     </div>
     <div style="display:flex;gap:6px;align-items:stretch">
       <div class="qstep" style="height:46px;align-items:center;flex:none;border:none;background:var(--chip)"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>
@@ -4636,7 +4683,7 @@ function editSheet(){
       </select>
       <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:15px" />
     </div>
-    ${isItem ? `<div style="display:flex;flex-wrap:nowrap;gap:6px;margin-top:12px">${[{k:"urgent",label:"Urgent",emoji:"🏃"},{k:"discount",label:"If discounted",emoji:"🏷️"},{k:"convenient",label:"If convenient",emoji:"🕒"}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${f.emoji}</span>${f.label}</button>`; }).join("")}</div>` : ""}
+    ${isItem ? `<div style="display:flex;flex-wrap:nowrap;gap:6px;margin-top:12px">${[{k:"urgent",label:"Urgent"},{k:"discount",label:"If discounted"},{k:"convenient",label:"If convenient"}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}
     <button class="editsec" id="ecHead"><span class="editsec-l">Category</span><span class="editsec-v">${selCat?`${catIcon(selCat,14)} ${esc(selCat.label)}`:'—'}<span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></button>
     ${editCatOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${chipsHTML(editing.cat)}<button class="catchip" id="ecAddCat" style="border-style:dashed;font-weight:800">＋ New</button></div>` : ""}
     ${subChips}
@@ -4822,12 +4869,16 @@ function wireEditSheet(){
       const en=app.querySelector("#editName"); if(en) en.oninput=e=>editing.name=e.target.value;
       const ws=app.querySelector("#weightSel");
       if(ws){ ws.onchange=e=>{ editing.weight=e.target.value; }; }   // the empty option always reads "unit"
-      const stb=app.querySelector("#starBtn"); if(stb) stb.onclick=()=>{ editing.starred=!editing.starred; render(); };
       const qm=app.querySelector("#qMinus"); if(qm) qm.onclick=()=>{ editing.qty=Math.max(1,(editing.qty||1)-1); render(); };
       const qp=app.querySelector("#qPlus"); if(qp) qp.onclick=()=>{ editing.qty=(editing.qty||1)+1; render(); };
       app.querySelectorAll("[data-ec]").forEach(b=>b.onclick=()=>{ editing.cat=b.dataset.ec; editing.sub=null; render(); });
       app.querySelectorAll("[data-es]").forEach(b=>b.onclick=()=>{ editing.sub=b.dataset.es||null; render(); });
-      app.querySelectorAll("[data-flag]").forEach(b=>b.onclick=()=>{ const k=b.dataset.flag; const t=Array.isArray(editing.tags)?editing.tags.slice():[]; const i=t.indexOf(k); if(i<0)t.push(k); else t.splice(i,1); editing.tags=t; render(); });
+      app.querySelectorAll("[data-flag]").forEach(b=>b.onclick=()=>{ const k=b.dataset.flag; const t=Array.isArray(editing.tags)?editing.tags.slice():[]; const i=t.indexOf(k); if(i<0)t.push(k); else t.splice(i,1); editing.tags=t;
+      /* v1.58 item 1: Urgent and the old ★ were two controls for one idea. The chip is now the only
+         one, and it keeps `starred` in step so the existing "urgent floats to the top" sort and any
+         item saved by an older build both keep working. */
+      editing.starred = (editing.tags||[]).includes("urgent");
+      render(); });
       const ech=app.querySelector("#ecHead"); if(ech) ech.onclick=()=>{ editCatOpen=!editCatOpen; render(); };
       const esh=app.querySelector("#esHead"); if(esh) esh.onclick=()=>{ editSubOpen=!editSubOpen; render(); };
       const eac=app.querySelector("#ecAddCat"); if(eac) eac.onclick=()=>{ const nm=prompt("New category name:",""); if(nm&&nm.trim()){ const id=makeCategory(nm); if(id){ editing.cat=id; editing.sub=null; render(); } } };
