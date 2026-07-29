@@ -716,6 +716,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      other, so the rim has to be the thing that draws them rather than the fill. */
   .colsw { box-shadow:inset 0 0 0 1px rgba(128,128,128,.35); }
   .colsw.on { border-color:var(--ink); box-shadow:0 0 0 2px var(--paper) inset; }
+  /* v1.56 item 1: the "same as the page" swatch. It is the paper colour itself, so on a pale theme it
+     would be an invisible disc — the dashed rim is what makes it findable. */
+  .colsw-page { background:var(--paper); border-style:dashed; border-color:var(--muted2); }
   .colbtn2 { flex:none; border:1.5px solid var(--line); background:var(--card); color:var(--text);
     font-weight:800; font-size:12px; padding:5px 10px; border-radius:999px; }
   .colbtn2.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
@@ -1091,7 +1094,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.55";
+const APP_VERSION = "v1.56";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1215,6 +1218,16 @@ function setAccent(v){ accent=v; localStorage.setItem("ml_accent",v); applyTheme
 function setTextCol(v){ textCol=v; localStorage.setItem("ml_textcol",v); applyTheme(); render(); }
 function setTextScope(v){ textScope=v; localStorage.setItem("ml_textscope",v); applyTheme(); render(); }
 function setCalmCol(v){ calmCol=!!v; localStorage.setItem("ml_calmcol", calmCol?"1":"0"); applyTheme(); render(); }
+/* v1.56 item 1: Calm now applies to all four colour pickers, not just the two tile ones. Same reason
+   as v1.55: "Calm colours" is a CSS filter and cannot reach a custom property, so the softening has
+   to be applied to the value before it is written. Each picker keeps its own switch — a calm accent
+   with firm text is a perfectly reasonable thing to want. */
+let accentCalm  = localStorage.getItem("ml_accentcalm")==="1";
+let textColCalm = localStorage.getItem("ml_textcolcalm")==="1";
+function setAccentCalm(v){ accentCalm=!!v; localStorage.setItem("ml_accentcalm", accentCalm?"1":"0"); applyTheme(); render(); }
+function setTextColCalm(v){ textColCalm=!!v; localStorage.setItem("ml_textcolcalm", textColCalm?"1":"0"); applyTheme(); render(); }
+function accentHex(){ const c=ACCENTS[accent]; return c ? (accentCalm?calmHex(c):c) : null; }
+function textColHex(){ const c=TEXTCOLS[textCol]; return c ? (textColCalm?calmHex(c):c) : null; }
 /* v1.54 item 1: two more surface colours the user can drive. "auto" removes the override and the
    theme token takes over again, exactly like Colour accent and Text colour. --tilebg is consulted
    only where a tile currently paints var(--card) — i.e. a tile that is ON the list. In-cart tiles
@@ -1232,8 +1245,15 @@ function setTileBgCalm(v){ tileBgCalm=!!v; localStorage.setItem("ml_tilebgcalm",
 function setTileBrdCalm(v){ tileBrdCalm=!!v; localStorage.setItem("ml_tilebrdcalm", tileBrdCalm?"1":"0"); applyTheme(); render(); }
 /* one place that answers "what colour is actually painted", so applyTheme and the swatch previews in
    Settings can never disagree about it. */
-function tileBgHex(){ const c=ACCENTS[tileBg]; return c ? (tileBgCalm?calmHex(c):c) : null; }
-function tileBrdHex(){ const c=ACCENTS[tileBrd]; return c ? (tileBrdCalm?calmHex(c):c) : null; }
+/* v1.56 item 1: "page" is not a fixed colour — it is whatever the current theme paints the page,
+   so it is read back from the token rather than stored as a hex. That also means it follows a theme
+   change for free. Calm is not offered on it: softening the page colour toward white would defeat
+   the entire point, which is to match. */
+function paperHex(){ try{ const v=getComputedStyle(document.body).getPropertyValue("--paper").trim(); return v||null; }catch(e){ return null; } }
+function tileBgHex(){ if(tileBg==="page") return paperHex();
+  const c=ACCENTS[tileBg]; return c ? (tileBgCalm?calmHex(c):c) : null; }
+function tileBrdHex(){ if(tileBrd==="page") return paperHex();
+  const c=ACCENTS[tileBrd]; return c ? (tileBrdCalm?calmHex(c):c) : null; }
 /* v1.54 item 1: the geometry settings. One table so the stepper UI, the clamping and the CSS
    variable stay in one place instead of eight near-identical globals. Defaults are exactly the
    values the stylesheet used before this version, so an untouched install looks unchanged. */
@@ -1315,8 +1335,8 @@ function applyTheme(){ const t = THEMES[theme] || THEMES.light;
      so a body-level declaration re-defines the token for everything inside <body>. An inline
      override on <html> alone loses to it — the accent silently did nothing on dark/ink/noir. */
   const els=[document.documentElement.style, document.body.style];
-  const ac=ACCENTS[accent];
-  const tx=TEXTCOLS[textCol];
+  const ac=accentHex();
+  const tx=textColHex();
   els.forEach(rs=>{
     if(ac){ rs.setProperty("--accent", ac); rs.setProperty("--on-accent", onAccent(ac)); }
     else  { rs.removeProperty("--accent"); rs.removeProperty("--on-accent"); }
@@ -1355,7 +1375,11 @@ function applyTheme(){ const t = THEMES[theme] || THEMES.light;
      tiling at its natural size. The ::before rule uses longhands instead. */
   document.body.style.setProperty("--wall", wallLayers((typeof wall!=="undefined" && wall) || "", _wp));
   document.body.style.setProperty("--wall-blend",
-    (typeof wall!=="undefined" && wall && WALL_TINTS[wall]) ? "luminosity" : "normal");
+    /* v1.56 item 1: `luminosity` alone applies to the background-COLOUR too, so the gradient was
+       blending with .wallbtn's grey chip and every colour wallpaper came out the same beige. Only
+       the photo layer should blend; the gradient paints normally underneath it. The value is shared
+       with the Settings swatches, so it must mean the same thing in both places. */
+    (typeof wall!=="undefined" && wall && WALL_TINTS[wall]) ? "luminosity, normal" : "normal");
   if(typeof fill!=="undefined") applyFill(); }
 function setTheme(v){ if(!THEMES[v]) return; theme = v; localStorage.setItem("ml_theme", theme); applyTheme(); render(); }
 function toggleTheme(){ setTheme(theme==="dark" ? "light" : "dark"); }   // kept for back-compat
@@ -2305,13 +2329,25 @@ if(typeof window!=="undefined"){
       /* v1.50: not while the open is still staging, and not before the sheet has ever had focus —
          see `_addFocused`. Otherwise the blur caused by hiding the floating pill reads as "done". */
       if(_addPhase2 || !_addFocused) return;
-      setTimeout(()=>{
+      /* v1.56 item 2: `relatedTarget` already says where focus is going. When it lands outside the
+         sheet — which is exactly what iOS's accessory-bar ✓ does, blurring to nothing — there is
+         nothing to disambiguate and nothing to wait for, so the close starts on the next frame
+         instead of 120ms later. That 120ms was the whole reason this exit looked different from
+         Cancel: the keyboard's own retraction is roughly 250ms, so by the time the sheet began to
+         move it had already gone. It now starts while the keyboard is still on its way down.
+         The deferral is kept for the ambiguous case (focus moving between controls in the sheet),
+         where it is still the only way to tell the two apart. */
+      const sheet0=document.getElementById("addSheet");
+      const rt=e && e.relatedTarget;
+      const goingOutside = !rt || !(sheet0 && sheet0.contains(rt));
+      const finish=()=>{
         if(!addOpen) return;
         const sheet=document.getElementById("addSheet"); if(!sheet) return;
         const a=document.activeElement;
         if(a && a!==document.body && sheet.contains(a)) return;   // moved to another control in the sheet
         commitAddSheet();
-      }, 120);
+      };
+      if(goingOutside) requestAnimationFrame(finish); else setTimeout(finish, 120);
     });
   }
   document.addEventListener("click", (e)=>{
@@ -3881,6 +3917,12 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-tilebrd]").forEach(b=>b.onclick=()=>setTileBrd(b.dataset.optTilebrd));
   app.querySelectorAll("[data-opt-tilebgcalm]").forEach(b=>b.onclick=()=>setTileBgCalm(b.dataset.optTilebgcalm==="1"));
   app.querySelectorAll("[data-opt-tilebrdcalm]").forEach(b=>b.onclick=()=>setTileBrdCalm(b.dataset.optTilebrdcalm==="1"));
+  /* v1.56 item 1: distinct attribute names, so these do not collide with the plain accent/textcol selectors. */
+  app.querySelectorAll("[data-opt-accentcalm]").forEach(b=>b.onclick=()=>setAccentCalm(b.dataset.optAccentcalm==="1"));
+  app.querySelectorAll("[data-opt-textcolcalm]").forEach(b=>b.onclick=()=>setTextColCalm(b.dataset.optTextcolcalm==="1"));
+  const oas=app.querySelector("#optAppSave"); if(oas) oas.onclick=()=>saveAppDefs();
+  const oar=app.querySelector("#optAppReset"); if(oar) oar.onclick=()=>resetAppearance();
+  const oaf=app.querySelector("#optAppFactory"); if(oaf) oaf.onclick=()=>factoryAppearance();
   app.querySelectorAll("[data-opt-num]").forEach(b=>b.onclick=()=>bumpNum(b.dataset.optNum, +b.dataset.optDelta));
   const onr=app.querySelector("#optNumReset"); if(onr) onr.onclick=()=>resetNums();
   const ons=app.querySelector("#optNumSave"); if(ons) ons.onclick=()=>saveNumDefs();
@@ -4187,6 +4229,38 @@ function histPeriod(ts){
   return { k:d.getFullYear()+"-"+d.getMonth()+"-"+d.getDate(),
     label:d.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"}) };
 }
+/* v1.56 item 1: the whole Appearance section as one preset. Listing the keys explicitly (rather than
+   sweeping every "ml_" key) is deliberate: the list IS the definition of what "appearance" means, and
+   a sweep would drag in the list cache, the household id and the shopping state with it. Anything
+   added to the Appearance section in future belongs in this array. */
+const APPEARANCE_KEYS = [
+  "ml_theme", "ml_wall", "ml_wallpos",
+  "ml_accent", "ml_accentcalm", "ml_textcol", "ml_textcolcalm", "ml_textscope", "ml_calmcol",
+  "ml_densities", "ml_density",
+  "ml_displays", "ml_largecols", "ml_smallcols", "ml_caton", "ml_subon",
+  "ml_fill", "ml_fill_v141",
+  "ml_tilebg", "ml_tilebrd", "ml_tilebgcalm", "ml_tilebrdcalm",
+  "ml_gapx", "ml_gapy", "ml_tilerad", "ml_padl", "ml_padr", "ml_padt", "ml_padb", "ml_numdef",
+  "ml_catemoji", "ml_itememoji"
+];
+function appDefs(){ try{ const o=JSON.parse(localStorage.getItem("ml_appdef")||"null"); return (o && typeof o==="object") ? o : null; }catch(e){ return null; } }
+function hasAppDefs(){ return !!appDefs(); }
+function saveAppDefs(){ const o={};
+  APPEARANCE_KEYS.forEach(k=>{ const v=localStorage.getItem(k); if(v!==null) o[k]=v; });
+  try{ localStorage.setItem("ml_appdef", JSON.stringify(o)); }catch(e){}
+  render(); }
+/* Restoring reloads rather than reassigning. Roughly twenty module-level `let`s are read once at boot
+   from these keys (theme, wall, accent, fill, catOn, densities, displays …); writing the storage and
+   hand-patching each global is the kind of list that silently falls out of step the next time a
+   setting is added. The boot path already rebuilds all of it from localStorage in a few milliseconds,
+   so let it. */
+function applyStoredAppearance(o){
+  APPEARANCE_KEYS.forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
+  if(o) Object.keys(o).forEach(k=>{ if(APPEARANCE_KEYS.indexOf(k)>=0){ try{ localStorage.setItem(k, o[k]); }catch(e){} } });
+  try{ location.reload(); }catch(e){ render(); }
+}
+function resetAppearance(){ applyStoredAppearance(appDefs()); }
+function factoryAppearance(){ try{ localStorage.removeItem("ml_appdef"); }catch(e){} applyStoredAppearance(null); }
 function optionsBody(){
   const row=(label,control)=>`<div class="optrow"><span class="optlabel">${label}</span><span class="optctrl">${control}</span></div>`;
   const rowNL=(label,control)=>`<div class="optrow optnl"><span class="optlabel">${label}</span><span class="optctrl">${control}</span></div>`;   // v1.29 no dividing line
@@ -4200,19 +4274,27 @@ function optionsBody(){
   if(curSort==="ai" && !aiSortOK()) curSort="location";
   return `
     ${sect("Appearance")}
+    ${/* v1.56 item 1: above Theme deliberately — it is the control that governs everything below it. */""}
+    <div class="optrow optrow-wide optnl"><span class="optlabel">My appearance</span><div class="optwide">
+      <div class="numbtns"><button id="optAppSave" class="colbtn2">Save current</button>${
+        hasAppDefs()?`<button id="optAppReset" class="colbtn2">Restore mine</button>`:""
+      }<button id="optAppFactory" class="colbtn2">Factory default</button></div></div></div>
     ${rowNL("Theme", `<div class="seg segfull" style="flex-wrap:wrap">${
       [{k:"light",label:"Light",bg:"#F6F2E7",br:"#DAD3C0",dot:"#D2542B"},
        {k:"ink",  label:"Ink",  bg:"#FFFFFF",br:"#D8D8D8",dot:"#000000"},
        {k:"noir", label:"Noir", bg:"#000000",br:"#333333",dot:"#FFFFFF"},
        {k:"dark", label:"Dark", bg:"#141C18",br:"#33433B",dot:"#E2502C"}]
-      .map(t=>`<button data-opt-theme="${t.k}" class="themebtn ${theme===t.k?'on':''}"><span class="themesw" style="background:${t.bg};border-color:${t.br}"><i style="background:${ACCENTS[accent]||t.dot}"></i></span>${t.label}</button>`).join("")
+      .map(t=>`<button data-opt-theme="${t.k}" class="themebtn ${theme===t.k?'on':''}"><span class="themesw" style="background:${t.bg};border-color:${t.br}"><i style="background:${accentHex()||t.dot}"></i></span>${t.label}</button>`).join("")
     }</div>`)}
     ${/* v1.54 item 1: no rule between Wallpaper and its own Top/Bottom control — they are one setting. */""}
     ${(wall ? rowNL : row)("Wallpaper", `<div class="wallrow">${[{v:"",label:"None"},{v:"wall-1"},{v:"wall-2"},{v:"wall-3"},{v:"wall-4"},
       {v:"wall-red"},{v:"wall-blue"},{v:"wall-yellow"},{v:"wall-pink"},{v:"wall-grey"}]
       .map(w=>`<button data-opt-wall="${w.v}" class="wallbtn ${wall===w.v?'on':''}" aria-label="${esc(w.label||w.v)}" style="${
         !w.v ? "" : (WALL_TINTS[w.v]
-          ? `background-image:url('img/${TINT_BAND[w.v]}-${wallPos}.jpg'), ${WALL_TINTS[w.v]};background-blend-mode:luminosity;background-position:center ${wallPos==='bottom'?'bottom':'top'}`
+          /* v1.56 item 1: `luminosity` alone applies to the background-COLOUR too, so the gradient was
+             blending with .wallbtn's grey chip and every colour wallpaper came out the same beige. Only
+             the photo layer should blend; the gradient paints normally underneath it. */
+          ? `background-image:url('img/${TINT_BAND[w.v]}-${wallPos}.jpg'), ${WALL_TINTS[w.v]};background-blend-mode:luminosity, normal;background-position:center ${wallPos==='bottom'?'bottom':'top'}`
           : `background-image:url('img/${w.v}-${wallPos}.jpg');background-position:center ${wallPos==='bottom'?'bottom':'top'}`)
       }">${w.label||''}</button>`).join("")}</div>`)}
     ${wall ? row("Wallpaper items", `<div class="seg"><button data-opt-wallpos="top" class="${wallPos==='top'?'on':''}">Top</button><button data-opt-wallpos="bottom" class="${wallPos==='bottom'?'on':''}">Bottom</button></div>`) : ""}
@@ -4222,11 +4304,12 @@ function optionsBody(){
           do not fit in the narrow value column — they still do not, so the swatch row wraps to a
           second line inside that column and right-aligns, rather than pushing the label off. */""}
     <div class="optrow optnl"><span class="optlabel">Colour accent</span><span class="optctrl">
-      <div class="colrow colrow-inline"><button data-opt-accent="auto" class="colbtn2 ${accent==='auto'?'on':''}">Auto</button>${
-      Object.keys(ACCENTS).map(k=>`<button data-opt-accent="${k}" class="colsw ${accent===k?'on':''}" style="background:${ACCENTS[k]}" aria-label="${k}" title="${k}"></button>`).join("")}</div></span></div>
+      ${/* v1.56 item 1: Calm here previews as well as applies — the swatches show the softened value. */""}
+      <div class="colrow colrow-inline"><button data-opt-accent="auto" class="colbtn2 ${accent==='auto'?'on':''}">Auto</button><button data-opt-accentcalm="${accentCalm?'0':'1'}" class="colbtn2 ${accentCalm?'on':''}">Calm</button>${
+      Object.keys(ACCENTS).map(k=>`<button data-opt-accent="${k}" class="colsw ${accent===k?'on':''}" style="background:${accentCalm?calmHex(ACCENTS[k]):ACCENTS[k]}" aria-label="${k}" title="${k}"></button>`).join("")}</div></span></div>
     <div class="optrow optnl"><span class="optlabel">Text colour</span><span class="optctrl">
-      <div class="colrow colrow-inline"><button data-opt-textcol="auto" class="colbtn2 ${textCol==='auto'?'on':''}">Auto</button>${
-      Object.keys(TEXTCOLS).map(k=>`<button data-opt-textcol="${k}" class="colsw ${textCol===k?'on':''}" style="background:${TEXTCOLS[k]}" aria-label="${k}" title="${k}"></button>`).join("")}</div></span></div>
+      <div class="colrow colrow-inline"><button data-opt-textcol="auto" class="colbtn2 ${textCol==='auto'?'on':''}">Auto</button><button data-opt-textcolcalm="${textColCalm?'0':'1'}" class="colbtn2 ${textColCalm?'on':''}">Calm</button>${
+      Object.keys(TEXTCOLS).map(k=>`<button data-opt-textcol="${k}" class="colsw ${textCol===k?'on':''}" style="background:${textColCalm?calmHex(TEXTCOLS[k]):TEXTCOLS[k]}" aria-label="${k}" title="${k}"></button>`).join("")}</div></span></div>
     ${rowNL("Text colour applies to", `<div class="seg"><button data-opt-textscope="all" class="${textScope==='all'?'on':''}">All text</button><button data-opt-textscope="tile" class="${textScope==='tile'?'on':''}">Tile text</button><button data-opt-textscope="cat" class="${textScope==='cat'?'on':''}">Category text</button></div>`)}
     ${rowNL("Calm colours", `<div class="seg"><button data-opt-calmcol="1" class="${calmCol?'on':''}">On</button><button data-opt-calmcol="0" class="${!calmCol?'on':''}">Off</button></div>`)}
     ${row("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
@@ -4250,10 +4333,10 @@ function optionsBody(){
     ${rowNL("Tile appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}"><span class="tdswatch" style="background:var(--accent)"></span>Full</button><button data-opt-fill="accent" class="${fillMode()==='accent'?'on':''}"><span class="tdswatch" style="border:1.5px solid var(--muted2);border-left:4px solid var(--accent)"></span>Accent</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}"><span class="tdswatch" style="border:1.5px solid var(--muted2)"></span>Empty</button></div>`)}
     ${/* v1.54 item 1: the tile's own colours, on the same one-line pattern as Colour accent. */""}
     <div class="optrow optnl"><span class="optlabel">Tile background</span><span class="optctrl">
-      <div class="colrow colrow-inline"><button data-opt-tilebg="auto" class="colbtn2 ${tileBg==='auto'?'on':''}">Auto</button><button data-opt-tilebgcalm="${tileBgCalm?'0':'1'}" class="colbtn2 ${tileBgCalm?'on':''}">Calm</button>${
+      <div class="colrow colrow-inline"><button data-opt-tilebg="auto" class="colbtn2 ${tileBg==='auto'?'on':''}">Auto</button><button data-opt-tilebgcalm="${tileBgCalm?'0':'1'}" class="colbtn2 ${tileBgCalm?'on':''}">Calm</button><button data-opt-tilebg="page" class="colsw colsw-page ${tileBg==='page'?'on':''}" aria-label="Page" title="Match the page background"></button>${
       Object.keys(ACCENTS).map(k=>`<button data-opt-tilebg="${k}" class="colsw ${tileBg===k?'on':''}" style="background:${tileBgCalm?calmHex(ACCENTS[k]):ACCENTS[k]}" aria-label="${k}" title="${k}"></button>`).join("")}</div></span></div>
     <div class="optrow optnl"><span class="optlabel">Tile border</span><span class="optctrl">
-      <div class="colrow colrow-inline"><button data-opt-tilebrd="auto" class="colbtn2 ${tileBrd==='auto'?'on':''}">Auto</button><button data-opt-tilebrdcalm="${tileBrdCalm?'0':'1'}" class="colbtn2 ${tileBrdCalm?'on':''}">Calm</button>${
+      <div class="colrow colrow-inline"><button data-opt-tilebrd="auto" class="colbtn2 ${tileBrd==='auto'?'on':''}">Auto</button><button data-opt-tilebrdcalm="${tileBrdCalm?'0':'1'}" class="colbtn2 ${tileBrdCalm?'on':''}">Calm</button><button data-opt-tilebrd="page" class="colsw colsw-page ${tileBrd==='page'?'on':''}" aria-label="Page" title="Match the page background"></button>${
       Object.keys(ACCENTS).map(k=>`<button data-opt-tilebrd="${k}" class="colsw ${tileBrd===k?'on':''}" style="background:${tileBrdCalm?calmHex(ACCENTS[k]):ACCENTS[k]}" aria-label="${k}" title="${k}"></button>`).join("")}</div></span></div>
     ${rowNL("Tile roundness", numCtl("rad"))}
     <div class="optrow optrow-wide optnl"><span class="optlabel">Tile gap</span><div class="optwide">
