@@ -1158,7 +1158,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.60";
+const APP_VERSION = "v1.61";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2778,7 +2778,12 @@ const FLAG_STAR_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="c
    the tag's own detail — the little punch hole, a thin outline, a small % beside it — and at the size
    this actually renders (about 13px on a tile) all of that collapses into a grey smudge. The tag is
    only there to say "price"; the % is the information, so it gets the height. */
-const FLAG_TAG_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.4 13.2l-8.2 8.2a2 2 0 01-2.83 0l-8-8A2 2 0 012 12V4.4A1.4 1.4 0 013.4 3H11c.53 0 1.04.21 1.41.59l9 9a2 2 0 010 2.61z"/><path d="M8.7 15.3l6.6-6.6" stroke-width="2"/><circle cx="9.3" cy="9.3" r="1.55"/><circle cx="14.7" cy="14.7" r="1.55"/></svg>`;
+/* v1.61 item 1: the tag lies flat instead of standing on its 45° corner. Diagonally, the widest
+   straight run inside the outline is the diagonal itself, so the % had to sit ON it and shrink to
+   fit between the two edges. Horizontal, the body is a clear ~11×8 box and the % gets all of it —
+   which is the whole reason the mark exists. The point and its hole move to the left so the % has
+   the wide end to itself. */
+const FLAG_TAG_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 6.2H9.4c-.62 0-1.2.26-1.62.7l-3.9 4.1a1.45 1.45 0 000 2l3.9 4.1c.42.44 1 .7 1.62.7h11.2A1.4 1.4 0 0022 16.4V7.6a1.4 1.4 0 00-1.4-1.4z"/><circle cx="7.6" cy="12" r=".95" fill="currentColor" stroke="none"/><path d="M12.2 14.6l5.6-5.2" stroke-width="1.9"/><circle cx="12.9" cy="10.1" r="1.4"/><circle cx="17.1" cy="13.9" r="1.4"/></svg>`;
 /* the plainest clock that still reads as one: a ring and two hands, no ticks, no bezel */
 const FLAG_CLOCK_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.4V12l3.3 2"/></svg>`;
 const FLAG_ICON = { urgent:FLAG_STAR_SVG, discount:FLAG_TAG_SVG, convenient:FLAG_CLOCK_SVG };
@@ -2825,7 +2830,7 @@ function addPillHTML(m){
   const cat=CAT(m.cat)||{color:"var(--muted2)"};
   const on=!!m.onId;
   const full=fillMode()==='full';
-  const style = full ? fullStyle(cat.color, !!on) : (fillMode()==="empty" ? `border-left:1.5px solid var(--line)` : `border-left:4px solid ${cat.color}`);
+  const style = full ? fullStyle(cat.color, !!on) : (fillMode()==="empty" ? `border-left:1.5px solid var(--line)` : `border-left:4px solid ${catEdge(cat.color, !!on)}`);
   const qcol = full?'#fff':cat.color;
   const meta=[(m.qty>1?m.qty+"×":""), m.weight].filter(Boolean).join(" ");
   const metaS = meta?`<span class="pill-meta"><span class="qty" style="color:${qcol}">${esc(meta)}</span></span>`:"";
@@ -3508,12 +3513,21 @@ function subKey(it){ return it.cat + "|" + subIndexOf(it); }
    omitting the declaration and hoping a stylesheet rule supplies it — the first attempt did omit,
    and broke the search-result strip, whose tiles carry neither .reg-in nor .reg-out and so matched
    no rule that could fill them back in. Resolving here works wherever a tile is drawn. */
+/* v1.61 item 2: Calm has to mean something when the picker is on AUTO too. On Auto a tile takes the
+   CATEGORY colour — which is not a colour any picker chose — so v1.57's per-picker Calm had nothing
+   to act on, and the switch did visibly nothing on Full tiles in Light or Dark. Calm now means
+   "soften this surface", whether the colour came from the picker or from the category. That also
+   puts back the pastel-category look the old global "Calm colours" switch gave, without a second
+   control competing for the same word. calmHex returns non-hex input unchanged, so the var()
+   fallbacks some callers pass through here are safe. */
+function catFill(catColor, sel){ return (sel ? calmOn.tilebg  : calmOn.utilebg)  ? calmHex(catColor) : catColor; }
+function catEdge(catColor, sel){ return (sel ? calmOn.tilebrd : calmOn.utilebrd) ? calmHex(catColor) : catColor; }
 function fullStyle(catColor, sel){
   if(sel){
-    return `background:${tileBgHex()||catColor};border:1.5px solid ${tileBrdHex()||catColor};color:${tileTxtHex()||"#fff"};`;
+    return `background:${tileBgHex()||catFill(catColor,true)};border:1.5px solid ${tileBrdHex()||catEdge(catColor,true)};color:${tileTxtHex()||"#fff"};`;
   }
   /* an unselected tile is an OUTLINE in Full — transparent unless a background was picked. */
-  return `background:${uTileBgHex()||"transparent"};border:1.5px solid ${uTileBrdHex()||catColor};color:${uTileTxtHex()||"var(--muted)"};`;
+  return `background:${uTileBgHex()||"transparent"};border:1.5px solid ${uTileBrdHex()||catEdge(catColor,false)};color:${uTileTxtHex()||"var(--muted)"};`;
 }
 function pillHTML(i, cat){
   // v1.37 item 5: a checked (in-cart) item renders EXACTLY like it does on the shop list — same
@@ -3524,7 +3538,7 @@ function pillHTML(i, cat){
   const qcol = full ? '#fff' : cat.color;
   // --edge carries the category colour so `.shop .pill.done` can keep it (the base `.pill.done`
   // rule forces border-left-color to grey with !important, which is what flattened cart tiles).
-  const style = `--edge:${cat.color};` + (full ? fullStyle(cat.color, true) : (fillMode()==="empty" ? `border-left:1.5px solid var(--line)` : `border-left:4px solid ${edge}`));
+  const style = `--edge:${catEdge(cat.color, true)};` + (full ? fullStyle(cat.color, true) : (fillMode()==="empty" ? `border-left:1.5px solid var(--line)` : `border-left:4px solid ${catEdge(edge, true)}`));
   const meta = `${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)}</span>`:""}`;
   /* v1.58 item 1: all three flags show on the tile now, not just the star. `starred` OR the urgent
      tag counts — the chip writes both, but an item saved before v1.58 has only `starred`. */
@@ -3597,7 +3611,7 @@ function regPill(entry, cat, it){
     /* v1.57 item 1: only the category-driven parts stay inline. Fill, line and text now come from
        CSS so that one rule owns all four sides of the border — see .pill.reg-in / .pill.reg-out. */
     const style = full ? fullStyle(cat.color, true)
-      : (fillMode()==="empty" ? "" : `border-left:4px solid ${cat.color}`);
+      : (fillMode()==="empty" ? "" : `border-left:4px solid ${catEdge(cat.color, true)}`);
     return `<button class="pill reg-in" data-reg-rm="${it.id}" style="${style}">${emS}${name}${metaS}</button>`;
   }
   /* v1.57 item 1: the unselected regular used to hard-code its own border, background and text
@@ -3606,7 +3620,7 @@ function regPill(entry, cat, it){
      tile that is not on the list at all. All four sides come from the same token now. */
   const outStyle = fillMode()==="full" ? fullStyle(cat.color, false)
     : fillMode()==="empty" ? ""
-    : `border-left:4px solid ${cat.color}`;
+    : `border-left:4px solid ${catEdge(cat.color, false)}`;
   return `<button class="pill reg-out" data-reg-add="${esc(entry.name)}|${cat.id}" style="${outStyle}">${emS}${name}${metaS}</button>`;
 }
 function planningSection(){
@@ -3834,7 +3848,9 @@ function wireListsPage(){
 function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
 function planFilledPill(i, cat){ const checked=i.checked; const full=fillMode()==="full"&&!checked;
   const edge=checked?'var(--done-edge)':cat.color; const qcol=full?'#fff':(checked?'var(--muted2)':cat.color);
-  const style=full?`background:${cat.color};border:1.5px solid ${cat.color};color:#fff`:(fillMode()==="empty"?`border-left:1.5px solid var(--line)`:`border-left:4px solid ${edge}`);
+  /* v1.61 item 2: this tile was missed by v1.60 — it is drawn by its own function and still wrote
+     the Full colours inline, so the six pickers had no effect here either. */
+  const style=full?fullStyle(cat.color,true):(fillMode()==="empty"?`border-left:1.5px solid var(--line)`:`border-left:4px solid ${catEdge(edge, true)}`);
   const em=itemEmoji(i.name,i.cat);
   return `<button class="pill plan-in ${checked?'done':''}" data-plan-rm="${i.id}" style="${style}">${em?`<span class="pemoji" aria-hidden="true">${em}</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}${checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit"${full?' style="color:rgba(255,255,255,.92)"':''}>▾</span></button>`; }
 /* A18/v1.08 — the quantity + weight editor for the selected plan item, shown as a banner
