@@ -262,6 +262,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .optlabel { font-weight:700; font-size:14px; }
   /* v1.33 tiny preview swatches inline in seg buttons (Tile appearance, Category/Item icons) */
   .tdswatch { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:5px; margin-right:6px; vertical-align:-3px; box-sizing:border-box; font-size:11px; line-height:1; }
+  /* v1.62 item 4: the Accent preview drew its bar in --accent inside a button whose selected state is
+     also --accent, so choosing it made the very thing it illustrates invisible. On the selected
+     button the bar switches to the on-accent colour, which is what a real tile's text uses there. */
+  .seg button.on .tdswatch { border-color:var(--on-accent) !important; }
+  .seg button.on .tdswatch[data-sw="full"] { background:var(--on-accent) !important; }
   .tdswatch-ico { background:var(--chip); }
   .tdswatch-ico.off { opacity:.35; }
   .seg { display:inline-flex; border:1.5px solid var(--line); border-radius:11px; overflow:hidden; }
@@ -339,6 +344,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   section.cat { margin-bottom:7px; }
   .chead { display:flex; align-items:center; gap:6px; margin-bottom:0; position:relative; }
   .chead .lbl { display:flex; align-items:center; gap:5px; border:none; background:transparent; padding:0; }
+  /* v1.62 item 2: the Urgent section is a second view of items that are also in their own category
+     below. Hiding the duplicate here rather than filtering it out of five different sort branches
+     keeps the sorting code untouched — and the sections stay in sync by construction. */
+  .urgentsec ~ section .pill.urgent-dup { display:none; }
+  .urgentchip .cname { font-weight:800; }
+  .urgentchip svg { color:#E8A91D; }
   .sq { width:8px; height:8px; border-radius:2px; }
   .cname { font-family:'Outfit',system-ui,sans-serif; font-weight:700; font-size:12px; letter-spacing:.02em; }
   .cnum { font-size:11px; color:var(--muted2); font-weight:700; }
@@ -525,6 +536,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      store name collapsed to a couple of clipped letters next to the "N to buy" count. */
   .locchip { display:inline-flex; align-items:center; gap:4px; margin:3px 0 1px 12px; font-size:11.5px; font-weight:700;
     color:var(--muted); background:var(--chip); border-radius:999px; padding:3px 9px; white-space:nowrap; max-width:calc(100% - 24px); overflow:hidden; text-overflow:ellipsis; }
+  /* v1.62 item 3: inside the header's title row the chip is a neighbour of the name, not a row of its
+     own — its row margins (and the 12px indent that lined it up under the back button) would read as
+     stray gaps there. Scoped to the header so the Lists page keeps the original spacing. */
+  .topfix header .locchip { margin:0; max-width:none; }
   .undobtn { margin-left:10px; background:rgba(255,255,255,.22); border:none; color:#fff; font-weight:800;
     font-size:13px; padding:4px 12px; border-radius:999px; white-space:nowrap; flex:none; }
   .toast > span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -727,10 +742,17 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .numbtns { display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; margin-top:9px; }
   /* v1.57 item 2: the slot rows. A fixed caption column keeps "Use" and "Save to" aligned so the two
      rows read as one control with two verbs. */
-  .slotrow { display:flex; align-items:center; gap:6px; margin-top:7px; }
-  .slotcap { flex:0 0 62px; font-size:12px; font-weight:700; color:var(--muted); }
+  /* v1.62 item 4: nine slots wrap to two lines, and a vertically centred caption then sits beside the
+     SECOND line — reading as a label for the wrong row. Align it to the first, like the stepper
+     captions. */
+  .slotrow { display:flex; align-items:flex-start; gap:6px; margin-top:7px; }
+  .slotcap { flex:0 0 62px; padding-top:7px; font-size:12px; font-weight:700; color:var(--muted); }
   .slotbtn { min-width:38px; text-align:center; }
   .slotbtn.empty { opacity:.4; }
+  /* v1.62 item 4: nine slots wrap rather than shrink to unreadable stubs; the five named ones are
+     wider than the numbered five because a name is the useful label. */
+  .slotgrid { display:flex; flex-wrap:wrap; gap:6px; flex:1; min-width:0; }
+  .slotbtn.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
   /* v1.59 item 2: two columns only while two columns fit. The Settings page is rendered at
      transform:scale(dens()) with width:calc(100%/dens()), so a bigger Text size gives the layout LESS
      css width, not more — at 130% these rows had ~278px for something that needs ~320px, which is why
@@ -796,7 +818,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .flagchip svg { vertical-align:-.14em; }
   /* the same marks on a shop tile, at the tile's own text colour and a touch smaller than the name */
   /* v1.59 item 1: .86em was too small for a mark that has to carry a symbol inside it. */
-  .pmark { display:inline-flex; align-items:center; font-size:1.05em; line-height:1; margin-right:2px; flex:none; }
+  /* v1.62 item 1: 1.25em of icon puts the % at a digit's height — see FLAG_TAG_SVG's geometry. */
+  .pmark { display:inline-flex; align-items:center; font-size:1.25em; line-height:1; margin-right:2px; flex:none; }
   /* v1.26 collapsible Category / Subcategory rows in the edit sheet */
   .editsec { width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; border:none; border-top:1px solid var(--line); background:transparent; padding:11px 0 4px; margin-top:10px; cursor:pointer; }
   .editsec-l { font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
@@ -1105,9 +1128,21 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      tightened under a `.addedit` scope instead of at the base, so the other screens are unchanged. */
   .addedit { display:flex; flex-direction:column; gap:7px; padding:2px 2px 0; }
   .addedit-flags { display:flex; gap:6px; }
-  /* v1.59 item 3: .wsel / .wchip removed — the add panel uses the same <select> wheel as the
-     shop-page editor now, so nothing referenced them. See the note beside that select in
-     addEditPanel() for the v1.44 trade-off this reverses. */
+  /* v1.62 item 5: a weight picker that is part of the sheet instead of a system overlay. The native
+     <select> opens the iOS picker, which takes the keyboard away and covers half the screen — it
+     cannot be made smaller, so it is replaced. This one is ~5 rows tall, scrolls, and every control
+     in it cancels pointerdown so focus (and the keyboard) never leave the search field. */
+  .wbtn { flex:none; height:40px; min-width:74px; padding:0 10px; border-radius:14px; border:none;
+    background:var(--chip); color:var(--text); font-size:14px; font-weight:600; display:inline-flex;
+    align-items:center; justify-content:center; gap:5px; }
+  .wbtn .wcar { font-size:11px; color:var(--muted); }
+  .wpop { position:absolute; z-index:40; margin-top:4px; max-height:184px; overflow-y:auto;
+    -webkit-overflow-scrolling:touch; background:var(--card); border:1.5px solid var(--line);
+    border-radius:14px; box-shadow:0 12px 30px -12px rgba(20,30,22,.5); padding:4px; min-width:104px; }
+  .wpop button { display:block; width:100%; text-align:left; border:none; background:transparent;
+    color:var(--text); font-size:14px; font-weight:600; padding:8px 10px; border-radius:10px; }
+  .wpop button.on { background:var(--accent); color:var(--on-accent); }
+  .wwrap { position:relative; flex:none; }
   .addedit-actions { display:flex; gap:8px; margin-top:2px; }
   .addedit-more { flex:none; border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:14px; padding:8px 12px; border-radius:12px; }
   .addedit-remove { flex:none; border:1.5px solid #C24A33; background:transparent; color:#C24A33; font-weight:700; font-size:14px; padding:8px 12px; border-radius:12px; }
@@ -1158,7 +1193,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.61";
+const APP_VERSION = "v1.62";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2118,6 +2153,7 @@ function stageAdds(fn){
 // addEditPrefix (v1.35) is the fixed text before this pick's contribution, so the search
 // bar can be re-synced to "Name qty× weight, " on every live edit without re-parsing.
 let addEditId=null, addEditPrefix="", addLastQuery="";
+let wOpen=null;   // item id whose weight popover is open
 // v1.11 done-shopping dialog
 let finishOpen=false;
 // A18 ✨ Smart add (planning-mode AI parse → preview → confirm)
@@ -2783,7 +2819,11 @@ const FLAG_STAR_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="c
    fit between the two edges. Horizontal, the body is a clear ~11×8 box and the % gets all of it —
    which is the whole reason the mark exists. The point and its hole move to the left so the % has
    the wide end to itself. */
-const FLAG_TAG_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 6.2H9.4c-.62 0-1.2.26-1.62.7l-3.9 4.1a1.45 1.45 0 000 2l3.9 4.1c.42.44 1 .7 1.62.7h11.2A1.4 1.4 0 0022 16.4V7.6a1.4 1.4 0 00-1.4-1.4z"/><circle cx="7.6" cy="12" r=".95" fill="currentColor" stroke="none"/><path d="M12.2 14.6l5.6-5.2" stroke-width="1.9"/><circle cx="12.9" cy="10.1" r="1.4"/><circle cx="17.1" cy="13.9" r="1.4"/></svg>`;
+/* v1.62 item 1: the % is now the same height as the text it sits beside. In a 24-square viewBox the
+   symbol could only ever be a fraction of the icon's height; the box is 28×20 instead, with the %
+   spanning 12 of those 20 units, so at 1.25em of icon the symbol lands at ~0.75em — a digit's
+   height. The tag is sized around the symbol rather than the other way round. */
+const FLAG_TAG_SVG = `<svg viewBox="0 0 28 20" height="1em" width="1.4em" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M25.6 2.4H11.2c-.44 0-.86.17-1.17.47l-6.6 6.4a1.05 1.05 0 000 1.46l6.6 6.4c.31.3.73.47 1.17.47h14.4A1.4 1.4 0 0027 16.2V3.8a1.4 1.4 0 00-1.4-1.4z"/><circle cx="7.9" cy="10" r="1" fill="currentColor" stroke="none"/><path d="M13.6 15.4l8-10.8" stroke-width="1.8"/><circle cx="15.3" cy="6.9" r="2.1"/><circle cx="19.9" cy="13.1" r="2.1"/></svg>`;
 /* the plainest clock that still reads as one: a ring and two hands, no ticks, no bezel */
 const FLAG_CLOCK_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.4V12l3.3 2"/></svg>`;
 const FLAG_ICON = { urgent:FLAG_STAR_SVG, discount:FLAG_TAG_SVG, convenient:FLAG_CLOCK_SVG };
@@ -2990,6 +3030,14 @@ function wireAddRows(){
 // v1.35 item 4: the SAME content as the long-press "Edit item" sheet (star, qty, weight, name,
 // flags, Category, Subcategory) — but wired for live inline editing (data-ae-*): every change
 // mutates the real item immediately, no separate Save step, keyboard/search bar never close.
+/* v1.62 item 5: one weight control for both editors. `id` scopes the popover to its item so two
+   panels can never fight over one open flag. */
+function weightPicker(id, cur, W){
+  const label = cur || "unit";
+  return `<div class="wwrap"><button class="wbtn" data-w-open="${id}" aria-haspopup="listbox">${esc(label)}<span class="wcar" aria-hidden="true">▾</span></button>`
+    + (wOpen===id ? `<div class="wpop" role="listbox">${W.map(w=>`<button role="option" data-w-set="${id}|${esc(w)}" class="${(cur||"")===w?'on':''}">${w?esc(w):'unit'}</button>`).join("")}</div>` : "")
+    + `</div>`;
+}
 function addEditPanel(){
   const it=state.items.find(i=>i.id===addEditId);
   if(!it){ addEditId=null; return addSheetRows(); }
@@ -3007,16 +3055,13 @@ function addEditPanel(){
     </div>
     <div style="display:flex;gap:6px;align-items:stretch">
       <div class="qstep" style="height:40px;align-items:center;flex:none;border:none;background:var(--chip)"><button data-ae-minus="${it.id}" aria-label="Less" style="width:32px">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:15px">${it.qty||1}</span><button data-ae-plus="${it.id}" aria-label="More" style="width:32px">+</button></div>
-      ${/* v1.59 item 3: this REVERSES v1.44 item 5, which replaced a select here with a scrolling chip
-            row precisely because a native <select> opens the iOS picker and drops the keyboard. That is
-            still true — tapping the wheel retracts the keyboard, and you tap the search bar to get it
-            back. It is the deliberate trade: matching the shop-page editor was worth more than keeping
-            the keyboard up through a weight change, which is not something you do mid-sentence. What
-            v1.44 could not rely on and we now can is that losing focus to a control INSIDE the sheet no
-            longer dismisses the sheet — see the relatedTarget guard in the focusout handler. */""}
-      <select data-ae-wsel="${it.id}" aria-label="Weight" style="width:78px;flex:none;height:40px;padding:0 4px;border-radius:14px;border:none;background:var(--chip);color:var(--text);font-size:14px;font-weight:600;text-align:center;text-align-last:center">
-        ${W.map(w=>{ const hl=(w==="500g"||w==="1kg"); return `<option value="${esc(w)}" ${(it.weight||"")===w?'selected':''}>${w?(hl?'★ '+w:esc(w)):'unit'}</option>`; }).join("")}
-      </select>
+      ${/* v1.62 item 5: the native <select> is gone again, and this restores what v1.44 item 5 was
+            protecting. v1.59 accepted the iOS picker as the price of matching the shop-page editor;
+            in use that price is the whole keyboard AND half the screen, every time you set a weight
+            on a phone. The replacement is a popover inside the sheet that cancels pointerdown, so
+            picking a weight costs nothing — and the shop-page editor now uses the same control, so
+            the two editors still match. */""}
+      ${weightPicker(it.id, it.weight, W)}
       <input data-ae-name="${it.id}" value="${esc(it.name)}" style="flex:1;min-width:0;height:40px;padding:0 12px;border-radius:14px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:15px" />
     </div>
     ${/* v1.59 item 3: the weight is the same wheel the shop-page Edit item uses, in the same place —
@@ -3045,12 +3090,19 @@ function wireAddEdit(){
   document.querySelectorAll("[data-ae-minus]").forEach(b=>b.onpointerdown=e=>e.preventDefault());
   document.querySelectorAll("[data-ae-minus]").forEach(b=>b.onclick=()=>{ const it=cur(); if(it){ it.qty=Math.max(1,(it.qty||1)-1); touch(it); refreshAddBody(); } });
   document.querySelectorAll("[data-ae-plus]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=cur(); if(it){ it.qty=(it.qty||1)+1; touch(it); refreshAddBody(); } }; });
-  /* v1.59 item 3: NO pointerdown guard on the select — that is what stops the wheel opening at all.
-     Losing focus to it is safe: the add sheet's auto-close only fires when focus lands OUTSIDE the
-     sheet, and the select is inside it. */
-  document.querySelectorAll("[data-ae-wsel]").forEach(s=>{ s.onchange=()=>{ const it=cur();
-    if(it){ it.weight=s.value||""; touch(it); refreshAddBody(); } }; });
+  /* v1.62 item 5: preventDefault on pointerdown everywhere in this control — that is the whole point.
+     A tap that never moves focus never dismisses the keyboard. */
+  document.querySelectorAll("#addSheetBody [data-w-open]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
+    b.onclick=()=>{ const id=b.dataset.wOpen; wOpen = (wOpen===id) ? null : id; refreshAddBody(); }; });
+  document.querySelectorAll("#addSheetBody [data-w-set]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
+    b.onclick=()=>{ const [id,w]=b.dataset.wSet.split("|"); const it=state.items.find(x=>x.id===id);
+      if(it){ it.weight=w||""; wOpen=null; touch(it); refreshAddBody(); } }; });
   document.querySelectorAll("[data-ae-flag]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const [id,k]=b.dataset.aeFlag.split("|"); const it=state.items.find(i=>i.id===id); if(it){ const t=Array.isArray(it.tags)?it.tags.slice():[]; const i=t.indexOf(k); if(i<0)t.push(k); else t.splice(i,1); it.tags=t;
+      /* v1.62 item 2: "get this now" and "only if you happen to pass it" are opposite instructions —
+         an item cannot be both. Selecting one clears the other rather than refusing the tap, so the
+         control never feels stuck. */
+      if(k==="urgent") it.tags = it.tags.filter(t=>t!=="convenient");
+      else if(k==="convenient") it.tags = it.tags.filter(t=>t!=="urgent");
       /* v1.58 item 1: Urgent and the old ★ were two controls for one idea. The chip is now the only
          one, and it keeps `starred` in step so the existing "urgent floats to the top" sort and any
          item saved by an older build both keep working. */
@@ -3148,7 +3200,7 @@ function finishAddTeardown(){
    screen simply blinking. */
 function endAddSheet(){
   if(_addClosing) return;
-  addOpen=false; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain=""; addStaged=[];
+  addOpen=false; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain=""; addStaged=[]; wOpen=null;   // v1.62 item 5: the weight popover is sheet state — it closes with the sheet
   /* v1.50: closing inside the staging window must not let phase 2 fire into a dismissed sheet. */
   if(_addPhase2){ clearTimeout(_addPhase2); _addPhase2=null; }
   _addFocused=false;
@@ -3553,7 +3605,7 @@ function pillHTML(i, cat){
   // No check circle — tapping the whole row checks it. Selected/on-list uses the Full/Empty tile look.
   const em = itemEmoji(i.name, i.cat);
   const emS = em?`<span class="pemoji" aria-hidden="true">${em}</span>`:"";
-  return `<button class="pill ${checked?'done':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="${style}">`
+  return `<button class="pill ${checked?'done':''} ${urgent?'urgent-dup':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="${style}">`
     +`${emS}${marks}${esc(cap(i.name))}${meta?`<span class="pill-meta">${meta}</span>`:""}`
     +`</button>`;
 }
@@ -3730,6 +3782,15 @@ function renderMain(){
     bodyBlocks = [ `<section class="cat">${note}${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
   else if(sm==="alpha"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(sortList(unchecked)) : "" }</section>` ]; }
   else { const unchecked=state.items.filter(i=>!i.checked).slice().sort(bySortKey); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
+  /* v1.62 item 2: Urgent is a lens over the list, not a category — it has to be at the top whether or
+     not "Group by category" is on, and whichever sort is running. So it is rendered from the item
+     list directly and the normal blocks are asked to leave those items out, rather than trying to
+     teach every one of the five sort branches above about it. */
+  const urgentItems = state.items.filter(i=>!i.checked && (i.starred || (Array.isArray(i.tags)&&i.tags.includes("urgent"))));
+  if(urgentItems.length){
+    const uHead = `<div class="chead"><span class="lbl catheadchip urgentchip">${FLAG_STAR_SVG}<span class="cname">Urgent</span><span class="cnum">${urgentItems.length}</span></span></div>`;
+    bodyBlocks = [`<section class="cat urgentsec">${uHead}${pillsMixed(urgentItems.slice().sort(bySortKey))}</section>`].concat(bodyBlocks);
+  }
   const listBody = bodyBlocks.join("");
   const checkedBar = done>0 ? `<div class="checkedbar shop" id="checkedbar">
       <button class="checkedbarhead" id="checkedHead"><span class="chk-in"><span class="chk-tick">✓</span>${done} in cart</span><span>${checkedOpen?"▾":"▸"}</span></button>
@@ -3742,13 +3803,16 @@ function renderMain(){
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
           <button class="backbtn" id="toLists" aria-label="Back to lists">‹</button>
           <span class="title disp">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="dot">.</span></span>
+          ${/* v1.62 item 3: the store sits with the list name rather than on a line of its own — it is
+                a qualifier on "which list am I looking at", and its own row cost 30px of a screen that
+                is mostly list. */""}
+          ${locChip()}
         </div>
         ${open>0?`<span class="hcount hcount-mid">${open} to buy</span>`:""}
         <div style="display:flex;align-items:center;gap:8px">
           ${syncChip()}
         </div>
       </header>
-      ${locChip()}
     </div>
     <div class="wrap ${shopMode?'shop':''}">
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
@@ -4390,55 +4454,74 @@ function histPeriod(ts){
   return { k:d.getFullYear()+"-"+d.getMonth()+"-"+d.getDate(),
     label:d.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"}) };
 }
-/* v1.56 item 1: the whole Appearance section as one preset. Listing the keys explicitly (rather than
-   sweeping every "ml_" key) is deliberate: the list IS the definition of what "appearance" means, and
-   a sweep would drag in the list cache, the household id and the shopping state with it. Anything
-   added to the Appearance section in future belongs in this array. */
-const APPEARANCE_KEYS = [
-  "ml_theme", "ml_wall", "ml_wallpos",
-  "ml_accent", "ml_textcol", "ml_cattext",
-  "ml_densities", "ml_density",
-  "ml_displays", "ml_largecols", "ml_smallcols", "ml_caton", "ml_subon",
-  "ml_fill", "ml_fill_v141",
-  "ml_tilebg", "ml_tilebrd", "ml_tiletext", "ml_utilebg", "ml_utilebrd", "ml_utiletext",
-  /* v1.58 item 2: one Calm flag per colour picker. */
-  "ml_accentcalm", "ml_textcolcalm", "ml_cattextcalm",
-  "ml_tiletextcalm", "ml_tilebgcalm", "ml_tilebrdcalm",
-  "ml_utiletextcalm", "ml_utilebgcalm", "ml_utilebrdcalm",
-  "ml_gapx", "ml_gapy", "ml_tilerad", "ml_padl", "ml_padr", "ml_padt", "ml_padb", "ml_numdef",
-  "ml_catemoji", "ml_itememoji"
+/* v1.62 item 4: five looks that between them cover the range — a soft default, a flat monochrome, a
+   dark one, a dense one for a long list, and a big-and-airy one. They live in the last five slots and
+   are overwritten the moment the user saves over them, so they are a starting point rather than
+   furniture. Keys only: each is exactly what "Save to" would have captured. */
+const APP_PRESETS = [
+  { name:"Market", keys:{ ml_theme:"light", ml_wall:"", ml_fill:"accent", ml_fill_v141:"1", ml_accent:"orange",
+      ml_tilerad:"12", ml_gapx:"8", ml_gapy:"8", ml_caton:"1", ml_catemoji:"1", ml_itememoji:"1" } },
+  { name:"Paper",  keys:{ ml_theme:"ink", ml_wall:"", ml_fill:"empty", ml_fill_v141:"1", ml_accent:"black",
+      ml_tilerad:"4", ml_gapx:"6", ml_gapy:"6", ml_caton:"1", ml_catemoji:"0", ml_itememoji:"0" } },
+  { name:"Night",  keys:{ ml_theme:"noir", ml_wall:"", ml_fill:"full", ml_fill_v141:"1", ml_accent:"white",
+      ml_tilerad:"18", ml_gapx:"8", ml_gapy:"8", ml_tilebgcalm:"1", ml_caton:"1", ml_catemoji:"1", ml_itememoji:"1" } },
+  { name:"Compact",keys:{ ml_theme:"light", ml_wall:"", ml_fill:"accent", ml_fill_v141:"1", ml_accent:"green",
+      ml_tilerad:"8", ml_gapx:"2", ml_gapy:"2", ml_padt:"2", ml_smallcols:"2",
+      ml_displays:JSON.stringify({cat:"small",flat:"small"}), ml_densities:JSON.stringify({cat:0.9,flat:0.9}),
+      ml_caton:"1", ml_catemoji:"1", ml_itememoji:"0" } },
+  { name:"Airy",   keys:{ ml_theme:"light", ml_wall:"wall-3", ml_wallpos:"bottom", ml_fill:"empty", ml_fill_v141:"1",
+      ml_accent:"sand", ml_tilerad:"22", ml_gapx:"14", ml_gapy:"14", ml_padl:"20", ml_padr:"20", ml_padt:"14",
+      ml_largecols:"1", ml_displays:JSON.stringify({cat:"large",flat:"large"}),
+      ml_densities:JSON.stringify({cat:1.1,flat:1.1}), ml_caton:"1", ml_catemoji:"1", ml_itememoji:"1" } }
 ];
-/* v1.57 item 2: four saved looks instead of one. Stored as a fixed-length array so a slot's NUMBER is
-   stable — slot 3 stays slot 3 whether or not 2 is filled, which is the whole point of numbered
-   presets. Nulls are empty slots. */
-function appSlots(){ try{ const a=JSON.parse(localStorage.getItem("ml_appslots")||"null");
-    if(Array.isArray(a)) return [0,1,2,3].map(i=>a[i]||null);
-  }catch(e){}
-  /* one-shot carry-forward of v1.56's single preset into slot 1 */
-  try{ const old=JSON.parse(localStorage.getItem("ml_appdef")||"null");
-    if(old && typeof old==="object") return [old,null,null,null];
-  }catch(e){}
-  return [null,null,null,null]; }
-function saveAppSlot(i){ const a=appSlots(); const o={};
-  APPEARANCE_KEYS.forEach(k=>{ const v=localStorage.getItem(k); if(v!==null) o[k]=v; });
-  a[i]=o; setLS("ml_appslots", JSON.stringify(a));
+/* v1.62 item 4: nine slots, and the last five ship filled with curated looks (see APP_PRESETS). */
+const APP_SLOTS = 9;
+/* v1.62 item 4: "record all settings" — an explicit include list kept missing whatever was added
+   last, which is exactly what the user hit. The definition is inverted: a slot captures every ml_*
+   key EXCEPT the ones that are data, identity or per-session state. Anything new is therefore
+   captured by default, and the only thing to maintain is the short list of what a look must not
+   carry with it. */
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_lists$|ml_lastlist$|ml_me$|ml_shop$|ml_kbh$|ml_appslots$|ml_appsel$|ml_numdef$)/;
+function appearanceSnapshot(){ const o={};
+  for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
+    if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
+  return o; }
+function appSlots(){ let a=null;
+  try{ a=JSON.parse(localStorage.getItem("ml_appslots")||"null"); }catch(e){}
+  if(!Array.isArray(a)){
+    a=[];
+    try{ const old=JSON.parse(localStorage.getItem("ml_appdef")||"null"); if(old&&typeof old==="object") a[0]=old; }catch(e){}
+  }
+  const out=[]; for(let i=0;i<APP_SLOTS;i++) out[i]=a[i]||null;
+  /* the five curated looks fill any of the last five slots the user has not written to themselves */
+  APP_PRESETS.forEach((p,n)=>{ const idx=APP_SLOTS-APP_PRESETS.length+n; if(!out[idx]) out[idx]={ __preset:p.name, ...p.keys }; });
+  return out; }
+function appSel(){ return localStorage.getItem("ml_appsel"); }
+function saveAppSlot(i){ const a=appSlots(); a[i]=appearanceSnapshot();
+  try{ localStorage.setItem("ml_appslots", JSON.stringify(a)); localStorage.setItem("ml_appsel", String(i)); }catch(e){}
   try{ localStorage.removeItem("ml_appdef"); }catch(e){}
-  showToast("Appearance saved to "+(i+1)); render(); }
-function useAppSlot(i){ const a=appSlots(); if(a[i]) applyStoredAppearance(a[i]); }
+  showToast("Saved to slot "+(i+1));
+  render(); }
+function useAppSlot(i){ const a=appSlots(); if(!a[i]) return;
+  try{ localStorage.setItem("ml_appsel", String(i)); }catch(e){}
+  applyStoredAppearance(a[i]); }
 /* Restoring reloads rather than reassigning. Roughly twenty module-level `let`s are read once at boot
    from these keys (theme, wall, accent, fill, catOn, densities, displays …); writing the storage and
    hand-patching each global is the kind of list that silently falls out of step the next time a
    setting is added. The boot path already rebuilds all of it from localStorage in a few milliseconds,
    so let it. */
+/* v1.62 item 4: the clear uses the same exclusion rule as the snapshot, so what a look replaces and
+   what it captures can never drift apart. */
 function applyStoredAppearance(o){
-  APPEARANCE_KEYS.forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
-  if(o) Object.keys(o).forEach(k=>{ if(APPEARANCE_KEYS.indexOf(k)>=0){ try{ localStorage.setItem(k, o[k]); }catch(e){} } });
+  const kill=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
+    if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) kill.push(k); }
+  kill.forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
+  if(o) Object.keys(o).forEach(k=>{ if(k!=="__preset" && !APP_EXCLUDE.test(k)){ try{ localStorage.setItem(k, o[k]); }catch(e){} } });
   try{ location.reload(); }catch(e){ render(); }
 }
-/* v1.57 item 2: a factory reset resets the LOOK and nothing else — `ml_appslots` is deliberately NOT
-   in APPEARANCE_KEYS, so the four saved looks survive it. v1.56 cleared its single preset here, which
-   made sense while there was only one; throwing away four numbered presets does not. */
-function factoryAppearance(){ applyStoredAppearance(null); }
+/* v1.57 item 2: a factory reset resets the LOOK and nothing else — `ml_appslots` is deliberately
+   excluded from the sweep, so the saved looks survive it. */
+function factoryAppearance(){ try{ localStorage.removeItem("ml_appsel"); }catch(e){} applyStoredAppearance(null); }
 function optionsBody(){
   const row=(label,control)=>`<div class="optrow"><span class="optlabel">${label}</span><span class="optctrl">${control}</span></div>`;
   const rowNL=(label,control)=>`<div class="optrow optnl"><span class="optlabel">${label}</span><span class="optctrl">${control}</span></div>`;   // v1.29 no dividing line
@@ -4473,10 +4556,10 @@ function optionsBody(){
           anyone actually does with this. Applying is one tap; saving is a deliberate second row, so a
           mis-tap costs you a preview rather than the look you had. */""}
     <div class="optrow optrow-wide optnl"><span class="optlabel">My appearance</span><div class="optwide">
-      <div class="slotrow"><span class="slotcap">Use</span>${
-        [0,1,2,3].map(i=>`<button data-app-use="${i}" class="colbtn2 slotbtn ${appSlots()[i]?'':'empty'}" ${appSlots()[i]?'':'disabled'}>${i+1}</button>`).join("")}</div>
-      <div class="slotrow"><span class="slotcap">Save to</span>${
-        [0,1,2,3].map(i=>`<button data-app-save="${i}" class="colbtn2 slotbtn">${i+1}</button>`).join("")}</div>
+      <div class="slotrow"><span class="slotcap">Use</span><div class="slotgrid">${
+        appSlots().map((s,i)=>`<button data-app-use="${i}" class="colbtn2 slotbtn ${s?'':'empty'} ${String(appSel())===String(i)?'on':''}" ${s?'':'disabled'} title="${s&&s.__preset?esc(s.__preset):'Slot '+(i+1)}">${s&&s.__preset?esc(s.__preset):(i+1)}</button>`).join("")}</div></div>
+      <div class="slotrow"><span class="slotcap">Save to</span><div class="slotgrid">${
+        [...Array(APP_SLOTS)].map((_,i)=>`<button data-app-save="${i}" class="colbtn2 slotbtn">${i+1}</button>`).join("")}</div></div>
       <div class="numbtns"><button id="optAppFactory" class="colbtn2">Factory default</button></div></div></div>
     ${rowNL("Theme", `<div class="seg segfull" style="flex-wrap:wrap">${
       [{k:"light",label:"Light",bg:"#F6F2E7",br:"#DAD3C0",dot:"#D2542B"},
@@ -4521,7 +4604,7 @@ function optionsBody(){
       </div></div></div>
     ${rowNL("Group by category", `<div class="seg"><button data-opt-caton="1" class="${catOn?'on':''}">On</button><button data-opt-caton="0" class="${!catOn?'on':''}">Off</button></div>`)}
     ${catOn ? rowNL("Group by subcategory", `<div class="seg"><button data-opt-subon="1" class="${subOn?'on':''}">On</button><button data-opt-subon="0" class="${!subOn?'on':''}">Off</button></div>`) : ""}` : ""}
-    ${rowNL("Tile appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}"><span class="tdswatch" style="background:var(--accent)"></span>Full</button><button data-opt-fill="accent" class="${fillMode()==='accent'?'on':''}"><span class="tdswatch" style="border:1.5px solid var(--muted2);border-left:4px solid var(--accent)"></span>Accent</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}"><span class="tdswatch" style="border:1.5px solid var(--muted2)"></span>Empty</button></div>`)}
+    ${rowNL("Tile appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}"><span class="tdswatch" data-sw="full" style="background:var(--accent)"></span>Full</button><button data-opt-fill="accent" class="${fillMode()==='accent'?'on':''}"><span class="tdswatch" data-sw="accent" style="border:1.5px solid var(--muted2);border-left:4px solid var(--accent)"></span>Accent</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}"><span class="tdswatch" data-sw="empty" style="border:1.5px solid var(--muted2)"></span>Empty</button></div>`)}
     ${/* v1.57 item 2: the two tile states, each with the same three colours in the same order, so the
           two blocks can be read against each other. */""}
     ${subhead("Selected tiles · on the list")}
@@ -4745,9 +4828,7 @@ function editSheet(){
     </div>
     <div style="display:flex;gap:6px;align-items:stretch">
       <div class="qstep" style="height:46px;align-items:center;flex:none;border:none;background:var(--chip)"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>
-      <select id="weightSel" style="width:80px;flex:none;height:46px;padding:0 4px;border-radius:14px;border:none;background:var(--chip);color:var(--text);font-size:14px;font-weight:600;text-align:center;text-align-last:center">
-        ${["","cup","tsp","Tbsp","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"].map(w=>{ const hl=(w==="500g"||w==="1kg"); return `<option value="${w}" ${(editing.weight||"")===w?'selected':''}>${w?(hl?'★ '+w:w):'unit'}</option>`; }).join("")}
-      </select>
+      ${weightPicker("edit", editing.weight, ["","cup","tsp","Tbsp","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"])}
       <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:15px" />
     </div>
     ${isItem ? `<div style="display:flex;flex-wrap:nowrap;gap:6px;margin-top:12px">${[{k:"urgent",label:"Urgent"},{k:"discount",label:"If discounted"},{k:"convenient",label:"If convenient"}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}
@@ -4934,13 +5015,23 @@ function wireEditSheet(){
       const bsv=app.querySelector("#baCatSave"); if(bsv) bsv.onclick=()=>{ state.baMeta={label:(editing.label||"").trim()||"Buy again", emoji:editing.img?"":(editing.emoji||"↩"), img:editing.img||"", pos:editing.pos|0}; rememberList(listCode, state.name); editing=null; save(); render(); };
     } else {
       const en=app.querySelector("#editName"); if(en) en.oninput=e=>editing.name=e.target.value;
-      const ws=app.querySelector("#weightSel");
-      if(ws){ ws.onchange=e=>{ editing.weight=e.target.value; }; }   // the empty option always reads "unit"
+      /* v1.62 item 5: the same in-sheet weight popover the add panel uses. Scoped to #sheet rather
+         than the document: the add sheet is mounted outside `app` and uses the same attribute names,
+         so an unscoped query here could rebind its buttons to `editing`. */
+      document.querySelectorAll("#sheet [data-w-open]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
+        b.onclick=()=>{ wOpen = (wOpen==="edit") ? null : "edit"; render(); }; });
+      document.querySelectorAll("#sheet [data-w-set]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
+        b.onclick=()=>{ const w=b.dataset.wSet.split("|")[1]||""; editing.weight=w; wOpen=null; render(); }; });
       const qm=app.querySelector("#qMinus"); if(qm) qm.onclick=()=>{ editing.qty=Math.max(1,(editing.qty||1)-1); render(); };
       const qp=app.querySelector("#qPlus"); if(qp) qp.onclick=()=>{ editing.qty=(editing.qty||1)+1; render(); };
       app.querySelectorAll("[data-ec]").forEach(b=>b.onclick=()=>{ editing.cat=b.dataset.ec; editing.sub=null; render(); });
       app.querySelectorAll("[data-es]").forEach(b=>b.onclick=()=>{ editing.sub=b.dataset.es||null; render(); });
       app.querySelectorAll("[data-flag]").forEach(b=>b.onclick=()=>{ const k=b.dataset.flag; const t=Array.isArray(editing.tags)?editing.tags.slice():[]; const i=t.indexOf(k); if(i<0)t.push(k); else t.splice(i,1); editing.tags=t;
+      /* v1.62 item 2: "get this now" and "only if you happen to pass it" are opposite instructions —
+         an item cannot be both. Selecting one clears the other rather than refusing the tap, so the
+         control never feels stuck. */
+      if(k==="urgent") editing.tags = editing.tags.filter(t=>t!=="convenient");
+      else if(k==="convenient") editing.tags = editing.tags.filter(t=>t!=="urgent");
       /* v1.58 item 1: Urgent and the old ★ were two controls for one idea. The chip is now the only
          one, and it keeps `starred` in step so the existing "urgent floats to the top" sort and any
          item saved by an older build both keep working. */
