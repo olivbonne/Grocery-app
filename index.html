@@ -1158,7 +1158,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.59";
+const APP_VERSION = "v1.60";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2825,7 +2825,7 @@ function addPillHTML(m){
   const cat=CAT(m.cat)||{color:"var(--muted2)"};
   const on=!!m.onId;
   const full=fillMode()==='full';
-  const style = full ? `background:${cat.color};border:1.5px solid ${cat.color};color:#fff` : (fillMode()==="empty" ? `border-left:1.5px solid var(--line)` : `border-left:4px solid ${cat.color}`);
+  const style = full ? fullStyle(cat.color, !!on) : (fillMode()==="empty" ? `border-left:1.5px solid var(--line)` : `border-left:4px solid ${cat.color}`);
   const qcol = full?'#fff':cat.color;
   const meta=[(m.qty>1?m.qty+"×":""), m.weight].filter(Boolean).join(" ");
   const metaS = meta?`<span class="pill-meta"><span class="qty" style="color:${qcol}">${esc(meta)}</span></span>`:"";
@@ -3499,6 +3499,22 @@ function catIndexOf(catId){ const i=catList().findIndex(c=>c.id===catId); return
 function subIndexOf(it){ const c=CAT(it.cat); if(!c||!c.subs||!c.subs.length) return 0; const s=effectiveSub(it,c); const i=c.subs.findIndex(x=>x.id===s); return i<0?c.subs.length:i; }
 function bySortKey(a,b){ const ca=catIndexOf(a.cat), cb=catIndexOf(b.cat); if(ca!==cb) return ca-cb; const sa=subIndexOf(a), sb=subIndexOf(b); if(sa!==sb) return sa-sb; return (a.name||"").localeCompare(b.name||""); }
 function subKey(it){ return it.cat + "|" + subIndexOf(it); }
+/* v1.60: "Full" tiles wrote the category colour as an INLINE style, and an inline declaration beats
+   the custom properties the six tile pickers set — so on Full, every one of Selected/Unselected
+   background, border and text silently did nothing. Accent and Empty were fine, which is why this
+   went unnoticed: they leave those three properties to CSS.
+   A picker is an explicit instruction and has to win; the category colour is the FALLBACK for
+   whichever of the three is still on Auto. This RESOLVES each colour and writes it out rather than
+   omitting the declaration and hoping a stylesheet rule supplies it — the first attempt did omit,
+   and broke the search-result strip, whose tiles carry neither .reg-in nor .reg-out and so matched
+   no rule that could fill them back in. Resolving here works wherever a tile is drawn. */
+function fullStyle(catColor, sel){
+  if(sel){
+    return `background:${tileBgHex()||catColor};border:1.5px solid ${tileBrdHex()||catColor};color:${tileTxtHex()||"#fff"};`;
+  }
+  /* an unselected tile is an OUTLINE in Full — transparent unless a background was picked. */
+  return `background:${uTileBgHex()||"transparent"};border:1.5px solid ${uTileBrdHex()||catColor};color:${uTileTxtHex()||"var(--muted)"};`;
+}
 function pillHTML(i, cat){
   // v1.37 item 5: a checked (in-cart) item renders EXACTLY like it does on the shop list — same
   // fill, same category edge, same meta colour. `.pill.done` then greys + strikes it, so it reads
@@ -3508,7 +3524,7 @@ function pillHTML(i, cat){
   const qcol = full ? '#fff' : cat.color;
   // --edge carries the category colour so `.shop .pill.done` can keep it (the base `.pill.done`
   // rule forces border-left-color to grey with !important, which is what flattened cart tiles).
-  const style = `--edge:${cat.color};` + (full ? `background:${cat.color};border:1.5px solid ${cat.color};color:#fff` : (fillMode()==="empty" ? `border-left:1.5px solid var(--line)` : `border-left:4px solid ${edge}`));
+  const style = `--edge:${cat.color};` + (full ? fullStyle(cat.color, true) : (fillMode()==="empty" ? `border-left:1.5px solid var(--line)` : `border-left:4px solid ${edge}`));
   const meta = `${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)}</span>`:""}`;
   /* v1.58 item 1: all three flags show on the tile now, not just the star. `starred` OR the urgent
      tag counts — the chip writes both, but an item saved before v1.58 has only `starred`. */
@@ -3580,7 +3596,7 @@ function regPill(entry, cat, it){
   if(selected){
     /* v1.57 item 1: only the category-driven parts stay inline. Fill, line and text now come from
        CSS so that one rule owns all four sides of the border — see .pill.reg-in / .pill.reg-out. */
-    const style = full ? `background:${cat.color};border:1.5px solid ${cat.color};color:#fff`
+    const style = full ? fullStyle(cat.color, true)
       : (fillMode()==="empty" ? "" : `border-left:4px solid ${cat.color}`);
     return `<button class="pill reg-in" data-reg-rm="${it.id}" style="${style}">${emS}${name}${metaS}</button>`;
   }
@@ -3588,7 +3604,7 @@ function regPill(entry, cat, it){
      inline. The Empty-mode rule repaints border-left-color with !important, which beat the inline
      declaration for that ONE side and left the other three grey — a coloured bar down the left of a
      tile that is not on the list at all. All four sides come from the same token now. */
-  const outStyle = fillMode()==="full" ? `border:1.5px solid ${cat.color}`
+  const outStyle = fillMode()==="full" ? fullStyle(cat.color, false)
     : fillMode()==="empty" ? ""
     : `border-left:4px solid ${cat.color}`;
   return `<button class="pill reg-out" data-reg-add="${esc(entry.name)}|${cat.id}" style="${outStyle}">${emS}${name}${metaS}</button>`;
