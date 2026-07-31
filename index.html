@@ -688,10 +688,16 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.22 item 6 — settings rows with a wide control laid out label-left / control-right (like Theme) */
   .optrow-wide { align-items:center; }
   /* v1.55 item 2: a label beside a multi-row control should head the FIRST row, not float between
-     the rows — the 2×2 margin grid put "Page margins" level with Top/Bottom instead of Left/Right. */
+     the rows — the 2×2 margin grid put "Page margins" level with Top/Bottom instead of Left/Right.
+     v1.59 item 2: no longer used by the margins row, which stacks its label above the grid via
+     .optrow-num instead. Kept for any future row that wants a label beside a tall control; the two
+     classes must not be combined, because flex-start there undoes .optrow-num's stretch and leaves
+     one label sized to its text while its siblings fill the row. */
   .optrow-wide.optrow-top { align-items:flex-start; }
   .optrow-wide.optrow-top > .optlabel { padding-top:9px; }
-  .optwide { flex:1; min-width:0; }
+  /* v1.59 item 2: a settings row is never allowed to push the page sideways. */
+  .optrow, .optrow-wide { max-width:100%; }
+  .optwide { flex:1 1 auto; min-width:0; max-width:100%; }
   /* v1.42 items 5/8: the colour pickers need the FULL row width — 8 and 10 swatches cannot fit in
      the value column beside a label, and wrapped to a ragged second row when they tried. Stacking
      the label above the swatches gives them the whole width. */
@@ -725,19 +731,34 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .slotcap { flex:0 0 62px; font-size:12px; font-weight:700; color:var(--muted); }
   .slotbtn { min-width:38px; text-align:center; }
   .slotbtn.empty { opacity:.4; }
-  .numgrid { display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; width:100%; }
-  .numcell { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  /* v1.59 item 2: two columns only while two columns fit. The Settings page is rendered at
+     transform:scale(dens()) with width:calc(100%/dens()), so a bigger Text size gives the layout LESS
+     css width, not more — at 130% these rows had ~278px for something that needs ~320px, which is why
+     the caption ended up under the stepper and the stepper ended up off the page. auto-fit drops to
+     one column exactly when the second no longer fits, at any zoom, with no breakpoint to maintain.
+     auto-FILL rather than auto-fit, deliberately: auto-fit collapses tracks that have no child, which
+     would let Tile roundness — a single stepper — span the whole row and land its control somewhere
+     no other row's control is. auto-fill keeps the empty track, so Corner sits in column one exactly
+     above Across and Left. */
+  .numgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px 10px; width:100%; }
+  .numcell { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; }
   /* v1.58 item 2: one caption width for every stepper cell, so Across / Left / Corner all start at
      the same x and the three rows read as one block instead of three near-misses. */
-  .numcell > span { flex:0 0 52px; font-size:12px; font-weight:700; color:var(--muted); }
-  .numcell .seg { flex:none; }
+  /* the caption may shrink and ellipsis rather than push the stepper off the row */
+  .numcell > span { flex:0 1 52px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    font-size:12px; font-weight:700; color:var(--muted); }
+  .numcell .seg { flex:0 0 auto; }
   .numcell .seg button { min-width:30px; }
   .numval { min-width:34px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:13px; }
   /* v1.58 item 2: the grid starts at a fixed column rather than after each label, so the swatches all
      begin at the same x and the block reads as one panel. Ten 22px columns instead of six 26px ones:
      with Auto and Calm spanning three each, twelve swatches now need two lines rather than three,
      which is most of the height this section used to spend on itself. */
-  .colgrid { display:grid; grid-template-columns:repeat(10, 22px); gap:4px; justify-content:end; flex:1 1 auto; }
+  /* v1.59 item 2: auto-fill rather than a fixed ten, for the same reason as .numgrid — at 390px and
+     100% this still lays out as ten columns, so nothing moves; above that the swatches wrap into
+     however many fit instead of running off the edge. */
+  .colgrid { display:grid; grid-template-columns:repeat(auto-fill, 22px); gap:4px; justify-content:end;
+    flex:1 1 auto; min-width:0; }
   .colspan3 { grid-column:span 3; }
   .colgrid .colsw { width:22px; height:22px; }
   .colgrid .colbtn2 { padding:3px 0; font-size:11.5px; text-align:center; }
@@ -748,8 +769,15 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .optsub { font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;
     color:var(--muted2); margin:14px 0 2px; }
   /* v1.57 item 2: Roundness, Tile gap and Page margins are one family and should read as a block —
-     a shared label column stops their controls stepping in and out by a few pixels per row. */
-  .optrow-num > .optlabel { flex:0 0 30%; min-width:0; }
+     a shared label column stops their controls stepping in and out by a few pixels per row.
+     v1.59 item 2: the label moves ABOVE the steppers rather than beside them. A stepper cell needs
+     about 154px (a 52px caption plus the −/value/+ control), so two of them need ~310px — and a
+     label column beside them left only ~244px at 100%, which is why the second stepper ran off the
+     edge and its caption ended up underneath. Given the full row width both fit comfortably, and
+     .numgrid's auto-fit still drops to one column by itself once the text size takes that away. */
+  .optrow-num { flex-direction:column; align-items:stretch; gap:7px; }
+  .optrow-num > .optlabel { flex:none; min-width:0; }
+  .optrow-num > .optwide { width:100%; }
   .colsw { width:26px; height:26px; flex:none; border-radius:50%; border:2px solid var(--line); padding:0; }
   /* v1.51: white and black swatches sit on paper that is nearly the same colour in one theme or the
      other, so the rim has to be the thing that draws them rather than the fill. */
@@ -767,7 +795,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.58 item 1: the mark sits on the text baseline and inherits the chip's colour. */
   .flagchip svg { vertical-align:-.14em; }
   /* the same marks on a shop tile, at the tile's own text colour and a touch smaller than the name */
-  .pmark { display:inline-flex; align-items:center; font-size:.86em; line-height:1; margin-right:2px; flex:none; }
+  /* v1.59 item 1: .86em was too small for a mark that has to carry a symbol inside it. */
+  .pmark { display:inline-flex; align-items:center; font-size:1.05em; line-height:1; margin-right:2px; flex:none; }
   /* v1.26 collapsible Category / Subcategory rows in the edit sheet */
   .editsec { width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; border:none; border-top:1px solid var(--line); background:transparent; padding:11px 0 4px; margin-top:10px; cursor:pointer; }
   .editsec-l { font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
@@ -1076,17 +1105,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      tightened under a `.addedit` scope instead of at the base, so the other screens are unchanged. */
   .addedit { display:flex; flex-direction:column; gap:7px; padding:2px 2px 0; }
   .addedit-flags { display:flex; gap:6px; }
-  /* v1.44 item 5: a native <select> opens the iOS picker wheel, which dismisses the keyboard and
-     reflows the whole sheet mid-edit. A scrolling chip row keeps focus — and the keyboard — where it is. */
-  .wsel { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:0; scrollbar-width:none; }
-  .wsel::-webkit-scrollbar { display:none; }
-  .wchip { flex:none; border:1.5px solid var(--line); background:var(--chip); color:var(--text);
-    font-weight:700; font-size:12.5px; padding:5px 10px; border-radius:999px; white-space:nowrap; }
-  /* the two common weights the old <select> starred. An accent-tinted border marks them without
-     stealing the "selected" look — dashed would have read as provisional, which is what a dashed
-     line means everywhere else in this app. */
-  .wchip-hl { border-color:var(--accent); }
-  .wchip.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+  /* v1.59 item 3: .wsel / .wchip removed — the add panel uses the same <select> wheel as the
+     shop-page editor now, so nothing referenced them. See the note beside that select in
+     addEditPanel() for the v1.44 trade-off this reverses. */
   .addedit-actions { display:flex; gap:8px; margin-top:2px; }
   .addedit-more { flex:none; border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:14px; padding:8px 12px; border-radius:12px; }
   .addedit-remove { flex:none; border:1.5px solid #C24A33; background:transparent; color:#C24A33; font-weight:700; font-size:14px; padding:8px 12px; border-radius:12px; }
@@ -1137,7 +1158,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.58";
+const APP_VERSION = "v1.59";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2753,7 +2774,11 @@ const SEARCH_SVG = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" 
    `currentColor` is the whole point; an emoji cannot do any of that. Inline, so nothing is fetched. */
 const FLAG_STAR_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4l-5.8 3.1 1.1-6.5L2.6 9.4l6.5-.9z"/></svg>`;
 /* a tag with a % in it — "only if it is on offer" */
-const FLAG_TAG_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 12.9l-7.7 7.7a2 2 0 01-2.8 0L3 13.5V4.5A1.5 1.5 0 014.5 3h9l7.1 7.1a2 2 0 010 2.8z"/><circle cx="7.4" cy="7.4" r="1.15" fill="currentColor" stroke="none"/><path d="M10.6 15.2l4.6-4.6"/><circle cx="10.9" cy="10.9" r="1.05"/><circle cx="14.9" cy="14.9" r="1.05"/></svg>`;
+/* v1.59 item 1: the % now fills the tag rather than hiding in a corner of it. The first version kept
+   the tag's own detail — the little punch hole, a thin outline, a small % beside it — and at the size
+   this actually renders (about 13px on a tile) all of that collapses into a grey smudge. The tag is
+   only there to say "price"; the % is the information, so it gets the height. */
+const FLAG_TAG_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.4 13.2l-8.2 8.2a2 2 0 01-2.83 0l-8-8A2 2 0 012 12V4.4A1.4 1.4 0 013.4 3H11c.53 0 1.04.21 1.41.59l9 9a2 2 0 010 2.61z"/><path d="M8.7 15.3l6.6-6.6" stroke-width="2"/><circle cx="9.3" cy="9.3" r="1.55"/><circle cx="14.7" cy="14.7" r="1.55"/></svg>`;
 /* the plainest clock that still reads as one: a ring and two hands, no ticks, no bezel */
 const FLAG_CLOCK_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.4V12l3.3 2"/></svg>`;
 const FLAG_ICON = { urgent:FLAG_STAR_SVG, discount:FLAG_TAG_SVG, convenient:FLAG_CLOCK_SVG };
@@ -2977,14 +3002,22 @@ function addEditPanel(){
     </div>
     <div style="display:flex;gap:6px;align-items:stretch">
       <div class="qstep" style="height:40px;align-items:center;flex:none;border:none;background:var(--chip)"><button data-ae-minus="${it.id}" aria-label="Less" style="width:32px">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:15px">${it.qty||1}</span><button data-ae-plus="${it.id}" aria-label="More" style="width:32px">+</button></div>
+      ${/* v1.59 item 3: this REVERSES v1.44 item 5, which replaced a select here with a scrolling chip
+            row precisely because a native <select> opens the iOS picker and drops the keyboard. That is
+            still true — tapping the wheel retracts the keyboard, and you tap the search bar to get it
+            back. It is the deliberate trade: matching the shop-page editor was worth more than keeping
+            the keyboard up through a weight change, which is not something you do mid-sentence. What
+            v1.44 could not rely on and we now can is that losing focus to a control INSIDE the sheet no
+            longer dismisses the sheet — see the relatedTarget guard in the focusout handler. */""}
+      <select data-ae-wsel="${it.id}" aria-label="Weight" style="width:78px;flex:none;height:40px;padding:0 4px;border-radius:14px;border:none;background:var(--chip);color:var(--text);font-size:14px;font-weight:600;text-align:center;text-align-last:center">
+        ${W.map(w=>{ const hl=(w==="500g"||w==="1kg"); return `<option value="${esc(w)}" ${(it.weight||"")===w?'selected':''}>${w?(hl?'★ '+w:esc(w)):'unit'}</option>`; }).join("")}
+      </select>
       <input data-ae-name="${it.id}" value="${esc(it.name)}" style="flex:1;min-width:0;height:40px;padding:0 12px;border-radius:14px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:15px" />
     </div>
-    ${/* v1.44 item 5: 500g and 1kg lead the row (after "unit"). The old <select> starred them because
-          they are the two people actually pick; in a scrolling row they would otherwise sit off-screen
-          to the right and need a swipe to reach. */""}
-    <div class="wsel" role="group" aria-label="Weight">${
-      ["","500g","1kg"].concat(W.filter(w=>w!=="" && w!=="500g" && w!=="1kg"))
-      .map(w=>`<button class="wchip ${(w==="500g"||w==="1kg")?'wchip-hl ':''}${(it.weight||"")===w?'on':''}" data-ae-weight="${it.id}|${esc(w)}">${w?esc(w):'unit'}</button>`).join("")}</div>
+    ${/* v1.59 item 3: the weight is the same wheel the shop-page Edit item uses, in the same place —
+          between the quantity and the name. It was a scrolling chip strip on its own row here, which
+          is a second way to do one thing and cost a row of a panel that already shares the screen
+          with the keyboard. */""}
     <div class="addedit-flags">${flags.map(f=>{ const on=(it.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-ae-flag="${it.id}|${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>
     <button class="editsec" data-ae-sechead="cat"><span class="editsec-l">Category</span><span class="editsec-v">${cat?`${catIcon(cat,14)} ${esc(cat.label)}`:'—'}<span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></button>
     ${editCatOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${catChips}<button class="catchip" data-ae-addcat="${it.id}" style="border-style:dashed;font-weight:800">＋ New</button></div>` : ""}
@@ -3007,9 +3040,11 @@ function wireAddEdit(){
   document.querySelectorAll("[data-ae-minus]").forEach(b=>b.onpointerdown=e=>e.preventDefault());
   document.querySelectorAll("[data-ae-minus]").forEach(b=>b.onclick=()=>{ const it=cur(); if(it){ it.qty=Math.max(1,(it.qty||1)-1); touch(it); refreshAddBody(); } });
   document.querySelectorAll("[data-ae-plus]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=cur(); if(it){ it.qty=(it.qty||1)+1; touch(it); refreshAddBody(); } }; });
-  document.querySelectorAll("[data-ae-weight]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{
-    const p=b.dataset.aeWeight.split("|"), id=p[0], w=p.slice(1).join("|");
-    const it=state.items.find(i=>i.id===id); if(it){ it.weight=w; touch(it); refreshAddBody(); } }; });
+  /* v1.59 item 3: NO pointerdown guard on the select — that is what stops the wheel opening at all.
+     Losing focus to it is safe: the add sheet's auto-close only fires when focus lands OUTSIDE the
+     sheet, and the select is inside it. */
+  document.querySelectorAll("[data-ae-wsel]").forEach(s=>{ s.onchange=()=>{ const it=cur();
+    if(it){ it.weight=s.value||""; touch(it); refreshAddBody(); } }; });
   document.querySelectorAll("[data-ae-flag]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const [id,k]=b.dataset.aeFlag.split("|"); const it=state.items.find(i=>i.id===id); if(it){ const t=Array.isArray(it.tags)?it.tags.slice():[]; const i=t.indexOf(k); if(i<0)t.push(k); else t.splice(i,1); it.tags=t;
       /* v1.58 item 1: Urgent and the old ★ were two controls for one idea. The chip is now the only
          one, and it keeps `starred` in step so the existing "urgent floats to the top" sort and any
@@ -4469,7 +4504,7 @@ function optionsBody(){
       <div class="numgrid">${numCell("rad")}</div></div></div>
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Tile gap</span><div class="optwide">
       <div class="numgrid">${numCell("gapx")}${numCell("gapy")}</div></div></div>
-    <div class="optrow optrow-wide optrow-top optnl optrow-num"><span class="optlabel">Page margins</span><div class="optwide">
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Page margins</span><div class="optwide">
       <div class="numgrid">${numCell("padl")}${numCell("padr")}${numCell("padt")}${numCell("padb")}</div>
       <div class="numbtns"><button id="optNumSave" class="colbtn2">Set as my default</button>${
         hasNumDefs()?`<button id="optNumReset" class="colbtn2">Reset to mine</button>`:""
