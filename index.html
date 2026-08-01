@@ -347,8 +347,14 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.62 item 2: the Urgent section is a second view of items that are also in their own category
      below. Hiding the duplicate here rather than filtering it out of five different sort branches
      keeps the sorting code untouched — and the sections stay in sync by construction. */
-  .urgentsec ~ section .pill.urgent-dup { display:none; }
-  .urgentchip .cname { font-weight:800; }
+  /* v1.63 item 2: …but only while Urgent is actually showing them. Collapsed, the section is still in
+     the DOM (it has to be — it is the header you tap to expand again), and hiding the duplicate off
+     the back of that made a collapsed Urgent remove the item from the whole list. Collapsing Urgent
+     now hands its items back to their own categories, which is what collapsing anything else does. */
+  .urgentsec:not(.ucoll) ~ section .pill.urgent-dup { display:none; }
+  /* v1.63 item 2: the old font-weight:800 override on Urgent's label is gone — `.catheadchip.catcalm
+     .cname` already sets it, and the extra rule was what made Urgent read heavier than every other
+     section header next to it. */
   .urgentchip svg { color:#E8A91D; }
   .sq { width:8px; height:8px; border-radius:2px; }
   .cname { font-family:'Outfit',system-ui,sans-serif; font-weight:700; font-size:12px; letter-spacing:.02em; }
@@ -383,6 +389,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     display:none; align-items:center; justify-content:center; }
   .clearbtn.show { display:flex; }
   .catheadchip { padding:9px 44px 9px 13px !important; border-radius:13px; gap:7px; width:100%; box-sizing:border-box; }
+  /* v1.63 item 2: a fixed icon box, so every section label starts at the same x. An emoji's advance
+     width is whatever the platform's emoji font says it is (measured 18.7px against the Urgent mark's
+     15px, which put Urgent's label 4px left of every category's), and it differs between emoji and
+     between phones — centring each icon in one box is the only version of "aligned" that holds. */
+  .catheadchip .cemoji { display:inline-flex; align-items:center; justify-content:center; width:1.25em; flex:none; }
   .catheadchip .cname { font-size:13px; }
   .catheadchip .cnum { margin-left:auto; }
   /* A26 — calmer category header + per-aisle progress (midnight/market/mono themes only) */
@@ -614,8 +625,14 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* A3 Shopping mode: bigger glanceable targets, editing chrome hidden */
   .shop .pill { min-height:60px; font-size:18px; padding:0 16px; }
   .shop .catheadchip { font-size:15px; padding:8px 14px; }
-  .shop .plus, .shop .catadd, .shop #addCat, .shop .hint,
+  /* v1.63 item 2: `.plus` and `.catadd` are no longer in this list. A3 hid them because shopping mode
+     was a separate, read-only lens over the planning page; since v1.15 there is only one page and it
+     always carries `.shop`, so this rule had quietly removed the per-category add from the whole app.
+     Adding straight into a category is the fastest route there is — the header is already on screen. */
+  .shop #addCat, .shop .hint,
   .shop #collapseAll { display:none !important; }
+  /* the + is a shop-sized target now that it lives on the shopping list */
+  .shop .plus { width:30px; height:30px; font-size:18px; right:6px; }
   /* v1.37 item 5: an in-cart tile keeps its shop-list identity (category edge + fill) and is simply
      muted and struck through — it no longer collapses into an anonymous empty grey tile. The
      more specific selector beats the base `.pill.done` !important border override. */
@@ -753,6 +770,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      wider than the numbered five because a name is the useful label. */
   .slotgrid { display:flex; flex-wrap:wrap; gap:6px; flex:1; min-width:0; }
   .slotbtn.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+  /* v1.63 item 3: the slot the app starts in is ringed, so it reads even when another slot is the one
+     currently applied. */
+  .slotbtn.start { box-shadow:inset 0 0 0 2px var(--accent); }
+  /* …and when that slot is also the one applied, the ring has to be the colour that shows ON the
+     accent fill, not the accent itself, which would be invisible against it. */
+  .slotbtn.start.on { box-shadow:inset 0 0 0 2px var(--on-accent); }
   /* v1.59 item 2: two columns only while two columns fit. The Settings page is rendered at
      transform:scale(dens()) with width:calc(100%/dens()), so a bigger Text size gives the layout LESS
      css width, not more — at 130% these rows had ~278px for something that needs ~320px, which is why
@@ -1117,9 +1140,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .searchbar-ic svg { display:block; }
   .addsheet-donebtn { flex:none; border:none; background:transparent; color:var(--text); font-weight:700; font-size:15px; padding:8px 6px; }   /* v1.34 plain Done (closes the sheet) */
   /* v1.34 item 4: search matches — one horizontally-scrolling row, no wrap/grouping */
-  .addstrip-wrap { overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; margin:0 -2px; }
-  .addstrip { display:flex; align-items:center; flex-wrap:nowrap; gap:8px; width:max-content; padding:2px; }
-  .addstrip .pill { flex:none; white-space:nowrap; }
+  .addstrip-wrap { overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; margin:0 -2px;
+    overscroll-behavior-x:contain; scroll-padding-inline:6px; }
+  /* v1.63 item 1: 6px of padding inside the scroller so the first and last pill are not flush against
+     the clip edge — at rest the leftmost pill sat 2px from it and read as cut off. */
+  .addstrip { display:flex; align-items:center; flex-wrap:nowrap; gap:8px; width:max-content; padding:2px 6px; }
+  .addstrip .pill { flex:none; white-space:nowrap; touch-action:pan-x; -webkit-touch-callout:none; user-select:none; -webkit-user-select:none; }
   .addresults { width:100%; }   /* v1.31 typed matches rendered as literal shop pills */
   .addresults .pills { margin-top:2px; }
   /* v1.32/v1.35 inline "Edit item" panel above the search bar */
@@ -1136,9 +1162,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     background:var(--chip); color:var(--text); font-size:14px; font-weight:600; display:inline-flex;
     align-items:center; justify-content:center; gap:5px; }
   .wbtn .wcar { font-size:11px; color:var(--muted); }
-  .wpop { position:absolute; z-index:40; margin-top:4px; max-height:184px; overflow-y:auto;
-    -webkit-overflow-scrolling:touch; background:var(--card); border:1.5px solid var(--line);
+  .wpop { position:absolute; left:0; z-index:40; margin-top:4px; max-height:184px; overflow-y:auto;
+    -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-y;
+    background:var(--card); border:1.5px solid var(--line);
     border-radius:14px; box-shadow:0 12px 30px -12px rgba(20,30,22,.5); padding:4px; min-width:104px; }
+  .wpop.up { top:auto; bottom:100%; margin:0 0 4px; }
   .wpop button { display:block; width:100%; text-align:left; border:none; background:transparent;
     color:var(--text); font-size:14px; font-weight:600; padding:8px 10px; border-radius:10px; }
   .wpop button.on { background:var(--accent); color:var(--on-accent); }
@@ -1193,11 +1221,38 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.62";
+const APP_VERSION = "v1.63";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }catch(e){ return ""; } })();
+
+/* v1.63 item 3: a slot can be marked as the look the app STARTS in. It is applied here, at the very
+   top of the module, because every appearance global below is read once from localStorage on the way
+   down — writing the keys first means the boot path builds the saved look with no reload and no
+   flash. `ml_appstart` unset (the default) leaves everything exactly as it was.
+   The regex is duplicated deliberately: APP_EXCLUDE is declared far below with the rest of the slot
+   machinery and would be in its temporal dead zone up here. Keep the two in step. */
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$)/;
+(function applyStartSlot(){
+  try{
+    /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
+       rebuild the globals from storage (see applyStoredAppearance), so without this guard tapping
+       Use — or the one-time migration — was undone by the start slot on the way back in, and the
+       slot buttons appeared to do nothing at all. sessionStorage is per launch: a reload inside the
+       session skips this, a fresh launch of the app does not. */
+    if(sessionStorage.getItem("ml_started")==="1") return;
+    sessionStorage.setItem("ml_started","1");
+    const si=localStorage.getItem("ml_appstart"); if(si===null) return;
+    const a=JSON.parse(localStorage.getItem("ml_appslots")||"null");
+    const o=Array.isArray(a) ? a[+si] : null; if(!o || typeof o!=="object") return;
+    const kill=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
+      if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE_BOOT.test(k)) kill.push(k); }
+    kill.forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
+    Object.keys(o).forEach(k=>{ if(k!=="__preset" && !APP_EXCLUDE_BOOT.test(k)){ try{ localStorage.setItem(k, o[k]); }catch(e){} } });
+    localStorage.setItem("ml_appsel", String(+si));
+  }catch(e){}
+})();
 
 /* default categories (ids stay fixed; label/color/order are editable & saved) */
 const DEFAULT_CATS = [
@@ -2999,16 +3054,24 @@ function findItem(name,cat){ return state.items.find(i=>!i.checked && i.name.toL
 /* v1.14 add-sheet rows: quick tap = select/unselect (add ⇄ remove); long press = edit menu.
    Replaces the old "second tap increments qty". */
 function wireAddRows(){
+  /* v1.63 item 1: these pills live in a horizontally scrolling strip, so cancelling `pointerdown`
+     froze it — the strip is ~1400px of content in a 356px box and none of it could be reached.
+     Focus is held by cancelling `mousedown` instead, and a press that travels is abandoned so a
+     swipe across the strip never adds an item. Long-press still opens the item's panel. */
   const press=(b, shortFn, longIdFn, refocus)=>{
+    let sx=0, sy=0, moved=false;
     b.oncontextmenu=e=>e.preventDefault();
-    b.onpointerdown=e=>{ e.preventDefault(); pressStart(); };
+    b.onmousedown=e=>e.preventDefault();
+    b.onpointerdown=e=>{ sx=e.clientX; sy=e.clientY; moved=false; pressStart(); };
+    b.onpointermove=e=>{ if(!moved && (Math.abs(e.clientX-sx)>10 || Math.abs(e.clientY-sy)>10)){ moved=true; pressCancel(); } };
     b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
     b.onpointerup=()=>{ pressCancel();
+      if(moved){ moved=false; return; }
       /* v1.40 item 1: a long press on a search result now opens the SAME inline "Edit item" panel a
          tap does. It used to jump to the full-screen edit sheet, which closed the keyboard. */
       if(longFired){ const id = longIdFn && longIdFn(); if(id) openAddEdit(id); return; }
       addKeepScroll(shortFn);
-      if(refocus){ const m=document.getElementById("mainInput"); if(m) m.focus(); }
+      const m=document.getElementById("mainInput"); if(m) m.focus();
     };
   };
   document.querySelectorAll("[data-add-typed]").forEach(b=>press(b,
@@ -3032,6 +3095,34 @@ function wireAddRows(){
 // mutates the real item immediately, no separate Save step, keyboard/search bar never close.
 /* v1.62 item 5: one weight control for both editors. `id` scopes the popover to its item so two
    panels can never fight over one open flag. */
+/* v1.63 item 1: a control that lives inside a SCROLLING box cannot cancel `pointerdown` — that is
+   the event whose default IS the pan, which is why neither the weight popover nor the results strip
+   could be dragged. Focus (and so the keyboard) is held by cancelling `mousedown` instead, the event
+   that actually moves focus, and the tap is abandoned if the finger travels, so a scroll never
+   commits a choice. */
+function tapNoScroll(el, fn){
+  let sx=0, sy=0, moved=false;
+  el.onmousedown=e=>e.preventDefault();
+  el.onpointerdown=e=>{ sx=e.clientX; sy=e.clientY; moved=false; };
+  el.onpointermove=e=>{ if(Math.abs(e.clientX-sx)>10 || Math.abs(e.clientY-sy)>10) moved=true; };
+  el.onclick=e=>{ if(moved){ moved=false; return; } fn(e); };
+}
+/* v1.63 item 1: the popover opens downward from its button, which on a short sheet (see item 1c) can
+   put its foot under the keyboard. Flip it above the button when there is no room below. */
+function syncWPop(){
+  document.querySelectorAll(".wpop").forEach(p=>{
+    p.classList.remove("up");
+    const as=document.getElementById("addSheet");
+    const lim=Math.min(window.innerHeight, as?as.getBoundingClientRect().bottom:window.innerHeight);
+    if(p.getBoundingClientRect().bottom > lim-4) p.classList.add("up");
+  });
+}
+/* v1.63 item 1: NOT a bug — recorded here so it is not "fixed" again. The strip is drawn inside a
+   `transform:scale(dens())` zoomer, which looks like it should leave the scroll extent behind. It does
+   not: a scroll container's scrollable overflow region is measured from its descendants' TRANSFORMED
+   boxes, so the extent already tracks Text size (measured 1407px at 100% and 1688px at 120% for the
+   same content). The strip was unreachable because the pills cancelled `pointerdown`, and nothing else.
+   A margin correction here would only have added dead space. */
 function weightPicker(id, cur, W){
   const label = cur || "unit";
   return `<div class="wwrap"><button class="wbtn" data-w-open="${id}" aria-haspopup="listbox">${esc(label)}<span class="wcar" aria-hidden="true">▾</span></button>`
@@ -3094,9 +3185,13 @@ function wireAddEdit(){
      A tap that never moves focus never dismisses the keyboard. */
   document.querySelectorAll("#addSheetBody [data-w-open]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
     b.onclick=()=>{ const id=b.dataset.wOpen; wOpen = (wOpen===id) ? null : id; refreshAddBody(); }; });
-  document.querySelectorAll("#addSheetBody [data-w-set]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
-    b.onclick=()=>{ const [id,w]=b.dataset.wSet.split("|"); const it=state.items.find(x=>x.id===id);
-      if(it){ it.weight=w||""; wOpen=null; touch(it); refreshAddBody(); } }; });
+  document.querySelectorAll("#addSheetBody [data-w-set]").forEach(b=>tapNoScroll(b, ()=>{
+    const [id,w]=b.dataset.wSet.split("|"); const it=state.items.find(x=>x.id===id);
+    if(it){ it.weight=w||""; wOpen=null; touch(it); refreshAddBody(); }
+    /* belt and braces: if the platform moved focus anyway, put it straight back inside the same
+       gesture, which is the only place iOS will re-raise the keyboard without a flicker. */
+    const mi=document.getElementById("mainInput"); if(mi) mi.focus();
+  }));
   document.querySelectorAll("[data-ae-flag]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const [id,k]=b.dataset.aeFlag.split("|"); const it=state.items.find(i=>i.id===id); if(it){ const t=Array.isArray(it.tags)?it.tags.slice():[]; const i=t.indexOf(k); if(i<0)t.push(k); else t.splice(i,1); it.tags=t;
       /* v1.62 item 2: "get this now" and "only if you happen to pass it" are opposite instructions —
          an item cannot be both. Selecting one clears the other rather than refusing the tap, so the
@@ -3147,6 +3242,7 @@ function wireAddEdit(){
     refreshAddBody();
     const m2=document.getElementById("mainInput"); if(m2){ m2.focus(); const end=(draftMain||"").length; try{ m2.setSelectionRange(end,end); }catch(e){} }
   }; }
+  syncWPop();
 }
 // v1.35 item 2: drag the grab handle down to dismiss the add sheet (same feel as a native sheet).
 function wireAddSheetDrag(){
@@ -3466,9 +3562,13 @@ function pinAddSheet(){
   const bot   = Math.max(botRaw, _botFloor);
   const gap   = Math.max(20, Math.round(vv.height*0.06));        // sliver of page left visible at the top
   const maxH  = Math.max(180, Math.round(vv.height - gap));
-  /* v1.47: reserve the height the Edit panel will need, so picking an item does not make the sheet
-     jump upward. The sheet opens at the size it will settle at. Capped by maxH on small screens. */
-  const minH = Math.min(maxH, 470);
+  /* v1.63 item 1: no minimum. v1.47 floored the sheet at 470px so that picking an item would not make
+     it grow — the cost was a sheet that is mostly empty paper whenever the content is short, which
+     covers the list you are adding to. The sheet is sized by its content now and `#addSheetBody`
+     already scrolls once that content passes `maxH`, so expanding Category inside the panel scrolls
+     rather than inflating the box. The jump v1.47 was avoiding is the honest consequence of a
+     content-sized sheet. */
+  const minH = 0;
   /* v1.40 item 1: the visualViewport resize/scroll handlers fire in bursts while scrolling. Re-writing
      identical geometry forces a layout every time, and that churn is what read as jerky scrolling
      and the sheet sliding about. Write only when something actually changed. */
@@ -3491,7 +3591,7 @@ function pinAddSheet(){
   as.style.bottom    = bot + "px";
   as.style.height    = "auto";
   as.style.maxHeight = maxH + "px";
-  as.style.minHeight = minH + "px";
+  as.style.minHeight = "";
   as.style.maxWidth  = "480px";
   const und=document.getElementById("addUnder");
   if(und){ und.style.height = bot + "px"; und.style.display = bot>0 ? "block" : "none"; }
@@ -3786,10 +3886,23 @@ function renderMain(){
      not "Group by category" is on, and whichever sort is running. So it is rendered from the item
      list directly and the normal blocks are asked to leave those items out, rather than trying to
      teach every one of the five sort branches above about it. */
-  const urgentItems = state.items.filter(i=>!i.checked && (i.starred || (Array.isArray(i.tags)&&i.tags.includes("urgent"))));
-  if(urgentItems.length){
-    const uHead = `<div class="chead"><span class="lbl catheadchip urgentchip">${FLAG_STAR_SVG}<span class="cname">Urgent</span><span class="cnum">${urgentItems.length}</span></span></div>`;
-    bodyBlocks = [`<section class="cat urgentsec">${uHead}${pillsMixed(urgentItems.slice().sort(bySortKey))}</section>`].concat(bodyBlocks);
+  /* v1.63 item 2: Urgent is only shown when the list is GROUPED BY CATEGORY. Ungrouped, the list is
+     one flat run in a chosen order and a second lens over the top of it reads as a duplicate rather
+     than as a section — the flag still shows on the tile either way. */
+  const urgentAll = state.items.filter(i=>i.starred || (Array.isArray(i.tags)&&i.tags.includes("urgent")));
+  const urgentItems = urgentAll.filter(i=>!i.checked);
+  if(disp==="cat" && urgentItems.length){
+    /* v1.63 item 2: the same header every other section draws (see calmHead) — same chip, same
+       padding, same text size, same count and the same progress bar — so it lines up with the
+       categories instead of sitting 9px proud of them. Amber stands in for the category colour. */
+    const uCol="#E8A91D";
+    const uCollapsed = collapse.cats.includes("__urgent");
+    const uPct = urgentAll.length ? Math.round(urgentAll.filter(i=>i.checked).length/urgentAll.length*100) : 0;
+    const uHead = `<div class="chead"><button class="lbl catheadchip catcalm urgentchip" data-urgentc="1">`
+      + `<span class="cemoji">${FLAG_STAR_SVG}</span><span class="cname">Urgent</span>`
+      + `<span class="cnum">${urgentAll.filter(i=>i.checked).length}/${urgentAll.length}${uCollapsed?' ▸':''}</span></button></div>`
+      + `<div class="cprog" aria-hidden="true"><i style="width:${uPct}%;background:${uCol}"></i></div>`;
+    bodyBlocks = [`<section class="cat urgentsec${uCollapsed?' ucoll':''}">${uHead}${uCollapsed?"":pillsMixed(urgentItems.slice().sort(bySortKey))}</section>`].concat(bodyBlocks);
   }
   const listBody = bodyBlocks.join("");
   const checkedBar = done>0 ? `<div class="checkedbar shop" id="checkedbar">
@@ -4149,6 +4262,9 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-calm]").forEach(b=>b.onclick=()=>{ const [k,v]=b.dataset.optCalm.split("|"); setCalm(k, v==="1"); });
   app.querySelectorAll("[data-app-use]").forEach(b=>b.onclick=()=>useAppSlot(+b.dataset.appUse));
   app.querySelectorAll("[data-app-save]").forEach(b=>b.onclick=()=>saveAppSlot(+b.dataset.appSave));
+  app.querySelectorAll("[data-app-starthere]").forEach(b=>b.onclick=()=>{
+    const cur=appSel()===null ? "0" : String(appSel());
+    setAppStart(appStart()===cur ? "" : cur); });
   const oaf=app.querySelector("#optAppFactory"); if(oaf) oaf.onclick=()=>factoryAppearance();
   app.querySelectorAll("[data-opt-num]").forEach(b=>b.onclick=()=>bumpNum(b.dataset.optNum, +b.dataset.optDelta));
   const onr=app.querySelector("#optNumReset"); if(onr) onr.onclick=()=>resetNums();
@@ -4480,8 +4596,17 @@ const APP_SLOTS = 9;
    last, which is exactly what the user hit. The definition is inverted: a slot captures every ml_*
    key EXCEPT the ones that are data, identity or per-session state. Anything new is therefore
    captured by default, and the only thing to maintain is the short list of what a look must not
-   carry with it. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_lists$|ml_lastlist$|ml_me$|ml_shop$|ml_kbh$|ml_appslots$|ml_appsel$|ml_numdef$)/;
+   carry with it.
+   v1.63 item 3: `ml_app` (unanchored) covers every slot key at once — ml_appslots, ml_appsel,
+   ml_appstart, ml_appdef, ml_appmig163 — so restoring a look can never rearrange the slots or re-arm
+   the migration. The learning and data keys are matched by PREFIX, not anchored: loadLearn stores
+   them per list as `ml_purch_<code>`, `ml_aiorder_<code>` and so on, so an anchored `ml_purch$` matched
+   nothing that actually exists and every list's purchase history was being deleted. They (ml_purch*,
+   ml_ai*, ml_predict*, ml_store*,
+   ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
+   since v1.63 that clear runs at every launch: a look must never take your history, your stores or
+   your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -4497,7 +4622,34 @@ function appSlots(){ let a=null;
   APP_PRESETS.forEach((p,n)=>{ const idx=APP_SLOTS-APP_PRESETS.length+n; if(!out[idx]) out[idx]={ __preset:p.name, ...p.keys }; });
   return out; }
 function appSel(){ return localStorage.getItem("ml_appsel"); }
-function saveAppSlot(i){ const a=appSlots(); a[i]=appearanceSnapshot();
+function appStart(){ const v=localStorage.getItem("ml_appstart"); return v===null ? null : v; }
+function setAppStart(v){ try{ if(v==="" || v===null) localStorage.removeItem("ml_appstart");
+    else { materialiseAppSlots(); localStorage.setItem("ml_appstart", String(v)); } }catch(e){}
+  showToast(v===""||v===null ? "Opens where you left off" : "Opens in slot "+(+v+1)); render(); }
+/* v1.63 item 3: "record all the current use, slots 1 to 9". Until now the five curated looks were
+   COMPUTED at read time and only existed in storage once you saved over them, and an untouched user
+   slot was a null. Both are written out as real records here, so all nine are things that exist and
+   can be swapped, started from, or overwritten. A slot with nothing in it records the look that is
+   in use right now rather than staying empty — recording all nine means all nine. */
+function materialiseAppSlots(){
+  const cur=appearanceSnapshot();
+  const out=appSlots().map(s=> s ? s : {...cur});
+  try{ localStorage.setItem("ml_appslots", JSON.stringify(out)); }catch(e){}
+  return out;
+}
+/* v1.63 item 3: a one-time move, run once per device. Slot 4 and slot 1 exchange contents and the new
+   slot 1 becomes the look the app starts in. Guarded by its own key (matched by the ml_app exclusion,
+   so restoring a look can never re-arm it). */
+function migrateAppSlots163(){
+  if(localStorage.getItem("ml_appmig163")==="1") return false;
+  try{ localStorage.setItem("ml_appmig163","1"); }catch(e){}
+  const a=materialiseAppSlots();
+  const t=a[0]; a[0]=a[3]; a[3]=t;
+  try{ localStorage.setItem("ml_appslots", JSON.stringify(a));
+       localStorage.setItem("ml_appstart","0"); localStorage.setItem("ml_appsel","0"); }catch(e){}
+  return true;
+}
+function saveAppSlot(i){ const a=materialiseAppSlots(); a[i]=appearanceSnapshot();
   try{ localStorage.setItem("ml_appslots", JSON.stringify(a)); localStorage.setItem("ml_appsel", String(i)); }catch(e){}
   try{ localStorage.removeItem("ml_appdef"); }catch(e){}
   showToast("Saved to slot "+(i+1));
@@ -4557,10 +4709,19 @@ function optionsBody(){
           mis-tap costs you a preview rather than the look you had. */""}
     <div class="optrow optrow-wide optnl"><span class="optlabel">My appearance</span><div class="optwide">
       <div class="slotrow"><span class="slotcap">Use</span><div class="slotgrid">${
-        appSlots().map((s,i)=>`<button data-app-use="${i}" class="colbtn2 slotbtn ${s?'':'empty'} ${String(appSel())===String(i)?'on':''}" ${s?'':'disabled'} title="${s&&s.__preset?esc(s.__preset):'Slot '+(i+1)}">${s&&s.__preset?esc(s.__preset):(i+1)}</button>`).join("")}</div></div>
+        appSlots().map((s,i)=>`<button data-app-use="${i}" class="colbtn2 slotbtn ${s?'':'empty'} ${String(appSel())===String(i)?'on':''} ${String(appStart())===String(i)?'start':''}" ${s?'':'disabled'} title="${s&&s.__preset?esc(s.__preset):'Slot '+(i+1)}">${s&&s.__preset?esc(s.__preset):(i+1)}</button>`).join("")}</div></div>
       <div class="slotrow"><span class="slotcap">Save to</span><div class="slotgrid">${
         [...Array(APP_SLOTS)].map((_,i)=>`<button data-app-save="${i}" class="colbtn2 slotbtn">${i+1}</button>`).join("")}</div></div>
-      <div class="numbtns"><button id="optAppFactory" class="colbtn2">Factory default</button></div></div></div>
+      ${/* v1.63 item 3: which slot the app opens in. A third row of nine buttons would have made this
+            one block half the Appearance section, and it never needed nine: the slot you want to start
+            in is the one you are using, so this marks THAT one. Off (the default) is how the app has
+            always behaved — it opens with whatever you last left it as. With a start slot set, anything
+            you change afterwards is a try-out that lasts until the next launch, which is the point.
+            Which slot it is stays visible as a ring on the Use row above. */""}
+      <div class="numbtns"><button data-app-starthere="1" class="colbtn2 ${appStart()!==null&&appStart()===String(appSel())?'on':''}">${
+        appStart()===null ? "Start in this slot"
+        : appStart()===String(appSel()) ? "Starts in this slot"
+        : "Start in this slot (now "+(+appStart()+1)+")"}</button><button id="optAppFactory" class="colbtn2">Factory default</button></div></div></div>
     ${rowNL("Theme", `<div class="seg segfull" style="flex-wrap:wrap">${
       [{k:"light",label:"Light",bg:"#F6F2E7",br:"#DAD3C0",dot:"#D2542B"},
        {k:"dark", label:"Dark", bg:"#141C18",br:"#33433B",dot:"#E2502C"},
@@ -4905,6 +5066,11 @@ function wire(){
     b.onpointerup=()=>{ pressCancel(); if(longFired){ const c=CAT(id); editing={kind:"cat", id, label:c.label, emoji:c.img?"":(c.emoji||""), img:c.img||"", color:c.color, iconManual:!!c.img}; render(); }
       else if(has){ toggleCat(id); } }; });
 
+  /* v1.63 item 2: Urgent collapses like any other section. It is not a real category, so it gets its
+     own attribute rather than being fed to the `[data-cat]` handler, whose long-press would call
+     CAT("__urgent") and open an editor for a category that does not exist. */
+  app.querySelectorAll("[data-urgentc]").forEach(b=>b.onclick=()=>toggleCat("__urgent"));
+
   app.querySelectorAll("[data-add]").forEach(b=>{ const id=b.dataset.add;
     b.onclick=()=>{ if(catEntry===id){ catEntry=null; } else { catEntry=id; draftCatText=""; } render(); const ci=app.querySelector("#catInput"); if(ci) ci.focus(); }; });
   const ci=app.querySelector("#catInput"), cab=app.querySelector("#catAddBtn"), cc=app.querySelector("#catClear");
@@ -5020,8 +5186,9 @@ function wireEditSheet(){
          so an unscoped query here could rebind its buttons to `editing`. */
       document.querySelectorAll("#sheet [data-w-open]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
         b.onclick=()=>{ wOpen = (wOpen==="edit") ? null : "edit"; render(); }; });
-      document.querySelectorAll("#sheet [data-w-set]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
-        b.onclick=()=>{ const w=b.dataset.wSet.split("|")[1]||""; editing.weight=w; wOpen=null; render(); }; });
+      document.querySelectorAll("#sheet [data-w-set]").forEach(b=>tapNoScroll(b, ()=>{
+        const w=b.dataset.wSet.split("|")[1]||""; editing.weight=w; wOpen=null; render(); }));
+      syncWPop();
       const qm=app.querySelector("#qMinus"); if(qm) qm.onclick=()=>{ editing.qty=Math.max(1,(editing.qty||1)-1); render(); };
       const qp=app.querySelector("#qPlus"); if(qp) qp.onclick=()=>{ editing.qty=(editing.qty||1)+1; render(); };
       app.querySelectorAll("[data-ec]").forEach(b=>b.onclick=()=>{ editing.cat=b.dataset.ec; editing.sub=null; render(); });
@@ -5089,6 +5256,10 @@ let _swipe=null, _drag=null;
 function _swipeBlocked(){ return true; }
 
 window.addEventListener("resize", syncZoomHeight);
+/* v1.63 item 3: the swap has to be in place before the first paint of THIS launch, and the appearance
+   globals were read on the way down — so the one launch it runs on applies the new slot 1 and reloads
+   into it. Every launch after that picks the start slot up at the top of the module, no reload. */
+if(migrateAppSlots163()){ applyStoredAppearance(appSlots()[0]); }
 render();
 </script>
 </body>
