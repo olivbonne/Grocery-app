@@ -1154,23 +1154,19 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      tightened under a `.addedit` scope instead of at the base, so the other screens are unchanged. */
   .addedit { display:flex; flex-direction:column; gap:7px; padding:2px 2px 0; }
   .addedit-flags { display:flex; gap:6px; }
-  /* v1.62 item 5: a weight picker that is part of the sheet instead of a system overlay. The native
+  /* v1.62 item 5: a weight control that is part of the sheet instead of a system overlay. The native
      <select> opens the iOS picker, which takes the keyboard away and covers half the screen — it
-     cannot be made smaller, so it is replaced. This one is ~5 rows tall, scrolls, and every control
-     in it cancels pointerdown so focus (and the keyboard) never leave the search field. */
+     cannot be made smaller, so it is replaced. Every control in it cancels pointerdown so focus
+     (and the keyboard) never leave the search field. */
   .wbtn { flex:none; height:40px; min-width:74px; padding:0 10px; border-radius:14px; border:none;
     background:var(--chip); color:var(--text); font-size:14px; font-weight:600; display:inline-flex;
     align-items:center; justify-content:center; gap:5px; }
   .wbtn .wcar { font-size:11px; color:var(--muted); }
-  .wpop { position:absolute; left:0; z-index:40; margin-top:4px; max-height:184px; overflow-y:auto;
-    -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-y;
-    background:var(--card); border:1.5px solid var(--line);
-    border-radius:14px; box-shadow:0 12px 30px -12px rgba(20,30,22,.5); padding:4px; min-width:104px; }
-  .wpop.up { top:auto; bottom:100%; margin:0 0 4px; }
-  .wpop button { display:block; width:100%; text-align:left; border:none; background:transparent;
-    color:var(--text); font-size:14px; font-weight:600; padding:8px 10px; border-radius:10px; }
-  .wpop button.on { background:var(--accent); color:var(--on-accent); }
-  .wwrap { position:relative; flex:none; }
+  /* v1.64 item 1: the choices as a wrapping chip grid in the panel's own flow — same shape and same
+     `.catchip` as the Category and Subcategory chips two rows below, so the panel has one way of
+     offering a list of options rather than two. */
+  .wgrid { display:flex; flex-wrap:wrap; gap:6px; margin-top:2px; }
+  .wgrid .catchip.on { background:var(--btn); border-color:var(--btn); color:var(--btn-text); }
   .addedit-actions { display:flex; gap:8px; margin-top:2px; }
   .addedit-more { flex:none; border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:14px; padding:8px 12px; border-radius:12px; }
   .addedit-remove { flex:none; border:1.5px solid #C24A33; background:transparent; color:#C24A33; font-weight:700; font-size:14px; padding:8px 12px; border-radius:12px; }
@@ -1221,7 +1217,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.63";
+const APP_VERSION = "v1.64";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2208,7 +2204,7 @@ function stageAdds(fn){
 // addEditPrefix (v1.35) is the fixed text before this pick's contribution, so the search
 // bar can be re-synced to "Name qty× weight, " on every live edit without re-parsing.
 let addEditId=null, addEditPrefix="", addLastQuery="";
-let wOpen=null;   // item id whose weight popover is open
+let wOpen=null;   // item id whose weight choices are expanded
 // v1.11 done-shopping dialog
 let finishOpen=false;
 // A18 ✨ Smart add (planning-mode AI parse → preview → confirm)
@@ -3107,34 +3103,32 @@ function tapNoScroll(el, fn){
   el.onpointermove=e=>{ if(Math.abs(e.clientX-sx)>10 || Math.abs(e.clientY-sy)>10) moved=true; };
   el.onclick=e=>{ if(moved){ moved=false; return; } fn(e); };
 }
-/* v1.63 item 1: the popover opens downward from its button, which on a short sheet (see item 1c) can
-   put its foot under the keyboard. Flip it above the button when there is no room below. */
-function syncWPop(){
-  document.querySelectorAll(".wpop").forEach(p=>{
-    p.classList.remove("up");
-    const as=document.getElementById("addSheet");
-    const lim=Math.min(window.innerHeight, as?as.getBoundingClientRect().bottom:window.innerHeight);
-    if(p.getBoundingClientRect().bottom > lim-4) p.classList.add("up");
-  });
-}
 /* v1.63 item 1: NOT a bug — recorded here so it is not "fixed" again. The strip is drawn inside a
    `transform:scale(dens())` zoomer, which looks like it should leave the scroll extent behind. It does
    not: a scroll container's scrollable overflow region is measured from its descendants' TRANSFORMED
    boxes, so the extent already tracks Text size (measured 1407px at 100% and 1688px at 120% for the
    same content). The strip was unreachable because the pills cancelled `pointerdown`, and nothing else.
    A margin correction here would only have added dead space. */
-function weightPicker(id, cur, W){
+/* v1.64 item 1: the popover is gone. `.wpop` was position:absolute inside `#addSheetBody`, and an
+   overflow container clips its absolutely-positioned descendants — so the list was cut off at the
+   panel's edge (measured: clipped mid-way through `100g`) with the remainder hidden behind the search
+   bar, and no amount of flipping it upward could help. The choices are part of the panel's flow now,
+   exactly like the Category and Subcategory chips directly below them: the button expands a wrapping
+   grid, the body scrolls to it, and nothing can be clipped by anything. */
+const WEIGHTS = ["","cup","tsp","Tbsp","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"];
+function weightBtn(id, cur){
   const label = cur || "unit";
-  return `<div class="wwrap"><button class="wbtn" data-w-open="${id}" aria-haspopup="listbox">${esc(label)}<span class="wcar" aria-hidden="true">▾</span></button>`
-    + (wOpen===id ? `<div class="wpop" role="listbox">${W.map(w=>`<button role="option" data-w-set="${id}|${esc(w)}" class="${(cur||"")===w?'on':''}">${w?esc(w):'unit'}</button>`).join("")}</div>` : "")
-    + `</div>`;
+  return `<button class="wbtn" data-w-open="${id}" aria-expanded="${wOpen===id}">${esc(label)}<span class="wcar" aria-hidden="true">${wOpen===id?'▴':'▾'}</span></button>`;
+}
+function weightChips(id, cur){
+  if(wOpen!==id) return "";
+  return `<div class="wgrid" role="listbox">${WEIGHTS.map(w=>`<button role="option" class="catchip${(cur||"")===w?' on':''}" data-w-set="${id}|${esc(w)}">${w?esc(w):'unit'}</button>`).join("")}</div>`;
 }
 function addEditPanel(){
   const it=state.items.find(i=>i.id===addEditId);
   if(!it){ addEditId=null; return addSheetRows(); }
   const cat=CAT(it.cat)||null;
   const subs=(cat&&Array.isArray(cat.subs))?cat.subs:[];
-  const W=["","cup","tsp","Tbsp","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"];
   const flags=[{k:"urgent",label:"Urgent"},{k:"discount",label:"If discounted"},{k:"convenient",label:"If convenient"}];
   const selSubLabel = (()=>{ if(!it.sub) return "None"; const s=subs.find(x=>x.id===it.sub); return s?s.label:"None"; })();
   const catChips = catList().map(c=>`<button class="catchip" data-ae-cat="${it.id}|${c.id}" style="${it.cat===c.id?`background:${c.color};border-color:${c.color};color:#fff`:''}">${catIcon(c,15)} ${esc(c.label)}</button>`).join("");
@@ -3149,12 +3143,13 @@ function addEditPanel(){
       ${/* v1.62 item 5: the native <select> is gone again, and this restores what v1.44 item 5 was
             protecting. v1.59 accepted the iOS picker as the price of matching the shop-page editor;
             in use that price is the whole keyboard AND half the screen, every time you set a weight
-            on a phone. The replacement is a popover inside the sheet that cancels pointerdown, so
-            picking a weight costs nothing — and the shop-page editor now uses the same control, so
-            the two editors still match. */""}
-      ${weightPicker(it.id, it.weight, W)}
+            on a phone. The replacement is part of the sheet and cancels pointerdown, so picking a
+            weight costs nothing — and the shop-page editor uses the same control, so the two editors
+            still match. (v1.64: it expands in the flow rather than floating over it — see weightChips.) */""}
+      ${weightBtn(it.id, it.weight)}
       <input data-ae-name="${it.id}" value="${esc(it.name)}" style="flex:1;min-width:0;height:40px;padding:0 12px;border-radius:14px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:15px" />
     </div>
+    ${weightChips(it.id, it.weight)}
     ${/* v1.59 item 3: the weight is the same wheel the shop-page Edit item uses, in the same place —
           between the quantity and the name. It was a scrolling chip strip on its own row here, which
           is a second way to do one thing and cost a row of a panel that already shares the screen
@@ -3184,7 +3179,11 @@ function wireAddEdit(){
   /* v1.62 item 5: preventDefault on pointerdown everywhere in this control — that is the whole point.
      A tap that never moves focus never dismisses the keyboard. */
   document.querySelectorAll("#addSheetBody [data-w-open]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
-    b.onclick=()=>{ const id=b.dataset.wOpen; wOpen = (wOpen===id) ? null : id; refreshAddBody(); }; });
+    b.onclick=()=>{ const id=b.dataset.wOpen; wOpen = (wOpen===id) ? null : id; refreshAddBody();
+      /* v1.64 item 1: the grid is taller than the row it replaced, so bring it into view rather than
+         leaving it under the fold of a sheet that is sized to its content. scrollIntoView on a plain
+         div moves no focus, so the keyboard is unaffected. */
+      const g=document.querySelector("#addSheetBody .wgrid"); if(g) g.scrollIntoView({block:"nearest"}); }; });
   document.querySelectorAll("#addSheetBody [data-w-set]").forEach(b=>tapNoScroll(b, ()=>{
     const [id,w]=b.dataset.wSet.split("|"); const it=state.items.find(x=>x.id===id);
     if(it){ it.weight=w||""; wOpen=null; touch(it); refreshAddBody(); }
@@ -3242,7 +3241,6 @@ function wireAddEdit(){
     refreshAddBody();
     const m2=document.getElementById("mainInput"); if(m2){ m2.focus(); const end=(draftMain||"").length; try{ m2.setSelectionRange(end,end); }catch(e){} }
   }; }
-  syncWPop();
 }
 // v1.35 item 2: drag the grab handle down to dismiss the add sheet (same feel as a native sheet).
 function wireAddSheetDrag(){
@@ -3296,7 +3294,7 @@ function finishAddTeardown(){
    screen simply blinking. */
 function endAddSheet(){
   if(_addClosing) return;
-  addOpen=false; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain=""; addStaged=[]; wOpen=null;   // v1.62 item 5: the weight popover is sheet state — it closes with the sheet
+  addOpen=false; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain=""; addStaged=[]; wOpen=null;   // v1.62 item 5: the open weight control is sheet state — it closes with the sheet
   /* v1.50: closing inside the staging window must not let phase 2 fire into a dismissed sheet. */
   if(_addPhase2){ clearTimeout(_addPhase2); _addPhase2=null; }
   _addFocused=false;
@@ -3866,22 +3864,28 @@ function renderMain(){
   const disp = displayFor();
   let sm = (disp==="cat" && (sortModeFor()==="location"||sortModeFor()==="ai")) ? "cat" : sortModeFor();   // Location & AI need flat display
   if(sm==="ai" && !aiSortOK()) sm="location";   // Home/Other: AI unavailable → fall back to Location
+  /* v1.64 item 2: with no Urgent section to put them in (v1.63 item 2), ungrouped lists lead with the
+     urgent items instead. A STABLE partition — whatever order the chosen sort produced is preserved
+     inside each half, so Location still walks the aisles and A-Z is still alphabetical, just with the
+     urgent ones brought forward. */
+  const isUrgent = i => !!(i.starred || (Array.isArray(i.tags)&&i.tags.includes("urgent")));
+  const urgentFirst = list => list.filter(isUrgent).concat(list.filter(i=>!isUrgent(i)));
   let bodyBlocks;
   if(disp==="cat"){ bodyBlocks = buildCatBlocks(!subOn); }                              // v1.23 Subcategory toggle controls sub-grouping
   else if(sm==="ai"){ ensureLocCheck(); const unchecked=state.items.filter(i=>!i.checked).slice().sort(byAI);   // AI = accepted per-store check order
     // A25 item-level order, frozen at trip start (aiResetTrip) — learns per item, applies next trip, never reshuffles mid-shop
     const seenItems = Object.keys(aiItemsApplied[aiStoreKey()]||{}).length;
     const note = `<div class="aihint">✨ AI order · ${seenItems?`following your learned item route · frozen for this trip`:`sorted by category — learns each item as you check it`}</div>`;
-    bodyBlocks = [ `<section class="cat">${note}${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
+    bodyBlocks = [ `<section class="cat">${note}${ unchecked.length ? pillsMixed(urgentFirst(unchecked)) : "" }</section>` ]; }
   else if(sm==="location"){ ensureLocCheck(); const useStore=locActive(); const cmp=useStore?byAisle:bySortKey;
     let unchecked=state.items.filter(i=>!i.checked); const n0=unchecked.length;
     if(useStore) unchecked=unchecked.filter(storeShows);
     unchecked=unchecked.slice().sort(cmp);
     const hid=n0-unchecked.length;
     const note=(useStore && hid>0) ? `<div class="hint" style="margin:0 0 8px;text-align:left">${esc((activeStore()||{}).name||"Market")} · fresh, meat &amp; produce only · ${hid} other ${hid===1?"item":"items"} hidden</div>` : "";
-    bodyBlocks = [ `<section class="cat">${note}${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
-  else if(sm==="alpha"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(sortList(unchecked)) : "" }</section>` ]; }
-  else { const unchecked=state.items.filter(i=>!i.checked).slice().sort(bySortKey); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(unchecked) : "" }</section>` ]; }
+    bodyBlocks = [ `<section class="cat">${note}${ unchecked.length ? pillsMixed(urgentFirst(unchecked)) : "" }</section>` ]; }
+  else if(sm==="alpha"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(urgentFirst(sortList(unchecked))) : "" }</section>` ]; }
+  else { const unchecked=state.items.filter(i=>!i.checked).slice().sort(bySortKey); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(urgentFirst(unchecked)) : "" }</section>` ]; }
   /* v1.62 item 2: Urgent is a lens over the list, not a category — it has to be at the top whether or
      not "Group by category" is on, and whichever sort is running. So it is rendered from the item
      list directly and the normal blocks are asked to leave those items out, rather than trying to
@@ -3889,7 +3893,7 @@ function renderMain(){
   /* v1.63 item 2: Urgent is only shown when the list is GROUPED BY CATEGORY. Ungrouped, the list is
      one flat run in a chosen order and a second lens over the top of it reads as a duplicate rather
      than as a section — the flag still shows on the tile either way. */
-  const urgentAll = state.items.filter(i=>i.starred || (Array.isArray(i.tags)&&i.tags.includes("urgent")));
+  const urgentAll = state.items.filter(isUrgent);
   const urgentItems = urgentAll.filter(i=>!i.checked);
   if(disp==="cat" && urgentItems.length){
     /* v1.63 item 2: the same header every other section draws (see calmHead) — same chip, same
@@ -4989,9 +4993,10 @@ function editSheet(){
     </div>
     <div style="display:flex;gap:6px;align-items:stretch">
       <div class="qstep" style="height:46px;align-items:center;flex:none;border:none;background:var(--chip)"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>
-      ${weightPicker("edit", editing.weight, ["","cup","tsp","Tbsp","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"])}
+      ${weightBtn("edit", editing.weight)}
       <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:15px" />
     </div>
+    ${weightChips("edit", editing.weight)}
     ${isItem ? `<div style="display:flex;flex-wrap:nowrap;gap:6px;margin-top:12px">${[{k:"urgent",label:"Urgent"},{k:"discount",label:"If discounted"},{k:"convenient",label:"If convenient"}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}
     <button class="editsec" id="ecHead"><span class="editsec-l">Category</span><span class="editsec-v">${selCat?`${catIcon(selCat,14)} ${esc(selCat.label)}`:'—'}<span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></button>
     ${editCatOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${chipsHTML(editing.cat)}<button class="catchip" id="ecAddCat" style="border-style:dashed;font-weight:800">＋ New</button></div>` : ""}
@@ -5181,14 +5186,15 @@ function wireEditSheet(){
       const bsv=app.querySelector("#baCatSave"); if(bsv) bsv.onclick=()=>{ state.baMeta={label:(editing.label||"").trim()||"Buy again", emoji:editing.img?"":(editing.emoji||"↩"), img:editing.img||"", pos:editing.pos|0}; rememberList(listCode, state.name); editing=null; save(); render(); };
     } else {
       const en=app.querySelector("#editName"); if(en) en.oninput=e=>editing.name=e.target.value;
-      /* v1.62 item 5: the same in-sheet weight popover the add panel uses. Scoped to #sheet rather
+      /* v1.62 item 5: the same in-sheet weight control the add panel uses. Scoped to #sheet rather
          than the document: the add sheet is mounted outside `app` and uses the same attribute names,
          so an unscoped query here could rebind its buttons to `editing`. */
       document.querySelectorAll("#sheet [data-w-open]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
-        b.onclick=()=>{ wOpen = (wOpen==="edit") ? null : "edit"; render(); }; });
+        b.onclick=()=>{ wOpen = (wOpen==="edit") ? null : "edit"; render();
+          /* v1.64 item 1: bring the newly-opened grid into view — same reason as the add panel. */
+          const g=document.querySelector("#sheet .wgrid"); if(g) g.scrollIntoView({block:"nearest"}); }; });
       document.querySelectorAll("#sheet [data-w-set]").forEach(b=>tapNoScroll(b, ()=>{
         const w=b.dataset.wSet.split("|")[1]||""; editing.weight=w; wOpen=null; render(); }));
-      syncWPop();
       const qm=app.querySelector("#qMinus"); if(qm) qm.onclick=()=>{ editing.qty=Math.max(1,(editing.qty||1)-1); render(); };
       const qp=app.querySelector("#qPlus"); if(qp) qp.onclick=()=>{ editing.qty=(editing.qty||1)+1; render(); };
       app.querySelectorAll("[data-ec]").forEach(b=>b.onclick=()=>{ editing.cat=b.dataset.ec; editing.sub=null; render(); });
