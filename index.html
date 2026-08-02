@@ -867,6 +867,29 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .colcustom.on { background-image:none; }
   .colcustom input { position:absolute; inset:-4px; width:calc(100% + 8px); height:calc(100% + 8px);
     opacity:0; border:none; padding:0; background:transparent; }
+  /* v1.69: the live sample shown while a colour picker is open. Fixed to the top because the
+     platform's colour overlay owns the bottom of the screen. Every colour is a custom property with
+     the same fallback the real tile uses on Auto, so it tells the truth before anything is chosen —
+     and it repaints during a drag without a re-render, which is the whole reason it exists. */
+  #colorpeek { position:fixed; top:0; left:0; right:0; z-index:60; display:none;
+    max-width:480px; margin:0 auto; box-sizing:border-box;
+    padding:calc(6px + env(safe-area-inset-top)) 12px 9px;
+    background:var(--paper); border-bottom:1px solid var(--line);
+    box-shadow:0 10px 24px -14px rgba(20,30,22,.55); }
+  body.peek #colorpeek { display:block; }
+  .cpk-cat { display:flex; align-items:center; gap:6px; margin-bottom:6px;
+    font-size:12px; font-weight:800; color:var(--cattext, var(--ink)); }
+  .cpk-dot { width:9px; height:9px; border-radius:50%; background:var(--accent); flex:none; }
+  .cpk-num { margin-left:auto; font-weight:700; color:var(--cattext, var(--muted2)); }
+  .cpk-row { display:flex; gap:8px; }
+  .cpk-tile { flex:1 1 0; min-width:0; display:flex; align-items:center; gap:6px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    padding:10px 12px; border-radius:var(--tilerad, 14px); font-weight:700; font-size:14px; }
+  .cpk-meta { font-style:normal; font-weight:700; opacity:.85; }
+  .cpk-sel { background:var(--tilebg, #B5402B); border:1.5px solid var(--tilebrd, #B5402B);
+    color:var(--tiletext, #fff); }
+  .cpk-uns { background:var(--utilebg, var(--card)); border:1.5px dashed var(--utilebrd, var(--line));
+    color:var(--utiletext, var(--muted)); }
   .colbtn2 { flex:none; border:1.5px solid var(--line); background:var(--card); color:var(--text);
     font-weight:800; font-size:12px; padding:5px 10px; border-radius:999px; }
   .colbtn2.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
@@ -1255,7 +1278,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.68";
+const APP_VERSION = "v1.69";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2305,7 +2328,29 @@ let _colorPicking=false;
    neither, renders would stay deferred for good and the whole app would look frozen. Any tap anywhere
    means the overlay is no longer up, so it releases the deferral and repaints once. Capture phase, so
    it runs before the tapped control's own handler decides whether to render. */
-document.addEventListener("pointerdown", ()=>{ if(_colorPicking){ _colorPicking=false; render(); } }, true);
+document.addEventListener("pointerdown", ()=>{ if(_colorPicking){ _colorPicking=false; colorPeek(false); render(); } }, true);
+/* v1.69: a live sample of the real thing, pinned to the top of the screen while a colour picker is
+   open. The platform's colour overlay covers the bottom of the display and the Settings page itself
+   only shows swatches, so there was nothing on screen that answered "what does this colour DO".
+   Every colour in it comes from a CSS custom property, never an inline style: v1.68 deliberately
+   skips the re-render while you drag, so a sample built from markup would sit frozen while the rest
+   of the page repainted. Tokens repaint on their own — the sample follows for free.
+   It is mounted outside #app because a render rebuilds app.innerHTML and would throw it away. */
+let _peekEl=null;
+function colorPeek(on){
+  if(on && !_peekEl){
+    _peekEl=document.createElement("div");
+    _peekEl.id="colorpeek"; _peekEl.setAttribute("aria-hidden","true");
+    _peekEl.innerHTML =
+      `<div class="cpk-cat"><span class="cpk-dot"></span><span class="cpk-name">Meat</span><span class="cpk-num">1/3</span></div>`
+      + `<div class="cpk-row">`
+      + `<span class="cpk-tile cpk-sel">🥩 Steak <i class="cpk-meta">2× 500g</i></span>`
+      + `<span class="cpk-tile cpk-uns">🧀 Cheese <i class="cpk-meta">1×</i></span>`
+      + `</div>`;
+    document.body.appendChild(_peekEl);
+  }
+  document.body.classList.toggle("peek", !!on);
+}
 // v1.11 done-shopping dialog
 let finishOpen=false;
 // A18 ✨ Smart add (planning-mode AI parse → preview → confirm)
@@ -4400,10 +4445,10 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-custom]").forEach(inp=>{
     const fn=CUSTOM_SET[inp.dataset.optCustom]; if(!fn) return;
     /* while the overlay is open: apply, repaint the tokens, do not rebuild the page */
-    inp.oninput=()=>{ _colorPicking=true; fn(inp.value, true); };
+    inp.oninput=()=>{ _colorPicking=true; colorPeek(true); fn(inp.value, true); };
     /* the overlay has closed (committed or dismissed) — now it is safe to rebuild */
-    inp.onchange=()=>{ _colorPicking=false; fn(inp.value); };
-    inp.onblur=()=>{ if(_colorPicking){ _colorPicking=false; render(); } }; });
+    inp.onchange=()=>{ _colorPicking=false; colorPeek(false); fn(inp.value); };
+    inp.onblur=()=>{ if(_colorPicking){ _colorPicking=false; colorPeek(false); render(); } }; });
   /* v1.58 item 2: one selector for all nine Calm switches — the row's key travels in the attribute,
      which is why they no longer need an attribute name each. */
   app.querySelectorAll("[data-opt-calm]").forEach(b=>b.onclick=()=>{ const [k,v]=b.dataset.optCalm.split("|"); setCalm(k, v==="1"); });
@@ -4421,9 +4466,9 @@ function wireOptions(){
   const onf=app.querySelector("#optNumFactory"); if(onf) onf.onclick=()=>factoryNums();
   app.querySelectorAll("[data-opt-wall]").forEach(b=>b.onclick=()=>{ if(wall!==b.dataset.optWall) setWall(b.dataset.optWall); });
   const wc=app.querySelector("[data-opt-wallcustom]");
-  if(wc){ wc.oninput=()=>{ _colorPicking=true; setWall(wc.value, true); };
-          wc.onchange=()=>{ _colorPicking=false; setWall(wc.value); };
-          wc.onblur=()=>{ if(_colorPicking){ _colorPicking=false; render(); } }; }
+  if(wc){ wc.oninput=()=>{ _colorPicking=true; colorPeek(true); setWall(wc.value, true); };
+          wc.onchange=()=>{ _colorPicking=false; colorPeek(false); setWall(wc.value); };
+          wc.onblur=()=>{ if(_colorPicking){ _colorPicking=false; colorPeek(false); render(); } }; }
   app.querySelectorAll("[data-opt-wallpos]").forEach(b=>b.onclick=()=>{ if(wallPos!==b.dataset.optWallpos) setWallPos(b.dataset.optWallpos); });
   app.querySelectorAll("[data-opt-caton]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optCaton==="1"; if(catOn!==v) setCatOn(v); });
   app.querySelectorAll("[data-opt-subon]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optSubon==="1"; if(subOn!==v) setSubOn(v); });
