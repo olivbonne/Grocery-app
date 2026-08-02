@@ -1255,7 +1255,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.67";
+const APP_VERSION = "v1.68";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1441,8 +1441,12 @@ const setLS=(k,v)=>{ try{ localStorage.setItem(k,v); }catch(e){} };
 try{ localStorage.removeItem("ml_calmcol"); }catch(e){}
 let accent   = localStorage.getItem("ml_accent")  || "auto";
 let textCol  = localStorage.getItem("ml_textcol") || "auto";
-function setAccent(v){ accent=v; localStorage.setItem("ml_accent",v); applyTheme(); render(); }
-function setTextCol(v){ textCol=v; localStorage.setItem("ml_textcol",v); applyTheme(); render(); }
+/* v1.68: `quiet` applies the value and repaints the tokens but skips the re-render. It exists for the
+   custom colour pickers: a re-render rebuilds app.innerHTML, which destroys the <input type="color">
+   the platform's colour overlay is anchored to — so on a phone the overlay was dismissed the instant
+   you moved the colour. Live drag is quiet; the full render happens once, when the picker closes. */
+function setAccent(v, quiet){ accent=v; localStorage.setItem("ml_accent",v); applyTheme(); if(!quiet) render(); }
+function setTextCol(v, quiet){ textCol=v; localStorage.setItem("ml_textcol",v); applyTheme(); if(!quiet) render(); }
 /* v1.58 item 2: a Calm switch on every colour row. v1.57 coupled them per tile state, which meant a
    calm fill forced a calm border — and the rows without a switch left a visible gap in the grid where
    the others have one. Nine independent flags, one per picker. The two v1.57 flags fan out to the
@@ -1469,13 +1473,13 @@ let uTileBg  = localStorage.getItem("ml_utilebg")   || "auto";
 let uTileBrd = localStorage.getItem("ml_utilebrd")  || "auto";
 let uTileTxt = localStorage.getItem("ml_utiletext") || "auto";
 let catTxt   = localStorage.getItem("ml_cattext")   || "auto";
-function setTileBg(v){ tileBg=v; setLS("ml_tilebg",v); applyTheme(); render(); }
-function setTileBrd(v){ tileBrd=v; setLS("ml_tilebrd",v); applyTheme(); render(); }
-function setTileTxt(v){ tileTxt=v; setLS("ml_tiletext",v); applyTheme(); render(); }
-function setUTileBg(v){ uTileBg=v; setLS("ml_utilebg",v); applyTheme(); render(); }
-function setUTileBrd(v){ uTileBrd=v; setLS("ml_utilebrd",v); applyTheme(); render(); }
-function setUTileTxt(v){ uTileTxt=v; setLS("ml_utiletext",v); applyTheme(); render(); }
-function setCatTxt(v){ catTxt=v; setLS("ml_cattext",v); applyTheme(); render(); }
+function setTileBg(v, quiet){ tileBg=v; setLS("ml_tilebg",v); applyTheme(); if(!quiet) render(); }
+function setTileBrd(v, quiet){ tileBrd=v; setLS("ml_tilebrd",v); applyTheme(); if(!quiet) render(); }
+function setTileTxt(v, quiet){ tileTxt=v; setLS("ml_tiletext",v); applyTheme(); if(!quiet) render(); }
+function setUTileBg(v, quiet){ uTileBg=v; setLS("ml_utilebg",v); applyTheme(); if(!quiet) render(); }
+function setUTileBrd(v, quiet){ uTileBrd=v; setLS("ml_utilebrd",v); applyTheme(); if(!quiet) render(); }
+function setUTileTxt(v, quiet){ uTileTxt=v; setLS("ml_utiletext",v); applyTheme(); if(!quiet) render(); }
+function setCatTxt(v, quiet){ catTxt=v; setLS("ml_cattext",v); applyTheme(); if(!quiet) render(); }
 /* one place that answers "what colour is actually painted", so applyTheme and the swatch previews in
    Settings can never disagree about it. */
 /* v1.56 item 1: "page" is not a fixed colour — it is whatever the current theme paints the page,
@@ -1687,7 +1691,7 @@ function wallLayers(v, pos){
   return t ? `url('img/${wallBand(v)}-${pos}.jpg'), ${t}` : `url('img/${v}-${pos}.jpg')`;
 }
 let wallPos = localStorage.getItem("ml_wallpos") || "bottom";   // v1.24 food band at "top" or "bottom" of the wallpaper
-function setWall(v){ wall = v; localStorage.setItem("ml_wall", v); applyTheme(); render(); }
+function setWall(v, quiet){ wall = v; localStorage.setItem("ml_wall", v); applyTheme(); if(!quiet) render(); }
 function setWallPos(v){ wallPos = v; localStorage.setItem("ml_wallpos", v); applyTheme(); render(); }
 // ---- Location / at-store detection ----
 let useLoc = localStorage.getItem("ml_useloc"); useLoc = (useLoc===null ? true : useLoc==="1");
@@ -2292,6 +2296,16 @@ let wOpen=null;   // item id whose weight choices are expanded
 /* v1.66 item 2: which slot a save is waiting on. "Save to" sits one row under "Use" and overwrites a
    saved look outright, so it asks first rather than acting on the tap. */
 let appSaveAsk=null;
+/* v1.68: a native colour overlay is anchored to its <input>, so ANY re-render dismisses it — not just
+   the picker's own. While one is open, a render from somewhere else (a Firestore echo, a toast
+   expiring) is skipped. Both the picker's `change` and its `blur` clear the flag and render once, so
+   this cannot get stuck: whichever fires first ends the deferral. */
+let _colorPicking=false;
+/* v1.68: belt and braces. `change` and `blur` both clear the flag, but if a platform ever fired
+   neither, renders would stay deferred for good and the whole app would look frozen. Any tap anywhere
+   means the overlay is no longer up, so it releases the deferral and repaints once. Capture phase, so
+   it runs before the tapped control's own handler decides whether to render. */
+document.addEventListener("pointerdown", ()=>{ if(_colorPicking){ _colorPicking=false; render(); } }, true);
 // v1.11 done-shopping dialog
 let finishOpen=false;
 // A18 ✨ Smart add (planning-mode AI parse → preview → confirm)
@@ -3699,6 +3713,7 @@ function pinAddSheet(){
   if(instant){ void as.offsetHeight; as.style.transition = prevTrans; }   // reflow before the transition comes back
 }
 function render(){
+  if(_colorPicking) return;
   ensureCats();
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
   if(!me){ renderOnboarding(); window.__mlRendered=true; return; }
@@ -4384,7 +4399,11 @@ function wireOptions(){
     "opt-utiletext":setUTileTxt, "opt-utilebg":setUTileBg, "opt-utilebrd":setUTileBrd };
   app.querySelectorAll("[data-opt-custom]").forEach(inp=>{
     const fn=CUSTOM_SET[inp.dataset.optCustom]; if(!fn) return;
-    inp.oninput=()=>fn(inp.value); });
+    /* while the overlay is open: apply, repaint the tokens, do not rebuild the page */
+    inp.oninput=()=>{ _colorPicking=true; fn(inp.value, true); };
+    /* the overlay has closed (committed or dismissed) — now it is safe to rebuild */
+    inp.onchange=()=>{ _colorPicking=false; fn(inp.value); };
+    inp.onblur=()=>{ if(_colorPicking){ _colorPicking=false; render(); } }; });
   /* v1.58 item 2: one selector for all nine Calm switches — the row's key travels in the attribute,
      which is why they no longer need an attribute name each. */
   app.querySelectorAll("[data-opt-calm]").forEach(b=>b.onclick=()=>{ const [k,v]=b.dataset.optCalm.split("|"); setCalm(k, v==="1"); });
@@ -4401,7 +4420,10 @@ function wireOptions(){
   const ons=app.querySelector("#optNumSave"); if(ons) ons.onclick=()=>saveNumDefs();
   const onf=app.querySelector("#optNumFactory"); if(onf) onf.onclick=()=>factoryNums();
   app.querySelectorAll("[data-opt-wall]").forEach(b=>b.onclick=()=>{ if(wall!==b.dataset.optWall) setWall(b.dataset.optWall); });
-  const wc=app.querySelector("[data-opt-wallcustom]"); if(wc) wc.oninput=()=>setWall(wc.value);
+  const wc=app.querySelector("[data-opt-wallcustom]");
+  if(wc){ wc.oninput=()=>{ _colorPicking=true; setWall(wc.value, true); };
+          wc.onchange=()=>{ _colorPicking=false; setWall(wc.value); };
+          wc.onblur=()=>{ if(_colorPicking){ _colorPicking=false; render(); } }; }
   app.querySelectorAll("[data-opt-wallpos]").forEach(b=>b.onclick=()=>{ if(wallPos!==b.dataset.optWallpos) setWallPos(b.dataset.optWallpos); });
   app.querySelectorAll("[data-opt-caton]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optCaton==="1"; if(catOn!==v) setCatOn(v); });
   app.querySelectorAll("[data-opt-subon]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optSubon==="1"; if(subOn!==v) setSubOn(v); });
