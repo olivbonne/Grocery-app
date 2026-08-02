@@ -237,7 +237,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.40 item 1: the search-result strip reuses .zoomer for its tile styling and so inherited the
      list's 6px/96px padding — 102px of dead space that shoved the results far above the search bar
      (the reported "items appear in the middle of the page"). The strip is a single row; it needs none. */
-  .addstrip-wrap .zoomer { padding:0; }
+  .addwrap .zoomer { padding:0; }
   .ctrlrow { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px; }
   .listname { border:none; background:transparent; color:var(--text); font-weight:800; font-size:15px; padding:2px 0; display:inline-flex; align-items:center; gap:5px; max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .listname .caret { color:var(--muted); font-size:11px; }
@@ -734,6 +734,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      one label sized to its text while its siblings fill the row. */
   .optrow-wide.optrow-top { align-items:flex-start; }
   .optrow-wide.optrow-top > .optlabel { padding-top:9px; }
+  /* v1.66 item 2: "My appearance" is the label for the whole block, but centred against it, it sat
+     beside the Save-to row. Line it up with the "Use" caption on the first row instead. The offset is
+     the first `.slotrow`'s own margin-top plus the caption's padding-top. */
+  .optrow-wide.optrow-slots { align-items:flex-start; }
+  .optrow-wide.optrow-slots > .optlabel { padding-top:7px; }
   /* v1.59 item 2: a settings row is never allowed to push the page sideways. */
   .optrow, .optrow-wide { max-width:100%; }
   .optwide { flex:1 1 auto; min-width:0; max-width:100%; }
@@ -783,6 +788,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* …and when that slot is also the one applied, the ring has to be the colour that shows ON the
      accent fill, not the accent itself, which would be invisible against it. */
   .slotbtn.start.on { box-shadow:inset 0 0 0 2px var(--on-accent); }
+  /* v1.66 item 2: the confirm row for a slot save. */
+  .slotask { align-items:center; }
+  .slotasktxt { font-size:12px; font-weight:700; color:var(--text); margin-right:2px; }
   /* v1.59 item 2: two columns only while two columns fit. The Settings page is rendered at
      transform:scale(dens()) with width:calc(100%/dens()), so a bigger Text size gives the layout LESS
      css width, not more — at 130% these rows had ~278px for something that needs ~320px, which is why
@@ -1146,13 +1154,15 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .searchbar-ic { flex:none; display:flex; align-items:center; color:var(--muted); }
   .searchbar-ic svg { display:block; }
   .addsheet-donebtn { flex:none; border:none; background:transparent; color:var(--text); font-weight:700; font-size:15px; padding:8px 6px; }   /* v1.34 plain Done (closes the sheet) */
-  /* v1.34 item 4: search matches — one horizontally-scrolling row, no wrap/grouping */
-  .addstrip-wrap { overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; margin:0 -2px;
-    overscroll-behavior-x:contain; scroll-padding-inline:6px; }
-  /* v1.63 item 1: 6px of padding inside the scroller so the first and last pill are not flush against
-     the clip edge — at rest the leftmost pill sat 2px from it and read as cut off. */
-  .addstrip { display:flex; align-items:center; flex-wrap:nowrap; gap:8px; width:max-content; padding:2px 6px; }
-  .addstrip .pill { flex:none; white-space:nowrap; touch-action:pan-x; -webkit-touch-callout:none; user-select:none; -webkit-user-select:none; }
+  /* v1.34 item 4: search matches rendered as the app's own shop pills.
+     v1.66 item 1: they WRAP now instead of living in a horizontally scrolling row. The row could not
+     be panned on iOS across three attempts — it was a horizontal scroller nested inside the panel's
+     vertical scroller, inside a keyboard-pinned fixed sheet, with a transform:scale() element in
+     between, which is the same shape the weight popover had to abandon in v1.64. Wrapping puts the
+     results on the one scroll that demonstrably works: the panel's. */
+  .addwrap { width:100%; }
+  .addgrid { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:2px; }
+  .addgrid .pill { flex:none; white-space:nowrap; -webkit-touch-callout:none; user-select:none; -webkit-user-select:none; }
   .addresults { width:100%; }   /* v1.31 typed matches rendered as literal shop pills */
   .addresults .pills { margin-top:2px; }
   /* v1.32/v1.35 inline "Edit item" panel above the search bar */
@@ -1224,7 +1234,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.65";
+const APP_VERSION = "v1.66";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2236,6 +2246,9 @@ function stageAdds(fn){
 // bar can be re-synced to "Name qty× weight, " on every live edit without re-parsing.
 let addEditId=null, addEditPrefix="", addLastQuery="";
 let wOpen=null;   // item id whose weight choices are expanded
+/* v1.66 item 2: which slot a save is waiting on. "Save to" sits one row under "Use" and overwrites a
+   saved look outright, so it asks first rather than acting on the tap. */
+let appSaveAsk=null;
 // v1.11 done-shopping dialog
 let finishOpen=false;
 // A18 ✨ Smart add (planning-mode AI parse → preview → confirm)
@@ -2974,12 +2987,15 @@ function addSheetRows(){
   const lbl= segs.length>1 ? `Add ${segs.length} items` : `Add “${(p.qty>1?p.qty+"× ":"")+(p.weight?esc(p.weight)+" ":"")+esc(cap(p.name))}”`;
   // the "Add …" pill is a commit action for what's typed — meaningless while the edit panel owns the bar
   const typed = addEditId ? "" : `<button class="pill" data-add-typed style="border:1.5px dashed var(--accent);color:var(--accent);background:transparent">${esc(lbl)}</button>`;
-  const ms=addMatches(f);
+  /* v1.66 item 1: a bounded list. `addMatches` walks the whole dictionary, so a one-letter query
+     returned everything — fine when the results were one clipped row, but they wrap now and the
+     panel would have to scroll through hundreds of them to reach the search bar. */
+  const ms=addMatches(f).slice(0, 36);
   const cells = typed + ms.map(addPillHTML).join("");
   /* v1.43 item 4: `largeCols()>1`, not `>0` — large·1 is now the list layout, and emitting
      `gridmode grid1` here turned the single horizontally-scrolling result strip into a one-column
      grid. The list look wants the base shop-pill sizing, exactly as the old "list" mode did. */
-  return `<div class="shop addstrip-wrap"><div class="zoomer ${styl()}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}${(dispBase()==='large'&&largeCols()>1)?(' gridmode grid'+largeCols()):''}" style="transform:scale(${dens()});transform-origin:top left"><div class="addstrip">${cells}</div></div></div>`;
+  return `<div class="shop addwrap"><div class="zoomer ${styl()}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}${(dispBase()==='large'&&largeCols()>1)?(' gridmode grid'+largeCols()):''}" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})"><div class="addgrid">${cells}</div></div></div>`;
 }
 function addBodyHTML(){
   /* v1.47: once an item is picked, its Edit panel is the whole point of the sheet — the leftover
@@ -3081,10 +3097,11 @@ function findItem(name,cat){ return state.items.find(i=>!i.checked && i.name.toL
 /* v1.14 add-sheet rows: quick tap = select/unselect (add ⇄ remove); long press = edit menu.
    Replaces the old "second tap increments qty". */
 function wireAddRows(){
-  /* v1.63 item 1: these pills live in a horizontally scrolling strip, so cancelling `pointerdown`
-     froze it — the strip is ~1400px of content in a 356px box and none of it could be reached.
-     Focus is held by cancelling `mousedown` instead, and a press that travels is abandoned so a
-     swipe across the strip never adds an item. Long-press still opens the item's panel. */
+  /* v1.63 item 1 / v1.66 item 1: these pills sit inside a scrolling area — the panel's own vertical
+     scroll now that the results wrap (v1.66) rather than the old horizontal strip — so cancelling
+     `pointerdown` would freeze that scroll. Focus is held by cancelling `mousedown` instead, and a
+     press that travels is abandoned so a scroll across the results never adds an item. Long-press
+     still opens the item's panel. */
   const press=(b, shortFn, longIdFn, refocus)=>{
     let sx=0, sy=0, moved=false;
     b.oncontextmenu=e=>e.preventDefault();
@@ -3643,6 +3660,10 @@ function render(){
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
   if(!me){ renderOnboarding(); window.__mlRendered=true; return; }
   try{ localStorage.setItem("ml_lastview", String(curPageIdx())); }catch(e){}   // v1.21 remember the page across restarts (item 5)
+  /* v1.66 item 2: a pending "Replace slot N?" belongs to the Settings page and nothing else. Clearing
+     it here rather than at each exit covers every way out — the nav, the back button, the scrim tap,
+     switching user — because they all end in a render with optOpen false. */
+  if(!optOpen) appSaveAsk=null;
   if(optOpen){ renderSettingsPage(); wireSettingsPage(); window.__mlRendered=true; syncZoomHeight(); syncAddChrome(); return; }
   if(view==="lists"){ renderListsPage(); wireListsPage(); window.__mlRendered=true; syncZoomHeight(); syncAddChrome(); return; }
   if(!shopMode) shopMode=true;   // v1.15 Plan and Shop are one page now — the detail page is always the combined, shoppable list
@@ -4303,7 +4324,9 @@ function wireOptions(){
      which is why they no longer need an attribute name each. */
   app.querySelectorAll("[data-opt-calm]").forEach(b=>b.onclick=()=>{ const [k,v]=b.dataset.optCalm.split("|"); setCalm(k, v==="1"); });
   app.querySelectorAll("[data-app-use]").forEach(b=>b.onclick=()=>useAppSlot(+b.dataset.appUse));
-  app.querySelectorAll("[data-app-save]").forEach(b=>b.onclick=()=>saveAppSlot(+b.dataset.appSave));
+  app.querySelectorAll("[data-app-save]").forEach(b=>b.onclick=()=>{ appSaveAsk=+b.dataset.appSave; render(); });
+  app.querySelectorAll("[data-app-saveyes]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.appSaveyes; appSaveAsk=null; saveAppSlot(i); });
+  app.querySelectorAll("[data-app-saveno]").forEach(b=>b.onclick=()=>{ appSaveAsk=null; render(); });
   app.querySelectorAll("[data-app-starthere]").forEach(b=>b.onclick=()=>{
     const cur=appSel()===null ? "0" : String(appSel());
     setAppStart(appStart()===cur ? "" : cur); });
@@ -4749,11 +4772,15 @@ function optionsBody(){
     ${/* v1.57 item 2: four slots. One saved look was not enough to compare two ideas — which is what
           anyone actually does with this. Applying is one tap; saving is a deliberate second row, so a
           mis-tap costs you a preview rather than the look you had. */""}
-    <div class="optrow optrow-wide optnl"><span class="optlabel">My appearance</span><div class="optwide">
+    <div class="optrow optrow-wide optnl optrow-slots"><span class="optlabel">My appearance</span><div class="optwide">
       <div class="slotrow"><span class="slotcap">Use</span><div class="slotgrid">${
         appSlots().map((s,i)=>`<button data-app-use="${i}" class="colbtn2 slotbtn ${s?'':'empty'} ${String(appSel())===String(i)?'on':''} ${String(appStart())===String(i)?'start':''}" ${s?'':'disabled'} title="${s&&s.__preset?esc(s.__preset):'Slot '+(i+1)}">${s&&s.__preset?esc(s.__preset):(i+1)}</button>`).join("")}</div></div>
       <div class="slotrow"><span class="slotcap">Save to</span><div class="slotgrid">${
-        [...Array(APP_SLOTS)].map((_,i)=>`<button data-app-save="${i}" class="colbtn2 slotbtn">${i+1}</button>`).join("")}</div></div>
+        [...Array(APP_SLOTS)].map((_,i)=>`<button data-app-save="${i}" class="colbtn2 slotbtn ${appSaveAsk===i?'on':''}">${i+1}</button>`).join("")}</div></div>
+      ${appSaveAsk===null ? "" : `<div class="slotrow"><span class="slotcap"></span><div class="slotgrid slotask">
+        <span class="slotasktxt">Replace slot ${appSaveAsk+1}?</span>
+        <button data-app-saveyes="${appSaveAsk}" class="colbtn2 slotbtn on">Save</button>
+        <button data-app-saveno="1" class="colbtn2 slotbtn">Cancel</button></div></div>`}
       ${/* v1.63 item 3: which slot the app opens in. A third row of nine buttons would have made this
             one block half the Appearance section, and it never needed nine: the slot you want to start
             in is the one you are using, so this marks THAT one. Off (the default) is how the app has
