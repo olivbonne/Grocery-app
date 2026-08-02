@@ -880,7 +880,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .cpk-cat { display:flex; align-items:center; gap:6px; margin-bottom:6px;
     font-size:12px; font-weight:800; color:var(--cattext, var(--ink)); }
   .cpk-dot { width:9px; height:9px; border-radius:50%; background:var(--accent); flex:none; }
-  .cpk-num { margin-left:auto; font-weight:700; color:var(--cattext, var(--muted2)); }
+  .cpk-num { font-weight:700; color:var(--cattext, var(--muted2)); }
+  /* v1.70: "I have decided" — the platform's own dismiss ends the pick too, but this is the visible
+     one, and it is on the sample because that is the only part of the app not covered by the overlay. */
+  .cpk-done { margin-left:auto; flex:none; border:none; border-radius:999px;
+    background:var(--btn); color:var(--btn-text); font-weight:800; font-size:12px; padding:5px 14px; }
   .cpk-row { display:flex; gap:8px; }
   .cpk-tile { flex:1 1 0; min-width:0; display:flex; align-items:center; gap:6px;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
@@ -1278,7 +1282,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.69";
+const APP_VERSION = "v1.70";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2328,7 +2332,10 @@ let _colorPicking=false;
    neither, renders would stay deferred for good and the whole app would look frozen. Any tap anywhere
    means the overlay is no longer up, so it releases the deferral and repaints once. Capture phase, so
    it runs before the tapped control's own handler decides whether to render. */
-document.addEventListener("pointerdown", ()=>{ if(_colorPicking){ _colorPicking=false; colorPeek(false); render(); } }, true);
+document.addEventListener("pointerdown", (e)=>{
+  /* a tap inside the sample is the Done button's business — everything else means the overlay is gone */
+  if(_colorPicking && !(e.target && e.target.closest && e.target.closest("#colorpeek"))) endColorPick();
+}, true);
 /* v1.69: a live sample of the real thing, pinned to the top of the screen while a colour picker is
    open. The platform's colour overlay covers the bottom of the display and the Settings page itself
    only shows swatches, so there was nothing on screen that answered "what does this colour DO".
@@ -2342,14 +2349,25 @@ function colorPeek(on){
     _peekEl=document.createElement("div");
     _peekEl.id="colorpeek"; _peekEl.setAttribute("aria-hidden","true");
     _peekEl.innerHTML =
-      `<div class="cpk-cat"><span class="cpk-dot"></span><span class="cpk-name">Meat</span><span class="cpk-num">1/3</span></div>`
+      `<div class="cpk-cat"><span class="cpk-dot"></span><span class="cpk-name">Meat</span><span class="cpk-num">1/3</span>`
+      + `<button type="button" class="cpk-done" id="cpkDone">Done</button></div>`
       + `<div class="cpk-row">`
       + `<span class="cpk-tile cpk-sel">🥩 Steak <i class="cpk-meta">2× 500g</i></span>`
       + `<span class="cpk-tile cpk-uns">🧀 Cheese <i class="cpk-meta">1×</i></span>`
       + `</div>`;
     document.body.appendChild(_peekEl);
+    /* v1.70: wired once, here, because the sample lives outside #app and wireOptions never sees it. */
+    const dn=_peekEl.querySelector("#cpkDone");
+    if(dn) dn.onclick=()=>endColorPick();
   }
   document.body.classList.toggle("peek", !!on);
+}
+/* v1.70: the one way a pick ends — whether the overlay was dismissed, tapped away from, or finished
+   with Done. Applying a colour never comes through here; only leaving the picker does. Guarded so the
+   several routes that can all fire for one dismissal rebuild the page once, not three times. */
+function endColorPick(){
+  if(!_colorPicking) return;
+  _colorPicking=false; colorPeek(false); render();
 }
 // v1.11 done-shopping dialog
 let finishOpen=false;
@@ -4444,11 +4462,15 @@ function wireOptions(){
     "opt-utiletext":setUTileTxt, "opt-utilebg":setUTileBg, "opt-utilebrd":setUTileBrd };
   app.querySelectorAll("[data-opt-custom]").forEach(inp=>{
     const fn=CUSTOM_SET[inp.dataset.optCustom]; if(!fn) return;
-    /* while the overlay is open: apply, repaint the tokens, do not rebuild the page */
+    /* v1.70: `change` is NOT "the picker closed" — on iOS it fires for every colour chosen inside the
+       still-open overlay, so committing here re-rendered mid-pick and ejected you after one choice.
+       Both events are quiet now; the rebuild waits for the picker to actually be finished with. */
     inp.oninput=()=>{ _colorPicking=true; colorPeek(true); fn(inp.value, true); };
-    /* the overlay has closed (committed or dismissed) — now it is safe to rebuild */
-    inp.onchange=()=>{ _colorPicking=false; colorPeek(false); fn(inp.value); };
-    inp.onblur=()=>{ if(_colorPicking){ _colorPicking=false; colorPeek(false); render(); } }; });
+    inp.onchange=()=>{ fn(inp.value, true);
+      /* …except where `change` really does mean "closed": a desktop dialog returns focus elsewhere
+         before firing it, and there is no blur to wait for. */
+      if(document.activeElement!==inp) endColorPick(); };
+    inp.onblur=()=>{ endColorPick(); }; });
   /* v1.58 item 2: one selector for all nine Calm switches — the row's key travels in the attribute,
      which is why they no longer need an attribute name each. */
   app.querySelectorAll("[data-opt-calm]").forEach(b=>b.onclick=()=>{ const [k,v]=b.dataset.optCalm.split("|"); setCalm(k, v==="1"); });
@@ -4467,8 +4489,8 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-wall]").forEach(b=>b.onclick=()=>{ if(wall!==b.dataset.optWall) setWall(b.dataset.optWall); });
   const wc=app.querySelector("[data-opt-wallcustom]");
   if(wc){ wc.oninput=()=>{ _colorPicking=true; colorPeek(true); setWall(wc.value, true); };
-          wc.onchange=()=>{ _colorPicking=false; colorPeek(false); setWall(wc.value); };
-          wc.onblur=()=>{ if(_colorPicking){ _colorPicking=false; colorPeek(false); render(); } }; }
+          wc.onchange=()=>{ setWall(wc.value, true); if(document.activeElement!==wc) endColorPick(); };
+          wc.onblur=()=>{ endColorPick(); }; }
   app.querySelectorAll("[data-opt-wallpos]").forEach(b=>b.onclick=()=>{ if(wallPos!==b.dataset.optWallpos) setWallPos(b.dataset.optWallpos); });
   app.querySelectorAll("[data-opt-caton]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optCaton==="1"; if(catOn!==v) setCatOn(v); });
   app.querySelectorAll("[data-opt-subon]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optSubon==="1"; if(subOn!==v) setSubOn(v); });
