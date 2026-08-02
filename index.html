@@ -130,8 +130,14 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   html[data-theme="ink"] .bapill, html[data-theme="noir"] .bapill {
     background:var(--tilebg, var(--card)) !important; border-color:var(--tilebrd, var(--line)) !important;
     border-left-color:var(--ink) !important; color:var(--tiletext, var(--ink)) !important; filter:none !important; }   /* v1.43 item 4: let a "Tile text" scope reach through the !important */
+  /* v1.67 item 1: a chosen Tile text has to reach the meta through this `!important` too, exactly as
+     the `.bapill` rule two lines above lets it reach the tile. `--tiletext` is written only when a
+     colour was actually picked (see applyTheme), so Auto still falls through to the flat grey these
+     two themes want — and the unselected state follows its OWN token rather than the selected one. */
   html[data-theme="ink"] .pill .qty, html[data-theme="noir"] .pill .qty,
-  html[data-theme="ink"] .pill .pill-meta, html[data-theme="noir"] .pill .pill-meta { color:var(--muted) !important; }
+  html[data-theme="ink"] .pill .pill-meta, html[data-theme="noir"] .pill .pill-meta { color:var(--tiletext, var(--muted)) !important; }
+  html[data-theme="ink"] .pill.reg-out .qty, html[data-theme="noir"] .pill.reg-out .qty,
+  html[data-theme="ink"] .pill.reg-out .pill-meta, html[data-theme="noir"] .pill.reg-out .pill-meta { color:var(--utiletext, var(--muted)) !important; }
   html[data-theme="ink"] .pill.done, html[data-theme="noir"] .pill.done {
     background:var(--done-bg) !important; color:var(--done-text) !important; border-left-color:var(--done-edge) !important; }
   html[data-theme="ink"] .cdot, html[data-theme="noir"] .cdot,
@@ -763,6 +769,13 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.52: ten wallpapers now — five per row rather than one ever-thinner strip each. */
   .wallbtn { flex:1 1 calc(20% - 6px); min-width:46px; height:40px; border-radius:11px; border:1.5px solid var(--line); background-color:var(--chip); background-position:top center; background-size:cover; color:var(--text); font-weight:700; font-size:12px; display:flex; align-items:center; justify-content:center; text-align:center; }
   .wallbtn.on { border-color:var(--accent); border-width:2px; }
+  /* v1.67 item 2: the "any colour" wallpaper swatch — same trick as .colcustom. */
+  .wallcustom { position:relative; overflow:hidden; padding:0;
+    background-color:transparent;
+    background-image:conic-gradient(#E2502C,#D9A404,#2F9E44,#1E6FD9,#7B4FBF,#D6478A,#E2502C); }
+  .wallcustom.on { background-image:none; }
+  .wallcustom input { position:absolute; inset:-4px; width:calc(100% + 8px); height:calc(100% + 8px);
+    opacity:0; border:none; padding:0; background:transparent; }
   /* v1.42 items 5/8 — colour swatch pickers. Wraps to two rows on a narrow phone. */
   .colrow { display:flex; flex-wrap:wrap; gap:6px; align-items:center; justify-content:flex-start; }
   /* v1.54 item 1: the spacing steppers. A 2×2 grid of labelled −/value/+ controls — four separate
@@ -846,6 +859,14 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.56 item 1: the "same as the page" swatch. It is the paper colour itself, so on a pale theme it
      would be an invisible disc — the dashed rim is what makes it findable. */
   .colsw-page { background:var(--paper); border-style:dashed; border-color:var(--muted2); }
+  /* v1.67 item 2: the "any colour" swatch. The native colour input is stretched over the swatch and
+     made invisible, so the swatch itself is the control — an unstyled <input type="color"> is a
+     platform-drawn box that would not sit in a row of circles. The rainbow is the empty state. */
+  .colcustom { position:relative; overflow:hidden; padding:0;
+    background:conic-gradient(#E2502C,#D9A404,#2F9E44,#1E6FD9,#7B4FBF,#D6478A,#E2502C); }
+  .colcustom.on { background-image:none; }
+  .colcustom input { position:absolute; inset:-4px; width:calc(100% + 8px); height:calc(100% + 8px);
+    opacity:0; border:none; padding:0; background:transparent; }
   .colbtn2 { flex:none; border:1.5px solid var(--line); background:var(--card); color:var(--text);
     font-weight:800; font-size:12px; padding:5px 10px; border-radius:999px; }
   .colbtn2.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
@@ -1234,7 +1255,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.66";
+const APP_VERSION = "v1.67";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1468,6 +1489,9 @@ function paperHex(){ try{ const v=getComputedStyle(document.body).getPropertyVal
    that swatch. One resolver, every picker. */
 function pickHex(key, calm, pal){
   if(key==="page") return paperHex();
+  /* v1.67 item 2: a stored value may be a literal hex now — the custom colour picker writes one.
+     It goes through Calm exactly like a palette colour does. */
+  if(typeof key==="string" && key.charAt(0)==="#") return calm ? calmHex(key) : key;
   const c=(pal||ACCENTS)[key]; if(!c) return null;
   return calm ? calmHex(c) : c; }
 function tileBgHex(){  return pickHex(tileBg,  calmOn.tilebg); }
@@ -1598,7 +1622,7 @@ function applyTheme(){ const t = THEMES[theme] || THEMES.light;
        blending with .wallbtn's grey chip and every colour wallpaper came out the same beige. Only
        the photo layer should blend; the gradient paints normally underneath it. The value is shared
        with the Settings swatches, so it must mean the same thing in both places. */
-    (typeof wall!=="undefined" && wall && WALL_TINTS[wall]) ? "luminosity, normal" : "normal");
+    (typeof wall!=="undefined" && wall && isTintWall(wall)) ? "luminosity, normal" : "normal");
   if(typeof fill!=="undefined") applyFill(); }
 function setTheme(v){ if(!THEMES[v]) return; theme = v; localStorage.setItem("ml_theme", theme); applyTheme(); render(); }
 function toggleTheme(){ setTheme(theme==="dark" ? "light" : "dark"); }   // kept for back-compat
@@ -1619,29 +1643,48 @@ function applyFill(){ try{ document.documentElement.setAttribute("data-fill", fi
 function setFill(m){ fill=m; localStorage.setItem("ml_fill", m); applyFill(); render(); }
 // v1.23 wallpaper — "" (none, default) or wall-1..wall-4, applied as a fixed full-screen backdrop via applyTheme()
 let wall = localStorage.getItem("ml_wall") || "";
+/* v1.67 item 2: the red wallpaper is retired. Custom colours exist now, so rather than dropping
+   anyone who was using it onto None, it becomes the same colour as a custom value — its own middle
+   gradient stop, which is the colour the wallpaper actually read as. */
+if(wall==="wall-red"){ wall="#EFA994"; try{ localStorage.setItem("ml_wall", wall); }catch(e){} }
 /* v1.52 — the five colour wallpapers. Deliberately CSS gradients rather than image files: the PWA has
    to work offline with zero external fetches, so every asset ships in the repo, and a flat colour wash
    is a gradient's natural job anyway. `--wall` feeds `background-image`, which takes a gradient
    exactly as happily as a url(). (v1.54 superseded the rest of this paragraph: these are no longer
    gradient-only, and the Top/Bottom control is no longer photo-only — see TINT_BAND below.) */
 const WALL_TINTS = {
-  "wall-red":    "linear-gradient(160deg,#FBE3DC 0%,#EFA994 48%,#C9603F 100%)",
   "wall-blue":   "linear-gradient(160deg,#DDE9F8 0%,#9CBEE6 48%,#3F6FA8 100%)",
   "wall-yellow": "linear-gradient(160deg,#FBEFCB 0%,#EDD183 48%,#BE9526 100%)",
   "wall-pink":   "linear-gradient(160deg,#FBE0EC 0%,#EDA6C4 48%,#C25587 100%)",
   "wall-grey":   "linear-gradient(160deg,#E9EBEE 0%,#BFC5CC 48%,#7B838C 100%)"
 };
-function isTintWall(v){ return !!WALL_TINTS[v]; }
+/* v1.67 item 2: "is this a colour wallpaper rather than a photograph" — true for the shipped tints
+   and for any custom colour. It decides the blend mode as well as the picker's preview, so both
+   follow from one definition. (It had gone unused; it is the right question again.) */
+function isTintWall(v){ return !!WALL_TINTS[v] || (typeof v==="string" && v.charAt(0)==="#"); }
 /* v1.54 item 1: the five colour wallpapers had no food band, because they are gradients rather than
    photographs. Rather than shipping five more JPEGs, the existing band art is layered OVER the
    gradient and blended in `luminosity` — the gradient keeps the hue, the photo contributes only its
    light and shade, so the produce reads as a tonal relief in the wallpaper's own colour. That also
    means Top/Bottom now means something for all ten wallpapers, not just the four photographic ones. */
-const TINT_BAND = { "wall-red":"wall-1", "wall-blue":"wall-2", "wall-yellow":"wall-3",
+const TINT_BAND = { "wall-blue":"wall-2", "wall-yellow":"wall-3",
                     "wall-pink":"wall-4", "wall-grey":"wall-2" };
+/* v1.67 item 2: a custom colour gets the same light→colour→dark ramp the five shipped tints have,
+   built from its own hue, so it sits in the same family instead of reading as a flat wash. */
+function customWallGradient(hex){
+  const h=String(hex||"").replace("#","");
+  if(h.length!==6) return hex;
+  const [hh,s,l]=rgbToHsl(parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16));
+  const lite=hslToHex(hh, Math.min(1, s*0.55), Math.min(0.94, l+0.32));
+  const dark=hslToHex(hh, Math.min(1, s*1.05), Math.max(0.24, l-0.26));
+  return `linear-gradient(160deg,${lite} 0%,${hex} 48%,${dark} 100%)`;
+}
+function wallTint(v){ return WALL_TINTS[v] || (String(v).charAt(0)==="#" ? customWallGradient(v) : null); }
+function wallBand(v){ return TINT_BAND[v] || (String(v).charAt(0)==="#" ? "wall-2" : v); }
 function wallLayers(v, pos){
   if(!v) return "none";
-  return WALL_TINTS[v] ? `url('img/${TINT_BAND[v]}-${pos}.jpg'), ${WALL_TINTS[v]}` : `url('img/${v}-${pos}.jpg')`;
+  const t=wallTint(v);
+  return t ? `url('img/${wallBand(v)}-${pos}.jpg'), ${t}` : `url('img/${v}-${pos}.jpg')`;
 }
 let wallPos = localStorage.getItem("ml_wallpos") || "bottom";   // v1.24 food band at "top" or "bottom" of the wallpaper
 function setWall(v){ wall = v; localStorage.setItem("ml_wall", v); applyTheme(); render(); }
@@ -2966,7 +3009,7 @@ function addPillHTML(m){
   const on=!!m.onId;
   const full=fillMode()==='full';
   const style = full ? fullStyle(cat.color, !!on) : (fillMode()==="empty" ? `border-left:1.5px solid var(--line)` : `border-left:4px solid ${catEdge(cat.color, !!on)}`);
-  const qcol = full?'#fff':cat.color;
+  const qcol = metaCol(cat.color, !!on, full);
   const meta=[(m.qty>1?m.qty+"×":""), m.weight].filter(Boolean).join(" ");
   const metaS = meta?`<span class="pill-meta"><span class="qty" style="color:${qcol}">${esc(meta)}</span></span>`:"";
   const em=itemEmoji(m.name,m.cat); const emS=em?`<span class="pemoji" aria-hidden="true">${em}</span>`:"";
@@ -3736,13 +3779,26 @@ function fullStyle(catColor, sel){
   /* an unselected tile is an OUTLINE in Full — transparent unless a background was picked. */
   return `background:${uTileBgHex()||"transparent"};border:1.5px solid ${uTileBrdHex()||catEdge(catColor,false)};color:${uTileTxtHex()||"var(--muted)"};`;
 }
+/* v1.67 item 1: one rule for every scrap of text on a tile. A chosen tile-text colour owns the WHOLE
+   tile — name, quantity and weight — because a "text colour" that leaves two of the three in the
+   category colour is not a text colour. On **Auto** the old split stays, and that is the point of
+   Auto: the meta takes the category colour (or, on a Full tile, whatever contrasts with the fill), so
+   "2× 500g" reads as a qualifier on the name rather than part of it. */
+function metaCol(catColor, sel, full){
+  const chosen = sel ? tileTxtHex() : uTileTxtHex();
+  if(chosen) return chosen;
+  if(!full) return catColor;
+  /* an unselected tile in Full is an OUTLINE, not a fill — its text is muted, so its meta is too */
+  if(!sel) return "var(--muted)";
+  return onAccent(tileBgHex()||catFill(catColor,true));
+}
 function pillHTML(i, cat){
   // v1.37 item 5: a checked (in-cart) item renders EXACTLY like it does on the shop list — same
   // fill, same category edge, same meta colour. `.pill.done` then greys + strikes it, so it reads
   // as "bought" without collapsing into an anonymous empty tile.
   const checked=i.checked; const full=fillMode()==="full";
   const edge = cat.color;
-  const qcol = full ? '#fff' : cat.color;
+  const qcol = metaCol(cat.color, true, full);
   // --edge carries the category colour so `.shop .pill.done` can keep it (the base `.pill.done`
   // rule forces border-left-color to grey with !important, which is what flattened cart tiles).
   const style = `--edge:${catEdge(cat.color, true)};` + (full ? fullStyle(cat.color, true) : (fillMode()==="empty" ? `border-left:1.5px solid var(--line)` : `border-left:4px solid ${catEdge(edge, true)}`));
@@ -3808,7 +3864,7 @@ function regPill(entry, cat, it){
   const q = selected ? (it.qty||1) : (entry.qty||1);
   const w = selected ? (it.weight||"") : (entry.weight||"");
   const full = selected && fillMode()==="full";
-  const qcol = full ? '#fff' : cat.color;
+  const qcol = metaCol(cat.color, selected, full);
   const em = itemEmoji(entry.name, cat.id);
   const emS = em?`<span class="pemoji" aria-hidden="true">${em}</span>`:"";
   const meta = `${q>1?`<span class="qty" style="color:${qcol}">${q}×</span>`:""}${w?`<span class="qty" style="color:${qcol}">${esc(w)}</span>`:""}`;
@@ -4087,7 +4143,7 @@ function wireListsPage(){
 }
 function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
 function planFilledPill(i, cat){ const checked=i.checked; const full=fillMode()==="full"&&!checked;
-  const edge=checked?'var(--done-edge)':cat.color; const qcol=full?'#fff':(checked?'var(--muted2)':cat.color);
+  const edge=checked?'var(--done-edge)':cat.color; const qcol = checked ? 'var(--muted2)' : metaCol(cat.color, true, full);
   /* v1.61 item 2: this tile was missed by v1.60 — it is drawn by its own function and still wrote
      the Full colours inline, so the six pickers had no effect here either. */
   const style=full?fullStyle(cat.color,true):(fillMode()==="empty"?`border-left:1.5px solid var(--line)`:`border-left:4px solid ${catEdge(edge, true)}`);
@@ -4320,6 +4376,15 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-utilebrd]").forEach(b=>b.onclick=()=>setUTileBrd(b.dataset.optUtilebrd));
   app.querySelectorAll("[data-opt-utiletext]").forEach(b=>b.onclick=()=>setUTileTxt(b.dataset.optUtiletext));
   app.querySelectorAll("[data-opt-cattext]").forEach(b=>b.onclick=()=>setCatTxt(b.dataset.optCattext));
+  /* v1.67 item 2: one handler for all nine custom pickers — the row's own attribute name says which
+     setting it belongs to, so the map is the only thing to keep in step. `input` rather than `change`
+     so the page follows the colour while it is being dragged. */
+  const CUSTOM_SET = { "opt-accent":setAccent, "opt-textcol":setTextCol, "opt-cattext":setCatTxt,
+    "opt-tiletext":setTileTxt, "opt-tilebg":setTileBg, "opt-tilebrd":setTileBrd,
+    "opt-utiletext":setUTileTxt, "opt-utilebg":setUTileBg, "opt-utilebrd":setUTileBrd };
+  app.querySelectorAll("[data-opt-custom]").forEach(inp=>{
+    const fn=CUSTOM_SET[inp.dataset.optCustom]; if(!fn) return;
+    inp.oninput=()=>fn(inp.value); });
   /* v1.58 item 2: one selector for all nine Calm switches — the row's key travels in the attribute,
      which is why they no longer need an attribute name each. */
   app.querySelectorAll("[data-opt-calm]").forEach(b=>b.onclick=()=>{ const [k,v]=b.dataset.optCalm.split("|"); setCalm(k, v==="1"); });
@@ -4336,6 +4401,7 @@ function wireOptions(){
   const ons=app.querySelector("#optNumSave"); if(ons) ons.onclick=()=>saveNumDefs();
   const onf=app.querySelector("#optNumFactory"); if(onf) onf.onclick=()=>factoryNums();
   app.querySelectorAll("[data-opt-wall]").forEach(b=>b.onclick=()=>{ if(wall!==b.dataset.optWall) setWall(b.dataset.optWall); });
+  const wc=app.querySelector("[data-opt-wallcustom]"); if(wc) wc.oninput=()=>setWall(wc.value);
   app.querySelectorAll("[data-opt-wallpos]").forEach(b=>b.onclick=()=>{ if(wallPos!==b.dataset.optWallpos) setWallPos(b.dataset.optWallpos); });
   app.querySelectorAll("[data-opt-caton]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optCaton==="1"; if(catOn!==v) setCatOn(v); });
   app.querySelectorAll("[data-opt-subon]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optSubon==="1"; if(subOn!==v) setSubOn(v); });
@@ -4760,6 +4826,10 @@ function optionsBody(){
       <button data-${attr}="auto" class="colbtn2 colspan3 ${cur==='auto'?'on':''}">Auto</button>`
       + `<button data-opt-calm="${ck}|${calm?'0':'1'}" class="colbtn2 colspan3 ${calm?'on':''}">Calm</button>`
       + `${o.page?`<button data-${attr}="page" class="colsw colsw-page ${cur==='page'?'on':''}" aria-label="Page" title="Match the page background"></button>`:""}`
+      + `${(()=>{ const isHex = typeof cur==="string" && cur.charAt(0)==="#";
+            return `<label class="colsw colcustom ${isHex?'on':''}" title="Any colour"`
+              + ` style="${isHex?`background:${calm?calmHex(cur):cur}`:''}">`
+              + `<input type="color" data-opt-custom="${attr}" value="${isHex?cur:'#888888'}" aria-label="Custom colour"></label>`; })()}`
       + `${Object.keys(pal).map(sw).join("")}</div></div>`;
   };
   const subhead=t=>`<div class="optsub">${t}</div>`;
@@ -4802,12 +4872,19 @@ function optionsBody(){
           three controls that change the whole page at once, so they read as one group and nothing
           separates them — including when there is no wallpaper and Text size follows directly. */""}
     ${rowNL("Wallpaper", `<div class="wallrow">${[{v:"",label:"None"},{v:"wall-1"},{v:"wall-2"},{v:"wall-3"},{v:"wall-4"},
-      {v:"wall-red"},{v:"wall-blue"},{v:"wall-yellow"},{v:"wall-pink"},{v:"wall-grey"}]
+      {v:"wall-blue"},{v:"wall-yellow"},{v:"wall-pink"},{v:"wall-grey"}]
       .map(w=>`<button data-opt-wall="${w.v}" class="wallbtn ${wall===w.v?'on':''}" aria-label="${esc(w.label||w.v)}" style="${
-        !w.v ? "" : (WALL_TINTS[w.v]
-          ? `background-image:url('img/${TINT_BAND[w.v]}-${wallPos}.jpg'), ${WALL_TINTS[w.v]};background-blend-mode:luminosity, normal;background-position:center ${wallPos==='bottom'?'bottom':'top'}`
+        !w.v ? "" : (wallTint(w.v)
+          ? `background-image:url('img/${wallBand(w.v)}-${wallPos}.jpg'), ${wallTint(w.v)};background-blend-mode:luminosity, normal;background-position:center ${wallPos==='bottom'?'bottom':'top'}`
           : `background-image:url('img/${w.v}-${wallPos}.jpg');background-position:center ${wallPos==='bottom'?'bottom':'top'}`)
-      }">${w.label||''}</button>`).join("")}</div>`)}
+      }">${w.label||''}</button>`).join("")}${
+      /* v1.67 item 2: any colour at all, previewed with the same ramp and food band the shipped
+         tints use, so what the swatch shows is what the page will look like. */
+      (()=>{ const isHex = typeof wall==="string" && wall.charAt(0)==="#";
+        return `<label class="wallbtn wallcustom ${isHex?'on':''}" title="Any colour" style="${isHex
+          ? `background-image:url('img/${wallBand(wall)}-${wallPos}.jpg'), ${customWallGradient(wall)};background-blend-mode:luminosity, normal;background-position:center ${wallPos==='bottom'?'bottom':'top'}`
+          : ''}"><input type="color" data-opt-wallcustom value="${isHex?wall:'#7BA05B'}" aria-label="Custom wallpaper colour"></label>`; })()
+      }</div>`)}
     ${wall ? rowNL("Wallpaper items", `<div class="seg"><button data-opt-wallpos="top" class="${wallPos==='top'?'on':''}">Top</button><button data-opt-wallpos="bottom" class="${wallPos==='bottom'?'on':''}">Bottom</button></div>`) : ""}
     ${/* v1.57 item 2: Text size sits with the wallpaper and the theme — the three things that change
           the whole page at once — and with no rule between them, because they are one group. */""}
