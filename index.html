@@ -331,6 +331,13 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.37 item 7: the total sits dead-centre of the banner, independent of the title/sync widths */
   .hcount-mid { position:absolute; left:50%; transform:translateX(-50%); }
   header { position:relative; }
+  /* v1.65 item 1: the shop banner is two rows — the title row, and the store under the centred count.
+     Scoped to `.hstack` because `header` is also the Lists and Settings banner, which are one row and
+     must stay that way. `.hrow` takes over `position:relative` so the absolutely-centred count still
+     centres on the title row rather than on the taller two-row block. */
+  header.hstack { flex-direction:column; align-items:stretch; gap:3px; }
+  header.hstack .hrow { display:flex; align-items:center; justify-content:space-between; position:relative; }
+  header.hstack .hloc { display:flex; justify-content:center; }
   .avatars { display:flex; }
   .av { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center;
     font-size:11px; font-weight:700; border:2px solid var(--paper); background:var(--chip); color:var(--text); }
@@ -1217,7 +1224,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.64";
+const APP_VERSION = "v1.65";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1345,17 +1352,38 @@ function onAccent(hex){ const h=String(hex||"").replace("#","");
   const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
   return (0.299*r + 0.587*g + 0.114*b) > 150 ? "#000000" : "#FFFFFF"; }
 /* v1.55 item 2: the pastel version of a picked colour. Calm colours elsewhere is a CSS filter, which
-   cannot apply to a custom property — so the softening is done to the value: pull each channel toward
-   the colour's own luminance (that is the desaturation) and then toward white (that is the lift).
-   Deliberately the same two moves, in the same order, as saturate(.5) brightness(1.1). */
+   cannot apply to a custom property — so the softening has to be done to the value itself, and every
+   caller then paints the softened hex directly. */
+/* v1.65 item 2: a real pastel, not a white veil. Pulling every channel toward the colour's own
+   luminance and then toward white is a wash — it drains the hue along with the intensity, and landed
+   red at S26/L57 and green at S19/L58, which is why it read as grubby rather than soft. A pastel is
+   the same HUE, still saturated, just light: so the work is done in HSL, holding the hue exactly,
+   keeping most of the saturation, and setting the lightness high.
+   Colours that were never chromatic to begin with (grey, black, white — anything under S18) are only
+   lightened: forcing a saturation floor onto grey turned it into pale blue. */
 function calmHex(hex){ const h=String(hex||"").replace("#","");
   if(h.length!==6) return hex;
-  let r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
-  const l=0.299*r + 0.587*g + 0.114*b;
-  r=r+(l-r)*0.5; g=g+(l-g)*0.5; b=b+(l-b)*0.5;                 // desaturate
-  r=r+(255-r)*0.28; g=g+(255-g)*0.28; b=b+(255-b)*0.28;        // lift
-  const p=n=>Math.max(0,Math.min(255,Math.round(n))).toString(16).padStart(2,"0");
-  return "#"+p(r)+p(g)+p(b); }
+  const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
+  const [hh,s,l]=rgbToHsl(r,g,b);
+  if(s < 0.18) return hslToHex(hh, s, l + (1-l)*0.34);
+  const ns = Math.min(0.85, Math.max(0.42, s*0.80));
+  const nl = 0.78 + (1-l)*0.06;
+  return hslToHex(hh, ns, nl); }
+/* the two conversions calmHex needs. Kept next to it — nothing else in the file works in HSL. */
+function rgbToHsl(r,g,b){ r/=255; g/=255; b/=255;
+  const mx=Math.max(r,g,b), mn=Math.min(r,g,b), l=(mx+mn)/2, d=mx-mn;
+  let h=0, s=0;
+  if(d){ s = l>0.5 ? d/(2-mx-mn) : d/(mx+mn);
+    h = mx===r ? ((g-b)/d + (g<b?6:0)) : mx===g ? ((b-r)/d + 2) : ((r-g)/d + 4);
+    h/=6; }
+  return [h,s,l]; }
+function hslToHex(h,s,l){
+  const p2=n=>Math.max(0,Math.min(255,Math.round(n))).toString(16).padStart(2,"0");
+  if(!s){ const v=l*255; return "#"+p2(v)+p2(v)+p2(v); }
+  const q = l<0.5 ? l*(1+s) : l+s-l*s, p = 2*l-q;
+  const f=t=>{ t=(t+1)%1;
+    return t<1/6 ? p+(q-p)*6*t : t<1/2 ? q : t<2/3 ? p+(q-p)*(2/3-t)*6 : p; };
+  return "#"+p2(f(h+1/3)*255)+p2(f(h)*255)+p2(f(h-1/3)*255); }
 /* v1.58 item 2: a neutral and a warm neutral — the two the palette was missing. Both dark
    enough for white text, so onAccent() still resolves sensibly. */
 const ACCENTS = { white:"#FFFFFF", black:"#000000", red:"#C62828", orange:"#E2502C", yellow:"#D9A404",
@@ -1397,8 +1425,8 @@ const CALM_KEYS = { accent:"ml_accentcalm", text:"ml_textcolcalm", cat:"ml_catte
 })();
 let calmOn = {}; Object.keys(CALM_KEYS).forEach(k=>{ calmOn[k] = localStorage.getItem(CALM_KEYS[k])==="1"; });
 function setCalm(k,v){ if(!CALM_KEYS[k]) return; calmOn[k]=!!v; setLS(CALM_KEYS[k], calmOn[k]?"1":"0"); applyTheme(); render(); }
-function accentHex(){  const c=ACCENTS[accent];  return c ? (calmOn.accent?calmHex(c):c) : null; }
-function textColHex(){ const c=TEXTCOLS[textCol]; return c ? (calmOn.text?calmHex(c):c) : null; }
+function accentHex(){ return pickHex(accent, calmOn.accent); }
+function textColHex(){ return pickHex(textCol, calmOn.text, TEXTCOLS); }
 /* v1.57 item 2: tiles have two states and each gets its own three colours. Selected = on the list;
    unselected = a regular that is not. One Calm switch per state rather than one per picker: six
    switches would be more chrome than the colours they modify, and nobody wants a calm fill with a
@@ -1424,18 +1452,21 @@ function setCatTxt(v){ catTxt=v; setLS("ml_cattext",v); applyTheme(); render(); 
    change for free. */
 function paperHex(){ try{ const v=getComputedStyle(document.body).getPropertyValue("--paper").trim(); return v||null; }catch(e){ return null; } }
 /* v1.57 item 2: one resolver for every picker: "page" is the theme's own paper colour (read back, so
-   it follows a theme change), a palette key is a hex, and Calm softens whatever came out. */
-function pickHex(key, calm){
+   it follows a theme change), a palette key is a hex, and Calm softens whatever came out.
+   v1.65 item 2: the palette is a parameter now. The five text/accent pickers each looked their key up
+   directly and so could not have understood "page" — which is why only Background and Border offered
+   that swatch. One resolver, every picker. */
+function pickHex(key, calm, pal){
   if(key==="page") return paperHex();
-  const c=ACCENTS[key]; if(!c) return null;
+  const c=(pal||ACCENTS)[key]; if(!c) return null;
   return calm ? calmHex(c) : c; }
 function tileBgHex(){  return pickHex(tileBg,  calmOn.tilebg); }
 function tileBrdHex(){ return pickHex(tileBrd, calmOn.tilebrd); }
-function tileTxtHex(){ const c=TEXTCOLS[tileTxt]; return c ? (calmOn.tiletext?calmHex(c):c) : null; }
+function tileTxtHex(){ return pickHex(tileTxt, calmOn.tiletext, TEXTCOLS); }
 function uTileBgHex(){  return pickHex(uTileBg,  calmOn.utilebg); }
 function uTileBrdHex(){ return pickHex(uTileBrd, calmOn.utilebrd); }
-function uTileTxtHex(){ const c=TEXTCOLS[uTileTxt]; return c ? (calmOn.utiletext?calmHex(c):c) : null; }
-function catTxtHex(){  const c=TEXTCOLS[catTxt];  return c ? (calmOn.cat?calmHex(c):c) : null; }
+function uTileTxtHex(){ return pickHex(uTileTxt, calmOn.utiletext, TEXTCOLS); }
+function catTxtHex(){ return pickHex(catTxt, calmOn.cat, TEXTCOLS); }
 /* v1.54 item 1: the geometry settings. One table so the stepper UI, the clamping and the CSS
    variable stay in one place instead of eight near-identical globals. Defaults are exactly the
    values the stylesheet used before this version, so an untouched install looks unchanged. */
@@ -3674,7 +3705,12 @@ function catFill(catColor, sel){ return (sel ? calmOn.tilebg  : calmOn.utilebg) 
 function catEdge(catColor, sel){ return (sel ? calmOn.tilebrd : calmOn.utilebrd) ? calmHex(catColor) : catColor; }
 function fullStyle(catColor, sel){
   if(sel){
-    return `background:${tileBgHex()||catFill(catColor,true)};border:1.5px solid ${tileBrdHex()||catEdge(catColor,true)};color:${tileTxtHex()||"#fff"};`;
+    /* v1.65 item 2: the default text follows the fill instead of always being white. It always was
+       white because the fill was always a full-strength category colour; with Calm now producing a
+       genuine pastel (L≈0.8), white on it is unreadable. onAccent picks by luminance, so a dark fill
+       still gets white and nothing changes for anyone not using Calm. */
+    const fill = tileBgHex()||catFill(catColor,true);
+    return `background:${fill};border:1.5px solid ${tileBrdHex()||catEdge(catColor,true)};color:${tileTxtHex()||onAccent(fill)};`;
   }
   /* an unselected tile is an OUTLINE in Full — transparent unless a background was picked. */
   return `background:${uTileBgHex()||"transparent"};border:1.5px solid ${uTileBrdHex()||catEdge(catColor,false)};color:${uTileTxtHex()||"var(--muted)"};`;
@@ -3916,19 +3952,21 @@ function renderMain(){
     </div>` : "";
   app.innerHTML = `
     <div class="topfix" id="topfix">
-      <header>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <button class="backbtn" id="toLists" aria-label="Back to lists">‹</button>
-          <span class="title disp">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="dot">.</span></span>
-          ${/* v1.62 item 3: the store sits with the list name rather than on a line of its own — it is
-                a qualifier on "which list am I looking at", and its own row cost 30px of a screen that
-                is mostly list. */""}
-          ${locChip()}
+      ${/* v1.65 item 1: the store reads as a qualifier on the COUNT — "12 to buy, at Waitrose" — so it
+            sits under it, centred, rather than trailing the list name. v1.62 put it on the title line to
+            save a row; it only costs one when a store is actually active, which is the trade taken. */""}
+      <header class="hstack">
+        <div class="hrow">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <button class="backbtn" id="toLists" aria-label="Back to lists">‹</button>
+            <span class="title disp">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="dot">.</span></span>
+          </div>
+          ${open>0?`<span class="hcount hcount-mid">${open} to buy</span>`:""}
+          <div style="display:flex;align-items:center;gap:8px">
+            ${syncChip()}
+          </div>
         </div>
-        ${open>0?`<span class="hcount hcount-mid">${open} to buy</span>`:""}
-        <div style="display:flex;align-items:center;gap:8px">
-          ${syncChip()}
-        </div>
+        ${locChip()?`<div class="hloc">${locChip()}</div>`:""}
       </header>
     </div>
     <div class="wrap ${shopMode?'shop':''}">
@@ -4751,9 +4789,9 @@ function optionsBody(){
     ${sectHR("Colour")}
     ${/* v1.57 item 2: "Colour accent" renamed. It has not been only an accent for several versions —
           it drives the nav highlight, the user chips and the selected states. */""}
-    ${colRow("Colour details", "opt-accent", accent, "accent", {})}
-    ${colRow("Text colour", "opt-textcol", textCol, "text", {pal:TEXTCOLS})}
-    ${colRow("Category text", "opt-cattext", catTxt, "cat", {pal:TEXTCOLS})}
+    ${colRow("Colour details", "opt-accent", accent, "accent", {page:true})}
+    ${colRow("Text colour", "opt-textcol", textCol, "text", {pal:TEXTCOLS, page:true})}
+    ${colRow("Category text", "opt-cattext", catTxt, "cat", {pal:TEXTCOLS, page:true})}
 
     ${sectHR("Tiles")}
     ${view!=="lists" ? `<div class="optrow optrow-wide optnl"><span class="optlabel">Tile display</span><div class="optwide">
@@ -4773,11 +4811,11 @@ function optionsBody(){
     ${/* v1.57 item 2: the two tile states, each with the same three colours in the same order, so the
           two blocks can be read against each other. */""}
     ${subhead("Selected tiles · on the list")}
-    ${colRow("Text", "opt-tiletext", tileTxt, "tiletext", {pal:TEXTCOLS})}
+    ${colRow("Text", "opt-tiletext", tileTxt, "tiletext", {pal:TEXTCOLS, page:true})}
     ${colRow("Background", "opt-tilebg", tileBg, "tilebg", {page:true})}
     ${colRow("Border", "opt-tilebrd", tileBrd, "tilebrd", {page:true})}
     ${subhead("Unselected tiles · in Regulars")}
-    ${colRow("Text", "opt-utiletext", uTileTxt, "utiletext", {pal:TEXTCOLS})}
+    ${colRow("Text", "opt-utiletext", uTileTxt, "utiletext", {pal:TEXTCOLS, page:true})}
     ${colRow("Background", "opt-utilebg", uTileBg, "utilebg", {page:true})}
     ${colRow("Border", "opt-utilebrd", uTileBrd, "utilebrd", {page:true})}
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Tile roundness</span><div class="optwide">
