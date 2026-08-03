@@ -777,7 +777,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     background-color:transparent;
     background-image:conic-gradient(#E2502C,#D9A404,#2F9E44,#1E6FD9,#7B4FBF,#D6478A,#E2502C); }
   .wallcustom.on { background-image:none; }
-  .wallshade { box-shadow: inset 0 0 0 2px var(--paper); }
+  /* v1.73: labelled, and still wearing the colour it would produce. */
+  .wallstep { font-size:11px; font-weight:800; }
   .wallcustom input { position:absolute; inset:-4px; width:calc(100% + 8px); height:calc(100% + 8px);
     opacity:0; border:none; padding:0; background:transparent; }
   /* v1.42 items 5/8 — colour swatch pickers. Wraps to two rows on a narrow phone. */
@@ -869,9 +870,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .colcustom { position:relative; overflow:hidden; padding:0;
     background:conic-gradient(#E2502C,#D9A404,#2F9E44,#1E6FD9,#7B4FBF,#D6478A,#E2502C); }
   .colcustom.on { background-image:none; }
-  /* v1.72: the two step chips. Ringed so they read as "a step from the current colour" rather than as
-     two more palette entries sitting next to eleven of them. */
-  .colshade { box-shadow: inset 0 0 0 1.5px var(--paper), 0 0 0 1.5px var(--line); }
+  /* v1.73: the step buttons are labelled and wear the colour they would produce. Centred like the
+     Auto/Calm pills they sit beside, so the row reads as one control strip. */
+  .colstep { text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .colcustom input { position:absolute; inset:-4px; width:calc(100% + 8px); height:calc(100% + 8px);
     opacity:0; border:none; padding:0; background:transparent; }
   /* v1.69: the live sample shown while a colour picker is open. Fixed to the top because the
@@ -1292,7 +1293,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.72";
+const APP_VERSION = "v1.73";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -4945,8 +4946,13 @@ function optionsBody(){
             const base = pickHex(cur, false, pal);
             if(!base || base.charAt(0)!=='#') return "";
             const lo = shadeHex(base,-1), hi = shadeHex(base,1);
+            /* v1.73: labelled, not just coloured. Two bare circles among eleven palette circles read
+               as two more palette colours; the words say what they do. They still wear the colour
+               they would produce, with the label in whatever contrasts with it, so the button is its
+               own preview — onAccent already answers "black or white on this?". */
             const chip=(v,lbl)=> (!v || v.toLowerCase()===base.toLowerCase()) ? ""
-              : `<button data-${attr}="${v}" class="colsw colshade" style="background:${calm?calmHex(v):v}" aria-label="${lbl}" title="${lbl}"></button>`;
+              : `<button data-${attr}="${v}" class="colbtn2 colspan3 colstep" aria-label="${lbl}" title="${lbl}"`
+                + ` style="background:${calm?calmHex(v):v};border-color:${calm?calmHex(v):v};color:${onAccent(calm?calmHex(v):v)}">${lbl}</button>`;
             return chip(lo,"Darker") + chip(hi,"Lighter"); })()}`
       + `${Object.keys(pal).map(sw).join("")}</div></div>`;
   };
@@ -5010,7 +5016,8 @@ function optionsBody(){
         if(!isHex) return "";
         const lo=shadeHex(wall,-1), hi=shadeHex(wall,1);
         const chip=(v,lbl)=> (!v || v.toLowerCase()===wall.toLowerCase()) ? ""
-          : `<button data-opt-wall="${v}" class="wallbtn wallshade" aria-label="${lbl}" title="${lbl}" style="background-image:none;background-color:${v}"></button>`;
+          : `<button data-opt-wall="${v}" class="wallbtn wallstep" aria-label="${lbl}" title="${lbl}"`
+            + ` style="background-image:none;background-color:${v};color:${onAccent(v)}">${lbl}</button>`;
         return chip(lo,"Darker")+chip(hi,"Lighter"); })()
       }</div>`)}
     ${wall ? rowNL("Wallpaper items", `<div class="seg"><button data-opt-wallpos="top" class="${wallPos==='top'?'on':''}">Top</button><button data-opt-wallpos="bottom" class="${wallPos==='bottom'?'on':''}">Bottom</button></div>`) : ""}
