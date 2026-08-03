@@ -777,6 +777,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     background-color:transparent;
     background-image:conic-gradient(#E2502C,#D9A404,#2F9E44,#1E6FD9,#7B4FBF,#D6478A,#E2502C); }
   .wallcustom.on { background-image:none; }
+  .wallshade { box-shadow: inset 0 0 0 2px var(--paper); }
   .wallcustom input { position:absolute; inset:-4px; width:calc(100% + 8px); height:calc(100% + 8px);
     opacity:0; border:none; padding:0; background:transparent; }
   /* v1.42 items 5/8 — colour swatch pickers. Wraps to two rows on a narrow phone. */
@@ -868,6 +869,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .colcustom { position:relative; overflow:hidden; padding:0;
     background:conic-gradient(#E2502C,#D9A404,#2F9E44,#1E6FD9,#7B4FBF,#D6478A,#E2502C); }
   .colcustom.on { background-image:none; }
+  /* v1.72: the two step chips. Ringed so they read as "a step from the current colour" rather than as
+     two more palette entries sitting next to eleven of them. */
+  .colshade { box-shadow: inset 0 0 0 1.5px var(--paper), 0 0 0 1.5px var(--line); }
   .colcustom input { position:absolute; inset:-4px; width:calc(100% + 8px); height:calc(100% + 8px);
     opacity:0; border:none; padding:0; background:transparent; }
   /* v1.69: the live sample shown while a colour picker is open. Fixed to the top because the
@@ -1288,7 +1292,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.71";
+const APP_VERSION = "v1.72";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1448,6 +1452,17 @@ function hslToHex(h,s,l){
   const f=t=>{ t=(t+1)%1;
     return t<1/6 ? p+(q-p)*6*t : t<1/2 ? q : t<2/3 ? p+(q-p)*(2/3-t)*6 : p; };
   return "#"+p2(f(h+1/3)*255)+p2(f(h)*255)+p2(f(h-1/3)*255); }
+/* v1.72: one step of white (dir +1) or black (dir −1) mixed into a colour. Done in HSL so the hue is
+   untouched and only the lightness moves — that is what "a tint" and "a shade" of a colour mean, and
+   it is the axis the native overlay makes hardest to walk. 8% a step: fine enough to land on a
+   particular shade, coarse enough that a few taps cross the range. */
+function shadeHex(hex, dir){
+  const h=String(hex||"").replace("#","");
+  if(h.length!==6) return null;
+  const [hh,s,l]=rgbToHsl(parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16));
+  const nl=Math.max(0, Math.min(1, l + dir*0.08));
+  return hslToHex(hh, s, nl);
+}
 /* v1.58 item 2: a neutral and a warm neutral — the two the palette was missing. Both dark
    enough for white text, so onAccent() still resolves sensibly. */
 const ACCENTS = { white:"#FFFFFF", black:"#000000", red:"#C62828", orange:"#E2502C", yellow:"#D9A404",
@@ -4921,6 +4936,18 @@ function optionsBody(){
             return `<label class="colsw colcustom ${isHex?'on':''}" title="Any colour"`
               + ` style="${isHex?`background:${calm?calmHex(cur):cur}`:''}">`
               + `<input type="color" data-opt-custom="${attr}" value="${isHex?cur:'#888888'}" aria-label="Custom colour"></label>`; })()}`
+      + `${(()=>{
+            /* v1.72: nothing to shade until the row has a colour — Auto is "whatever the theme says",
+               which is not a value this can step from. `pickHex` resolves a palette key, a hex, or
+               "page" alike, so all three can be walked toward white or black. Calm is applied to the
+               PREVIEW only: the stored value stays the true colour, exactly as the palette swatches do. */
+            if(cur==='auto') return "";
+            const base = pickHex(cur, false, pal);
+            if(!base || base.charAt(0)!=='#') return "";
+            const lo = shadeHex(base,-1), hi = shadeHex(base,1);
+            const chip=(v,lbl)=> (!v || v.toLowerCase()===base.toLowerCase()) ? ""
+              : `<button data-${attr}="${v}" class="colsw colshade" style="background:${calm?calmHex(v):v}" aria-label="${lbl}" title="${lbl}"></button>`;
+            return chip(lo,"Darker") + chip(hi,"Lighter"); })()}`
       + `${Object.keys(pal).map(sw).join("")}</div></div>`;
   };
   const subhead=t=>`<div class="optsub">${t}</div>`;
@@ -4975,6 +5002,16 @@ function optionsBody(){
         return `<label class="wallbtn wallcustom ${isHex?'on':''}" title="Any colour" style="${isHex
           ? `background-image:none;background-color:${wall}`
           : ''}"><input type="color" data-opt-wallcustom value="${isHex?wall:'#7BA05B'}" aria-label="Custom wallpaper colour"></label>`; })()
+      }${
+      /* v1.72: step the wallpaper toward white or black, the same as any other colour. Only for a
+         custom colour: a shipped tint is a photograph with a ramp, and there is no single value to
+         step from. */
+      (()=>{ const isHex = typeof wall==="string" && wall.charAt(0)==="#";
+        if(!isHex) return "";
+        const lo=shadeHex(wall,-1), hi=shadeHex(wall,1);
+        const chip=(v,lbl)=> (!v || v.toLowerCase()===wall.toLowerCase()) ? ""
+          : `<button data-opt-wall="${v}" class="wallbtn wallshade" aria-label="${lbl}" title="${lbl}" style="background-image:none;background-color:${v}"></button>`;
+        return chip(lo,"Darker")+chip(hi,"Lighter"); })()
       }</div>`)}
     ${wall ? rowNL("Wallpaper items", `<div class="seg"><button data-opt-wallpos="top" class="${wallPos==='top'?'on':''}">Top</button><button data-opt-wallpos="bottom" class="${wallPos==='bottom'?'on':''}">Bottom</button></div>`) : ""}
     ${/* v1.57 item 2: Text size sits with the wallpaper and the theme — the three things that change
