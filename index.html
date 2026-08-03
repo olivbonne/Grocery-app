@@ -232,7 +232,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   html,body { margin:0; background:var(--paper); color:var(--text); min-height:100vh; min-height:100dvh;
     font-family:'Outfit',-apple-system,'SF Pro Text',system-ui,sans-serif; }
   .wrap { max-width:480px; margin:0 auto; }
-  .topfix { position:fixed; top:0; left:0; right:0; margin:0 auto; max-width:480px; z-index:30; background:var(--paper); padding:calc(8px + env(safe-area-inset-top)) 14px 8px; box-shadow:0 6px 16px -10px rgba(20,30,22,.45); }
+  /* v1.76 item 1: a bar's height IS its padding, so the user's number is added to both ends. The
+     shorthand has to stay first and unchanged — it is the only thing setting the left/right 14px —
+     and the two longhands after it re-state the vertical ends with --barpadt folded in. */
+  .topfix { position:fixed; top:0; left:0; right:0; margin:0 auto; max-width:480px; z-index:30; background:var(--paper); padding:calc(8px + env(safe-area-inset-top)) 14px 8px; box-shadow:0 6px 16px -10px rgba(20,30,22,.45);
+    padding-top:calc(8px + env(safe-area-inset-top) + var(--barpadt, 0px)); padding-bottom:calc(8px + var(--barpadt, 0px)); }
   .zoomwrap { overflow:hidden; }
   /* v1.54 item 1: the item area's margins are user-set. Longhand order is T R B L. The bottom is
      NOT a variable: syncZoomHeight() overwrites padding-bottom inline on every render with the
@@ -249,7 +253,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .listname .caret { color:var(--muted); font-size:11px; }
   .collapseall { border:none; background:transparent; color:var(--muted); font-size:12px; font-weight:700; padding:2px 0; }
   .bottomnav { position:fixed; left:0; right:0; bottom:0; z-index:40; display:flex; max-width:480px; margin:0 auto;
-    background:var(--paper); border-top:1px solid var(--line); padding:6px 18px calc(8px + env(safe-area-inset-bottom)); justify-content:space-between; }
+    background:var(--paper); border-top:1px solid var(--line); padding:6px 18px calc(8px + env(safe-area-inset-bottom)); justify-content:space-between;
+    /* v1.76 item 1: same treatment as .topfix — shorthand first for the sides, longhands after for
+       the height. The v1.12 glass block re-states this padding and wins by order, so it carries its
+       own copy of these two (with its own 6px base) further down. */
+    padding-top:calc(6px + var(--barpadb, 0px)); padding-bottom:calc(8px + env(safe-area-inset-bottom) + var(--barpadb, 0px)); }
   .navbtn { position:relative; flex:1; border:none; background:transparent; color:var(--muted); display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px; font-weight:700; padding:6px 0; }
   .navbtn:active { color:var(--text); }
   .navbtn span { letter-spacing:.2px; }
@@ -419,7 +427,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .catheadchip .cname { font-size:13px; }
   .catheadchip .cnum { margin-left:auto; }
   /* A26 — calmer category header + per-aisle progress (midnight/market/mono themes only) */
-  .catheadchip.catcalm { width:100%; background:transparent !important; border:1.5px solid transparent !important;
+  /* v1.76 item 2: the heading already has a tile's padding, radius and 1.5px border — it just painted
+     them transparent. Two tokens with transparent fallbacks is the whole feature. */
+  .catheadchip.catcalm { width:100%; background:var(--cathdbg, transparent) !important; border:1.5px solid var(--cathdbrd, transparent) !important;
     color:var(--text) !important; padding:7px 44px 7px 4px !important; }
   .catheadchip.catcalm .cname { color:var(--text); font-weight:800; }
   .catheadchip.catcalm .cnum { color:var(--muted2); opacity:1; font-weight:700; }
@@ -937,7 +947,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .editsec-v { font-size:14px; font-weight:700; color:var(--text); display:inline-flex; align-items:center; gap:6px; }
   .editsec-ch { color:var(--muted2); font-size:13px; }
   .regcat { margin-top:2px; }
-  .regcatlbl { display:flex; align-items:center; justify-content:space-between; width:100%; border:none; background:transparent; cursor:pointer; font-size:18px; font-weight:600; color:var(--text); letter-spacing:normal; text-transform:none; margin:10px 2px 0; padding:0; }
+  /* v1.76 item 2: the Regulars heading is bare text, so it takes the tile shape only once a colour is
+     set — the width and padding come from applyTheme and are 0px until then, so an untouched install
+     does not move by a pixel. */
+  .regcatlbl { display:flex; align-items:center; justify-content:space-between; width:100%; border:var(--reghdbw, 0px) solid var(--reghdbrd, transparent); background:var(--reghdbg, transparent); cursor:pointer; font-size:18px; font-weight:600; color:var(--reghdtext, var(--text)); letter-spacing:normal; text-transform:none; margin:10px 2px 0; padding:var(--reghdpad, 0px); border-radius:13px; box-sizing:border-box; }
   .regcnum { color:var(--muted); font-weight:700; font-size:15px; }
   /* A15 bigger effective touch targets on small controls, no visual change (~44px hit areas) */
   .qmore, .iconbtn, .iconmini { position:relative; }
@@ -1024,15 +1037,27 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .userchip .ucur { font-size:10px; font-weight:800; opacity:.8; text-transform:uppercase; letter-spacing:.4px; }
   /* v1.12 "Glasshouse" — Liquid-Glass WEB APPROXIMATION (there is no official Apple web
      framework for it): backdrop blur + layered border + inset highlight, solid fallbacks. */
+  /* v1.76 item 1: the two bars are split out of the shared list so each can take its own variable.
+     The var() fallback is the glass recipe itself, so a bar nobody has touched paints exactly what
+     it painted before — the other four surfaces keep the shared declaration untouched. */
   .topfix, .bottomnav, .checkedbar, .qbanner, .sheet, .addpill {
-    background:var(--glass-bg);
     -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(160%);
     backdrop-filter:blur(var(--glass-blur)) saturate(160%);
   }
+  .checkedbar, .qbanner, .sheet, .addpill { background:var(--glass-bg); }
+  .topfix { background:var(--topbar-bg, var(--glass-bg)); }
+  .bottomnav { background:var(--navbar-bg, var(--glass-bg)); }
+  /* v1.76 item 1: the title follows a chosen top bar, because a dark bar under a light theme would
+     otherwise keep the theme's dark title and go blank. Unset, it inherits exactly as before. */
+  .topfix header, .topfix .title { color:var(--topbar-text, inherit); }
   .topfix { box-shadow:none; border-bottom:1px solid var(--glass-brd); }
   .bottomnav { left:12px; right:12px; bottom:calc(10px + env(safe-area-inset-bottom)); max-width:456px;
     border:1px solid var(--glass-brd); border-radius:999px; padding:6px 16px;
+    /* v1.76 item 1: the height, added to the glass block's own 6px so zero is today's chrome. */
+    padding-top:calc(6px + var(--barpadb, 0px)); padding-bottom:calc(6px + var(--barpadb, 0px));
     box-shadow: inset 0 1px 0 var(--glass-hi), 0 12px 30px rgba(20,30,22,.25); }
+  .bottomnav .navbtn { color:var(--navbar-text, var(--muted)); }
+  .bottomnav .navbtn.active { color:var(--navbar-text, var(--text)); }
   .navbtn.active { background:var(--chip); border-radius:999px; }
   .navbtn.active::before { display:none; }
   .checkedbar { border-top:1px solid var(--glass-brd); border-radius:22px 22px 0 0;
@@ -1043,11 +1068,18 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .addpill { border:1px solid var(--glass-brd);
     box-shadow: inset 0 1px 0 var(--glass-hi), 0 10px 26px rgba(20,30,22,.22); }
   @supports not (backdrop-filter: blur(1px)){
-    .topfix, .bottomnav, .checkedbar, .qbanner, .sheet, .addpill { background:var(--paper); }
+    /* v1.76 item 1: split the same way as the glass block above, with the solid paper as the fallback. */
+    .checkedbar, .qbanner, .sheet, .addpill { background:var(--paper); }
+    .topfix { background:var(--topbar-bg, var(--paper)); }
+    .bottomnav { background:var(--navbar-bg, var(--paper)); }
   }
   @media (prefers-reduced-transparency: reduce){
-    .topfix, .bottomnav, .checkedbar, .qbanner, .sheet, .addpill { background:var(--paper);
+    .topfix, .bottomnav, .checkedbar, .qbanner, .sheet, .addpill {
       -webkit-backdrop-filter:none; backdrop-filter:none; }
+    /* v1.76 item 1: same split again — the user's bar colour still applies with transparency reduced. */
+    .checkedbar, .qbanner, .sheet, .addpill { background:var(--paper); }
+    .topfix { background:var(--topbar-bg, var(--paper)); }
+    .bottomnav { background:var(--navbar-bg, var(--paper)); }
   }
   /* v1.12 per-item emoji icon */
   .pemoji { flex:none; font-size:15px; margin-right:1px; }
@@ -1312,7 +1344,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.75";
+const APP_VERSION = "v1.76";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1505,7 +1537,12 @@ function setTextCol(v, quiet){ textCol=v; localStorage.setItem("ml_textcol",v); 
    the new vocabulary has to a pastel, and the closest an old look can be carried forward. */
 const SHADE_KEYS = { accent:"ml_accentshade", text:"ml_textcolshade", cat:"ml_cattextshade",
                      tiletext:"ml_tiletextshade", tilebg:"ml_tilebgshade", tilebrd:"ml_tilebrdshade",
-                     utiletext:"ml_utiletextshade", utilebg:"ml_utilebgshade", utilebrd:"ml_utilebrdshade" };
+                     utiletext:"ml_utiletextshade", utilebg:"ml_utilebgshade", utilebrd:"ml_utilebrdshade",
+                     /* v1.76 items 1 & 2: the seven new rows join the same machinery — a row without a
+                        step level would be the only one in Settings that could do nothing on Auto. */
+                     topbar:"ml_topbarshade", navbar:"ml_navbarshade",
+                     cathdbg:"ml_cathdbgshade", cathdbrd:"ml_cathdbrdshade",
+                     reghdtext:"ml_reghdtextshade", reghdbg:"ml_reghdbgshade", reghdbrd:"ml_reghdbrdshade" };
 const SHADE_MAX = 5;
 (function(){ const OLD = { accent:"ml_accentcalm", text:"ml_textcolcalm", cat:"ml_cattextcalm",
     tiletext:"ml_tiletextcalm", tilebg:"ml_tilebgcalm", tilebrd:"ml_tilebrdcalm",
@@ -1552,6 +1589,54 @@ function setUTileBg(v, quiet){ uTileBg=v; setLS("ml_utilebg",v); applyTheme(); i
 function setUTileBrd(v, quiet){ uTileBrd=v; setLS("ml_utilebrd",v); applyTheme(); if(!quiet) render(); }
 function setUTileTxt(v, quiet){ uTileTxt=v; setLS("ml_utiletext",v); applyTheme(); if(!quiet) render(); }
 function setCatTxt(v, quiet){ catTxt=v; setLS("ml_cattext",v); applyTheme(); if(!quiet) render(); }
+/* v1.76 item 1: the two bars are the only surfaces the user cannot reach — every other colour in the
+   app is settable and these two were fixed glass. Untouched they stay exactly that: the colour is
+   Auto and the transparency is 100, and in that state nothing is written, so the glass recipe from
+   v1.12 is what paints. Touch either one and the bar becomes your colour at your transparency —
+   which is the only rule that can be stated in one sentence, and the only one where an untouched
+   install is byte-for-byte unchanged. */
+let topBar  = localStorage.getItem("ml_topbar") || "auto";
+let navBar  = localStorage.getItem("ml_navbar") || "auto";
+function barAlpha(k){ const v=parseInt(localStorage.getItem(k==="top"?"ml_topbara":"ml_navbara"),10);
+  return (isFinite(v) && v>=0 && v<=100) ? v : 100; }
+function setTopBar(v, quiet){ topBar=v; setLS("ml_topbar",v); applyTheme(); if(!quiet) render(); }
+function setNavBar(v, quiet){ navBar=v; setLS("ml_navbar",v); applyTheme(); if(!quiet) render(); }
+function bumpBarAlpha(k,d){ const cur=barAlpha(k);
+  const v=Math.max(0, Math.min(100, cur + d*5));
+  setLS(k==="top"?"ml_topbara":"ml_navbara", String(v)); applyTheme(); render(); }
+/* the composed background, or null when the bar has been left alone. `hexA` turns the resolved hex
+   into rgba so the transparency is part of the colour rather than an opacity on the element — an
+   element opacity would fade the buttons sitting on the bar along with it. */
+function hexA(hex, a){ const h=String(hex||"").replace("#","");
+  if(h.length!==6) return null;
+  return `rgba(${parseInt(h.slice(0,2),16)}, ${parseInt(h.slice(2,4),16)}, ${parseInt(h.slice(4,6),16)}, ${(a/100).toFixed(3)})`; }
+function barBg(kind){
+  const sel = kind==="top" ? topBar : navBar;
+  const a = barAlpha(kind);
+  if(sel==="auto" && a===100) return null;                 // untouched: the glass recipe still paints
+  const base = autoShade(kind==="top"?"topbar":"navbar", pickHex(sel) || paperHex());
+  return hexA(base, a);
+}
+/* v1.76 item 2: the category heading, treated as the one-line tile it already looks like. Its TEXT
+   has been settable since v1.57 (`ml_cattext`); what it never had was the surface under that text.
+   The heading in Regulars gets its own three, deliberately separate: it heads a different kind of
+   thing — what you are not buying — and someone who wants the two to look different has no other way
+   to say so. */
+let catHdBg  = localStorage.getItem("ml_cathdbg")  || "auto";
+let catHdBrd = localStorage.getItem("ml_cathdbrd") || "auto";
+let regHdTxt = localStorage.getItem("ml_reghdtext")|| "auto";
+let regHdBg  = localStorage.getItem("ml_reghdbg")  || "auto";
+let regHdBrd = localStorage.getItem("ml_reghdbrd") || "auto";
+function setCatHdBg(v, quiet){ catHdBg=v; setLS("ml_cathdbg",v); applyTheme(); if(!quiet) render(); }
+function setCatHdBrd(v, quiet){ catHdBrd=v; setLS("ml_cathdbrd",v); applyTheme(); if(!quiet) render(); }
+function setRegHdTxt(v, quiet){ regHdTxt=v; setLS("ml_reghdtext",v); applyTheme(); if(!quiet) render(); }
+function setRegHdBg(v, quiet){ regHdBg=v; setLS("ml_reghdbg",v); applyTheme(); if(!quiet) render(); }
+function setRegHdBrd(v, quiet){ regHdBrd=v; setLS("ml_reghdbrd",v); applyTheme(); if(!quiet) render(); }
+function catHdBgHex(){  return pickHex(catHdBg); }
+function catHdBrdHex(){ return pickHex(catHdBrd); }
+function regHdTxtHex(){ return pickHex(regHdTxt, TEXTCOLS); }
+function regHdBgHex(){  return pickHex(regHdBg); }
+function regHdBrdHex(){ return pickHex(regHdBrd); }
 /* one place that answers "what colour is actually painted", so applyTheme and the swatch previews in
    Settings can never disagree about it. */
 /* v1.56 item 1: "page" is not a fixed colour — it is whatever the current theme paints the page,
@@ -1614,7 +1699,12 @@ const NUMOPT = {
      reserves exactly that much). This number is the breathing room ON TOP of that clearance — 24px
      is what the code reserved unconditionally before it was settable — so even 0 still clears the
      chrome and the last row of tiles can never end up underneath it. */
-  padb: { ls:"ml_padb",                     def:24, min:0,  max:120, step:4, label:"Bottom" }
+  padb: { ls:"ml_padb",                     def:24, min:0,  max:120, step:4, label:"Bottom" },
+  /* v1.76 item 1: the bars' own breathing room. These ADD to the padding each bar already has rather
+     than replacing it, so zero is exactly today's chrome and an untouched install does not move —
+     replacing it would have meant picking a new baseline for everyone who never asked for one. */
+  barT: { ls:"ml_barpadt", vr:"--barpadt", def:0, min:0, max:30, step:2, label:"Top" },
+  barB: { ls:"ml_barpadb", vr:"--barpadb", def:0, min:0, max:30, step:2, label:"Bottom" }
 };
 /* v1.55 item 2: two levels of default. NUMOPT[].def is the FACTORY value — what the stylesheet used
    before any of this was settable, and the thing to fall back to when an experiment goes wrong.
@@ -1695,12 +1785,36 @@ function applyTheme(){ const t = THEMES[theme] || THEMES.light;
        colour, so "auto" falls through to the CSS fallback and the theme keeps deciding. */
     const T={ "--tilebg":tileBgHex(), "--tilebrd":tileBrdHex(), "--tiletext":tileTxtHex(),
               "--utilebg":uTileBgHex(), "--utilebrd":uTileBrdHex(), "--utiletext":uTileTxtHex(),
-              "--cattext":catTxtHex() };
+              "--cattext":catTxtHex(),
+              /* v1.76 item 2: the heading's own surface, and the Regulars heading's separate three. */
+              "--cathdbg":catHdBgHex(), "--cathdbrd":catHdBrdHex(),
+              "--reghdtext":regHdTxtHex(), "--reghdbg":regHdBgHex(), "--reghdbrd":regHdBrdHex() };
     Object.keys(T).forEach(k=>{ if(T[k]) rs.setProperty(k, T[k]); else rs.removeProperty(k); });
     /* A chosen tile background can be black or white, so the tile text has to follow it unless the
        user has picked one. Same for the unselected state. */
     if(T["--tilebg"] && !T["--tiletext"]) rs.setProperty("--tiletext", onAccent(T["--tilebg"]));
     if(T["--utilebg"] && !T["--utiletext"]) rs.setProperty("--utiletext", onAccent(T["--utilebg"]));
+    /* v1.76 item 2: the same rule for the two headings — a chosen heading background must not leave
+       its label unreadable, but a chosen label colour always wins, so this only fills in the gap. */
+    if(T["--cathdbg"] && !T["--cattext"]) rs.setProperty("--cattext", onAccent(T["--cathdbg"]));
+    if(T["--reghdbg"] && !T["--reghdtext"]) rs.setProperty("--reghdtext", onAccent(T["--reghdbg"]));
+    /* v1.76 item 2: the WIDTH is published, not just the colour — a 1.5px transparent border would
+       still take 3px of height on a heading that has never had one, which is exactly the kind of
+       silent shift an untouched install must not get. Same for the padding. */
+    rs.setProperty("--reghdbw", T["--reghdbrd"] ? "1.5px" : "0px");
+    rs.setProperty("--reghdpad", (T["--reghdbg"] || T["--reghdbrd"]) ? "7px 11px" : "0px");
+    /* v1.76 item 1: written only when the bar has been touched, so an untouched install falls through
+       to the glass recipe exactly as before. A chosen bar also publishes the text colour that reads
+       on it — a dark bar on a light theme would otherwise keep the theme's dark labels and go blank
+       (the same lesson as the tile fill in v1.65). Below 60% the bar is mostly page, so the page's own
+       text is still the right answer and nothing is published. */
+    const TB=barBg("top"), NB=barBg("nav");
+    if(TB){ rs.setProperty("--topbar-bg", TB); } else { rs.removeProperty("--topbar-bg"); }
+    if(NB){ rs.setProperty("--navbar-bg", NB); } else { rs.removeProperty("--navbar-bg"); }
+    const tOn = (TB && barAlpha("top")>=60) ? onAccent(autoShade("topbar", pickHex(topBar)||paperHex())) : null;
+    const nOn = (NB && barAlpha("nav")>=60) ? onAccent(autoShade("navbar", pickHex(navBar)||paperHex())) : null;
+    if(tOn){ rs.setProperty("--topbar-text", tOn); } else { rs.removeProperty("--topbar-text"); }
+    if(nOn){ rs.setProperty("--navbar-text", nOn); } else { rs.removeProperty("--navbar-text"); }
   });
   /* v1.54 item 1: the qty and weight are painted from the CATEGORY colour by an inline style, which
      no stylesheet rule can outrank without !important — and a category red on a chosen blue tile is
@@ -4556,12 +4670,29 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-utilebrd]").forEach(b=>b.onclick=()=>setUTileBrd(b.dataset.optUtilebrd));
   app.querySelectorAll("[data-opt-utiletext]").forEach(b=>b.onclick=()=>setUTileTxt(b.dataset.optUtiletext));
   app.querySelectorAll("[data-opt-cattext]").forEach(b=>b.onclick=()=>setCatTxt(b.dataset.optCattext));
+  /* v1.76 items 1 & 2: the seven new rows, wired exactly like the nine above them. */
+  app.querySelectorAll("[data-opt-topbar]").forEach(b=>b.onclick=()=>setTopBar(b.dataset.optTopbar));
+  app.querySelectorAll("[data-opt-navbar]").forEach(b=>b.onclick=()=>setNavBar(b.dataset.optNavbar));
+  app.querySelectorAll("[data-opt-cathdbg]").forEach(b=>b.onclick=()=>setCatHdBg(b.dataset.optCathdbg));
+  app.querySelectorAll("[data-opt-cathdbrd]").forEach(b=>b.onclick=()=>setCatHdBrd(b.dataset.optCathdbrd));
+  app.querySelectorAll("[data-opt-reghdtext]").forEach(b=>b.onclick=()=>setRegHdTxt(b.dataset.optReghdtext));
+  app.querySelectorAll("[data-opt-reghdbg]").forEach(b=>b.onclick=()=>setRegHdBg(b.dataset.optReghdbg));
+  app.querySelectorAll("[data-opt-reghdbrd]").forEach(b=>b.onclick=()=>setRegHdBrd(b.dataset.optReghdbrd));
+  /* v1.76 item 1: the two transparency steppers — the key and the direction travel in the attribute,
+     the same shape [data-opt-shade] uses. */
+  app.querySelectorAll("[data-opt-bara]").forEach(b=>b.onclick=()=>{
+    const [k,d]=b.dataset.optBara.split("|"); bumpBarAlpha(k, parseInt(d,10)); });
   /* v1.67 item 2: one handler for all nine custom pickers — the row's own attribute name says which
      setting it belongs to, so the map is the only thing to keep in step. `input` rather than `change`
      so the page follows the colour while it is being dragged. */
   const CUSTOM_SET = { "opt-accent":setAccent, "opt-textcol":setTextCol, "opt-cattext":setCatTxt,
     "opt-tiletext":setTileTxt, "opt-tilebg":setTileBg, "opt-tilebrd":setTileBrd,
-    "opt-utiletext":setUTileTxt, "opt-utilebg":setUTileBg, "opt-utilebrd":setUTileBrd };
+    "opt-utiletext":setUTileTxt, "opt-utilebg":setUTileBg, "opt-utilebrd":setUTileBrd,
+    /* v1.76 items 1 & 2: sixteen now. Every one of these setters takes `quiet`, so the custom picker
+       can follow the drag without rebuilding the page underneath it. */
+    "opt-topbar":setTopBar, "opt-navbar":setNavBar,
+    "opt-cathdbg":setCatHdBg, "opt-cathdbrd":setCatHdBrd,
+    "opt-reghdtext":setRegHdTxt, "opt-reghdbg":setRegHdBg, "opt-reghdbrd":setRegHdBrd };
   app.querySelectorAll("[data-opt-custom]").forEach(inp=>{
     const fn=CUSTOM_SET[inp.dataset.optCustom]; if(!fn) return;
     /* v1.70: `change` is NOT "the picker closed" — on iOS it fires for every colour chosen inside the
@@ -5132,7 +5263,35 @@ function optionsBody(){
           it drives the nav highlight, the user chips and the selected states. */""}
     ${colRow("Colour details", "opt-accent", accent, "accent", {page:true})}
     ${colRow("Text colour", "opt-textcol", textCol, "text", {pal:TEXTCOLS, page:true})}
-    ${colRow("Category text", "opt-cattext", catTxt, "cat", {pal:TEXTCOLS, page:true})}
+
+    ${sectHR("Top and bottom bars")}
+    ${/* v1.76 items 1 & 3: these two are the app's frame — they belong together and not inside Colour,
+          because each is a colour AND a transparency AND a height, which is a different kind of
+          decision from "what colour is this one thing". */""}
+    ${colRow("Top bar", "opt-topbar", topBar, "topbar", {page:true})}
+    ${colRow("Bottom bar", "opt-navbar", navBar, "navbar", {page:true})}
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Bar transparency</span><div class="optwide">
+      <div class="numgrid">
+        <div class="numcell"><span>Top</span><div class="seg"><button data-opt-bara="top|-1" aria-label="Less">−</button><span class="numval">${barAlpha("top")}%</span><button data-opt-bara="top|1" aria-label="More">+</button></div></div>
+        <div class="numcell"><span>Bottom</span><div class="seg"><button data-opt-bara="nav|-1" aria-label="Less">−</button><span class="numval">${barAlpha("nav")}%</span><button data-opt-bara="nav|1" aria-label="More">+</button></div></div>
+      </div></div></div>
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Bar height</span><div class="optwide">
+      <div class="numgrid">${numCell("barT")}${numCell("barB")}</div></div></div>
+
+    ${sectHR("Category headings")}
+    ${/* v1.76 items 2 & 3: the heading's three colours, twice — the list and Regulars head different
+          kinds of thing and someone who wants them to differ has no other way to say so. Category
+          text moved out of Colour to sit with the surface it paints on, and Category icons moved up
+          from the bottom of Tiles: it is a heading control, not a tile one. */""}
+    ${subhead("On the list")}
+    ${colRow("Text", "opt-cattext", catTxt, "cat", {pal:TEXTCOLS, page:true})}
+    ${colRow("Background", "opt-cathdbg", catHdBg, "cathdbg", {page:true})}
+    ${colRow("Border", "opt-cathdbrd", catHdBrd, "cathdbrd", {page:true})}
+    ${subhead("In Regulars")}
+    ${colRow("Text", "opt-reghdtext", regHdTxt, "reghdtext", {pal:TEXTCOLS, page:true})}
+    ${colRow("Background", "opt-reghdbg", regHdBg, "reghdbg", {page:true})}
+    ${colRow("Border", "opt-reghdbrd", regHdBrd, "reghdbrd", {page:true})}
+    ${rowNL("Category icons", `<div class="seg"><button data-opt-catemoji="1" class="${catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">🥦</span>On</button><button data-opt-catemoji="0" class="${!catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
 
     ${sectHR("Tiles")}
     ${view!=="lists" ? `<div class="optrow optrow-wide optnl"><span class="optlabel">Tile display</span><div class="optwide">
@@ -5168,7 +5327,6 @@ function optionsBody(){
       <div class="numbtns"><button id="optNumSave" class="colbtn2">Set as my default</button>${
         hasNumDefs()?`<button id="optNumReset" class="colbtn2">Reset to mine</button>`:""
       }<button id="optNumFactory" class="colbtn2">Factory default</button></div></div></div>
-    ${rowNL("Category icons", `<div class="seg"><button data-opt-catemoji="1" class="${catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">🥦</span>On</button><button data-opt-catemoji="0" class="${!catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
     ${row("Item icons", `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">🍞</span>On</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
     ${sect("Sort")}
     ${rowNL("Location", `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">On</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">Off</button></div>`)}
