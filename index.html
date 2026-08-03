@@ -765,6 +765,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     background-image:var(--wall); background-position:top center; background-size:cover;
     background-repeat:no-repeat; background-blend-mode:var(--wall-blend, normal); }
   body.haswall::after { content:""; position:fixed; inset:0; z-index:-1; background:var(--paper); opacity:.32; }
+  /* v1.71: the wash exists to soften a PHOTOGRAPH behind text. A flat colour the user chose is not a
+     photograph, and washing a third of the paper colour over it is exactly why "black" came out grey. */
+  body.flatwall::after { display:none; }
   .wallrow { display:flex; flex-wrap:wrap; gap:6px; width:100%; }
   /* v1.52: ten wallpapers now — five per row rather than one ever-thinner strip each. */
   .wallbtn { flex:1 1 calc(20% - 6px); min-width:46px; height:40px; border-radius:11px; border:1.5px solid var(--line); background-color:var(--chip); background-position:top center; background-size:cover; color:var(--text); font-weight:700; font-size:12px; display:flex; align-items:center; justify-content:center; text-align:center; }
@@ -877,6 +880,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     background:var(--paper); border-bottom:1px solid var(--line);
     box-shadow:0 10px 24px -14px rgba(20,30,22,.55); }
   body.peek #colorpeek { display:block; }
+  /* v1.71: while the WALLPAPER is what is being picked, the sample must not paint over it. */
+  body.haswall #colorpeek { background:transparent; backdrop-filter:none; }
+  body.haswall #colorpeek .cpk-cat { text-shadow:0 1px 3px rgba(0,0,0,.45); }
   .cpk-cat { display:flex; align-items:center; gap:6px; margin-bottom:6px;
     font-size:12px; font-weight:800; color:var(--cattext, var(--ink)); }
   .cpk-dot { width:9px; height:9px; border-radius:50%; background:var(--accent); flex:none; }
@@ -1282,7 +1288,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.70";
+const APP_VERSION = "v1.71";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1605,6 +1611,8 @@ function applyTheme(){ const t = THEMES[theme] || THEMES.light;
   document.body.classList.toggle("dark", t.dark); document.documentElement.classList.toggle("dark", t.dark);
   const tc=document.getElementById("themeColor"); if(tc) tc.content = t.tc;
   document.body.classList.toggle("haswall", !!(typeof wall!=="undefined" && wall));
+  /* v1.71: a flat custom colour skips the paper wash — see body.flatwall::after. */
+  document.body.classList.toggle("flatwall", isCustomWall(typeof wall!=="undefined" ? wall : ""));
   const _wp = (typeof wallPos!=="undefined" && wallPos==="top") ? "top" : "bottom";
   /* v1.42 items 5/7/8 — user colour overrides, written as inline custom properties on <html> so they
      beat the theme's own token block. "auto" removes the override and falls back to the theme.
@@ -1689,10 +1697,6 @@ const WALL_TINTS = {
   "wall-pink":   "linear-gradient(160deg,#FBE0EC 0%,#EDA6C4 48%,#C25587 100%)",
   "wall-grey":   "linear-gradient(160deg,#E9EBEE 0%,#BFC5CC 48%,#7B838C 100%)"
 };
-/* v1.67 item 2: "is this a colour wallpaper rather than a photograph" — true for the shipped tints
-   and for any custom colour. It decides the blend mode as well as the picker's preview, so both
-   follow from one definition. (It had gone unused; it is the right question again.) */
-function isTintWall(v){ return !!WALL_TINTS[v] || (typeof v==="string" && v.charAt(0)==="#"); }
 /* v1.54 item 1: the five colour wallpapers had no food band, because they are gradients rather than
    photographs. Rather than shipping five more JPEGs, the existing band art is layered OVER the
    gradient and blended in `luminosity` — the gradient keeps the hue, the photo contributes only its
@@ -1700,22 +1704,20 @@ function isTintWall(v){ return !!WALL_TINTS[v] || (typeof v==="string" && v.char
    means Top/Bottom now means something for all ten wallpapers, not just the four photographic ones. */
 const TINT_BAND = { "wall-blue":"wall-2", "wall-yellow":"wall-3",
                     "wall-pink":"wall-4", "wall-grey":"wall-2" };
-/* v1.67 item 2: a custom colour gets the same light→colour→dark ramp the five shipped tints have,
-   built from its own hue, so it sits in the same family instead of reading as a flat wash. */
-function customWallGradient(hex){
-  const h=String(hex||"").replace("#","");
-  if(h.length!==6) return hex;
-  const [hh,s,l]=rgbToHsl(parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16));
-  const lite=hslToHex(hh, Math.min(1, s*0.55), Math.min(0.94, l+0.32));
-  const dark=hslToHex(hh, Math.min(1, s*1.05), Math.max(0.24, l-0.26));
-  return `linear-gradient(160deg,${lite} 0%,${hex} 48%,${dark} 100%)`;
-}
-function wallTint(v){ return WALL_TINTS[v] || (String(v).charAt(0)==="#" ? customWallGradient(v) : null); }
-function wallBand(v){ return TINT_BAND[v] || (String(v).charAt(0)==="#" ? "wall-2" : v); }
+/* v1.71: a custom colour is painted FLAT and exact — no ramp, no photo band, no wash. Measured, the
+   old path turned #000000 into a #525252→#000000→#3d3d3d ramp with a photograph blended over it and
+   a third of the paper colour washed on top, so the one thing a colour picker promises — that you get
+   the colour you picked — was the one thing it did not do. `--wall` feeds `background-image`, which
+   cannot take a bare colour, so a two-stop gradient of the same colour is the flat fill.
+   The five shipped tints are photographs and keep their ramp, band and wash: the softening is what
+   makes text readable over a picture, and none of it applies to a flat colour you chose deliberately. */
+function isCustomWall(v){ return typeof v==="string" && v.charAt(0)==="#"; }
+function isTintWall(v){ return !!WALL_TINTS[v]; }   // the shipped colour tints, which carry a photo band
+function wallBand(v){ return TINT_BAND[v] || v; }
 function wallLayers(v, pos){
   if(!v) return "none";
-  const t=wallTint(v);
-  return t ? `url('img/${wallBand(v)}-${pos}.jpg'), ${t}` : `url('img/${v}-${pos}.jpg')`;
+  if(isCustomWall(v)) return `linear-gradient(${v}, ${v})`;
+  return WALL_TINTS[v] ? `url('img/${wallBand(v)}-${pos}.jpg'), ${WALL_TINTS[v]}` : `url('img/${v}-${pos}.jpg')`;
 }
 let wallPos = localStorage.getItem("ml_wallpos") || "bottom";   // v1.24 food band at "top" or "bottom" of the wallpaper
 function setWall(v, quiet){ wall = v; localStorage.setItem("ml_wall", v); applyTheme(); if(!quiet) render(); }
@@ -4963,15 +4965,15 @@ function optionsBody(){
     ${rowNL("Wallpaper", `<div class="wallrow">${[{v:"",label:"None"},{v:"wall-1"},{v:"wall-2"},{v:"wall-3"},{v:"wall-4"},
       {v:"wall-blue"},{v:"wall-yellow"},{v:"wall-pink"},{v:"wall-grey"}]
       .map(w=>`<button data-opt-wall="${w.v}" class="wallbtn ${wall===w.v?'on':''}" aria-label="${esc(w.label||w.v)}" style="${
-        !w.v ? "" : (wallTint(w.v)
-          ? `background-image:url('img/${wallBand(w.v)}-${wallPos}.jpg'), ${wallTint(w.v)};background-blend-mode:luminosity, normal;background-position:center ${wallPos==='bottom'?'bottom':'top'}`
+        !w.v ? "" : (WALL_TINTS[w.v]
+          ? `background-image:url('img/${TINT_BAND[w.v]}-${wallPos}.jpg'), ${WALL_TINTS[w.v]};background-blend-mode:luminosity, normal;background-position:center ${wallPos==='bottom'?'bottom':'top'}`
           : `background-image:url('img/${w.v}-${wallPos}.jpg');background-position:center ${wallPos==='bottom'?'bottom':'top'}`)
       }">${w.label||''}</button>`).join("")}${
-      /* v1.67 item 2: any colour at all, previewed with the same ramp and food band the shipped
-         tints use, so what the swatch shows is what the page will look like. */
+      /* v1.71: the swatch previews the truth — the flat colour the page will actually be, not a ramp
+         with a photo band over it that the page no longer paints. */
       (()=>{ const isHex = typeof wall==="string" && wall.charAt(0)==="#";
         return `<label class="wallbtn wallcustom ${isHex?'on':''}" title="Any colour" style="${isHex
-          ? `background-image:url('img/${wallBand(wall)}-${wallPos}.jpg'), ${customWallGradient(wall)};background-blend-mode:luminosity, normal;background-position:center ${wallPos==='bottom'?'bottom':'top'}`
+          ? `background-image:none;background-color:${wall}`
           : ''}"><input type="color" data-opt-wallcustom value="${isHex?wall:'#7BA05B'}" aria-label="Custom wallpaper colour"></label>`; })()
       }</div>`)}
     ${wall ? rowNL("Wallpaper items", `<div class="seg"><button data-opt-wallpos="top" class="${wallPos==='top'?'on':''}">Top</button><button data-opt-wallpos="bottom" class="${wallPos==='bottom'?'on':''}">Bottom</button></div>`) : ""}
