@@ -375,6 +375,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .plus { position:absolute; right:8px; top:50%; transform:translateY(-50%); width:24px; height:24px; border-radius:8px; border:none; background:var(--chip); color:var(--text);
     font-size:15px; font-weight:800; line-height:1; display:flex; align-items:center; justify-content:center; z-index:1; }
   .catadd { display:flex; gap:6px; margin:6px 0; animation:rise .15s ease; align-items:flex-start; }
+  /* v1.74 item 1: the suggestions under the add box. Chips wrap; the category's own colour outlines
+     them so it is obvious which category they would land in. */
+  .catsug { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 8px; }
+  .catsugchip { border:1.5px dashed var(--line); background:var(--card); color:var(--text);
+    font-weight:700; font-size:13px; padding:6px 11px; border-radius:999px; white-space:nowrap; }
   .catadd textarea { flex:1; min-width:0; height:38px; min-height:38px; padding:8px 36px 8px 12px; border-radius:12px; outline:none;
     background:var(--card); color:var(--text); resize:none; overflow:hidden; line-height:1.2;
     white-space:pre-wrap; word-break:break-word; }
@@ -756,7 +761,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .optwide > .dispgrid, .optwide > .seg.segfull, .optwide > .daychips, .optwide > .storegrid { width:100%; }
   /* v1.22 item 5 — single collapsed "Regulars" header */
   .plansec-h[data-reg-showall] { width:100%; border:none; background:transparent; cursor:pointer; }
-  .plansec-count { color:var(--muted); }
+  .plansec-count { color:var(--muted); font-weight:700; font-size:15px; }
   /* v1.23 wallpaper — fixed full-screen backdrop with a theme-tinted readability scrim; default none */
   body.haswall { background:transparent; }
   /* v1.54 item 1: multi-layer wallpapers (photo band over gradient) need longhands — a shorthand
@@ -1084,7 +1089,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .tdprev-var b { width:100%; display:block; height:4px; border-radius:2px; background:var(--accent); opacity:.85; }
   /* v1.15 combined-page planning section (regulars to re-add, below the shopping list) */
   .plansec { margin-top:22px; border-top:1.5px dashed var(--line); padding-top:12px; }
-  .plansec-h { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin:0 2px 8px; }
+  /* v1.74 item 2: the same type as the category labels it heads — 18px/600, sentence case, the page's
+     own text colour. It was 12px/800 uppercase and letter-spaced, which made a heading that shouted
+     louder than the categories under it. Margins match `.regcatlbl` so the two line up on the left. */
+  .plansec-h { display:flex; align-items:center; justify-content:space-between; gap:8px;
+    font-size:18px; font-weight:600; text-transform:none; letter-spacing:normal;
+    color:var(--text); margin:10px 2px 8px; }
   .plansec-toggle { flex:none; border:none; background:var(--chip); color:var(--text); font-weight:800; font-size:11px; text-transform:none; letter-spacing:0; padding:5px 11px; border-radius:999px; }
   .regtick { font-size:19px; font-weight:900; line-height:1; margin-right:2px; }
   .reg-in .regplus, .regplus { font-weight:900; margin-right:2px; }
@@ -1293,7 +1303,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.73";
+const APP_VERSION = "v1.74";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -3939,9 +3949,13 @@ function calmHead(cat, done, total, collapsed, attr, entryOpen){
   // v1.38 item 6: show the category ICON when Category icons is on (every theme uses this header
   // since v1.28, so the icon was never rendered anywhere); fall back to the colour dot when off.
   const ic = catIcon(cat,16);
+  /* v1.74 item 3: with no icon, the dot was a second thing saying what the label can say itself —
+     so the dot goes and the LABEL takes the category's colour. `var(--cattext, …)` keeps the Category
+     text picker winning when one is set; the category colour is only the fallback, exactly as
+     everywhere else. With an icon, nothing changes. */
   return `<div class="chead"><button class="lbl catheadchip catcalm" ${attr}="${cat.id}">`
-    +(ic ? `<span class="cemoji">${ic}</span>` : `<span class="cdot" style="background:${cat.color}"></span>`)
-    +`<span class="cname">${esc(cat.label)}</span>`
+    +(ic ? `<span class="cemoji">${ic}</span>` : "")
+    +`<span class="cname"${ic ? "" : ` style="color:var(--cattext, ${cat.color})"`}>${esc(cat.label)}</span>`
     +`<span class="cnum">${done}/${total}${collapsed?' ▸':''}</span></button>`
     +`<button class="plus" data-add="${cat.id}" style="${entryOpen?`background:${cat.color};color:#fff`:''}">${entryOpen?'×':'+'}</button></div>`
     +`<div class="cprog" aria-hidden="true"><i style="width:${pct}%;background:${cat.color}"></i></div>`;
@@ -3997,6 +4011,41 @@ function planningSection(){
   const open = collapse.regAll !== false;   // v1.24 shown by default (categories visible)
   return `<div class="plansec"><button class="plansec-h" data-reg-showall aria-expanded="${open}"><span>＋ Add from your regulars</span><span class="plansec-count">${state.buyAgain.length}${open?' ▾':' ▸'}</span></button>${open?groups:""}</div>`;
 }
+/* v1.74 item 1: adding straight into a category suggests what to add. `addMatches` already ranks
+   exactly right for this — predicted-due first, then your regulars, then the dictionary — so this is
+   that list filtered to the category being added to, which is the question actually being asked
+   ("what goes in Fruit?"). Anything already on the list is dropped: this is a list of things to ADD.
+   Wrapping chips, never a sideways scroller — see v1.66 for why that shape kept failing. */
+function catSuggest(cat){
+  const f=(draftCatText||"").trim().toLowerCase();
+  const ms=addMatches(f).filter(m=>m.cat===cat.id && !m.onId).slice(0,18);
+  if(!ms.length) return "";
+  return `<div class="catsug">${ms.map(m=>
+    `<button class="catsugchip" data-catsug="${esc(m.name)}|${cat.id}" style="border-color:${cat.color}">${esc(cap(m.name))}</button>`
+  ).join("")}</div>`;
+}
+/* v1.74 item 1: wiring the suggestions is its own function because it happens twice — once when the
+   page renders, and again every time they are rebuilt as you type. */
+function wireCatSuggest(){
+  document.querySelectorAll("[data-catsug]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
+    b.onclick=()=>{ const p=b.dataset.catsug.split("|"), c=p.pop(), n=p.join("|");
+      addEntries(n, c); render();
+      const ci=document.querySelector("#catInput"); if(ci){ ci.focus(); grow(ci); } }; });
+}
+/* v1.74 item 1: the suggestions narrow as you type — and ONLY this block is rebuilt. A render would
+   remove the focused textarea, and iOS drops the keyboard the instant that happens (v1.45), which is
+   the whole reason the add sheet refreshes its body rather than the page. Same trick, smaller box. */
+function refreshCatSuggest(){
+  if(!catEntry) return;
+  const cat=CAT(catEntry); if(!cat) return;
+  const add=document.querySelector(".catadd"); if(!add) return;
+  const box=document.querySelector(".catsug");
+  const tmp=document.createElement("div"); tmp.innerHTML=catSuggest(cat);
+  const next=tmp.firstElementChild;
+  if(!next){ if(box) box.remove(); return; }
+  if(box) box.replaceWith(next); else add.insertAdjacentElement("afterend", next);
+  wireCatSuggest();
+}
 function renderMain(){
   const open = state.items.filter(i=>!i.checked).length;
   const done = state.items.filter(i=>i.checked).length;
@@ -4024,7 +4073,7 @@ function renderMain(){
     }
     const catAdd = catEntry===cat.id ? `<div class="catadd">
         <div class="inwrap"><textarea id="catInput" rows="1" placeholder="Add to ${esc(cat.label)}" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="Clear">×</button></div>
-        <button id="catAddBtn" style="background:${cat.color}">+</button></div>` : "";
+        <button id="catAddBtn" style="background:${cat.color}">+</button></div>${catSuggest(cat)}` : "";
     const chipText = has ? '#fff' : 'var(--muted2)';
     const chipBg = has ? cat.color : 'transparent';
     const chipBorder = has ? cat.color : 'var(--line)';
@@ -4297,7 +4346,7 @@ function renderPlanPage(){
       const collapsed = (collapse.planCats||[]).includes(cat.id);
       const catAdd = catEntry===cat.id ? `<div class="catadd">
           <div class="inwrap"><textarea id="catInput" rows="1" placeholder="Add to ${esc(cat.label)}" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="Clear">×</button></div>
-          <button id="catAddBtn" style="background:${cat.color}">+</button></div>` : "";
+          <button id="catAddBtn" style="background:${cat.color}">+</button></div>${catSuggest(cat)}` : "";
       const merged = inList.map(i=>({it:i})).sort((A,B)=> alpha ? byName(A.it,B.it) : bySortKey(A.it,B.it));
       const pills = merged.map(({it})=> planFilledPill(it,cat)).join("");
       const chead = CALM_THEMES.has(theme)
@@ -4315,7 +4364,7 @@ function renderPlanPage(){
       const collapsed = (collapse.planCats||[]).includes(cat.id);
       const catAdd = catEntry===cat.id ? `<div class="catadd">
           <div class="inwrap"><textarea id="catInput" rows="1" placeholder="Add to ${esc(cat.label)}" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="Clear">×</button></div>
-          <button id="catAddBtn" style="background:${cat.color}">+</button></div>` : "";
+          <button id="catAddBtn" style="background:${cat.color}">+</button></div>${catSuggest(cat)}` : "";
       const combined = inList.map(i=>({it:i})).sort((A,B)=>bySortKey(A.it,B.it));
       const html = combined.map(({it})=> planFilledPill(it,CAT(it.cat)) ).join("");
       const chead = CALM_THEMES.has(theme)
@@ -4393,9 +4442,13 @@ function wirePlanPage(){
   const pci=app.querySelector("#catInput"), pcab=app.querySelector("#catAddBtn"), pcc=app.querySelector("#catClear");
   const pToggle=()=>{ if(pcc) pcc.classList.toggle("show", !!(pci&&pci.value.trim())); };
   if(pci){ pci.value=draftCatText; pci.focus(); grow(pci); pToggle();
-    pci.oninput=()=>{ draftCatText=pci.value; grow(pci); pToggle(); };
+    pci.oninput=()=>{ draftCatText=pci.value; grow(pci); pToggle(); refreshCatSuggest(); };
     pci.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); addEntries(pci.value,catEntry); pci.value=""; draftCatText=""; grow(pci); pToggle(); pci.focus(); } }; }
   if(pcc){ pcc.onpointerdown=e=>e.preventDefault(); pcc.onclick=()=>{ if(pci){ pci.value=""; draftCatText=""; grow(pci); pToggle(); pci.focus(); } }; }
+  /* v1.74 item 1: a suggestion adds straight into the category and leaves the box focused, so several
+     can be tapped in a row. pointerdown is cancelled for the same reason it is on #catAddBtn — a tap
+     that moves focus takes the keyboard with it. */
+  wireCatSuggest();
   if(pcab){ pcab.onpointerdown=e=>e.preventDefault(); pcab.onclick=()=>{ const v=app.querySelector("#catInput").value; addEntries(v,catEntry); draftCatText=""; render(); const x=app.querySelector("#catInput"); if(x){ x.focus(); grow(x); } }; }
   const acp=app.querySelector("#addCatPlan"); if(acp) acp.onclick=addCategory;
   // B4 restock suggestions
@@ -5358,9 +5411,13 @@ function wire(){
   const ci=app.querySelector("#catInput"), cab=app.querySelector("#catAddBtn"), cc=app.querySelector("#catClear");
   const toggleCC=()=>{ if(cc) cc.classList.toggle("show", !!(ci&&ci.value.trim())); };
   if(ci){ ci.value=draftCatText; ci.focus(); grow(ci); toggleCC();
-    ci.oninput=()=>{ draftCatText=ci.value; grow(ci); toggleCC(); };
+    ci.oninput=()=>{ draftCatText=ci.value; grow(ci); toggleCC(); refreshCatSuggest(); };
     ci.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); addEntries(ci.value,catEntry); ci.value=""; draftCatText=""; grow(ci); toggleCC(); ci.focus(); } }; }
   if(cc){ cc.onpointerdown=e=>e.preventDefault(); cc.onclick=()=>{ if(ci){ ci.value=""; draftCatText=""; grow(ci); toggleCC(); ci.focus(); } }; }
+  /* v1.74 item 1: a suggestion adds straight into the category and leaves the box focused, so several
+     can be tapped in a row. pointerdown is cancelled for the same reason it is on #catAddBtn — a tap
+     that moves focus takes the keyboard with it. */
+  wireCatSuggest();
   if(cab){ cab.onpointerdown=e=>e.preventDefault(); cab.onclick=()=>{ const v=app.querySelector("#catInput").value; addEntries(v,catEntry); draftCatText=""; render(); const x=app.querySelector("#catInput"); if(x){ x.focus(); grow(x); } }; }
 
   const sb=app.querySelector("#sweepBtn"); if(sb) sb.onclick=sweep;
