@@ -282,6 +282,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .seg.seg-wrap button { padding:8px 9px; min-width:0; }
   .seg.segfull { display:flex; width:100%; }
   .seg.segfull button { flex:1 1 0; min-width:0; padding:9px 6px; }
+  /* v1.75 item 3: five words across 362px is tighter than this segment has had to be — "Instant" and
+     "Normal" were clipped mid-word at the shipped 13px. Only the five-way segments shrink; every
+     other .segfull keeps its size. */
+  .seg.seg5 button { font-size:11.5px; padding:9px 2px; letter-spacing:-.01em; }
   /* v1.51 history rows — a dense log, so it stays readable at 150 entries without becoming a wall. */
   .histlist { display:flex; flex-direction:column; gap:1px; margin:4px 0 2px; }
   /* v1.52: a period header is the whole tap target — the count tells you what is inside before you
@@ -840,10 +844,15 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.59 item 2: auto-fill rather than a fixed ten, for the same reason as .numgrid — at 390px and
      100% this still lays out as ten columns, so nothing moves; above that the swatches wrap into
      however many fit instead of running off the edge. */
-  .colgrid { display:grid; grid-template-columns:repeat(auto-fill, 22px); gap:4px; justify-content:end;
+  /* v1.75 item 1: the Darker/Lighter pair now renders on every row, so a row carries three span-3
+     buttons where it used to carry two — one column more than the ten that fit, which pushed every
+     picker onto a third line. Twenty-pixel columns instead of twenty-two give exactly eleven at 390px,
+     which is exactly what a row needs: Auto · Darker · Lighter · Page · Any colour on the first line,
+     the palette on the second. The section keeps the height v1.58 bought it. */
+  .colgrid { display:grid; grid-template-columns:repeat(auto-fill, 20px); gap:4px; justify-content:end;
     flex:1 1 auto; min-width:0; }
   .colspan3 { grid-column:span 3; }
-  .colgrid .colsw { width:22px; height:22px; }
+  .colgrid .colsw { width:20px; height:20px; }
   .colgrid .colbtn2 { padding:3px 0; font-size:11.5px; text-align:center; }
   .optrow-col { align-items:flex-start; padding:7px 0; }
   .optrow-col > .optlabel { flex:0 0 92px; min-width:0; padding-top:4px; font-size:13.5px; line-height:1.2; }
@@ -1303,7 +1312,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.74";
+const APP_VERSION = "v1.75";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1430,25 +1439,7 @@ function onAccent(hex){ const h=String(hex||"").replace("#","");
   if(h.length!==6) return "#fff";
   const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
   return (0.299*r + 0.587*g + 0.114*b) > 150 ? "#000000" : "#FFFFFF"; }
-/* v1.55 item 2: the pastel version of a picked colour. Calm colours elsewhere is a CSS filter, which
-   cannot apply to a custom property — so the softening has to be done to the value itself, and every
-   caller then paints the softened hex directly. */
-/* v1.65 item 2: a real pastel, not a white veil. Pulling every channel toward the colour's own
-   luminance and then toward white is a wash — it drains the hue along with the intensity, and landed
-   red at S26/L57 and green at S19/L58, which is why it read as grubby rather than soft. A pastel is
-   the same HUE, still saturated, just light: so the work is done in HSL, holding the hue exactly,
-   keeping most of the saturation, and setting the lightness high.
-   Colours that were never chromatic to begin with (grey, black, white — anything under S18) are only
-   lightened: forcing a saturation floor onto grey turned it into pale blue. */
-function calmHex(hex){ const h=String(hex||"").replace("#","");
-  if(h.length!==6) return hex;
-  const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
-  const [hh,s,l]=rgbToHsl(r,g,b);
-  if(s < 0.18) return hslToHex(hh, s, l + (1-l)*0.34);
-  const ns = Math.min(0.85, Math.max(0.42, s*0.80));
-  const nl = 0.78 + (1-l)*0.06;
-  return hslToHex(hh, ns, nl); }
-/* the two conversions calmHex needs. Kept next to it — nothing else in the file works in HSL. */
+/* the two HSL conversions. Nothing else in the file works in HSL. */
 function rgbToHsl(r,g,b){ r/=255; g/=255; b/=255;
   const mx=Math.max(r,g,b), mn=Math.min(r,g,b), l=(mx+mn)/2, d=mx-mn;
   let h=0, s=0;
@@ -1506,25 +1497,47 @@ let textCol  = localStorage.getItem("ml_textcol") || "auto";
    you moved the colour. Live drag is quiet; the full render happens once, when the picker closes. */
 function setAccent(v, quiet){ accent=v; localStorage.setItem("ml_accent",v); applyTheme(); if(!quiet) render(); }
 function setTextCol(v, quiet){ textCol=v; localStorage.setItem("ml_textcol",v); applyTheme(); if(!quiet) render(); }
-/* v1.58 item 2: a Calm switch on every colour row. v1.57 coupled them per tile state, which meant a
-   calm fill forced a calm border — and the rows without a switch left a visible gap in the grid where
-   the others have one. Nine independent flags, one per picker. The two v1.57 flags fan out to the
-   three rows each used to govern. */
-const CALM_KEYS = { accent:"ml_accentcalm", text:"ml_textcolcalm", cat:"ml_cattextcalm",
-                    tiletext:"ml_tiletextcalm", tilebg:"ml_tilebgcalm", tilebrd:"ml_tilebrdcalm",
-                    utiletext:"ml_utiletextcalm", utilebg:"ml_utilebgcalm", utilebrd:"ml_utilebrdcalm" };
-(function(){ const sel=localStorage.getItem("ml_selcalm"), un=localStorage.getItem("ml_unselcalm");
-  if(sel==="1") ["tiletext","tilebg","tilebrd"].forEach(k=>{ if(localStorage.getItem(CALM_KEYS[k])===null) setLS(CALM_KEYS[k],"1"); });
-  if(un==="1")  ["utiletext","utilebg","utilebrd"].forEach(k=>{ if(localStorage.getItem(CALM_KEYS[k])===null) setLS(CALM_KEYS[k],"1"); });
+/* v1.75 item 1: Calm is gone, and with it the one thing a row could do on Auto. Calm was a pastel
+   FILTER — a colour it could only soften, never take toward black — and on Auto it was the only
+   control a row had at all. A signed lightness level does both jobs and does them on every row: the
+   value is a step count, not a colour, so it can sit on a row whose colour the theme or the category
+   decides and still mean something. A saved Calm becomes +2 (two steps lighter) — the nearest thing
+   the new vocabulary has to a pastel, and the closest an old look can be carried forward. */
+const SHADE_KEYS = { accent:"ml_accentshade", text:"ml_textcolshade", cat:"ml_cattextshade",
+                     tiletext:"ml_tiletextshade", tilebg:"ml_tilebgshade", tilebrd:"ml_tilebrdshade",
+                     utiletext:"ml_utiletextshade", utilebg:"ml_utilebgshade", utilebrd:"ml_utilebrdshade" };
+const SHADE_MAX = 5;
+(function(){ const OLD = { accent:"ml_accentcalm", text:"ml_textcolcalm", cat:"ml_cattextcalm",
+    tiletext:"ml_tiletextcalm", tilebg:"ml_tilebgcalm", tilebrd:"ml_tilebrdcalm",
+    utiletext:"ml_utiletextcalm", utilebg:"ml_utilebgcalm", utilebrd:"ml_utilebrdcalm" };
+  const sel=localStorage.getItem("ml_selcalm"), un=localStorage.getItem("ml_unselcalm");
+  const wasCalm=k=> localStorage.getItem(OLD[k])==="1"
+    || (sel==="1" && ["tiletext","tilebg","tilebrd"].includes(k) && localStorage.getItem(OLD[k])===null)
+    || (un==="1"  && ["utiletext","utilebg","utilebrd"].includes(k) && localStorage.getItem(OLD[k])===null);
+  Object.keys(SHADE_KEYS).forEach(k=>{ if(localStorage.getItem(SHADE_KEYS[k])===null && wasCalm(k)) setLS(SHADE_KEYS[k],"2"); });
+  try{ Object.keys(OLD).forEach(k=>localStorage.removeItem(OLD[k]));
+       localStorage.removeItem("ml_selcalm"); localStorage.removeItem("ml_unselcalm"); }catch(e){}
 })();
-let calmOn = {}; Object.keys(CALM_KEYS).forEach(k=>{ calmOn[k] = localStorage.getItem(CALM_KEYS[k])==="1"; });
-function setCalm(k,v){ if(!CALM_KEYS[k]) return; calmOn[k]=!!v; setLS(CALM_KEYS[k], calmOn[k]?"1":"0"); applyTheme(); render(); }
-function accentHex(){ return pickHex(accent, calmOn.accent); }
-function textColHex(){ return pickHex(textCol, calmOn.text, TEXTCOLS); }
+let shadeOn={}; Object.keys(SHADE_KEYS).forEach(k=>{
+  shadeOn[k]=Math.max(-SHADE_MAX, Math.min(SHADE_MAX, parseInt(localStorage.getItem(SHADE_KEYS[k])||"0",10)||0)); });
+function setShade(k,d){ if(!SHADE_KEYS[k]) return;
+  shadeOn[k]=Math.max(-SHADE_MAX, Math.min(SHADE_MAX, (shadeOn[k]||0)+d));
+  setLS(SHADE_KEYS[k], String(shadeOn[k])); applyTheme(); render(); }
+/* one HSL move rather than N clamped calls to shadeHex, so stepping down and back up returns exactly
+   where it started. Non-hex input comes back unchanged — several callers pass a var() fallback. */
+function shadeBy(hex, n){
+  if(!n) return hex;
+  const h=String(hex||"").replace("#","");
+  if(h.length!==6) return hex;
+  const [hh,s,l]=rgbToHsl(parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16));
+  return hslToHex(hh, s, Math.max(0, Math.min(1, l + n*0.08)));
+}
+function autoShade(k, hex){ return shadeBy(hex, shadeOn[k]||0); }
+function accentHex(){ return pickHex(accent); }
+function textColHex(){ return pickHex(textCol, TEXTCOLS); }
 /* v1.57 item 2: tiles have two states and each gets its own three colours. Selected = on the list;
-   unselected = a regular that is not. One Calm switch per state rather than one per picker: six
-   switches would be more chrome than the colours they modify, and nobody wants a calm fill with a
-   loud border on the same tile. */
+   unselected = a regular that is not. Each of the six carries its own Darker/Lighter step (v1.75);
+   the shared per-state switch this comment used to describe is gone. */
 let tileBg   = localStorage.getItem("ml_tilebg")   || "auto";
 let tileBrd  = localStorage.getItem("ml_tilebrd")  || "auto";
 let tileTxt  = localStorage.getItem("ml_tiletext") || "auto";
@@ -1545,25 +1558,44 @@ function setCatTxt(v, quiet){ catTxt=v; setLS("ml_cattext",v); applyTheme(); if(
    so it is read back from the token rather than stored as a hex. That also means it follows a theme
    change for free. */
 function paperHex(){ try{ const v=getComputedStyle(document.body).getPropertyValue("--paper").trim(); return v||null; }catch(e){ return null; } }
+/* v1.75 item 1: read the THEME's own value for a token, with our inline override lifted first —
+   reading it while the override is in place would shade the already-shaded value and drift a little
+   further every time applyTheme ran. */
+function themeToken(name){
+  try{
+    const els=[document.documentElement.style, document.body.style];
+    const saved=els.map(s=>s.getPropertyValue(name));
+    els.forEach(s=>s.removeProperty(name));
+    const v=getComputedStyle(document.body).getPropertyValue(name).trim();
+    els.forEach((s,i)=>{ if(saved[i]) s.setProperty(name, saved[i]); });
+    return v||null;
+  }catch(e){ return null; }
+}
+function autoToken(k, name){
+  if(!shadeOn[k]) return null;
+  const base=themeToken(name);
+  if(!base || base.charAt(0)!=="#") return null;
+  const out=shadeBy(base, shadeOn[k]);
+  return out===base ? null : out;
+}
 /* v1.57 item 2: one resolver for every picker: "page" is the theme's own paper colour (read back, so
-   it follows a theme change), a palette key is a hex, and Calm softens whatever came out.
+   it follows a theme change) and a palette key is a hex.
    v1.65 item 2: the palette is a parameter now. The five text/accent pickers each looked their key up
    directly and so could not have understood "page" — which is why only Background and Border offered
    that swatch. One resolver, every picker. */
-function pickHex(key, calm, pal){
+function pickHex(key, pal){
   if(key==="page") return paperHex();
-  /* v1.67 item 2: a stored value may be a literal hex now — the custom colour picker writes one.
-     It goes through Calm exactly like a palette colour does. */
-  if(typeof key==="string" && key.charAt(0)==="#") return calm ? calmHex(key) : key;
+  /* v1.67 item 2: a stored value may be a literal hex — the custom colour picker writes one. */
+  if(typeof key==="string" && key.charAt(0)==="#") return key;
   const c=(pal||ACCENTS)[key]; if(!c) return null;
-  return calm ? calmHex(c) : c; }
-function tileBgHex(){  return pickHex(tileBg,  calmOn.tilebg); }
-function tileBrdHex(){ return pickHex(tileBrd, calmOn.tilebrd); }
-function tileTxtHex(){ return pickHex(tileTxt, calmOn.tiletext, TEXTCOLS); }
-function uTileBgHex(){  return pickHex(uTileBg,  calmOn.utilebg); }
-function uTileBrdHex(){ return pickHex(uTileBrd, calmOn.utilebrd); }
-function uTileTxtHex(){ return pickHex(uTileTxt, calmOn.utiletext, TEXTCOLS); }
-function catTxtHex(){ return pickHex(catTxt, calmOn.cat, TEXTCOLS); }
+  return c; }
+function tileBgHex(){  return pickHex(tileBg); }
+function tileBrdHex(){ return pickHex(tileBrd); }
+function tileTxtHex(){ return pickHex(tileTxt, TEXTCOLS); }
+function uTileBgHex(){  return pickHex(uTileBg); }
+function uTileBrdHex(){ return pickHex(uTileBrd); }
+function uTileTxtHex(){ return pickHex(uTileTxt, TEXTCOLS); }
+function catTxtHex(){ return pickHex(catTxt, TEXTCOLS); }
 /* v1.54 item 1: the geometry settings. One table so the stepper UI, the clamping and the CSS
    variable stay in one place instead of eight near-identical globals. Defaults are exactly the
    values the stylesheet used before this version, so an untouched install looks unchanged. */
@@ -1648,8 +1680,8 @@ function applyTheme(){ const t = THEMES[theme] || THEMES.light;
      so a body-level declaration re-defines the token for everything inside <body>. An inline
      override on <html> alone loses to it — the accent silently did nothing on dark/ink/noir. */
   const els=[document.documentElement.style, document.body.style];
-  const ac=accentHex();
-  const tx=textColHex();
+  const ac=accentHex() || autoToken("accent","--accent");
+  const tx=textColHex() || autoToken("text","--text");
   els.forEach(rs=>{
     if(ac){ rs.setProperty("--accent", ac); rs.setProperty("--on-accent", onAccent(ac)); }
     else  { rs.removeProperty("--accent"); rs.removeProperty("--on-accent"); }
@@ -3864,15 +3896,14 @@ function subKey(it){ return it.cat + "|" + subIndexOf(it); }
    omitting the declaration and hoping a stylesheet rule supplies it — the first attempt did omit,
    and broke the search-result strip, whose tiles carry neither .reg-in nor .reg-out and so matched
    no rule that could fill them back in. Resolving here works wherever a tile is drawn. */
-/* v1.61 item 2: Calm has to mean something when the picker is on AUTO too. On Auto a tile takes the
-   CATEGORY colour — which is not a colour any picker chose — so v1.57's per-picker Calm had nothing
-   to act on, and the switch did visibly nothing on Full tiles in Light or Dark. Calm now means
-   "soften this surface", whether the colour came from the picker or from the category. That also
-   puts back the pastel-category look the old global "Calm colours" switch gave, without a second
-   control competing for the same word. calmHex returns non-hex input unchanged, so the var()
-   fallbacks some callers pass through here are safe. */
-function catFill(catColor, sel){ return (sel ? calmOn.tilebg  : calmOn.utilebg)  ? calmHex(catColor) : catColor; }
-function catEdge(catColor, sel){ return (sel ? calmOn.tilebrd : calmOn.utilebrd) ? calmHex(catColor) : catColor; }
+/* v1.75 item 1: the row's step has to mean something when the picker is on AUTO too. On Auto a tile
+   takes the CATEGORY colour — which is not a colour any picker chose, and is different for every
+   category — so a stored hex could never describe it. A stored LEVEL can: it says "this surface, two
+   steps lighter", whether the colour came from the picker or from the category, which is the only
+   thing a row can act on there. shadeBy returns non-hex input unchanged, so the var() fallbacks some
+   callers pass through here are safe. */
+function catFill(catColor, sel){ return autoShade(sel ? "tilebg"  : "utilebg",  catColor); }
+function catEdge(catColor, sel){ return autoShade(sel ? "tilebrd" : "utilebrd", catColor); }
 function fullStyle(catColor, sel){
   if(sel){
     /* v1.65 item 2: the default text follows the fill instead of always being white. It always was
@@ -3893,7 +3924,7 @@ function fullStyle(catColor, sel){
 function metaCol(catColor, sel, full){
   const chosen = sel ? tileTxtHex() : uTileTxtHex();
   if(chosen) return chosen;
-  if(!full) return catColor;
+  if(!full) return autoShade(sel ? "tiletext" : "utiletext", catColor);
   /* an unselected tile in Full is an OUTLINE, not a fill — its text is muted, so its meta is too */
   if(!sel) return "var(--muted)";
   return onAccent(tileBgHex()||catFill(catColor,true));
@@ -3955,7 +3986,7 @@ function calmHead(cat, done, total, collapsed, attr, entryOpen){
      everywhere else. With an icon, nothing changes. */
   return `<div class="chead"><button class="lbl catheadchip catcalm" ${attr}="${cat.id}">`
     +(ic ? `<span class="cemoji">${ic}</span>` : "")
-    +`<span class="cname"${ic ? "" : ` style="color:var(--cattext, ${cat.color})"`}>${esc(cat.label)}</span>`
+    +`<span class="cname"${ic ? "" : ` style="color:var(--cattext, ${autoShade("cat", cat.color)})"`}>${esc(cat.label)}</span>`
     +`<span class="cnum">${done}/${total}${collapsed?' ▸':''}</span></button>`
     +`<button class="plus" data-add="${cat.id}" style="${entryOpen?`background:${cat.color};color:#fff`:''}">${entryOpen?'×':'+'}</button></div>`
     +`<div class="cprog" aria-hidden="true"><i style="width:${pct}%;background:${cat.color}"></i></div>`;
@@ -4542,9 +4573,12 @@ function wireOptions(){
          before firing it, and there is no blur to wait for. */
       if(document.activeElement!==inp) endColorPick(); };
     inp.onblur=()=>{ endColorPick(); }; });
-  /* v1.58 item 2: one selector for all nine Calm switches — the row's key travels in the attribute,
-     which is why they no longer need an attribute name each. */
-  app.querySelectorAll("[data-opt-calm]").forEach(b=>b.onclick=()=>{ const [k,v]=b.dataset.optCalm.split("|"); setCalm(k, v==="1"); });
+  /* v1.75 item 1: one selector for all nine step controls on Auto rows — the row's key and the
+     direction travel in the attribute, the same shape the Calm switch used. */
+  app.querySelectorAll("[data-opt-shade]").forEach(b=>b.onclick=()=>{
+    const [k,d]=b.dataset.optShade.split("|"); setShade(k, parseInt(d,10)); });
+  app.querySelectorAll("[data-opt-transdir]").forEach(b=>b.onclick=()=>setTransDir(b.dataset.optTransdir));
+  app.querySelectorAll("[data-opt-transspd]").forEach(b=>b.onclick=()=>setTransSpd(b.dataset.optTransspd));
   app.querySelectorAll("[data-app-use]").forEach(b=>b.onclick=()=>useAppSlot(+b.dataset.appUse));
   app.querySelectorAll("[data-app-save]").forEach(b=>b.onclick=()=>{ appSaveAsk=+b.dataset.appSave; render(); });
   app.querySelectorAll("[data-app-saveyes]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.appSaveyes; appSaveAsk=null; saveAppSlot(i); });
@@ -4972,31 +5006,38 @@ function optionsBody(){
      from a single place. */
   const numCtl=k=>`<div class="seg"><button data-opt-num="${k}" data-opt-delta="-1" aria-label="Less">−</button><span class="numval">${numVal(k)}</span><button data-opt-num="${k}" data-opt-delta="1" aria-label="More">+</button></div>`;
   const numCell=k=>`<div class="numcell"><span>${NUMOPT[k].label}</span>${numCtl(k)}</div>`;
-  /* v1.57 item 2: one layout for every colour picker, so Auto/Calm and the swatches land in the same
+  /* v1.57 item 2: one layout for every colour picker, so Auto, the steps and the swatches land in the same
      places on every row. Ten swatches cannot fit beside a label at 390px — what makes the rows look
      aligned is that they all WRAP the same way, which a fixed grid guarantees and a flex row does not. */
-  /* v1.58 item 2: every row now carries its own Calm, so the switch is part of the row rather than
-     an argument some rows pass and others leave a hole for. `ck` is the CALM_KEYS name of the row. */
+  /* v1.75 item 1: the Calm switch that used to sit in every row is gone; its place in the grid is
+     taken by the Darker/Lighter pair, which now renders on every row including Auto. `ck` is the
+     SHADE_KEYS name of the row — the key the level is stored under. */
   const colRow=(label, attr, cur, ck, opts)=>{
     const o=opts||{};
     const pal=o.pal||ACCENTS;
-    const calm=!!calmOn[ck];
-    const sw=k=>`<button data-${attr}="${k}" class="colsw ${cur===k?'on':''}" style="background:${calm?calmHex(pal[k]):pal[k]}" aria-label="${k}" title="${k}"></button>`;
+    const sw=k=>`<button data-${attr}="${k}" class="colsw ${cur===k?'on':''}" style="background:${pal[k]}" aria-label="${k}" title="${k}"></button>`;
     return `<div class="optrow optnl optrow-col"><span class="optlabel">${label}</span><div class="colgrid">
       <button data-${attr}="auto" class="colbtn2 colspan3 ${cur==='auto'?'on':''}">Auto</button>`
-      + `<button data-opt-calm="${ck}|${calm?'0':'1'}" class="colbtn2 colspan3 ${calm?'on':''}">Calm</button>`
       + `${o.page?`<button data-${attr}="page" class="colsw colsw-page ${cur==='page'?'on':''}" aria-label="Page" title="Match the page background"></button>`:""}`
       + `${(()=>{ const isHex = typeof cur==="string" && cur.charAt(0)==="#";
             return `<label class="colsw colcustom ${isHex?'on':''}" title="Any colour"`
-              + ` style="${isHex?`background:${calm?calmHex(cur):cur}`:''}">`
+              + ` style="${isHex?`background:${cur}`:''}">`
               + `<input type="color" data-opt-custom="${attr}" value="${isHex?cur:'#888888'}" aria-label="Custom colour"></label>`; })()}`
       + `${(()=>{
-            /* v1.72: nothing to shade until the row has a colour — Auto is "whatever the theme says",
-               which is not a value this can step from. `pickHex` resolves a palette key, a hex, or
-               "page" alike, so all three can be walked toward white or black. Calm is applied to the
-               PREVIEW only: the stored value stays the true colour, exactly as the palette swatches do. */
-            if(cur==='auto') return "";
-            const base = pickHex(cur, false, pal);
+            /* v1.75 item 1: the step is the row's only control on Auto, so it has to render there too.
+               With a colour to step from it still COMMITS a hex, exactly as v1.72 shipped it — the
+               value is real and the button previews it. On Auto there is no one colour (the theme or
+               the category decides, and each category is different), so there is nothing honest to
+               preview: the step is stored as a level instead and the chip stays plain, with the count
+               shown once it is off zero so the row says how far it has been moved. */
+            const lv=shadeOn[ck]||0;
+            if(cur==='auto'){
+              const step=(d,lbl)=>`<button data-opt-shade="${ck}|${d}" class="colbtn2 colspan3 colstep`
+                + `${(d<0?lv<0:lv>0)?' on':''}" aria-label="${lbl}" title="${lbl}"`
+                + `${(d<0?lv<=-SHADE_MAX:lv>=SHADE_MAX)?' disabled':''}>${lbl}${(d<0?lv<0:lv>0)?' '+Math.abs(lv):''}</button>`;
+              return step(-1,"Darker")+step(1,"Lighter");
+            }
+            const base = pickHex(cur, pal);
             if(!base || base.charAt(0)!=='#') return "";
             const lo = shadeHex(base,-1), hi = shadeHex(base,1);
             /* v1.73: labelled, not just coloured. Two bare circles among eleven palette circles read
@@ -5005,7 +5046,7 @@ function optionsBody(){
                own preview — onAccent already answers "black or white on this?". */
             const chip=(v,lbl)=> (!v || v.toLowerCase()===base.toLowerCase()) ? ""
               : `<button data-${attr}="${v}" class="colbtn2 colspan3 colstep" aria-label="${lbl}" title="${lbl}"`
-                + ` style="background:${calm?calmHex(v):v};border-color:${calm?calmHex(v):v};color:${onAccent(calm?calmHex(v):v)}">${lbl}</button>`;
+                + ` style="background:${v};border-color:${v};color:${onAccent(v)}">${lbl}</button>`;
             return chip(lo,"Darker") + chip(hi,"Lighter"); })()}`
       + `${Object.keys(pal).map(sw).join("")}</div></div>`;
   };
@@ -5077,6 +5118,14 @@ function optionsBody(){
     ${/* v1.57 item 2: Text size sits with the wallpaper and the theme — the three things that change
           the whole page at once — and with no rule between them, because they are one group. */""}
     ${rowNL("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
+    ${/* v1.75 item 3: the two page-change controls sit with Text size and the wallpaper — the settings
+          that change how the whole app looks and moves rather than one part of it. */""}
+    <div class="optrow optrow-wide optnl"><span class="optlabel">Page slides in from</span><div class="optwide">
+      <div class="seg segfull seg5">${Object.keys(TRANS_DIRS).map(k=>
+        `<button data-opt-transdir="${k}" class="${transDir===k?'on':''}">${TRANS_DIRS[k]}</button>`).join("")}</div></div></div>
+    <div class="optrow optrow-wide optnl"><span class="optlabel">Page change speed</span><div class="optwide">
+      <div class="seg segfull seg5">${["instant","fast","normal","slow","slower"].map(k=>
+        `<button data-opt-transspd="${k}" class="${transSpd===k?'on':''}">${k.charAt(0).toUpperCase()+k.slice(1)}</button>`).join("")}</div></div></div>
 
     ${sectHR("Colour")}
     ${/* v1.57 item 2: "Colour accent" renamed. It has not been only an accent for several versions —
@@ -5566,6 +5615,23 @@ function applyPage(idx){
   if(idx===0){ view="lists"; } else { view="detail"; shopMode=true; }
 }
 let _pageAnim=false;
+/* v1.75 item 3: which way a page arrives, and how fast. Auto is what the app has always done — the
+   pages sit in a row (Lists · Shop · Settings) and a new one slides in from the side it lives on, so
+   the movement says where you went. A fixed direction is the same motion every time regardless, which
+   is what someone who just wants one consistent animation is asking for. Instant is a real answer to
+   "speed" and the honest way to turn the movement off. */
+const TRANS_DIRS = { auto:"Auto", left:"Left", right:"Right", up:"Up", down:"Down" };
+const TRANS_SPD  = { instant:0, fast:220, normal:378, slow:560, slower:800 };
+let transDir = TRANS_DIRS[localStorage.getItem("ml_transdir")] ? localStorage.getItem("ml_transdir") : "auto";
+let transSpd = (localStorage.getItem("ml_transspd") in TRANS_SPD) ? localStorage.getItem("ml_transspd") : "normal";
+function setTransDir(v){ transDir=v; setLS("ml_transdir",v); render(); }
+function setTransSpd(v){ transSpd=v; setLS("ml_transspd",v); render(); }
+/* v1.75 item 2: where you were on each page, so leaving one and coming back does not throw the
+   position away. Settings is the page it matters on — it is long, and the thing you were adjusting is
+   halfway down it — but a page you scrolled is a page you scrolled, so all three are remembered.
+   Restored after the render AND again on the next frame: the new page's content does not have its
+   full height until it has been laid out, so a single scrollTo before that lands short. */
+const _pageY={};
 /* v1.14/1.18 single-layer transition: render the new page, then slide/fade the incoming .wrap in
    from the correct side. No cloned "ghost" layer, so the old and new screens can never be on
    screen at the same time. As of v1.18 the fixed header (.topfix) lives OUTSIDE .wrap (so an
@@ -5577,17 +5643,26 @@ function transitionTo(idx){
   if(idx===from){ render(); return; }
   const dir = idx>from ? 1 : -1;                                  // 1 → new page enters from the right (it lies to the right)
   applyPage(idx);
+  _pageY[from]=window.scrollY||window.pageYOffset||0;
   window.scrollTo(0,0);
   render();
-  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const backY=_pageY[idx]||0;
+  if(backY>0){ window.scrollTo(0,backY); requestAnimationFrame(()=>window.scrollTo(0,backY)); }
+  const ms = TRANS_SPD[transSpd];
+  if(!ms || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const nw=app.querySelector(".wrap"); if(!nw) return;
+  /* the page ENTERS from the named edge: "Left" means it comes in from the left, so it starts at
+     -100% and travels to 0. Auto keeps the page order deciding, which is the shipped behaviour. */
+  const from100 = transDir==="left" ? "translateX(-100%)" : transDir==="right" ? "translateX(100%)"
+                : transDir==="up"   ? "translateY(-100%)" : transDir==="down"  ? "translateY(100%)"
+                : "translateX(" + (dir>0?100:-100) + "%)";
+  const to0 = from100.indexOf("translateY")===0 ? "translateY(0)" : "translateX(0)";
   _pageAnim=true;
   nw.style.willChange="transform";
-  const a=nw.animate(
-    [{transform:"translateX("+(dir>0?100:-100)+"%)",opacity:.35},{transform:"translateX(0)",opacity:1}],
-    {duration:378,easing:"cubic-bezier(.32,.72,.30,1)"});   // v1.20 slowed 40% (270→378)
+  const a=nw.animate([{transform:from100,opacity:.35},{transform:to0,opacity:1}],
+    {duration:ms, easing:"cubic-bezier(.32,.72,.30,1)"});
   const fin=()=>{ _pageAnim=false; if(nw.isConnected) nw.style.willChange=""; };
-  a.onfinish=fin; a.oncancel=fin; setTimeout(fin, 500);           // safety net if WAAPI events don't fire
+  a.onfinish=fin; a.oncancel=fin; setTimeout(fin, ms+130);          // safety net if WAAPI events don't fire
 }
 function gotoPage(idx){ transitionTo(idx); }
 // v1.20 swipe-between-pages is disabled — navigation is via the bottom nav only (the transition
