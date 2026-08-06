@@ -237,6 +237,13 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      and the two longhands after it re-state the vertical ends with --barpadt folded in. */
   .topfix { position:fixed; top:0; left:0; right:0; margin:0 auto; max-width:480px; z-index:30; background:var(--paper); padding:calc(8px + env(safe-area-inset-top)) 14px 8px; box-shadow:0 6px 16px -10px rgba(20,30,22,.45);
     padding-top:calc(8px + env(safe-area-inset-top) + var(--barpadt, 0px)); padding-bottom:calc(8px + var(--barpadt, 0px)); }
+  /* v1.77 item 2: one bar height on every page, with the title centred in it. The back button is what
+     made the header 44px tall everywhere except Lists, which has none — so the height is stated rather
+     than left to whatever happens to be inside. And the 8px below the header is only wanted when the
+     location chip or the at-store prompt follows it; as the last child those pixels are dead space
+     under the title, which is exactly what made it sit high in its own bar. */
+  .topfix header { min-height:44px; }
+  .topfix header:last-child { margin-bottom:0; }
   .zoomwrap { overflow:hidden; }
   /* v1.54 item 1: the item area's margins are user-set. Longhand order is T R B L. The bottom is
      NOT a variable: syncZoomHeight() overwrites padding-bottom inline on every render with the
@@ -870,6 +877,17 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      as a label for the three rows under it rather than as a new part of Settings. */
   .optsub { font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;
     color:var(--muted2); margin:14px 0 2px; }
+  /* v1.77 item 3: the section header — the same small uppercase label it always was, now a full-width
+     button with a caret. */
+  .optsect { display:flex; align-items:center; justify-content:space-between; width:100%; border:none;
+    background:transparent; text-align:left; cursor:pointer; padding:0;
+    margin:16px 0 2px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--muted); font-family:inherit; }
+  .optsect-hr { border-top:1px solid var(--line); padding-top:14px; }
+  .optcaret::after { content:"▾"; font-size:11px; }
+  .optsect.coll .optcaret::after { content:"▸"; }
+  .optgrpbody { display:block; }
+  .optgrpbody.coll { display:none; }
   /* v1.57 item 2: Roundness, Tile gap and Page margins are one family and should read as a block —
      a shared label column stops their controls stepping in and out by a few pixels per row.
      v1.59 item 2: the label moves ABOVE the steppers rather than beside them. A stepper cell needs
@@ -940,7 +958,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* the same marks on a shop tile, at the tile's own text colour and a touch smaller than the name */
   /* v1.59 item 1: .86em was too small for a mark that has to carry a symbol inside it. */
   /* v1.62 item 1: 1.25em of icon puts the % at a digit's height — see FLAG_TAG_SVG's geometry. */
-  .pmark { display:inline-flex; align-items:center; font-size:1.25em; line-height:1; margin-right:2px; flex:none; }
+  .pmark { display:inline-flex; align-items:center; font-size:1.25em; line-height:1; flex:none; }
+  /* v1.77 item 1: the flag group — see pillHTML. flex:none so it never shrinks the name.
+     .pmark's old margin-right is gone: the gap here does that job, and .pmark is used nowhere else. */
+  .pmarks { display:inline-flex; align-items:center; gap:2px; flex:none; }
   /* v1.26 collapsible Category / Subcategory rows in the edit sheet */
   .editsec { width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px; border:none; border-top:1px solid var(--line); background:transparent; padding:11px 0 4px; margin-top:10px; cursor:pointer; }
   .editsec-l { font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
@@ -1344,7 +1365,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.76";
+const APP_VERSION = "v1.77";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -4059,10 +4080,15 @@ function pillHTML(i, cat){
   const tg = Array.isArray(i.tags) ? i.tags : [];
   const urgent = !checked && (i.starred || tg.includes("urgent"));
   const mk = (svg,col,title)=>`<span class="pmark" style="color:${col}" title="${title}">${svg}</span>`;
-  const marks = `${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}`
+  /* v1.77 item 1: the flags are one group, not three children. On a large tile the pill is a COLUMN,
+     so three separate spans became three stacked lines — an item that is urgent AND discounted took
+     two rows of the tile before its own name. Wrapped, they stay a row inside a column tile and are
+     unchanged inside a row one. The saving dot goes in with them: it is the same kind of marker. */
+  const markInner = `${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}`
     + `${urgent?mk(FLAG_STAR_SVG, full?'#fff':'#E8A91D', 'Urgent'):""}`
     + `${(!checked&&tg.includes("discount"))?mk(FLAG_TAG_SVG,'currentColor','If discounted'):""}`
     + `${(!checked&&tg.includes("convenient"))?mk(FLAG_CLOCK_SVG,'currentColor','If convenient'):""}`;
+  const marks = markInner ? `<span class="pmarks">${markInner}</span>` : "";
   // v1.20 unified row anatomy (shared with regPill): emoji · name, then qty/weight pushed to the right.
   // No check circle — tapping the whole row checks it. Selected/on-list uses the Full/Empty tile look.
   const em = itemEmoji(i.name, i.cat);
@@ -4629,6 +4655,43 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
   wireEditSheet();
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
+/* v1.77 item 3: which sections are folded. Keyed by the section's own name rather than its index, so
+   adding or reordering a section cannot silently fold a different one. Everything starts open: this
+   makes Settings foldable, it does not decide for anyone which parts they never use. */
+function optColl(){ try{ const a=JSON.parse(localStorage.getItem("ml_optcoll")||"[]"); return new Set(Array.isArray(a)?a:[]); }catch(e){ return new Set(); } }
+/* Calls groupOptions() and NOT render(): folding a section must not rebuild the page and throw away
+   the scroll position — that is the whole point of v1.75 item 2. */
+function toggleOptColl(name){ const s=optColl(); if(s.has(name)) s.delete(name); else s.add(name);
+  try{ localStorage.setItem("ml_optcoll", JSON.stringify([...s])); }catch(e){}
+  groupOptions(); }
+/* v1.77 item 3: fold each section's rows into a body of their own. The template emits headers and rows
+   as flat siblings — a section IS "this header and everything up to the next one" — so the grouping is
+   read from that rather than written into the template, which would have meant cutting several nested
+   conditionals apart. Idempotent: it runs on every render and re-groups whatever it finds, so a body it
+   built last time is simply rebuilt. */
+function groupOptions(){
+  const page=document.querySelector(".optpage"); if(!page) return;
+  const coll=optColl();
+  /* unwrap anything a previous pass built, so the sibling walk always sees the flat markup */
+  page.querySelectorAll(".optgrpbody").forEach(b=>{ const p=b.parentNode;
+    while(b.firstChild) p.insertBefore(b.firstChild, b);
+    b.remove(); });
+  [...page.querySelectorAll(".optsect")].forEach(h=>{
+    const name=h.dataset.sect||"";
+    const body=document.createElement("div");
+    body.className="optgrpbody";
+    let n=h.nextSibling;
+    while(n && !(n.nodeType===1 && n.classList && n.classList.contains("optsect"))){
+      const next=n.nextSibling; body.appendChild(n); n=next;
+    }
+    h.insertAdjacentElement("afterend", body);
+    const shut=coll.has(name);
+    body.classList.toggle("coll", shut);
+    h.classList.toggle("coll", shut);
+    h.setAttribute("aria-expanded", shut?"false":"true");
+    h.onclick=()=>toggleOptColl(name);
+  });
+}
 function wireOptions(){
   const optBg=app.querySelector("#optBg"); if(optBg) optBg.onclick=()=>{ optOpen=false; render(); };
   const optS=app.querySelector("#optSheet"); if(optS) optS.onclick=e=>e.stopPropagation();
@@ -4766,6 +4829,7 @@ function wireOptions(){
   const dpa=app.querySelector("#diagPredToggleAll"); if(dpa) dpa.onclick=()=>diagKeepScroll(()=>{ const keys=Object.keys(purch||{}); const allOpen=keys.length&&keys.every(k=>diagPredExpand.has(k)); if(allOpen) diagPredExpand.clear(); else keys.forEach(k=>diagPredExpand.add(k)); });
   app.querySelectorAll("[data-diag-sort]").forEach(el=>el.onclick=()=>diagKeepScroll(()=>{ diagPredSort=el.dataset.diagSort; }));
   app.querySelectorAll("[data-diag-pred]").forEach(el=>el.onclick=()=>diagKeepScroll(()=>{ const k=el.dataset.diagPred; if(diagPredExpand.has(k)) diagPredExpand.delete(k); else diagPredExpand.add(k); }));
+  groupOptions();   // v1.77 item 3: last, so it folds markup that is already wired
 }
 /* A18 ✨ Smart add — planning-mode AI parse → preview → confirm.
    Calls the server-side /api/parse (Groq); the API key never touches the client. */
@@ -5182,8 +5246,12 @@ function optionsBody(){
       + `${Object.keys(pal).map(sw).join("")}</div></div>`;
   };
   const subhead=t=>`<div class="optsub">${t}</div>`;
-  const sect=t=>`<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 2px">${t}</div>`;   // v1.12 grouped settings
-  const sectHR=t=>`<div style="border-top:1px solid var(--line);margin:16px 0 2px;padding-top:14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">${t}</div>`;   // v1.29 section with a rule above
+  /* v1.12 grouped settings; v1.29 the HR variant.
+     v1.77 item 3: a section header is a button now, and the rows under it are folded into a body by
+     groupOptions() after the render. Settings is sixteen colour rows long since v1.76 — an index you
+     can close is the difference between a panel and a wall. */
+  const sect=t=>`<button class="optsect" data-sect="${esc(t)}">${t}<span class="optcaret" aria-hidden="true"></span></button>`;
+  const sectHR=t=>`<button class="optsect optsect-hr" data-sect="${esc(t)}">${t}<span class="optcaret" aria-hidden="true"></span></button>`;
   let curSort = (displayFor()==="cat" && (sortModeFor()==="location"||sortModeFor()==="ai")) ? "cat" : sortModeFor();
   if(curSort==="ai" && !aiSortOK()) curSort="location";
   return `
