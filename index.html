@@ -231,12 +231,23 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   html { background:var(--paper); }
   html,body { margin:0; background:var(--paper); color:var(--text); min-height:100vh; min-height:100dvh;
     font-family:'Outfit',-apple-system,'SF Pro Text',system-ui,sans-serif; }
+  /* v1.78: an overlay tile is allowed to be wider than the screen and to hang off both edges — that is
+     the point of the Width number. What must NOT follow from it is a page you can drag sideways, so the
+     overflow is clipped here. `clip` and not `hidden`: `hidden` on <body> makes some engines treat the
+     body as the scroll container, which would drag the position:fixed chrome along with the page. */
+  html, body { overflow-x:clip; }
   .wrap { max-width:480px; margin:0 auto; }
   /* v1.76 item 1: a bar's height IS its padding, so the user's number is added to both ends. The
      shorthand has to stay first and unchanged — it is the only thing setting the left/right 14px —
      and the two longhands after it re-state the vertical ends with --barpadt folded in. */
-  .topfix { position:fixed; top:0; left:0; right:0; margin:0 auto; max-width:480px; z-index:30; background:var(--paper); padding:calc(8px + env(safe-area-inset-top)) 14px 8px; box-shadow:0 6px 16px -10px rgba(20,30,22,.45);
-    padding-top:calc(8px + env(safe-area-inset-top) + var(--barpadt, 0px)); padding-bottom:calc(8px + var(--barpadt, 0px)); }
+  .topfix { position:fixed; top:0; left:var(--topleft, 0px); right:var(--topright, 0px); margin:0 auto; max-width:var(--topw, 480px); z-index:30; background:var(--paper); padding:calc(8px + env(safe-area-inset-top)) 14px 8px; box-shadow:0 6px 16px -10px rgba(20,30,22,.45);
+    padding-top:calc(8px + env(safe-area-inset-top) + var(--barpadt, 0px)); padding-bottom:calc(8px + var(--barpadt, 0px));
+    /* v1.78: position is a transform so nothing here fights the fixed box the layout already gives it,
+       and width is only honoured when set — the var() fallback is the box as it stands. A width larger
+       than the screen is allowed on purpose: the tile is meant to be able to run past both edges. The
+       existing `margin:0 auto` is what keeps an explicit width centred inside `left:0;right:0`. */
+    transform:translate(var(--topx, 0px), var(--topy, 0px));
+    width:var(--topw, auto); border-radius:var(--topr, 0px); }
   /* v1.77 item 2: one bar height on every page, with the title centred in it. The back button is what
      made the header 44px tall everywhere except Lists, which has none — so the height is stated rather
      than left to whatever happens to be inside. And the 8px below the header is only wanted when the
@@ -1023,7 +1034,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .qbanner-row { display:flex; align-items:center; gap:8px; }
   /* v1.27 floating search bubble replaces the "+ Add" pill; ✨ AI sits to its right. (.addpill also
      gets the glass bg/border/shadow from the Glasshouse grouping below.) */
-  .addpill-wrap { position:fixed; left:0; right:0; bottom:0; margin:0 auto; max-width:480px; z-index:41;
+  .addpill-wrap { position:fixed; left:var(--srchleft, 0px); right:var(--srchright, 0px); bottom:0; margin:0 auto; max-width:var(--srchw, 480px); z-index:41;
     display:flex; gap:8px; padding:0 14px; pointer-events:none; }
   .addpill { pointer-events:auto; flex:1; min-width:0; display:flex; align-items:center; gap:10px;
     color:var(--muted); font-weight:600; font-size:15px; padding:14px 18px; border-radius:999px; transition:transform .12s ease; }
@@ -1065,17 +1076,26 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(160%);
     backdrop-filter:blur(var(--glass-blur)) saturate(160%);
   }
-  .checkedbar, .qbanner, .sheet, .addpill { background:var(--glass-bg); }
+  .checkedbar, .qbanner, .sheet { background:var(--glass-bg); }
+  /* v1.78: the search bar is split out of the shared list the same way v1.76 split the two bars, so it
+     can take its own colour. The fallback is the glass recipe, so untouched it paints what it painted. */
+  .addpill { background:var(--srchbar-bg, var(--glass-bg)); color:var(--srchbar-text, var(--muted)); }
   .topfix { background:var(--topbar-bg, var(--glass-bg)); }
   .bottomnav { background:var(--navbar-bg, var(--glass-bg)); }
   /* v1.76 item 1: the title follows a chosen top bar, because a dark bar under a light theme would
      otherwise keep the theme's dark title and go blank. Unset, it inherits exactly as before. */
   .topfix header, .topfix .title { color:var(--topbar-text, inherit); }
   .topfix { box-shadow:none; border-bottom:1px solid var(--glass-brd); }
-  .bottomnav { left:12px; right:12px; bottom:calc(10px + env(safe-area-inset-bottom)); max-width:456px;
-    border:1px solid var(--glass-brd); border-radius:999px; padding:6px 16px;
+  .bottomnav { left:var(--navleft, 12px); right:var(--navright, 12px); bottom:calc(10px + env(safe-area-inset-bottom)); max-width:var(--navw, 456px);
+    border:1px solid var(--glass-brd); padding:6px 16px;
     /* v1.76 item 1: the height, added to the glass block's own 6px so zero is today's chrome. */
     padding-top:calc(6px + var(--barpadb, 0px)); padding-bottom:calc(6px + var(--barpadb, 0px));
+    /* v1.78: same three as .topfix, written on THIS rule because it is the one that wins for the nav.
+       A transform rather than a change to `bottom`, because syncZoomHeight() owns the bottom edge of
+       the nav-adjacent chrome and a offset written here could only fight it. The roundness fallback is
+       the 999px this rule already had, so an untouched install keeps its pill. */
+    transform:translate(var(--navx, 0px), var(--navy, 0px));
+    width:var(--navw, auto); margin:0 auto; border-radius:var(--navr, 999px);
     box-shadow: inset 0 1px 0 var(--glass-hi), 0 12px 30px rgba(20,30,22,.25); }
   .bottomnav .navbtn { color:var(--navbar-text, var(--muted)); }
   .bottomnav .navbtn.active { color:var(--navbar-text, var(--text)); }
@@ -1090,7 +1110,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     box-shadow: inset 0 1px 0 var(--glass-hi), 0 10px 26px rgba(20,30,22,.22); }
   @supports not (backdrop-filter: blur(1px)){
     /* v1.76 item 1: split the same way as the glass block above, with the solid paper as the fallback. */
-    .checkedbar, .qbanner, .sheet, .addpill { background:var(--paper); }
+    .checkedbar, .qbanner, .sheet { background:var(--paper); }
+    .addpill { background:var(--srchbar-bg, var(--paper)); }
     .topfix { background:var(--topbar-bg, var(--paper)); }
     .bottomnav { background:var(--navbar-bg, var(--paper)); }
   }
@@ -1098,7 +1119,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     .topfix, .bottomnav, .checkedbar, .qbanner, .sheet, .addpill {
       -webkit-backdrop-filter:none; backdrop-filter:none; }
     /* v1.76 item 1: same split again — the user's bar colour still applies with transparency reduced. */
-    .checkedbar, .qbanner, .sheet, .addpill { background:var(--paper); }
+    .checkedbar, .qbanner, .sheet { background:var(--paper); }
+    .addpill { background:var(--srchbar-bg, var(--paper)); }
     .topfix { background:var(--topbar-bg, var(--paper)); }
     .bottomnav { background:var(--navbar-bg, var(--paper)); }
   }
@@ -1165,10 +1187,23 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .pill-meta { margin-left:auto; display:inline-flex; align-items:center; gap:5px; padding-left:10px; }
   .qbanner-rm { border:1.5px solid #C24A33; color:#C24A33; background:transparent; font-weight:800; font-size:13px; padding:6px 14px; border-radius:999px; }
   /* v1.10 bottom-first add — floating pill + full-screen add sheet */
-  .addpill-wrap { position:fixed; left:0; right:0; bottom:0; margin:0 auto; max-width:480px; z-index:41; padding:0 14px; display:flex; }
+  /* v1.78: this is the .addpill-wrap that wins (the v1.27 one above is overridden here by source
+     order), so the search tile's geometry is written on it. Position is a transform because
+     syncZoomHeight() writes `style.bottom` inline on both wraps on every pass — a `bottom` here could
+     never win, and a transform does not have to. Width is only honoured when set, and `margin:0 auto`
+     keeps an explicit width centred inside `left:0;right:0`. */
+  .addpill-wrap { position:fixed; left:var(--srchleft, 0px); right:var(--srchright, 0px); bottom:0; margin:0 auto; max-width:var(--srchw, 480px); z-index:41; padding:0 14px; display:flex;
+    transform:translate(var(--srchx, 0px), var(--srchy, 0px)); width:var(--srchw, auto); }
+  /* v1.78: Height adds to the pill's own 13px at both ends, the same "add, never replace" rule the two
+     bars' heights use in v1.76, so zero is exactly today's pill. */
   .addpill { flex:1; display:flex; align-items:center; gap:9px; border:1.5px solid var(--line); border-radius:999px; padding:13px 18px;
-    background:var(--card); color:var(--muted); font-weight:700; font-size:14.5px; text-align:left;
-    box-shadow:0 10px 26px rgba(20,30,22,.22); }
+    /* v1.78: this rule comes AFTER the glass block and re-declares the background at equal
+       specificity, so the chosen search-bar colour has to be honoured HERE as well or it never
+       paints. Same for the text colour that has to read on it. */
+    background:var(--srchbar-bg, var(--card)); color:var(--srchbar-text, var(--muted)); font-weight:700; font-size:14.5px; text-align:left;
+    box-shadow:0 10px 26px rgba(20,30,22,.22);
+    border-radius:var(--srchr, 999px);
+    padding-top:calc(13px + var(--srchh, 0px)); padding-bottom:calc(13px + var(--srchh, 0px)); }
   .addpill svg { flex:none; }
   /* v1.38 item 3 — the sheet is PINNED to the visual viewport by JS (pinAddSheet), not by CSS units.
      v1.36 sized it with dvh math, which is correct until iOS scrolls the *visual* viewport to reveal
@@ -1365,7 +1400,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.77";
+const APP_VERSION = "v1.78";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1563,7 +1598,9 @@ const SHADE_KEYS = { accent:"ml_accentshade", text:"ml_textcolshade", cat:"ml_ca
                         step level would be the only one in Settings that could do nothing on Auto. */
                      topbar:"ml_topbarshade", navbar:"ml_navbarshade",
                      cathdbg:"ml_cathdbgshade", cathdbrd:"ml_cathdbrdshade",
-                     reghdtext:"ml_reghdtextshade", reghdbg:"ml_reghdbgshade", reghdbrd:"ml_reghdbrdshade" };
+                     reghdtext:"ml_reghdtextshade", reghdbg:"ml_reghdbgshade", reghdbrd:"ml_reghdbrdshade",
+                     /* v1.78: the search bar is the third overlay tile, so it joins on the same terms. */
+                     srchbar:"ml_srchbarshade" };
 const SHADE_MAX = 5;
 (function(){ const OLD = { accent:"ml_accentcalm", text:"ml_textcolcalm", cat:"ml_cattextcalm",
     tiletext:"ml_tiletextcalm", tilebg:"ml_tilebgcalm", tilebrd:"ml_tilebrdcalm",
@@ -1618,24 +1655,36 @@ function setCatTxt(v, quiet){ catTxt=v; setLS("ml_cattext",v); applyTheme(); if(
    install is byte-for-byte unchanged. */
 let topBar  = localStorage.getItem("ml_topbar") || "auto";
 let navBar  = localStorage.getItem("ml_navbar") || "auto";
-function barAlpha(k){ const v=parseInt(localStorage.getItem(k==="top"?"ml_topbara":"ml_navbara"),10);
+/* v1.78: the search bar is the third overlay tile, so it gets what the other two got in v1.76 — the
+   same Auto/100 default, the same "nothing is written until you touch it" rule, the same alpha-in-the-
+   colour rather than an opacity that would fade the text inside it. */
+let srchBar = localStorage.getItem("ml_srchbar") || "auto";
+function setSrchBar(v, quiet){ srchBar=v; setLS("ml_srchbar",v); applyTheme(); if(!quiet) render(); }
+/* v1.78: three tiles is one too many for a two-way ternary, so the storage key comes from a map. */
+const BARA_KEY = { top:"ml_topbara", nav:"ml_navbara", srch:"ml_srchbara" };
+function barAlpha(k){ const key=BARA_KEY[k]; if(!key) return 100;
+  const v=parseInt(localStorage.getItem(key),10);
   return (isFinite(v) && v>=0 && v<=100) ? v : 100; }
 function setTopBar(v, quiet){ topBar=v; setLS("ml_topbar",v); applyTheme(); if(!quiet) render(); }
 function setNavBar(v, quiet){ navBar=v; setLS("ml_navbar",v); applyTheme(); if(!quiet) render(); }
-function bumpBarAlpha(k,d){ const cur=barAlpha(k);
-  const v=Math.max(0, Math.min(100, cur + d*5));
-  setLS(k==="top"?"ml_topbara":"ml_navbara", String(v)); applyTheme(); render(); }
+function bumpBarAlpha(k,d){ const key=BARA_KEY[k]; if(!key) return;
+  const v=Math.max(0, Math.min(100, barAlpha(k) + d*5));
+  setLS(key, String(v)); applyTheme(); render(); }
 /* the composed background, or null when the bar has been left alone. `hexA` turns the resolved hex
    into rgba so the transparency is part of the colour rather than an opacity on the element — an
    element opacity would fade the buttons sitting on the bar along with it. */
 function hexA(hex, a){ const h=String(hex||"").replace("#","");
   if(h.length!==6) return null;
   return `rgba(${parseInt(h.slice(0,2),16)}, ${parseInt(h.slice(2,4),16)}, ${parseInt(h.slice(4,6),16)}, ${(a/100).toFixed(3)})`; }
+/* v1.78: `srch` joins on the same terms — one map from tile to its picker and its shade key, so a
+   fourth tile later is a line here rather than another branch. */
+function barSel(kind){ return kind==="top" ? topBar : kind==="nav" ? navBar : srchBar; }
+function barShadeKey(kind){ return kind==="top" ? "topbar" : kind==="nav" ? "navbar" : "srchbar"; }
 function barBg(kind){
-  const sel = kind==="top" ? topBar : navBar;
+  const sel = barSel(kind);
   const a = barAlpha(kind);
   if(sel==="auto" && a===100) return null;                 // untouched: the glass recipe still paints
-  const base = autoShade(kind==="top"?"topbar":"navbar", pickHex(sel) || paperHex());
+  const base = autoShade(barShadeKey(kind), pickHex(sel) || paperHex());
   return hexA(base, a);
 }
 /* v1.76 item 2: the category heading, treated as the one-line tile it already looks like. Its TEXT
@@ -1724,8 +1773,30 @@ const NUMOPT = {
   /* v1.76 item 1: the bars' own breathing room. These ADD to the padding each bar already has rather
      than replacing it, so zero is exactly today's chrome and an untouched install does not move —
      replacing it would have meant picking a new baseline for everyone who never asked for one. */
-  barT: { ls:"ml_barpadt", vr:"--barpadt", def:0, min:0, max:30, step:2, label:"Top" },
-  barB: { ls:"ml_barpadb", vr:"--barpadb", def:0, min:0, max:30, step:2, label:"Bottom" }
+  barT: { ls:"ml_barpadt", vr:"--barpadt", def:0, min:0, max:30, step:2, label:"Height" },
+  barB: { ls:"ml_barpadb", vr:"--barpadb", def:0, min:0, max:30, step:2, label:"Height" },
+  /* v1.78: where the three overlay tiles sit and how big they are. There is no Height here for the two
+     bars because they already have one — a bar's height IS its padding, which is what barT/barB are, so
+     each simply appears inside its own tile's grid rather than being restated under a second name.
+     Across/Down are transforms, so zero is genuinely "where it is now" and nothing is written until it
+     is moved. Width and Roundness carry `off:0`: 0px is a real value for both, and the thing they
+     actually need to express is "leave it alone" — auto width, and the shape the stylesheet already
+     gives the tile — which no number can say, so zero is spent on it. Anyone who truly wants square
+     corners can set 2 and will not be able to tell the difference. topy starts at -40 so the top bar
+     can be pulled up under the status bar; navy/srchy end at +40 for the same reason at the bottom. */
+  topx:  { ls:"ml_topx",  vr:"--topx",  def:0,  min:-60, max:60,  step:2, label:"Across" },
+  topy:  { ls:"ml_topy",  vr:"--topy",  def:0,  min:-40, max:120, step:2, label:"Down" },
+  topw:  { ls:"ml_topw",  vr:"--topw",  def:0,  min:0,   max:640, step:10, off:0, label:"Width" },
+  topr:  { ls:"ml_topr",  vr:"--topr",  def:0,  min:0,   max:40,  step:2, off:0, label:"Corner" },
+  navx:  { ls:"ml_navx",  vr:"--navx",  def:0,  min:-60, max:60,  step:2, label:"Across" },
+  navy:  { ls:"ml_navy",  vr:"--navy",  def:0,  min:-120,max:40,  step:2, label:"Down" },
+  navw:  { ls:"ml_navw",  vr:"--navw",  def:0,  min:0,   max:640, step:10, off:0, label:"Width" },
+  navr:  { ls:"ml_navr",  vr:"--navr",  def:0,  min:0,   max:40,  step:2, off:0, label:"Corner" },
+  srchx: { ls:"ml_srchx", vr:"--srchx", def:0,  min:-60, max:60,  step:2, label:"Across" },
+  srchy: { ls:"ml_srchy", vr:"--srchy", def:0,  min:-120,max:40,  step:2, label:"Down" },
+  srchw: { ls:"ml_srchw", vr:"--srchw", def:0,  min:0,   max:640, step:10, off:0, label:"Width" },
+  srchh: { ls:"ml_srchh", vr:"--srchh", def:0,  min:0,   max:40,  step:2, label:"Height" },
+  srchr: { ls:"ml_srchr", vr:"--srchr", def:0,  min:0,   max:40,  step:2, off:0, label:"Corner" }
 };
 /* v1.55 item 2: two levels of default. NUMOPT[].def is the FACTORY value — what the stylesheet used
    before any of this was settable, and the thing to fall back to when an experiment goes wrong.
@@ -1801,7 +1872,12 @@ function applyTheme(){ const t = THEMES[theme] || THEMES.light;
     /* v1.54 item 1: geometry is always written (a number always has a value); the two surface
        colours are written only when the user picked one, so "auto" falls back to the theme token
        through the var() fallback in the stylesheet. */
-    Object.keys(NUMOPT).forEach(k=>{ const vr=NUMOPT[k].vr; if(vr) rs.setProperty(vr, numVal(k)+"px"); });
+    /* v1.78: a number whose value equals its `off` is not written at all, so the stylesheet's own
+       value stands. Width and roundness need this — 0px is a real value for both, and "auto" cannot be
+       expressed as a number, so the escape has to be a value the var simply never takes. */
+    Object.keys(NUMOPT).forEach(k=>{ const o=NUMOPT[k]; if(!o.vr) return;
+      if(o.off!==undefined && numVal(k)===o.off) rs.removeProperty(o.vr);
+      else rs.setProperty(o.vr, numVal(k)+"px"); });
     /* v1.57 item 2: six tile tokens plus the category one. Each is written only when its picker has a
        colour, so "auto" falls through to the CSS fallback and the theme keeps deciding. */
     const T={ "--tilebg":tileBgHex(), "--tilebrd":tileBrdHex(), "--tiletext":tileTxtHex(),
@@ -1829,13 +1905,26 @@ function applyTheme(){ const t = THEMES[theme] || THEMES.light;
        on it — a dark bar on a light theme would otherwise keep the theme's dark labels and go blank
        (the same lesson as the tile fill in v1.65). Below 60% the bar is mostly page, so the page's own
        text is still the right answer and nothing is published. */
-    const TB=barBg("top"), NB=barBg("nav");
+    /* v1.78: the search bar is written on exactly the same terms as the two bars above it. */
+    /* v1.78: a tile wider than the box it is anchored in cannot be centred by `margin:auto` — the
+       browser gives up on the over-constrained equation and pins it to the left edge. So when a width
+       IS set the tile stops being anchored to both edges and is hung from the centre instead, which is
+       the only way it can run past both sides evenly. Unset, neither var exists and the stylesheet's
+       own left/right stand. */
+    [["topw","--topleft","--topright"],["navw","--navleft","--navright"],["srchw","--srchleft","--srchright"]]
+      .forEach(([k,lv,rv])=>{ const w=numVal(k);
+        if(w>0){ rs.setProperty(lv, "calc(50% - "+(w/2)+"px)"); rs.setProperty(rv, "auto"); }
+        else { rs.removeProperty(lv); rs.removeProperty(rv); } });
+    const TB=barBg("top"), NB=barBg("nav"), SB=barBg("srch");
     if(TB){ rs.setProperty("--topbar-bg", TB); } else { rs.removeProperty("--topbar-bg"); }
     if(NB){ rs.setProperty("--navbar-bg", NB); } else { rs.removeProperty("--navbar-bg"); }
+    if(SB){ rs.setProperty("--srchbar-bg", SB); } else { rs.removeProperty("--srchbar-bg"); }
     const tOn = (TB && barAlpha("top")>=60) ? onAccent(autoShade("topbar", pickHex(topBar)||paperHex())) : null;
     const nOn = (NB && barAlpha("nav")>=60) ? onAccent(autoShade("navbar", pickHex(navBar)||paperHex())) : null;
+    const sOn = (SB && barAlpha("srch")>=60) ? onAccent(autoShade("srchbar", pickHex(srchBar)||paperHex())) : null;
     if(tOn){ rs.setProperty("--topbar-text", tOn); } else { rs.removeProperty("--topbar-text"); }
     if(nOn){ rs.setProperty("--navbar-text", nOn); } else { rs.removeProperty("--navbar-text"); }
+    if(sOn){ rs.setProperty("--srchbar-text", sOn); } else { rs.removeProperty("--srchbar-text"); }
   });
   /* v1.54 item 1: the qty and weight are painted from the CATEGORY colour by an inline style, which
      no stylesheet rule can outrank without !important — and a category red on a chosen blue tile is
@@ -3840,7 +3929,11 @@ const esc = s => String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&
 
 function syncZoomHeight(){ const z=document.getElementById("zoomer"); const bb=document.getElementById("bottomnav"); const tf=document.getElementById("topfix"); const cb=document.getElementById("checkedbar");
   const zw=z?z.parentElement:null;
-  if(zw && tf){ zw.style.marginTop = Math.ceil(tf.getBoundingClientRect().height) + "px"; }
+  /* v1.78: the BOTTOM edge, not the height. What the content has to clear is where the bar actually
+     ends, and --topy moves the bar down the screen without changing how tall it is — measured by height
+     alone the content would slide under a bar the user had nudged down. The rect is post-transform, so
+     the bottom edge already carries the offset. Clamped at 0 for a bar pulled up off the top. */
+  if(zw && tf){ zw.style.marginTop = Math.ceil(Math.max(0, tf.getBoundingClientRect().bottom)) + "px"; }
   const navH = bb ? Math.max(0, Math.ceil(window.innerHeight - bb.getBoundingClientRect().top)) : 0;   // v1.12 floating nav: stack everything above its top edge
   const qb=document.getElementById("qbanner"); if(qb) qb.style.bottom = Math.ceil(navH) + "px";   // quantity banner sits on top of the nav
   const qbH = qb ? qb.getBoundingClientRect().height : 0;
@@ -4736,6 +4829,7 @@ function wireOptions(){
   /* v1.76 items 1 & 2: the seven new rows, wired exactly like the nine above them. */
   app.querySelectorAll("[data-opt-topbar]").forEach(b=>b.onclick=()=>setTopBar(b.dataset.optTopbar));
   app.querySelectorAll("[data-opt-navbar]").forEach(b=>b.onclick=()=>setNavBar(b.dataset.optNavbar));
+  app.querySelectorAll("[data-opt-srchbar]").forEach(b=>b.onclick=()=>setSrchBar(b.dataset.optSrchbar));
   app.querySelectorAll("[data-opt-cathdbg]").forEach(b=>b.onclick=()=>setCatHdBg(b.dataset.optCathdbg));
   app.querySelectorAll("[data-opt-cathdbrd]").forEach(b=>b.onclick=()=>setCatHdBrd(b.dataset.optCathdbrd));
   app.querySelectorAll("[data-opt-reghdtext]").forEach(b=>b.onclick=()=>setRegHdTxt(b.dataset.optReghdtext));
@@ -4754,6 +4848,8 @@ function wireOptions(){
     /* v1.76 items 1 & 2: sixteen now. Every one of these setters takes `quiet`, so the custom picker
        can follow the drag without rebuilding the page underneath it. */
     "opt-topbar":setTopBar, "opt-navbar":setNavBar,
+    /* v1.78: the third overlay tile. */
+    "opt-srchbar":setSrchBar,
     "opt-cathdbg":setCatHdBg, "opt-cathdbrd":setCatHdBrd,
     "opt-reghdtext":setRegHdTxt, "opt-reghdbg":setRegHdBg, "opt-reghdbrd":setRegHdBrd };
   app.querySelectorAll("[data-opt-custom]").forEach(inp=>{
@@ -5332,19 +5428,40 @@ function optionsBody(){
     ${colRow("Colour details", "opt-accent", accent, "accent", {page:true})}
     ${colRow("Text colour", "opt-textcol", textCol, "text", {pal:TEXTCOLS, page:true})}
 
-    ${sectHR("Top and bottom bars")}
+    ${sectHR("Bars and overlays")}
     ${/* v1.76 items 1 & 3: these two are the app's frame — they belong together and not inside Colour,
           because each is a colour AND a transparency AND a height, which is a different kind of
-          decision from "what colour is this one thing". */""}
-    ${colRow("Top bar", "opt-topbar", topBar, "topbar", {page:true})}
-    ${colRow("Bottom bar", "opt-navbar", navBar, "navbar", {page:true})}
-    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Bar transparency</span><div class="optwide">
+          decision from "what colour is this one thing".
+          v1.78: three tiles now, each read as ONE thing under its own subhead — colour, then where it
+          sits and how big it is, then how much of the page shows through it. The old combined
+          "Bar transparency" and "Bar height" rows made you hold two tiles in your head at once to
+          change one; the height numbers are the same barT/barB, just moved into the grid they belong
+          to. Dragging these tiles on the page, and adding tiles of your own, are the next two
+          versions — this one is only the numbers. */""}
+    ${subhead("Top bar")}
+    ${colRow("Colour", "opt-topbar", topBar, "topbar", {page:true})}
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Size and place</span><div class="optwide">
+      <div class="numgrid">${numCell("topx")}${numCell("topy")}${numCell("topw")}${numCell("barT")}${numCell("topr")}</div></div></div>
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Transparency</span><div class="optwide">
       <div class="numgrid">
         <div class="numcell"><span>Top</span><div class="seg"><button data-opt-bara="top|-1" aria-label="Less">−</button><span class="numval">${barAlpha("top")}%</span><button data-opt-bara="top|1" aria-label="More">+</button></div></div>
+      </div></div></div>
+    ${subhead("Bottom bar")}
+    ${colRow("Colour", "opt-navbar", navBar, "navbar", {page:true})}
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Size and place</span><div class="optwide">
+      <div class="numgrid">${numCell("navx")}${numCell("navy")}${numCell("navw")}${numCell("barB")}${numCell("navr")}</div></div></div>
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Transparency</span><div class="optwide">
+      <div class="numgrid">
         <div class="numcell"><span>Bottom</span><div class="seg"><button data-opt-bara="nav|-1" aria-label="Less">−</button><span class="numval">${barAlpha("nav")}%</span><button data-opt-bara="nav|1" aria-label="More">+</button></div></div>
       </div></div></div>
-    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Bar height</span><div class="optwide">
-      <div class="numgrid">${numCell("barT")}${numCell("barB")}</div></div></div>
+    ${subhead("Search bar")}
+    ${colRow("Colour", "opt-srchbar", srchBar, "srchbar", {page:true})}
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Size and place</span><div class="optwide">
+      <div class="numgrid">${numCell("srchx")}${numCell("srchy")}${numCell("srchw")}${numCell("srchh")}${numCell("srchr")}</div></div></div>
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Transparency</span><div class="optwide">
+      <div class="numgrid">
+        <div class="numcell"><span>Search</span><div class="seg"><button data-opt-bara="srch|-1" aria-label="Less">−</button><span class="numval">${barAlpha("srch")}%</span><button data-opt-bara="srch|1" aria-label="More">+</button></div></div>
+      </div></div></div>
 
     ${sectHR("Category headings")}
     ${/* v1.76 items 2 & 3: the heading's three colours, twice — the list and Regulars head different
