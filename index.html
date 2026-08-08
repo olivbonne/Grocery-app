@@ -1204,6 +1204,20 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      keeps an explicit width centred inside `left:0;right:0`. */
   .addpill-wrap { position:fixed; left:var(--srchleft, 0px); right:var(--srchright, 0px); bottom:0; margin:0 auto; max-width:var(--srchw, 480px); z-index:41; padding:0 14px; display:flex;
     transform:translate(var(--srchx, 0px), var(--srchy, 0px)); width:var(--srchw, auto); }
+  /* v1.80: the tile strip is a fixed, non-interactive column above the nav — only the tiles inside it
+     take taps, so it can span the screen without swallowing anything behind it. Bottom-right by
+     default because that is where a thumb rests; every tile's own Across/Down moves it from there. */
+  .utiles { position:fixed; left:0; right:0; bottom:0; margin:0 auto; max-width:480px; z-index:41;
+    display:flex; flex-direction:column; align-items:flex-end; gap:8px; padding:0 14px;
+    pointer-events:none; }
+  .utile { pointer-events:auto; display:inline-flex; align-items:center; gap:7px; border:1px solid var(--glass-brd);
+    background:var(--glass-bg); color:var(--text); font-weight:700; font-size:14px;
+    padding:12px 16px; border-radius:999px; box-shadow:0 10px 26px rgba(20,30,22,.22);
+    -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(160%);
+    backdrop-filter:blur(var(--glass-blur)) saturate(160%);
+    transition:transform .12s ease; }
+  .utile:active { transform:scale(.96); }
+  .utile-em { font-size:17px; line-height:1; }
   /* v1.78: Height adds to the pill's own 13px at both ends, the same "add, never replace" rule the two
      bars' heights use in v1.76, so zero is exactly today's pill. */
   .addpill { flex:1; display:flex; align-items:center; gap:9px; border:1.5px solid var(--line); border-radius:999px; padding:13px 18px;
@@ -1410,7 +1424,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.79";
+const APP_VERSION = "v1.80";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1670,6 +1684,88 @@ let navBar  = localStorage.getItem("ml_navbar") || "auto";
    colour rather than an opacity that would fade the text inside it. */
 let srchBar = localStorage.getItem("ml_srchbar") || "auto";
 function setSrchBar(v, quiet){ srchBar=v; setLS("ml_srchbar",v); applyTheme(); if(!quiet) render(); }
+/* v1.80: tiles of your own. The three bars became settable tiles in v1.78; this is the same idea with
+   the list opened up — a label, an optional emoji, and one thing it does. Everything about where it
+   sits and what it looks like is stored ON the tile, because unlike the three built-ins these come and
+   go and there is no fixed table that could hold a row per tile.
+   Device-local, like every other appearance setting: these describe how YOUR phone looks, not what is
+   on the list, so they never go near the synced state. */
+const TILE_ACTS = {
+  add:      "Open add",
+  lists:    "Go to Lists",
+  shop:     "Go to Shop",
+  settings: "Go to Settings",
+  finish:   "Finish shopping",
+  cat:      "Jump to a category"
+};
+function userTiles(){ try{ const a=JSON.parse(localStorage.getItem("ml_tiles")||"[]");
+  return Array.isArray(a) ? a.filter(t=>t && typeof t==="object" && t.id) : []; }catch(e){ return []; } }
+function writeTiles(a){ try{ localStorage.setItem("ml_tiles", JSON.stringify(a)); }catch(e){} }
+/* a new tile lands bottom-right, above the nav, where a thumb already is — visible the moment it is
+   made rather than needing to be found. */
+function addUserTile(){
+  const t={ id:"t"+Date.now().toString(36), label:"Shortcut", emoji:"", act:"add", cat:"",
+            x:0, y:0, w:0, h:0, r:0, col:"auto", alpha:100, shade:0 };
+  writeTiles(userTiles().concat([t])); render();
+}
+function patchTile(id, k, v){ const a=userTiles(); const t=a.find(x=>x.id===id); if(!t) return;
+  t[k]=v; writeTiles(a); applyTheme(); render(); }
+/* the numbers move in the same steps the built-in tiles use, and are clamped the same way, so the two
+   kinds of tile cannot drift apart in feel. */
+const TILE_NUM = { x:{min:-160,max:160,step:4,label:"Across"}, y:{min:-320,max:80,step:4,label:"Down"},
+                   w:{min:0,max:640,step:10,label:"Width"},   h:{min:0,max:60,step:2,label:"Height"},
+                   r:{min:0,max:40,step:2,label:"Corner"} };
+function bumpTile(id, k, d){ const o=TILE_NUM[k]; if(!o) return;
+  const a=userTiles(); const t=a.find(x=>x.id===id); if(!t) return;
+  t[k]=Math.max(o.min, Math.min(o.max, (parseInt(t[k],10)||0) + d*o.step));
+  writeTiles(a); render(); }
+function bumpTileAlpha(id, d){ const a=userTiles(); const t=a.find(x=>x.id===id); if(!t) return;
+  t.alpha=Math.max(0, Math.min(100, (parseInt(t.alpha,10)||100) + d*5)); writeTiles(a); render(); }
+function bumpTileShade(id, d){ const a=userTiles(); const t=a.find(x=>x.id===id); if(!t) return;
+  t.shade=Math.max(-SHADE_MAX, Math.min(SHADE_MAX, (parseInt(t.shade,10)||0) + d)); writeTiles(a); render(); }
+function deleteTile(id){ writeTiles(userTiles().filter(t=>t.id!==id)); render(); }
+/* v1.80: the tiles float over whatever page you are on, which is the point of them — a shortcut you
+   placed for your thumb should not disappear because you changed page. They hide with the add sheet
+   exactly as the search pill does (syncAddChrome), so nothing floats over an open sheet. */
+function userTilesHTML(){
+  const ts=userTiles(); if(!ts.length) return "";
+  return `<div class="utiles" id="utiles">` + ts.map(t=>{
+    const bg = (t.col==="auto" && (t.alpha|0)===100) ? "" : (()=>{
+      const base = shadeBy(pickHex(t.col) || paperHex(), parseInt(t.shade,10)||0);
+      const a = (t.alpha===undefined?100:t.alpha);
+      const rgba = hexA(base, a);
+      return rgba ? `background:${rgba};color:${a>=60?onAccent(base):"var(--text)"};` : "";
+    })();
+    const geo = `transform:translate(${parseInt(t.x,10)||0}px, ${parseInt(t.y,10)||0}px);`
+      + ((parseInt(t.w,10)||0) ? `width:${parseInt(t.w,10)}px;` : "")
+      + ((parseInt(t.h,10)||0) ? `padding-top:calc(12px + ${parseInt(t.h,10)}px);padding-bottom:calc(12px + ${parseInt(t.h,10)}px);` : "")
+      + ((parseInt(t.r,10)||0) ? `border-radius:${parseInt(t.r,10)}px;` : "");
+    return `<button class="utile" data-utile="${esc(t.id)}" style="${geo}${bg}">`
+      + (t.emoji ? `<span class="utile-em" aria-hidden="true">${esc(t.emoji)}</span>` : "")
+      + `<span class="utile-lb">${esc(t.label||"")}</span></button>`;
+  }).join("") + `</div>`;
+}
+/* v1.80: one place decides what a tile does, so a shortcut behaves the same whichever page it is
+   tapped from. An action whose target has gone (a deleted category) does nothing rather than throwing
+   — the tile stays, because the category may come back and a tile that vanished would be worse. */
+function wireUserTiles(){
+  document.querySelectorAll("[data-utile]").forEach(b=>b.onclick=()=>{
+    const t=userTiles().find(x=>x.id===b.dataset.utile); if(!t) return;
+    switch(t.act){
+      case "lists":    gotoPage(0); break;
+      case "shop":     gotoPage(1); break;
+      case "settings": settingsFrom=curPageIdx(); gotoPage(2); break;
+      case "finish":   if(state.items.some(i=>i.checked)){ finishOpen=true; render(); } else { gotoPage(1); } break;
+      case "cat":      { const c=t.cat ? catList().find(x=>x.id===t.cat) : null; if(!c) return;
+                         if(curPageIdx()!==1){ gotoPage(1); }
+                         catEntry=c.id; render();
+                         const el=document.querySelector(`[data-add="${c.id}"]`);
+                         if(el) el.scrollIntoView({block:"center", behavior:"smooth"});
+                         break; }
+      default:         openAdd(); break;
+    }
+  });
+}
 /* v1.78: three tiles is one too many for a two-way ternary, so the storage key comes from a map. */
 const BARA_KEY = { top:"ml_topbara", nav:"ml_navbara", srch:"ml_srchbara" };
 function barAlpha(k){ const key=BARA_KEY[k]; if(!key) return 100;
@@ -3824,6 +3920,9 @@ function mountAddSheet(){
 function syncAddChrome(){
   const fab=document.getElementById("shopAddFabWrap"); if(fab) fab.style.display = addOpen ? "none" : "";
   const apw=document.getElementById("addPillWrap");    if(apw) apw.style.display = addOpen ? "none" : "";
+  /* v1.80: your own tiles are floating chrome like the pill, so they go with it — a shortcut sitting
+     on top of an open add sheet would be tappable through the scrim. */
+  const ut=document.getElementById("utiles");           if(ut) ut.style.display = addOpen ? "none" : "";
 }
 function unmountAddSheet(){
   const bg=document.getElementById("addBg"); if(bg && bg.parentNode) bg.parentNode.removeChild(bg);
@@ -3957,13 +4056,18 @@ function syncZoomHeight(){ const z=document.getElementById("zoomer"); const bb=d
   const cbH = cb ? cb.getBoundingClientRect().height : 0;
   const apw=document.getElementById("addPillWrap"); if(apw) apw.style.bottom = Math.ceil(navH + 10) + "px";   // floating add pill above the nav
   const apH = apw ? apw.getBoundingClientRect().height + 10 : 0;
+  /* v1.80: the strip of your own tiles stacks ABOVE the search pill, positioned the same way every
+     other piece of floating chrome is — measured after the pill so the two can never overlap, and its
+     height added into the trailing clearance so the last row can still be scrolled clear of it. */
+  const utw=document.getElementById("utiles"); if(utw) utw.style.bottom = Math.ceil(navH + fabH + apH + 10) + "px";
+  const utH = utw ? utw.getBoundingClientRect().height + 10 : 0;
   /* v1.43 item 2: the toast's CSS bottom is a fixed 92px, which lands it on top of the search pill.
      Once the real heights are known, lift it above everything that floats. CSS keeps the fallback. */
-  const tt=document.getElementById("toast"); if(tt) tt.style.bottom = Math.ceil(navH + fabH + cbH + apH + 10) + "px";
+  const tt=document.getElementById("toast"); if(tt) tt.style.bottom = Math.ceil(navH + fabH + cbH + apH + utH + 10) + "px";
   /* v1.54 item 1: the trailing constant was a flat 24px of breathing room under the last row. It is
      the "Bottom" page margin now — everything before it is clearance the floating chrome genuinely
      needs, which is why the setting is added rather than substituted. */
-  if(z){ z.style.paddingBottom = Math.ceil((navH + cbH + qbH + apH + fabH)/dens() + numVal("padb")) + "px";
+  if(z){ z.style.paddingBottom = Math.ceil((navH + cbH + qbH + apH + fabH + utH)/dens() + numVal("padb")) + "px";
     if(zw) zw.style.height = Math.ceil(z.getBoundingClientRect().height) + "px"; }
   applyKb(); }
 let kbOffset=0, kbActive=false;
@@ -4481,7 +4585,7 @@ function renderMain(){
   </div>
   ${checkedBar}
   ${!addOpen?`<div class="addpill-wrap" id="shopAddFabWrap"><button class="addpill" id="shopAddFab"><span class="addpill-ic" aria-hidden="true">${SEARCH_SVG}</span><span class="addpill-ph">Add item…</span></button></div>`:""}${/* v1.36 item 4: search bar shows even on an empty list */""}
-  ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:true,setId:"setNav"})}  ${finishOpen?finishSheet():""}
+  ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:true,setId:"setNav"})}${userTilesHTML()}  ${finishOpen?finishSheet():""}
   ${listsOpen?listsSheet():""}
   ${smartOpen?smartSheet():""}
   ${editing?editSheet():""}
@@ -4518,7 +4622,7 @@ function renderListsPage(){
       <p class="hint" style="text-align:center;margin-top:16px">Tap a list to open it · press &amp; hold to rename, share, or delete.</p>
     </div></div>
   </div>
-  ${bottomNav({listsId:"listsBtnL",listsActive:true,cartId:"cartNavL",cartActive:false,setId:"setNavL"})}
+  ${bottomNav({listsId:"listsBtnL",listsActive:true,cartId:"cartNavL",cartActive:false,setId:"setNavL"})}${userTilesHTML()}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
@@ -4553,6 +4657,7 @@ function wireListsPage(){
   const cnl=app.querySelector("#cartNavL"); if(cnl) cnl.onclick=()=>gotoPage(1);   // open the combined list
   const stnl=app.querySelector("#setNavL"); if(stnl) stnl.onclick=()=>{ settingsFrom=0; gotoPage(2); };   // Settings tab
   const ob=app.querySelector("#optBtnTop"); if(ob) ob.onclick=()=>{ optOpen=true; render(); };
+  wireUserTiles();
   wireOptions();
   const lbg=app.querySelector("#listActBg"); if(lbg) lbg.onclick=()=>{ listActOpen=false; render(); };
   const las=app.querySelector("#listActSheet"); if(las) las.onclick=e=>e.stopPropagation();
@@ -4683,7 +4788,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>Add items…</span></button></div>`:""}
-  ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}  ${smartOpen?smartSheet():""}
+  ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -4749,6 +4854,7 @@ function wirePlanPage(){
   wireSmartSheet();
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>gotoPage(0);
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
+  wireUserTiles();
   wireOptions();
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
   wireEditSheet();
@@ -4892,6 +4998,42 @@ function wireOptions(){
     setAppStart(appStart()===cur ? "" : cur); });
   const oaf=app.querySelector("#optAppFactory"); if(oaf) oaf.onclick=()=>factoryAppearance();
   app.querySelectorAll("[data-opt-num]").forEach(b=>b.onclick=()=>bumpNum(b.dataset.optNum, +b.dataset.optDelta));
+  /* v1.80: the user tiles' controls. Same attribute shape as the bars above — the id, the key and the
+     direction travel in the attribute, so a tile added later needs no new handler. */
+  app.querySelectorAll("[data-tile-num]").forEach(b=>b.onclick=()=>{
+    const [id,k,d]=b.dataset.tileNum.split("|"); bumpTile(id, k, parseInt(d,10)); });
+  app.querySelectorAll("[data-tile-alpha]").forEach(b=>b.onclick=()=>{
+    const [id,d]=b.dataset.tileAlpha.split("|"); bumpTileAlpha(id, parseInt(d,10)); });
+  app.querySelectorAll("[data-tile-shade]").forEach(b=>b.onclick=()=>{
+    const [id,d]=b.dataset.tileShade.split("|"); bumpTileShade(id, parseInt(d,10)); });
+  app.querySelectorAll("[data-tile-col]").forEach(b=>b.onclick=()=>{
+    const [id,v]=b.dataset.tileCol.split("|"); patchTile(id,"col",v); });
+  app.querySelectorAll("[data-tile-act]").forEach(b=>b.onclick=()=>{
+    const [id,v]=b.dataset.tileAct.split("|"); patchTile(id,"act",v); });
+  app.querySelectorAll("[data-tile-cat]").forEach(b=>b.onclick=()=>{
+    const [id,v]=b.dataset.tileCat.split("|"); patchTile(id,"cat",v); });
+  app.querySelectorAll("[data-tile-del]").forEach(b=>b.onclick=()=>deleteTile(b.dataset.tileDel));
+  /* v1.80: the two text fields are written on `input` WITHOUT a render — a render rebuilds
+     app.innerHTML, which destroys the focused field, and iOS drops the keyboard the instant that
+     happens (the v1.45 note; #catInput is handled the same way). The value is persisted on every
+     keystroke and the page is rebuilt once, on blur, when the field is finished with. */
+  const tileText=(attr,key)=>app.querySelectorAll(`[data-tile-${attr}]`).forEach(inp=>{
+    const id=inp.dataset[attr==="label"?"tileLabel":"tileEmoji"];
+    inp.oninput=()=>{ const a=userTiles(); const t=a.find(x=>x.id===id); if(!t) return;
+      t[key]=inp.value; writeTiles(a); };
+    inp.onblur=()=>render(); });
+  tileText("label","label"); tileText("emoji","emoji");
+  /* v1.80: the custom picker follows the drag quietly, exactly as the v1.68 pickers do — committing
+     on every colour chosen inside a still-open iOS overlay would rebuild the page underneath it. */
+  app.querySelectorAll("[data-tile-custom]").forEach(inp=>{
+    const id=inp.dataset.tileCustom;
+    const quietSet=v=>{ const a=userTiles(); const t=a.find(x=>x.id===id); if(!t) return;
+      t.col=v; writeTiles(a); applyTheme(); };
+    inp.oninput=()=>{ _colorPicking=true; colorPeek(true); quietSet(inp.value); };
+    inp.onchange=()=>{ quietSet(inp.value); if(document.activeElement!==inp) endColorPick(); };
+    inp.onblur=()=>{ endColorPick(); }; });
+  const aut=app.querySelector("#addUserTile"); if(aut) aut.onclick=addUserTile;
+  wireUserTiles();
   const onr=app.querySelector("#optNumReset"); if(onr) onr.onclick=()=>resetNums();
   const ons=app.querySelector("#optNumSave"); if(ons) ons.onclick=()=>saveNumDefs();
   const onf=app.querySelector("#optNumFactory"); if(onf) onf.onclick=()=>factoryNums();
@@ -5355,6 +5497,26 @@ function optionsBody(){
             return chip(lo,"Darker") + chip(hi,"Lighter"); })()}`
       + `${Object.keys(pal).map(sw).join("")}</div></div>`;
   };
+  /* v1.80: a colour row for a tile of your own. Deliberately NOT a parameter on colRow above: that one
+     is load-bearing for sixteen fixed rows whose attribute names and SHADE_KEYS entries are fixed
+     strings, and a user tile has neither — its colour and its step live on the tile object, keyed by
+     id. Generalising colRow to take both shapes would put all sixteen at risk for the one row that is
+     not like them, so this emits the SAME classes and looks identical while carrying its own
+     attributes. */
+  const tileColRow=(t)=>{
+    const pal=ACCENTS, cur=t.col, lv=parseInt(t.shade,10)||0;
+    const sw=k=>`<button data-tile-col="${t.id}|${k}" class="colsw ${cur===k?'on':''}" style="background:${pal[k]}" aria-label="${k}" title="${k}"></button>`;
+    const isHex = typeof cur==="string" && cur.charAt(0)==="#";
+    const step=(d,lbl)=>`<button data-tile-shade="${t.id}|${d}" class="colbtn2 colspan3 colstep`
+      + `${(d<0?lv<0:lv>0)?' on':''}" aria-label="${lbl}" title="${lbl}"`
+      + `${(d<0?lv<=-SHADE_MAX:lv>=SHADE_MAX)?' disabled':''}>${lbl}${(d<0?lv<0:lv>0)?' '+Math.abs(lv):''}</button>`;
+    return `<div class="optrow optnl optrow-col"><span class="optlabel">Colour</span><div class="colgrid">
+      <button data-tile-col="${t.id}|auto" class="colbtn2 colspan3 ${cur==='auto'?'on':''}">Auto</button>`
+      + `<label class="colsw colcustom ${isHex?'on':''}" title="Any colour" style="${isHex?`background:${cur}`:''}">`
+      + `<input type="color" data-tile-custom="${t.id}" value="${isHex?cur:'#888888'}" aria-label="Custom colour"></label>`
+      + step(-1,"Darker") + step(1,"Lighter")
+      + `${Object.keys(pal).map(sw).join("")}</div></div>`;
+  };
   const subhead=t=>`<div class="optsub">${t}</div>`;
   /* v1.12 grouped settings; v1.29 the HR variant.
      v1.77 item 3: a section header is a button now, and the rows under it are folded into a body by
@@ -5485,6 +5647,33 @@ function optionsBody(){
       <div class="numgrid">
         <div class="numcell"><span>Search</span><div class="seg"><button data-opt-bara="srch|-1" aria-label="Less">−</button><span class="numval">${barAlpha("srch")}%</span><button data-opt-bara="srch|1" aria-label="More">+</button></div></div>
       </div></div></div>
+    ${/* v1.80: tiles of your own, under the same subhead-per-tile rule the three built-ins got in
+          v1.78 — one tile reads as ONE thing: what it says, what it does, then colour, transparency
+          and where it sits. The controls are deliberately the same shape as the bars' controls, so
+          there is nothing new to learn once you have moved the search bar once. */""}
+    ${subhead("My tiles")}
+    ${userTiles().map(t=>`
+    ${subhead(esc(t.label||"Shortcut"))}
+    <div class="optrow optnl" style="gap:7px">
+      <input data-tile-label="${esc(t.id)}" value="${esc(t.label||"")}" placeholder="Label" autocomplete="off" style="flex:1;min-width:0;padding:10px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:14px;font-weight:600" />
+      <input data-tile-emoji="${esc(t.id)}" value="${esc(t.emoji||"")}" placeholder="🙂" autocomplete="off" style="flex:0 0 62px;width:62px;text-align:center;padding:10px 6px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:16px" />
+    </div>
+    <div class="optrow optrow-wide optnl"><span class="optlabel">Does</span><div class="optwide">
+      <div class="seg segfull" style="flex-wrap:wrap">${Object.keys(TILE_ACTS).map(k=>
+        `<button data-tile-act="${esc(t.id)}|${k}" class="${t.act===k?'on':''}">${TILE_ACTS[k]}</button>`).join("")}</div></div></div>
+    ${t.act!=="cat" ? "" : `<div class="optrow optrow-wide optnl"><span class="optlabel">Category</span><div class="optwide">
+      <div style="display:flex;flex-wrap:wrap;gap:6px">${catList().map(c=>
+        `<button class="catchip" data-tile-cat="${esc(t.id)}|${esc(c.id)}" style="${t.cat===c.id?`background:${c.color};border-color:${c.color};color:#fff`:''}">${catIcon(c,15)} ${esc(c.label)}</button>`).join("")}</div></div></div>`}
+    ${tileColRow(t)}
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Transparency</span><div class="optwide">
+      <div class="numgrid">
+        <div class="numcell"><span>Tile</span><div class="seg"><button data-tile-alpha="${esc(t.id)}|-1" aria-label="Less">−</button><span class="numval">${(t.alpha===undefined?100:parseInt(t.alpha,10)||0)}%</span><button data-tile-alpha="${esc(t.id)}|1" aria-label="More">+</button></div></div>
+      </div></div></div>
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Size and place</span><div class="optwide">
+      <div class="numgrid">${Object.keys(TILE_NUM).map(k=>
+        `<div class="numcell"><span>${TILE_NUM[k].label}</span><div class="seg"><button data-tile-num="${esc(t.id)}|${k}|-1" aria-label="Less">−</button><span class="numval">${parseInt(t[k],10)||0}</span><button data-tile-num="${esc(t.id)}|${k}|1" aria-label="More">+</button></div></div>`).join("")}</div></div></div>
+    <button class="optaction" data-tile-del="${esc(t.id)}" style="border-color:#C24A33;color:#C24A33">Delete this tile</button>`).join("")}
+    <button class="optaction" id="addUserTile">＋ Add a tile</button>
 
     ${sectHR("Category headings")}
     ${/* v1.76 items 2 & 3: the heading's three colours, twice — the list and Regulars head different
@@ -5609,7 +5798,7 @@ function renderSettingsPage(){
       <div class="optpage">${optionsBody()}</div>
     </div></div>
     </div>
-    ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}
+    ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
     ${diagOpen?diagSheet():""}
     ${listsOpen?listsSheet():""}
     ${editing?editSheet():""}
@@ -5880,6 +6069,8 @@ function wire(){
   app.querySelectorAll("[data-example]").forEach(b=>b.onclick=()=>{ addEntries(b.dataset.example, null); });
   wireQuickPanel();
   const ac=app.querySelector("#addCat"); if(ac) ac.onclick=addCategory;
+
+  wireUserTiles();
 
   /* options sheet */
   wireOptions();

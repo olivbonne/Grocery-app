@@ -1,0 +1,2 @@
+# suites write their screenshots beside themselves; the images are output, not source
+*.png

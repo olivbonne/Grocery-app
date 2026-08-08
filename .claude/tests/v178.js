@@ -242,7 +242,11 @@ const SEED = (extra)=>`(() => {
   ok('the section is named for what it now holds',
      sec.names.includes('Bars and overlays') && !sec.names.includes('Top and bottom bars'),
      JSON.stringify(sec.names));
-  ok('…with one subhead per tile', sec.subs.join(',')==='Top bar,Bottom bar,Search bar', JSON.stringify(sec.subs));
+  /* SUPERSEDED by v1.80: the section gained a "My tiles" block for tiles of your own. The claim that
+     survives is about the three BUILT-IN tiles — one subhead each, in that order, before anything the
+     user has added. */
+  ok('…with one subhead per built-in tile, in order',
+     sec.subs.slice(0,3).join(',')==='Top bar,Bottom bar,Search bar', JSON.stringify(sec.subs));
   ok('…a colour row for each', sec.cols.length===3, JSON.stringify(sec.cols));
   ok('…a transparency for each', sec.alpha===6, String(sec.alpha));
   ok('…and every geometry number present exactly once',
