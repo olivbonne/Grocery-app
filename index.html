@@ -636,8 +636,14 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .iconbtn.on { background:var(--accent); color:var(--on-accent); }
   /* v1.58 item 2: the back chevron was a 20px glyph in an 8px pad — a small target for the control
      that leaves the page. 30px glyph, 44px tall, which is the minimum comfortable touch target. */
+  /* v1.79 item 2: an optical nudge, not a layout change. The button box is already centred on the
+     title's; it is the glyph inside it that sits low — measured, the chevron's ink centre falls 3.5px
+     below its line box's centre against the title's 2.0px. bottom padding lifts the centred content by
+     half its value, and 5px is what measuring the painted pixels asked for — the first estimate of
+     3px came from the font's own metrics and left the arrow 1.25px low, because the title's ink band
+     is its capitals (no descender in "Groceries.") rather than the em box those metrics describe. The 44px hit area is untouched. */
   .backbtn { border:none; background:transparent; color:var(--text); font-weight:800; font-size:30px;
-    line-height:1; border-radius:12px; padding:0 12px; min-height:44px; min-width:44px;
+    line-height:1; border-radius:12px; padding:0 12px 5px; min-height:44px; min-width:44px;
     display:inline-flex; align-items:center; justify-content:center; }
   .listgrid { display:flex; flex-direction:column; gap:12px; margin-top:6px; }
   .listbubble { display:flex; flex-direction:column; align-items:flex-start; gap:4px; width:100%; text-align:left;
@@ -891,10 +897,14 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.77 item 3: the section header — the same small uppercase label it always was, now a full-width
      button with a caret. */
   .optsect { display:flex; align-items:center; justify-content:space-between; width:100%; border:none;
-    background:transparent; text-align:left; cursor:pointer; padding:0;
+    border-top:1px solid var(--line); background:transparent; text-align:left; cursor:pointer;
+    padding:14px 0 0;
     margin:16px 0 2px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em;
     color:var(--muted); font-family:inherit; }
-  .optsect-hr { border-top:1px solid var(--line); padding-top:14px; }
+  /* v1.79 item 4: every section carries the rule now. Folded, Settings is a list of headers and
+     nothing else, so a rule above some of them and not others read as grouping that was not there.
+     The first one has nothing to separate it from. */
+  .optpage > .optsect:first-child, .optgrpbody:empty + .optsect { border-top:none; padding-top:0; }
   .optcaret::after { content:"▾"; font-size:11px; }
   .optsect.coll .optcaret::after { content:"▸"; }
   .optgrpbody { display:block; }
@@ -1400,7 +1410,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.78";
+const APP_VERSION = "v1.79";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -4483,7 +4493,11 @@ function renderListsPage(){
   app.innerHTML = `
     <div class="topfix" id="topfix">
       <header>
-        <div style="display:flex;align-items:center;gap:8px"><span class="title disp">Lists<span class="dot">.</span></span></div>
+        ${/* v1.79 item 1: Lists is the root page, so it has no back button — which left its title 52px to the
+              left of every other page's. The placeholder is the same class, empty and not a button, so the space
+              comes from the rule that defines the real one: 44px of min-width plus the row's own 8px gap. A
+              number typed here instead would drift the moment .backbtn changed. */""}
+        <div style="display:flex;align-items:center;gap:8px"><span class="backbtn" aria-hidden="true"></span><span class="title disp">Lists<span class="dot">.</span></span></div>
         <div style="display:flex;align-items:center;gap:8px">${syncChip()}</div>
       </header>
     </div>
@@ -5346,8 +5360,10 @@ function optionsBody(){
      v1.77 item 3: a section header is a button now, and the rows under it are folded into a body by
      groupOptions() after the render. Settings is sixteen colour rows long since v1.76 — an index you
      can close is the difference between a panel and a wall. */
-  const sect=t=>`<button class="optsect" data-sect="${esc(t)}">${t}<span class="optcaret" aria-hidden="true"></span></button>`;
-  const sectHR=t=>`<button class="optsect optsect-hr" data-sect="${esc(t)}">${t}<span class="optcaret" aria-hidden="true"></span></button>`;
+  /* v1.79 item 4: the two helpers emit the same header now — the rule is on .optsect itself and the
+     first header suppresses it in CSS. Both names stay because they are called from many places. */
+  const sectHR=t=>`<button class="optsect" data-sect="${esc(t)}">${t}<span class="optcaret" aria-hidden="true"></span></button>`;
+  const sect=sectHR;
   let curSort = (displayFor()==="cat" && (sortModeFor()==="location"||sortModeFor()==="ai")) ? "cat" : sortModeFor();
   if(curSort==="ai" && !aiSortOK()) curSort="location";
   return `
@@ -5413,6 +5429,13 @@ function optionsBody(){
     ${/* v1.57 item 2: Text size sits with the wallpaper and the theme — the three things that change
           the whole page at once — and with no rule between them, because they are one group. */""}
     ${rowNL("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
+    ${/* v1.79 item 3: Page margins moved out of Tiles and in beside Text size. It measures the whole
+          page, not a tile — it belongs with the other settings that resize everything at once. */""}
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Page margins</span><div class="optwide">
+      <div class="numgrid">${numCell("padl")}${numCell("padr")}${numCell("padt")}${numCell("padb")}</div>
+      <div class="numbtns"><button id="optNumSave" class="colbtn2">Set as my default</button>${
+        hasNumDefs()?`<button id="optNumReset" class="colbtn2">Reset to mine</button>`:""
+      }<button id="optNumFactory" class="colbtn2">Factory default</button></div></div></div>
     ${/* v1.75 item 3: the two page-change controls sit with Text size and the wallpaper — the settings
           that change how the whole app looks and moves rather than one part of it. */""}
     <div class="optrow optrow-wide optnl"><span class="optlabel">Page slides in from</span><div class="optwide">
@@ -5507,11 +5530,6 @@ function optionsBody(){
       <div class="numgrid">${numCell("rad")}</div></div></div>
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Tile gap</span><div class="optwide">
       <div class="numgrid">${numCell("gapx")}${numCell("gapy")}</div></div></div>
-    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Page margins</span><div class="optwide">
-      <div class="numgrid">${numCell("padl")}${numCell("padr")}${numCell("padt")}${numCell("padb")}</div>
-      <div class="numbtns"><button id="optNumSave" class="colbtn2">Set as my default</button>${
-        hasNumDefs()?`<button id="optNumReset" class="colbtn2">Reset to mine</button>`:""
-      }<button id="optNumFactory" class="colbtn2">Factory default</button></div></div></div>
     ${row("Item icons", `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">🍞</span>On</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
     ${sect("Sort")}
     ${rowNL("Location", `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">On</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">Off</button></div>`)}
