@@ -209,7 +209,6 @@ const SEED = (extra)=>`(() => {
   await page.locator('#addDone').click(); await page.waitForTimeout(1500);
   ok('…and closes', (await page.locator('#addSheet').count())===0, '');
   await lists();
-  await page.screenshot({ path: __dirname+'/../../.tmp-v179-lists.png' }).catch(()=>{});
   await settings();
 
   ok('no console errors anywhere in the run', errors.length===0, errors.slice(0,4).join(' | '));
