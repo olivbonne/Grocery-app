@@ -53,7 +53,14 @@ No build step, no framework. Firebase Firestore for live household sync, Vercel 
   (`executablePath: '/opt/pw-browsers/chromium'`), **stubs `www.gstatic.com/firebasejs/**`**
   (egress blocks it; the app runs local-only when `firebaseConfig.apiKey === "REPLACE_ME"`),
   walks onboarding (name → Join), pastes a sample list, screenshots at 390×844.
-- There are no unit tests; the smoke test + screenshot is the bar.
+- **Per-version suites live in `.claude/tests/`** — one file per version, run against a local
+  server (`node .claude/tests/v178.js <port> <out.png>`). See `.claude/tests/README.md` for how to
+  run them and what a check has to prove. Write the new version's suite there, then re-run the
+  existing ones as a regression sweep before shipping. Do NOT leave suites in the scratchpad: it is
+  not durable, and every suite up to v1.76 was lost that way.
+- When a version deliberately changes what an older check asserts, rewrite that check in place with
+  a `SUPERSEDED by vX.YZ:` note — do not delete it and do not leave it failing.
+- There are no unit tests; the suites + the smoke test + the screenshot are the bar.
 
 ## Environment quirks (Claude Code on the web)
 - Egress blocks most external hosts (x.com, blogs, Firebase JS CDN). `fonts.gstatic.com`
