@@ -1,0 +1,14 @@
+{
+  "name": "Iron Circle — Social Gym Tracker",
+  "short_name": "Iron Circle",
+  "description": "A private gym log for you and your circle — workouts, PRs, progress and a leaderboard.",
+  "start_url": "/gym.html",
+  "scope": "/gym.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B0B12",
+  "theme_color": "#0B0B12",
+  "icons": [
+    { "src": "img/gym-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -18,6 +18,14 @@
       "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
     },
     {
+      "source": "/gym.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
+    },
+    {
+      "source": "/gym.webmanifest",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
+    },
+    {
       "source": "/manifest.webmanifest",
       "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
     },

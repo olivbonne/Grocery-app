@@ -1,0 +1,2143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Iron Circle — Social Gym Tracker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="theme-color" content="#0B0B12">
+<meta name="description" content="A private gym log for you and your circle — workouts, PRs, progress and a leaderboard.">
+<link rel="manifest" href="gym.webmanifest">
+<link rel="icon" href="img/gym-icon.svg" type="image/svg+xml">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Iron Circle">
+<link rel="apple-touch-icon" href="img/gym-icon.svg">
+
+<style>
+/* ── Self-hosted Outfit (already in the repo — no external font requests) ───── */
+@font-face{
+  font-family:'Outfit';
+  src:url('outfit-latin.woff2') format('woff2');
+  font-weight:100 900; font-style:normal; font-display:swap;
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face{
+  font-family:'Outfit';
+  src:url('outfit-latin-ext.woff2') format('woff2');
+  font-weight:100 900; font-style:normal; font-display:swap;
+  unicode-range:U+0100-024F,U+0259,U+1E00-1EFF,U+2020,U+20A0-20AB,U+20AD-20CF,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* ── Midnight tokens ────────────────────────────────────────────────────────
+   Every colour lives here. The app is dark-only by design: it is meant to be
+   read at arm's length in a badly lit gym, so contrast is the brief.        */
+:root{
+  --bg:#0B0B12;
+  --bg-grad:radial-gradient(120% 80% at 50% -10%, #191A2B 0%, #0B0B12 60%);
+  --surface:#15162160;
+  --card:#171826;
+  --card-2:#1E2032;
+  --line:#2A2C42;
+  --line-soft:#22243A;
+  --text:#F2F3F8;
+  --text-2:#C6C8DC;
+  --muted:#8E90AE;
+  --accent:#7C6FFF;
+  --accent-2:#6450F0;
+  --accent-ink:#FFFFFF;
+  --accent-dim:#7C6FFF22;
+  --pr:#FFC94A;
+  --pr-dim:#FFC94A1F;
+  --good:#38D9A9;
+  --danger:#FF6B6B;
+  --danger-dim:#FF6B6B1A;
+
+  --r-sm:10px; --r:14px; --r-lg:20px; --r-pill:999px;
+  --pad:16px;
+  --nav-h:60px;
+  --shadow:0 10px 30px #00000066;
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{
+  font-family:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;
+  background:var(--bg); background-image:var(--bg-grad); background-attachment:fixed;
+  color:var(--text);
+  min-height:100dvh;
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior-y:none;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+input,textarea,select{-webkit-appearance:none;appearance:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+/* ── App frame ─────────────────────────────────────────────────────────────*/
+#app{max-width:520px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;position:relative}
+.screen{flex:1;display:flex;flex-direction:column;min-height:0}
+.scroll{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:0 var(--pad) calc(var(--nav-h) + var(--safe-b) + 28px);
+}
+.pad-bottom-lg{padding-bottom:calc(var(--nav-h) + var(--safe-b) + 120px)}
+
+/* ── Top bar ───────────────────────────────────────────────────────────────*/
+.topbar{
+  position:sticky;top:0;z-index:20;
+  padding:calc(var(--safe-t) + 12px) var(--pad) 12px;
+  display:flex;align-items:center;gap:10px;min-height:56px;
+  background:linear-gradient(180deg,#0B0B12EE 60%,#0B0B1200);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+}
+.topbar h1{font-size:24px;font-weight:700;letter-spacing:-.02em;margin:0;flex:1;min-width:0}
+.topbar .sub{display:block;font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0}
+.iconbtn{
+  width:40px;height:40px;flex:0 0 40px;border-radius:var(--r-pill);
+  display:grid;place-items:center;font-size:18px;
+  background:var(--card);border:1px solid var(--line);color:var(--text-2);
+}
+.iconbtn:active{transform:scale(.94)}
+
+/* ── Bottom nav ────────────────────────────────────────────────────────────*/
+nav.tabs{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;
+  max-width:520px;margin:0 auto;
+  height:calc(var(--nav-h) + var(--safe-b));padding-bottom:var(--safe-b);
+  display:grid;grid-template-columns:repeat(5,1fr);align-items:center;
+  background:#10111BF2;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  border-top:1px solid var(--line-soft);
+}
+nav.tabs button{
+  height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  font-size:10px;font-weight:600;letter-spacing:.02em;color:var(--muted);
+}
+nav.tabs button .ic{font-size:19px;line-height:1}
+nav.tabs button[aria-current="page"]{color:var(--accent)}
+nav.tabs button:active{transform:scale(.93)}
+
+/* ── Generic bits ──────────────────────────────────────────────────────────*/
+.card{background:var(--card);border:1px solid var(--line-soft);border-radius:var(--r-lg);padding:14px}
+.card + .card{margin-top:12px}
+.row{display:flex;align-items:center;gap:10px}
+.row.between{justify-content:space-between}
+.grow{flex:1;min-width:0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.tiny{font-size:11px}
+.bold{font-weight:700}
+.center{text-align:center}
+.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stack{display:flex;flex-direction:column;gap:12px}
+.hr{height:1px;background:var(--line-soft);margin:12px 0}
+.section-title{
+  font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--muted);margin:20px 2px 10px;
+}
+.section-title:first-child{margin-top:6px}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:48px;padding:0 18px;border-radius:var(--r-pill);
+  font-weight:700;font-size:16px;
+  background:linear-gradient(180deg,var(--accent),var(--accent-2));color:var(--accent-ink);
+  box-shadow:0 6px 18px #6450F04D;
+}
+.btn:active{transform:translateY(1px) scale(.99)}
+.btn[disabled]{opacity:.45;box-shadow:none;pointer-events:none}
+.btn.block{width:100%}
+.btn.ghost{background:var(--card-2);color:var(--text);box-shadow:none;border:1px solid var(--line)}
+.btn.danger{background:var(--danger-dim);color:var(--danger);box-shadow:none;border:1px solid #FF6B6B44}
+.btn.sm{min-height:38px;font-size:14px;padding:0 14px}
+.btn.xs{min-height:32px;font-size:13px;padding:0 12px;border-radius:var(--r-pill)}
+
+label.field{display:block;margin-bottom:12px}
+label.field > span{display:block;font-size:13px;font-weight:600;color:var(--text-2);margin:0 0 6px 2px}
+.input{
+  width:100%;min-height:48px;padding:12px 14px;
+  background:var(--card-2);border:1px solid var(--line);border-radius:var(--r);
+  color:var(--text);font-size:16px;
+}
+.input::placeholder{color:#6E7091}
+.input:focus{border-color:var(--accent);outline:none}
+textarea.input{min-height:80px;resize:vertical;line-height:1.45}
+select.input{
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 18px) 21px,calc(100% - 13px) 21px;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:38px;
+}
+
+.pills{display:flex;gap:8px;overflow-x:auto;padding:2px;scrollbar-width:none}
+.pills::-webkit-scrollbar{display:none}
+.pill{
+  flex:0 0 auto;padding:8px 14px;border-radius:var(--r-pill);
+  background:var(--card-2);border:1px solid var(--line);
+  font-size:13px;font-weight:600;color:var(--text-2);white-space:nowrap;
+}
+.pill[aria-pressed="true"]{background:var(--accent-dim);border-color:var(--accent);color:var(--text)}
+
+.badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 8px;border-radius:var(--r-pill);
+  font-size:11px;font-weight:700;letter-spacing:.02em;
+  background:var(--card-2);color:var(--text-2);border:1px solid var(--line);
+}
+.badge.pr{background:var(--pr-dim);color:var(--pr);border-color:#FFC94A44}
+.badge.accent{background:var(--accent-dim);color:#B3AAFF;border-color:#7C6FFF44}
+
+.avatar{
+  width:40px;height:40px;flex:0 0 40px;border-radius:var(--r-pill);
+  display:grid;place-items:center;font-size:20px;
+  background:var(--card-2);border:1px solid var(--line);
+}
+.avatar.sm{width:28px;height:28px;flex-basis:28px;font-size:14px}
+.avatar.lg{width:72px;height:72px;flex-basis:72px;font-size:36px}
+
+.empty{
+  text-align:center;color:var(--muted);font-size:14px;line-height:1.6;
+  padding:34px 18px;border:1px dashed var(--line);border-radius:var(--r-lg);
+}
+.empty .big{display:block;font-size:34px;margin-bottom:10px}
+
+/* ── Stat tiles ────────────────────────────────────────────────────────────*/
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.tiles.three{grid-template-columns:repeat(3,1fr)}
+.tile{background:var(--card);border:1px solid var(--line-soft);border-radius:var(--r);padding:12px}
+.tile .k{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tile .v{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-top:3px}
+.tile .v small{font-size:12px;font-weight:600;color:var(--muted);margin-left:2px}
+
+/* ── Feed ──────────────────────────────────────────────────────────────────*/
+.feed-card{background:var(--card);border:1px solid var(--line-soft);border-radius:var(--r-lg);padding:14px;margin-bottom:12px}
+.feed-head{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.ex-line{display:flex;justify-content:space-between;gap:10px;padding:6px 0;font-size:14px;border-top:1px solid var(--line-soft)}
+.ex-line:first-of-type{border-top:0}
+.ex-line .r{color:var(--muted);font-variant-numeric:tabular-nums;flex:0 0 auto}
+.social-bar{display:flex;gap:8px;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--line-soft)}
+.likebtn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--r-pill);background:var(--card-2);border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--text-2)}
+.likebtn[aria-pressed="true"]{background:var(--accent-dim);border-color:var(--accent);color:#B3AAFF}
+.comment{display:flex;gap:8px;margin-top:10px;font-size:14px;line-height:1.45}
+.comment .body{background:var(--card-2);border-radius:var(--r);padding:8px 11px;flex:1;min-width:0}
+.comment .who{font-weight:700;font-size:13px}
+.comment-form{display:flex;gap:8px;margin-top:10px}
+.comment-form .input{min-height:42px;padding:9px 12px;font-size:15px}
+
+/* ── Logger ────────────────────────────────────────────────────────────────*/
+.ex-card{background:var(--card);border:1px solid var(--line-soft);border-radius:var(--r-lg);padding:12px 12px 6px;margin-bottom:12px}
+.set-grid{display:grid;grid-template-columns:26px 1fr 1fr 44px 34px;gap:8px;align-items:center;margin-bottom:8px}
+.set-grid .idx{font-size:13px;font-weight:700;color:var(--muted);text-align:center}
+.set-grid .input{min-height:44px;padding:8px 10px;text-align:center;font-variant-numeric:tabular-nums}
+.set-grid .input.pr{border-color:#FFC94A66;background:#FFC94A14}
+.set-head{display:grid;grid-template-columns:26px 1fr 1fr 44px 34px;gap:8px;margin-bottom:6px}
+.set-head span{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-align:center}
+.checkbtn{
+  width:44px;height:44px;border-radius:var(--r);display:grid;place-items:center;font-size:16px;
+  background:var(--card-2);border:1px solid var(--line);color:var(--muted);
+}
+.checkbtn[aria-pressed="true"]{background:#38D9A91F;border-color:#38D9A966;color:var(--good)}
+.delbtn{width:34px;height:44px;display:grid;place-items:center;color:var(--muted);font-size:16px;border-radius:var(--r)}
+.delbtn:active{color:var(--danger)}
+
+.sticky-bar{
+  position:fixed;left:0;right:0;bottom:calc(var(--nav-h) + var(--safe-b));
+  max-width:520px;margin:0 auto;z-index:25;
+  padding:10px var(--pad);
+  background:linear-gradient(180deg,#0B0B1200,#0B0B12E6 30%);
+  display:flex;gap:10px;
+}
+.rest-chip{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(var(--nav-h) + var(--safe-b) + 74px);z-index:26;
+  padding:8px 16px;border-radius:var(--r-pill);
+  background:var(--accent-dim);border:1px solid var(--accent);color:#CFC9FF;
+  font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;
+  box-shadow:var(--shadow);
+}
+
+/* ── Charts ────────────────────────────────────────────────────────────────*/
+.chart{width:100%;display:block;overflow:visible}
+.chart .grid{stroke:var(--line-soft);stroke-width:1}
+.chart .axis{fill:var(--muted);font-size:9px;font-weight:600}
+.chart .lineseries{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.chart .area{fill:url(#gfill)}
+.chart .dot{fill:var(--accent);stroke:var(--card);stroke-width:2}
+.chart .dot.pr{fill:var(--pr);stroke:var(--card)}
+.chart .bar{fill:var(--accent);rx:3}
+.chart .bar.dim{fill:#7C6FFF55}
+
+/* ── Leaderboard ───────────────────────────────────────────────────────────*/
+.lb-row{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:var(--r);background:var(--card);border:1px solid var(--line-soft);margin-bottom:8px}
+.lb-row.me{border-color:var(--accent);background:#7C6FFF12}
+.lb-rank{width:26px;flex:0 0 26px;text-align:center;font-weight:800;font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums}
+.lb-val{font-weight:800;font-variant-numeric:tabular-nums;font-size:15px}
+.lb-bar{height:4px;border-radius:2px;background:var(--line);margin-top:5px;overflow:hidden}
+.lb-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent-2),var(--accent));border-radius:2px}
+
+/* ── Sheet / modal ─────────────────────────────────────────────────────────*/
+.sheet-wrap{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;justify-content:flex-end}
+.sheet-scrim{position:absolute;inset:0;background:#05060BC4;backdrop-filter:blur(3px)}
+.sheet{
+  position:relative;max-width:520px;width:100%;margin:0 auto;
+  background:#13141F;border:1px solid var(--line);border-bottom:0;
+  border-radius:var(--r-lg) var(--r-lg) 0 0;
+  padding:12px var(--pad) calc(var(--safe-b) + 16px);
+  max-height:88dvh;display:flex;flex-direction:column;
+  animation:up .22s cubic-bezier(.2,.8,.3,1);
+}
+@keyframes up{from{transform:translateY(18px);opacity:.4}to{transform:none;opacity:1}}
+.sheet .handle{width:40px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 12px;flex:0 0 auto}
+.sheet h2{margin:0 0 12px;font-size:19px;font-weight:700}
+.sheet-body{overflow-y:auto;min-height:0}
+.opt{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  padding:12px;border-radius:var(--r);background:var(--card);border:1px solid var(--line-soft);
+  margin-bottom:8px;font-size:15px;
+}
+.opt:active{border-color:var(--accent)}
+.opt .cat{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+
+.toast{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(var(--nav-h) + var(--safe-b) + 18px);z-index:80;
+  background:#23253A;border:1px solid var(--line);color:var(--text);
+  padding:11px 18px;border-radius:var(--r-pill);font-size:14px;font-weight:600;
+  box-shadow:var(--shadow);animation:up .2s ease;max-width:calc(100% - 32px);text-align:center;
+}
+
+/* ── Auth ──────────────────────────────────────────────────────────────────*/
+.auth{padding:calc(var(--safe-t) + 40px) 22px calc(var(--safe-b) + 30px);max-width:460px;margin:0 auto;width:100%}
+.logo{font-size:44px;line-height:1;margin-bottom:14px}
+.auth h1{font-size:31px;font-weight:800;letter-spacing:-.03em;margin:0 0 8px;line-height:1.1}
+.auth p.lede{color:var(--muted);font-size:15px;line-height:1.55;margin:0 0 26px}
+.err{background:var(--danger-dim);border:1px solid #FF6B6B44;color:#FFAFAF;padding:10px 13px;border-radius:var(--r);font-size:14px;margin-bottom:12px}
+.note{background:var(--accent-dim);border:1px solid #7C6FFF3D;color:#C4BDFF;padding:11px 13px;border-radius:var(--r);font-size:13.5px;line-height:1.5;margin-bottom:14px}
+.switcher{display:flex;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-pill);padding:4px;margin-bottom:22px}
+.switcher button{flex:1;padding:10px;border-radius:var(--r-pill);font-size:14px;font-weight:700;color:var(--muted)}
+.switcher button[aria-pressed="true"]{background:var(--accent-dim);color:var(--text)}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+<div id="app"><div class="screen"><div class="scroll"></div></div></div>
+
+<script type="module">
+/* ═══════════════════════════════════════════════════════════════════════════
+   Iron Circle — a social gym tracker for a private circle of friends.
+
+   Single file, no build step, no framework, no network at runtime. State lives
+   in localStorage under one key so the whole app is one JSON document that can
+   be inspected, exported and re-imported.
+
+   Layout of this file:
+     1. Constants + tiny helpers
+     2. Storage + state
+     3. Domain logic (volume, e1RM, PR detection, leaderboards)
+     4. Seed data
+     5. Auth
+     6. Chart primitives (hand-rolled SVG — nothing is fetched)
+     7. Screens
+     8. Event wiring + boot
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const APP_VERSION = '1.00';
+const STORE_KEY   = 'ironcircle.v1';
+const KG_PER_LB   = 0.45359237;
+
+/* ── 1. Constants + helpers ─────────────────────────────────────────────── */
+
+const CATEGORIES = ['Chest','Back','Legs','Shoulders','Arms','Core','Cardio'];
+
+const CAT_EMOJI = {
+  Chest:'🫁', Back:'🪢', Legs:'🦵', Shoulders:'🏔️', Arms:'💪', Core:'🎯', Cardio:'🏃',
+};
+
+// The starter catalogue. Free-form entry is always allowed — this is a
+// convenience list, not a set of routines. (Spec: no predefined routines.)
+const CATALOG = [
+  ['Bench Press','Chest'],['Incline Bench Press','Chest'],['Dumbbell Press','Chest'],
+  ['Cable Fly','Chest'],['Push-up','Chest'],['Dip','Chest'],
+  ['Deadlift','Back'],['Barbell Row','Back'],['Pull-up','Back'],['Chin-up','Back'],
+  ['Lat Pulldown','Back'],['Seated Row','Back'],['Face Pull','Back'],
+  ['Back Squat','Legs'],['Front Squat','Legs'],['Leg Press','Legs'],
+  ['Romanian Deadlift','Legs'],['Lunge','Legs'],['Leg Curl','Legs'],
+  ['Leg Extension','Legs'],['Calf Raise','Legs'],['Hip Thrust','Legs'],
+  ['Overhead Press','Shoulders'],['Arnold Press','Shoulders'],['Lateral Raise','Shoulders'],
+  ['Rear Delt Fly','Shoulders'],['Upright Row','Shoulders'],
+  ['Barbell Curl','Arms'],['Dumbbell Curl','Arms'],['Hammer Curl','Arms'],
+  ['Triceps Pushdown','Arms'],['Skull Crusher','Arms'],['Close-grip Bench','Arms'],
+  ['Plank','Core'],['Hanging Leg Raise','Core'],['Cable Crunch','Core'],
+  ['Ab Wheel','Core'],['Russian Twist','Core'],
+  ['Treadmill Run','Cardio'],['Rowing Machine','Cardio'],['Cycling','Cardio'],
+  ['Stair Climber','Cardio'],['Jump Rope','Cardio'],
+].map(([name,cat]) => ({name, cat}));
+
+const AVATARS = ['🦍','🐺','🦅','🐅','🦏','🐻','🦌','🐉','🦈','⚡','🔥','🥷','🚀','🎯','🪨','🧊'];
+
+const $  = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+
+const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => (
+  {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+));
+
+const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+
+const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
+
+/** Round for display: whole numbers stay whole, decimals keep one place. */
+const fmt = (n) => {
+  if (!Number.isFinite(n)) return '0';
+  const r = Math.round(n * 10) / 10;
+  return Number.isInteger(r) ? String(r) : r.toFixed(1);
+};
+
+/** Big numbers get a thousands separator; very big ones get a k. */
+const fmtBig = (n) => n >= 100000 ? Math.round(n / 1000) + 'k'
+                   : Math.round(n).toLocaleString('en-US');
+
+const dayStart = (d) => { const x = new Date(d); x.setHours(0,0,0,0); return x; };
+const DAY = 86400000;
+
+const relDate = (iso) => {
+  const then = dayStart(iso), now = dayStart(Date.now());
+  const days = Math.round((now - then) / DAY);
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7)   return days + ' days ago';
+  return new Date(iso).toLocaleDateString(undefined, { day:'numeric', month:'short' });
+};
+
+const fullDate = (iso) => new Date(iso).toLocaleDateString(undefined,
+  { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+
+const relTime = (iso) => {
+  const mins = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (mins < 1)  return 'just now';
+  if (mins < 60) return mins + 'm';
+  if (mins < 1440) return Math.round(mins / 60) + 'h';
+  return Math.round(mins / 1440) + 'd';
+};
+
+/* A deliberately simple, NON-cryptographic digest. Everything here is local to
+   the device — there is no server to authenticate against — so this only keeps
+   the password out of localStorage in plain sight. It is not security. */
+function digest(str){
+  let h1 = 0x811c9dc5, h2 = 0x01000193;
+  for (let i = 0; i < str.length; i++){
+    const c = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 0x01000193);
+    h2 = Math.imul(h2 + c, 0x85ebca6b) ^ (h2 >>> 7);
+  }
+  return ((h1 >>> 0).toString(16) + (h2 >>> 0).toString(16)).padStart(16, '0');
+}
+
+/* ── 2. Storage + state ─────────────────────────────────────────────────── */
+
+const blank = () => ({
+  version: 1,
+  users: [],
+  session: null,
+  workouts: [],
+  likes: {},       // workoutId -> [userId]
+  comments: [],    // {id, workoutId, userId, text, at}
+  draft: null,     // the in-progress workout, if any
+  inviteCode: 'IRON-2026',
+  ui: { unit: 'kg' },
+});
+
+let state = blank();
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    state = Object.assign(blank(), parsed);
+    state.ui = Object.assign({ unit:'kg' }, parsed.ui);
+    return true;
+  }catch(err){
+    console.warn('Stored data was unreadable — starting fresh.', err);
+    return false;
+  }
+}
+
+let saveTimer = null;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+    catch(err){ console.warn('Could not save.', err); toast('Storage is full — could not save.'); }
+  }, 60);
+}
+
+const me       = () => state.users.find(u => u.id === state.session) || null;
+const userById = (id) => state.users.find(u => u.id === id) || null;
+
+/** Everyone whose activity I can see: me plus my confirmed circle. */
+function circleIds(){
+  const m = me();
+  if (!m) return [];
+  return [m.id, ...(m.friends || []).filter(id => userById(id))];
+}
+
+/* ── Units ──────────────────────────────────────────────────────────────────
+   Weights are stored in kilograms, always. The unit setting is a display
+   concern only, applied at the edges: `toDisp` on the way out, `toKg` on the
+   way in. Nothing downstream of storage ever has to think about it.        */
+
+const unit    = () => state.ui.unit;
+const toDisp  = (kg) => unit() === 'lb' ? kg / KG_PER_LB : kg;
+const toKg    = (v)  => unit() === 'lb' ? v * KG_PER_LB  : v;
+const wLabel  = (kg) => fmt(toDisp(kg)) + ' ' + unit();
+const volLabel = (kg) => fmtBig(toDisp(kg)) + ' ' + unit();
+
+/* ── 3. Domain logic ────────────────────────────────────────────────────── */
+
+const doneSets = (w) => w.exercises.flatMap(ex => ex.sets.filter(s => s.done));
+
+/** Total tonnage: weight × reps over every completed set. */
+const workoutVolume = (w) =>
+  doneSets(w).reduce((sum, s) => sum + s.weight * s.reps, 0);
+
+const workoutSetCount = (w) => doneSets(w).length;
+
+const workoutPRs = (w) => doneSets(w).filter(s => s.pr).length;
+
+/** Epley estimate. Capped at 12 reps — beyond that the formula drifts badly. */
+function e1rm(weight, reps){
+  if (weight <= 0 || reps <= 0) return 0;
+  if (reps === 1) return weight;
+  return weight * (1 + Math.min(reps, 12) / 30);
+}
+
+const exKey = (name) => String(name).trim().toLowerCase();
+
+/**
+ * Recompute every PR flag for one user, from scratch.
+ *
+ * Walking the whole history in date order is the only approach that stays
+ * correct under editing: if you delete the session that held your bench PR,
+ * the next-best set has to become the PR again, and an incremental "is this
+ * bigger than the best I know about" check can never undo a flag. Histories
+ * here are small enough that a full pass costs nothing.
+ */
+function recomputePRs(userId){
+  const sessions = state.workouts
+    .filter(w => w.userId === userId)
+    .sort((a, b) => new Date(a.date) - new Date(b.date) || a.createdAt - b.createdAt);
+
+  const bestWeight = Object.create(null);   // heaviest single set
+  const bestVolume = Object.create(null);   // heaviest weight × reps
+
+  for (const w of sessions){
+    for (const ex of w.exercises){
+      const key = exKey(ex.name);
+      for (const s of ex.sets){
+        s.prWeight = false; s.prVolume = false; s.pr = false;
+        if (!s.done || s.reps <= 0) continue;
+
+        const vol = s.weight * s.reps;
+        if (s.weight > 0 && s.weight > (bestWeight[key] ?? 0)){
+          s.prWeight = true; bestWeight[key] = s.weight;
+        }
+        if (vol > 0 && vol > (bestVolume[key] ?? 0)){
+          s.prVolume = true; bestVolume[key] = vol;
+        }
+        s.pr = s.prWeight || s.prVolume;
+      }
+    }
+  }
+}
+
+/** Every distinct exercise a user has logged, most recently used first. */
+function exercisesFor(userId){
+  const seen = new Map();
+  state.workouts
+    .filter(w => w.userId === userId)
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .forEach(w => w.exercises.forEach(ex => {
+      if (!seen.has(exKey(ex.name))) seen.set(exKey(ex.name), ex.name);
+    }));
+  return [...seen.values()];
+}
+
+/** One point per session for one exercise: best weight, best e1RM, volume. */
+function exerciseSeries(userId, name){
+  const key = exKey(name);
+  return state.workouts
+    .filter(w => w.userId === userId)
+    .map(w => {
+      const sets = w.exercises
+        .filter(ex => exKey(ex.name) === key)
+        .flatMap(ex => ex.sets.filter(s => s.done && s.reps > 0));
+      if (!sets.length) return null;
+      return {
+        t: new Date(w.date).getTime(),
+        date: w.date,
+        workoutId: w.id,
+        topWeight: Math.max(...sets.map(s => s.weight)),
+        e1rm:      Math.max(...sets.map(s => e1rm(s.weight, s.reps))),
+        volume:    sets.reduce((sum, s) => sum + s.weight * s.reps, 0),
+        pr:        sets.some(s => s.pr),
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.t - b.t);
+}
+
+const TIMEFRAMES = {
+  week:  { label:'This week',  days:7   },
+  month: { label:'This month', days:30  },
+  all:   { label:'All time',   days:null },
+};
+
+function sinceFor(tf){
+  const spec = TIMEFRAMES[tf] || TIMEFRAMES.all;
+  return spec.days === null ? 0 : dayStart(Date.now() - (spec.days - 1) * DAY).getTime();
+}
+
+function workoutsInFrame(userId, tf){
+  const since = sinceFor(tf);
+  return state.workouts.filter(w =>
+    w.userId === userId && new Date(w.date).getTime() >= since);
+}
+
+/** Leaderboard by total tonnage across the circle. */
+function boardByVolume(tf){
+  return circleIds().map(id => {
+    const ws = workoutsInFrame(id, tf);
+    return {
+      userId: id,
+      value: ws.reduce((sum, w) => sum + workoutVolume(w), 0),
+      meta: ws.length + (ws.length === 1 ? ' session' : ' sessions'),
+      display: (v) => volLabel(v),
+    };
+  }).sort((a, b) => b.value - a.value);
+}
+
+/** Leaderboard by best estimated 1RM on one lift. */
+function boardByExercise(name, tf){
+  const key = exKey(name);
+  return circleIds().map(id => {
+    let best = 0, bestReps = 0, bestW = 0;
+    for (const w of workoutsInFrame(id, tf)){
+      for (const ex of w.exercises){
+        if (exKey(ex.name) !== key) continue;
+        for (const s of ex.sets){
+          if (!s.done || s.reps <= 0) continue;
+          const est = e1rm(s.weight, s.reps);
+          if (est > best){ best = est; bestReps = s.reps; bestW = s.weight; }
+        }
+      }
+    }
+    return {
+      userId: id,
+      value: best,
+      meta: best ? `${fmt(toDisp(bestW))} × ${bestReps}` : 'no lifts logged',
+      display: (v) => v ? wLabel(v) : '—',
+    };
+  }).sort((a, b) => b.value - a.value);
+}
+
+/** Every exercise anyone in the circle has logged — the board's dropdown. */
+function circleExercises(){
+  const seen = new Map();
+  const ids = new Set(circleIds());
+  for (const w of state.workouts){
+    if (!ids.has(w.userId)) continue;
+    for (const ex of w.exercises){
+      if (!seen.has(exKey(ex.name))) seen.set(exKey(ex.name), ex.name);
+    }
+  }
+  return [...seen.values()].sort((a, b) => a.localeCompare(b));
+}
+
+/** Volume per day for the last n days — the bar chart on Stats. */
+function volumeByDay(userId, days){
+  const out = [];
+  const today = dayStart(Date.now()).getTime();
+  for (let i = days - 1; i >= 0; i--){
+    const d = today - i * DAY;
+    const vol = state.workouts
+      .filter(w => w.userId === userId && dayStart(w.date).getTime() === d)
+      .reduce((sum, w) => sum + workoutVolume(w), 0);
+    out.push({ t: d, v: vol });
+  }
+  return out;
+}
+
+/** Consecutive weeks, counting back from this one, with at least one session. */
+function weekStreak(userId){
+  const ws = state.workouts.filter(w => w.userId === userId);
+  if (!ws.length) return 0;
+  const weekOf = (ms) => {
+    const d = dayStart(ms);
+    const dow = (d.getDay() + 6) % 7;      // Monday = 0
+    return d.getTime() - dow * DAY;
+  };
+  const active = new Set(ws.map(w => weekOf(new Date(w.date).getTime())));
+  let cursor = weekOf(Date.now()), streak = 0;
+  // A week that has not finished yet should not break the streak.
+  if (!active.has(cursor)) cursor -= 7 * DAY;
+  while (active.has(cursor)){ streak++; cursor -= 7 * DAY; }
+  return streak;
+}
+
+/* ── 4. Seed data ───────────────────────────────────────────────────────── */
+
+/* A circle with history in it, so the feed, the board and the charts all have
+   something to say the moment someone signs up. The signed-up user starts
+   empty — their own history is theirs to write — and can pull in a sample
+   block from Profile if they want to see the charts populated. */
+
+function seedCircle(){
+  const people = [
+    { name:'Mara',  email:'mara@circle.gym',  avatar:'🦅', bio:'Powerlifter. Sleeps like it is a sport.' },
+    { name:'Dev',   email:'dev@circle.gym',   avatar:'🐅', bio:'Volume merchant. Never skips legs.' },
+    { name:'Tomas', email:'tomas@circle.gym', avatar:'🐺', bio:'Back day enthusiast, cardio sceptic.' },
+    { name:'Anke',  email:'anke@circle.gym',  avatar:'⚡', bio:'Early mornings, heavy pulls.' },
+  ];
+
+  const users = people.map(p => ({
+    id: uid(), ...p,
+    pass: digest('demo'),
+    joined: new Date(Date.now() - 200 * DAY).toISOString(),
+    friends: [],
+    demo: true,
+  }));
+  users.forEach(u => u.friends = users.filter(o => o.id !== u.id).map(o => o.id));
+  state.users.push(...users);
+
+  // Deterministic pseudo-random so a re-seed looks the same and progression
+  // reads as progression rather than noise.
+  let seedN = 20260809;
+  const rnd = () => (seedN = (seedN * 1103515245 + 12345) % 2147483648) / 2147483648;
+  const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
+
+  const plans = {
+    Push: [['Bench Press',60,5],['Overhead Press',35,6],['Incline Bench Press',45,8],['Triceps Pushdown',25,12],['Lateral Raise',10,14]],
+    Pull: [['Deadlift',90,4],['Barbell Row',55,8],['Lat Pulldown',50,10],['Barbell Curl',25,10],['Face Pull',18,15]],
+    Legs: [['Back Squat',80,5],['Romanian Deadlift',70,8],['Leg Press',120,10],['Leg Curl',35,12],['Calf Raise',40,15]],
+  };
+  const names = Object.keys(plans);
+  const catOf = (n) => (CATALOG.find(c => exKey(c.name) === exKey(n)) || { cat:'Chest' }).cat;
+
+  users.forEach((u, ui) => {
+    const strength = 0.82 + ui * 0.13;          // each lifter has their own level
+    for (let wk = 7; wk >= 0; wk--){            // eight weeks of history
+      const sessionsThisWeek = 2 + Math.floor(rnd() * 2);
+      for (let s = 0; s < sessionsThisWeek; s++){
+        const dayOffset = wk * 7 - (s * 2 + Math.floor(rnd() * 2));
+        if (dayOffset < 0) continue;
+        const when = new Date(dayStart(Date.now() - dayOffset * DAY).getTime() + (7 + ui) * 3600e3);
+        const title = names[(wk + s + ui) % names.length];
+        // ~1.8% a week, with a session-to-session wobble. Without the wobble
+        // every session beats the last one on every lift, and a PR badge that
+        // appears on everything says nothing.
+        const progress = (1 + (7 - wk) * 0.018) * (0.955 + rnd() * 0.06);
+
+        const exercises = plans[title].map(([name, base, reps]) => {
+          const top = Math.round(base * strength * progress / 2.5) * 2.5;
+          const setCount = 3 + (rnd() > 0.65 ? 1 : 0);
+          const sets = [];
+          for (let i = 0; i < setCount; i++){
+            const drop = i === 0 ? 0 : Math.round(top * 0.05 * i / 2.5) * 2.5;
+            sets.push({
+              id: uid(),
+              weight: Math.max(2.5, top - drop),
+              reps: clamp(reps + (i ? Math.floor(rnd() * 3) : 0), 1, 20),
+              done: true, pr:false, prWeight:false, prVolume:false,
+            });
+          }
+          return { id: uid(), name, cat: catOf(name), sets };
+        });
+
+        state.workouts.push({
+          id: uid(), userId: u.id,
+          date: when.toISOString(),
+          title: title + ' day',
+          note: rnd() > 0.75 ? pick(['Felt strong.','Short on time.','Elbow a bit cranky.','Good session.','Grip gave out first.']) : '',
+          duration: 45 + Math.floor(rnd() * 40),
+          createdAt: when.getTime(),
+        });
+        state.workouts[state.workouts.length - 1].exercises = exercises;
+      }
+    }
+  });
+
+  users.forEach(u => recomputePRs(u.id));
+
+  // A little social history on the most recent sessions.
+  const recent = [...state.workouts].sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 10);
+  const lines = [
+    'Massive. 👏', 'That squat number is unreal.', 'Beltless? Respect.',
+    'Catching you next week 😤', 'Solid session.', 'PR! Let’s go 🔥',
+    'How was the elbow?', 'Stealing this workout.',
+  ];
+  recent.forEach((w, i) => {
+    const others = users.filter(u => u.id !== w.userId);
+    state.likes[w.id] = others.slice(0, 1 + Math.floor(rnd() * others.length)).map(u => u.id);
+    if (i % 3 === 0){
+      const who = pick(others);
+      state.comments.push({
+        id: uid(), workoutId: w.id, userId: who.id,
+        text: pick(lines),
+        at: new Date(new Date(w.date).getTime() + 3600e3).toISOString(),
+      });
+    }
+  });
+}
+
+/** Copy the shape of a demo lifter's history onto the signed-in user. */
+function loadSampleForMe(){
+  const m = me();
+  if (!m) return;
+  const donor = state.users.find(u => u.demo);
+  if (!donor) return;
+  const mine = state.workouts.filter(w => w.userId === donor.id).slice(-14);
+  mine.forEach(w => {
+    state.workouts.push({
+      ...structuredClone(w),
+      id: uid(), userId: m.id,
+      exercises: structuredClone(w.exercises).map(ex => ({
+        ...ex, id: uid(),
+        sets: ex.sets.map(s => ({ ...s, id: uid(), weight: Math.round(s.weight * 0.9 / 2.5) * 2.5 })),
+      })),
+    });
+  });
+  recomputePRs(m.id);
+  save();
+  toast('Sample history added');
+}
+
+/* ── 5. Auth ────────────────────────────────────────────────────────────── */
+
+const ui = {
+  screen: 'feed',
+  authMode: 'signin',
+  authError: '',
+  // What is currently typed into the auth form. A rejected sign-up re-renders
+  // the screen to show the error, and without this the re-render would wipe
+  // every field — being told the invite code is wrong should not cost you your
+  // name, your email and your password.
+  authValues: { name:'', email:'', password:'', invite:'', avatar: AVATARS[0] },
+  magicCode: null,
+  statExercise: null,
+  statMetric: 'e1rm',
+  boardMetric: 'volume',
+  boardExercise: null,
+  boardFrame: 'week',
+  historyQuery: '',
+  openWorkout: null,
+  sheet: null,
+  restEndsAt: null,
+};
+
+function signUp({ name, email, password, invite, avatar }){
+  name = name.trim(); email = email.trim().toLowerCase();
+  if (name.length < 2)      return 'Please enter your name.';
+  if (!/^\S+@\S+\.\S+$/.test(email)) return 'That email does not look right.';
+  if (password.length < 4)  return 'Use at least 4 characters for the password.';
+  if (invite.trim().toUpperCase() !== state.inviteCode)
+    return 'That invite code is not valid. This circle is invite-only.';
+  if (state.users.some(u => u.email === email))
+    return 'There is already an account with that email.';
+
+  const user = {
+    id: uid(), name, email, avatar: avatar || '🔥',
+    pass: digest(password), bio: '',
+    joined: new Date().toISOString(),
+    friends: state.users.filter(u => u.demo).map(u => u.id),
+  };
+  // The circle is mutual — everyone already in it gains the new member.
+  state.users.forEach(u => { if (u.demo) u.friends.push(user.id); });
+  state.users.push(user);
+  state.session = user.id;
+  save();
+  return null;
+}
+
+function signIn({ email, password }){
+  const user = state.users.find(u => u.email === email.trim().toLowerCase());
+  if (!user) return 'No account with that email.';
+  if (user.pass !== digest(password)) return 'That password is not right.';
+  state.session = user.id;
+  save();
+  return null;
+}
+
+function signOut(){
+  state.session = null;
+  state.draft = null;
+  ui.screen = 'feed';
+  save();
+  render();
+}
+
+/* ── 6. Charts ──────────────────────────────────────────────────────────────
+   Hand-rolled SVG. A charting library would be a network dependency and this
+   app has none — and two chart types is less code than an adapter would be. */
+
+function lineChart(points, opts = {}){
+  const w = 320, h = opts.h || 168;
+  const pad = { l: 38, r: 12, t: 14, b: 22 };
+  if (points.length === 0) return '';
+
+  const iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
+  const ys = points.map(p => p.v);
+  const maxY = Math.max(...ys) * 1.12 || 1;
+  const minY = 0;
+  const xs = points.map(p => p.t);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const spanX = maxX - minX;
+
+  const px = (t) => spanX === 0 ? pad.l + iw / 2 : pad.l + ((t - minX) / spanX) * iw;
+  const py = (v) => pad.t + ih - ((v - minY) / (maxY - minY)) * ih;
+
+  const coords = points.map(p => [px(p.t), py(p.v)]);
+  const path = coords.map(([x, y], i) => (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1)).join(' ');
+  const area = path + ` L${coords[coords.length-1][0].toFixed(1)} ${pad.t+ih} L${coords[0][0].toFixed(1)} ${pad.t+ih} Z`;
+
+  // Four gridlines with labels, rounded to something readable.
+  let grid = '';
+  for (let i = 0; i <= 3; i++){
+    const v = minY + (maxY - minY) * (i / 3);
+    const y = py(v);
+    grid += `<line class="grid" x1="${pad.l}" y1="${y.toFixed(1)}" x2="${w-pad.r}" y2="${y.toFixed(1)}"/>`
+         +  `<text class="axis" x="${pad.l-6}" y="${(y+3).toFixed(1)}" text-anchor="end">${opts.fmtY ? opts.fmtY(v) : fmtBig(v)}</text>`;
+  }
+
+  const dots = points.map((p, i) => {
+    const [x, y] = coords[i];
+    const isPR = !!p.pr;
+    return `<circle class="dot${isPR ? ' pr' : ''}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${isPR ? 4.5 : 3.2}">`
+         + `<title>${esc(opts.tip ? opts.tip(p) : fmt(p.v))}</title></circle>`;
+  }).join('');
+
+  const first = new Date(minX).toLocaleDateString(undefined, { day:'numeric', month:'short' });
+  const last  = new Date(maxX).toLocaleDateString(undefined, { day:'numeric', month:'short' });
+  const axisX = spanX === 0
+    ? `<text class="axis" x="${w/2}" y="${h-6}" text-anchor="middle">${esc(first)}</text>`
+    : `<text class="axis" x="${pad.l}" y="${h-6}">${esc(first)}</text>`
+      + `<text class="axis" x="${w-pad.r}" y="${h-6}" text-anchor="end">${esc(last)}</text>`;
+
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(opts.label || 'Progress chart')}" preserveAspectRatio="none">
+    <defs><linearGradient id="gfill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7C6FFF" stop-opacity=".28"/>
+      <stop offset="100%" stop-color="#7C6FFF" stop-opacity="0"/>
+    </linearGradient></defs>
+    ${grid}
+    ${points.length > 1 ? `<path class="area" d="${area}"/><path class="lineseries" d="${path}"/>` : ''}
+    ${dots}${axisX}
+  </svg>`;
+}
+
+function barChart(points, opts = {}){
+  const w = 320, h = opts.h || 120;
+  const pad = { l: 38, r: 12, t: 10, b: 18 };
+  const iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
+  const maxY = Math.max(...points.map(p => p.v)) || 1;
+  const bw = Math.max(2, iw / points.length - 2);
+
+  const bars = points.map((p, i) => {
+    const x = pad.l + (i * iw) / points.length;
+    const bh = (p.v / maxY) * ih;
+    const y = pad.t + ih - bh;
+    const label = new Date(p.t).toLocaleDateString(undefined, { day:'numeric', month:'short' });
+    return `<rect class="bar${p.v ? '' : ' dim'}" x="${x.toFixed(1)}" y="${(p.v ? y : pad.t+ih-1).toFixed(1)}" `
+         + `width="${bw.toFixed(1)}" height="${(p.v ? bh : 1).toFixed(1)}" rx="2">`
+         + `<title>${esc(label)} — ${p.v ? volLabel(p.v) : 'rest'}</title></rect>`;
+  }).join('');
+
+  let grid = '';
+  for (let i = 0; i <= 2; i++){
+    const v = (maxY * i) / 2, y = pad.t + ih - (i / 2) * ih;
+    grid += `<line class="grid" x1="${pad.l}" y1="${y}" x2="${w-pad.r}" y2="${y}"/>`
+         +  `<text class="axis" x="${pad.l-6}" y="${y+3}" text-anchor="end">${fmtBig(toDisp(v))}</text>`;
+  }
+
+  return `<svg class="chart" viewBox="0 0 ${w} ${h}" role="img" aria-label="${esc(opts.label||'Volume per day')}" preserveAspectRatio="none">
+    ${grid}${bars}
+  </svg>`;
+}
+
+/* ── 7. Screens ─────────────────────────────────────────────────────────── */
+
+const TABS = [
+  { id:'feed',    label:'Feed',    ic:'🏠' },
+  { id:'log',     label:'Log',     ic:'➕' },
+  { id:'stats',   label:'Stats',   ic:'📈' },
+  { id:'board',   label:'Board',   ic:'🏆' },
+  { id:'profile', label:'You',     ic:'👤' },
+];
+
+function navHTML(){
+  return `<nav class="tabs">${TABS.map(t => `
+    <button data-act="tab" data-tab="${t.id}" ${ui.screen === t.id ? 'aria-current="page"' : ''}>
+      <span class="ic">${t.ic}</span><span>${t.label}</span>
+    </button>`).join('')}</nav>`;
+}
+
+function topbar(title, sub, right = ''){
+  return `<header class="topbar">
+    <h1>${esc(title)}${sub ? `<span class="sub">${esc(sub)}</span>` : ''}</h1>
+    ${right}
+  </header>`;
+}
+
+/* ── Auth screen ──────────────────────────────────────────────────────── */
+
+function renderAuth(){
+  const signup = ui.authMode === 'signup';
+  const v = ui.authValues;
+  return `<div class="screen"><div class="scroll" style="padding:0">
+    <div class="auth">
+      <div class="logo">🏋️</div>
+      <h1>Iron Circle</h1>
+      <p class="lede">A private gym log for you and the handful of people you actually train near. Log lifts, watch the lines go up, and give each other no peace on the leaderboard.</p>
+
+      <div class="switcher" role="group">
+        <button data-act="authmode" data-mode="signin" aria-pressed="${!signup}">Sign in</button>
+        <button data-act="authmode" data-mode="signup" aria-pressed="${signup}">Join</button>
+      </div>
+
+      ${ui.authError ? `<div class="err">${esc(ui.authError)}</div>` : ''}
+
+      <form id="authform" novalidate>
+        ${signup ? `
+          <label class="field"><span>Name</span>
+            <input class="input" name="name" value="${esc(v.name)}" autocomplete="name" placeholder="What your friends call you" required></label>` : ''}
+
+        <label class="field"><span>Email</span>
+          <input class="input" name="email" type="email" value="${esc(v.email)}" inputmode="email" autocapitalize="none"
+                 autocomplete="${signup ? 'email' : 'username'}" placeholder="you@example.com" required></label>
+
+        <label class="field"><span>Password</span>
+          <input class="input" name="password" type="password" value="${esc(v.password)}"
+                 autocomplete="${signup ? 'new-password' : 'current-password'}" placeholder="••••••••" required></label>
+
+        ${signup ? `
+          <label class="field"><span>Invite code</span>
+            <input class="input" name="invite" value="${esc(v.invite)}" autocapitalize="characters" placeholder="From someone in the circle" required></label>
+          <label class="field"><span>Pick an animal</span></label>
+          <div class="pills" style="margin:-6px 0 16px" id="avatarpicker">
+            ${AVATARS.map(a => `<button type="button" class="pill" data-act="pickavatar" data-a="${a}"
+                aria-pressed="${v.avatar === a}" style="font-size:19px;padding:7px 12px">${a}</button>`).join('')}
+          </div>` : ''}
+
+        <button class="btn block" type="submit">${signup ? 'Join the circle' : 'Sign in'}</button>
+      </form>
+
+      ${!signup ? `
+        <button class="btn ghost block" data-act="magic" style="margin-top:10px">Email me a sign-in link</button>
+        ${ui.magicCode ? `<div class="note" style="margin-top:12px">
+          <strong>Link sent — in a real deployment.</strong> This build runs entirely on your device with no server to send mail from, so here is the code it would have contained: <strong style="font-size:16px;letter-spacing:.1em">${esc(ui.magicCode.code)}</strong>
+          <div style="margin-top:8px"><button class="btn sm" data-act="magicuse">Use this code</button></div>
+        </div>` : ''}` : ''}
+
+      <div class="note" style="margin-top:22px">
+        <strong>Invite code for this demo: <span style="letter-spacing:.06em">${esc(state.inviteCode)}</span></strong><br>
+        Accounts, workouts and comments are stored in this browser only — nothing leaves the device, and there is no server. Treat the password as a lock on the front door, not as security.
+      </div>
+    </div>
+  </div></div>`;
+}
+
+/* ── Feed ─────────────────────────────────────────────────────────────── */
+
+function workoutSummaryHTML(w){
+  const vol = workoutVolume(w), prs = workoutPRs(w), sets = workoutSetCount(w);
+  const lines = w.exercises.map(ex => {
+    const done = ex.sets.filter(s => s.done);
+    if (!done.length) return '';
+    const top = Math.max(...done.map(s => s.weight));
+    const hasPR = done.some(s => s.pr);
+    return `<div class="ex-line">
+      <span class="truncate">${hasPR ? '<span class="badge pr" style="margin-right:6px">PR</span>' : ''}${esc(ex.name)}</span>
+      <span class="r">${done.length} × ${top > 0 ? wLabel(top) : 'bodyweight'}</span>
+    </div>`;
+  }).join('');
+
+  return `<div class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <span class="badge accent">${volLabel(vol)}</span>
+      <span class="badge">${sets} sets</span>
+      <span class="badge">${w.exercises.length} exercises</span>
+      ${w.duration ? `<span class="badge">${w.duration} min</span>` : ''}
+      ${prs ? `<span class="badge pr">🏅 ${prs} PR${prs > 1 ? 's' : ''}</span>` : ''}
+    </div>
+    ${lines}
+    ${w.note ? `<p class="small muted" style="margin:10px 0 0;line-height:1.5">“${esc(w.note)}”</p>` : ''}`;
+}
+
+function feedCardHTML(w){
+  const u = userById(w.userId);
+  if (!u) return '';
+  const likes = state.likes[w.id] || [];
+  const liked = likes.includes(state.session);
+  const comments = state.comments
+    .filter(c => c.workoutId === w.id)
+    .sort((a, b) => new Date(a.at) - new Date(b.at));
+  const mine = w.userId === state.session;
+
+  return `<article class="feed-card">
+    <div class="feed-head">
+      <div class="avatar">${esc(u.avatar)}</div>
+      <div class="grow">
+        <div class="bold truncate">${esc(u.name)}${mine ? ' <span class="muted small">· you</span>' : ''}</div>
+        <div class="tiny muted">${esc(w.title || 'Workout')} · ${esc(relDate(w.date))}</div>
+      </div>
+      ${mine ? `<button class="iconbtn" data-act="open" data-id="${w.id}" aria-label="Open workout">›</button>` : ''}
+    </div>
+
+    ${workoutSummaryHTML(w)}
+
+    <div class="social-bar">
+      <button class="likebtn" data-act="like" data-id="${w.id}" aria-pressed="${liked}">
+        ${liked ? '💜' : '🤍'} ${likes.length || ''}
+      </button>
+      <button class="likebtn" data-act="focuscomment" data-id="${w.id}">💬 ${comments.length || ''}</button>
+    </div>
+
+    ${comments.map(c => {
+      const cu = userById(c.userId);
+      return `<div class="comment">
+        <div class="avatar sm">${esc(cu ? cu.avatar : '👤')}</div>
+        <div class="body">
+          <div class="who">${esc(cu ? cu.name : 'Someone')} <span class="muted tiny" style="font-weight:500">${esc(relTime(c.at))}</span></div>
+          <div>${esc(c.text)}</div>
+        </div>
+        ${c.userId === state.session
+          ? `<button class="delbtn" data-act="delcomment" data-id="${c.id}" aria-label="Delete comment">✕</button>` : ''}
+      </div>`;
+    }).join('')}
+
+    <form class="comment-form" data-act="comment" data-id="${w.id}">
+      <input class="input grow" name="text" id="c-${w.id}" placeholder="Say something…" maxlength="240" autocomplete="off">
+      <button class="btn sm" type="submit">Post</button>
+    </form>
+  </article>`;
+}
+
+function renderFeed(){
+  const ids = new Set(circleIds());
+  const feed = state.workouts
+    .filter(w => ids.has(w.userId) && workoutSetCount(w) > 0)
+    .sort((a, b) => new Date(b.date) - new Date(a.date) || b.createdAt - a.createdAt)
+    .slice(0, 40);
+
+  const m = me();
+  const streak = weekStreak(m.id);
+  const weekVol = workoutsInFrame(m.id, 'week').reduce((s, w) => s + workoutVolume(w), 0);
+
+  return `<div class="screen">
+    ${topbar('Feed', `${state.users.length} in the circle`,
+      `<button class="iconbtn" data-act="tab" data-tab="log" aria-label="Start a workout">➕</button>`)}
+    <div class="scroll">
+      <div class="tiles three" style="margin-bottom:14px">
+        <div class="tile"><div class="k">This week</div><div class="v">${fmtBig(toDisp(weekVol))}<small>${unit()}</small></div></div>
+        <div class="tile"><div class="k">Sessions</div><div class="v">${workoutsInFrame(m.id,'week').length}</div></div>
+        <div class="tile"><div class="k">Streak</div><div class="v">${streak}<small>wk</small></div></div>
+      </div>
+
+      ${state.draft ? `<div class="card" style="border-color:var(--accent);background:#7C6FFF14;margin-bottom:14px">
+        <div class="row between">
+          <div><div class="bold">Workout in progress</div>
+            <div class="small muted">${state.draft.exercises.length} exercise${state.draft.exercises.length === 1 ? '' : 's'} so far</div></div>
+          <button class="btn sm" data-act="tab" data-tab="log">Resume</button>
+        </div></div>` : ''}
+
+      ${feed.length
+        ? feed.map(feedCardHTML).join('')
+        : `<div class="empty"><span class="big">🫂</span>Nothing here yet. Log a session and it will show up for the circle.
+           <div style="margin-top:14px"><button class="btn sm" data-act="tab" data-tab="log">Start a workout</button></div></div>`}
+    </div>
+    ${navHTML()}
+  </div>`;
+}
+
+/* ── Logger ───────────────────────────────────────────────────────────── */
+
+function newDraft(){
+  return {
+    id: uid(), userId: state.session,
+    date: new Date().toISOString(),
+    title: '', note: '', exercises: [],
+    startedAt: Date.now(), createdAt: Date.now(),
+  };
+}
+
+function setRowHTML(exId, s, i){
+  return `<div class="set-grid" data-set="${s.id}" data-ex="${exId}">
+    <div class="idx">${i + 1}</div>
+    <input class="input${s.prWeight ? ' pr' : ''}" data-act="setfield" data-f="weight" type="number"
+           inputmode="decimal" step="0.5" min="0" value="${s.weight ? fmt(toDisp(s.weight)) : ''}" placeholder="0" aria-label="Weight">
+    <input class="input${s.prVolume && !s.prWeight ? ' pr' : ''}" data-act="setfield" data-f="reps" type="number"
+           inputmode="numeric" step="1" min="0" value="${s.reps || ''}" placeholder="0" aria-label="Reps">
+    <button class="checkbtn" data-act="toggleset" aria-pressed="${!!s.done}" aria-label="Mark set done">${s.done ? '✓' : ''}</button>
+    <button class="delbtn" data-act="delset" aria-label="Delete set">✕</button>
+  </div>`;
+}
+
+function renderLog(){
+  const d = state.draft;
+
+  if (!d){
+    const last = state.workouts
+      .filter(w => w.userId === state.session)
+      .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+    return `<div class="screen">
+      ${topbar('Log a workout', 'Build it as you go')}
+      <div class="scroll">
+        <div class="empty" style="border-style:solid;border-color:var(--line-soft);background:var(--card)">
+          <span class="big">🏋️</span>
+          <div class="bold" style="color:var(--text);font-size:17px;margin-bottom:6px">Ready when you are</div>
+          No routines, no templates — add exercises as you do them.
+          <div style="margin-top:16px"><button class="btn" data-act="startworkout">Start empty workout</button></div>
+          ${last ? `<div style="margin-top:10px"><button class="btn ghost sm" data-act="repeat" data-id="${last.id}">
+            Repeat “${esc(last.title || 'last workout')}”</button></div>` : ''}
+        </div>
+      </div>
+      ${navHTML()}
+    </div>`;
+  }
+
+  const vol = workoutVolume(d), sets = workoutSetCount(d);
+  const mins = Math.max(1, Math.round((Date.now() - d.startedAt) / 60000));
+
+  return `<div class="screen">
+    ${topbar('In progress', `${mins} min · ${sets} sets · ${volLabel(vol)}`,
+      `<button class="iconbtn" data-act="discard" aria-label="Discard workout">🗑</button>`)}
+    <div class="scroll pad-bottom-lg">
+      <label class="field"><span>Session name</span>
+        <input class="input" data-act="drafttitle" value="${esc(d.title)}" placeholder="Push day, legs, whatever it was" maxlength="60"></label>
+
+      ${d.exercises.map(ex => `
+        <section class="ex-card" data-ex="${ex.id}">
+          <div class="row between" style="margin-bottom:10px">
+            <div class="grow">
+              <div class="bold truncate">${esc(CAT_EMOJI[ex.cat] || '🏋️')} ${esc(ex.name)}</div>
+              <div class="tiny muted">${esc(ex.cat)}</div>
+            </div>
+            <button class="delbtn" data-act="delex" aria-label="Remove exercise">✕</button>
+          </div>
+          <div class="set-head"><span></span><span>${unit()}</span><span>Reps</span><span>Done</span><span></span></div>
+          ${ex.sets.map((s, i) => setRowHTML(ex.id, s, i)).join('')}
+          <button class="btn ghost sm" data-act="addset" style="width:100%;margin:2px 0 10px">+ Add set</button>
+        </section>`).join('')}
+
+      ${!d.exercises.length ? `<div class="empty" style="margin-top:4px">
+        <span class="big">➕</span>Add your first exercise.</div>` : ''}
+
+      <button class="btn ghost block" data-act="pickexercise" style="margin-top:4px">+ Add exercise</button>
+
+      <label class="field" style="margin-top:16px"><span>Note (optional)</span>
+        <textarea class="input" data-act="draftnote" placeholder="How did it feel?" maxlength="240">${esc(d.note)}</textarea></label>
+    </div>
+
+    ${ui.restEndsAt ? `<div class="rest-chip" data-act="stoprest">⏱ ${restRemaining()}s — tap to stop</div>` : ''}
+
+    <div class="sticky-bar">
+      <button class="btn ghost grow" data-act="rest">⏱ Rest 90s</button>
+      <button class="btn grow" data-act="finish" ${sets ? '' : 'disabled'}>Finish</button>
+    </div>
+    ${navHTML()}
+  </div>`;
+}
+
+const restRemaining = () =>
+  Math.max(0, Math.ceil((ui.restEndsAt - Date.now()) / 1000));
+
+/* ── Stats ────────────────────────────────────────────────────────────── */
+
+function renderStats(){
+  const m = me();
+  const mine = state.workouts.filter(w => w.userId === m.id);
+  const exList = exercisesFor(m.id);
+
+  if (!mine.length){
+    return `<div class="screen">
+      ${topbar('Progress', 'Your numbers over time')}
+      <div class="scroll">
+        <div class="empty"><span class="big">📈</span>
+          Charts appear once you have logged a session or two.
+          <div style="margin-top:14px"><button class="btn sm" data-act="tab" data-tab="log">Log a workout</button></div>
+        </div>
+      </div>${navHTML()}</div>`;
+  }
+
+  if (!ui.statExercise || !exList.some(n => exKey(n) === exKey(ui.statExercise))){
+    ui.statExercise = exList[0];
+  }
+
+  const series = exerciseSeries(m.id, ui.statExercise);
+  const metric = ui.statMetric;
+  const points = series.map(p => ({
+    t: p.t, pr: p.pr,
+    v: metric === 'e1rm' ? toDisp(p.e1rm)
+     : metric === 'top'  ? toDisp(p.topWeight)
+     : toDisp(p.volume),
+    raw: p,
+  }));
+
+  const bestE  = series.length ? Math.max(...series.map(p => p.e1rm)) : 0;
+  const bestW  = series.length ? Math.max(...series.map(p => p.topWeight)) : 0;
+  const totalV = series.reduce((s, p) => s + p.volume, 0);
+
+  // Progress since the first logged session for this lift.
+  const first = points[0]?.v ?? 0, last = points[points.length-1]?.v ?? 0;
+  const delta = first > 0 ? ((last - first) / first) * 100 : 0;
+
+  const allVol = mine.reduce((s, w) => s + workoutVolume(w), 0);
+  const allPRs = mine.reduce((s, w) => s + workoutPRs(w), 0);
+
+  const metricLabel = { e1rm:'Estimated 1RM', top:'Top set', volume:'Session volume' }[metric];
+
+  return `<div class="screen">
+    ${topbar('Progress', 'Your numbers over time')}
+    <div class="scroll">
+      <div class="tiles" style="margin-bottom:14px">
+        <div class="tile"><div class="k">Sessions</div><div class="v">${mine.length}</div></div>
+        <div class="tile"><div class="k">Lifetime volume</div><div class="v">${fmtBig(toDisp(allVol))}<small>${unit()}</small></div></div>
+        <div class="tile"><div class="k">PRs set</div><div class="v" style="color:var(--pr)">${allPRs}</div></div>
+        <div class="tile"><div class="k">Week streak</div><div class="v">${weekStreak(m.id)}</div></div>
+      </div>
+
+      <div class="section-title">Volume, last 30 days</div>
+      <div class="card">${barChart(volumeByDay(m.id, 30), { label:'Daily training volume' })}</div>
+
+      <div class="section-title">Per exercise</div>
+      <label class="field"><span>Exercise</span>
+        <select class="input" data-act="statex">
+          ${exList.map(n => `<option value="${esc(n)}" ${exKey(n) === exKey(ui.statExercise) ? 'selected' : ''}>${esc(n)}</option>`).join('')}
+        </select></label>
+
+      <div class="pills" style="margin-bottom:12px">
+        ${[['e1rm','Est. 1RM'],['top','Top set'],['volume','Volume']].map(([k, l]) =>
+          `<button class="pill" data-act="statmetric" data-m="${k}" aria-pressed="${metric === k}">${l}</button>`).join('')}
+      </div>
+
+      <div class="card">
+        <div class="row between" style="margin-bottom:6px">
+          <div><div class="bold">${esc(metricLabel)}</div>
+            <div class="tiny muted">${series.length} session${series.length === 1 ? '' : 's'} · ${esc(ui.statExercise)}</div></div>
+          ${series.length > 1 ? `<div class="badge ${delta >= 0 ? 'accent' : ''}">${delta >= 0 ? '↑' : '↓'} ${fmt(Math.abs(delta))}%</div>` : ''}
+        </div>
+        ${points.length
+          ? lineChart(points, {
+              label: metricLabel + ' for ' + ui.statExercise,
+              fmtY: (v) => metric === 'volume' ? fmtBig(v) : fmt(v),
+              tip: (p) => `${new Date(p.t).toLocaleDateString()} — ${fmt(p.v)} ${unit()}${p.pr ? ' · PR' : ''}`,
+            })
+          : '<div class="empty">No completed sets for this exercise yet.</div>'}
+        <div class="tiny muted center" style="margin-top:4px">
+          <span style="color:var(--pr)">●</span> a session where you set a PR
+        </div>
+      </div>
+
+      <div class="tiles three" style="margin-top:12px">
+        <div class="tile"><div class="k">Best set</div><div class="v">${fmt(toDisp(bestW))}<small>${unit()}</small></div></div>
+        <div class="tile"><div class="k">Est. 1RM</div><div class="v">${fmt(toDisp(bestE))}<small>${unit()}</small></div></div>
+        <div class="tile"><div class="k">Volume</div><div class="v">${fmtBig(toDisp(totalV))}<small>${unit()}</small></div></div>
+      </div>
+
+      <div class="section-title">History</div>
+      <button class="btn ghost block" data-act="tab" data-tab="history">Browse every session →</button>
+    </div>
+    ${navHTML()}
+  </div>`;
+}
+
+/* ── Leaderboard ──────────────────────────────────────────────────────── */
+
+function renderBoard(){
+  const exList = circleExercises();
+  if (ui.boardMetric === 'exercise' && !ui.boardExercise) ui.boardExercise = exList[0] || null;
+
+  const rows = ui.boardMetric === 'volume'
+    ? boardByVolume(ui.boardFrame)
+    : ui.boardExercise ? boardByExercise(ui.boardExercise, ui.boardFrame) : [];
+
+  const max = Math.max(...rows.map(r => r.value), 1);
+  const medals = ['🥇','🥈','🥉'];
+
+  return `<div class="screen">
+    ${topbar('Leaderboard', TIMEFRAMES[ui.boardFrame].label)}
+    <div class="scroll">
+      <div class="pills" style="margin-bottom:10px">
+        ${Object.entries(TIMEFRAMES).map(([k, v]) =>
+          `<button class="pill" data-act="frame" data-f="${k}" aria-pressed="${ui.boardFrame === k}">${v.label}</button>`).join('')}
+      </div>
+      <div class="pills" style="margin-bottom:14px">
+        <button class="pill" data-act="boardmetric" data-m="volume" aria-pressed="${ui.boardMetric === 'volume'}">Total volume</button>
+        <button class="pill" data-act="boardmetric" data-m="exercise" aria-pressed="${ui.boardMetric === 'exercise'}">By exercise</button>
+      </div>
+
+      ${ui.boardMetric === 'exercise' ? `
+        <label class="field"><span>Exercise — ranked by best estimated 1RM</span>
+          <select class="input" data-act="boardex">
+            ${exList.map(n => `<option value="${esc(n)}" ${exKey(n) === exKey(ui.boardExercise || '') ? 'selected' : ''}>${esc(n)}</option>`).join('')}
+          </select></label>` : ''}
+
+      ${rows.length ? rows.map((r, i) => {
+        const u = userById(r.userId);
+        if (!u) return '';
+        const isMe = r.userId === state.session;
+        return `<div class="lb-row${isMe ? ' me' : ''}">
+          <div class="lb-rank">${r.value > 0 && i < 3 ? medals[i] : i + 1}</div>
+          <div class="avatar">${esc(u.avatar)}</div>
+          <div class="grow">
+            <div class="row between" style="gap:8px">
+              <span class="bold truncate">${esc(u.name)}${isMe ? ' <span class="muted small">· you</span>' : ''}</span>
+              <span class="lb-val">${esc(r.display(r.value))}</span>
+            </div>
+            <div class="tiny muted">${esc(r.meta)}</div>
+            <div class="lb-bar"><i style="width:${clamp((r.value / max) * 100, 0, 100).toFixed(1)}%"></i></div>
+          </div>
+        </div>`;
+      }).join('') : `<div class="empty"><span class="big">🏆</span>Nothing logged in this window yet.</div>`}
+
+      <p class="tiny muted center" style="margin-top:16px;line-height:1.5">
+        ${ui.boardMetric === 'exercise'
+          ? 'Estimated 1RM uses the Epley formula, capped at 12 reps.<br>'
+          : 'Volume is weight × reps across every completed set.<br>'}Only completed sets count.
+      </p>
+    </div>
+    ${navHTML()}
+  </div>`;
+}
+
+/* ── History ──────────────────────────────────────────────────────────── */
+
+function renderHistory(){
+  const q = ui.historyQuery.trim().toLowerCase();
+  const mine = state.workouts
+    .filter(w => w.userId === state.session)
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const shown = q ? mine.filter(w =>
+    (w.title || '').toLowerCase().includes(q) ||
+    (w.note  || '').toLowerCase().includes(q) ||
+    fullDate(w.date).toLowerCase().includes(q) ||
+    w.exercises.some(ex => ex.name.toLowerCase().includes(q))
+  ) : mine;
+
+  return `<div class="screen">
+    ${topbar('History', `${mine.length} session${mine.length === 1 ? '' : 's'}`,
+      `<button class="iconbtn" data-act="tab" data-tab="stats" aria-label="Back to stats">✕</button>`)}
+    <div class="scroll">
+      <input class="input" data-act="histsearch" value="${esc(ui.historyQuery)}"
+             placeholder="Search exercise, name or date" style="margin-bottom:14px" autocomplete="off">
+
+      ${shown.length ? shown.map(w => `
+        <button class="card" data-act="open" data-id="${w.id}" style="width:100%;text-align:left;display:block;margin-bottom:10px">
+          <div class="row between" style="margin-bottom:6px">
+            <div class="grow"><div class="bold truncate">${esc(w.title || 'Workout')}</div>
+              <div class="tiny muted">${esc(fullDate(w.date))}</div></div>
+            <span class="muted">›</span>
+          </div>
+          <div class="row" style="gap:6px;flex-wrap:wrap">
+            <span class="badge accent">${volLabel(workoutVolume(w))}</span>
+            <span class="badge">${workoutSetCount(w)} sets</span>
+            ${workoutPRs(w) ? `<span class="badge pr">🏅 ${workoutPRs(w)}</span>` : ''}
+          </div>
+        </button>`).join('')
+        : `<div class="empty"><span class="big">🔍</span>${q ? 'Nothing matches that.' : 'No sessions logged yet.'}</div>`}
+    </div>
+    ${navHTML()}
+  </div>`;
+}
+
+/* ── Workout detail (full CRUD on a past session) ─────────────────────── */
+
+function renderWorkoutDetail(){
+  const w = state.workouts.find(x => x.id === ui.openWorkout);
+  if (!w) { ui.openWorkout = null; return render(); }
+  const editable = w.userId === state.session;
+
+  return `<div class="screen">
+    ${topbar(w.title || 'Workout', fullDate(w.date),
+      `<button class="iconbtn" data-act="closeworkout" aria-label="Close">✕</button>`)}
+    <div class="scroll pad-bottom-lg">
+      <div class="tiles three" style="margin-bottom:14px">
+        <div class="tile"><div class="k">Volume</div><div class="v">${fmtBig(toDisp(workoutVolume(w)))}<small>${unit()}</small></div></div>
+        <div class="tile"><div class="k">Sets</div><div class="v">${workoutSetCount(w)}</div></div>
+        <div class="tile"><div class="k">PRs</div><div class="v" style="color:var(--pr)">${workoutPRs(w)}</div></div>
+      </div>
+
+      ${editable ? `<label class="field"><span>Session name</span>
+        <input class="input" data-act="edittitle" data-id="${w.id}" value="${esc(w.title)}" maxlength="60"></label>` : ''}
+
+      ${w.exercises.map(ex => `
+        <section class="ex-card" data-ex="${ex.id}" data-workout="${w.id}">
+          <div class="row between" style="margin-bottom:10px">
+            <div class="grow"><div class="bold truncate">${esc(CAT_EMOJI[ex.cat] || '🏋️')} ${esc(ex.name)}</div>
+              <div class="tiny muted">${esc(ex.cat)}</div></div>
+            ${editable ? `<button class="delbtn" data-act="delex" aria-label="Remove exercise">✕</button>` : ''}
+          </div>
+          <div class="set-head"><span></span><span>${unit()}</span><span>Reps</span><span>Done</span><span></span></div>
+          ${ex.sets.map((s, i) => editable ? setRowHTML(ex.id, s, i) : `
+            <div class="set-grid">
+              <div class="idx">${i + 1}</div>
+              <div class="input" style="display:grid;place-items:center">${fmt(toDisp(s.weight))}</div>
+              <div class="input" style="display:grid;place-items:center">${s.reps}</div>
+              <div class="checkbtn" aria-pressed="${!!s.done}">${s.done ? '✓' : ''}</div>
+              <div>${s.pr ? '🏅' : ''}</div>
+            </div>`).join('')}
+          ${editable ? `<button class="btn ghost sm" data-act="addset" style="width:100%;margin:2px 0 10px">+ Add set</button>` : ''}
+        </section>`).join('')}
+
+      ${editable ? `
+        <button class="btn ghost block" data-act="pickexercise" data-workout="${w.id}">+ Add exercise</button>
+        <label class="field" style="margin-top:16px"><span>Note</span>
+          <textarea class="input" data-act="editnote" data-id="${w.id}" maxlength="240">${esc(w.note)}</textarea></label>
+        <button class="btn danger block" data-act="delworkout" data-id="${w.id}" style="margin-top:8px">Delete this workout</button>` : ''}
+    </div>
+    ${navHTML()}
+  </div>`;
+}
+
+/* ── Profile ──────────────────────────────────────────────────────────── */
+
+function renderProfile(){
+  const m = me();
+  const mine = state.workouts.filter(w => w.userId === m.id);
+  const totalVol = mine.reduce((s, w) => s + workoutVolume(w), 0);
+  const prs = mine.reduce((s, w) => s + workoutPRs(w), 0);
+  const circle = (m.friends || []).map(userById).filter(Boolean);
+
+  return `<div class="screen">
+    ${topbar('You', esc(m.email))}
+    <div class="scroll">
+      <div class="card">
+        <div class="row" style="gap:14px">
+          <div class="avatar lg">${esc(m.avatar)}</div>
+          <div class="grow">
+            <div class="bold" style="font-size:20px">${esc(m.name)}</div>
+            <div class="small muted">Joined ${esc(new Date(m.joined).toLocaleDateString(undefined,{month:'long',year:'numeric'}))}</div>
+          </div>
+        </div>
+        <div class="pills" style="margin-top:14px">
+          ${AVATARS.map(a => `<button class="pill" data-act="setavatar" data-a="${a}"
+             aria-pressed="${m.avatar === a}" style="font-size:19px;padding:7px 12px">${a}</button>`).join('')}
+        </div>
+        <label class="field" style="margin:14px 0 0"><span>Display name</span>
+          <input class="input" data-act="setname" value="${esc(m.name)}" maxlength="30"></label>
+        <label class="field" style="margin:0"><span>Bio</span>
+          <input class="input" data-act="setbio" value="${esc(m.bio || '')}" placeholder="One line about your training" maxlength="80"></label>
+      </div>
+
+      <div class="section-title">Lifetime</div>
+      <div class="tiles three">
+        <div class="tile"><div class="k">Sessions</div><div class="v">${mine.length}</div></div>
+        <div class="tile"><div class="k">Volume</div><div class="v">${fmtBig(toDisp(totalVol))}<small>${unit()}</small></div></div>
+        <div class="tile"><div class="k">PRs</div><div class="v" style="color:var(--pr)">${prs}</div></div>
+      </div>
+
+      <div class="section-title">Units</div>
+      <div class="pills">
+        ${['kg','lb'].map(u => `<button class="pill" data-act="unit" data-u="${u}" aria-pressed="${unit() === u}">${u}</button>`).join('')}
+      </div>
+      <p class="tiny muted" style="margin:8px 2px 0">Weights are stored in kilograms and converted for display, so switching back and forth never rounds your history away.</p>
+
+      <div class="section-title">Your circle</div>
+      ${circle.map(u => `<div class="lb-row">
+        <div class="avatar">${esc(u.avatar)}</div>
+        <div class="grow"><div class="bold truncate">${esc(u.name)}</div>
+          <div class="tiny muted truncate">${esc(u.bio || u.email)}</div></div>
+      </div>`).join('') || '<div class="empty">Nobody else here yet.</div>'}
+
+      <div class="card" style="margin-top:12px">
+        <div class="bold">Invite someone</div>
+        <p class="small muted" style="margin:6px 0 10px;line-height:1.5">
+          The circle is closed — a new member needs this code to join. Share it only with people you want reading your log.</p>
+        <div class="row" style="gap:8px">
+          <div class="input grow bold" style="letter-spacing:.08em;display:flex;align-items:center">${esc(state.inviteCode)}</div>
+          <button class="btn sm" data-act="copyinvite">Copy</button>
+        </div>
+      </div>
+
+      <div class="section-title">Data</div>
+      <div class="stack">
+        ${mine.length === 0 ? `<button class="btn ghost block" data-act="sample">Add sample history to my account</button>` : ''}
+        <button class="btn ghost block" data-act="export">Export my data as JSON</button>
+        <button class="btn ghost block" data-act="signout">Sign out</button>
+        <button class="btn danger block" data-act="wipe">Erase everything on this device</button>
+      </div>
+
+      <p class="tiny muted center" style="margin:22px 0 0">Iron Circle v${APP_VERSION} · stored on this device only</p>
+    </div>
+    ${navHTML()}
+  </div>`;
+}
+
+/* ── Exercise picker sheet ────────────────────────────────────────────── */
+
+function renderSheet(){
+  if (!ui.sheet) return '';
+  const q = (ui.sheet.query || '').trim().toLowerCase();
+
+  // Your own most-used lifts first — that is nearly always what you want.
+  const mineRanked = exercisesFor(state.session);
+  const pool = [
+    ...mineRanked.map(n => ({
+      name: n,
+      cat: (CATALOG.find(c => exKey(c.name) === exKey(n)) || {}).cat || 'Other',
+      mine: true,
+    })),
+    ...CATALOG.filter(c => !mineRanked.some(n => exKey(n) === exKey(c.name))),
+  ];
+
+  const matches = q
+    ? pool.filter(e => e.name.toLowerCase().includes(q) || e.cat.toLowerCase().includes(q))
+    : pool;
+
+  const exact = matches.some(e => exKey(e.name) === q);
+
+  return `<div class="sheet-wrap">
+    <div class="sheet-scrim" data-act="closesheet"></div>
+    <div class="sheet" role="dialog" aria-label="Add an exercise">
+      <div class="handle"></div>
+      <h2>Add an exercise</h2>
+      <input class="input" data-act="exsearch" value="${esc(ui.sheet.query || '')}" autocomplete="off"
+             placeholder="Search, or type anything new" style="margin-bottom:12px">
+      <div class="sheet-body">
+        ${q && !exact ? `<button class="opt" data-act="pickex" data-name="${esc(ui.sheet.query.trim())}" data-cat="Other">
+          <span style="font-size:18px">✨</span>
+          <span class="grow"><span class="bold">Add “${esc(ui.sheet.query.trim())}”</span><br>
+          <span class="cat">New exercise</span></span></button>` : ''}
+        ${matches.slice(0, 60).map(e => `
+          <button class="opt" data-act="pickex" data-name="${esc(e.name)}" data-cat="${esc(e.cat)}">
+            <span style="font-size:18px">${esc(CAT_EMOJI[e.cat] || '🏋️')}</span>
+            <span class="grow"><span class="bold">${esc(e.name)}</span><br>
+            <span class="cat">${esc(e.cat)}${e.mine ? ' · yours' : ''}</span></span>
+          </button>`).join('')}
+        ${!matches.length && !q ? '<div class="empty">Nothing to show.</div>' : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ── Render dispatch ──────────────────────────────────────────────────── */
+
+let toastTimer = null;
+function toast(msg){
+  $$('.toast').forEach(t => t.remove());
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  el.setAttribute('role', 'status');
+  // Sit above whatever else is already floating over the nav. A "Personal
+  // record" toast that lands on top of the Finish button hides the one control
+  // you reached for it to confirm.
+  const lift = ($('.sticky-bar') ? 76 : 0) + ($('.rest-chip') ? 44 : 0);
+  if (lift) el.style.bottom = `calc(var(--nav-h) + var(--safe-b) + ${18 + lift}px)`;
+  document.body.appendChild(el);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.remove(), 2400);
+}
+
+/** Keep scroll position across re-renders, per screen. */
+const scrollMemory = Object.create(null);
+
+function render(){
+  const app = $('#app');
+  const prev = $('.scroll', app);
+  const key = ui.openWorkout ? 'detail' : ui.screen;
+  if (prev) scrollMemory[app.dataset.key || key] = prev.scrollTop;
+
+  let html;
+  if (!me())                    html = renderAuth();
+  else if (ui.openWorkout)      html = renderWorkoutDetail();
+  else switch (ui.screen){
+    case 'log':     html = renderLog(); break;
+    case 'stats':   html = renderStats(); break;
+    case 'board':   html = renderBoard(); break;
+    case 'history': html = renderHistory(); break;
+    case 'profile': html = renderProfile(); break;
+    default:        html = renderFeed();
+  }
+
+  const focused = document.activeElement;
+  const focusKey = focused && focused.dataset && focused.dataset.act
+    ? [focused.dataset.act, focused.dataset.f,
+       focused.closest('[data-set]')?.dataset.set, focused.dataset.id].join('|')
+    : null;
+  const selStart = focused && 'selectionStart' in focused ? focused.selectionStart : null;
+
+  app.innerHTML = html + renderSheet();
+  app.dataset.key = key;
+
+  const next = $('.scroll', app);
+  if (next && scrollMemory[key] != null) next.scrollTop = scrollMemory[key];
+
+  // Restore focus into the field that was being typed in, so a re-render
+  // triggered by a keystroke does not eject the keyboard.
+  if (focusKey){
+    const target = $$('[data-act]', app).find(el => {
+      if (!el.matches('input,textarea,select')) return false;
+      return [el.dataset.act, el.dataset.f,
+              el.closest('[data-set]')?.dataset.set, el.dataset.id].join('|') === focusKey;
+    });
+    if (target){
+      target.focus({ preventScroll: true });
+      if (selStart != null && 'setSelectionRange' in target){
+        try { target.setSelectionRange(selStart, selStart); } catch { /* number inputs */ }
+      }
+    }
+  }
+
+  if (ui.sheet){
+    const s = $('[data-act="exsearch"]', app);
+    if (s && ui.sheet.focus !== false){ s.focus({ preventScroll:true }); ui.sheet.focus = false; }
+  }
+}
+
+/* ── 8. Events ──────────────────────────────────────────────────────────── */
+
+function findEx(exId){
+  if (ui.openWorkout){
+    const w = state.workouts.find(x => x.id === ui.openWorkout);
+    return { host: w, ex: w?.exercises.find(e => e.id === exId) };
+  }
+  return { host: state.draft, ex: state.draft?.exercises.find(e => e.id === exId) };
+}
+
+function afterEdit(host){
+  if (!host) return;
+  if (host !== state.draft) recomputePRs(host.userId);
+  save();
+  render();
+}
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const act = el.dataset.act;
+  const exId = el.closest('[data-ex]')?.dataset.ex;
+  const setId = el.closest('[data-set]')?.dataset.set;
+
+  switch (act){
+
+    case 'authmode':
+      ui.authMode = el.dataset.mode; ui.authError = ''; ui.magicCode = null; render(); break;
+
+    case 'pickavatar':
+      ui.authValues.avatar = el.dataset.a;
+      $$('#avatarpicker .pill').forEach(b => b.setAttribute('aria-pressed', String(b === el)));
+      break;
+
+    case 'magic': {
+      const email = $('#authform [name="email"]').value.trim().toLowerCase();
+      const user = state.users.find(u => u.email === email);
+      if (!user){ ui.authError = 'Enter the email of an existing account first.'; render(); break; }
+      ui.authError = '';
+      ui.magicCode = { userId: user.id, code: String(Math.floor(100000 + Math.random() * 900000)) };
+      render(); break;
+    }
+
+    case 'magicuse':
+      if (ui.magicCode){ state.session = ui.magicCode.userId; ui.magicCode = null; save(); render(); }
+      break;
+
+    case 'tab':
+      ui.openWorkout = null;
+      ui.screen = el.dataset.tab;
+      render(); break;
+
+    case 'startworkout':
+      state.draft = newDraft(); save(); render(); break;
+
+    case 'repeat': {
+      const src = state.workouts.find(w => w.id === el.dataset.id);
+      if (!src) break;
+      state.draft = newDraft();
+      state.draft.title = src.title;
+      state.draft.exercises = src.exercises.map(ex => ({
+        id: uid(), name: ex.name, cat: ex.cat,
+        // Same movements and the same set count, with the numbers cleared —
+        // last week's weights are a starting point, not this week's result.
+        sets: ex.sets.map(s => ({ id: uid(), weight: s.weight, reps: 0, done: false, pr:false, prWeight:false, prVolume:false })),
+      }));
+      save(); render(); break;
+    }
+
+    case 'discard':
+      if (confirm('Discard this workout? Nothing will be saved.')){
+        state.draft = null; ui.restEndsAt = null; save(); render();
+      }
+      break;
+
+    case 'pickexercise':
+      ui.sheet = { query:'', focus:true, workoutId: el.dataset.workout || null };
+      render(); break;
+
+    case 'closesheet':
+      ui.sheet = null; render(); break;
+
+    case 'pickex': {
+      const name = el.dataset.name.trim();
+      const cat = el.dataset.cat || 'Other';
+      const host = ui.openWorkout
+        ? state.workouts.find(w => w.id === ui.openWorkout)
+        : state.draft;
+      if (host){
+        host.exercises.push({
+          id: uid(), name, cat,
+          sets: [{ id: uid(), weight: 0, reps: 0, done: false, pr:false, prWeight:false, prVolume:false }],
+        });
+      }
+      ui.sheet = null;
+      afterEdit(host); break;
+    }
+
+    case 'addset': {
+      const { host, ex } = findEx(exId);
+      if (!ex) break;
+      const last = ex.sets[ex.sets.length - 1];
+      ex.sets.push({
+        id: uid(),
+        weight: last ? last.weight : 0,
+        reps: last ? last.reps : 0,
+        done: false, pr:false, prWeight:false, prVolume:false,
+      });
+      afterEdit(host); break;
+    }
+
+    case 'delset': {
+      const { host, ex } = findEx(exId);
+      if (!ex) break;
+      ex.sets = ex.sets.filter(s => s.id !== setId);
+      if (!ex.sets.length && host) host.exercises = host.exercises.filter(x => x.id !== ex.id);
+      afterEdit(host); break;
+    }
+
+    case 'toggleset': {
+      const { host, ex } = findEx(exId);
+      const s = ex?.sets.find(x => x.id === setId);
+      if (!s) break;
+      s.done = !s.done;
+      if (s.done && s.reps === 0) s.reps = 1;   // a completed set has at least one rep
+      if (host === state.draft && s.done){
+        // Recompute against saved history so the PR badge shows live.
+        flagDraftPRs();
+      }
+      afterEdit(host);
+      if (s.done && s.pr) toast('🏅 Personal record');
+      break;
+    }
+
+    case 'delex': {
+      const { host } = findEx(exId);
+      if (!host) break;
+      host.exercises = host.exercises.filter(x => x.id !== exId);
+      afterEdit(host); break;
+    }
+
+    case 'rest':
+      ui.restEndsAt = Date.now() + 90000; render(); break;
+
+    case 'stoprest':
+      ui.restEndsAt = null; render(); break;
+
+    case 'finish': {
+      const d = state.draft;
+      if (!d || !workoutSetCount(d)) break;
+      d.title = d.title.trim() || 'Workout';
+      d.duration = Math.max(1, Math.round((Date.now() - d.startedAt) / 60000));
+      d.exercises.forEach(ex => { ex.sets = ex.sets.filter(s => s.done); });
+      d.exercises = d.exercises.filter(ex => ex.sets.length);
+      state.workouts.push(d);
+      state.draft = null;
+      ui.restEndsAt = null;
+      recomputePRs(state.session);
+      const saved = state.workouts[state.workouts.length - 1];
+      save();
+      ui.screen = 'feed';
+      render();
+      const n = workoutPRs(saved);
+      toast(n ? `Saved — ${n} PR${n > 1 ? 's' : ''} 🏅` : 'Workout saved');
+      break;
+    }
+
+    case 'like': {
+      const id = el.dataset.id;
+      const list = state.likes[id] || (state.likes[id] = []);
+      const i = list.indexOf(state.session);
+      if (i >= 0) list.splice(i, 1); else list.push(state.session);
+      save(); render(); break;
+    }
+
+    case 'focuscomment': {
+      const input = $('#c-' + CSS.escape(el.dataset.id));
+      if (input) input.focus();
+      break;
+    }
+
+    case 'delcomment':
+      state.comments = state.comments.filter(c => c.id !== el.dataset.id);
+      save(); render(); break;
+
+    case 'open':
+      ui.openWorkout = el.dataset.id; render(); break;
+
+    case 'closeworkout':
+      ui.openWorkout = null; render(); break;
+
+    case 'delworkout':
+      if (confirm('Delete this workout? Any PRs it held will pass back to your next-best set.')){
+        const id = el.dataset.id;
+        state.workouts = state.workouts.filter(w => w.id !== id);
+        state.comments = state.comments.filter(c => c.workoutId !== id);
+        delete state.likes[id];
+        ui.openWorkout = null;
+        recomputePRs(state.session);
+        save(); render(); toast('Workout deleted');
+      }
+      break;
+
+    case 'statmetric':
+      ui.statMetric = el.dataset.m; render(); break;
+
+    case 'frame':
+      ui.boardFrame = el.dataset.f; render(); break;
+
+    case 'boardmetric':
+      ui.boardMetric = el.dataset.m; render(); break;
+
+    case 'setavatar': {
+      const m = me(); if (!m) break;
+      m.avatar = el.dataset.a; save(); render(); break;
+    }
+
+    case 'unit':
+      state.ui.unit = el.dataset.u; save(); render(); break;
+
+    case 'copyinvite':
+      navigator.clipboard?.writeText(state.inviteCode)
+        .then(() => toast('Invite code copied'))
+        .catch(() => toast('Code: ' + state.inviteCode));
+      break;
+
+    case 'sample':
+      loadSampleForMe(); render(); break;
+
+    case 'export': {
+      const m = me();
+      const payload = {
+        exportedAt: new Date().toISOString(),
+        user: { name:m.name, email:m.email, joined:m.joined },
+        workouts: state.workouts.filter(w => w.userId === m.id),
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'iron-circle-' + new Date().toISOString().slice(0, 10) + '.json';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      toast('Exported');
+      break;
+    }
+
+    case 'signout':
+      signOut(); break;
+
+    case 'wipe':
+      if (confirm('Erase every account, workout and comment stored in this browser? This cannot be undone.')){
+        localStorage.removeItem(STORE_KEY);
+        state = blank();
+        seedCircle();
+        save();
+        ui.screen = 'feed'; ui.openWorkout = null;
+        render(); toast('Everything erased');
+      }
+      break;
+  }
+});
+
+/** While a draft is open, flag its PRs against saved history for live badges. */
+function flagDraftPRs(){
+  const d = state.draft;
+  if (!d) return;
+  const bestW = Object.create(null), bestV = Object.create(null);
+  for (const w of state.workouts.filter(w => w.userId === d.userId)){
+    for (const ex of w.exercises){
+      const k = exKey(ex.name);
+      for (const s of ex.sets){
+        if (!s.done) continue;
+        bestW[k] = Math.max(bestW[k] ?? 0, s.weight);
+        bestV[k] = Math.max(bestV[k] ?? 0, s.weight * s.reps);
+      }
+    }
+  }
+  for (const ex of d.exercises){
+    const k = exKey(ex.name);
+    let runW = bestW[k] ?? 0, runV = bestV[k] ?? 0;
+    for (const s of ex.sets){
+      s.prWeight = false; s.prVolume = false; s.pr = false;
+      if (!s.done || s.reps <= 0) continue;
+      const vol = s.weight * s.reps;
+      if (s.weight > 0 && s.weight > runW){ s.prWeight = true; runW = s.weight; }
+      if (vol > 0 && vol > runV){ s.prVolume = true; runV = vol; }
+      s.pr = s.prWeight || s.prVolume;
+    }
+  }
+}
+
+/* Text/number inputs. `input` for things that must not re-render on every
+   keystroke; `change` where a re-render is wanted once the field is left. */
+document.addEventListener('input', (e) => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const act = el.dataset.act;
+  const exId = el.closest('[data-ex]')?.dataset.ex;
+  const setId = el.closest('[data-set]')?.dataset.set;
+
+  switch (act){
+    case 'drafttitle': if (state.draft){ state.draft.title = el.value; save(); } break;
+    case 'draftnote':  if (state.draft){ state.draft.note  = el.value; save(); } break;
+
+    case 'edittitle': {
+      const w = state.workouts.find(x => x.id === el.dataset.id);
+      if (w){ w.title = el.value; save(); } break;
+    }
+    case 'editnote': {
+      const w = state.workouts.find(x => x.id === el.dataset.id);
+      if (w){ w.note = el.value; save(); } break;
+    }
+
+    case 'setfield': {
+      const { host, ex } = findEx(exId);
+      const s = ex?.sets.find(x => x.id === setId);
+      if (!s) break;
+      if (el.dataset.f === 'weight') s.weight = Math.max(0, toKg(num(el.value)));
+      else                           s.reps   = clamp(Math.round(num(el.value)), 0, 999);
+      if (host === state.draft) flagDraftPRs(); else if (host) recomputePRs(host.userId);
+      save();
+      // No re-render: that would fight the keyboard. The totals refresh on the
+      // next render, and the check button is the moment a set becomes real.
+      break;
+    }
+
+    case 'histsearch': ui.historyQuery = el.value; renderHistoryList(); break;
+
+    case 'exsearch':
+      if (ui.sheet){ ui.sheet.query = el.value; ui.sheet.focus = false; render(); }
+      break;
+
+    case 'setname': { const m = me(); if (m){ m.name = el.value; save(); } break; }
+    case 'setbio':  { const m = me(); if (m){ m.bio  = el.value; save(); } break; }
+  }
+});
+
+/** History is filtered live, so redraw just the list and keep the caret put. */
+function renderHistoryList(){
+  if (ui.screen !== 'history' || ui.openWorkout) return;
+  const scroll = $('.scroll');
+  if (!scroll) return;
+  const input = $('[data-act="histsearch"]');
+  const pos = input ? input.selectionStart : null;
+  const top = scroll.scrollTop;
+  render();
+  const again = $('[data-act="histsearch"]');
+  if (again){
+    again.focus({ preventScroll:true });
+    if (pos != null) try { again.setSelectionRange(pos, pos); } catch { /* ignore */ }
+  }
+  const s = $('.scroll'); if (s) s.scrollTop = top;
+}
+
+document.addEventListener('change', (e) => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  if (el.dataset.act === 'statex'){ ui.statExercise = el.value; render(); }
+  if (el.dataset.act === 'boardex'){ ui.boardExercise = el.value; render(); }
+});
+
+document.addEventListener('submit', (e) => {
+  const form = e.target;
+  e.preventDefault();
+
+  if (form.id === 'authform'){
+    const data = Object.fromEntries(new FormData(form).entries());
+    // Remember what was typed before validating, so an error message does not
+    // arrive together with an emptied form.
+    Object.assign(ui.authValues, {
+      name: data.name ?? ui.authValues.name,
+      email: data.email ?? '',
+      password: data.password ?? '',
+      invite: data.invite ?? ui.authValues.invite,
+    });
+
+    if (ui.authMode === 'signup'){
+      const err = signUp({
+        name: ui.authValues.name, email: ui.authValues.email,
+        password: ui.authValues.password, invite: ui.authValues.invite,
+        avatar: ui.authValues.avatar,
+      });
+      ui.authError = err || '';
+      if (!err){ ui.screen = 'feed'; toast('Welcome to the circle'); }
+    } else {
+      const err = signIn({ email: ui.authValues.email, password: ui.authValues.password });
+      ui.authError = err || '';
+      if (!err) ui.screen = 'feed';
+    }
+    // Never keep a password lying around in memory once it has been accepted.
+    if (!ui.authError) ui.authValues = { name:'', email:'', password:'', invite:'', avatar: AVATARS[0] };
+    render();
+    return;
+  }
+
+  if (form.dataset.act === 'comment'){
+    const text = form.text.value.trim();
+    if (!text) return;
+    state.comments.push({
+      id: uid(), workoutId: form.dataset.id, userId: state.session,
+      text, at: new Date().toISOString(),
+    });
+    save(); render();
+  }
+});
+
+/* The rest timer only needs to repaint while it is running. */
+setInterval(() => {
+  if (!ui.restEndsAt) return;
+  if (restRemaining() <= 0){
+    ui.restEndsAt = null;
+    render();
+    toast('Rest over — next set');
+    try{ navigator.vibrate?.(200); }catch{ /* not supported */ }
+  } else {
+    const chip = $('.rest-chip');
+    if (chip) chip.textContent = `⏱ ${restRemaining()}s — tap to stop`;
+    else render();
+  }
+}, 1000);
+
+/* ── Boot ───────────────────────────────────────────────────────────────── */
+
+if (!load()){
+  seedCircle();
+  save();
+}
+// A session pointing at a user that no longer exists must not wedge the app.
+if (state.session && !me()) state.session = null;
+if (state.draft && state.draft.userId !== state.session) state.draft = null;
+
+render();
+
+// Keep the tab honest if another tab of the same app writes.
+window.addEventListener('storage', (e) => {
+  if (e.key === STORE_KEY){ load(); render(); }
+});
+</script>
+</body>
+</html>
