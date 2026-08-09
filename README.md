@@ -66,19 +66,6 @@ Easiest, no tools:
 - **Clear** button moves checked items into **Buy again** at the bottom — tap any of those to add it back next time.
 - Tap a category heading to collapse it; tap **Buy again** to expand/collapse it.
 
----
-
-## Also in this repo: Iron Circle (`/gym.html`)
-
-A second, separate app — a social gym tracker for a private circle of friends: live workout logging,
-automatic PR detection, progress charts, an activity feed with likes and comments, and a leaderboard.
-Same one-file approach as Market List, its own storage, and it shares nothing with the grocery list.
-
-Open `/gym.html` on the same deployment. Invite code for the demo circle: **`IRON-2026`**.
-Details and design decisions: [`docs/iron-circle.md`](docs/iron-circle.md).
-
----
-
 ## Notes
 - I couldn't test this against a live Firebase from here, so if something doesn't sync, double-check the config values and that the Firestore rules were published.
 - Free tiers are generous; a household grocery list won't get close to any limit.

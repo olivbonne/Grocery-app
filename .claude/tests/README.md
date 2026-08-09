@@ -39,21 +39,6 @@ and carries forward the test bugs found in earlier ones. The recurring lessons:
   bringing the target into view (v1.77).
 - A page transition swallows the next tap while it runs — wait it out (v1.75).
 
-## The gym tracker's suite
-
-`gym-v100.js` covers **`gym.html`** (Iron Circle), not Market List. It is a separate app in the same
-repo — a different `localStorage` key, a different page — so it is named for its own app and version
-rather than joining the `vNNN` series. It needs no Firebase stub: `gym.html` makes no network requests.
-
-```bash
-python3 -m http.server 8974 --directory /home/user/Grocery-app &
-node .claude/tests/gym-v100.js 8974 /tmp/<scratch>/gym.png
-```
-
-Its load-bearing check is the PR one: it logs a heavy session, then a lighter one, then **deletes the
-heavy session** and asserts the record passes back to the lighter set. A high-water-mark implementation
-of PR detection passes every other check in the file and fails that one.
-
 ## Superseding a check
 
 When a version deliberately changes what an older check asserts, rewrite that check in place against
