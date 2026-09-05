@@ -572,6 +572,20 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.84: a label for a field, not a caption for the page — .hint is centred, which reads as stray
      text sitting above a left-aligned input. */
   .palabel { margin:0 0 6px; font-size:12px; font-weight:700; color:var(--muted); text-align:left; }
+  /* v1.86 recipe import: three ways in, all landing in the same form */
+  .pimprow { display:flex; gap:7px; flex-wrap:wrap; margin:0 0 12px; }
+  .pimp { flex:1 1 auto; padding:9px 12px; border-radius:13px; border:1.5px solid var(--line);
+    background:var(--card); color:var(--text); font-family:'Outfit',system-ui,sans-serif;
+    font-weight:700; font-size:13.5px; white-space:nowrap; }
+  .pimp.on { border-color:var(--accent); color:var(--accent); }
+  .pimppanel { display:flex; gap:8px; align-items:stretch; margin:0 0 12px; }
+  .pimppanel.col { flex-direction:column; }
+  .pimpgo { flex:none; padding:0 16px; border-radius:14px; border:none; background:var(--btn);
+    color:#fff; font-weight:800; font-size:14px; font-family:'Outfit',system-ui,sans-serif; }
+  .pimpgo.wide { padding:12px 16px; }
+  .pimpgo[disabled] { opacity:.45; }
+  .pimpnote { margin:0 0 10px; font-size:12.5px; font-weight:600; color:var(--muted); line-height:1.45; }
+  .pimpnote.err { color:var(--accent); }
   /* A19 AI-order note — visible in shop mode (unlike .hint) */
   .aihint { margin:0 0 10px; font-size:12px; font-weight:700; color:var(--muted); text-align:left; }
   /* B7 AI aisle-order proposal (accept/revert) */
@@ -1494,7 +1508,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.85";
+const APP_VERSION = "v1.86";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -4898,7 +4912,8 @@ function planIngName(x){ return planIngNorm(x).name; }
 function planIngCat(x){ const c=planIngNorm(x).cat; return c || null; }
 let planWeek = 0;        // which week the Plan tab is showing, 0 = this one
 let planMenu = null;     // dayKey whose + menu is open
-let planAdd = null;      // { day, kind:"food"|"recipe", name, ing:[{name,cat}], rid, edit, q, cat, emoji }
+let planAdd = null;      // { day, kind:"food"|"recipe", name, ing:[{name,cat}], rid, edit, q, cat, emoji,
+                         //   imp:null|"link"|"paste", impVal, impBusy, impErr }  // v1.86 recipe import
 let planPick = null;     // { day, id } — the chip whose actions are open
 function renderPlanTab(){
   const P = planData(), s = weekStart(planWeek), todayK = dayKey(new Date());
@@ -4994,6 +5009,73 @@ function wirePlanDyn(){
     b.onclick=()=>{ if(!planAdd) return;
       planAdd.ing.splice(parseInt(b.dataset.pingrm,10),1); refreshPlanDyn(); }; });
 }
+/* v1.86: a photo from a phone is several megabytes and the request body is capped well below that, so
+   the picture is scaled down and re-encoded here before it is ever sent. It also makes the round trip
+   quick enough to wait for. */
+function planShrinkImage(file, maxPx, quality){
+  return new Promise((resolve, reject)=>{
+    const fr=new FileReader();
+    fr.onerror=()=>reject(new Error("read"));
+    fr.onload=()=>{
+      const img=new Image();
+      img.onerror=()=>reject(new Error("decode"));
+      img.onload=()=>{ try{
+        const s=Math.min(1, maxPx/Math.max(img.width, img.height));
+        const w=Math.max(1, Math.round(img.width*s)), h=Math.max(1, Math.round(img.height*s));
+        const cv=document.createElement("canvas"); cv.width=w; cv.height=h;
+        cv.getContext("2d").drawImage(img, 0, 0, w, h);
+        resolve(cv.toDataURL("image/jpeg", quality));
+      }catch(e){ reject(e); } };
+      img.src=fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+/* Every failure the server can name gets a sentence that says what to do about it. A generic
+   "couldn't read that" sends someone hunting in the wrong place — the whole reason the endpoint
+   returns a code alongside its message. */
+function planImpMessage(code){
+  switch(code){
+    case "not_configured": return "Recipe reading isn't set up yet — add a GROQ_API_KEY in Vercel (see docs/ai-setup.md). You can still type ingredients.";
+    case "vision_model":   return "Reading photos needs a vision model set up (GROQ_VISION_MODEL — see docs/ai-setup.md). A link or pasted text works now.";
+    case "bad_url": case "blocked_url": return "That link can't be opened. Paste the recipe's web address.";
+    case "not_a_page":     return "That link isn't a web page.";
+    case "fetch_failed":   return "Couldn't read that page — some sites block it. Try pasting the recipe text instead.";
+    case "bad_image": case "too_large": return "That photo didn't work — try a closer, clearer shot.";
+    case "too_long":       return "That's a lot of text — paste just the recipe.";
+    default:               return "Couldn't read that — try pasting the recipe text instead.";
+  }
+}
+/* v1.86: link, photo and pasted text all come back as the same thing — a title and a list of
+   ingredients — so they all land in the same place: the form, filled in, for you to check before
+   anything is added. Nothing is written to a day or to the list here. */
+async function planImport(payload){
+  if(!planAdd) return;
+  planAdd.impBusy=true; planAdd.impErr=""; render();
+  let res=null, data=null;
+  try{
+    res=await fetch("/api/recipe", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(payload) });
+  }catch(e){ res=null; }
+  if(!planAdd) return;
+  if(!res){ planAdd.impBusy=false; planAdd.impErr="Couldn't reach the reader. Check your connection — you can still type ingredients."; render(); return; }
+  try{ data=await res.json(); }catch(e){ data=null; }
+  if(!res.ok){
+    planAdd.impBusy=false;
+    planAdd.impErr=planImpMessage(data && data.code);
+    render(); return;
+  }
+  const allowed=catList().map(c=>c.id);
+  const items=(data && Array.isArray(data.items)) ? data.items : [];
+  const ing=items.map(it=>({ name:String((it&&it.name)||"").trim(),
+                             cat:(it && allowed.includes(String(it.category))) ? String(it.category) : "" }))
+                 .filter(x=>x.name);
+  planAdd.impBusy=false;
+  if(!ing.length){ planAdd.impErr="No ingredients found in that."; render(); return; }
+  planAdd.ing = planAdd.ing.concat(ing);
+  if(!(planAdd.name||"").trim() && data && data.title) planAdd.name=String(data.title).slice(0,80);
+  planAdd.rid=""; planAdd.imp=null; planAdd.impVal=""; planAdd.impErr="";
+  render();
+}
 function planAddSheet(){
   const isR = planAdd.kind==="recipe";
   const saved = planData().recipes;
@@ -5003,6 +5085,24 @@ function planAddSheet(){
   const ingCSS   = "width:100%;height:46px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;background:var(--card);color:var(--text);font-size:16px;box-sizing:border-box";
   return `<div class="sheet-bg kbpin" id="paBg"><div class="sheet" id="paSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${esc(head)}${planAdd.edit?"":` · ${esc(dayName)}`}</div>
+    ${(isR && !planAdd.edit) ? `<p class="palabel">Start from</p>
+      <div class="pimprow">
+        <button class="pimp${planAdd.imp==='link'?' on':''}" data-pimp="link">🔗 A link</button>
+        <button class="pimp" data-pimp="photo">📷 A photo</button>
+        <button class="pimp${planAdd.imp==='paste'?' on':''}" data-pimp="paste">📋 Paste text</button>
+      </div>
+      <input id="paPhoto" type="file" accept="image/*" style="display:none" />
+      ${planAdd.impBusy ? `<p class="pimpnote">Reading the recipe…</p>` : ""}
+      ${planAdd.impErr ? `<p class="pimpnote err">${esc(planAdd.impErr)}</p>` : ""}
+      ${planAdd.imp==='link' ? `<div class="pimppanel">
+          <input id="paImpVal" placeholder="Paste a recipe link" value="${esc(planAdd.impVal||"")}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="url" style="${ingCSS}" />
+          <button class="pimpgo" id="paImpGo"${planAdd.impBusy?" disabled":""}>Read it</button>
+        </div>` : ""}
+      ${planAdd.imp==='paste' ? `<div class="pimppanel col">
+          <textarea id="paImpVal" rows="5" placeholder="Paste the recipe here — ingredients and all" style="width:100%;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;background:var(--card);color:var(--text);font-size:15px;box-sizing:border-box;resize:none">${esc(planAdd.impVal||"")}</textarea>
+          <button class="pimpgo wide" id="paImpGo"${planAdd.impBusy?" disabled":""}>Read it</button>
+        </div>` : ""}
+      ` : ""}
     ${(isR && !planAdd.edit && saved.length) ? `<p class="palabel">Your recipes</p>
       <div class="pills" style="margin-bottom:14px">${saved.map(r=>`<button class="sugchip" data-precipe="${esc(r.id)}">${esc(r.name)}</button>`).join("")}</div>` : ""}
     <input id="paName" placeholder="${isR?'Recipe name':'What are you eating?'}" value="${esc(planAdd.name||"")}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="${fieldCSS}" />
@@ -5039,13 +5139,13 @@ function wirePlanTab(){
       if(longFired){
         const en=planEntries(day).find(x=>x.id===id);
         const r=en && en.kind==="recipe" ? recipeById(en.rid) : null;
-        if(r){ planAdd={ day, kind:"recipe", name:r.name, ing:(r.ing||[]).map(planIngNorm), rid:r.id, edit:true, q:"" }; render(); return; }
+        if(r){ planAdd={ day, kind:"recipe", name:r.name, ing:(r.ing||[]).map(planIngNorm), rid:r.id, edit:true, q:"", imp:null, impVal:"", impBusy:false, impErr:"" }; render(); return; }
       }
       planPick={day,id}; render(); };
   });
 
   const pmBg=app.querySelector("#pmBg"); if(pmBg) pmBg.onclick=e=>{ if(e.target===pmBg){ planMenu=null; render(); } };
-  const pmR=app.querySelector("#pmRecipe"); if(pmR) pmR.onclick=()=>{ planAdd={day:planMenu,kind:"recipe",name:"",ing:[],rid:"",edit:false,q:""}; planMenu=null; render(); };
+  const pmR=app.querySelector("#pmRecipe"); if(pmR) pmR.onclick=()=>{ planAdd={day:planMenu,kind:"recipe",name:"",ing:[],rid:"",edit:false,q:"",imp:null,impVal:"",impBusy:false,impErr:""}; planMenu=null; render(); };
   const pmF=app.querySelector("#pmFood");   if(pmF) pmF.onclick=()=>{ planAdd={day:planMenu,kind:"food",name:"",ing:[],rid:"",edit:false,q:"",cat:"",emoji:""}; planMenu=null; render(); };
 
   const paBg=app.querySelector("#paBg"); if(paBg) paBg.onclick=e=>{ if(e.target===paBg){ planAdd=null; render(); } };
@@ -5061,6 +5161,23 @@ function wirePlanTab(){
       const t=(paI.value||"").trim();
       if(t){ planAdd.ing.push({name:t, cat:""}); planAdd.q=""; paI.value=""; refreshPlanDyn(); } } }; }
   const paG=app.querySelector("#paGo"); if(paG){ paG.onpointerdown=e=>e.preventDefault(); paG.onclick=planCommitAdd; }
+  app.querySelectorAll("[data-pimp]").forEach(b=>b.onclick=()=>{
+    if(!planAdd || planAdd.impBusy) return;
+    const k=b.dataset.pimp;
+    if(k==="photo"){ const f=app.querySelector("#paPhoto"); if(f) f.click(); return; }
+    planAdd.imp = (planAdd.imp===k) ? null : k; planAdd.impVal=""; planAdd.impErr=""; render(); });
+  const paPh=app.querySelector("#paPhoto");
+  if(paPh) paPh.onchange=()=>{ const file=paPh.files && paPh.files[0]; if(!file || !planAdd) return;
+    planAdd.impBusy=true; planAdd.impErr=""; render();
+    planShrinkImage(file, 1400, 0.72)
+      .then(img=>planImport({ image:img }))
+      .catch(()=>{ if(planAdd){ planAdd.impBusy=false; planAdd.impErr="Couldn't open that photo."; render(); } }); };
+  const paIV=app.querySelector("#paImpVal");
+  if(paIV){ paIV.focus();
+    /* v1.45 again: typing must not re-render, or the field is torn out and the keyboard goes with it. */
+    paIV.oninput=()=>{ planAdd.impVal=paIV.value; };
+    paIV.onkeydown=e=>{ if(e.key==="Enter" && planAdd.imp==="link"){ e.preventDefault(); planImpGo(); } }; }
+  const paIG=app.querySelector("#paImpGo"); if(paIG){ paIG.onpointerdown=e=>e.preventDefault(); paIG.onclick=planImpGo; }
   /* v1.84: picking a saved recipe FILLS the form — its name into the field, its ingredients below it —
      and stays put. Nothing returns to the plan until Add is pressed, so what is about to be added can
      be read and changed first. The name input is written directly rather than re-rendered, so the
@@ -5102,6 +5219,13 @@ function wirePlanTab(){
   wireListsSheet();
   wireSmartSheet();
   wireUserTiles();
+}
+function planImpGo(){
+  if(!planAdd || planAdd.impBusy) return;
+  const el=document.querySelector("#paImpVal");
+  const v=((el && el.value) || planAdd.impVal || "").trim();
+  if(!v){ planAdd.impErr="Nothing to read yet."; render(); return; }
+  planImport(planAdd.imp==="link" ? { url:v } : { text:v });
 }
 function planCommitAdd(){
   if(!planAdd) return;

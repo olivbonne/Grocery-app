@@ -22,6 +22,38 @@ covers a household). Groq's API is OpenAI-compatible.
 Until the key is set, `/api/parse` returns `500 Server not configured` and the
 app's Smart-add falls back gracefully (plain typing still adds items).
 
+## Reading a recipe from a link or a photo
+
+`/api/recipe` takes any one of three things:
+
+| body | what happens |
+|---|---|
+| `{ text }` | pasted recipe text is parsed straight away |
+| `{ url }`  | the page is fetched **on the server**, reduced to text, then parsed |
+| `{ image }`| a data: URL of a photo is sent to a vision model |
+
+**The link path fetches a URL the user typed**, which is a request only the server can
+make — so it is fenced in: `http`/`https` only, no loopback, private, link-local or
+`.local`/`.internal` hosts, every redirect hop re-checked (a public host is free to redirect
+inward), an 8s timeout, a 1.5MB read cap, and HTML/plain-text content types only. Where a page
+carries schema.org `Recipe` JSON-LD — most recipe sites do — the ingredient list is taken from
+that rather than from the prose, which is both cheaper and more accurate.
+
+**The photo path needs a vision model, and Groq's image-capable line-up changes** — Llama 4
+Scout was deprecated for free and developer tiers in June 2026. So the model name is an
+environment variable:
+
+```
+GROQ_VISION_MODEL = <a model your Groq account lists as image-capable>
+```
+
+Set it in the same place as `GROQ_API_KEY` (Vercel → Settings → Environment Variables), then
+redeploy. Pick the name from **console.groq.com → Models**, filtering for image input. If it is
+unset the default is tried, and when that model is not available to your account the endpoint
+answers with the code `vision_model` and the app says photo reading is not set up — rather than
+a generic failure that sends you looking in the wrong place. The link and paste paths work
+without it.
+
 ## Why the key stays server-side
 
 The serverless function `api/parse.js` reads `process.env.GROQ_API_KEY` and
