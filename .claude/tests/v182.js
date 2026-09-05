@@ -91,12 +91,23 @@ const fmtDate = d => d.toLocaleDateString(undefined,{day:"numeric",month:"short"
       more:!!s.querySelector('[data-pd]'),
       key:(s.querySelector('[data-pd]')||{dataset:{}}).dataset.pd,
       chips:[...s.querySelectorAll('.pchip')].map(c=>c.textContent.trim()) })) }));
+  /* SUPERSEDED by v1.84: ingredients used to be one free-text #paIng textarea, filled in one go. They
+     are entered one at a time now through #paIngIn, each matched against the app's own items, so the
+     helper types them individually. What the checks below assert — that a recipe lands on its day with
+     its ingredients — is unchanged; only the way they are typed is. v184.js drives the new field's
+     suggestions and its chips. */
   const addTo = async(dayIdx, kind, name, ing)=>{
     const more = page.locator('.planday').nth(dayIdx).locator('[data-pd]');
     await more.click(); await page.waitForTimeout(700);
     await tap(kind==='recipe' ? '#pmRecipe' : '#pmFood');
     await page.locator('#paName').fill(name);
-    if(ing!==undefined) await page.locator('#paIng').fill(ing);
+    if(ing!==undefined){
+      for(const one of String(ing).split(/[\n,]/).map(x=>x.trim()).filter(Boolean)){
+        await page.locator('#paIngIn').fill(one);
+        await page.keyboard.press('Enter');
+        await page.waitForTimeout(350);
+      }
+    }
     await tap('#paGo');
   };
 
@@ -180,9 +191,17 @@ const fmtDate = d => d.toLocaleDateString(undefined,{day:"numeric",month:"short"
     await tap('#pmRecipe');
     const saved = await page.evaluate(()=>[...document.querySelectorAll('[data-precipe]')].map(b=>b.textContent.trim()));
     ok('…and it is offered again on another day, without retyping', saved.includes('Bolognese'), JSON.stringify(saved));
+    /* SUPERSEDED by v1.84: picking a saved recipe used to add it to the day and close the sheet. It now
+       FILLS the form — name and ingredients — and stays put, so what is about to be added can be read and
+       changed first; the day only gets it when Add is pressed. Both halves are checked here. */
     await tap('[data-precipe]');
+    ok('…and picking it fills the form rather than closing (v1.84)',
+       await page.evaluate(()=>!!document.querySelector('#paSheet') && (document.querySelector('#paName')||{}).value==='Bolognese'),
+       JSON.stringify(await page.evaluate(()=>({ open:!!document.querySelector('#paSheet'),
+                                                 name:(document.querySelector('#paName')||{}).value }))));
+    await tap('#paGo');
     w4 = await week();
-    ok('…picking it puts it on the second day too',
+    ok('…and then it is on the second day too',
        (w4.days[6].chips||[]).some(c=>/Bolognese/.test(c)) && (w4.days[4].chips||[]).some(c=>/Bolognese/.test(c)),
        JSON.stringify({thu:w4.days[4].chips, sun:w4.days[6].chips}));
 

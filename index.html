@@ -559,6 +559,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .zoomer.normal .bapill { min-height:46px; font-size:15px; padding:10px 14px; border-radius:13px; gap:7px; }
   .zoomer.normal .bapill .qmore { font-size:13px; }
   .hint { margin-top:12px; font-size:11px; color:var(--muted); text-align:center; }
+  /* v1.84: a label for a field, not a caption for the page — .hint is centred, which reads as stray
+     text sitting above a left-aligned input. */
+  .palabel { margin:0 0 6px; font-size:12px; font-weight:700; color:var(--muted); text-align:left; }
   /* A19 AI-order note — visible in shop mode (unlike .hint) */
   .aihint { margin:0 0 10px; font-size:12px; font-weight:700; color:var(--muted); text-align:left; }
   /* B7 AI aisle-order proposal (accept/revert) */
@@ -691,13 +694,17 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .pdname { font-family:'Outfit',system-ui,sans-serif; font-weight:800; font-size:16px; }
   .pddate { font-size:12.5px; font-weight:700; color:var(--muted2); }
   .pdmore { flex:none; width:40px; height:36px; border:none; background:transparent; color:var(--muted);
-    display:inline-flex; align-items:center; justify-content:center; border-radius:12px; }
+    display:inline-flex; align-items:center; justify-content:center; border-radius:12px;
+    font-family:'Outfit',system-ui,sans-serif; font-size:24px; font-weight:700; line-height:1; }
   .pdmore:active { background:var(--chip); color:var(--text); }
   .pdempty { margin:6px 0 0; font-size:13px; color:var(--muted2); }
   .pdchips { display:flex; flex-wrap:wrap; gap:7px; margin-top:9px; }
   .pchip { display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:999px;
     border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:14px; max-width:100%; }
   .pchip.recipe { border-style:dashed; }
+  /* v1.84 */
+  .pchip { user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; touch-action:manipulation; }
+  .pchip .pcx { color:var(--muted2); font-weight:800; margin-left:2px; }
   .pchip .pcname { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .qmore { margin-left:6px; width:22px; height:22px; flex:none; border-radius:7px; display:inline-flex; align-items:center; justify-content:center;
     color:var(--muted); font-size:13px; font-weight:800; background:var(--chip); transition:transform .15s ease; }
@@ -1467,7 +1474,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.83";
+const APP_VERSION = "v1.84";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2570,7 +2577,6 @@ const CHEV_SVG = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" st
 const GEAR_SVG = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 const CAL_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
 /* v1.82: ⋯ is not in the self-hosted Outfit subset and would render as nothing, so the three dots are drawn. */
-const DOTS_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>';
 function bottomNav(o){
   // v1.16 three tabs: Lists · Shop (middle, cart) · Settings (right). Adding is the floating "+ Add" pill.
   // v1.82 four tabs: Plan sits between Lists and Shop.
@@ -4145,10 +4151,23 @@ function syncZoomHeight(){ const z=document.getElementById("zoomer"); const bb=d
     if(zw) zw.style.height = Math.ceil(z.getBoundingClientRect().height) + "px"; }
   nudgeHeaderCount();   // v1.81 keep the centred count clear of the switcher's chevron
   applyKb(); }
+/* v1.84: a bottom sheet with a field in it is pinned to the LAYOUT viewport, so the keyboard opens
+   straight over it. visualViewport reports what is actually still visible; sitting the sheet on top of
+   that strip — and capping its height to it — is all these sheets need. `.sheet-bg.kbpin` opts in, so
+   the add sheet's own far more elaborate pinning (pinAddSheet) is untouched. */
+function pinKbSheet(){
+  const vv = (typeof window!=="undefined") ? window.visualViewport : null;
+  document.querySelectorAll(".sheet-bg.kbpin > .sheet").forEach(s=>{
+    if(!vv){ s.style.transform=""; s.style.maxHeight=""; return; }
+    const bot = Math.max(0, Math.round(window.innerHeight - (vv.offsetTop + vv.height)));
+    s.style.transform = bot>1 ? "translateY(-"+bot+"px)" : "";
+    s.style.maxHeight = bot>1 ? Math.max(200, Math.round(vv.height - 24))+"px" : "";
+  });
+}
 let kbOffset=0, kbActive=false;
 function applyKb(){ const bar=document.getElementById("botbar"); if(bar) bar.style.transform = kbOffset>1 ? `translateY(${-kbOffset}px)` : "";
   const as=document.getElementById("addSheet"); if(as){ as.style.setProperty("--kb", (kbOffset>1?kbOffset:0)+"px"); as.classList.toggle("kbup", kbOffset>1); }
-  pinAddSheet(); }
+  pinAddSheet(); pinKbSheet(); }
 /* v1.38 item 3 — pin the add sheet to the VISUAL viewport.
    Why JS and not CSS: position:fixed is resolved against the LAYOUT viewport. When the keyboard opens,
    iOS scrolls the *visual* viewport to bring the focused input into view; the layout viewport doesn't
@@ -4851,20 +4870,32 @@ function planRemoveEntry(k, id){ const P=planData();
 function planSaveRecipe(r){ const P=planData();
   P.recipes = P.recipes.filter(x=>x.id!==r.id).concat([r]); writePlan(P); }
 function recipeById(id){ return planData().recipes.find(r=>r.id===id) || null; }
+/* v1.84: an ingredient carries its category now, so it can go onto the list as the real item rather
+   than as loose text. Recipes written before this version hold plain strings — normalise on read. */
+function planIngNorm(x){ return (typeof x==="string") ? {name:x, cat:""} : {name:(x&&x.name)||"", cat:(x&&x.cat)||""}; }
+function planIngName(x){ return planIngNorm(x).name; }
+function planIngCat(x){ const c=planIngNorm(x).cat; return c || null; }
 let planWeek = 0;        // which week the Plan tab is showing, 0 = this one
-let planMenu = null;     // dayKey whose ⋯ menu is open
-let planAdd = null;      // { day, kind:"food"|"recipe", name, ing }
+let planMenu = null;     // dayKey whose + menu is open
+let planAdd = null;      // { day, kind:"food"|"recipe", name, ing:[{name,cat}], rid, edit, q, cat, emoji }
 let planPick = null;     // { day, id } — the chip whose actions are open
 function renderPlanTab(){
   const P = planData(), s = weekStart(planWeek), todayK = dayKey(new Date());
   const days = [];
   for(let i=0;i<7;i++){
     const d = new Date(s.getTime()+i*DAY_MS), k = dayKey(d), es = P.days[k]||[];
-    const chips = es.map(e=>`<button class="pchip${e.kind==='recipe'?' recipe':''}" data-pchip="${esc(k)}|${esc(e.id)}">${e.emoji?`<span class="pcem" aria-hidden="true">${e.emoji}</span>`:""}<span class="pcname">${esc(e.name)}</span></button>`).join("");
+    const chips = es.map(e=>{
+      const r = e.kind==="recipe" ? recipeById(e.rid) : null;
+      const nm = r ? r.name : e.name;                       // a renamed recipe renames every day it is on
+      /* v1.84: names picked from the app's items arrive as the dictionary holds them ("milk"), so the
+         chip title-cases exactly the way every other item label in the app does. */
+      const em = e.emoji || (e.cat ? itemEmoji(nm, e.cat) : "");
+      return `<button class="pchip${e.kind==='recipe'?' recipe':''}" data-pchip="${esc(k)}|${esc(e.id)}">${em?`<span class="pcem" aria-hidden="true">${em}</span>`:""}<span class="pcname">${esc(cap(nm))}</span></button>`;
+    }).join("");
     days.push(`<section class="planday${k===todayK?' today':''}">
       <div class="pdhead">
         <span class="pdwhen"><span class="pdname">${esc(d.toLocaleDateString(undefined,{weekday:"long"}))}</span><span class="pddate">${esc(d.toLocaleDateString(undefined,{day:"numeric",month:"short"}))}</span></span>
-        <button class="pdmore" data-pd="${esc(k)}" aria-haspopup="dialog" aria-label="Add to ${esc(d.toLocaleDateString(undefined,{weekday:"long"}))}">${DOTS_SVG}</button>
+        <button class="pdmore" data-pd="${esc(k)}" aria-haspopup="dialog" aria-label="Add to ${esc(d.toLocaleDateString(undefined,{weekday:"long"}))}">+</button>
       </div>
       ${chips ? `<div class="pdchips">${chips}</div>` : `<p class="pdempty">Nothing planned</p>`}
     </section>`);
@@ -4903,15 +4934,60 @@ function planMenuSheet(){
     <button class="optaction" id="pmFood">Add food</button>
   </div></div>`;
 }
+/* v1.84: what you type is matched against the app's own items — the same addMatches() the add sheet
+   and the category suggestions use, so a plan entry is a real item with a category and an icon rather
+   than loose text. Nothing is shown until you type, which is the rule the add sheet already follows. */
+function planDynHTML(){
+  if(!planAdd) return "";
+  const isR = planAdd.kind==="recipe";
+  const q = String(isR ? (planAdd.q||"") : (planAdd.name||"")).trim().toLowerCase();
+  const ms = q ? addMatches(q).slice(0,12) : [];
+  const sug = ms.length ? `<div class="catsug">${ms.map(m=>{ const c=CAT(m.cat)||{color:"var(--line)"};
+      const em=itemEmoji(m.name,m.cat);
+      return `<button class="catsugchip" data-psug="${esc(m.name)}|${esc(m.cat)}" style="border-color:${c.color}">${em?em+" ":""}${esc(cap(m.name))}</button>`;
+    }).join("")}</div>` : "";
+  const chips = (isR && planAdd.ing.length)
+    ? `<div class="pdchips" style="margin-top:10px">${planAdd.ing.map((x,i)=>{ const em=itemEmoji(planIngName(x),planIngCat(x));
+        return `<button class="pchip" data-pingrm="${i}">${em?`<span class="pcem" aria-hidden="true">${em}</span>`:""}<span class="pcname">${esc(cap(planIngName(x)))}</span><span class="pcx" aria-hidden="true">×</span></button>`;
+      }).join("")}</div>` : "";
+  return sug + chips;
+}
+function refreshPlanDyn(){ const d=document.querySelector("#paDyn"); if(!d || !planAdd) return;
+  d.innerHTML = planDynHTML(); wirePlanDyn(); }
+/* Wired separately because #paDyn is rebuilt on its own as you type — a full render would take the
+   focused field with it (v1.45). */
+function wirePlanDyn(){
+  document.querySelectorAll("[data-psug]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
+    b.onclick=()=>{ if(!planAdd) return;
+      const p=b.dataset.psug.split("|"); const cat=p.pop(); const nm=p.join("|");
+      if(planAdd.kind==="recipe"){
+        planAdd.ing.push({name:nm, cat}); planAdd.q="";
+        const ii=document.querySelector("#paIngIn"); if(ii){ ii.value=""; ii.focus(); }
+        refreshPlanDyn();
+      } else {
+        planAdd.name=nm; planAdd.cat=cat; planAdd.emoji=itemEmoji(nm,cat)||"";
+        planCommitAdd();
+      } }; });
+  document.querySelectorAll("[data-pingrm]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
+    b.onclick=()=>{ if(!planAdd) return;
+      planAdd.ing.splice(parseInt(b.dataset.pingrm,10),1); refreshPlanDyn(); }; });
+}
 function planAddSheet(){
   const isR = planAdd.kind==="recipe";
   const saved = planData().recipes;
-  return `<div class="sheet-bg" id="paBg"><div class="sheet" id="paSheet">
-    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${isR?"Add recipe":"Add food"}</div>
-    ${isR && saved.length ? `<p class="hint" style="margin:0 0 8px">Your recipes</p><div class="pills" style="margin-bottom:12px">${saved.map(r=>`<button class="sugchip" data-precipe="${esc(r.id)}">${r.emoji?esc(r.emoji)+" ":""}${esc(r.name)}</button>`).join("")}</div>` : ""}
-    <input id="paName" placeholder="${isR?'Recipe name':'What are you eating?'}" value="${esc(planAdd.name||"")}" autocomplete="off" style="width:100%;height:48px;padding:0 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:16px;box-sizing:border-box" />
-    ${isR?`<textarea id="paIng" rows="4" placeholder="Ingredients, one per line" style="width:100%;margin-top:8px;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;background:var(--card);color:var(--text);font-size:15px;box-sizing:border-box;resize:none">${esc(planAdd.ing||"")}</textarea>`:""}
-    <button class="newlist" id="paGo">Add to ${esc(new Date(planAdd.day+"T00:00:00").toLocaleDateString(undefined,{weekday:"long"}))}</button>
+  const dayName = new Date(planAdd.day+"T00:00:00").toLocaleDateString(undefined,{weekday:"long"});
+  const head = planAdd.edit ? "Edit recipe" : (isR ? "Add recipe" : "Add food");
+  const fieldCSS = "width:100%;height:48px;padding:0 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:16px;box-sizing:border-box";
+  const ingCSS   = "width:100%;height:46px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;background:var(--card);color:var(--text);font-size:16px;box-sizing:border-box";
+  return `<div class="sheet-bg kbpin" id="paBg"><div class="sheet" id="paSheet">
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${esc(head)}${planAdd.edit?"":` · ${esc(dayName)}`}</div>
+    ${(isR && !planAdd.edit && saved.length) ? `<p class="palabel">Your recipes</p>
+      <div class="pills" style="margin-bottom:14px">${saved.map(r=>`<button class="sugchip" data-precipe="${esc(r.id)}">${esc(r.name)}</button>`).join("")}</div>` : ""}
+    <input id="paName" placeholder="${isR?'Recipe name':'What are you eating?'}" value="${esc(planAdd.name||"")}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="${fieldCSS}" />
+    ${isR?`<p class="palabel" style="margin-top:14px">Ingredients</p>
+      <input id="paIngIn" placeholder="Add an ingredient" value="" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="${ingCSS}" />`:""}
+    <div id="paDyn">${planDynHTML()}</div>
+    <button class="newlist" id="paGo">${planAdd.edit ? "Save recipe" : "Add to "+esc(dayName)}</button>
   </div></div>`;
 }
 function planPickSheet(){
@@ -4932,26 +5008,48 @@ function wirePlanTab(){
   const nx=app.querySelector("#pwNext"); if(nx) nx.onclick=()=>{ planWeek++; render(); };
   const nw=app.querySelector("#pwNow");  if(nw) nw.onclick=()=>{ planWeek=0; render(); };
   app.querySelectorAll("[data-pd]").forEach(b=>b.onclick=()=>{ planMenu=b.dataset.pd; render(); });
-  app.querySelectorAll("[data-pchip]").forEach(b=>b.onclick=()=>{
-    const [day,id]=b.dataset.pchip.split("|"); planPick={day,id}; render(); });
+  /* v1.84: tap opens what you can do with this entry; press-and-hold on a recipe opens the recipe
+     itself for editing. Food has nothing behind it to edit, so a hold there does what a tap does. */
+  app.querySelectorAll("[data-pchip]").forEach(b=>{ const [day,id]=b.dataset.pchip.split("|");
+    b.oncontextmenu=e=>e.preventDefault();
+    b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
+    b.onpointerup=()=>{ pressCancel();
+      if(longFired){
+        const en=planEntries(day).find(x=>x.id===id);
+        const r=en && en.kind==="recipe" ? recipeById(en.rid) : null;
+        if(r){ planAdd={ day, kind:"recipe", name:r.name, ing:(r.ing||[]).map(planIngNorm), rid:r.id, edit:true, q:"" }; render(); return; }
+      }
+      planPick={day,id}; render(); };
+  });
 
   const pmBg=app.querySelector("#pmBg"); if(pmBg) pmBg.onclick=e=>{ if(e.target===pmBg){ planMenu=null; render(); } };
-  const pmR=app.querySelector("#pmRecipe"); if(pmR) pmR.onclick=()=>{ planAdd={day:planMenu,kind:"recipe",name:"",ing:""}; planMenu=null; render(); };
-  const pmF=app.querySelector("#pmFood");   if(pmF) pmF.onclick=()=>{ planAdd={day:planMenu,kind:"food",name:"",ing:""}; planMenu=null; render(); };
+  const pmR=app.querySelector("#pmRecipe"); if(pmR) pmR.onclick=()=>{ planAdd={day:planMenu,kind:"recipe",name:"",ing:[],rid:"",edit:false,q:""}; planMenu=null; render(); };
+  const pmF=app.querySelector("#pmFood");   if(pmF) pmF.onclick=()=>{ planAdd={day:planMenu,kind:"food",name:"",ing:[],rid:"",edit:false,q:"",cat:"",emoji:""}; planMenu=null; render(); };
 
   const paBg=app.querySelector("#paBg"); if(paBg) paBg.onclick=e=>{ if(e.target===paBg){ planAdd=null; render(); } };
   const paN=app.querySelector("#paName");
-  if(paN){ paN.focus();
-    /* v1.45: a render tears a focused field out of the document and drops the keyboard, so the draft is
-       kept on input and only committed on Add — nothing here re-renders while you are typing. */
-    paN.oninput=()=>{ planAdd.name=paN.value; };
+  if(paN){ if(!planAdd.edit && !planAdd.name) paN.focus();
+    /* v1.45: a render tears a focused field out of the document and drops the keyboard, so typing only
+       updates the draft and refreshes the ONE block that depends on it — never the page. */
+    paN.oninput=()=>{ planAdd.name=paN.value; if(planAdd.kind!=="recipe") refreshPlanDyn(); };
     paN.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); planCommitAdd(); } }; }
-  const paI=app.querySelector("#paIng"); if(paI) paI.oninput=()=>{ planAdd.ing=paI.value; };
+  const paI=app.querySelector("#paIngIn");
+  if(paI){ paI.oninput=()=>{ planAdd.q=paI.value; refreshPlanDyn(); };
+    paI.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault();
+      const t=(paI.value||"").trim();
+      if(t){ planAdd.ing.push({name:t, cat:""}); planAdd.q=""; paI.value=""; refreshPlanDyn(); } } }; }
   const paG=app.querySelector("#paGo"); if(paG){ paG.onpointerdown=e=>e.preventDefault(); paG.onclick=planCommitAdd; }
-  app.querySelectorAll("[data-precipe]").forEach(b=>b.onclick=()=>{
-    const r=recipeById(b.dataset.precipe); if(!r) return;
-    planAddEntry(planAdd.day, { id:"pe"+Date.now().toString(36), kind:"recipe", name:r.name, emoji:r.emoji||"", rid:r.id });
-    planAdd=null; render(); });
+  /* v1.84: picking a saved recipe FILLS the form — its name into the field, its ingredients below it —
+     and stays put. Nothing returns to the plan until Add is pressed, so what is about to be added can
+     be read and changed first. The name input is written directly rather than re-rendered, so the
+     keyboard survives. */
+  app.querySelectorAll("[data-precipe]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
+    b.onclick=()=>{ const r=recipeById(b.dataset.precipe); if(!r || !planAdd) return;
+      planAdd.name=r.name; planAdd.rid=r.id; planAdd.ing=(r.ing||[]).map(planIngNorm); planAdd.q="";
+      const n=document.querySelector("#paName"); if(n) n.value=r.name;
+      const ii=document.querySelector("#paIngIn"); if(ii) ii.value="";
+      refreshPlanDyn(); }; });
+  wirePlanDyn();
 
   const ppBg=app.querySelector("#ppBg"); if(ppBg) ppBg.onclick=e=>{ if(e.target===ppBg){ planPick=null; render(); } };
   const ppD=app.querySelector("#ppDel"); if(ppD) ppD.onclick=()=>{ const p=planPick; planPick=null; planRemoveEntry(p.day,p.id); render(); };
@@ -4959,8 +5057,11 @@ function wirePlanTab(){
     const es=planEntries(planPick.day), e=es.find(x=>x.id===planPick.id);
     if(!e){ planPick=null; render(); return; }
     const r = e.kind==="recipe" ? recipeById(e.rid) : null;
-    const text = (r && (r.ing||[]).length) ? r.ing.join(", ") : e.name;
-    addEntries(text, null); save();
+    /* v1.84: each ingredient goes on with its OWN category, so it lands where it belongs in the shop
+       rather than wherever the parser guesses. addEntries takes one override per call, hence the loop. */
+    if(r && (r.ing||[]).length){ r.ing.forEach(x=>addEntries(planIngName(x), planIngCat(x))); }
+    else { addEntries(e.name, e.cat || null); }
+    save();
     planPick=null; render(); showToast("Added to the list"); };
 
   const lb=app.querySelector("#listsBtnP"); if(lb) lb.onclick=()=>gotoPage(0);
@@ -4970,15 +5071,21 @@ function wirePlanTab(){
   wireUserTiles();
 }
 function planCommitAdd(){
-  const nm=(planAdd.name||"").trim(); if(!nm){ planAdd=null; render(); return; }
+  if(!planAdd) return;
+  const nm=(planAdd.name||"").trim();
+  const ing=(planAdd.ing||[]).map(planIngNorm);
+  if(!nm){ planAdd=null; render(); return; }
   const day=planAdd.day;
   if(planAdd.kind==="recipe"){
-    const ing=(planAdd.ing||"").split(/[\n,]/).map(x=>x.trim()).filter(Boolean);
-    const r={ id:"pr"+Date.now().toString(36), name:nm, emoji:"", ing };
-    planSaveRecipe(r);
-    planAddEntry(day, { id:"pe"+Date.now().toString(36), kind:"recipe", name:nm, emoji:"", rid:r.id });
+    /* v1.84: editing writes back to the recipe and stops — the days that reference it show its name
+       through recipeById(), so every day it is on follows the rename without touching their entries. */
+    if(planAdd.edit){ planSaveRecipe({ id:planAdd.rid, name:nm, emoji:"", ing }); planAdd=null; render(); return; }
+    const rid = planAdd.rid || ("pr"+Date.now().toString(36));
+    planSaveRecipe({ id:rid, name:nm, emoji:"", ing });
+    planAddEntry(day, { id:"pe"+Date.now().toString(36), kind:"recipe", name:nm, emoji:"", rid });
   } else {
-    planAddEntry(day, { id:"pe"+Date.now().toString(36), kind:"food", name:nm, emoji:"" });
+    planAddEntry(day, { id:"pe"+Date.now().toString(36), kind:"food", name:nm,
+                        emoji:planAdd.emoji||"", cat:planAdd.cat||"" });
   }
   planAdd=null; render();
 }
