@@ -676,6 +676,28 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .listbubble.cur .lb-badge { background:var(--accent); }
   .listbubble.add { align-items:center; background:transparent; border-style:dashed; }
   .listbubble.add .lb-name { color:var(--accent); font-size:16px; }
+  /* v1.82 the Plan tab: a week of days, each a row you can add to */
+  .planweek { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 0 14px; }
+  .planweek .pwlbl { flex:1; border:1.5px solid var(--line); background:var(--card); color:var(--text);
+    font-family:'Outfit',system-ui,sans-serif; font-weight:800; font-size:15px; padding:10px 12px; border-radius:14px; }
+  .planweek .pwarrow { flex:none; width:42px; height:42px; border-radius:14px; border:1.5px solid var(--line);
+    background:transparent; color:var(--text); font-size:20px; font-weight:800; line-height:1; }
+  .planday { padding:12px 0 14px; border-bottom:1px solid var(--line); }
+  .planday:last-of-type { border-bottom:none; }
+  .planday.today .pdname { color:var(--accent); }
+  .pdhead { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .pdwhen { display:flex; align-items:baseline; gap:8px; min-width:0; }
+  .pdname { font-family:'Outfit',system-ui,sans-serif; font-weight:800; font-size:16px; }
+  .pddate { font-size:12.5px; font-weight:700; color:var(--muted2); }
+  .pdmore { flex:none; width:40px; height:36px; border:none; background:transparent; color:var(--muted);
+    display:inline-flex; align-items:center; justify-content:center; border-radius:12px; }
+  .pdmore:active { background:var(--chip); color:var(--text); }
+  .pdempty { margin:6px 0 0; font-size:13px; color:var(--muted2); }
+  .pdchips { display:flex; flex-wrap:wrap; gap:7px; margin-top:9px; }
+  .pchip { display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:999px;
+    border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:14px; max-width:100%; }
+  .pchip.recipe { border-style:dashed; }
+  .pchip .pcname { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .qmore { margin-left:6px; width:22px; height:22px; flex:none; border-radius:7px; display:inline-flex; align-items:center; justify-content:center;
     color:var(--muted); font-size:13px; font-weight:800; background:var(--chip); transition:transform .15s ease; }
   .qmore.open { transform:rotate(180deg); color:var(--on-accent); background:var(--accent); }
@@ -1444,7 +1466,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.81";
+const APP_VERSION = "v1.82";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1456,7 +1478,7 @@ const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(i
    flash. `ml_appstart` unset (the default) leaves everything exactly as it was.
    The regex is duplicated deliberately: APP_EXCLUDE is declared far below with the rest of the slot
    machinery and would be in its temporal dead zone up here. Keep the two in step. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview2?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -1713,6 +1735,7 @@ function setSrchBar(v, quiet){ srchBar=v; setLS("ml_srchbar",v); applyTheme(); i
 const TILE_ACTS = {
   add:      "Open add",
   lists:    "Go to Lists",
+  plan:     "Go to Plan",
   shop:     "Go to Shop",
   settings: "Go to Settings",
   finish:   "Finish shopping",
@@ -1773,11 +1796,12 @@ function wireUserTiles(){
     const t=userTiles().find(x=>x.id===b.dataset.utile); if(!t) return;
     switch(t.act){
       case "lists":    gotoPage(0); break;
-      case "shop":     gotoPage(1); break;
-      case "settings": settingsFrom=curPageIdx(); gotoPage(2); break;
-      case "finish":   if(state.items.some(i=>i.checked)){ finishOpen=true; render(); } else { gotoPage(1); } break;
+      case "plan":     gotoPage(1); break;
+      case "shop":     gotoPage(2); break;
+      case "settings": settingsFrom=curPageIdx(); gotoPage(3); break;
+      case "finish":   if(state.items.some(i=>i.checked)){ finishOpen=true; render(); } else { gotoPage(2); } break;
       case "cat":      { const c=t.cat ? catList().find(x=>x.id===t.cat) : null; if(!c) return;
-                         if(curPageIdx()!==1){ gotoPage(1); }
+                         if(curPageIdx()!==2){ gotoPage(2); }
                          catEntry=c.id; render();
                          const el=document.querySelector(`[data-add="${c.id}"]`);
                          if(el) el.scrollIntoView({block:"center", behavior:"smooth"});
@@ -2543,10 +2567,15 @@ const LISTS_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" s
 // the character renders as blank — and there is no web font to fall back to in an offline PWA.
 const CHEV_SVG = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"/></svg>';
 const GEAR_SVG = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+const CAL_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
+/* v1.82: ⋯ is not in the self-hosted Outfit subset and would render as nothing, so the three dots are drawn. */
+const DOTS_SVG = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>';
 function bottomNav(o){
   // v1.16 three tabs: Lists · Shop (middle, cart) · Settings (right). Adding is the floating "+ Add" pill.
+  // v1.82 four tabs: Plan sits between Lists and Shop.
   return `<nav class="bottomnav" id="bottomnav">
     <button class="navbtn ${o.listsActive?'active':''}" id="${o.listsId}">${LISTS_SVG}<span>Lists</span></button>
+    <button class="navbtn ${o.planActive?'active':''}" id="${o.planId}">${CAL_SVG}<span>Plan</span></button>
     <button class="navbtn ${o.cartActive?'active':''}" id="${o.cartId}">${cartBadgeHTML(CART_NAV_SVG)}<span>Shop</span></button>
     <button class="navbtn ${o.setActive?'active':''}" id="${o.setId}">${GEAR_SVG}<span>Settings</span></button>
   </nav>`;
@@ -2790,7 +2819,10 @@ let smartOpen=false, smartLoading=false, smartError="", smartItems=[], smartEdit
 let smartServings=null;
 let view="detail", listActOpen=false, listActCode=null, newListOpen=false, newListDraft="", diagOpen=false, diagPredExpand=new Set(), diagPredSort="az";
 // v1.21 restore the last page the user was on across app restarts (item 5). optOpen is declared above; view/optOpen are ignored until onboarding completes.
-(()=>{ try{ const lv=localStorage.getItem("ml_lastview"); if(lv==="0") view="lists"; else if(lv==="2") optOpen=true; else view="detail"; }catch(e){} })();
+/* v1.82: the page indexes moved when Plan became a tab, so an old ml_lastview would restore the wrong
+   page. New key, and an absent one simply lands on the list, which is where a first launch lands. */
+(()=>{ try{ const lv=localStorage.getItem("ml_lastview2");
+  if(lv==="0") view="lists"; else if(lv==="1") view="plan"; else if(lv==="3") optOpen=true; else view="detail"; }catch(e){} })();
 function listCount(code){ try{ const s = (code===listCode) ? state : JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); return (s&&s.items)? s.items.filter(i=>!i.checked).length : 0; }catch(e){ return 0; } }
 function listStats(code){ try{ const s=(code===listCode)?state:JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); const items=(s&&s.items)||[]; const total=items.length, done=items.filter(i=>i.checked).length; return {total, done, pct: total?Math.round(done/total*100):0}; }catch(e){ return {total:0,done:0,pct:0}; } }
 function listURL(code){ return location.origin + location.pathname + "?list=" + code; }
@@ -2875,7 +2907,7 @@ function switchList(code){ listsOpen=false; if(code===listCode){ render(); retur
   LS = { me:"ml_me", collapse:"ml_collapse_"+code, cache:"ml_cache_"+code };
   reloadLearn();
   try{ collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}'); }catch(e){ collapse={cats:[],ba:false}; }
-  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{} };
+  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]} };
   try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state=c; }catch(e){}
   if(!state.purch || typeof state.purch!=="object") state.purch={};
   state.purch = purchMerge(state.purch, purch);   // fold any legacy per-device history into the shared copy
@@ -2913,7 +2945,7 @@ function playPlan(add){ if(!soundOn) return;
   } catch(e){} }
 let lastPop=null;
 
-let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{} };
+let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]} };
 rememberList(listCode);
 try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state = c; } catch(e){}
 if(!state.purch || typeof state.purch!=="object") state.purch={};
@@ -3039,7 +3071,7 @@ function subscribe(){
     if(snap.exists() && !snap.metadata.hasPendingWrites){ const d = snap.data();
       const mg = baMerge(d.buyAgain||[], d.baTomb||{}, state.buyAgain||[], state.baTomb||{});   // A24 conflict-free Buy-again
       const mgPurch = purchMerge(d.purch||{}, purch||{});                                        // B4 shared restock history (union merge)
-      state = { items:d.items||[], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch };
+      state = { items:d.items||[], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]} };
       purch = state.purch;                                                                        // keep the working ref pointed at the shared copy
       if(!state.name){ const ln=(getLists().find(l=>l.code===listCode)||{}).name; if(ln){ state.name=ln; save(); } }
       if(state.name) rememberList(listCode, state.name);
@@ -3973,7 +4005,7 @@ function openAdd(){
   if(_addClosing){ _addClosing=false; unmountAddSheet(); }
   addTab="reg"; addOpen=true; addStaged=[]; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain=""; _pinLast="";
   const y0 = window.scrollY||window.pageYOffset||0;   // v1.48: read it here, before anything can scroll the page
-  if(curPageIdx()===0){ gotoPage(1); }   // coming from Lists: the page slide has to happen first
+  if(curPageIdx()!==2){ gotoPage(2); }   // the add sheet belongs to the shop page, from wherever it was opened
   /* v1.47: lock AFTER the render. position:fixed on <body> collapses the document height, and doing
      that before the re-render painted let the collapsed page flash through as a blank frame.
      v1.49: there is no render here any more — mounting the sheet into <body> is what replaced it. */
@@ -4224,13 +4256,14 @@ function render(){
   ensureCats();
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
   if(!me){ renderOnboarding(); window.__mlRendered=true; return; }
-  try{ localStorage.setItem("ml_lastview", String(curPageIdx())); }catch(e){}   // v1.21 remember the page across restarts (item 5)
+  try{ localStorage.setItem("ml_lastview2", String(curPageIdx())); }catch(e){}   // v1.21 remember the page across restarts (item 5)
   /* v1.66 item 2: a pending "Replace slot N?" belongs to the Settings page and nothing else. Clearing
      it here rather than at each exit covers every way out — the nav, the back button, the scrim tap,
      switching user — because they all end in a render with optOpen false. */
   if(!optOpen) appSaveAsk=null;
   if(optOpen){ renderSettingsPage(); wireSettingsPage(); window.__mlRendered=true; syncZoomHeight(); syncAddChrome(); return; }
   if(view==="lists"){ renderListsPage(); wireListsPage(); window.__mlRendered=true; syncZoomHeight(); syncAddChrome(); return; }
+  if(view==="plan"){ renderPlanTab(); wirePlanTab(); window.__mlRendered=true; syncZoomHeight(); syncAddChrome(); return; }
   if(!shopMode) shopMode=true;   // v1.15 Plan and Shop are one page now — the detail page is always the combined, shoppable list
   renderMain(); wire(); window.__mlRendered=true; syncZoomHeight();
   /* v1.49: the sheet is outside #app now, so a render while it is open must re-hide the page's
@@ -4627,7 +4660,7 @@ function renderMain(){
   </div>
   ${checkedBar}
   ${!addOpen?`<div class="addpill-wrap" id="shopAddFabWrap"><button class="addpill" id="shopAddFab"><span class="addpill-ic" aria-hidden="true">${SEARCH_SVG}</span><span class="addpill-ph">Add item…</span></button></div>`:""}${/* v1.36 item 4: search bar shows even on an empty list */""}
-  ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:true,setId:"setNav"})}${userTilesHTML()}  ${finishOpen?finishSheet():""}
+  ${bottomNav({listsId:"listsBtn",listsActive:false,planId:"planNav",planActive:false,cartId:"cartNav",cartActive:true,setId:"setNav"})}${userTilesHTML()}  ${finishOpen?finishSheet():""}
   ${listsOpen?listsSheet():""}
   ${newListOpen?newListSheet():""}
   ${smartOpen?smartSheet():""}
@@ -4665,7 +4698,7 @@ function renderListsPage(){
       <p class="hint" style="text-align:center;margin-top:16px">Tap a list to open it · press &amp; hold to rename, share, or delete.</p>
     </div></div>
   </div>
-  ${bottomNav({listsId:"listsBtnL",listsActive:true,cartId:"cartNavL",cartActive:false,setId:"setNavL"})}${userTilesHTML()}
+  ${bottomNav({listsId:"listsBtnL",listsActive:true,planId:"planNavL",planActive:false,cartId:"cartNavL",cartActive:false,setId:"setNavL"})}${userTilesHTML()}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
@@ -4694,16 +4727,31 @@ function wireNewListSheet(){
     nln.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); createNewListFromSheet(); } }; }
   const nlc=app.querySelector("#newListCreate"); if(nlc){ nlc.onpointerdown=e=>e.preventDefault(); nlc.onclick=createNewListFromSheet; }
 }
+/* v1.82: the switcher opens from the Shop page and the Plan page both, so its wiring lives in one
+   function rather than inline in wire(). Same handlers, more than one caller. */
+function wireListsSheet(){
+  const lsBg=app.querySelector("#listsBg"); if(lsBg) lsBg.onclick=()=>{ listsOpen=false; render(); };
+  const lsS=app.querySelector("#listsSheetEl"); if(lsS) lsS.onclick=e=>e.stopPropagation();
+  app.querySelectorAll("[data-list]").forEach(b=>b.onclick=()=>switchList(b.dataset.list));
+  app.querySelectorAll("[data-list-up]").forEach(b=>b.onclick=()=>moveList(b.dataset.listUp,-1));
+  app.querySelectorAll("[data-list-down]").forEach(b=>b.onclick=()=>moveList(b.dataset.listDown,1));
+  app.querySelectorAll("[data-list-del]").forEach(b=>b.onclick=()=>delList(b.dataset.listDel));
+  const nl=app.querySelector("#newList"); if(nl) nl.onclick=newListPrompt;
+  wireNewListSheet();
+  const rl=app.querySelector("#renameList"); if(rl) rl.onclick=renameList;
+  const mgl=app.querySelector("#manageLists"); if(mgl) mgl.onclick=()=>{ listsOpen=false; gotoPage(0); };   // v1.81 the Lists page is the manager
+}
 function wireListsPage(){
   app.querySelectorAll("[data-open]").forEach(b=>{ const code=b.dataset.open;
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
-    b.onpointerup=()=>{ pressCancel(); if(longFired){ listActCode=code; listActOpen=true; render(); } else if(code===listCode){ gotoPage(1); } else { switchList(code); view="detail"; setShop(false); render(); } };
+    b.onpointerup=()=>{ pressCancel(); if(longFired){ listActCode=code; listActOpen=true; render(); } else if(code===listCode){ gotoPage(2); } else { switchList(code); view="detail"; setShop(false); render(); } };
   });
   const nb=app.querySelector("#newListBubble"); if(nb) nb.onclick=newListPrompt;
   wireNewListSheet();
-  const cnl=app.querySelector("#cartNavL"); if(cnl) cnl.onclick=()=>gotoPage(1);   // open the combined list
-  const stnl=app.querySelector("#setNavL"); if(stnl) stnl.onclick=()=>{ settingsFrom=0; gotoPage(2); };   // Settings tab
+  const pnl=app.querySelector("#planNavL"); if(pnl) pnl.onclick=()=>gotoPage(1);   // Plan tab
+  const cnl=app.querySelector("#cartNavL"); if(cnl) cnl.onclick=()=>gotoPage(2);   // open the combined list
+  const stnl=app.querySelector("#setNavL"); if(stnl) stnl.onclick=()=>{ settingsFrom=0; gotoPage(3); };   // Settings tab
   const ob=app.querySelector("#optBtnTop"); if(ob) ob.onclick=()=>{ optOpen=true; render(); };
   wireUserTiles();
   wireOptions();
@@ -4760,6 +4808,167 @@ function atStorePrompt(){
   try{ if(Date.now()-(+localStorage.getItem("ml_atstore_x")||0) < 2*3600000) return ""; }catch(e){}
   return `<div class="shopbar" style="margin-top:8px"><span>📍 At ${esc(st.name)}?</span><span style="display:flex;gap:8px"><button id="atstoreGo">Start shopping</button><button id="atstoreX" aria-label="Not now" style="padding:7px 11px">✕</button></span></div>`;
 }
+/* ── v1.82 the Plan tab ─────────────────────────────────────────────────────────────
+   A week of days, each holding what you mean to eat. It is per-list and it syncs, because
+   a meal plan is a household thing in exactly the way the list is — one additive field on
+   the state, read defensively so an older document is simply an empty plan.
+   DAY_MS is already declared up in the restock-cadence code — one per file. */
+function planData(){ const p = (state.plan && typeof state.plan==="object") ? state.plan : null;
+  return { days:(p && p.days) || {}, recipes:(p && p.recipes) || [] }; }
+function writePlan(next){ state.plan = { days:next.days||{}, recipes:next.recipes||[] }; save(); }
+function dayKey(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function weekStart(off){ const d=new Date(); d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - ((d.getDay()+6)%7) + off*7);   // weeks run Monday to Sunday
+  return d; }
+function weekLabel(off){
+  if(off===0) return "This week"; if(off===1) return "Next week"; if(off===-1) return "Last week";
+  const s=weekStart(off), e=new Date(s.getTime()+6*DAY_MS);
+  const f=x=>x.toLocaleDateString(undefined,{day:"numeric",month:"short"});
+  return f(s)+" – "+f(e); }
+function planEntries(k){ return planData().days[k] || []; }
+function planAddEntry(k, entry){ const P=planData();
+  P.days = Object.assign({}, P.days); P.days[k] = (P.days[k]||[]).concat([entry]); writePlan(P); }
+function planRemoveEntry(k, id){ const P=planData();
+  P.days = Object.assign({}, P.days);
+  P.days[k] = (P.days[k]||[]).filter(e=>e.id!==id);
+  if(!P.days[k].length) delete P.days[k];
+  writePlan(P); }
+function planSaveRecipe(r){ const P=planData();
+  P.recipes = P.recipes.filter(x=>x.id!==r.id).concat([r]); writePlan(P); }
+function recipeById(id){ return planData().recipes.find(r=>r.id===id) || null; }
+let planWeek = 0;        // which week the Plan tab is showing, 0 = this one
+let planMenu = null;     // dayKey whose ⋯ menu is open
+let planAdd = null;      // { day, kind:"food"|"recipe", name, ing }
+let planPick = null;     // { day, id } — the chip whose actions are open
+function renderPlanTab(){
+  const P = planData(), s = weekStart(planWeek), todayK = dayKey(new Date());
+  const days = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(s.getTime()+i*DAY_MS), k = dayKey(d), es = P.days[k]||[];
+    const chips = es.map(e=>`<button class="pchip${e.kind==='recipe'?' recipe':''}" data-pchip="${esc(k)}|${esc(e.id)}">${e.emoji?`<span class="pcem" aria-hidden="true">${e.emoji}</span>`:""}<span class="pcname">${esc(e.name)}</span></button>`).join("");
+    days.push(`<section class="planday${k===todayK?' today':''}">
+      <div class="pdhead">
+        <span class="pdwhen"><span class="pdname">${esc(d.toLocaleDateString(undefined,{weekday:"long"}))}</span><span class="pddate">${esc(d.toLocaleDateString(undefined,{day:"numeric",month:"short"}))}</span></span>
+        <button class="pdmore" data-pd="${esc(k)}" aria-haspopup="dialog" aria-label="Add to ${esc(d.toLocaleDateString(undefined,{weekday:"long"}))}">${DOTS_SVG}</button>
+      </div>
+      ${chips ? `<div class="pdchips">${chips}</div>` : `<p class="pdempty">Nothing planned</p>`}
+    </section>`);
+  }
+  app.innerHTML = `
+    <div class="topfix" id="topfix">
+      <header>
+        <div style="display:flex;align-items:center;gap:8px"><span class="backbtn" aria-hidden="true"></span><button class="title disp listswitch" id="listSwitch" aria-haspopup="dialog" aria-expanded="${listsOpen?'true':'false'}">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="dot">.</span><span class="lschev" aria-hidden="true">${CHEV_SVG}</span></button></div>
+        <div style="display:flex;align-items:center;gap:8px">${syncChip()}</div>
+      </header>
+    </div>
+    <div class="wrap">
+    <div class="zoomwrap"><div class="zoomer" id="zoomer">
+      <div class="planweek">
+        <button class="pwarrow" id="pwPrev" aria-label="Previous week">‹</button>
+        <button class="pwlbl" id="pwNow">${esc(weekLabel(planWeek))}</button>
+        <button class="pwarrow" id="pwNext" aria-label="Next week">›</button>
+      </div>
+      ${days.join("")}
+    </div></div>
+  </div>
+  ${bottomNav({listsId:"listsBtnP",listsActive:false,planId:"planNavP",planActive:true,cartId:"cartNavP",cartActive:false,setId:"setNavP"})}${userTilesHTML()}
+  ${planMenu?planMenuSheet():""}
+  ${planAdd?planAddSheet():""}
+  ${planPick?planPickSheet():""}
+  ${listsOpen?listsSheet():""}
+  ${newListOpen?newListSheet():""}
+  ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
+}
+function planMenuSheet(){
+  const d = new Date(planMenu+"T00:00:00");
+  return `<div class="sheet-bg" id="pmBg"><div class="sheet" id="pmSheet">
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${esc(d.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"}))}</div>
+    <button class="optaction" id="pmRecipe">Add recipe</button>
+    <button class="optaction" id="pmFood">Add food</button>
+  </div></div>`;
+}
+function planAddSheet(){
+  const isR = planAdd.kind==="recipe";
+  const saved = planData().recipes;
+  return `<div class="sheet-bg" id="paBg"><div class="sheet" id="paSheet">
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${isR?"Add recipe":"Add food"}</div>
+    ${isR && saved.length ? `<p class="hint" style="margin:0 0 8px">Your recipes</p><div class="pills" style="margin-bottom:12px">${saved.map(r=>`<button class="sugchip" data-precipe="${esc(r.id)}">${r.emoji?esc(r.emoji)+" ":""}${esc(r.name)}</button>`).join("")}</div>` : ""}
+    <input id="paName" placeholder="${isR?'Recipe name':'What are you eating?'}" value="${esc(planAdd.name||"")}" autocomplete="off" style="width:100%;height:48px;padding:0 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:16px;box-sizing:border-box" />
+    ${isR?`<textarea id="paIng" rows="4" placeholder="Ingredients, one per line" style="width:100%;margin-top:8px;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;background:var(--card);color:var(--text);font-size:15px;box-sizing:border-box;resize:none">${esc(planAdd.ing||"")}</textarea>`:""}
+    <button class="newlist" id="paGo">Add to ${esc(new Date(planAdd.day+"T00:00:00").toLocaleDateString(undefined,{weekday:"long"}))}</button>
+  </div></div>`;
+}
+function planPickSheet(){
+  const es = planEntries(planPick.day), e = es.find(x=>x.id===planPick.id);
+  if(!e) return "";
+  const r = e.kind==="recipe" ? recipeById(e.rid) : null;
+  const n = r ? (r.ing||[]).length : 0;
+  return `<div class="sheet-bg" id="ppBg"><div class="sheet" id="ppSheet">
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${e.emoji?esc(e.emoji)+" ":""}${esc(e.name)}</div>
+    ${r && n ? `<button class="optaction" id="ppList">Add ${n} ingredient${n===1?"":"s"} to the list</button>`
+             : `<button class="optaction" id="ppList">Add to the shopping list</button>`}
+    <button class="optaction" id="ppDel" style="border-color:#C24A33;color:#C24A33">Remove from this day</button>
+  </div></div>`;
+}
+function wirePlanTab(){
+  const lsw=app.querySelector("#listSwitch"); if(lsw) lsw.onclick=()=>{ listsOpen=true; render(); };
+  const pv=app.querySelector("#pwPrev"); if(pv) pv.onclick=()=>{ planWeek--; render(); };
+  const nx=app.querySelector("#pwNext"); if(nx) nx.onclick=()=>{ planWeek++; render(); };
+  const nw=app.querySelector("#pwNow");  if(nw) nw.onclick=()=>{ planWeek=0; render(); };
+  app.querySelectorAll("[data-pd]").forEach(b=>b.onclick=()=>{ planMenu=b.dataset.pd; render(); });
+  app.querySelectorAll("[data-pchip]").forEach(b=>b.onclick=()=>{
+    const [day,id]=b.dataset.pchip.split("|"); planPick={day,id}; render(); });
+
+  const pmBg=app.querySelector("#pmBg"); if(pmBg) pmBg.onclick=e=>{ if(e.target===pmBg){ planMenu=null; render(); } };
+  const pmR=app.querySelector("#pmRecipe"); if(pmR) pmR.onclick=()=>{ planAdd={day:planMenu,kind:"recipe",name:"",ing:""}; planMenu=null; render(); };
+  const pmF=app.querySelector("#pmFood");   if(pmF) pmF.onclick=()=>{ planAdd={day:planMenu,kind:"food",name:"",ing:""}; planMenu=null; render(); };
+
+  const paBg=app.querySelector("#paBg"); if(paBg) paBg.onclick=e=>{ if(e.target===paBg){ planAdd=null; render(); } };
+  const paN=app.querySelector("#paName");
+  if(paN){ paN.focus();
+    /* v1.45: a render tears a focused field out of the document and drops the keyboard, so the draft is
+       kept on input and only committed on Add — nothing here re-renders while you are typing. */
+    paN.oninput=()=>{ planAdd.name=paN.value; };
+    paN.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); planCommitAdd(); } }; }
+  const paI=app.querySelector("#paIng"); if(paI) paI.oninput=()=>{ planAdd.ing=paI.value; };
+  const paG=app.querySelector("#paGo"); if(paG){ paG.onpointerdown=e=>e.preventDefault(); paG.onclick=planCommitAdd; }
+  app.querySelectorAll("[data-precipe]").forEach(b=>b.onclick=()=>{
+    const r=recipeById(b.dataset.precipe); if(!r) return;
+    planAddEntry(planAdd.day, { id:"pe"+Date.now().toString(36), kind:"recipe", name:r.name, emoji:r.emoji||"", rid:r.id });
+    planAdd=null; render(); });
+
+  const ppBg=app.querySelector("#ppBg"); if(ppBg) ppBg.onclick=e=>{ if(e.target===ppBg){ planPick=null; render(); } };
+  const ppD=app.querySelector("#ppDel"); if(ppD) ppD.onclick=()=>{ const p=planPick; planPick=null; planRemoveEntry(p.day,p.id); render(); };
+  const ppL=app.querySelector("#ppList"); if(ppL) ppL.onclick=()=>{
+    const es=planEntries(planPick.day), e=es.find(x=>x.id===planPick.id);
+    if(!e){ planPick=null; render(); return; }
+    const r = e.kind==="recipe" ? recipeById(e.rid) : null;
+    const text = (r && (r.ing||[]).length) ? r.ing.join(", ") : e.name;
+    addEntries(text, null); save();
+    planPick=null; render(); showToast("Added to the list"); };
+
+  const lb=app.querySelector("#listsBtnP"); if(lb) lb.onclick=()=>gotoPage(0);
+  const cn=app.querySelector("#cartNavP"); if(cn) cn.onclick=()=>gotoPage(2);
+  const st=app.querySelector("#setNavP"); if(st) st.onclick=()=>{ settingsFrom=1; gotoPage(3); };
+  wireListsSheet();
+  wireUserTiles();
+}
+function planCommitAdd(){
+  const nm=(planAdd.name||"").trim(); if(!nm){ planAdd=null; render(); return; }
+  const day=planAdd.day;
+  if(planAdd.kind==="recipe"){
+    const ing=(planAdd.ing||"").split(/[\n,]/).map(x=>x.trim()).filter(Boolean);
+    const r={ id:"pr"+Date.now().toString(36), name:nm, emoji:"", ing };
+    planSaveRecipe(r);
+    planAddEntry(day, { id:"pe"+Date.now().toString(36), kind:"recipe", name:nm, emoji:"", rid:r.id });
+  } else {
+    planAddEntry(day, { id:"pe"+Date.now().toString(36), kind:"food", name:nm, emoji:"" });
+  }
+  planAdd=null; render();
+}
+/* LEGACY / UNREACHABLE: the pre-v1.15 plan page. Nothing calls this pair — the Plan TAB added in v1.82
+   is renderPlanTab()/wirePlanTab(), just above this. Left in place rather than deleted so this version is
+   only the new feature; it is dead weight and a candidate for removal on its own. */
 function renderPlanPage(){
   const psm = (displayFor()==="cat" && sortModeFor()==="location") ? "cat" : sortModeFor();
   let planBody;
@@ -4836,7 +5045,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>Add items…</span></button></div>`:""}
-  ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}
+  ${bottomNav({listsId:"listsBtn",listsActive:false,planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -4910,7 +5119,8 @@ function wirePlanPage(){
 function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay sheet); v1.20 slides in/out
   const bk=app.querySelector("#setBack"); if(bk) bk.onclick=()=>gotoPage(settingsFrom);   // ‹ back slides to where we came from
   const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>gotoPage(0);
-  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(1);   // Shop lies to the left → slides in from the left
+  const pns=app.querySelector("#planNavS"); if(pns) pns.onclick=()=>gotoPage(1);   // Plan tab
+  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(2);   // Shop lies to the left → slides in from the left
   const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{};   // already on Settings
   wireOptions();
   wireEditSheet();
@@ -5426,7 +5636,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview2?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -5846,7 +6056,7 @@ function renderSettingsPage(){
       <div class="optpage">${optionsBody()}</div>
     </div></div>
     </div>
-    ${bottomNav({listsId:"listsBtn",listsActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
+    ${bottomNav({listsId:"listsBtn",listsActive:false,planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
     ${diagOpen?diagSheet():""}
     ${listsOpen?listsSheet():""}
   ${newListOpen?newListSheet():""}
@@ -6090,10 +6300,10 @@ function wire(){
       else { restore(name,cat); } }; });
   const cba=app.querySelector("#clearBA"); if(cba) cba.onclick=()=>{ const prev=snapState(); const now=Date.now(); state.baTomb=state.baTomb||{}; state.buyAgain.forEach(e=>{ state.baTomb[baKey(e)]=now; }); state.buyAgain=[]; save(); render(); showUndo(prev,"Buy-again cleared"); };
 
-  const dsh=app.querySelector("#doneShop"); if(dsh) dsh.onclick=()=>{ if(state.items.some(i=>i.checked)){ finishOpen=true; render(); } else gotoPage(1); };
+  const dsh=app.querySelector("#doneShop"); if(dsh) dsh.onclick=()=>{ if(state.items.some(i=>i.checked)){ finishOpen=true; render(); } else gotoPage(2); };
   const fbg=app.querySelector("#finishBg"); if(fbg) fbg.onclick=e=>{ if(e.target===fbg){ finishOpen=false; render(); } };
-  const fsv=app.querySelector("#finishSave"); if(fsv) fsv.onclick=()=>{ finishOpen=false; sweep(); gotoPage(1); };
-  const fkp=app.querySelector("#finishKeep"); if(fkp) fkp.onclick=()=>{ finishOpen=false; gotoPage(1); };
+  const fsv=app.querySelector("#finishSave"); if(fsv) fsv.onclick=()=>{ finishOpen=false; sweep(); gotoPage(2); };
+  const fkp=app.querySelector("#finishKeep"); if(fkp) fkp.onclick=()=>{ finishOpen=false; gotoPage(2); };
   const ssh=app.querySelector("#startShop"); if(ssh) ssh.onclick=()=>gotoPage(2);
   const aiAp=app.querySelector("[data-ai-apply]"); if(aiAp) aiAp.onclick=aiApplyProposal;   // B7 accept the proposed aisle order
   const aiKp=app.querySelector("[data-ai-keep]"); if(aiKp) aiKp.onclick=aiDismissProposal;   // B7 revert / keep current
@@ -6101,8 +6311,9 @@ function wire(){
   const ln=app.querySelector("#listName"); if(ln) ln.onclick=()=>gotoPage(0);
   const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>gotoPage(0);   // ‹ back to Lists
   const lsw=app.querySelector("#listSwitch"); if(lsw) lsw.onclick=()=>{ listsOpen=true; render(); };   // v1.81 title opens the switcher
-  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(1);
-  const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{ settingsFrom=1; gotoPage(2); };   // Settings tab (bottom-right) — slides in from the right
+  const pnv=app.querySelector("#planNav"); if(pnv) pnv.onclick=()=>gotoPage(1);   // Plan tab
+  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(2);
+  const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{ settingsFrom=2; gotoPage(3); };   // Settings tab (bottom-right) — slides in from the right
   const saf=app.querySelector("#shopAddFab"); if(saf) saf.onclick=openAdd;   // floating search bubble opens the add sheet
   const rsa=app.querySelector("[data-reg-showall]"); if(rsa) rsa.onclick=()=>{   // v1.24 "Regulars" header — shown by default; tap to hide/show the categories
     collapse.regAll = (collapse.regAll===false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
@@ -6128,16 +6339,7 @@ function wire(){
   wireOptions();
 
   /* lists sheet */
-  const lsBg=app.querySelector("#listsBg"); if(lsBg) lsBg.onclick=()=>{ listsOpen=false; render(); };
-  const lsS=app.querySelector("#listsSheetEl"); if(lsS) lsS.onclick=e=>e.stopPropagation();
-  app.querySelectorAll("[data-list]").forEach(b=>b.onclick=()=>switchList(b.dataset.list));
-  app.querySelectorAll("[data-list-up]").forEach(b=>b.onclick=()=>moveList(b.dataset.listUp,-1));
-  app.querySelectorAll("[data-list-down]").forEach(b=>b.onclick=()=>moveList(b.dataset.listDown,1));
-  app.querySelectorAll("[data-list-del]").forEach(b=>b.onclick=()=>delList(b.dataset.listDel));
-  const nl=app.querySelector("#newList"); if(nl) nl.onclick=newListPrompt;
-  wireNewListSheet();
-  const rl=app.querySelector("#renameList"); if(rl) rl.onclick=renameList;
-  const mgl=app.querySelector("#manageLists"); if(mgl) mgl.onclick=()=>{ listsOpen=false; gotoPage(0); };   // v1.81 the Lists page is the manager
+  wireListsSheet();
 
 
   wireEditSheet();
@@ -6210,15 +6412,17 @@ function wireEditSheet(){
   }
 }
 
-/* Three linear pages: Lists (0) ▸ Plan (1) ▸ Shop (2). Plan and Shop share view="detail",
-   distinguished by shopMode. A horizontal swipe drags the live page with the finger before
-   committing (see transitionTo for the animation). */
-function curPageIdx(){ return optOpen ? 2 : (view==="lists" ? 0 : 1); }   // v1.20 linear pages: Lists(0) · Shop(1) · Settings(2)
+/* Four linear pages: Lists (0) ▸ Plan (1) ▸ Shop (2) ▸ Settings (3). Plan is its own view as of
+   v1.82; Shop is view="detail" with shopMode. A horizontal swipe drags the live page with the finger
+   before committing (see transitionTo for the animation). */
+function curPageIdx(){ return optOpen ? 3 : (view==="lists" ? 0 : (view==="plan" ? 1 : 2)); }
 function applyPage(idx){
   catEntry=null; quickEdit=null;
-  if(idx===2){ optOpen=true; return; }   // Settings sits to the right of Shop
+  if(idx===3){ optOpen=true; return; }
   optOpen=false;
-  if(idx===0){ view="lists"; } else { view="detail"; shopMode=true; }
+  if(idx===0){ view="lists"; }
+  else if(idx===1){ view="plan"; }
+  else { view="detail"; shopMode=true; }
 }
 let _pageAnim=false;
 /* v1.75 item 3: which way a page arrives, and how fast. Auto is what the app has always done — the
@@ -6244,7 +6448,7 @@ const _pageY={};
    ancestor transform can never unpin it on iOS Safari); only the scrolling content (.wrap) slides,
    the header and bottom nav stay put — native-tab style. */
 function transitionTo(idx){
-  if(idx<0 || idx>2 || _pageAnim) return;
+  if(idx<0 || idx>3 || _pageAnim) return;
   const from=curPageIdx();
   if(idx===from){ render(); return; }
   const dir = idx>from ? 1 : -1;                                  // 1 → new page enters from the right (it lies to the right)
