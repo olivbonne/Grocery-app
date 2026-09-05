@@ -352,7 +352,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .listrow-go { color:var(--muted); font-size:18px; }
   /* v1.81 switcher rows: name over count, selection as a radio on the right */
   .listpick { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:11px 13px;
-    border-radius:14px; border:1.5px solid var(--line); background:var(--card); color:var(--text); }
+    border-radius:14px; border:1.5px solid var(--line); background:var(--card); color:var(--text);
+    user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; touch-action:manipulation; }
   .listpick.cur { border-color:var(--accent); }
   .listpick .lp-main { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
   .listpick .lp-name { font-weight:800; font-size:15.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -1466,7 +1467,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.82";
+const APP_VERSION = "v1.83";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -4662,6 +4663,7 @@ function renderMain(){
   ${!addOpen?`<div class="addpill-wrap" id="shopAddFabWrap"><button class="addpill" id="shopAddFab"><span class="addpill-ic" aria-hidden="true">${SEARCH_SVG}</span><span class="addpill-ph">Add item…</span></button></div>`:""}${/* v1.36 item 4: search bar shows even on an empty list */""}
   ${bottomNav({listsId:"listsBtn",listsActive:false,planId:"planNav",planActive:false,cartId:"cartNav",cartActive:true,setId:"setNav"})}${userTilesHTML()}  ${finishOpen?finishSheet():""}
   ${listsOpen?listsSheet():""}
+  ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
   ${smartOpen?smartSheet():""}
   ${editing?editSheet():""}
@@ -4732,14 +4734,34 @@ function wireNewListSheet(){
 function wireListsSheet(){
   const lsBg=app.querySelector("#listsBg"); if(lsBg) lsBg.onclick=()=>{ listsOpen=false; render(); };
   const lsS=app.querySelector("#listsSheetEl"); if(lsS) lsS.onclick=e=>e.stopPropagation();
-  app.querySelectorAll("[data-list]").forEach(b=>b.onclick=()=>switchList(b.dataset.list));
+  /* v1.83: tap picks the list, press-and-hold opens everything you can do to it — the same gesture
+     and the same sheet the Lists page's bubbles use, so there is one way to manage a list, not two. */
+  app.querySelectorAll("[data-list]").forEach(b=>{ const code=b.dataset.list;
+    b.oncontextmenu=e=>e.preventDefault();
+    b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
+    b.onpointerup=()=>{ pressCancel();
+      if(longFired){ listActCode=code; listActOpen=true; listsOpen=false; render(); }
+      else switchList(code); };
+  });
+  wireListActSheet();
   app.querySelectorAll("[data-list-up]").forEach(b=>b.onclick=()=>moveList(b.dataset.listUp,-1));
   app.querySelectorAll("[data-list-down]").forEach(b=>b.onclick=()=>moveList(b.dataset.listDown,1));
   app.querySelectorAll("[data-list-del]").forEach(b=>b.onclick=()=>delList(b.dataset.listDel));
   const nl=app.querySelector("#newList"); if(nl) nl.onclick=newListPrompt;
   wireNewListSheet();
   const rl=app.querySelector("#renameList"); if(rl) rl.onclick=renameList;
-  const mgl=app.querySelector("#manageLists"); if(mgl) mgl.onclick=()=>{ listsOpen=false; gotoPage(0); };   // v1.81 the Lists page is the manager
+}
+/* v1.83: the list-action sheet is reachable from the switcher's rows now, not just the Lists page's
+   bubbles, so its wiring has to travel with it. Same handlers, two callers. */
+function wireListActSheet(){
+  const lbg=app.querySelector("#listActBg"); if(lbg) lbg.onclick=()=>{ listActOpen=false; render(); };
+  const las=app.querySelector("#listActSheet"); if(las) las.onclick=e=>e.stopPropagation();
+  const lar=app.querySelector("#laRename"); if(lar) lar.onclick=()=>renameListCode(listActCode);
+  const laup=app.querySelector("#laUp"); if(laup) laup.onclick=()=>moveList(listActCode,-1);
+  const ladn=app.querySelector("#laDown"); if(ladn) ladn.onclick=()=>moveList(listActCode,1);
+  const lash=app.querySelector("#laShare"); if(lash) lash.onclick=()=>shareListCode(listActCode);
+  const lac=app.querySelector("#laDup"); if(lac) lac.onclick=()=>duplicateListCode(listActCode);
+  const lad=app.querySelector("#laDelete"); if(lad) lad.onclick=()=>delListUndo(listActCode);
 }
 function wireListsPage(){
   app.querySelectorAll("[data-open]").forEach(b=>{ const code=b.dataset.open;
@@ -4755,14 +4777,7 @@ function wireListsPage(){
   const ob=app.querySelector("#optBtnTop"); if(ob) ob.onclick=()=>{ optOpen=true; render(); };
   wireUserTiles();
   wireOptions();
-  const lbg=app.querySelector("#listActBg"); if(lbg) lbg.onclick=()=>{ listActOpen=false; render(); };
-  const las=app.querySelector("#listActSheet"); if(las) las.onclick=e=>e.stopPropagation();
-  const lar=app.querySelector("#laRename"); if(lar) lar.onclick=()=>renameListCode(listActCode);
-  const laup=app.querySelector("#laUp"); if(laup) laup.onclick=()=>moveList(listActCode,-1);
-  const ladn=app.querySelector("#laDown"); if(ladn) ladn.onclick=()=>moveList(listActCode,1);
-  const lash=app.querySelector("#laShare"); if(lash) lash.onclick=()=>shareListCode(listActCode);
-  const lac=app.querySelector("#laDup"); if(lac) lac.onclick=()=>duplicateListCode(listActCode);
-  const lad=app.querySelector("#laDelete"); if(lad) lad.onclick=()=>delListUndo(listActCode);
+  wireListActSheet();
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
@@ -4876,6 +4891,7 @@ function renderPlanTab(){
   ${planAdd?planAddSheet():""}
   ${planPick?planPickSheet():""}
   ${listsOpen?listsSheet():""}
+  ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -6059,6 +6075,7 @@ function renderSettingsPage(){
     ${bottomNav({listsId:"listsBtn",listsActive:false,planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
     ${diagOpen?diagSheet():""}
     ${listsOpen?listsSheet():""}
+    ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
     ${editing?editSheet():""}
     ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
@@ -6074,10 +6091,8 @@ function listsSheet(){
       <span class="lp-main"><span class="lp-name">${esc(l.name||'Untitled list')}</span><span class="lp-sub">${sub}</span></span>
       <span class="lp-radio${cur?' on':''}" aria-hidden="true"></span></button>`; }).join("");
   return `<div class="sheet-bg" id="listsBg"><div class="sheet" id="listsSheetEl">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px">
-      <div class="disp" style="font-weight:800;font-size:17px">Your lists</div>
-      <button class="optaction" id="manageLists" style="width:auto;margin:0;padding:8px 12px">Manage</button>
-    </div>
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:2px">Your lists</div>
+    <p class="hint" style="margin:0 0 12px">Tap to switch · press &amp; hold for rename, share, reorder or delete.</p>
     <div class="listrows">${rows||'<p class="empty-sub">No lists yet.</p>'}</div>
     <button class="newlist" id="newList">+ Create new list</button>
   </div></div>`;
