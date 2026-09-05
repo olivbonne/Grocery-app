@@ -22,7 +22,9 @@
    - v1.80: assert a count AND the identity behind it.
    - v1.81: "the element exists" says nothing about whether it can be SEEN.
    - v1.82: addInitScript re-runs on every navigation, so a seed must be idempotent.
-   - v1.83: not every action closes its sheet — dismiss explicitly rather than assuming. */
+   - v1.83: not every action closes its sheet — dismiss explicitly rather than assuming.
+   - v1.85 put a review sheet between "add the ingredients" and the list; the check below confirms it
+     and then commits. See the SUPERSEDED note there. */
 const { chromium } = require(require.resolve('playwright', { paths: [__dirname, '/opt/node22/lib/node_modules', '/tmp'] }));
 const STUB = `export const initializeApp=()=>({});export const getFirestore=()=>({});
 export const initializeFirestore=()=>({});export const persistentLocalCache=()=>({});
@@ -222,7 +224,13 @@ const SEED = (extra)=>`(() => {
     const itemsBefore = await page.evaluate(()=>JSON.parse(localStorage.getItem('ml_cache_v101')).items.length);
     await page.locator('.planday').nth(3).locator('.pchip').first().click();
     await page.waitForTimeout(700);
+    /* SUPERSEDED by v1.85: "add the ingredients" opens a review sheet now, where any of them can be
+       turned off before anything is written. The category check below is the point of this pair and is
+       unchanged — it just has to press through the review to get there. */
     await tap('#ppList');
+    ok('…by way of the review sheet, not straight onto the list (v1.85)',
+       (await page.locator('#smartSheetEl').count())===1, String(await page.locator('#smartSheetEl').count()));
+    await tap('#smartConfirm');
     const added = await page.evaluate(()=>JSON.parse(localStorage.getItem('ml_cache_v101')).items.slice(-2));
     ok('a recipe\'s ingredients go onto the shopping list',
        (await page.evaluate(()=>JSON.parse(localStorage.getItem('ml_cache_v101')).items.length))===itemsBefore+2,

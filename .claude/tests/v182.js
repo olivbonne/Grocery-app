@@ -214,7 +214,14 @@ const fmtDate = d => d.toLocaleDateString(undefined,{day:"numeric",month:"short"
     ok('tapping what you planned offers the list and the day',
        pick && pick.actions.length===2 && /ingredient/i.test(pick.actions[0]) && /Remove/i.test(pick.actions[1]),
        JSON.stringify(pick));
+    /* SUPERSEDED by v1.85: this used to write the ingredients straight to the list. They now go through
+       the review sheet first, where each one can be turned off — some of a recipe is usually already in
+       the cupboard. What this check guards is unchanged (all three ingredients reach the list); it just
+       confirms the review on the way. v185.js drives the deselection itself. */
     await tap('#ppList');
+    ok('…and that opens the review sheet rather than writing straight away (v1.85)',
+       (await page.locator('#smartSheetEl').count())===1, String(await page.locator('#smartSheetEl').count()));
+    await tap('#smartConfirm');
     const after = await page.evaluate(()=>JSON.parse(localStorage.getItem('ml_cache_v101')).items.map(i=>i.name.toLowerCase()));
     ok('…and the recipe\'s ingredients land on the shopping list',
        after.length===before+3 && ['mince','tomatoes','spaghetti'].every(x=>after.includes(x)),
