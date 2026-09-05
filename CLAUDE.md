@@ -48,7 +48,10 @@ No build step, no framework. Firebase Firestore for live household sync, Vercel 
   version-bump → changelog → commit → push → PR inner loop.
 
 ## Verification
-- Syntax: extract the module script and `node --check` it.
+- Syntax: extract the module script and `node --check` it — and extract it to the **last** `</script>`,
+  not the first. The module contains `</script>` inside a template literal, so a non-greedy match compiles
+  only a prefix: that is how a duplicate top-level `const` reached the browser in v1.82.
+  `const a=h.indexOf('<script type="module">'), b=h.lastIndexOf('</script>')`.
 - Behavior: `/verify-app` skill — serves the repo, launches headless Chromium
   (`executablePath: '/opt/pw-browsers/chromium'`), **stubs `www.gstatic.com/firebasejs/**`**
   (egress blocks it; the app runs local-only when `firebaseConfig.apiKey === "REPLACE_ME"`),
