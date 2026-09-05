@@ -23,6 +23,14 @@ node .claude/tests/v178.js 8971 /tmp/<scratch>/v178.png
 Each prints one `PASS`/`FAIL` line per check and a tally, and writes a screenshot to the path given.
 A suite that cannot reach the server crashes with `ERR_CONNECTION_REFUSED` — start the server first.
 
+## The one that is not a browser suite
+
+`api-recipe.js` tests the serverless endpoint directly — `node .claude/tests/api-recipe.js`, no server
+and no network, with the one outward call stubbed. It exists because v1.86 made `/api/recipe` fetch a
+URL that a user typed, which is a request only the deployment can make; the guards around that (no
+loopback, no private ranges, no link-local, every redirect hop re-checked) are the most
+security-relevant code in the repo and no browser suite can reach any of it.
+
 ## What a good check looks like
 
 The header of each suite lists what that version's checks have to prove beyond "the control exists",
