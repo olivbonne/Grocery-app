@@ -11,7 +11,9 @@
    - selection is single: exactly one radio is on, and it follows the switch;
    - creating a list from the sheet reaches the real new-list flow;
    - the management the sheet gave up (move / rename / delete) is still reachable — it moved to the
-     Lists page's press-and-hold, it did not disappear;
+     Lists page's press-and-hold, it did not disappear. (v1.83 brought that same press-and-hold to the
+     switcher's own rows and dropped the Manage button; the checks that named Manage are superseded
+     in place below, and v183.js drives the gesture that replaced it.);
    - the top bar is untouched: the title is still vertically centred in the 61px bar (v1.77) and the
      back arrow still works and still lines up (v1.79). The title changed from a <span> to a <button>,
      which is exactly the kind of swap that quietly moves a baseline.
@@ -174,7 +176,12 @@ const SEED = (solo,nm)=>`(() => {
     ok('…exactly one row selected, and it is the current list',
        s.open && s.rows.filter(r=>r.on).length===1 && s.rows[0].on===true && s.rows[0].cur===true,
        JSON.stringify(s.open&&s.rows.map(r=>({n:r.name,on:r.on}))));
-    ok('…offering create + manage', s.open && s.newList===true && s.manage===true, JSON.stringify({n:s.newList,m:s.manage}));
+    /* SUPERSEDED by v1.83: the sheet offered a "Manage" button that navigated to the Lists page for
+       rename/reorder/delete. v1.83 removed it and put those options on a press-and-hold of the row
+       itself, so the assertion is inverted: Manage must be GONE, and the gesture that replaced it must
+       be named on the sheet — a hidden gesture is an unavailable feature. v183.js drives the gesture. */
+    ok('…offering create, and no Manage detour (v1.83)', s.open && s.newList===true && s.manage===false,
+       JSON.stringify({n:s.newList,m:s.manage}));
     ok('…and the create button says what it does', s.open && /create new list/i.test(s.newLabel||''), s.newLabel);
 
     /* ── 3. switching actually switches ─────────────────────────────────── */
@@ -219,11 +226,18 @@ const SEED = (solo,nm)=>`(() => {
        s.rows.filter(r=>r.on).length===1 && (s.rows.find(r=>r.on)||{}).name==='Pharmacy',
        JSON.stringify(s.open&&s.rows.map(r=>({n:r.name,on:r.on}))));
 
-    await tap('#manageLists');   // the sheet is already open from the check above — re-tapping the switcher would hit its scrim
+    /* SUPERSEDED by v1.83: this used to tap "Manage" to reach the Lists page. That button is gone, so
+       the route is the nav — but what the pair was really guarding still holds and is still checked:
+       the sheet can be left, and the Lists page carries no switcher of its own because it IS the list
+       of lists. */
+    await page.evaluate(()=>{ const b=document.querySelector('#listsBg'); if(b) b.click(); });
+    await page.waitForTimeout(700);
+    await tap('#listsBtn, #listsBtnL, #listsBtnP, #listsBtnS');
     const onLists = await page.evaluate(()=>({ grid:!!document.querySelector('.listgrid'),
                                                sheet:!!document.querySelector('#listsSheetEl'),
                                                sw:!!document.querySelector('#listSwitch') }));
-    ok('"Manage" closes the sheet and lands on the Lists page', onLists.grid===true && onLists.sheet===false, JSON.stringify(onLists));
+    ok('the sheet can be dismissed and the Lists page reached (v1.83: via the nav, not Manage)',
+       onLists.grid===true && onLists.sheet===false, JSON.stringify(onLists));
     ok('…where there is no switcher, because that page IS the list of lists', onLists.sw===false, JSON.stringify({sw:onLists.sw}));
 
     /* ── 5. the management the sheet gave up is still reachable ─────────── */
