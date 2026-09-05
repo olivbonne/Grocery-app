@@ -24,13 +24,18 @@ export const onSnapshot=()=>()=>{};export const setDoc=async()=>{};export defaul
     const b = page.locator(`button:visible:has-text("${btn}")`).first();
     if (await b.count()) { await b.click().catch(()=>{}); await page.waitForTimeout(600); break; }
   }
-  // add items through the add bar
-  const ta = page.locator('textarea:visible').first();
+  // Add items through the real add sheet. Since v1.49 the sheet is mounted into <body> on demand, so
+  // there is no visible textarea until the floating "Add item…" pill is tapped — this step used to look
+  // for one at rest, find nothing, and skip silently, which let the smoke test pass an empty list.
+  const fab = page.locator('#shopAddFab').first();
+  if (await fab.count()) { await fab.click().catch(()=>{}); await page.waitForTimeout(900); }
+  const ta = page.locator('#mainInput, textarea:visible').first();
   if (await ta.count()) {
     await ta.fill('2 milk, bananas, chicken, shampoo, rice, 500g cheese');
-    const add = page.locator('.addbtn, #catAddBtn').first();
-    if (await add.count()) await add.click().catch(()=>{}); else await page.keyboard.press('Enter');
-    await page.waitForTimeout(1000);
+    // Enter is the "I'm done" gesture: it adds what is typed AND commits the sheet. The Cancel button
+    // (#addDone) would delete the staged items, so never reach for that to close.
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(1200);
   }
   await page.screenshot({ path: out });
   const txt = await page.locator('#app').innerText().catch(() => '(none)');
