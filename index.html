@@ -1106,7 +1106,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.27 floating search bubble replaces the "+ Add" pill; ✨ AI sits to its right. (.addpill also
      gets the glass bg/border/shadow from the Glasshouse grouping below.) */
   .addpill-wrap { position:fixed; left:var(--srchleft, 0px); right:var(--srchright, 0px); bottom:0; margin:0 auto; max-width:var(--srchw, 480px); z-index:41;
-    display:flex; gap:8px; padding:0 14px; pointer-events:none; }
+    display:flex; gap:8px; padding:0 var(--srchpad, 14px); pointer-events:none; }
   .addpill { pointer-events:auto; flex:1; min-width:0; display:flex; align-items:center; gap:10px;
     color:var(--muted); font-weight:600; font-size:15px; padding:14px 18px; border-radius:999px; transition:transform .12s ease; }
   .addpill:active { transform:scale(.98); }
@@ -1267,7 +1267,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      syncZoomHeight() writes `style.bottom` inline on both wraps on every pass — a `bottom` here could
      never win, and a transform does not have to. Width is only honoured when set, and `margin:0 auto`
      keeps an explicit width centred inside `left:0;right:0`. */
-  .addpill-wrap { position:fixed; left:var(--srchleft, 0px); right:var(--srchright, 0px); bottom:0; margin:0 auto; max-width:var(--srchw, 480px); z-index:41; padding:0 14px; display:flex;
+  .addpill-wrap { position:fixed; left:var(--srchleft, 0px); right:var(--srchright, 0px); bottom:0; margin:0 auto; max-width:var(--srchw, 480px); z-index:41; padding:0 var(--srchpad, 14px); display:flex;
     transform:translate(var(--srchx, 0px), var(--srchy, 0px)); width:var(--srchw, auto); }
   /* v1.80: the tile strip is a fixed, non-interactive column above the nav — only the tiles inside it
      take taps, so it can span the screen without swallowing anything behind it. Bottom-right by
@@ -1495,7 +1495,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.87";
+const APP_VERSION = "v1.88";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1755,6 +1755,14 @@ let navBar  = localStorage.getItem("ml_navbar") || "auto";
    colour rather than an opacity that would fade the text inside it. */
 let srchBar = localStorage.getItem("ml_srchbar") || "auto";
 function setSrchBar(v, quiet){ srchBar=v; setLS("ml_srchbar",v); applyTheme(); if(!quiet) render(); }
+/* v1.88: the search bar could be nudged with "Across" but never actually reach an edge — the wrap holds
+   a 14px inset on both sides, and a 2px-per-tap stepper is the wrong instrument for crossing a screen.
+   Alignment is one tap; Across still fine-tunes from wherever it lands. */
+const SRCH_ALIGN = { left:"Left", center:"Centre", right:"Right" };
+const _srchAlign0 = (typeof localStorage!=="undefined") ? localStorage.getItem("ml_srchalign") : null;
+let srchAlignV = SRCH_ALIGN[_srchAlign0] ? _srchAlign0 : "center";
+function srchAlign(){ return srchAlignV; }
+function setSrchAlign(v){ srchAlignV = SRCH_ALIGN[v] ? v : "center"; setLS("ml_srchalign", srchAlignV); applyTheme(); render(); }
 /* v1.80: tiles of your own. The three bars became settable tiles in v1.78; this is the same idea with
    the list opened up — a label, an optional emoji, and one thing it does. Everything about where it
    sits and what it looks like is stored ON the tile, because unlike the three built-ins these come and
@@ -2093,9 +2101,20 @@ function applyTheme(){ const t = THEMES[theme] || THEMES.light;
        the only way it can run past both sides evenly. Unset, neither var exists and the stylesheet's
        own left/right stand. */
     [["topw","--topleft","--topright"],["navw","--navleft","--navright"],["srchw","--srchleft","--srchright"]]
-      .forEach(([k,lv,rv])=>{ const w=numVal(k);
+      .forEach(([k,lv,rv])=>{
+        /* v1.88: when the search bar is aligned to an edge, the alignment owns --srchleft/--srchright —
+           centre-anchoring a width on top of that would fight it. */
+        if(k==="srchw" && srchAlign()!=="center") return;
+        const w=numVal(k);
         if(w>0){ rs.setProperty(lv, "calc(50% - "+(w/2)+"px)"); rs.setProperty(rv, "auto"); }
         else { rs.removeProperty(lv); rs.removeProperty(rv); } });
+    /* v1.88: an edge means the edge — the wrap's 14px inset goes with the alignment, or "flush left"
+       would still be 14px short of it. Centre leaves every one of these unset, so an install that has
+       not touched this is unchanged to the pixel. */
+    const _sa = srchAlign();
+    if(_sa==="left"){ rs.setProperty("--srchleft","0px"); rs.setProperty("--srchright","auto"); rs.setProperty("--srchpad","0px"); }
+    else if(_sa==="right"){ rs.setProperty("--srchleft","auto"); rs.setProperty("--srchright","0px"); rs.setProperty("--srchpad","0px"); }
+    else { rs.removeProperty("--srchpad"); }
     const TB=barBg("top"), NB=barBg("nav"), SB=barBg("srch");
     if(TB){ rs.setProperty("--topbar-bg", TB); } else { rs.removeProperty("--topbar-bg"); }
     if(NB){ rs.setProperty("--navbar-bg", NB); } else { rs.removeProperty("--navbar-bg"); }
@@ -5462,6 +5481,7 @@ function wireOptions(){
     const [k,d]=b.dataset.optShade.split("|"); setShade(k, parseInt(d,10)); });
   app.querySelectorAll("[data-opt-transdir]").forEach(b=>b.onclick=()=>setTransDir(b.dataset.optTransdir));
   app.querySelectorAll("[data-opt-transspd]").forEach(b=>b.onclick=()=>setTransSpd(b.dataset.optTransspd));
+  app.querySelectorAll("[data-opt-srchalign]").forEach(b=>b.onclick=()=>setSrchAlign(b.dataset.optSrchalign));
   app.querySelectorAll("[data-app-use]").forEach(b=>b.onclick=()=>useAppSlot(+b.dataset.appUse));
   app.querySelectorAll("[data-app-save]").forEach(b=>b.onclick=()=>{ appSaveAsk=+b.dataset.appSave; render(); });
   app.querySelectorAll("[data-app-saveyes]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.appSaveyes; appSaveAsk=null; saveAppSlot(i); });
@@ -6127,6 +6147,8 @@ function optionsBody(){
       </div></div></div>
     ${subhead("Search bar")}
     ${colRow("Colour", "opt-srchbar", srchBar, "srchbar", {page:true})}
+    ${rowNL("Align", `<div class="seg segfull">${Object.keys(SRCH_ALIGN).map(k=>
+      `<button data-opt-srchalign="${k}" class="${srchAlign()===k?'on':''}">${SRCH_ALIGN[k]}</button>`).join("")}</div>`)}
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Size and place</span><div class="optwide">
       <div class="numgrid">${numCell("srchx")}${numCell("srchy")}${numCell("srchw")}${numCell("srchh")}${numCell("srchr")}</div></div></div>
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Transparency</span><div class="optwide">
