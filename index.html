@@ -1520,7 +1520,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.90";
+const APP_VERSION = "v1.91";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2977,7 +2977,11 @@ function reloadLearn(){
   purch=loadLearn("ml_purch"); predictSeen=loadLearn("ml_predict_seen");
   _aiTripCats=[]; _aiTripItems=[];
 }
-function switchList(code){ listsOpen=false; if(code===listCode){ render(); return; }
+/* v1.91: the page you were on survives the switch. `view="detail"` below was unconditional, so
+   picking another list from the switcher on the Plan page dropped you onto Shop — the switcher is
+   reachable from both pages since v1.87, so it has to leave you where it found you. Captured before
+   the early return, so the "same list" path is covered too. */
+function switchList(code){ const wasPlan = (view==="plan"); listsOpen=false; if(code===listCode){ render(); return; }
   listCode=code; localStorage.setItem(LS_LASTLIST, code);
   LS = { me:"ml_me", collapse:"ml_collapse_"+code, cache:"ml_cache_"+code };
   reloadLearn();
@@ -2987,7 +2991,7 @@ function switchList(code){ listsOpen=false; if(code===listCode){ render(); retur
   if(!state.purch || typeof state.purch!=="object") state.purch={};
   state.purch = purchMerge(state.purch, purch);   // fold any legacy per-device history into the shared copy
   purch = state.purch;
-  ensureCats(); editing=null; quickEdit=null; view="detail"; shopMode=false;
+  ensureCats(); editing=null; quickEdit=null; view = wasPlan ? "plan" : "detail"; shopMode=false;
   if(typeof history!=="undefined" && history.replaceState){ try{ history.replaceState(null, "", location.pathname+"?list="+code); }catch(e){} }
   subscribe(); render(); }
 function renameList(){ const name=prompt("Rename this list:", state.name||"Groceries"); if(name===null) return;
@@ -5028,6 +5032,7 @@ function planShrinkImage(file, maxPx, quality){
 function planImpMessage(code){
   switch(code){
     case "not_configured": return "Recipe reading isn't set up yet — add a GROQ_API_KEY in Vercel (see docs/ai-setup.md). You can still type ingredients.";
+    case "model":          return "The recipe reader's model is no longer available — set GROQ_MODEL in Vercel (see docs/ai-setup.md).";
     case "vision_model":   return "Reading photos needs a vision model set up (GROQ_VISION_MODEL — see docs/ai-setup.md). A link or pasted text works now.";
     case "bad_url": case "blocked_url": return "That link can't be opened. Paste the recipe's web address.";
     case "not_a_page":     return "That link isn't a web page.";
@@ -5067,6 +5072,7 @@ function planSearchMessage(code){
     case "no_results":      return "Nothing found for that — try a different name.";
     case "search_key":      return "Web search refused its key (SEARCH_API_KEY — see docs/ai-setup.md).";
     case "not_configured":  return "Recipe reading isn't set up yet — add a GROQ_API_KEY in Vercel (see docs/ai-setup.md).";
+    case "model":           return "The recipe reader's model is no longer available — set GROQ_MODEL in Vercel (see docs/ai-setup.md).";
     case "too_long":        return "That's a long one — try just the dish name.";
     default:                return "Couldn't search just now — you can still paste a link or the text.";
   }
@@ -5740,7 +5746,15 @@ async function smartAdd(){
     smartLoading=false; smartError="Smart add isn't set up yet. Add a GROQ_API_KEY in Vercel (see docs/ai-setup.md). You can still type items normally."; render(); return;
   }
   if(!res.ok){
-    smartLoading=false; smartError="Couldn't read that — try rephrasing, or just type your items."; render(); return;
+    /* v1.91: Smart add read no code off the failure, so when Groq retired the model in August it spent
+       three weeks telling people to rephrase — the one thing that could not possibly have helped. The
+       server names what went wrong; say it. */
+    smartLoading=false;
+    let ecode=""; try{ ecode=((await res.json())||{}).code||""; }catch(e){}
+    smartError = ecode==="model"
+      ? "Smart add's model is no longer available — set GROQ_MODEL in Vercel (see docs/ai-setup.md). You can still type items normally."
+      : "Couldn't read that — try rephrasing, or just type your items.";
+    render(); return;
   }
   try{ data=await res.json(); }catch(e){ data=null; }
   const raw=(data&&Array.isArray(data.items))?data.items:null;

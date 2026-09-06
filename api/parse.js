@@ -1,8 +1,7 @@
 // api/parse.js — Vercel Node serverless function (CommonJS).
 //
-// Turns free-form grocery text into structured items using Groq
-// (llama-3.1-8b-instant), keeping the API key SERVER-SIDE so the client
-// (index.html) never sees it.
+// Turns free-form grocery text into structured items using Groq, keeping the
+// API key SERVER-SIDE so the client (index.html) never sees it.
 // Contract:  POST /api/parse  { text }  ->  { items: [{ name, qty, category }] }
 //
 // The key lives in the GROQ_API_KEY environment variable (Vercel Project
@@ -16,11 +15,15 @@ const CATEGORIES = [
   'asian', 'alcohol', 'health', 'others',
 ];
 
-// Groq is OpenAI-compatible. llama-3.1-8b-instant is the cheapest/fastest model
-// and is plenty for grocery parsing. Swap MODEL to 'llama-3.3-70b-versatile' for
-// higher accuracy on messy input at slightly higher cost/latency.
+// Groq is OpenAI-compatible. The default is a small, fast model, which is plenty
+// for grocery parsing; set GROQ_MODEL in Vercel to any model your account lists
+// (a larger one for higher accuracy on messy input, at more cost/latency).
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'llama-3.1-8b-instant';
+/* v1.91: Groq retires models on its own schedule — llama-3.1-8b-instant was shut down for
+   free-tier traffic on 2026-08-16 and took every AI feature in the app down with it, silently,
+   because the name was compiled in. It is an env var now, like GROQ_VISION_MODEL already is, so
+   the next retirement is a Vercel setting rather than a deploy. See docs/ai-setup.md. */
+const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
 
 const SYSTEM = [
   'You parse free-form grocery shopping text into discrete items.',
@@ -107,9 +110,18 @@ module.exports = async (req, res) => {
       return;
     }
 
+    /* v1.91: read the body before bailing. A retired or renamed model comes back as a 400 naming
+       itself, and "Parse failed" sent nobody to the setting that fixes it — that is exactly how the
+       app sat broken for three weeks. Logged for the next time, and named for the person using it. */
     if (!upstream.ok) {
-      // Don't surface upstream status/body to the client.
-      res.status(502).json({ error: 'Parse failed' });
+      // Don't surface upstream status/body to the client — the detail goes to the log only.
+      const detail = await upstream.text().catch(() => '');
+      console.error('groq ' + upstream.status + ' ' + detail.slice(0, 300));
+      if (/model_decommissioned|model_not_found|does not exist|decommissioned/i.test(detail)) {
+        res.status(502).json({ error: 'The recipe reader\'s model is no longer available', code: 'model' });
+        return;
+      }
+      res.status(502).json({ error: 'Parse failed', code: 'upstream' });
       return;
     }
 

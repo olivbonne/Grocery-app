@@ -19,6 +19,7 @@
      model under its own prompt — the app must not be sent a recipe for the wrong thing. */
 process.env.GROQ_API_KEY = 'test-key';
 process.env.GROQ_VISION_MODEL = 'test-vision-model';
+process.env.GROQ_MODEL = 'test-text-model';   // v1.91: the text model is a setting too, so the suite sets it
 const handler = require('../../api/recipe.js');
 
 const results = []; const ok = (n, c, x) => results.push([n, !!c, x === undefined ? '' : String(x)]);
@@ -40,12 +41,13 @@ const call = async (body, method) => {
 let calls = [];
 let groqReply = { title: 'Stew', servings: 4, items: [{ name: 'onion', qty: 2, weight: '', category: 'vegetable' }] };
 let groqStatus = 200;
+let groqErrBody = '{}';   /* v1.91: what a failing upstream SAYS decides which error the app shows */
 let pages = {};
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (url, opts) => {
   calls.push({ url: String(url), opts });
   if (String(url).indexOf('api.groq.com') >= 0) {
-    if (groqStatus !== 200) return new Response('{}', { status: groqStatus });
+    if (groqStatus !== 200) return new Response(groqErrBody, { status: groqStatus });
     const content = typeof groqReply === 'string' ? groqReply : JSON.stringify(groqReply);
     return new Response(JSON.stringify({ choices: [{ message: { content } }] }),
       { status: 200, headers: { 'content-type': 'application/json' } });
@@ -55,7 +57,7 @@ globalThis.fetch = async (url, opts) => {
   if (p.redirect) return new Response(null, { status: 302, headers: { location: p.redirect } });
   return new Response(p.body, { status: p.status || 200, headers: { 'content-type': p.type || 'text/html' } });
 };
-const reset = () => { calls = []; groqStatus = 200; pages = {}; groqReply = { title: 'Stew', servings: 4, items: [{ name: 'onion', qty: 2, weight: '', category: 'vegetable' }] }; };
+const reset = () => { calls = []; groqStatus = 200; groqErrBody = '{}'; pages = {}; groqReply = { title: 'Stew', servings: 4, items: [{ name: 'onion', qty: 2, weight: '', category: 'vegetable' }] }; };
 
 const IMG = 'data:image/jpeg;base64,' + 'A'.repeat(200);
 
@@ -78,9 +80,16 @@ const IMG = 'data:image/jpeg;base64,' + 'A'.repeat(200);
   reset();
   r = await call({ text: 'Beef stew\n2 onions\n500g beef' });
   ok('pasted text is parsed', r.code === 200 && r.body.items.length === 1, JSON.stringify(r.body));
+  /* SUPERSEDED by v1.91: this named llama-3.1-8b-instant, which Groq shut down on 2026-08-16 — so the
+     check that was meant to prove "the text model, not the vision one" instead pinned the app to a dead
+     model and would have broken again on the next retirement. It asks the endpoint what it is configured
+     to use, which is the thing that actually has to hold: the text model, never the vision one, and JSON
+     asked for explicitly. GROQ_MODEL is set at the top of this file, so the literal below is the test's
+     own value, not a model name compiled into the app. */
   ok('…by the text model, with a JSON response format asked for', (() => {
     const b = JSON.parse(calls[0].opts.body);
-    return b.model === 'llama-3.1-8b-instant' && b.response_format && b.response_format.type === 'json_object';
+    return b.model === 'test-text-model' && b.model !== process.env.GROQ_VISION_MODEL
+      && b.response_format && b.response_format.type === 'json_object';
   })(), calls[0] && JSON.parse(calls[0].opts.body).model);
 
   reset();
@@ -173,6 +182,21 @@ const IMG = 'data:image/jpeg;base64,' + 'A'.repeat(200);
   r = await call({ text: 'onions' });
   ok('…while the same upstream failure on text stays generic', r.body.code === 'upstream', JSON.stringify(r.body));
 
+  /* v1.91: Groq shut down llama-3.1-8b-instant on 2026-08-16 and this endpoint answered "Parse failed"
+     to every call for three weeks. The upstream says exactly what happened; the only reason nobody
+     could see it was that we threw the body away. Now it is read, logged, and named. */
+  reset(); groqStatus = 400;
+  groqErrBody = JSON.stringify({ error: { message: 'The model `llama-3.1-8b-instant` has been decommissioned', code: 'model_decommissioned' } });
+  r = await call({ text: 'onions' });
+  ok('a retired model is named, not hidden as a generic parse failure',
+    r.code === 502 && r.body.code === 'model', JSON.stringify(r.body));
+  ok('…without the upstream body reaching the client',
+    !/llama|decommissioned/i.test(JSON.stringify(r.body)), JSON.stringify(r.body));
+
+  reset(); groqStatus = 500; groqErrBody = 'gateway blew up';
+  r = await call({ text: 'onions' });
+  ok('…while any other upstream failure stays generic', r.body.code === 'upstream', JSON.stringify(r.body));
+
   reset();
   groqReply = '```json\n{"title":"Pie","servings":2,"items":[{"name":"apple","qty":3,"category":"fruit"}]}\n```';
   r = await call({ image: IMG });
@@ -184,7 +208,9 @@ const IMG = 'data:image/jpeg;base64,' + 'A'.repeat(200);
   r = await call({ dish: 'Classic beef goulash' });
   ok('a named dish is written out', r.code === 200 && r.body.items.length === 1, JSON.stringify(r.body));
   const db = JSON.parse(calls[0].opts.body);
-  ok('…by the text model, not the vision one', db.model === 'llama-3.1-8b-instant', db.model);
+  /* SUPERSEDED by v1.91: was pinned to the retired llama-3.1-8b-instant — see the note above. */
+  ok('…by the text model, not the vision one',
+    db.model === 'test-text-model' && db.model !== process.env.GROQ_VISION_MODEL, db.model);
   ok('…told it is being given a NAME rather than a recipe',
     /name of a dish/i.test(db.messages[0].content), db.messages[0].content.slice(-140));
   ok('…with the dish as the user message', db.messages[1].content === 'Classic beef goulash', db.messages[1].content);

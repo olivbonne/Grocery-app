@@ -39,6 +39,24 @@ inward), an 8s timeout, a 1.5MB read cap, and HTML/plain-text content types only
 carries schema.org `Recipe` JSON-LD — most recipe sites do — the ingredient list is taken from
 that rather than from the prose, which is both cheaper and more accurate.
 
+**The text model is a setting too, because Groq retires models on its own schedule** —
+`llama-3.1-8b-instant` was shut down for free and developer tiers on 16 August 2026, and every
+AI feature in the app (smart add, recipe reading, recipe suggestions) went down with it while the
+name was still compiled in. So all three endpoints read it from the environment:
+
+```
+GROQ_MODEL = <a model your Groq account lists>
+```
+
+Set it in the same place as `GROQ_API_KEY` (Vercel → Settings → Environment Variables), then
+redeploy. Unset, the default `openai/gpt-oss-20b` is used — a production model that supports JSON
+object mode, which these endpoints rely on. The current line-up is at
+**console.groq.com/docs/models**. When the model in use is gone the endpoints answer with the code
+`model` and the app says *the recipe reader's model is no longer available — set GROQ_MODEL in
+Vercel*, so a retirement points straight at the knob that fixes it instead of reading as a generic
+failure. (The upstream status and body are logged server-side only; they are never returned to the
+browser.)
+
 **The photo path needs a vision model, and Groq's image-capable line-up changes** — Llama 4
 Scout was deprecated for free and developer tiers in June 2026. So the model name is an
 environment variable:
