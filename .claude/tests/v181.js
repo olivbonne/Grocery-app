@@ -136,7 +136,11 @@ const SEED = (solo,nm)=>`(() => {
        cv && cv.w>0 && cv.h>0 && cv.mine===true, JSON.stringify(cv));
     ok('…announced as opening a dialog', h.pop==='dialog' && h.expanded==='false', JSON.stringify({pop:h.pop,exp:h.expanded}));
     ok('…still classed title+disp (v1.77/v1.79 typography)', h.titleClass===true, JSON.stringify({cls:h.titleClass}));
-    ok('…top LEFT, after the back arrow', h.leftHalf===true && h.afterBack===true, JSON.stringify({x:h.x,afterBack:h.afterBack}));
+    /* SUPERSEDED by v1.90: there is no back arrow on this page to sit after — its reserved space was
+       removed. The switcher is still top LEFT, which is what this check was really about; where it starts
+       is now the tiles' left edge, and v179.js measures that alignment. */
+    ok('…top LEFT, where the arrow\'s space used to be', h.leftHalf===true && h.afterBack===null,
+       JSON.stringify({x:h.x,afterBack:h.afterBack}));
     ok('…and still vertically centred in the bar', Math.abs(h.offCentre)<=1.5, JSON.stringify({bar:h.barH,off:h.offCentre}));
 
     /* The pill keeps its v1.37 dead-centre position whenever the title leaves room for it, and only
@@ -260,15 +264,15 @@ const SEED = (solo,nm)=>`(() => {
     await page.waitForTimeout(600);
 
     /* ── 6. the rest of the top bar is untouched ────────────────────────── */
-    /* SUPERSEDED by v1.87: the shop page's ‹ went with the page it went back to. Its space is kept as
-       an inert placeholder so the title still starts where it did, which is what is checked instead —
-       v179.js measures the alignment itself. */
+    /* SUPERSEDED by v1.87, again by v1.90: the shop page's ‹ went with the page it went back to, and
+       v1.90 removed the empty space it had left behind. Nothing may remain in that slot at all —
+       v179.js measures where the title lands as a result. */
     await tap('#cartNav, #cartNavP, #cartNavS'); await page.waitForTimeout(400);
     const backWorks = await page.evaluate(()=>{
       const b=document.querySelector('.topfix .backbtn');
       return !b ? 'missing' : (b.tagName==='SPAN' && !b.textContent.trim() ? 'placeholder' : 'button');
     });
-    ok('the ‹ back arrow is gone, its space kept as a placeholder', backWorks==='placeholder', String(backWorks));
+    ok('the ‹ back arrow is gone, and so is the space it held', backWorks==='missing', String(backWorks));
     const settingsSw = await page.evaluate(async()=>{
       const s=document.querySelector('#setNav'); if(!s) return null;
       s.click(); await new Promise(r=>setTimeout(r,900));

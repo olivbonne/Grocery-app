@@ -102,8 +102,10 @@ const SEED = (extra)=>`(() => {
   const titleX = ()=>page.evaluate(()=>{
     const tf=document.querySelector('.topfix'), t=tf&&tf.querySelector('.title');
     const bk=tf&&tf.querySelector('.backbtn');
+    const tile=document.querySelector('section.cat');
     return { x:t?Math.round(t.getBoundingClientRect().left):null,
              back: bk ? { tag:bk.tagName, tappable: bk.tagName==='BUTTON', w:Math.round(bk.getBoundingClientRect().width) } : null,
+             tile: tile?Math.round(tile.getBoundingClientRect().left):null,
              h:tf?Math.round(tf.getBoundingClientRect().height):null };
   });
   await mk();
@@ -112,28 +114,31 @@ const SEED = (extra)=>`(() => {
   const setT = await titleX();
   await lists();
   const listT = await titleX();
-  ok('Shop and Settings agree on where the title starts (the baseline for this)',
-     shopT.x===setT.x && shopT.x>40, JSON.stringify({shop:shopT.x, settings:setT.x}));
-  ok('Plan starts in the same place (v1.87: was Lists)', listT.x===shopT.x,
-     JSON.stringify({plan:listT.x, others:shopT.x}));
+  /* SUPERSEDED by v1.90: this version's whole point was that the pages with nothing to go back to should
+     stop reserving the arrow's width. So "Shop and Settings agree" is no longer the guarantee — Shop and
+     Plan start at the tiles' left edge, Settings keeps its real arrow and the indent that comes with it.
+     What v1.79 actually bought, and what still has to hold, is that every page WITHOUT an arrow agrees
+     with every other, and that the bar is one height throughout. */
+  ok('Shop and Plan agree on where the title starts (the baseline for this)',
+     shopT.x===listT.x && shopT.x<40, JSON.stringify({shop:shopT.x, plan:listT.x}));
+  ok('…and that is the tiles\' left edge, not an indent left over from the arrow',
+     shopT.tile!==null && shopT.x===shopT.tile, JSON.stringify({title:shopT.x, tile:shopT.tile}));
   ok('…and the bar is still the same height on all three',
      shopT.h===setT.h && setT.h===listT.h, JSON.stringify({shop:shopT.h, set:setT.h, plan:listT.h}));
-  ok('…without giving the root page something to go back to',
-     listT.back && listT.back.tappable===false && listT.back.w>=40,
+  ok('…without giving the root page something to go back to', listT.back===null,
      JSON.stringify(listT.back));
-  /* SUPERSEDED by v1.87: "the other pages" was Shop and Settings. The Lists page is gone and the shop's
-     back arrow went with it — there was nowhere left to go back to — so its slot is the same inert
-     placeholder, and Settings is the one page that still has a real arrow to align. That it still does
-     is the half of this check that still means something. */
-  ok('Settings still has a real back button (v1.87: the shop\'s became a placeholder)',
-     setT.back && setT.back.tappable===true, JSON.stringify({settings:setT.back, shop:shopT.back}));
-  ok('…and the shop now carries the same inert placeholder the other pages do',
-     shopT.back && shopT.back.tappable===false && shopT.back.w>=40, JSON.stringify(shopT.back));
+  /* SUPERSEDED by v1.90: the inert placeholder is gone — that space was what item 3 asked us to remove.
+     Settings is the one page that still has a real arrow, and it is still the one page whose title is
+     pushed in by it; both halves are what is left of the original guarantee. */
+  ok('Settings still has a real back button', setT.back && setT.back.tappable===true,
+     JSON.stringify({settings:setT.back, shop:shopT.back}));
+  ok('…and it is the only page whose title is pushed in by one',
+     shopT.back===null && listT.back===null && setT.x>shopT.x,
+     JSON.stringify({shop:shopT.back, plan:listT.back, setX:setT.x, shopX:shopT.x}));
 
-  /* the placeholder must not be reachable by keyboard either */
-  ok('…and it is not focusable', await page.evaluate(()=>{
-    const b=document.querySelector('.topfix .backbtn'); if(!b) return false;
-    b.focus(); return document.activeElement!==b; }), '');
+  /* nothing inert may be left behind in the bar to be tabbed into */
+  ok('…and no empty placeholder is left to focus', await page.evaluate(()=>
+    document.querySelectorAll('.topfix .backbtn').length===0), '');
 
   // ═══════════════════════════════════════════════════════════════════
   // ITEM 2 — the arrow's ink sits level with the title's ink
