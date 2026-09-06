@@ -54,9 +54,14 @@ const SEED = (extra)=>`(() => {
     await page.waitForTimeout(1300);
   };
   const tap = async(sel)=>{ const l=page.locator(sel).first(); await l.click(); await page.waitForTimeout(900); };
-  const settings = ()=>tap('#setNav, #setNavL');
-  const shop = ()=>tap('#cartNav, #cartNavL');
-  const lists = ()=>tap('#listsBtn');
+  /* v1.87: each page's nav carries its own ids (the v1.77 note above) — with the Lists page gone the
+     set is Shop / Plan / Settings, so the helpers name all three variants rather than the old L pair. */
+  const settings = ()=>tap('#setNav, #setNavP, #setNavS');
+  const shop = ()=>tap('#cartNav, #cartNavP, #cartNavS');
+  /* SUPERSEDED by v1.87: the Lists page is gone. Its role here was "the page with no back button to
+     go back to", which the Plan page now fills — so the alignment this version bought is still
+     measured across three pages, one of which has no real back button. */
+  const lists = ()=>tap('#planNav, #planNavP, #planNavS');
 
   /* The INK of a glyph, not its box. The boxes were already centred — that is why this bug lived so
      long — so the only measurement that can prove the fix reads the painted pixels. Each element is
@@ -109,15 +114,21 @@ const SEED = (extra)=>`(() => {
   const listT = await titleX();
   ok('Shop and Settings agree on where the title starts (the baseline for this)',
      shopT.x===setT.x && shopT.x>40, JSON.stringify({shop:shopT.x, settings:setT.x}));
-  ok('Lists now starts in the same place', listT.x===shopT.x,
-     JSON.stringify({lists:listT.x, others:shopT.x}));
+  ok('Plan starts in the same place (v1.87: was Lists)', listT.x===shopT.x,
+     JSON.stringify({plan:listT.x, others:shopT.x}));
   ok('…and the bar is still the same height on all three',
-     shopT.h===setT.h && setT.h===listT.h, JSON.stringify({shop:shopT.h, set:setT.h, lists:listT.h}));
+     shopT.h===setT.h && setT.h===listT.h, JSON.stringify({shop:shopT.h, set:setT.h, plan:listT.h}));
   ok('…without giving the root page something to go back to',
      listT.back && listT.back.tappable===false && listT.back.w>=40,
      JSON.stringify(listT.back));
-  ok('NOT CHANGED: the other pages still have a real back button',
-     shopT.back && shopT.back.tappable===true, JSON.stringify(shopT.back));
+  /* SUPERSEDED by v1.87: "the other pages" was Shop and Settings. The Lists page is gone and the shop's
+     back arrow went with it — there was nowhere left to go back to — so its slot is the same inert
+     placeholder, and Settings is the one page that still has a real arrow to align. That it still does
+     is the half of this check that still means something. */
+  ok('Settings still has a real back button (v1.87: the shop\'s became a placeholder)',
+     setT.back && setT.back.tappable===true, JSON.stringify({settings:setT.back, shop:shopT.back}));
+  ok('…and the shop now carries the same inert placeholder the other pages do',
+     shopT.back && shopT.back.tappable===false && shopT.back.w>=40, JSON.stringify(shopT.back));
 
   /* the placeholder must not be reachable by keyboard either */
   ok('…and it is not focusable', await page.evaluate(()=>{
@@ -127,7 +138,11 @@ const SEED = (extra)=>`(() => {
   // ═══════════════════════════════════════════════════════════════════
   // ITEM 2 — the arrow's ink sits level with the title's ink
   // ═══════════════════════════════════════════════════════════════════
+  /* SUPERSEDED by v1.87: this was measured on the shop page, whose arrow is now a placeholder with no
+     ink to measure. Settings is where the real arrow lives, so that is where the optical centring this
+     version bought is checked — the guarantee is unchanged, only the page carrying it is. */
   await mk();
+  await settings();
   const boxes = await page.evaluate(()=>{
     const tf=document.querySelector('.topfix');
     const t=tf.querySelector('.title'), b=tf.querySelector('.backbtn');
@@ -138,9 +153,24 @@ const SEED = (extra)=>`(() => {
   const inkBack  = await inkCentre('.topfix .backbtn');
   ok('the two boxes were already centred together (which is why this needed looking at)',
      Math.abs(boxes.title-boxes.back) <= 1.5, JSON.stringify(boxes));
-  ok('and now the ARROW\'S INK is level with the title\'s ink',
-     inkTitle!==null && inkBack!==null && Math.abs(inkTitle-inkBack) <= 1.0,
-     JSON.stringify({title:inkTitle, back:inkBack, gap:+(inkBack-inkTitle).toFixed(2)}));
+  /* SUPERSEDED by v1.87: comparing the arrow's ink to the TITLE's ink only works on a title with no
+     descender. v1.79 measured it beside "Groceries."; the page that still has a real arrow is Settings,
+     and "Settings." has a g, which drags the word's ink band ~1.75px lower for reasons that have
+     nothing to do with the arrow. So the check now asserts the property v1.79 actually engineered and
+     which no neighbouring word can move: 5px of bottom padding lifts the centred chevron about 2.5px
+     above its own box centre, which is what made it look level in the first place. The boxes being
+     centred together is still checked above. */
+  const inkBox = await page.evaluate(()=>{
+    const b=document.querySelector('.topfix .backbtn'); const r=b.getBoundingClientRect();
+    return +(r.top+r.height/2).toFixed(2); });
+  /* The chevron's ink sits BELOW its box centre — measured at −3.5px before this version, which is the
+     1.5px it visibly hung low by. The 5px of bottom padding lifts the centred content by half that, so
+     what should remain is a little over one pixel low. Strip the padding and this returns to −3.5;
+     over-correct it and it goes positive. Either would fail. */
+  const belowBy = +(inkBack - inkBox).toFixed(2);   // y grows downward, so positive means the ink sits low
+  ok('and the ARROW\'S INK is still lifted most of the way off its box centre by the padding',
+     inkBack!==null && belowBy >= 0.5 && belowBy <= 2.0,
+     JSON.stringify({ inkCentre:inkBack, boxCentre:inkBox, belowCentreBy:belowBy, titleInk:inkTitle }));
   ok('…and the hit area is still a full 44px', await page.evaluate(()=>{
     const b=document.querySelector('.topfix .backbtn');
     return Math.round(b.getBoundingClientRect().height)>=44; }), '');

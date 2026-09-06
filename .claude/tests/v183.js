@@ -164,13 +164,19 @@ const SEED = `(() => {
     ok('precondition: Settings is open', (await page.locator('.optpage').count())===1);
     ok('…and Settings has no switcher of its own to hold', (await page.locator('#listSwitch').count())===0);
 
-    /* ── 6. the Lists page's own press-and-hold is untouched ────────────── */
-    await tap('#listsBtn, #listsBtnL, #listsBtnP, #listsBtnS');
-    ok('precondition: the Lists page is open', (await page.locator('.listgrid').count())===1);
-    await hold(page.locator('.listbubble[data-open="v102"]'));
+    /* ── 6. the hold is now the ONLY route to these options ─────────────── */
+    /* SUPERSEDED by v1.87: this checked that the Lists page's own press-and-hold still worked alongside
+       the switcher's. That page is gone, so the switcher's row is the only way to reach rename, share,
+       reorder, duplicate and delete — which makes it worth proving that it still is, from the shop page
+       and after a relaunch, rather than only in the run above. */
+    await mk();
+    await openSwitcher();
+    await hold(page.locator('.listpick[data-list="v102"]'));
     const la = await act();
-    ok('the Lists page still opens the same sheet on a hold', la.open===true && la.ids.length===6, JSON.stringify(la.ids));
-    ok('…for the bubble held', /Hardware/.test(la.head||''), la.head);
+    ok('a hold on a switcher row is the only route to the options, and it works', la.open===true && la.ids.length===6, JSON.stringify(la.ids));
+    ok('…for the row held', /Hardware/.test(la.head||''), la.head);
+    ok('…and no Lists page exists any more', (await page.locator('.listgrid').count())===0,
+       String(await page.locator('.listgrid').count()));
 
     ok('no console errors anywhere in the run', errors.length===0, errors.slice(0,3).join(' | '));
     if(out) await page.screenshot({ path: out, fullPage:false });

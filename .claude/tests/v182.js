@@ -115,11 +115,13 @@ const fmtDate = d => d.toLocaleDateString(undefined,{day:"numeric",month:"short"
     /* ── 1. the tab ─────────────────────────────────────────────────────── */
     await mk();
     let n = await nav();
-    ok('the nav has four tabs', n.length===4, JSON.stringify(n.map(b=>b.label)));
-    ok('…in the order Lists · Plan · Shop · Settings',
-       n.map(b=>b.label).join('|')==='Lists|Plan|Shop|Settings', JSON.stringify(n.map(b=>b.label)));
-    ok('…with Plan to the LEFT of Shop, as asked', n[1].x < n[2].x, JSON.stringify({plan:n[1].x, shop:n[2].x}));
-    ok('…and Shop is the tab we are on', n[2].active===true && n[1].active===false,
+    /* SUPERSEDED by v1.87: the Lists tab is gone, so the nav is three. Plan being to the LEFT of Shop —
+       what this version was actually asked for — is unchanged and still checked. */
+    ok('the nav has three tabs (v1.87: was four, Lists went)', n.length===3, JSON.stringify(n.map(b=>b.label)));
+    ok('…in the order Plan · Shop · Settings',
+       n.map(b=>b.label).join('|')==='Plan|Shop|Settings', JSON.stringify(n.map(b=>b.label)));
+    ok('…with Plan to the LEFT of Shop, as asked', n[0].x < n[1].x, JSON.stringify({plan:n[0].x, shop:n[1].x}));
+    ok('…and Shop is the tab we are on', n[1].active===true && n[0].active===false,
        JSON.stringify(n.map(b=>({l:b.label,a:b.active}))));
 
     await plan();
@@ -127,7 +129,7 @@ const fmtDate = d => d.toLocaleDateString(undefined,{day:"numeric",month:"short"
     const w = await week();
     ok('tapping Plan opens the Plan page', (await page.locator('.planweek').count())===1 && w.days.length===7,
        JSON.stringify({weekbar:await page.locator('.planweek').count(), days:w.days.length}));
-    ok('…and marks Plan as the current tab', n[1].active===true && n[2].active===false,
+    ok('…and marks Plan as the current tab', n[0].active===true && n[1].active===false,
        JSON.stringify(n.map(b=>({l:b.label,a:b.active}))));
 
     /* ── 2. the week is a real week ─────────────────────────────────────── */
@@ -236,28 +238,30 @@ const fmtDate = d => d.toLocaleDateString(undefined,{day:"numeric",month:"short"
 
     /* ── 7. it all survives a relaunch, and so does the page you were on ── */
     await page.reload({ waitUntil:'domcontentloaded' }); await page.waitForTimeout(1500);
+    /* SUPERSEDED by v1.87: the page numbers moved again when Lists went, so the key is ml_lastview3 and
+       Plan is index 0. The guarantee — the page you were on survives a relaunch, under a key versioned
+       for the numbering that wrote it — is unchanged. */
     const back = await page.evaluate(()=>({ onPlan:!!document.querySelector('.planweek'),
-                                            key:localStorage.getItem('ml_lastview2'),
-                                            old:localStorage.getItem('ml_lastview') }));
+                                            key:localStorage.getItem('ml_lastview3'),
+                                            old:localStorage.getItem('ml_lastview2') }));
     ok('a relaunch comes back to the Plan tab', back.onPlan===true, JSON.stringify(back));
-    ok('…remembered under a versioned key, the pre-v1.82 one gone', back.key==='1' && back.old===null, JSON.stringify(back));
+    ok('…remembered under a versioned key, the older ones gone', back.key==='0' && back.old===null, JSON.stringify(back));
     const kept = await week();
     ok('…with the plan still on it', (kept.days[4].chips||[]).some(c=>/Bolognese/.test(c)), JSON.stringify(kept.days[4].chips));
 
     /* ── 8. every tab reaches every page ────────────────────────────────── */
     await shop();
     ok('Plan → Shop works', (await page.locator('#zoomer .pill').count())>0 && (await page.locator('.planweek').count())===0);
-    await tap('#listsBtn');
-    ok('Shop → Lists works', (await page.locator('.listgrid').count())===1);
+    /* SUPERSEDED by v1.87: there is no Lists page to pass through, so the walk is Shop → Plan direct. */
     await plan();
-    ok('Lists → Plan works', (await page.locator('.planweek').count())===1);
+    ok('Shop → Plan works', (await page.locator('.planweek').count())===1);
     await tap('#setNavP');
     ok('Plan → Settings works', (await page.locator('.optpage').count())===1);
     await tap('#setBack');
     ok('…and Settings\' back returns to Plan, where it was opened from', (await page.locator('.planweek').count())===1);
 
     /* ── 9. a stale pre-v1.82 remembered page cannot mislead ────────────── */
-    await mk(`localStorage.setItem("ml_lastview","2");`);   // used to mean Settings; index 2 is Shop now
+    await mk(`localStorage.setItem("ml_lastview","2");`);   // a key from two numberings ago
     const stale = await page.evaluate(()=>({ opt:!!document.querySelector('.optpage'),
                                              plan:!!document.querySelector('.planweek'),
                                              shop:(document.querySelectorAll('#zoomer .pill').length>0) }));

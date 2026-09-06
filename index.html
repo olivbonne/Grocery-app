@@ -232,9 +232,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .iconbtn{ width:30px; height:30px; border-radius:9px; border:none; background:var(--chip);
     color:var(--text); font-size:15px; line-height:1; display:flex; align-items:center; justify-content:center; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  .qty, .lb-badge, .cartcount, .cnum { font-variant-numeric: tabular-nums; }
-  .pill, .bapill, .listbubble, .navbtn, .iconbtn, .micbtn, .optaction, .seg button, .lb-badge { transition: transform .15s ease, background-color .15s ease, border-color .15s ease, color .15s ease; }
-  .pill:active, .bapill:active, .listbubble:active, .navbtn:active, .iconbtn:active, .micbtn:active, .optaction:active { transform: scale(0.97); }
+  .qty, .cartcount, .cnum { font-variant-numeric: tabular-nums; }
+  .pill, .bapill, .navbtn, .iconbtn, .micbtn, .optaction, .seg button { transition: transform .15s ease, background-color .15s ease, border-color .15s ease, color .15s ease; }
+  .pill:active, .bapill:active, .navbtn:active, .iconbtn:active, .micbtn:active, .optaction:active { transform: scale(0.97); }
   button:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
   /* v1.47: belt-and-braces against the white flash — when position:fixed collapses <body>, whatever
      shows through is the ROOT element's background, so it must be paper, never the UA white. */
@@ -450,8 +450,6 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .sugchip { flex:none; padding:7px 12px; border-radius:999px; border:1.5px solid var(--line); background:var(--card);
     color:var(--text); font-size:13px; font-weight:600; white-space:nowrap; }
   .sugchip.sugba { border-color:var(--accent); color:var(--accent); font-weight:800; }
-  .prog { height:5px; background:var(--line); border-radius:999px; margin:0 0 10px; overflow:hidden; }
-  .prog-fill { height:100%; background:var(--accent); border-radius:999px; transition:width .25s ease; }
   .cicon { object-fit:contain; border-radius:3px; vertical-align:middle; display:inline-block; }
   .iconbtn img.uiicon { width:18px; height:18px; object-fit:contain; display:block; }
   .iconbtn img.uiicon2 { width:18px; height:18px; object-fit:contain; display:block; }
@@ -693,17 +691,6 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .backbtn { border:none; background:transparent; color:var(--text); font-weight:800; font-size:30px;
     line-height:1; border-radius:12px; padding:0 12px 5px; min-height:44px; min-width:44px;
     display:inline-flex; align-items:center; justify-content:center; }
-  .listgrid { display:flex; flex-direction:column; gap:12px; margin-top:6px; }
-  .listbubble { display:flex; flex-direction:column; align-items:flex-start; gap:4px; width:100%; text-align:left;
-    background:var(--card); border:1.5px solid var(--line); border-radius:20px; padding:20px 18px; }
-  .listbubble.cur { border-color:var(--accent); }
-  .listbubble .lb-name { font-family:'Outfit',system-ui,sans-serif; font-weight:800; font-size:20px; color:var(--text); }
-  .listbubble .lb-count { font-size:13px; color:var(--muted); font-weight:700; }
-  .lb-badge { flex:none; font-size:13px; font-weight:800; color:var(--on-accent); background:var(--accent); border-radius:999px; padding:3px 10px; white-space:nowrap; }
-  .lb-chevron { flex:none; color:var(--muted); font-size:24px; line-height:1; font-weight:700; margin-left:-2px; }
-  .listbubble.cur .lb-badge { background:var(--accent); }
-  .listbubble.add { align-items:center; background:transparent; border-style:dashed; }
-  .listbubble.add .lb-name { color:var(--accent); font-size:16px; }
   /* v1.82 the Plan tab: a week of days, each a row you can add to */
   .planweek { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:0 0 14px; }
   .planweek .pwlbl { flex:1; border:1.5px solid var(--line); background:var(--card); color:var(--text);
@@ -1508,7 +1495,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.86";
+const APP_VERSION = "v1.87";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1520,7 +1507,7 @@ const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(i
    flash. `ml_appstart` unset (the default) leaves everything exactly as it was.
    The regex is duplicated deliberately: APP_EXCLUDE is declared far below with the rest of the slot
    machinery and would be in its temporal dead zone up here. Keep the two in step. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview2?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -1776,7 +1763,7 @@ function setSrchBar(v, quiet){ srchBar=v; setLS("ml_srchbar",v); applyTheme(); i
    on the list, so they never go near the synced state. */
 const TILE_ACTS = {
   add:      "Open add",
-  lists:    "Go to Lists",
+  lists:    "Open the list switcher",
   plan:     "Go to Plan",
   shop:     "Go to Shop",
   settings: "Go to Settings",
@@ -1837,13 +1824,15 @@ function wireUserTiles(){
   document.querySelectorAll("[data-utile]").forEach(b=>b.onclick=()=>{
     const t=userTiles().find(x=>x.id===b.dataset.utile); if(!t) return;
     switch(t.act){
-      case "lists":    gotoPage(0); break;
-      case "plan":     gotoPage(1); break;
-      case "shop":     gotoPage(2); break;
-      case "settings": settingsFrom=curPageIdx(); gotoPage(3); break;
-      case "finish":   if(state.items.some(i=>i.checked)){ finishOpen=true; render(); } else { gotoPage(2); } break;
+      /* v1.87: the Lists page this tile pointed at is gone and the switcher is what replaced it, so a
+         tile already made on someone's phone keeps working and opens the nearest true thing. */
+      case "lists":    listsOpen=true; render(); break;
+      case "plan":     gotoPage(0); break;
+      case "shop":     gotoPage(1); break;
+      case "settings": settingsFrom=curPageIdx(); gotoPage(2); break;
+      case "finish":   if(state.items.some(i=>i.checked)){ finishOpen=true; render(); } else { gotoPage(1); } break;
       case "cat":      { const c=t.cat ? catList().find(x=>x.id===t.cat) : null; if(!c) return;
-                         if(curPageIdx()!==2){ gotoPage(2); }
+                         if(curPageIdx()!==1){ gotoPage(1); }
                          catEntry=c.id; render();
                          const el=document.querySelector(`[data-add="${c.id}"]`);
                          if(el) el.scrollIntoView({block:"center", behavior:"smooth"});
@@ -2579,7 +2568,8 @@ applyTheme();
 let shopMode = localStorage.getItem("ml_shop")==="1";   // v1.09 restore the shopper's lens on relaunch
 function setShop(on){ if(shopMode===on) return; shopMode=on; if(shopMode) aiResetTrip(); localStorage.setItem("ml_shop", shopMode?"1":"0"); collapse.ba = !shopMode && collapse.ba; }
 function toggleShop(){ setShop(!shopMode); render(); }
-function optMode(){ return view==="lists" ? "lists" : (shopMode ? "shop" : "plan"); }
+/* v1.87: the "lists" mode key is retired with the page — settings stored under it are simply unused. */
+function optMode(){ return shopMode ? "shop" : "plan"; }
 let _prevPlanned=null, _prevChecked=null;
 let _cartPending = 0;   // items mid-flight to the cart — counted in the badge only once the flyer lands (bumpCart)
 function cartCount(){ return Math.max(0, state.items.filter(i=>i.checked).length - _cartPending); }
@@ -2604,7 +2594,6 @@ const CART_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" st
 // A27 bottom-nav cart: the app cart with an OPEN top (no top rail) and scaled up, so the
 // in-cart count sits inside the open basket with even spacing and fits double-digit numbers (matches the reference art)
 const CART_NAV_SVG = '<svg width="29" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.5"/><circle cx="18" cy="21" r="1.5"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7"/></svg>';
-const LISTS_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>';
 // v1.81 the switcher's chevron. Drawn, not typed: U+2304 is not in the self-hosted Outfit subset, so
 // the character renders as blank — and there is no web font to fall back to in an offline PWA.
 const CHEV_SVG = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"/></svg>';
@@ -2613,9 +2602,8 @@ const CAL_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" str
 /* v1.82: ⋯ is not in the self-hosted Outfit subset and would render as nothing, so the three dots are drawn. */
 function bottomNav(o){
   // v1.16 three tabs: Lists · Shop (middle, cart) · Settings (right). Adding is the floating "+ Add" pill.
-  // v1.82 four tabs: Plan sits between Lists and Shop.
+  // v1.87 three tabs again: the Lists page is gone (the title's switcher replaced it) — Plan · Shop · Settings.
   return `<nav class="bottomnav" id="bottomnav">
-    <button class="navbtn ${o.listsActive?'active':''}" id="${o.listsId}">${LISTS_SVG}<span>Lists</span></button>
     <button class="navbtn ${o.planActive?'active':''}" id="${o.planId}">${CAL_SVG}<span>Plan</span></button>
     <button class="navbtn ${o.cartActive?'active':''}" id="${o.cartId}">${cartBadgeHTML(CART_NAV_SVG)}<span>Shop</span></button>
     <button class="navbtn ${o.setActive?'active':''}" id="${o.setId}">${GEAR_SVG}<span>Settings</span></button>
@@ -2764,7 +2752,7 @@ function setItemEmoji(on){ _emojiItem = on?"1":"0"; localStorage.setItem("ml_emo
 let _smart = localStorage.getItem("ml_smart");
 function smartOn(){ return _smart===null ? true : _smart==="1"; }
 function setSmart(on){ _smart = on?"1":"0"; localStorage.setItem("ml_smart", _smart); render(); }
-let optOpen=false, listsOpen=false, settingsFrom=1;   // settingsFrom: page the Settings tab was opened from (for the ‹ back slide)
+let optOpen=false, listsOpen=false, settingsFrom=1;   // settingsFrom: page the Settings tab was opened from (for the ‹ back slide); 1 = Shop as of v1.87's renumber
 // v1.10 bottom-first add sheet
 let addOpen=false, addTab="reg", _addScrollY=0;
 /* v1.44 item 5: focusing the search bar makes iOS scroll the page underneath to reveal the input, so
@@ -2861,10 +2849,11 @@ let smartServings=null;
 let smartTitle="";
 let view="detail", listActOpen=false, listActCode=null, newListOpen=false, newListDraft="", diagOpen=false, diagPredExpand=new Set(), diagPredSort="az";
 // v1.21 restore the last page the user was on across app restarts (item 5). optOpen is declared above; view/optOpen are ignored until onboarding completes.
-/* v1.82: the page indexes moved when Plan became a tab, so an old ml_lastview would restore the wrong
-   page. New key, and an absent one simply lands on the list, which is where a first launch lands. */
-(()=>{ try{ const lv=localStorage.getItem("ml_lastview2");
-  if(lv==="0") view="lists"; else if(lv==="1") view="plan"; else if(lv==="3") optOpen=true; else view="detail"; }catch(e){} })();
+/* v1.87: page indexes moved a second time when the Lists page went, so the key is versioned again —
+   a stored 0 used to mean Lists and now means Plan, which is exactly the kind of silent wrong-page
+   landing this avoids. An absent key lands on the shop, which is where a first launch belongs. */
+(()=>{ try{ const lv=localStorage.getItem("ml_lastview3");
+  if(lv==="0") view="plan"; else if(lv==="2") optOpen=true; else view="detail"; }catch(e){} })();
 function listCount(code){ try{ const s = (code===listCode) ? state : JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); return (s&&s.items)? s.items.filter(i=>!i.checked).length : 0; }catch(e){ return 0; } }
 function listStats(code){ try{ const s=(code===listCode)?state:JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); const items=(s&&s.items)||[]; const total=items.length, done=items.filter(i=>i.checked).length; return {total, done, pct: total?Math.round(done/total*100):0}; }catch(e){ return {total:0,done:0,pct:0}; } }
 function listURL(code){ return location.origin + location.pathname + "?list=" + code; }
@@ -4047,7 +4036,7 @@ function openAdd(){
   if(_addClosing){ _addClosing=false; unmountAddSheet(); }
   addTab="reg"; addOpen=true; addStaged=[]; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain=""; _pinLast="";
   const y0 = window.scrollY||window.pageYOffset||0;   // v1.48: read it here, before anything can scroll the page
-  if(curPageIdx()!==2){ gotoPage(2); }   // the add sheet belongs to the shop page, from wherever it was opened
+  if(curPageIdx()!==1){ gotoPage(1); }   // the add sheet belongs to the shop page, from wherever it was opened
   /* v1.47: lock AFTER the render. position:fixed on <body> collapses the document height, and doing
      that before the re-render painted let the collapsed page flash through as a blank frame.
      v1.49: there is no render here any more — mounting the sheet into <body> is what replaced it. */
@@ -4311,13 +4300,12 @@ function render(){
   ensureCats();
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
   if(!me){ renderOnboarding(); window.__mlRendered=true; return; }
-  try{ localStorage.setItem("ml_lastview2", String(curPageIdx())); }catch(e){}   // v1.21 remember the page across restarts (item 5)
+  try{ localStorage.setItem("ml_lastview3", String(curPageIdx())); }catch(e){}   // v1.21 remember the page across restarts (item 5)
   /* v1.66 item 2: a pending "Replace slot N?" belongs to the Settings page and nothing else. Clearing
      it here rather than at each exit covers every way out — the nav, the back button, the scrim tap,
      switching user — because they all end in a render with optOpen false. */
   if(!optOpen) appSaveAsk=null;
   if(optOpen){ renderSettingsPage(); wireSettingsPage(); window.__mlRendered=true; syncZoomHeight(); syncAddChrome(); return; }
-  if(view==="lists"){ renderListsPage(); wireListsPage(); window.__mlRendered=true; syncZoomHeight(); syncAddChrome(); return; }
   if(view==="plan"){ renderPlanTab(); wirePlanTab(); window.__mlRendered=true; syncZoomHeight(); syncAddChrome(); return; }
   if(!shopMode) shopMode=true;   // v1.15 Plan and Shop are one page now — the detail page is always the combined, shoppable list
   renderMain(); wire(); window.__mlRendered=true; syncZoomHeight();
@@ -4688,7 +4676,9 @@ function renderMain(){
       <header class="hstack">
         <div class="hrow">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <button class="backbtn" id="toLists" aria-label="Back to lists">‹</button>
+            ${/* v1.87: the Lists page is gone, so there is nowhere to go back to — but the space stays,
+                  the same empty placeholder the Plan page uses, so every page's title starts at the same x. */""}
+            <span class="backbtn" aria-hidden="true"></span>
             <button class="title disp listswitch" id="listSwitch" aria-haspopup="dialog" aria-expanded="${listsOpen?'true':'false'}">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="dot">.</span><span class="lschev" aria-hidden="true">${CHEV_SVG}</span></button>
           </div>
           ${open>0?`<span class="hcount hcount-mid">${open} to buy</span>`:""}
@@ -4715,7 +4705,7 @@ function renderMain(){
   </div>
   ${checkedBar}
   ${!addOpen?`<div class="addpill-wrap" id="shopAddFabWrap"><button class="addpill" id="shopAddFab" aria-label="Add an item"><span class="addpill-plus" aria-hidden="true">+</span></button></div>`:""}${/* v1.36 item 4: search bar shows even on an empty list */""}
-  ${bottomNav({listsId:"listsBtn",listsActive:false,planId:"planNav",planActive:false,cartId:"cartNav",cartActive:true,setId:"setNav"})}${userTilesHTML()}  ${finishOpen?finishSheet():""}
+  ${bottomNav({planId:"planNav",planActive:false,cartId:"cartNav",cartActive:true,setId:"setNav"})}${userTilesHTML()}  ${finishOpen?finishSheet():""}
   ${listsOpen?listsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
@@ -4724,41 +4714,6 @@ function renderMain(){
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
 
-function renderListsPage(){
-  const lists=getLists();
-  app.innerHTML = `
-    <div class="topfix" id="topfix">
-      <header>
-        ${/* v1.79 item 1: Lists is the root page, so it has no back button — which left its title 52px to the
-              left of every other page's. The placeholder is the same class, empty and not a button, so the space
-              comes from the rule that defines the real one: 44px of min-width plus the row's own 8px gap. A
-              number typed here instead would drift the moment .backbtn changed. */""}
-        <div style="display:flex;align-items:center;gap:8px"><span class="backbtn" aria-hidden="true"></span><span class="title disp">Lists<span class="dot">.</span></span></div>
-        <div style="display:flex;align-items:center;gap:8px">${syncChip()}</div>
-      </header>
-    </div>
-    <div class="wrap">
-    <div class="zoomwrap"><div class="zoomer" id="zoomer">
-      <div class="listgrid">
-        ${lists.map(l=>{ const st=listStats(l.code); const cur=l.code===listCode;
-          return `<button class="listbubble ${cur?'cur':''}" data-open="${esc(l.code)}">
-            <div style="display:flex;align-items:center;gap:10px;width:100%">
-              <span class="lb-name" style="flex:1;min-width:0">${esc(l.name||'Untitled list')}</span>
-              <span class="lb-badge">${st.total}</span>
-              <span class="lb-chevron" aria-hidden="true">›</span>
-            </div>
-            <div class="prog" style="margin-top:11px;width:100%"><div class="prog-fill" style="width:${st.pct}%"></div></div>
-          </button>`; }).join("")}
-        <button class="listbubble add" id="newListBubble"><span class="lb-name">+ New list</span></button>
-      </div>
-      <p class="hint" style="text-align:center;margin-top:16px">Tap a list to open it · press &amp; hold to rename, share, or delete.</p>
-    </div></div>
-  </div>
-  ${bottomNav({listsId:"listsBtnL",listsActive:true,planId:"planNavL",planActive:false,cartId:"cartNavL",cartActive:false,setId:"setNavL"})}${userTilesHTML()}
-  ${listActOpen?listActSheet():""}
-  ${newListOpen?newListSheet():""}
-  ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
-}
 function listActSheet(){ const a=getLists(); const idx=a.findIndex(x=>x.code===listActCode); const l=a[idx]||{};
   return `<div class="sheet-bg" id="listActBg"><div class="sheet" id="listActSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${esc(l.name||'List')}</div>
@@ -4816,23 +4771,6 @@ function wireListActSheet(){
   const lash=app.querySelector("#laShare"); if(lash) lash.onclick=()=>shareListCode(listActCode);
   const lac=app.querySelector("#laDup"); if(lac) lac.onclick=()=>duplicateListCode(listActCode);
   const lad=app.querySelector("#laDelete"); if(lad) lad.onclick=()=>delListUndo(listActCode);
-}
-function wireListsPage(){
-  app.querySelectorAll("[data-open]").forEach(b=>{ const code=b.dataset.open;
-    b.oncontextmenu=e=>e.preventDefault();
-    b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
-    b.onpointerup=()=>{ pressCancel(); if(longFired){ listActCode=code; listActOpen=true; render(); } else if(code===listCode){ gotoPage(2); } else { switchList(code); view="detail"; setShop(false); render(); } };
-  });
-  const nb=app.querySelector("#newListBubble"); if(nb) nb.onclick=newListPrompt;
-  wireNewListSheet();
-  const pnl=app.querySelector("#planNavL"); if(pnl) pnl.onclick=()=>gotoPage(1);   // Plan tab
-  const cnl=app.querySelector("#cartNavL"); if(cnl) cnl.onclick=()=>gotoPage(2);   // open the combined list
-  const stnl=app.querySelector("#setNavL"); if(stnl) stnl.onclick=()=>{ settingsFrom=0; gotoPage(3); };   // Settings tab
-  const ob=app.querySelector("#optBtnTop"); if(ob) ob.onclick=()=>{ optOpen=true; render(); };
-  wireUserTiles();
-  wireOptions();
-  wireListActSheet();
-  const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
 function planFilledPill(i, cat){ const checked=i.checked; const full=fillMode()==="full"&&!checked;
@@ -4953,7 +4891,7 @@ function renderPlanTab(){
       ${days.join("")}
     </div></div>
   </div>
-  ${bottomNav({listsId:"listsBtnP",listsActive:false,planId:"planNavP",planActive:true,cartId:"cartNavP",cartActive:false,setId:"setNavP"})}${userTilesHTML()}
+  ${bottomNav({planId:"planNavP",planActive:true,cartId:"cartNavP",cartActive:false,setId:"setNavP"})}${userTilesHTML()}
   ${planMenu?planMenuSheet():""}
   ${planAdd?planAddSheet():""}
   ${planPick?planPickSheet():""}
@@ -5213,9 +5151,8 @@ function wirePlanTab(){
     addEntries(e.name, e.cat || null); save();
     planPick=null; render(); showToast("Added to the list"); };
 
-  const lb=app.querySelector("#listsBtnP"); if(lb) lb.onclick=()=>gotoPage(0);
-  const cn=app.querySelector("#cartNavP"); if(cn) cn.onclick=()=>gotoPage(2);
-  const st=app.querySelector("#setNavP"); if(st) st.onclick=()=>{ settingsFrom=1; gotoPage(3); };
+  const cn=app.querySelector("#cartNavP"); if(cn) cn.onclick=()=>gotoPage(1);
+  const st=app.querySelector("#setNavP"); if(st) st.onclick=()=>{ settingsFrom=0; gotoPage(2); };
   wireListsSheet();
   wireSmartSheet();
   wireUserTiles();
@@ -5325,7 +5262,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>Add items…</span></button></div>`:""}
-  ${bottomNav({listsId:"listsBtn",listsActive:false,planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}
+  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -5380,8 +5317,7 @@ function wirePlanPage(){
   app.querySelectorAll("[data-merge-go]").forEach(b=>b.onclick=()=>mergeCluster(b.dataset.mergeGo));
   app.querySelectorAll("[data-merge-x]").forEach(b=>b.onclick=()=>mergeDismiss(b.dataset.mergeX));
   const mHide=app.querySelector("[data-merge-hide]"); if(mHide) mHide.onclick=mergeHideAll;
-  const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>gotoPage(0);
-  const ag=app.querySelector("#atstoreGo"); if(ag) ag.onclick=()=>gotoPage(2);
+  const ag=app.querySelector("#atstoreGo"); if(ag) ag.onclick=()=>gotoPage(1);
   const ax=app.querySelector("#atstoreX"); if(ax) ax.onclick=()=>{ try{ localStorage.setItem("ml_atstore_x", String(Date.now())); }catch(e){} render(); };
   const an=app.querySelector("#addNav"); if(an) an.onclick=openAdd;   // Add tab → add sheet
   const apl=app.querySelector("#addPill"); if(apl) apl.onclick=openAdd;
@@ -5398,9 +5334,8 @@ function wirePlanPage(){
 }
 function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay sheet); v1.20 slides in/out
   const bk=app.querySelector("#setBack"); if(bk) bk.onclick=()=>gotoPage(settingsFrom);   // ‹ back slides to where we came from
-  const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>gotoPage(0);
-  const pns=app.querySelector("#planNavS"); if(pns) pns.onclick=()=>gotoPage(1);   // Plan tab
-  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(2);   // Shop lies to the left → slides in from the left
+  const pns=app.querySelector("#planNavS"); if(pns) pns.onclick=()=>gotoPage(0);   // Plan tab
+  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(1);   // Shop lies to the left → slides in from the left
   const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{};   // already on Settings
   wireOptions();
   wireEditSheet();
@@ -5929,7 +5864,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview2?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -6349,7 +6284,7 @@ function renderSettingsPage(){
       <div class="optpage">${optionsBody()}</div>
     </div></div>
     </div>
-    ${bottomNav({listsId:"listsBtn",listsActive:false,planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
+    ${bottomNav({planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
     ${diagOpen?diagSheet():""}
     ${listsOpen?listsSheet():""}
     ${listActOpen?listActSheet():""}
@@ -6592,20 +6527,17 @@ function wire(){
       else { restore(name,cat); } }; });
   const cba=app.querySelector("#clearBA"); if(cba) cba.onclick=()=>{ const prev=snapState(); const now=Date.now(); state.baTomb=state.baTomb||{}; state.buyAgain.forEach(e=>{ state.baTomb[baKey(e)]=now; }); state.buyAgain=[]; save(); render(); showUndo(prev,"Buy-again cleared"); };
 
-  const dsh=app.querySelector("#doneShop"); if(dsh) dsh.onclick=()=>{ if(state.items.some(i=>i.checked)){ finishOpen=true; render(); } else gotoPage(2); };
+  const dsh=app.querySelector("#doneShop"); if(dsh) dsh.onclick=()=>{ if(state.items.some(i=>i.checked)){ finishOpen=true; render(); } else gotoPage(1); };
   const fbg=app.querySelector("#finishBg"); if(fbg) fbg.onclick=e=>{ if(e.target===fbg){ finishOpen=false; render(); } };
-  const fsv=app.querySelector("#finishSave"); if(fsv) fsv.onclick=()=>{ finishOpen=false; sweep(); gotoPage(2); };
-  const fkp=app.querySelector("#finishKeep"); if(fkp) fkp.onclick=()=>{ finishOpen=false; gotoPage(2); };
-  const ssh=app.querySelector("#startShop"); if(ssh) ssh.onclick=()=>gotoPage(2);
+  const fsv=app.querySelector("#finishSave"); if(fsv) fsv.onclick=()=>{ finishOpen=false; sweep(); gotoPage(1); };
+  const fkp=app.querySelector("#finishKeep"); if(fkp) fkp.onclick=()=>{ finishOpen=false; gotoPage(1); };
+  const ssh=app.querySelector("#startShop"); if(ssh) ssh.onclick=()=>gotoPage(1);
   const aiAp=app.querySelector("[data-ai-apply]"); if(aiAp) aiAp.onclick=aiApplyProposal;   // B7 accept the proposed aisle order
   const aiKp=app.querySelector("[data-ai-keep]"); if(aiKp) aiKp.onclick=aiDismissProposal;   // B7 revert / keep current
-  const lb=app.querySelector("#listsBtn"); if(lb) lb.onclick=()=>gotoPage(0);
-  const ln=app.querySelector("#listName"); if(ln) ln.onclick=()=>gotoPage(0);
-  const tl=app.querySelector("#toLists"); if(tl) tl.onclick=()=>gotoPage(0);   // ‹ back to Lists
   const lsw=app.querySelector("#listSwitch"); if(lsw) lsw.onclick=()=>{ listsOpen=true; render(); };   // v1.81 title opens the switcher
-  const pnv=app.querySelector("#planNav"); if(pnv) pnv.onclick=()=>gotoPage(1);   // Plan tab
-  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(2);
-  const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{ settingsFrom=2; gotoPage(3); };   // Settings tab (bottom-right) — slides in from the right
+  const pnv=app.querySelector("#planNav"); if(pnv) pnv.onclick=()=>gotoPage(0);   // Plan tab
+  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(1);
+  const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{ settingsFrom=1; gotoPage(2); };   // Settings tab (bottom-right) — slides in from the right
   const saf=app.querySelector("#shopAddFab"); if(saf) saf.onclick=openAdd;   // floating search bubble opens the add sheet
   const rsa=app.querySelector("[data-reg-showall]"); if(rsa) rsa.onclick=()=>{   // v1.24 "Regulars" header — shown by default; tap to hide/show the categories
     collapse.regAll = (collapse.regAll===false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
@@ -6704,17 +6636,16 @@ function wireEditSheet(){
   }
 }
 
-/* Four linear pages: Lists (0) ▸ Plan (1) ▸ Shop (2) ▸ Settings (3). Plan is its own view as of
-   v1.82; Shop is view="detail" with shopMode. A horizontal swipe drags the live page with the finger
-   before committing (see transitionTo for the animation). */
-function curPageIdx(){ return optOpen ? 3 : (view==="lists" ? 0 : (view==="plan" ? 1 : 2)); }
+/* Three linear pages: Plan (0) ▸ Shop (1) ▸ Settings (2). Plan is its own view as of v1.82; Shop is
+   view="detail" with shopMode. The Lists page went in v1.87 — the list switcher behind the title does
+   everything it did. A horizontal swipe drags the live page with the finger before committing (see
+   transitionTo for the animation). */
+function curPageIdx(){ return optOpen ? 2 : (view==="plan" ? 0 : 1); }
 function applyPage(idx){
   catEntry=null; quickEdit=null;
-  if(idx===3){ optOpen=true; return; }
+  if(idx===2){ optOpen=true; return; }
   optOpen=false;
-  if(idx===0){ view="lists"; }
-  else if(idx===1){ view="plan"; }
-  else { view="detail"; shopMode=true; }
+  if(idx===0){ view="plan"; } else { view="detail"; shopMode=true; }
 }
 let _pageAnim=false;
 /* v1.75 item 3: which way a page arrives, and how fast. Auto is what the app has always done — the
@@ -6740,7 +6671,7 @@ const _pageY={};
    ancestor transform can never unpin it on iOS Safari); only the scrolling content (.wrap) slides,
    the header and bottom nav stay put — native-tab style. */
 function transitionTo(idx){
-  if(idx<0 || idx>3 || _pageAnim) return;
+  if(idx<0 || idx>2 || _pageAnim) return;
   const from=curPageIdx();
   if(idx===from){ render(); return; }
   const dir = idx>from ? 1 : -1;                                  // 1 → new page enters from the right (it lies to the right)
