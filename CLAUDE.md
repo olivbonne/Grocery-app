@@ -58,9 +58,17 @@ No build step, no framework. Firebase Firestore for live household sync, Vercel 
   walks onboarding (name → Join), pastes a sample list, screenshots at 390×844.
 - **Per-version suites live in `.claude/tests/`** — one file per version, run against a local
   server (`node .claude/tests/v178.js <port> <out.png>`). See `.claude/tests/README.md` for how to
-  run them and what a check has to prove. Write the new version's suite there, then re-run the
-  existing ones as a regression sweep before shipping. Do NOT leave suites in the scratchpad: it is
-  not durable, and every suite up to v1.76 was lost that way.
+  run them and what a check has to prove. Do NOT leave suites in the scratchpad: it is not durable,
+  and every suite up to v1.76 was lost that way.
+- **RULE — sweep ONCE, at the end of the batch.** While building, run only the new version's own
+  suite plus the syntax check; that is what tells you whether the thing you just wrote works. The
+  full regression sweep and `/verify-app` run **once, after the last change of the batch**, right
+  before shipping. Running all of them after every item costs a great deal for very little — there
+  are a dozen suites now and a batch has several items. (Standing user instruction, 2026-09-06.)
+- **RULE — one version per batch, not one per item.** A batch of numbered requests is ONE
+  `APP_VERSION` bump, one CHANGELOG row, one PR. Splitting a five-item batch into five versions is
+  what made the sweep run five times. Ship a version mid-batch only when an item is genuinely
+  independent and worth deploying on its own — and say why.
 - When a version deliberately changes what an older check asserts, rewrite that check in place with
   a `SUPERSEDED by vX.YZ:` note — do not delete it and do not leave it failing.
 - There are no unit tests; the suites + the smoke test + the screenshot are the bar.
