@@ -403,7 +403,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      must stay that way. `.hrow` takes over `position:relative` so the absolutely-centred count still
      centres on the title row rather than on the taller two-row block. */
   header.hstack { flex-direction:column; align-items:stretch; gap:3px; }
-  header.hstack .hrow { display:flex; align-items:center; justify-content:space-between; position:relative; }
+  /* v1.90: the row keeps the 44px the back button used to give it. That button was what made the title
+     centre in the bar (v1.77) — removing its placeholder for the title alignment took the height with it
+     and left the title sitting 10px high. The height belongs to the row, not to a button that may or may
+     not be in it. */
+  header.hstack .hrow { display:flex; align-items:center; justify-content:space-between; position:relative;
+    min-height:44px; }
   header.hstack .hloc { display:flex; justify-content:center; }
   .avatars { display:flex; }
   .av { width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center;
@@ -710,22 +715,27 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     font-family:'Outfit',system-ui,sans-serif; font-weight:800; font-size:15px; padding:10px 12px; border-radius:14px; }
   .planweek .pwarrow { flex:none; width:42px; height:42px; border-radius:14px; border:1.5px solid var(--line);
     background:transparent; color:var(--text); font-size:20px; font-weight:800; line-height:1; }
-  .planday { padding:12px 0 14px; border-bottom:1px solid var(--line); }
+  /* v1.90: one row per day, so a week with a meal on every day fits a screen without scrolling.
+     Measured before: 108px a row and 798px of content in a 704px space. The chips moved up beside the
+     day rather than under it, which is where the height was going. */
+  .planday { padding:7px 0; border-bottom:1px solid var(--line); }
   .planday:last-of-type { border-bottom:none; }
   .planday.today .pdname { color:var(--accent); }
-  .pdhead { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-  .pdwhen { display:flex; align-items:baseline; gap:8px; min-width:0; }
-  .pdname { font-family:'Outfit',system-ui,sans-serif; font-weight:800; font-size:16px; }
-  .pddate { font-size:12.5px; font-weight:700; color:var(--muted2); }
-  .pdmore { flex:none; width:40px; height:36px; border:none; background:transparent; color:var(--muted);
+  .pdhead { display:flex; align-items:center; gap:10px; }
+  .pdwhen { flex:none; min-width:104px; display:flex; align-items:baseline; gap:7px; }
+  .pdname { font-family:'Outfit',system-ui,sans-serif; font-weight:800; font-size:15.5px; }
+  .pddate { font-size:12px; font-weight:700; color:var(--muted2); }
+  .pdchips { flex:1; min-width:0; display:flex; flex-wrap:wrap; gap:6px; margin:0; }
+  .pdempty { flex:1; min-width:0; margin:0; font-size:12.5px; color:var(--muted2); }
+  .pdmore { flex:none; width:38px; height:38px; border:none; background:transparent; color:var(--muted);
     display:inline-flex; align-items:center; justify-content:center; border-radius:12px;
     font-family:'Outfit',system-ui,sans-serif; font-size:24px; font-weight:700; line-height:1; }
   .pdmore:active { background:var(--chip); color:var(--text); }
-  .pdempty { margin:6px 0 0; font-size:13px; color:var(--muted2); }
-  .pdchips { display:flex; flex-wrap:wrap; gap:7px; margin-top:9px; }
   .pchip { display:inline-flex; align-items:center; gap:6px; padding:8px 12px; border-radius:999px;
     border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:14px; max-width:100%; }
   .pchip.recipe { border-style:dashed; }
+  /* v1.90 */
+  .pchip { padding:6px 11px; font-size:13.5px; }
   /* v1.84 */
   .pchip { user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; touch-action:manipulation; }
   .pchip .pcx { color:var(--muted2); font-weight:800; margin-left:2px; }
@@ -1510,7 +1520,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.89";
+const APP_VERSION = "v1.90";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -4710,9 +4720,8 @@ function renderMain(){
       <header class="hstack">
         <div class="hrow">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            ${/* v1.87: the Lists page is gone, so there is nowhere to go back to — but the space stays,
-                  the same empty placeholder the Plan page uses, so every page's title starts at the same x. */""}
-            <span class="backbtn" aria-hidden="true"></span>
+            ${/* v1.90: the 52px held for a back arrow goes with the arrow — the title starts where the
+                  tiles and category headings start. Settings keeps its own back button. */""}
             <button class="title disp listswitch" id="listSwitch" aria-haspopup="dialog" aria-expanded="${listsOpen?'true':'false'}">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="dot">.</span><span class="lschev" aria-hidden="true">${CHEV_SVG}</span></button>
           </div>
           ${open>0?`<span class="hcount hcount-mid">${open} to buy</span>`:""}
@@ -4913,15 +4922,15 @@ function renderPlanTab(){
     days.push(`<section class="planday${k===todayK?' today':''}">
       <div class="pdhead">
         <span class="pdwhen"><span class="pdname">${esc(d.toLocaleDateString(undefined,{weekday:"long"}))}</span><span class="pddate">${esc(d.toLocaleDateString(undefined,{day:"numeric",month:"short"}))}</span></span>
+        ${chips ? `<div class="pdchips">${chips}</div>` : `<span class="pdempty">Nothing planned</span>`}
         <button class="pdmore" data-pd="${esc(k)}" aria-haspopup="dialog" aria-label="Add to ${esc(d.toLocaleDateString(undefined,{weekday:"long"}))}">+</button>
       </div>
-      ${chips ? `<div class="pdchips">${chips}</div>` : `<p class="pdempty">Nothing planned</p>`}
     </section>`);
   }
   app.innerHTML = `
     <div class="topfix" id="topfix">
       <header>
-        <div style="display:flex;align-items:center;gap:8px"><span class="backbtn" aria-hidden="true"></span><button class="title disp listswitch" id="listSwitch" aria-haspopup="dialog" aria-expanded="${listsOpen?'true':'false'}">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="dot">.</span><span class="lschev" aria-hidden="true">${CHEV_SVG}</span></button></div>
+        <div style="display:flex;align-items:center;gap:8px"><button class="title disp listswitch" id="listSwitch" aria-haspopup="dialog" aria-expanded="${listsOpen?'true':'false'}">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="dot">.</span><span class="lschev" aria-hidden="true">${CHEV_SVG}</span></button></div>
         <div style="display:flex;align-items:center;gap:8px">${syncChip()}</div>
       </header>
     </div>
@@ -5271,6 +5280,38 @@ function wirePlanTab(){
   wireListsSheet();
   wireSmartSheet();
   wireUserTiles();
+}
+/* v1.90: a recipe page shared into the app. Android hands it over directly through the manifest's
+   share_target (?title=/?text=/?url=); iOS cannot register a PWA as a share target at all, so there the
+   route is a Shortcut that opens ?import=<url>. Same door, two ways of knocking — and either way the
+   app lands on the plan with the importer already running. */
+function sharedRecipeURL(){
+  const raw = params.get("import") || params.get("url") || params.get("text") || "";
+  if(!raw) return "";
+  /* A shared "text" is usually a sentence with the link inside it, not a bare URL. */
+  const m = String(raw).match(/https?:\/\/[^\s"'<>]+/);
+  if(!m) return "";
+  try{ const u=new URL(m[0]);
+    if(u.protocol!=="http:" && u.protocol!=="https:") return "";
+    return u.toString(); }catch(e){ return ""; }
+}
+function takeSharedRecipe(){
+  const u = sharedRecipeURL(); if(!u) return;
+  /* Strip it out of the address bar before doing anything with it: a reload must not import the same
+     page a second time, and the link is not ours to keep in a URL people may share onward. */
+  try{ ["import","url","text","title"].forEach(k=>params.delete(k));
+       const q=params.toString();
+       history.replaceState(null, "", location.pathname + (q?("?"+q):"")); }catch(e){}
+  /* v1.90: gated on having a name, not on Firebase. The plan is written through save(), which already
+     keeps a local-only install working without a database — so a device that has never been pointed at
+     Firebase can still import a recipe. Guarding on `configured` would have refused them for no reason,
+     and would have made this whole path untestable, since the suites run local-only by design. */
+  if(!me) return;                  // not set up yet — there is nothing to import into
+  optOpen=false; listsOpen=false; view="plan"; planWeek=0;
+  planAdd = { day:dayKey(new Date()), kind:"recipe", name:"", ing:[], rid:"", edit:false, q:"",
+              imp:"link", impVal:u, impBusy:false, impErr:"", sq:"", sres:null, ssrc:"" };
+  render();
+  planImport({ url:u });
 }
 function planImpGo(){
   if(!planAdd || planAdd.impBusy) return;
@@ -6834,6 +6875,7 @@ window.addEventListener("resize", syncZoomHeight);
    into it. Every launch after that picks the start slot up at the top of the module, no reload. */
 if(migrateAppSlots163()){ applyStoredAppearance(appSlots()[0]); }
 render();
+takeSharedRecipe();   // v1.90 a page shared in from the phone's share sheet
 </script>
 </body>
 </html>

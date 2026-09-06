@@ -58,6 +58,31 @@ Easiest, no tools:
 
 ---
 
+## Sending a recipe to the app from your phone
+
+When you're looking at a recipe in your browser, you can send the page straight to Market List
+and it will read the ingredients for you.
+
+**Android** — it just works. Share the page and pick **Market List** from the share sheet.
+
+**iPhone** — iOS doesn't let a web app appear in the share sheet on its own, so make a Shortcut once:
+
+1. Open the **Shortcuts** app → **+** → **Add Action**
+2. Search **URL** → choose **Text** if you want, but the simplest is: **Add Action → Web → Open URLs**
+3. Tap the action's URL field and type: `https://YOUR-APP-ADDRESS/?import=`
+4. With the cursor still at the end, tap **Shortcut Input** in the variable bar so it reads
+   `https://YOUR-APP-ADDRESS/?import=` followed by the Shortcut Input variable
+5. Tap the shortcut's **ⓘ** (Details) → turn on **Show in Share Sheet**
+6. Under **Share Sheet Types**, leave only **URLs** ticked
+7. Name it something like *Send to Market List* and save
+
+Now, from any recipe page: **Share → Send to Market List**. The app opens on the Plan tab with
+the recipe already being read.
+
+(Replace `YOUR-APP-ADDRESS` with your own Vercel address — the same one you use to open the app.)
+
+---
+
 ## Using it
 - **Paste** your whole note (even with `Meat:`, `Fruit:` labels) into the top box — items file into the right category and the labels are dropped.
 - Type plainly (`banana, 2 kimchi`) and items auto-sort; quantities like `2 kimchi` show as `2×`.

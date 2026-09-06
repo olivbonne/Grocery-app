@@ -90,13 +90,16 @@ const SEED = (extra)=>`(() => {
       placeholder:!!document.querySelector('.topfix .backbtn') }));
     ok('nothing on the shop page points at the deleted page',
        gone.grid===0 && gone.btn===0 && gone.back===0, JSON.stringify(gone));
-    ok('…but its space is kept, so the title still starts where it did', gone.placeholder===true,
+    /* SUPERSEDED by v1.90: keeping the space was this version's compromise — v1.90 removed it, so the
+       title now starts at the tiles' left edge instead of where the arrow used to leave it. The slot must
+       be empty, and the title must line up with the tiles; v179.js measures that across all three pages. */
+    ok('…and its space is gone too, not held empty', gone.placeholder===false,
        JSON.stringify({ph:gone.placeholder}));
 
-    /* the empty placeholder is not a button — there must be nothing to tap there */
+    /* nothing may be left in that slot at all — not a button, not an inert span */
     const ph = await page.evaluate(()=>{ const b=document.querySelector('.topfix .backbtn');
       return b ? { tag:b.tagName, txt:b.textContent.trim() } : null; });
-    ok('…and it is inert, not a dead button', ph && ph.tag==='SPAN' && ph.txt==='', JSON.stringify(ph));
+    ok('…nothing at all is left where it was', ph===null, JSON.stringify(ph));
 
     /* ── 2. the titles still line up across the pages (v1.79) ───────────── */
     const titleX = async()=>page.evaluate(()=>Math.round(document.querySelector('.topfix .title').getBoundingClientRect().left));
