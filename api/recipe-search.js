@@ -23,7 +23,11 @@ const MAX_RESULTS = 8;
 const FETCH_TIMEOUT_MS = 7000;
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'llama-3.1-8b-instant';
+/* v1.91: Groq retires models on its own schedule — llama-3.1-8b-instant was shut down for
+   free-tier traffic on 2026-08-16 and took every AI feature in the app down with it, silently,
+   because the name was compiled in. It is an env var now, like GROQ_VISION_MODEL already is, so
+   the next retirement is a Vercel setting rather than a deploy. See docs/ai-setup.md. */
+const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
 const BRAVE_URL = 'https://api.search.brave.com/res/v1/web/search';
 
 // Same guard as api/recipe.js: a URL this endpoint hands back will be fetched by
@@ -117,7 +121,15 @@ async function modelIdeas(q, key) {
         response_format: { type: 'json_object' },
       }),
     });
-    if (!r.ok) return { code: 'upstream' };
+    /* v1.91: read the body before bailing. A retired or renamed model comes back as a 400 naming
+       itself, and "Search failed" sent nobody to the setting that fixes it — that is exactly how the
+       app sat broken for three weeks. Logged for the next time, and named for the person using it. */
+    if (!r.ok) {
+      const detail = await r.text().catch(() => '');
+      console.error('groq ' + r.status + ' ' + detail.slice(0, 300));
+      if (/model_decommissioned|model_not_found|does not exist|decommissioned/i.test(detail)) return { code: 'model' };
+      return { code: 'upstream' };
+    }
     const data = await r.json();
     const reply = data && data.choices && data.choices[0]
       && data.choices[0].message && data.choices[0].message.content;

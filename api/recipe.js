@@ -28,7 +28,11 @@ const CATEGORIES = [
 ];
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'llama-3.1-8b-instant';
+/* v1.91: Groq retires models on its own schedule — llama-3.1-8b-instant was shut down for
+   free-tier traffic on 2026-08-16 and took every AI feature in the app down with it, silently,
+   because the name was compiled in. It is an env var now, like GROQ_VISION_MODEL already is, so
+   the next retirement is a Vercel setting rather than a deploy. See docs/ai-setup.md. */
+const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
 
 // Vision is a separate model and Groq's line-up changes: Llama 4 Scout was
 // deprecated for free/developer tiers in June 2026. Hence an env override —
@@ -312,11 +316,19 @@ module.exports = async (req, res) => {
     }
 
     if (!upstream.ok) {
+      /* v1.91: read the body before bailing, and log it. Every upstream failure used to leave the
+         same "Parse failed" and nothing in the log, which is exactly how the app sat broken for three
+         weeks after Groq retired the model. The detail goes to the log only — never into a response. */
+      const detail = await upstream.text().catch(() => '');
+      console.error('groq ' + upstream.status + ' ' + detail.slice(0, 300));
       // A missing/renamed vision model is the one upstream failure worth naming:
       // Groq's image-capable line-up changes, and "parse failed" would send the
       // user hunting in the wrong place. See GROQ_VISION_MODEL in docs/ai-setup.md.
       if (image && (upstream.status === 400 || upstream.status === 404)) {
         return fail(res, 502, 'vision_model', 'Photo reading is not set up on this account');
+      }
+      if (/model_decommissioned|model_not_found|does not exist|decommissioned/i.test(detail)) {
+        return fail(res, 502, 'model', 'The recipe reader\'s model is no longer available');
       }
       return fail(res, 502, 'upstream', 'Parse failed');
     }

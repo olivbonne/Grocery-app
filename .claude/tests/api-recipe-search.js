@@ -36,6 +36,7 @@ let calls = [];
 let brave = { status: 200, body: { web: { results: [
   { title: 'Best Beef Goulash', url: 'https://recipes.example.com/goulash', description: 'A <b>classic</b> stew' },
   { title: 'Quick Goulash', url: 'https://cooking.example.org/quick', description: 'Weeknight version' } ] } } };
+let groqErrBody = '{}';   /* v1.91: what a failing upstream SAYS decides which error the app shows */
 let groq = { status: 200, content: JSON.stringify({ results: [
   { title: 'Classic beef goulash', note: 'Paprika-heavy, slow cooked' },
   { title: 'Quick weeknight goulash', note: 'Under an hour' } ] }) };
@@ -45,6 +46,7 @@ globalThis.fetch = async (url, opts) => {
   if (String(url).indexOf('api.search.brave.com') >= 0) {
     return new Response(JSON.stringify(brave.body), { status: brave.status, headers: { 'content-type': 'application/json' } });
   }
+  if (groq.status !== 200) return new Response(groqErrBody, { status: groq.status });
   return new Response(JSON.stringify({ choices: [{ message: { content: groq.content } }] }),
     { status: groq.status, headers: { 'content-type': 'application/json' } });
 };
@@ -139,6 +141,19 @@ const reset = () => { calls = []; };
     JSON.stringify({ t: r.body.results[0].title.length, n: r.body.results[0].note.length }));
   ok('a nameless suggestion is dropped', !r.body.results.some(x => !x.title), JSON.stringify(r.body.results.length));
   ok('and the list is capped', r.body.results.length <= 8, r.body.results.length);
+
+  /* v1.91: same retirement that took /api/recipe down took the search with it, and "couldn't search
+     just now" pointed nowhere. The suggestion path is the one that talks to the model, so it is the
+     one that has to name a model that is gone. */
+  reset();
+  groq = { status: 400, content: '' };
+  groqErrBody = JSON.stringify({ error: { message: 'The model `llama-3.1-8b-instant` has been decommissioned', code: 'model_decommissioned' } });
+  r = await call({ q: 'goulash' });
+  ok('a retired model is named, not hidden as a generic search failure',
+    r.code === 502 && r.body.code === 'model', JSON.stringify(r.body));
+  ok('…without the upstream body reaching the client',
+    !/llama|decommissioned/i.test(JSON.stringify(r.body)), JSON.stringify(r.body));
+  groqErrBody = '{}';
 
   reset();
   groq = { status: 200, content: 'not json at all' };
