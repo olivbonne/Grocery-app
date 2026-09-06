@@ -584,6 +584,19 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .pimpgo[disabled] { opacity:.45; }
   .pimpnote { margin:0 0 10px; font-size:12.5px; font-weight:600; color:var(--muted); line-height:1.45; }
   .pimpnote.err { color:var(--accent); }
+  /* v1.89 search results + delete-a-recipe chip */
+  .presults { display:flex; flex-direction:column; gap:7px; margin:0 0 12px; max-height:34vh; overflow-y:auto; }
+  .presult { display:flex; flex-direction:column; align-items:flex-start; gap:2px; width:100%; text-align:left;
+    padding:10px 13px; border-radius:13px; border:1.5px solid var(--line); background:var(--card); color:var(--text); }
+  .presult .pres-t { font-family:'Outfit',system-ui,sans-serif; font-weight:700; font-size:14.5px; line-height:1.3; }
+  .presult .pres-s { font-size:11.5px; font-weight:700; color:var(--accent); }
+  .presult .pres-n { font-size:12px; color:var(--muted2); line-height:1.35; }
+  .precwrap { display:inline-flex; align-items:stretch; }
+  .precwrap .sugchip { border-top-right-radius:0; border-bottom-right-radius:0; }
+  .precdel { flex:none; padding:0 10px; border:1.5px solid var(--line); border-left:none;
+    border-top-right-radius:999px; border-bottom-right-radius:999px;
+    background:var(--card); color:var(--muted2); font-weight:800; font-size:15px; line-height:1; }
+  .precdel:active { color:var(--accent); }
   /* A19 AI-order note — visible in shop mode (unlike .hint) */
   .aihint { margin:0 0 10px; font-size:12px; font-weight:700; color:var(--muted); text-align:left; }
   /* B7 AI aisle-order proposal (accept/revert) */
@@ -1294,6 +1307,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     border-radius:var(--srchr, 999px);
     padding-top:calc(13px + var(--srchh, 0px)); padding-bottom:calc(13px + var(--srchh, 0px)); }
   .addpill svg { flex:none; }
+  /* v1.89: a press-and-hold on the + must not start a text selection instead. */
+  .addpill { user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
   /* v1.38 item 3 — the sheet is PINNED to the visual viewport by JS (pinAddSheet), not by CSS units.
      v1.36 sized it with dvh math, which is correct until iOS scrolls the *visual* viewport to reveal
      the focused input: position:fixed tracks the LAYOUT viewport, so the whole sheet slid up and only
@@ -1495,7 +1510,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.88";
+const APP_VERSION = "v1.89";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2771,7 +2786,7 @@ function setItemEmoji(on){ _emojiItem = on?"1":"0"; localStorage.setItem("ml_emo
 let _smart = localStorage.getItem("ml_smart");
 function smartOn(){ return _smart===null ? true : _smart==="1"; }
 function setSmart(on){ _smart = on?"1":"0"; localStorage.setItem("ml_smart", _smart); render(); }
-let optOpen=false, listsOpen=false, settingsFrom=1;   // settingsFrom: page the Settings tab was opened from (for the ‹ back slide); 1 = Shop as of v1.87's renumber
+let optOpen=false, listsOpen=false, fabMoveOpen=false, settingsFrom=1;   // settingsFrom: page the Settings tab was opened from (for the ‹ back slide); 1 = Shop as of v1.87's renumber
 // v1.10 bottom-first add sheet
 let addOpen=false, addTab="reg", _addScrollY=0;
 /* v1.44 item 5: focusing the search bar makes iOS scroll the page underneath to reveal the input, so
@@ -4726,6 +4741,7 @@ function renderMain(){
   ${!addOpen?`<div class="addpill-wrap" id="shopAddFabWrap"><button class="addpill" id="shopAddFab" aria-label="Add an item"><span class="addpill-plus" aria-hidden="true">+</span></button></div>`:""}${/* v1.36 item 4: search bar shows even on an empty list */""}
   ${bottomNav({planId:"planNav",planActive:false,cartId:"cartNav",cartActive:true,setId:"setNav"})}${userTilesHTML()}  ${finishOpen?finishSheet():""}
   ${listsOpen?listsSheet():""}
+  ${fabMoveOpen?fabMoveSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
   ${smartOpen?smartSheet():""}
@@ -4760,6 +4776,8 @@ function wireNewListSheet(){
 /* v1.82: the switcher opens from the Shop page and the Plan page both, so its wiring lives in one
    function rather than inline in wire(). Same handlers, more than one caller. */
 function wireListsSheet(){
+  const fmBg=app.querySelector("#fabMoveBg"); if(fmBg) fmBg.onclick=e=>{ if(e.target===fmBg){ fabMoveOpen=false; render(); } };
+  app.querySelectorAll("[data-fabalign]").forEach(b=>b.onclick=()=>{ fabMoveOpen=false; setSrchAlign(b.dataset.fabalign); });
   const lsBg=app.querySelector("#listsBg"); if(lsBg) lsBg.onclick=()=>{ listsOpen=false; render(); };
   const lsS=app.querySelector("#listsSheetEl"); if(lsS) lsS.onclick=e=>e.stopPropagation();
   /* v1.83: tap picks the list, press-and-hold opens everything you can do to it — the same gesture
@@ -4861,6 +4879,13 @@ function planRemoveEntry(k, id){ const P=planData();
   writePlan(P); }
 function planSaveRecipe(r){ const P=planData();
   P.recipes = P.recipes.filter(x=>x.id!==r.id).concat([r]); writePlan(P); }
+/* v1.89: a recipe can be thrown away. Days that had it keep their entry — the chip falls back to the
+   name stored on the entry, so a deleted recipe leaves the plan readable instead of blank. */
+function planDeleteRecipe(id){
+  const P=planData();
+  P.recipes = P.recipes.filter(r=>r.id!==id);
+  writePlan(P);
+}
 function recipeById(id){ return planData().recipes.find(r=>r.id===id) || null; }
 /* v1.84: an ingredient carries its category now, so it can go onto the list as the real item rather
    than as loose text. Recipes written before this version hold plain strings — normalise on read. */
@@ -5003,6 +5028,40 @@ function planImpMessage(code){
     default:               return "Couldn't read that — try pasting the recipe text instead.";
   }
 }
+/* v1.89: finding a recipe without leaving the app. The server answers from a real web search when one
+   is configured and from the recipe reader's own knowledge when it is not — and says which, because a
+   suggestion and a search result are not the same thing and the app should not pretend otherwise. */
+async function planSearch(){
+  if(!planAdd || planAdd.impBusy) return;
+  const el=document.querySelector("#paImpVal");
+  const q=((el && el.value) || planAdd.sq || "").trim();
+  if(!q){ planAdd.impErr="Type what you want to cook."; render(); return; }
+  planAdd.sq=q; planAdd.impBusy=true; planAdd.impErr=""; planAdd.sres=null; render();
+  let res=null, data=null;
+  try{ res=await fetch("/api/recipe-search",{ method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({q}) }); }
+  catch(e){ res=null; }
+  if(!planAdd) return;
+  planAdd.impBusy=false;
+  if(!res){ planAdd.impErr="Couldn't reach the search. Check your connection."; render(); return; }
+  try{ data=await res.json(); }catch(e){ data=null; }
+  if(!res.ok){ planAdd.impErr=planSearchMessage(data && data.code); render(); return; }
+  const raw=(data && Array.isArray(data.results)) ? data.results : [];
+  planAdd.ssrc = (data && data.source==="web") ? "web" : "model";
+  planAdd.sres = raw.map(r=>({ title:String((r&&r.title)||"").trim(),
+                               url:String((r&&r.url)||"").trim(),
+                               site:String((r&&r.site)||"").trim(),
+                               note:String((r&&r.note)||"").trim() })).filter(r=>r.title);
+  render();
+}
+function planSearchMessage(code){
+  switch(code){
+    case "no_results":      return "Nothing found for that — try a different name.";
+    case "search_key":      return "Web search refused its key (SEARCH_API_KEY — see docs/ai-setup.md).";
+    case "not_configured":  return "Recipe reading isn't set up yet — add a GROQ_API_KEY in Vercel (see docs/ai-setup.md).";
+    case "too_long":        return "That's a long one — try just the dish name.";
+    default:                return "Couldn't search just now — you can still paste a link or the text.";
+  }
+}
 /* v1.86: link, photo and pasted text all come back as the same thing — a title and a list of
    ingredients — so they all land in the same place: the form, filled in, for you to check before
    anything is added. Nothing is written to a day or to the list here. */
@@ -5030,7 +5089,8 @@ async function planImport(payload){
   if(!ing.length){ planAdd.impErr="No ingredients found in that."; render(); return; }
   planAdd.ing = planAdd.ing.concat(ing);
   if(!(planAdd.name||"").trim() && data && data.title) planAdd.name=String(data.title).slice(0,80);
-  planAdd.rid=""; planAdd.imp=null; planAdd.impVal=""; planAdd.impErr="";
+  if(!planAdd.edit) planAdd.rid="";
+  planAdd.imp=null; planAdd.impVal=""; planAdd.sres=null; planAdd.sq=""; planAdd.impErr="";
   render();
 }
 function planAddSheet(){
@@ -5042,8 +5102,9 @@ function planAddSheet(){
   const ingCSS   = "width:100%;height:46px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;background:var(--card);color:var(--text);font-size:16px;box-sizing:border-box";
   return `<div class="sheet-bg kbpin" id="paBg"><div class="sheet" id="paSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${esc(head)}${planAdd.edit?"":` · ${esc(dayName)}`}</div>
-    ${(isR && !planAdd.edit) ? `<p class="palabel">Start from</p>
+    ${isR ? `<p class="palabel">Start from</p>
       <div class="pimprow">
+        <button class="pimp${planAdd.imp==='search'?' on':''}" data-pimp="search">🔎 Search</button>
         <button class="pimp${planAdd.imp==='link'?' on':''}" data-pimp="link">🔗 A link</button>
         <button class="pimp" data-pimp="photo">📷 A photo</button>
         <button class="pimp${planAdd.imp==='paste'?' on':''}" data-pimp="paste">📋 Paste text</button>
@@ -5055,18 +5116,40 @@ function planAddSheet(){
           <input id="paImpVal" placeholder="Paste a recipe link" value="${esc(planAdd.impVal||"")}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="url" style="${ingCSS}" />
           <button class="pimpgo" id="paImpGo"${planAdd.impBusy?" disabled":""}>Read it</button>
         </div>` : ""}
+      ${planAdd.imp==='search' ? `<div class="pimppanel">
+          <input id="paImpVal" placeholder="What do you want to cook?" value="${esc(planAdd.sq||"")}" autocomplete="off" autocapitalize="none" spellcheck="false" style="${ingCSS}" />
+          <button class="pimpgo" id="paImpGo"${planAdd.impBusy?" disabled":""}>Find</button>
+        </div>
+        ${Array.isArray(planAdd.sres) ? (planAdd.sres.length ? `
+          <p class="pimpnote">${planAdd.ssrc==='web' ? 'From the web — pick one to read it.' : 'No web search is set up, so these are the recipe reader\'s own suggestions.'}</p>
+          <div class="presults">${planAdd.sres.map((r,i)=>`<button class="presult" data-pres="${i}">
+            <span class="pres-t">${esc(r.title)}</span>
+            ${r.site?`<span class="pres-s">${esc(r.site)}</span>`:""}
+            ${r.note?`<span class="pres-n">${esc(r.note)}</span>`:""}
+          </button>`).join("")}</div>` : `<p class="pimpnote">Nothing found for that.</p>`) : ""}` : ""}
       ${planAdd.imp==='paste' ? `<div class="pimppanel col">
           <textarea id="paImpVal" rows="5" placeholder="Paste the recipe here — ingredients and all" style="width:100%;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;background:var(--card);color:var(--text);font-size:15px;box-sizing:border-box;resize:none">${esc(planAdd.impVal||"")}</textarea>
           <button class="pimpgo wide" id="paImpGo"${planAdd.impBusy?" disabled":""}>Read it</button>
         </div>` : ""}
       ` : ""}
+    ${/* v1.89: the picker stays out of edit mode on purpose — picking a different saved recipe while
+          editing one would silently change which recipe "Save recipe" then overwrites. */""}
     ${(isR && !planAdd.edit && saved.length) ? `<p class="palabel">Your recipes</p>
-      <div class="pills" style="margin-bottom:14px">${saved.map(r=>`<button class="sugchip" data-precipe="${esc(r.id)}">${esc(r.name)}</button>`).join("")}</div>` : ""}
+      <div class="pills" style="margin-bottom:14px">${saved.map(r=>`<span class="precwrap"><button class="sugchip" data-precipe="${esc(r.id)}">${esc(r.name)}</button><button class="precdel" data-precdel="${esc(r.id)}" aria-label="Delete ${esc(r.name)}">×</button></span>`).join("")}</div>` : ""}
     <input id="paName" placeholder="${isR?'Recipe name':'What are you eating?'}" value="${esc(planAdd.name||"")}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="${fieldCSS}" />
     ${isR?`<p class="palabel" style="margin-top:14px">Ingredients</p>
       <input id="paIngIn" placeholder="Add an ingredient" value="" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="${ingCSS}" />`:""}
     <div id="paDyn">${planDynHTML()}</div>
     <button class="newlist" id="paGo">${planAdd.edit ? "Save recipe" : "Add to "+esc(dayName)}</button>
+  </div></div>`;
+}
+/* v1.89: the same setting Settings has, offered where the button is. */
+function fabMoveSheet(){
+  return `<div class="sheet-bg" id="fabMoveBg"><div class="sheet" id="fabMoveSheet">
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">Where should + sit?</div>
+    <p class="hint" style="text-align:left;margin:0 0 12px">Also in Settings › Bars and overlays, with size and colour.</p>
+    <div class="seg segfull">${Object.keys(SRCH_ALIGN).map(k=>
+      `<button data-fabalign="${k}" class="${srchAlign()===k?'on':''}">${SRCH_ALIGN[k]}</button>`).join("")}</div>
   </div></div>`;
 }
 function planPickSheet(){
@@ -5096,13 +5179,13 @@ function wirePlanTab(){
       if(longFired){
         const en=planEntries(day).find(x=>x.id===id);
         const r=en && en.kind==="recipe" ? recipeById(en.rid) : null;
-        if(r){ planAdd={ day, kind:"recipe", name:r.name, ing:(r.ing||[]).map(planIngNorm), rid:r.id, edit:true, q:"", imp:null, impVal:"", impBusy:false, impErr:"" }; render(); return; }
+        if(r){ planAdd={ day, kind:"recipe", name:r.name, ing:(r.ing||[]).map(planIngNorm), rid:r.id, edit:true, q:"", imp:null, impVal:"", impBusy:false, impErr:"", sq:"", sres:null, ssrc:"" }; render(); return; }
       }
       planPick={day,id}; render(); };
   });
 
   const pmBg=app.querySelector("#pmBg"); if(pmBg) pmBg.onclick=e=>{ if(e.target===pmBg){ planMenu=null; render(); } };
-  const pmR=app.querySelector("#pmRecipe"); if(pmR) pmR.onclick=()=>{ planAdd={day:planMenu,kind:"recipe",name:"",ing:[],rid:"",edit:false,q:"",imp:null,impVal:"",impBusy:false,impErr:""}; planMenu=null; render(); };
+  const pmR=app.querySelector("#pmRecipe"); if(pmR) pmR.onclick=()=>{ planAdd={day:planMenu,kind:"recipe",name:"",ing:[],rid:"",edit:false,q:"",imp:null,impVal:"",impBusy:false,impErr:"",sq:"",sres:null,ssrc:""}; planMenu=null; render(); };
   const pmF=app.querySelector("#pmFood");   if(pmF) pmF.onclick=()=>{ planAdd={day:planMenu,kind:"food",name:"",ing:[],rid:"",edit:false,q:"",cat:"",emoji:""}; planMenu=null; render(); };
 
   const paBg=app.querySelector("#paBg"); if(paBg) paBg.onclick=e=>{ if(e.target===paBg){ planAdd=null; render(); } };
@@ -5132,9 +5215,18 @@ function wirePlanTab(){
   const paIV=app.querySelector("#paImpVal");
   if(paIV){ paIV.focus();
     /* v1.45 again: typing must not re-render, or the field is torn out and the keyboard goes with it. */
-    paIV.oninput=()=>{ planAdd.impVal=paIV.value; };
-    paIV.onkeydown=e=>{ if(e.key==="Enter" && planAdd.imp==="link"){ e.preventDefault(); planImpGo(); } }; }
-  const paIG=app.querySelector("#paImpGo"); if(paIG){ paIG.onpointerdown=e=>e.preventDefault(); paIG.onclick=planImpGo; }
+    paIV.oninput=()=>{ if(planAdd.imp==="search") planAdd.sq=paIV.value; else planAdd.impVal=paIV.value; };
+    paIV.onkeydown=e=>{ if(e.key==="Enter" && planAdd.imp==="search"){ e.preventDefault(); planSearch(); return; }
+      if(e.key==="Enter" && planAdd.imp==="link"){ e.preventDefault(); planImpGo(); } }; }
+  const paIG=app.querySelector("#paImpGo"); if(paIG){ paIG.onpointerdown=e=>e.preventDefault();
+    paIG.onclick=()=>(planAdd && planAdd.imp==="search") ? planSearch() : planImpGo(); }
+  app.querySelectorAll("[data-pres]").forEach(b=>b.onclick=()=>{
+    if(!planAdd || planAdd.impBusy) return;
+    const r=(planAdd.sres||[])[+b.dataset.pres]; if(!r) return;
+    /* A web result is a page to read; a suggestion has no page, so the reader is asked to write that
+       dish out. Either way it lands in the same form, for checking before anything is added. */
+    planImport(r.url ? { url:r.url } : { dish:r.title });
+  });
   /* v1.84: picking a saved recipe FILLS the form — its name into the field, its ingredients below it —
      and stays put. Nothing returns to the plan until Add is pressed, so what is about to be added can
      be read and changed first. The name input is written directly rather than re-rendered, so the
@@ -5145,6 +5237,10 @@ function wirePlanTab(){
       const n=document.querySelector("#paName"); if(n) n.value=r.name;
       const ii=document.querySelector("#paIngIn"); if(ii) ii.value="";
       refreshPlanDyn(); }; });
+  app.querySelectorAll("[data-precdel]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
+    b.onclick=()=>{ const id=b.dataset.precdel; const r=recipeById(id); if(!r) return;
+      if(!confirm('Delete the recipe "'+r.name+'"?\n\nDays it is already on keep it.')) return;
+      planDeleteRecipe(id); render(); }; });
   wirePlanDyn();
 
   const ppBg=app.querySelector("#ppBg"); if(ppBg) ppBg.onclick=e=>{ if(e.target===ppBg){ planPick=null; render(); } };
@@ -6560,7 +6656,14 @@ function wire(){
   const pnv=app.querySelector("#planNav"); if(pnv) pnv.onclick=()=>gotoPage(0);   // Plan tab
   const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(1);
   const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{ settingsFrom=1; gotoPage(2); };   // Settings tab (bottom-right) — slides in from the right
-  const saf=app.querySelector("#shopAddFab"); if(saf) saf.onclick=openAdd;   // floating search bubble opens the add sheet
+  /* v1.89: a tap adds an item; a press-and-hold offers where the button itself should live. The
+     alignment has been in Settings since v1.88, roughly two screens down "Bars and overlays" — which
+     is where a setting belongs and not where anyone looks for it. Press-and-hold is the gesture this
+     app already uses for "options for this thing" (lists, recipes, items, categories). */
+  const saf=app.querySelector("#shopAddFab");
+  if(saf){ saf.oncontextmenu=e=>e.preventDefault();
+    saf.onpointerdown=pressStart; saf.onpointerleave=pressCancel; saf.onpointercancel=pressCancel;
+    saf.onpointerup=()=>{ pressCancel(); if(longFired){ fabMoveOpen=true; render(); } else openAdd(); }; }
   const rsa=app.querySelector("[data-reg-showall]"); if(rsa) rsa.onclick=()=>{   // v1.24 "Regulars" header — shown by default; tap to hide/show the categories
     collapse.regAll = (collapse.regAll===false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   app.querySelectorAll("[data-regc]").forEach(b=>{ const id=b.dataset.regc;   // v1.24 each regulars category collapsed by default; tap to open (tracked in regOpen)

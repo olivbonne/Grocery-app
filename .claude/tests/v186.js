@@ -14,7 +14,9 @@
    - ingredients keep the category the parse gave them, so they land in the right aisle later;
    - a failure says what to do about it. The endpoint returns a code precisely so that "photo reading
      is not set up" and "that site blocks us" are different sentences, and both are checked;
-   - importing is offered when adding a recipe and not when editing one.
+   - importing is offered when adding a recipe. (v1.89 extended it to editing too, at the user's
+     request; the check below is superseded in place and now guards the thing that must still not
+     appear while editing — the picker for a different saved recipe.)
 
    TEST-BUG NOTES CARRIED FORWARD:
    - v1.60: drive the real control, never seed localStorage in its place.
@@ -114,9 +116,12 @@ const GOOD = { title:"Beef Goulash", servings:6, items:[
     await mk();
     await openRecipe(0);
     let s = await sheet();
-    ok('the recipe sheet offers three ways to start', s.open===true && s.imports.length===3, JSON.stringify(s.imports));
-    ok('…a link, a photo and pasted text',
-       /link/i.test(s.imports[0]) && /photo/i.test(s.imports[1]) && /paste/i.test(s.imports[2]),
+    /* SUPERSEDED by v1.89: a fourth route — Search — was added in front of these three, so the count
+       and the order both moved. What this pair guards is that every route v1.86 built is still offered,
+       which is asserted by name rather than by position now; v189.js drives Search itself. */
+    ok('the recipe sheet offers a way in for each source', s.open===true && s.imports.length===4, JSON.stringify(s.imports));
+    ok('…a link, a photo and pasted text among them (v1.89 added Search)',
+       /link/i.test(s.imports.join('|')) && /photo/i.test(s.imports.join('|')) && /paste/i.test(s.imports.join('|')),
        JSON.stringify(s.imports));
     ok('…and none of them is open until asked', s.panel===false, JSON.stringify({panel:s.panel}));
 
@@ -219,8 +224,14 @@ const GOOD = { title:"Beef Goulash", servings:6, items:[
     await page.waitForTimeout(800);
     s = await sheet();
     ok('precondition: holding a recipe opens it for editing', s.open===true && s.ing.length===3, JSON.stringify(s.ing));
-    ok('…where importing is not offered, because the recipe already exists', s.imports.length===0,
-       JSON.stringify(s.imports));
+    /* SUPERSEDED by v1.89: editing now offers the same four ways in as adding — the user asked for it,
+       and an import while editing appends to the recipe being edited rather than starting a new one.
+       What must still NOT be offered while editing is the picker for a DIFFERENT saved recipe, which
+       would change which recipe "Save recipe" then overwrites. That is the guard now. */
+    ok('…where the same ways in are offered (v1.89)', s.imports.length===4, JSON.stringify(s.imports));
+    ok('…but not the picker for a different recipe',
+       (await page.evaluate(()=>document.querySelectorAll('[data-precipe]').length))===0,
+       String(await page.evaluate(()=>document.querySelectorAll('[data-precipe]').length)));
 
     ok('no console errors anywhere in the run', errors.length===0, errors.slice(0,3).join(' | '));
     if(out) await page.screenshot({ path: out, fullPage:false });

@@ -54,6 +54,35 @@ answers with the code `vision_model` and the app says photo reading is not set u
 a generic failure that sends you looking in the wrong place. The link and paste paths work
 without it.
 
+## Searching for a recipe
+
+`/api/recipe-search` takes `{ q }` and answers `{ source, results }`. It has two sources and it always
+says which one you got:
+
+| `source` | when | what a result carries |
+|---|---|---|
+| `web`   | `SEARCH_API_KEY` is set | a real page: `title`, `url`, `site`, `note` |
+| `model` | it is not | the recipe reader's own suggestions: `title`, `note`, no `url` |
+
+The app shows that distinction to the user rather than passing suggestions off as search results. Picking
+a web result sends its `url` to `/api/recipe`; picking a suggestion sends `{ dish }` instead, and the
+model writes that dish out.
+
+**To enable real web search**, set
+
+```
+SEARCH_API_KEY = <a Brave Search API key>
+```
+
+alongside `GROQ_API_KEY` (Vercel → Settings → Environment Variables), then redeploy. Brave has a free
+tier; the endpoint asks for the top 8 results and appends "recipe" to the query. The key is sent as the
+`X-Subscription-Token` header, never in a URL. Without it the search still works — it just answers from
+the model, and says so.
+
+URLs a search hands back are checked with the same host guard as `/api/recipe`, because the app feeds
+them straight back to that endpoint to be fetched: a search engine is free to return a link pointing
+inside this network, and it is dropped here before the app ever sees it.
+
 ## Why the key stays server-side
 
 The serverless function `api/parse.js` reads `process.env.GROQ_API_KEY` and
