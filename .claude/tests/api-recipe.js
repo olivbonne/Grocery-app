@@ -14,7 +14,9 @@
      over the surrounding prose;
    - a photo goes to the vision model in the multimodal shape, and a missing vision model is reported
      as its own thing rather than as a generic failure — Groq's image-capable line-up changes;
-   - the model's answer is untrusted: categories, quantities and lengths are all coerced. */
+   - the model's answer is untrusted: categories, quantities and lengths are all coerced;
+   - a dish NAME (v1.89, for a search suggestion with no page behind it) is written out by the text
+     model under its own prompt — the app must not be sent a recipe for the wrong thing. */
 process.env.GROQ_API_KEY = 'test-key';
 process.env.GROQ_VISION_MODEL = 'test-vision-model';
 const handler = require('../../api/recipe.js');
@@ -176,6 +178,21 @@ const IMG = 'data:image/jpeg;base64,' + 'A'.repeat(200);
   r = await call({ image: IMG });
   ok('a vision answer wrapped in a code fence is still read',
     r.code === 200 && r.body.items[0].name === 'apple', JSON.stringify(r.body));
+
+  // ── a dish name, for a search result with no page behind it (v1.89) ──────
+  reset();
+  r = await call({ dish: 'Classic beef goulash' });
+  ok('a named dish is written out', r.code === 200 && r.body.items.length === 1, JSON.stringify(r.body));
+  const db = JSON.parse(calls[0].opts.body);
+  ok('…by the text model, not the vision one', db.model === 'llama-3.1-8b-instant', db.model);
+  ok('…told it is being given a NAME rather than a recipe',
+    /name of a dish/i.test(db.messages[0].content), db.messages[0].content.slice(-140));
+  ok('…with the dish as the user message', db.messages[1].content === 'Classic beef goulash', db.messages[1].content);
+
+  reset();
+  r = await call({ dish: '', text: 'onions and beef' });
+  ok('an empty dish falls back to the text it was sent with', r.code === 200, JSON.stringify(r.body));
+  ok('…using the ordinary recipe prompt', !/name of a dish/i.test(JSON.parse(calls[0].opts.body).messages[0].content));
 
   // ── the model's answer is untrusted ───────────────────────────────────────
   reset();

@@ -7,6 +7,8 @@
 //              { text }   pasted recipe text
 //              { url }    a link to a recipe page — fetched and read here (v1.86)
 //              { image }  a data: URL of a photo of a recipe        (v1.86)
+//              { dish }   the name of a dish, written out by the model (v1.89) —
+//                         used for search results that have no page behind them
 //            ->  { title, servings, items: [{ name, qty, weight, category }] }
 //            errors are { error, code } so the app can say something useful.
 //
@@ -52,6 +54,12 @@ const SYSTEM = [
   'Choose the closest category; use "others" when nothing fits.',
   'Return only the JSON object — no prose, no markdown fences.',
 ].join('\n');
+
+// v1.89: a search result with no URL is a dish the model suggested, so the model is
+// asked to write that dish out. Same output shape, so it lands in the same form.
+const DISH_SYSTEM = SYSTEM
+  + '\nYou are given the NAME of a dish rather than a recipe. Write out the ingredients'
+  + '\na cook would need to buy for it, as the same JSON object. Use the dish name as the title.';
 
 const VISION_SYSTEM = SYSTEM
   + '\nThe recipe is in the attached image. Read the ingredient list from it.'
@@ -244,6 +252,7 @@ module.exports = async (req, res) => {
 
     const image = typeof body.image === 'string' ? body.image.trim() : '';
     const url = typeof body.url === 'string' ? body.url.trim() : '';
+    const dish = typeof body.dish === 'string' ? body.dish.trim().slice(0, 120) : '';
     let text = typeof body.text === 'string' ? body.text.trim() : '';
 
     if (image) {
@@ -260,6 +269,8 @@ module.exports = async (req, res) => {
         return fail(res, got.code === 'bad_url' || got.code === 'blocked_url' ? 400 : 502, got.code, msg);
       }
       text = got.text;
+    } else if (dish) {
+      text = dish;
     } else {
       if (!text) return fail(res, 400, 'missing', 'Missing text');
       if (text.length > MAX_INPUT_CHARS) return fail(res, 400, 'too_long', 'Input too long');
@@ -281,7 +292,7 @@ module.exports = async (req, res) => {
       : {
         model: MODEL,
         messages: [
-          { role: 'system', content: SYSTEM },
+          { role: 'system', content: dish ? DISH_SYSTEM : SYSTEM },
           { role: 'user', content: text },
         ],
         temperature: 0.2,
