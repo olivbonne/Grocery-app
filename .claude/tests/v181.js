@@ -230,18 +230,24 @@ const SEED = (solo,nm)=>`(() => {
        the route is the nav — but what the pair was really guarding still holds and is still checked:
        the sheet can be left, and the Lists page carries no switcher of its own because it IS the list
        of lists. */
+    /* SUPERSEDED by v1.87: the Lists page is gone entirely, so there is no page to reach and none that
+       lacks a switcher. What survives of this pair is the half that still means something — the sheet
+       can be dismissed and leaves the page it was opened over intact. */
     await page.evaluate(()=>{ const b=document.querySelector('#listsBg'); if(b) b.click(); });
     await page.waitForTimeout(700);
-    await tap('#listsBtn, #listsBtnL, #listsBtnP, #listsBtnS');
     const onLists = await page.evaluate(()=>({ grid:!!document.querySelector('.listgrid'),
                                                sheet:!!document.querySelector('#listsSheetEl'),
                                                sw:!!document.querySelector('#listSwitch') }));
-    ok('the sheet can be dismissed and the Lists page reached (v1.83: via the nav, not Manage)',
-       onLists.grid===true && onLists.sheet===false, JSON.stringify(onLists));
-    ok('…where there is no switcher, because that page IS the list of lists', onLists.sw===false, JSON.stringify({sw:onLists.sw}));
+    ok('the sheet can be dismissed, leaving the page it was opened over',
+       onLists.sheet===false && onLists.sw===true, JSON.stringify(onLists));
+    ok('…and there is no Lists page left to reach (v1.87)', onLists.grid===false, JSON.stringify({grid:onLists.grid}));
 
     /* ── 5. the management the sheet gave up is still reachable ─────────── */
-    const bub = page.locator('.listbubble[data-open="v101"]').first();
+    /* SUPERSEDED by v1.87: the hold used to be on a bubble on the Lists page. v1.83 brought the same
+       gesture to the switcher's own rows and v1.87 deleted the page, so the row IS where it lives now.
+       The thing being guarded is unchanged: the management this sheet gave up in v1.81 is still there. */
+    await tap('#listSwitch');
+    const bub = page.locator('.listpick[data-list="v101"]').first();
     await bub.scrollIntoViewIfNeeded();
     const box = await bub.boundingBox();
     await page.mouse.move(box.x+box.width/2, box.y+box.height/2);
@@ -249,19 +255,20 @@ const SEED = (solo,nm)=>`(() => {
     await page.waitForTimeout(700);
     const act = await page.evaluate(()=>({ up:!!document.querySelector('#laUp'), rn:!!document.querySelector('#laRename'),
                                            del:!!document.querySelector('#laDelete'), dup:!!document.querySelector('#laDup') }));
-    ok('press-and-hold on the Lists page still gives move/rename/delete', act.up&&act.rn&&act.del&&act.dup, JSON.stringify(act));
+    ok('press-and-hold on a switcher row still gives move/rename/delete', act.up&&act.rn&&act.del&&act.dup, JSON.stringify(act));
     await page.evaluate(()=>{ const b=document.querySelector('#listActBg'); if(b) b.click(); });
     await page.waitForTimeout(600);
 
     /* ── 6. the rest of the top bar is untouched ────────────────────────── */
-    await tap('#cartNavL'); await page.waitForTimeout(400);
-    const backWorks = await page.evaluate(async()=>{
-      const b=document.querySelector('#toLists'); if(!b) return 'no back button';
-      b.click(); await new Promise(r=>setTimeout(r,900));
-      return document.querySelector('.listgrid') ? 'lists' : 'elsewhere';
+    /* SUPERSEDED by v1.87: the shop page's ‹ went with the page it went back to. Its space is kept as
+       an inert placeholder so the title still starts where it did, which is what is checked instead —
+       v179.js measures the alignment itself. */
+    await tap('#cartNav, #cartNavP, #cartNavS'); await page.waitForTimeout(400);
+    const backWorks = await page.evaluate(()=>{
+      const b=document.querySelector('.topfix .backbtn');
+      return !b ? 'missing' : (b.tagName==='SPAN' && !b.textContent.trim() ? 'placeholder' : 'button');
     });
-    ok('the ‹ back arrow still goes to Lists', backWorks==='lists', String(backWorks));
-    await tap('#cartNavL');
+    ok('the ‹ back arrow is gone, its space kept as a placeholder', backWorks==='placeholder', String(backWorks));
     const settingsSw = await page.evaluate(async()=>{
       const s=document.querySelector('#setNav'); if(!s) return null;
       s.click(); await new Promise(r=>setTimeout(r,900));

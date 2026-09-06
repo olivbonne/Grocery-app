@@ -57,8 +57,10 @@ const SEED = (extra)=>`(() => {
     await page.waitForTimeout(1300);
   };
   const tap = async(sel)=>{ const l=page.locator(sel).first(); await l.click(); await page.waitForTimeout(900); };
-  const settings = ()=>tap('#setNav, #setNavL');
-  const shop = ()=>tap('#cartNav, #cartNavL');
+  /* v1.87: each page's nav carries its own ids (the v1.77 note above) — with the Lists page gone the
+     set is Shop / Plan / Settings, so the helpers name all three variants rather than the old L pair. */
+  const settings = ()=>tap('#setNav, #setNavP, #setNavS');
+  const shop = ()=>tap('#cartNav, #cartNavP, #cartNavS');
   const openTiles = async()=>{ await settings();
     const h=page.locator('.optsect[data-sect="Bars and overlays"]');
     await h.scrollIntoViewIfNeeded(); await page.waitForTimeout(300);
@@ -107,8 +109,11 @@ const SEED = (extra)=>`(() => {
   // ═══════════════════════════════════════════════════════════════════
   await settings();
   ok('the tile is there on Settings too', (await page.locator('.utile').count())===1, '');
-  await tap('#listsBtn');
-  ok('…and on Lists', (await page.locator('.utile').count())===1, '');
+  /* SUPERSEDED by v1.87: "every page" was Settings, Lists and Shop; the Lists page is gone, so the
+     third page is Plan. What is being proved — a tile shows on every page, not just the one it was
+     made on — is unchanged. */
+  await tap('#planNav, #planNavP, #planNavS');
+  ok('…and on Plan (v1.87: was Lists)', (await page.locator('.utile').count())===1, '');
   await shop();
   await page.locator('#shopAddFab').click(); await page.waitForTimeout(2200);
   const overSheet = await page.evaluate(()=>{ const s=document.querySelector('#utiles');
@@ -123,19 +128,25 @@ const SEED = (extra)=>`(() => {
   const setAct = async(act)=>{ await settings();
     const b=page.locator(`[data-tile-act$="|${act}"]`).first();
     await b.scrollIntoViewIfNeeded(); await b.click(); await page.waitForTimeout(600); };
-  const pageNow = ()=>page.evaluate(()=>document.querySelector('#setNav,#setNavL')
-    ? (document.querySelector('.optpage') ? 'settings'
-       : (document.querySelector('.listgrid') ? 'lists' : 'shop')) : 'unknown');
+  const pageNow = ()=>page.evaluate(()=>document.querySelector('.optpage') ? 'settings'
+    : document.querySelector('.planweek') ? 'plan'
+    : document.querySelector('#zoomer') ? 'shop' : 'unknown');
 
+  /* SUPERSEDED by v1.87: the "lists" action pointed at a page that no longer exists. Tiles carrying it
+     are already on people's phones, so it was repointed at the switcher rather than orphaned into the
+     default case — and that is what this now proves. */
   await setAct('lists');
   await shop();
   await page.locator('.utile').click(); await page.waitForTimeout(1000);
-  ok('the Lists shortcut goes to Lists, from the Shop page', (await pageNow())==='lists', await pageNow());
+  ok('the Lists shortcut opens the list switcher, from the Shop page (v1.87)',
+     (await page.locator('#listsSheetEl').count())===1, String(await page.locator('#listsSheetEl').count()));
+  await page.evaluate(()=>{ const b=document.querySelector('#listsBg'); if(b) b.click(); });
+  await page.waitForTimeout(700);
 
   await setAct('shop');
-  await tap('#listsBtn');
+  await tap('#planNav, #planNavP, #planNavS');   // v1.87: driven from Plan, since Lists is gone
   await page.locator('.utile').click(); await page.waitForTimeout(1000);
-  ok('the Shop shortcut goes to Shop, from the Lists page', (await pageNow())==='shop', await pageNow());
+  ok('the Shop shortcut goes to Shop, from the Plan page (v1.87)', (await pageNow())==='shop', await pageNow());
 
   await setAct('settings');
   await shop();

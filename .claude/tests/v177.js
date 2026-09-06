@@ -61,9 +61,14 @@ const SEED = (extra)=>`(() => {
   /* TEST BUG (fixed): the Lists page's nav carries its own ids (#setNavL / #cartNavL), so a bare
      '#setNav' hung the moment a check navigated away from Lists. Take whichever exists. */
   const tap = async(sel)=>{ const l=page.locator(sel).first(); await l.click(); await page.waitForTimeout(900); };
-  const settings = ()=>tap('#setNav, #setNavL');
-  const shop = ()=>tap('#cartNav, #cartNavL');
-  const lists = ()=>tap('#listsBtn');
+  /* v1.87: each page's nav carries its own ids (the v1.77 note above) — with the Lists page gone the
+     set is Shop / Plan / Settings, so the helpers name all three variants rather than the old L pair. */
+  const settings = ()=>tap('#setNav, #setNavP, #setNavS');
+  const shop = ()=>tap('#cartNav, #cartNavP, #cartNavS');
+  /* SUPERSEDED by v1.87: this opened the Lists page, which no longer exists. The Plan page is now the
+     other page carrying the empty back-button placeholder, so it is what the shop bar is measured
+     against — the guarantee is unchanged: every page's bar is one height with its title in one place. */
+  const lists = ()=>tap('#planNav, #planNavP, #planNavS');
   /* drive the real Tile display control rather than seeding ml_displays (v1.60). */
   const setLarge = async(cols)=>{ await settings();
     await page.locator('[data-tiledisp="large"]').click(); await page.waitForTimeout(500);
@@ -129,10 +134,10 @@ const SEED = (extra)=>`(() => {
   const shopBar = await bar();
   await lists();
   const listBar = await bar();
-  ok('the Lists bar is the same height as every other page', shopBar && listBar && shopBar.h===listBar.h,
-     JSON.stringify({shop:shopBar, lists:listBar}));
+  ok('the Plan bar is the same height as every other page (v1.87: was Lists)', shopBar && listBar && shopBar.h===listBar.h,
+     JSON.stringify({shop:shopBar, plan:listBar}));
   ok('…and its title sits in the same place', shopBar.titleTop===listBar.titleTop,
-     JSON.stringify({shop:shopBar.titleTop, lists:listBar.titleTop}));
+     JSON.stringify({shop:shopBar.titleTop, plan:listBar.titleTop}));
   ok('the title is centred in the bar rather than sitting high in it',
      Math.abs(shopBar.gapTop - shopBar.gapBot) <= 2,
      JSON.stringify({above:shopBar.gapTop, below:shopBar.gapBot}));
