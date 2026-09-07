@@ -587,6 +587,14 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     color:#fff; font-weight:800; font-size:14px; font-family:'Outfit',system-ui,sans-serif; }
   .pimpgo.wide { padding:12px 16px; }
   .pimpgo[disabled] { opacity:.45; }
+  /* v1.94 */
+  .pingrow { display:flex; gap:8px; align-items:center; }
+  .pingrow #paIngIn { flex:1; }
+  .preswrap { display:flex; align-items:stretch; gap:7px; }
+  .preswrap .presult { flex:1; min-width:0; }
+  .presopen { flex:none; width:40px; min-height:40px; border-radius:13px; border:1.5px solid var(--line);
+    background:var(--card); color:var(--accent); font-weight:800; font-size:15px; text-decoration:none;
+    display:flex; align-items:center; justify-content:center; }
   .pimpnote { margin:0 0 10px; font-size:12.5px; font-weight:600; color:var(--muted); line-height:1.45; }
   .pimpnote.err { color:var(--accent); }
   /* v1.89 search results + delete-a-recipe chip */
@@ -739,6 +747,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.84 */
   .pchip { user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; touch-action:manipulation; }
   .pchip .pcx { color:var(--muted2); font-weight:800; margin-left:2px; }
+  .pchip .pcamt { color:var(--muted2); font-weight:700; font-size:12.5px; margin-right:4px; }
   .pchip .pcname { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .qmore { margin-left:6px; width:22px; height:22px; flex:none; border-radius:7px; display:inline-flex; align-items:center; justify-content:center;
     color:var(--muted); font-size:13px; font-weight:800; background:var(--chip); transition:transform .15s ease; }
@@ -1520,11 +1529,68 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.93";
+const APP_VERSION = "v1.94";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }catch(e){ return ""; } })();
+
+/* v1.94: recipes are written in whatever the writer's kitchen uses. This converts what is SHOWN,
+   never what is stored — so turning the setting off puts every amount back exactly as the recipe
+   gave it, and nothing is lost in a round trip. Anything it cannot parse ("a pinch", "2 cloves")
+   passes straight through: a guess would be worse than leaving it alone. */
+const UNIT_TABLE = {
+  // imperial -> base (mass in g, volume in ml)
+  oz:{g:28.3495}, ounce:{g:28.3495}, ounces:{g:28.3495},
+  lb:{g:453.592}, lbs:{g:453.592}, pound:{g:453.592}, pounds:{g:453.592},
+  tsp:{ml:4.92892}, teaspoon:{ml:4.92892}, teaspoons:{ml:4.92892},
+  tbsp:{ml:14.7868}, tablespoon:{ml:14.7868}, tablespoons:{ml:14.7868},
+  cup:{ml:236.588}, cups:{ml:236.588},
+  pint:{ml:473.176}, pints:{ml:473.176}, pt:{ml:473.176},
+  quart:{ml:946.353}, quarts:{ml:946.353}, qt:{ml:946.353},
+  gallon:{ml:3785.41}, gallons:{ml:3785.41}, gal:{ml:3785.41},
+  // metric -> base
+  g:{g:1, metric:true}, gram:{g:1, metric:true}, grams:{g:1, metric:true},
+  kg:{g:1000, metric:true}, kilo:{g:1000, metric:true}, kilogram:{g:1000, metric:true}, kilograms:{g:1000, metric:true},
+  ml:{ml:1, metric:true}, millilitre:{ml:1, metric:true}, milliliter:{ml:1, metric:true},
+  cl:{ml:10, metric:true}, dl:{ml:100, metric:true},
+  l:{ml:1000, metric:true}, litre:{ml:1000, metric:true}, liter:{ml:1000, metric:true}, litres:{ml:1000, metric:true}, liters:{ml:1000, metric:true},
+};
+function unitsMode(){ try{ const v=localStorage.getItem("ml_units"); return (v==="metric"||v==="imperial") ? v : "off"; }catch(e){ return "off"; } }
+function setUnitsMode(m){ try{ localStorage.setItem("ml_units", m); }catch(e){} render(); }
+/* A number the way a recipe writes one: 2, 2.5, 1/2, 1 1/2. */
+function parseNum(s){
+  const t=String(s).trim().replace(",", ".");
+  let m=t.match(/^(\d+)\s+(\d+)\/(\d+)$/); if(m) return +m[1] + (+m[2])/(+m[3]);
+  m=t.match(/^(\d+)\/(\d+)$/);             if(m) return (+m[1])/(+m[2]);
+  const n=parseFloat(t); return isFinite(n) ? n : null;
+}
+function roundAmt(n){
+  if(n>=100) return String(Math.round(n/5)*5);
+  if(n>=10)  return String(Math.round(n));
+  const r=Math.round(n*10)/10; return String(r).replace(/\.0$/,"");
+}
+function showAmt(w){
+  const s=String(w||"").trim(); if(!s) return s;
+  const mode=unitsMode(); if(mode==="off") return s;
+  const m=s.match(/^(\d+(?:[.,]\d+)?(?:\s+\d+\/\d+)?|\d+\/\d+)\s*([a-zA-Z]{1,12})\.?$/);
+  if(!m) return s;
+  const n=parseNum(m[1]); const u=UNIT_TABLE[m[2].toLowerCase()];
+  if(n===null || !u) return s;
+  const isMetric=!!u.metric;
+  if(mode==="metric" && isMetric) return s;         // already the way they want it
+  if(mode==="imperial" && !isMetric) return s;
+  if(u.g!==undefined){
+    const g=n*u.g;
+    if(mode==="metric") return g>=1000 ? roundAmt(g/1000)+" kg" : roundAmt(g)+" g";
+    const oz=g/28.3495; return oz>=16 ? roundAmt(oz/16)+" lb" : roundAmt(oz)+" oz";
+  }
+  const ml=n*u.ml;
+  if(mode==="metric") return ml>=1000 ? roundAmt(ml/1000)+" l" : roundAmt(ml)+" ml";
+  if(ml>=236.588){ const c=roundAmt(ml/236.588); return c+(c==="1"?" cup":" cups"); }
+  if(ml>=14.7868) return roundAmt(ml/14.7868)+" tbsp";
+  return roundAmt(ml/4.92892)+" tsp";
+}
 
 /* v1.63 item 3: a slot can be marked as the look the app STARTS in. It is applied here, at the very
    top of the module, because every appearance global below is read once from localStorage on the way
@@ -1532,7 +1598,7 @@ const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(i
    flash. `ml_appstart` unset (the default) leaves everything exactly as it was.
    The regex is duplicated deliberately: APP_EXCLUDE is declared far below with the rest of the slot
    machinery and would be in its temporal dead zone up here. Keep the two in step. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -3628,7 +3694,7 @@ function addSheetRows(){
   if(!frag) return "";
   const segs=(draftMain||"").split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
   const p=parseEntry(frag);
-  const lbl= segs.length>1 ? `Add ${segs.length} items` : `Add “${(p.qty>1?p.qty+"× ":"")+(p.weight?esc(p.weight)+" ":"")+esc(cap(p.name))}”`;
+  const lbl= segs.length>1 ? `Add ${segs.length} items` : `Add “${(p.qty>1?p.qty+"× ":"")+(p.weight?esc(showAmt(p.weight))+" ":"")+esc(cap(p.name))}”`;
   // the "Add …" pill is a commit action for what's typed — meaningless while the edit panel owns the bar
   const typed = addEditId ? "" : `<button class="pill" data-add-typed style="border:1.5px dashed var(--accent);color:var(--accent);background:transparent">${esc(lbl)}</button>`;
   /* v1.66 item 1: a bounded list. `addMatches` walks the whole dictionary, so a one-letter query
@@ -4447,7 +4513,7 @@ function pillHTML(i, cat){
   // --edge carries the category colour so `.shop .pill.done` can keep it (the base `.pill.done`
   // rule forces border-left-color to grey with !important, which is what flattened cart tiles).
   const style = `--edge:${catEdge(cat.color, true)};` + (full ? fullStyle(cat.color, true) : (fillMode()==="empty" ? `border-left:1.5px solid var(--line)` : `border-left:4px solid ${catEdge(edge, true)}`));
-  const meta = `${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)}</span>`:""}`;
+  const meta = `${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(showAmt(i.weight))}</span>`:""}`;
   /* v1.58 item 1: all three flags show on the tile now, not just the star. `starred` OR the urgent
      tag counts — the chip writes both, but an item saved before v1.58 has only `starred`. */
   const tg = Array.isArray(i.tags) ? i.tags : [];
@@ -4641,7 +4707,7 @@ function renderMain(){
       `<button class="bapill ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="border:1.5px dashed ${cat.color}">`
       +`<span style="color:${cat.color};font-weight:800">+</span>`
       +`${(e.qty||1)>1?`<span style="color:${cat.color};font-weight:800">${e.qty}×</span>`:""}`
-      +`${e.weight?`<span style="color:${cat.color};font-weight:800">${esc(e.weight)} </span>`:""}`
+      +`${e.weight?`<span style="color:${cat.color};font-weight:800">${esc(showAmt(e.weight))} </span>`:""}`
       +`${esc(e.name)}</button>`).join("")}</div>`;
   }).join("");
   const baPills = state.buyAgain.length
@@ -4829,7 +4895,7 @@ function planFilledPill(i, cat){ const checked=i.checked; const full=fillMode()=
      the Full colours inline, so the six pickers had no effect here either. */
   const style=full?fullStyle(cat.color,true):(fillMode()==="empty"?`border-left:1.5px solid var(--line)`:`border-left:4px solid ${catEdge(edge, true)}`);
   const em=itemEmoji(i.name,i.cat);
-  return `<button class="pill plan-in ${checked?'done':''}" data-plan-rm="${i.id}" style="${style}">${em?`<span class="pemoji" aria-hidden="true">${em}</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(i.weight)} </span>`:""}${esc(cap(i.name))}${checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit"${full?' style="color:rgba(255,255,255,.92)"':''}>▾</span></button>`; }
+  return `<button class="pill plan-in ${checked?'done':''}" data-plan-rm="${i.id}" style="${style}">${em?`<span class="pemoji" aria-hidden="true">${em}</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(showAmt(i.weight))} </span>`:""}${esc(cap(i.name))}${checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit"${full?' style="color:rgba(255,255,255,.92)"':''}>▾</span></button>`; }
 /* A18/v1.08 — the quantity + weight editor for the selected plan item, shown as a banner
    fixed above the bottom nav (rather than inline in the list). */
 function planQBannerHTML(){
@@ -4902,9 +4968,35 @@ function planDeleteRecipe(id){
 function recipeById(id){ return planData().recipes.find(r=>r.id===id) || null; }
 /* v1.84: an ingredient carries its category now, so it can go onto the list as the real item rather
    than as loose text. Recipes written before this version hold plain strings — normalise on read. */
-function planIngNorm(x){ return (typeof x==="string") ? {name:x, cat:""} : {name:(x&&x.name)||"", cat:(x&&x.cat)||""}; }
+/* v1.94: an ingredient is a name, a category and an AMOUNT. It was the first two, so everything the
+   recipe reader worked out about how much — "2 pounds", "500 g", 3 of them — was dropped at this
+   line and the shopping list got bare names. Older shapes still normalise: a plain string and a
+   {name,cat} both come back with no amount, which is exactly what they meant. */
+function planIngNorm(x){
+  if(typeof x==="string") return {name:x, cat:"", qty:1, weight:""};
+  const q = Math.max(1, Math.min(99, parseInt((x&&x.qty)||1, 10)||1));
+  return { name:(x&&x.name)||"", cat:(x&&x.cat)||"",
+           qty:q, weight:String((x&&x.weight)||"").trim().slice(0,24) };
+}
 function planIngName(x){ return planIngNorm(x).name; }
 function planIngCat(x){ const c=planIngNorm(x).cat; return c || null; }
+function planIngAmt(x){ const n=planIngNorm(x); return n.weight || (n.qty>1 ? n.qty+"\u00d7" : ""); }
+/* v1.94: "2 lb beef" is how a person writes an ingredient, so read the amount off the front of it
+   rather than making them type the name and then hunt for a picker. A leading count with no unit is
+   a count ("3 onions"); a leading number WITH a unit is a weight ("2 lb beef"). Anything it cannot
+   read stays in the name, which is the safe direction — a wrong name is visible, a wrong amount is
+   not. */
+function planIngFromText(t){
+  const s=String(t||"").trim(); if(!s) return null;
+  const m=s.match(/^(\d+(?:[.,]\d+)?(?:\s+\d+\/\d+)?|\d+\/\d+)\s*([a-zA-Z]{1,12}\.?)?\s+(.+)$/);
+  if(m){
+    const num=m[1], unit=(m[2]||"").replace(/\.$/,""), rest=m[3].trim();
+    if(unit && UNIT_TABLE[unit.toLowerCase()]) return { name:rest, cat:"", qty:1, weight:(num+" "+unit).trim() };
+    if(!unit){ const n=parseInt(num,10);
+      if(n>=1 && n<=99 && String(n)===num) return { name:rest, cat:"", qty:n, weight:"" }; }
+  }
+  return { name:s, cat:"", qty:1, weight:"" };
+}
 let planWeek = 0;        // which week the Plan tab is showing, 0 = this one
 let planMenu = null;     // dayKey whose + menu is open
 let planAdd = null;      // { day, kind:"food"|"recipe", name, ing:[{name,cat}], rid, edit, q, cat, emoji,
@@ -4979,8 +5071,9 @@ function planDynHTML(){
       return `<button class="catsugchip" data-psug="${esc(m.name)}|${esc(m.cat)}" style="border-color:${c.color}">${em?em+" ":""}${esc(cap(m.name))}</button>`;
     }).join("")}</div>` : "";
   const chips = (isR && planAdd.ing.length)
-    ? `<div class="pdchips" style="margin-top:10px">${planAdd.ing.map((x,i)=>{ const em=itemEmoji(planIngName(x),planIngCat(x));
-        return `<button class="pchip" data-pingrm="${i}">${em?`<span class="pcem" aria-hidden="true">${em}</span>`:""}<span class="pcname">${esc(cap(planIngName(x)))}</span><span class="pcx" aria-hidden="true">×</span></button>`;
+    ? `<div class="pdchips" style="margin-top:10px">${planAdd.ing.map((x,i)=>{ const n=planIngNorm(x);
+        const em=itemEmoji(n.name,n.cat); const amt=showAmt(planIngAmt(x));
+        return `<button class="pchip" data-pingrm="${i}">${em?`<span class="pcem" aria-hidden="true">${em}</span>`:""}${amt?`<span class="pcamt">${esc(amt)}</span>`:""}<span class="pcname">${esc(cap(n.name))}</span><span class="pcx" aria-hidden="true">×</span></button>`;
       }).join("")}</div>` : "";
   return sug + chips;
 }
@@ -5105,7 +5198,9 @@ async function planImport(payload){
   const allowed=catList().map(c=>c.id);
   const items=(data && Array.isArray(data.items)) ? data.items : [];
   const ing=items.map(it=>({ name:String((it&&it.name)||"").trim(),
-                             cat:(it && allowed.includes(String(it.category))) ? String(it.category) : "" }))
+                             cat:(it && allowed.includes(String(it.category))) ? String(it.category) : "",
+                             qty:Math.max(1, Math.min(99, parseInt((it&&it.qty)||1,10)||1)),
+                             weight:String((it&&it.weight)||"").trim().slice(0,24) }))
                  .filter(x=>x.name);
   planAdd.impBusy=false;
   if(!ing.length){ planAdd.impErr="No ingredients found in that."; render(); return; }
@@ -5143,12 +5238,18 @@ function planAddSheet(){
           <button class="pimpgo" id="paImpGo"${planAdd.impBusy?" disabled":""}>Find</button>
         </div>
         ${Array.isArray(planAdd.sres) ? (planAdd.sres.length ? `
-          <p class="pimpnote">${planAdd.ssrc==='web' ? 'From the web — pick one to read it.' : 'No web search is set up, so these are the recipe reader\'s own suggestions.'}</p>
-          <div class="presults">${planAdd.sres.map((r,i)=>`<button class="presult" data-pres="${i}">
+          <p class="pimpnote">${planAdd.ssrc==='web' ? 'From the web — tap one to read it into the form, or ↗ to open the page.' : 'No web search is set up, so these are the recipe reader\'s own suggestions.'}</p>
+          ${/* v1.94: the page opens in a new context so the phone\'s in-app browser handles it and Done
+                comes back here. The URL is from a search engine, so it is untrusted: only http(s), and
+                escaped. An iframe was rejected — recipe sites refuse to be framed. */""}
+          <div class="presults">${planAdd.sres.map((r,i)=>{
+            const u=/^https?:\/\//i.test(r.url||"") ? r.url : "";
+            return `<div class="preswrap"><button class="presult" data-pres="${i}">
             <span class="pres-t">${esc(r.title)}</span>
             ${r.site?`<span class="pres-s">${esc(r.site)}</span>`:""}
             ${r.note?`<span class="pres-n">${esc(r.note)}</span>`:""}
-          </button>`).join("")}</div>` : `<p class="pimpnote">Nothing found for that.</p>`) : ""}` : ""}
+          </button>${u?`<a class="presopen" href="${esc(u)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${esc(r.title)} in a browser">↗</a>`:""}</div>`;
+          }).join("")}</div>` : `<p class="pimpnote">Nothing found for that.</p>`) : ""}` : ""}
       ${planAdd.imp==='paste' ? `<div class="pimppanel col">
           <textarea id="paImpVal" rows="5" placeholder="Paste the recipe here — ingredients and all" style="width:100%;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;background:var(--card);color:var(--text);font-size:15px;box-sizing:border-box;resize:none">${esc(planAdd.impVal||"")}</textarea>
           <button class="pimpgo wide" id="paImpGo"${planAdd.impBusy?" disabled":""}>Read it</button>
@@ -5160,7 +5261,7 @@ function planAddSheet(){
       <div class="pills" style="margin-bottom:14px">${saved.map(r=>`<span class="precwrap"><button class="sugchip" data-precipe="${esc(r.id)}">${esc(r.name)}</button><button class="precdel" data-precdel="${esc(r.id)}" aria-label="Delete ${esc(r.name)}">×</button></span>`).join("")}</div>` : ""}
     <input id="paName" placeholder="${isR?'Recipe name':'What are you eating?'}" value="${esc(planAdd.name||"")}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="${fieldCSS}" />
     ${isR?`<p class="palabel" style="margin-top:14px">Ingredients</p>
-      <input id="paIngIn" placeholder="Add an ingredient" value="" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="${ingCSS}" />`:""}
+      <div class="pingrow"><input id="paIngIn" placeholder="Add an ingredient — “2 lb beef”" value="" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="${ingCSS}" /><button class="pimpgo" id="paIngAdd" aria-label="Add this ingredient">Add</button></div>`:""}
     <div id="paDyn">${planDynHTML()}</div>
     <button class="newlist" id="paGo">${planAdd.edit ? "Save recipe" : "Add to "+esc(dayName)}</button>
   </div></div>`;
@@ -5218,10 +5319,16 @@ function wirePlanTab(){
     paN.oninput=()=>{ planAdd.name=paN.value; if(planAdd.kind!=="recipe") refreshPlanDyn(); };
     paN.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); planCommitAdd(); } }; }
   const paI=app.querySelector("#paIngIn");
+  /* v1.94: one path for Enter and for the Add button, so the button is not a second, subtly
+     different way of doing the same thing. A render would take the focused field with it, so this
+     refreshes the one block that changed. */
+  const paIngCommit=()=>{ if(!planAdd || !paI) return;
+    const ing=planIngFromText(paI.value); if(!ing) return;
+    planAdd.ing.push(ing); planAdd.q=""; paI.value=""; refreshPlanDyn(); paI.focus(); };
   if(paI){ paI.oninput=()=>{ planAdd.q=paI.value; refreshPlanDyn(); };
-    paI.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault();
-      const t=(paI.value||"").trim();
-      if(t){ planAdd.ing.push({name:t, cat:""}); planAdd.q=""; paI.value=""; refreshPlanDyn(); } } }; }
+    paI.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); paIngCommit(); } }; }
+  const paIA=app.querySelector("#paIngAdd");
+  if(paIA){ paIA.onpointerdown=e=>e.preventDefault(); paIA.onclick=paIngCommit; }
   const paG=app.querySelector("#paGo"); if(paG){ paG.onpointerdown=e=>e.preventDefault(); paG.onclick=planCommitAdd; }
   app.querySelectorAll("[data-pimp]").forEach(b=>b.onclick=()=>{
     if(!planAdd || planAdd.impBusy) return;
@@ -5279,7 +5386,9 @@ function wirePlanTab(){
       smartItems = r.ing.map(planIngNorm).map(x=>{
         const known = knownEntry(x.name);
         const cat = allowed.includes(x.cat) ? x.cat : ((known && known.cat) || "others");
-        return { name:x.name, qty:1, baseQty:1, sub:"", category:cat, weight:"", sel:true };
+        /* v1.94: the amount travels with the ingredient. It was hardcoded to one-of-each and no
+           weight, so a recipe asking for 2lb of beef and 3 onions arrived as "beef" and "onion". */
+        return { name:x.name, qty:x.qty, baseQty:x.qty, sub:"", category:cat, weight:x.weight, sel:true };
       });
       smartTitle = r.name || ""; smartServings = null;
       smartOpen = true; smartLoading = false; smartError = ""; smartEdit = null;
@@ -5689,6 +5798,7 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-caton]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optCaton==="1"; if(catOn!==v) setCatOn(v); });
   app.querySelectorAll("[data-opt-subon]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optSubon==="1"; if(subOn!==v) setSubOn(v); });
   app.querySelectorAll("[data-opt-smart]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optSmart==="1"; if(smartOn()!==want) setSmart(want); });
+  app.querySelectorAll("[data-opt-units]").forEach(b=>b.onclick=()=>setUnitsMode(b.dataset.optUnits));
   app.querySelectorAll("[data-opt-catemoji]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optCatemoji==="1"; if(catEmojiOn()!==want) setCatEmoji(want); });
   app.querySelectorAll("[data-opt-itememoji]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optItememoji==="1"; if(itemEmojiOn()!==want) setItemEmoji(want); });
   app.querySelectorAll("[data-opt-useloc]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optUseloc==="1"; if(useLoc!==want){ useLoc=want; localStorage.setItem("ml_useloc", want?"1":"0"); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(want) ensureLocCheck(); render(); } });
@@ -5844,7 +5954,11 @@ function smartSheet(){
       return `<div class="smartchip ${open?'open':''}${it.sel===false?' off':''}" style="border-left:4px solid ${c.color}">
         <div class="smartchip-top">
           <button class="smartchip-head" data-smart-edit="${idx}">
-            <span class="smartchip-name">${(it.qty>1)?`<b>${it.qty}× </b>`:""}${it.weight?`<b>${esc(it.weight)} </b>`:""}${esc(cap(it.name))}</span>
+            ${/* v1.94: the collapsed row is a SUMMARY, so it converts like every other summary does.
+                   The weight chips below it are the editor and deliberately stay literal — same split
+                   as a shop pill and its quick-edit. Leaving this one alone would have shown "8 oz"
+                   here and "225 g" on the pill it creates, one tap apart. */""}
+            <span class="smartchip-name">${(it.qty>1)?`<b>${it.qty}× </b>`:""}${it.weight?`<b>${esc(showAmt(it.weight))} </b>`:""}${esc(cap(it.name))}</span>
             ${have?`<span class="smartchip-have" title="Already on your list">in list</span>`:""}
             <span class="smartchip-cat">${catIcon(c,13)} ${esc(c.label)}</span>
             <span class="smartchip-caret" aria-hidden="true">▾</span>
@@ -6048,7 +6162,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -6409,6 +6523,8 @@ function optionsBody(){
     ${sectHR("Sound")}
     ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
     ${(view!=="lists") ? `${sect("Smart add")}${row("Smart add", `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">On</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">Off</button></div>`)}` : ""}
+    ${(view!=="lists") ? `${sect("Measurements")}${row("Convert amounts", `<div class="seg"><button data-opt-units="off" class="${unitsMode()==='off'?'on':''}">Off</button><button data-opt-units="metric" class="${unitsMode()==='metric'?'on':''}">Metric</button><button data-opt-units="imperial" class="${unitsMode()==='imperial'?'on':''}">Imperial</button></div>`)}
+    <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">Changes how amounts are shown, not what is stored — a recipe\'s own wording comes back if you turn this off. Amounts it can\'t read, like “a pinch”, are left alone.</div>` : ""}
     ${(view!=="lists") ? `${sect("Predictions")}${rowNL("Suggest restocks", `<div class="seg"><button data-pred-on="1" class="${predictCfg.on?'on':''}">On</button><button data-pred-on="0" class="${!predictCfg.on?'on':''}">Off</button></div>`)}
     ${predictCfg.on ? `${rowNL("Remind me", `<div class="seg"><button data-pred-freq="weekly" class="${predictCfg.freq==='weekly'?'on':''}">Weekly</button><button data-pred-freq="monthly" class="${predictCfg.freq==='monthly'?'on':''}">Monthly</button></div>`)}
     ${predictCfg.freq==='weekly' ? `<div class="optrow optrow-wide optnl"><span class="optlabel">Day</span><div class="optwide">
