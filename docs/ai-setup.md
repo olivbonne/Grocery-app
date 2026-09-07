@@ -1,14 +1,43 @@
-# AI setup — server-side Groq key
+# AI setup — a server-side model key
 
 Market List can call an LLM to turn free-form text ("2 milk, dozen eggs, stuff
 for tacos") into structured grocery items. The API key stays on the server so it
 is never exposed in the browser.
 
-The backend uses **Groq** running **`llama-3.1-8b-instant`** — an open-weights
-model that is very cheap and fast (Groq has a generous free tier that easily
-covers a household). Groq's API is OpenAI-compatible.
+## Pick a provider
 
-## Setting `GROQ_API_KEY` in Vercel
+Either key works, and you only need one. **Gemini** (Google AI Studio) or **Groq** —
+both speak the OpenAI-compatible chat-completions API, so the app talks to them through
+the same code path and only the URL, the key and the model name differ. If **both** keys
+are set, Gemini is used: a key someone went and created is the one they meant to use.
+
+With neither key set the AI features answer `500 not_configured` and the app falls back
+gracefully — plain typing still adds items, and the app names the variable to add.
+
+### Gemini (Google AI Studio)
+
+1. Get a key at **https://aistudio.google.com** → **API keys** → Create key.
+2. Vercel dashboard → the Market List project → **Settings → Environment
+   Variables**.
+3. Add a variable named `GEMINI_API_KEY` with your key as the value. Apply it to the
+   Production (and Preview, if you want) environments.
+4. **Redeploy.** Environment variables are baked in at deploy time — an existing
+   deployment will not pick up the new value until you redeploy.
+
+The model name is a setting too:
+
+```
+GEMINI_MODEL = <a model your Google AI Studio account lists>
+```
+
+Unset, the default `gemini-3.8-flash` is used. The current line-up is at
+**ai.google.dev/gemini-api/docs/models**.
+
+Gemini is natively multimodal: **the same model reads a photo**, so there is no separate
+vision model on this path and `GROQ_VISION_MODEL` is not needed. That also means a photo
+failure here is a model or an image problem, never a missing vision setting.
+
+### Groq
 
 1. Get a key at **https://console.groq.com** → **API Keys** → Create Key.
 2. Vercel dashboard → the Market List project → **Settings → Environment
@@ -19,8 +48,8 @@ covers a household). Groq's API is OpenAI-compatible.
    deployment will not pick up the new value until you redeploy (merge a PR, or
    use "Redeploy" on the latest deployment).
 
-Until the key is set, `/api/parse` returns `500 Server not configured` and the
-app's Smart-add falls back gracefully (plain typing still adds items).
+Groq has a generous free tier that easily covers a household. Its text model is
+`GROQ_MODEL` and its vision model is `GROQ_VISION_MODEL` — both described below.
 
 ## Reading a recipe from a link or a photo
 
@@ -39,25 +68,26 @@ inward), an 8s timeout, a 1.5MB read cap, and HTML/plain-text content types only
 carries schema.org `Recipe` JSON-LD — most recipe sites do — the ingredient list is taken from
 that rather than from the prose, which is both cheaper and more accurate.
 
-**The text model is a setting too, because Groq retires models on its own schedule** —
-`llama-3.1-8b-instant` was shut down for free and developer tiers on 16 August 2026, and every
-AI feature in the app (smart add, recipe reading, recipe suggestions) went down with it while the
-name was still compiled in. So all three endpoints read it from the environment:
+**The text model is a setting on both providers, because providers retire models on their own
+schedule** — Groq shut `llama-3.1-8b-instant` down for free and developer tiers on 16 August 2026,
+and every AI feature in the app (smart add, recipe reading, recipe suggestions) went down with it
+while the name was still compiled in. So all three endpoints read it from the environment:
 
 ```
-GROQ_MODEL = <a model your Groq account lists>
+GROQ_MODEL   = <a model your Groq account lists>
+GEMINI_MODEL = <a model your Google AI Studio account lists>
 ```
 
-Set it in the same place as `GROQ_API_KEY` (Vercel → Settings → Environment Variables), then
-redeploy. Unset, the default `openai/gpt-oss-20b` is used — a production model that supports JSON
-object mode, which these endpoints rely on. The current line-up is at
-**console.groq.com/docs/models**. When the model in use is gone the endpoints answer with the code
-`model` and the app says *the recipe reader's model is no longer available — set GROQ_MODEL in
-Vercel*, so a retirement points straight at the knob that fixes it instead of reading as a generic
-failure. (The upstream status and body are logged server-side only; they are never returned to the
-browser.)
+Set it in the same place as the key (Vercel → Settings → Environment Variables), then redeploy.
+Unset, the defaults are `openai/gpt-oss-20b` on Groq and `gemini-3.8-flash` on Gemini — both
+support JSON object mode, which these endpoints rely on. The current line-ups are at
+**console.groq.com/docs/models** and **ai.google.dev/gemini-api/docs/models**. When the model in
+use is gone the endpoints answer with the code `model` and the app says *the recipe model is no
+longer available — set GEMINI_MODEL (or GROQ_MODEL) in Vercel*, so a retirement points straight at
+the knob that fixes it instead of reading as a generic failure. (The upstream status and body are
+logged server-side only; they are never returned to the browser.)
 
-**The photo path needs a vision model, and Groq's image-capable line-up changes** — Llama 4
+**On Groq the photo path needs a separate vision model, and Groq's image-capable line-up changes** — Llama 4
 Scout was deprecated for free and developer tiers in June 2026. So the model name is an
 environment variable:
 
@@ -70,7 +100,8 @@ redeploy. Pick the name from **console.groq.com → Models**, filtering for imag
 unset the default is tried, and when that model is not available to your account the endpoint
 answers with the code `vision_model` and the app says photo reading is not set up — rather than
 a generic failure that sends you looking in the wrong place. The link and paste paths work
-without it.
+without it. On Gemini this variable does no work at all: the same model reads the photo, so the
+`vision_model` code is never returned there.
 
 ## Searching for a recipe
 
@@ -92,7 +123,7 @@ model writes that dish out.
 SEARCH_API_KEY = <a Brave Search API key>
 ```
 
-alongside `GROQ_API_KEY` (Vercel → Settings → Environment Variables), then redeploy. Brave has a free
+alongside the model key (Vercel → Settings → Environment Variables), then redeploy. Brave has a free
 tier; the endpoint asks for the top 8 results and appends "recipe" to the query. The key is sent as the
 `X-Subscription-Token` header, never in a URL. Without it the search still works — it just answers from
 the model, and says so.
@@ -103,15 +134,16 @@ inside this network, and it is dropped here before the app ever sees it.
 
 ## Why the key stays server-side
 
-The serverless function `api/parse.js` reads `process.env.GROQ_API_KEY` and
-calls Groq from the server. The key is never sent to the browser, never logged,
-and never embedded in any static asset.
+The serverless functions read `process.env.GEMINI_API_KEY` / `process.env.GROQ_API_KEY`
+and call the provider from the server. The key is never sent to the browser, never logged,
+and never embedded in any static asset. `index.html` is a static file served to every
+browser: no key may ever appear there.
 
 This is deliberately different from the **Firebase web config** in `index.html`,
 which is *meant* to be public — Firebase client config identifies the project and
-is protected by Firestore security rules, not by secrecy. The Anthropic key is a
+is protected by Firestore security rules, not by secrecy. A provider key is a
 real secret: anyone who has it can spend money against your account, so it must
-never ship to the client. Never move Claude calls into `index.html`.
+never ship to the client. Never move a provider call into `index.html`.
 
 ## Endpoint contract
 
@@ -132,7 +164,7 @@ Error responses (all JSON, never leaking the key or upstream details):
 |--------|-----------------------------------|-----------------------------------------|
 | 405    | `{ "error": "Method not allowed" }` | Non-POST request                        |
 | 400    | `{ "error": "Missing text" }` etc.  | Empty / oversized / malformed input     |
-| 500    | `{ "error": "Server not configured" }` | `GROQ_API_KEY` missing                |
+| 500    | `{ "error": "Server not configured" }` | neither `GEMINI_API_KEY` nor `GROQ_API_KEY` is set |
 | 502    | `{ "error": "Parse failed" }`       | Upstream error or unparseable model reply |
 
 The function validates the model's output server-side: `qty` is coerced to a
@@ -142,7 +174,7 @@ positive integer, `category` is forced to one of the allowed values (else
 ## Recipe endpoint — folded into ✨ Smart add
 
 A second function, `api/recipe.js`, extracts a shopping list from pasted recipe
-text using the same server-side Groq key.
+text using the same server-side provider key.
 
 ```
 POST /api/recipe
@@ -154,7 +186,7 @@ Response body:  { "title": "Pancakes", "servings": 4,
 Same key, same guardrails as `/api/parse` (405/400/500/502, output validated
 server-side). In the app the ingredients land in the **Smart-add preview**, where
 you can scale by servings, edit any item, and see which are already on your list
-before adding. Until `GROQ_API_KEY` is set it returns `500` and the sheet says so.
+before adding. Until a provider key is set it returns `500` and the sheet says so.
 
 **One entry point (v0.77).** There is no separate "Add from a recipe" button.
 The **✨ Smart add** button reads the add-box text and, when it *looks like a
@@ -165,10 +197,11 @@ same editable preview.
 
 ## Model
 
-Uses **`llama-3.1-8b-instant`** on Groq — the cheapest, fastest option, and
-plenty for grocery parsing. To raise accuracy on messy/ambiguous input, change
-`MODEL` in `api/parse.js` to `llama-3.3-70b-versatile` (still cheap, a bit
-slower). Groq JSON mode (`response_format: json_object`) guarantees valid JSON.
+Whichever provider is in use, the default is a small, fast model — plenty for grocery
+parsing. To raise accuracy on messy or ambiguous input, set `GEMINI_MODEL` / `GROQ_MODEL`
+to a larger model your account lists; it is a Vercel setting, not a code change. JSON mode
+(`response_format: json_object`) is asked for on every call, and a fenced or wrapped answer
+is still read, because a compatibility layer is free to ignore the request.
 
 ## Client wiring — "✨ Smart add"
 

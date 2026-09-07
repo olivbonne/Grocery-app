@@ -22,12 +22,61 @@ const MAX_Q = 120;
 const MAX_RESULTS = 8;
 const FETCH_TIMEOUT_MS = 7000;
 
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-/* v1.91: Groq retires models on its own schedule — llama-3.1-8b-instant was shut down for
-   free-tier traffic on 2026-08-16 and took every AI feature in the app down with it, silently,
-   because the name was compiled in. It is an env var now, like GROQ_VISION_MODEL already is, so
-   the next retirement is a Vercel setting rather than a deploy. See docs/ai-setup.md. */
-const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
+/* v1.92: two providers, one shape. Groq and Gemini both speak the OpenAI chat-completions API, so
+   the only things that differ are the URL, the key and the model name. Gemini is chosen when its
+   key is set, because a key someone went and created is the one they meant to use.
+
+   Both model names are env vars. v1.91 was the lesson: Groq retired llama-3.1-8b-instant on
+   2026-08-16 and took every AI feature down with it because the name was compiled in. Providers
+   retire models on their own schedule and this app should survive it as a settings change. */
+function aiProvider() {
+  const gem = process.env.GEMINI_API_KEY;
+  if (gem) {
+    const m = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+    return {
+      name: 'gemini',
+      url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+      key: gem,
+      model: m,
+      /* Gemini is natively multimodal — the same model reads a photo, so there is no separate
+         vision model to configure and no separate way for the photo path to be unavailable. */
+      vision: m,
+      modelVar: 'GEMINI_MODEL',
+    };
+  }
+  const groq = process.env.GROQ_API_KEY;
+  if (groq) {
+    return {
+      name: 'groq',
+      url: 'https://api.groq.com/openai/v1/chat/completions',
+      key: groq,
+      model: process.env.GROQ_MODEL || 'openai/gpt-oss-20b',
+      /* Groq's image-capable line-up changes separately from its text one — Llama 4 Scout was
+         deprecated for free/developer tiers in June 2026 — so vision is its own setting here. */
+      vision: process.env.GROQ_VISION_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct',
+      modelVar: 'GROQ_MODEL',
+    };
+  }
+  return null;
+}
+
+/* v1.92: providers word "that model is gone" differently — Groq says model_decommissioned, Google
+   says "is not found for API version v1beta". Both mean the same thing to whoever has to fix it, so
+   both have to reach the same message: point at the model setting, not at a generic failure. Getting
+   this wrong is not cosmetic — it is the difference between a one-line fix and another three weeks. */
+const MODEL_GONE = /model_decommissioned|model_not_found|decommissioned|does not exist|is not found for API version|unsupported model|invalid model|not supported for this API/i;
+
+/* v1.92: lifted from api/recipe.js. Strict JSON mode is a request, not a guarantee — a
+   compatibility layer in front of another provider may hand back a fenced block instead. Keep
+   asking for json_object; just do not fall over when something wraps it. */
+function looseJson(s) {
+  const t = String(s).trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+  try { return JSON.parse(t); } catch (e) {}
+  const a = t.indexOf('{'), b = t.lastIndexOf('}');
+  if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch (e) {} }
+  return null;
+}
+
 const BRAVE_URL = 'https://api.search.brave.com/res/v1/web/search';
 
 // Same guard as api/recipe.js: a URL this endpoint hands back will be fetched by
@@ -105,16 +154,16 @@ const IDEA_SYSTEM = [
   'Give between 3 and 6 distinct suggestions. Return only the JSON object.',
 ].join('\n');
 
-async function modelIdeas(q, key) {
+async function modelIdeas(q, ai) {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), FETCH_TIMEOUT_MS);
   try {
-    const r = await fetch(GROQ_URL, {
+    const r = await fetch(ai.url, {
       method: 'POST',
       signal: ctl.signal,
-      headers: { 'authorization': 'Bearer ' + key, 'content-type': 'application/json' },
+      headers: { 'authorization': 'Bearer ' + ai.key, 'content-type': 'application/json' },
       body: JSON.stringify({
-        model: MODEL,
+        model: ai.model,
         messages: [{ role: 'system', content: IDEA_SYSTEM }, { role: 'user', content: q }],
         temperature: 0.4,
         max_tokens: 700,
@@ -126,16 +175,16 @@ async function modelIdeas(q, key) {
        app sat broken for three weeks. Logged for the next time, and named for the person using it. */
     if (!r.ok) {
       const detail = await r.text().catch(() => '');
-      console.error('groq ' + r.status + ' ' + detail.slice(0, 300));
-      if (/model_decommissioned|model_not_found|does not exist|decommissioned/i.test(detail)) return { code: 'model' };
+      console.error(ai.name + ' ' + r.status + ' ' + detail.slice(0, 300));
+      if (MODEL_GONE.test(detail)) return { code: 'model' };
       return { code: 'upstream' };
     }
     const data = await r.json();
     const reply = data && data.choices && data.choices[0]
       && data.choices[0].message && data.choices[0].message.content;
     if (typeof reply !== 'string') return { code: 'upstream' };
-    let parsed;
-    try { parsed = JSON.parse(reply); } catch (e) { return { code: 'unreadable' }; }
+    const parsed = looseJson(reply);
+    if (!parsed) return { code: 'unreadable' };
     const raw = (parsed && Array.isArray(parsed.results)) ? parsed.results : null;
     if (!raw) return { code: 'unreadable' };
     const results = raw.map((x) => ({
@@ -180,10 +229,10 @@ module.exports = async (req, res) => {
       if (got.code === 'search_key') return fail(res, 502, 'search_key', 'Web search rejected its key');
     }
 
-    const groqKey = process.env.GROQ_API_KEY;
-    if (!groqKey) return fail(res, 500, 'not_configured', 'Server not configured');
+    const ai = aiProvider();
+    if (!ai) return fail(res, 500, 'not_configured', 'Server not configured');
 
-    const ideas = await modelIdeas(q, groqKey);
+    const ideas = await modelIdeas(q, ai);
     if (ideas.code) return fail(res, 502, ideas.code, 'Search failed');
     if (!ideas.results.length) return fail(res, 404, 'no_results', 'Nothing found for that');
     res.status(200).json({ source: 'model', results: ideas.results });
