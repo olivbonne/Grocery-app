@@ -1520,7 +1520,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.91";
+const APP_VERSION = "v1.92";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -5031,8 +5031,8 @@ function planShrinkImage(file, maxPx, quality){
    returns a code alongside its message. */
 function planImpMessage(code){
   switch(code){
-    case "not_configured": return "Recipe reading isn't set up yet — add a GROQ_API_KEY in Vercel (see docs/ai-setup.md). You can still type ingredients.";
-    case "model":          return "The recipe reader's model is no longer available — set GROQ_MODEL in Vercel (see docs/ai-setup.md).";
+    case "not_configured": return "Recipe reading isn't set up yet — add a GEMINI_API_KEY (or GROQ_API_KEY) in Vercel (see docs/ai-setup.md). You can still type ingredients.";
+    case "model":          return "The recipe model is no longer available — set GEMINI_MODEL (or GROQ_MODEL) in Vercel (see docs/ai-setup.md).";
     case "vision_model":   return "Reading photos needs a vision model set up (GROQ_VISION_MODEL — see docs/ai-setup.md). A link or pasted text works now.";
     case "bad_url": case "blocked_url": return "That link can't be opened. Paste the recipe's web address.";
     case "not_a_page":     return "That link isn't a web page.";
@@ -5071,8 +5071,8 @@ function planSearchMessage(code){
   switch(code){
     case "no_results":      return "Nothing found for that — try a different name.";
     case "search_key":      return "Web search refused its key (SEARCH_API_KEY — see docs/ai-setup.md).";
-    case "not_configured":  return "Recipe reading isn't set up yet — add a GROQ_API_KEY in Vercel (see docs/ai-setup.md).";
-    case "model":           return "The recipe reader's model is no longer available — set GROQ_MODEL in Vercel (see docs/ai-setup.md).";
+    case "not_configured":  return "Recipe reading isn't set up yet — add a GEMINI_API_KEY (or GROQ_API_KEY) in Vercel (see docs/ai-setup.md).";
+    case "model":           return "The recipe model is no longer available — set GEMINI_MODEL (or GROQ_MODEL) in Vercel (see docs/ai-setup.md).";
     case "too_long":        return "That's a long one — try just the dish name.";
     default:                return "Couldn't search just now — you can still paste a link or the text.";
   }
@@ -5743,7 +5743,7 @@ async function smartAdd(){
     smartLoading=false; smartError="Couldn't reach Smart add. Check your connection — you can still type items normally."; render(); return;
   }
   if(res.status===500){
-    smartLoading=false; smartError="Smart add isn't set up yet. Add a GROQ_API_KEY in Vercel (see docs/ai-setup.md). You can still type items normally."; render(); return;
+    smartLoading=false; smartError="Smart add isn't set up yet. Add a GEMINI_API_KEY (or GROQ_API_KEY) in Vercel (see docs/ai-setup.md). You can still type items normally."; render(); return;
   }
   if(!res.ok){
     /* v1.91: Smart add read no code off the failure, so when Groq retired the model in August it spent
@@ -5752,7 +5752,7 @@ async function smartAdd(){
     smartLoading=false;
     let ecode=""; try{ ecode=((await res.json())||{}).code||""; }catch(e){}
     smartError = ecode==="model"
-      ? "Smart add's model is no longer available — set GROQ_MODEL in Vercel (see docs/ai-setup.md). You can still type items normally."
+      ? "Smart add's model is no longer available — set GEMINI_MODEL (or GROQ_MODEL) in Vercel (see docs/ai-setup.md). You can still type items normally."
       : "Couldn't read that — try rephrasing, or just type your items.";
     render(); return;
   }

@@ -1,7 +1,7 @@
 // api/recipe.js — Vercel Node serverless function (CommonJS).
 //
-// Turns a recipe into a shopping-ready ingredient list using Groq, keeping the
-// API key SERVER-SIDE so the client (index.html) never sees it.
+// Turns a recipe into a shopping-ready ingredient list using Gemini or Groq, keeping
+// the API key SERVER-SIDE so the client (index.html) never sees it.
 //
 // Contract:  POST /api/recipe  with exactly one of:
 //              { text }   pasted recipe text
@@ -12,8 +12,8 @@
 //            ->  { title, servings, items: [{ name, qty, weight, category }] }
 //            errors are { error, code } so the app can say something useful.
 //
-// The key lives in the GROQ_API_KEY environment variable (Vercel Project
-// Settings -> Environment Variables). It is never logged, never returned to the
+// The key lives in the GEMINI_API_KEY or GROQ_API_KEY environment variable (Vercel
+// Project Settings -> Environment Variables). It is never logged, never returned to the
 // browser, and never embedded in any static asset. See docs/ai-setup.md.
 
 const MAX_INPUT_CHARS = 8000;   // recipes are longer than a grocery jot
@@ -27,20 +27,43 @@ const CATEGORIES = [
   'asian', 'alcohol', 'health', 'others',
 ];
 
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-/* v1.91: Groq retires models on its own schedule — llama-3.1-8b-instant was shut down for
-   free-tier traffic on 2026-08-16 and took every AI feature in the app down with it, silently,
-   because the name was compiled in. It is an env var now, like GROQ_VISION_MODEL already is, so
-   the next retirement is a Vercel setting rather than a deploy. See docs/ai-setup.md. */
-const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
+/* v1.92: two providers, one shape. Groq and Gemini both speak the OpenAI chat-completions API, so
+   the only things that differ are the URL, the key and the model name. Gemini is chosen when its
+   key is set, because a key someone went and created is the one they meant to use.
 
-// Vision is a separate model and Groq's line-up changes: Llama 4 Scout was
-// deprecated for free/developer tiers in June 2026. Hence an env override —
-// set GROQ_VISION_MODEL to whatever your account currently lists as
-// image-capable. If the default is not available the upstream call fails with a
-// model error, and that is reported as its own code so the app can say exactly
-// what to do rather than "parse failed".
-const VISION_MODEL = process.env.GROQ_VISION_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct';
+   Both model names are env vars. v1.91 was the lesson: Groq retired llama-3.1-8b-instant on
+   2026-08-16 and took every AI feature down with it because the name was compiled in. Providers
+   retire models on their own schedule and this app should survive it as a settings change. */
+function aiProvider() {
+  const gem = process.env.GEMINI_API_KEY;
+  if (gem) {
+    const m = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+    return {
+      name: 'gemini',
+      url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+      key: gem,
+      model: m,
+      /* Gemini is natively multimodal — the same model reads a photo, so there is no separate
+         vision model to configure and no separate way for the photo path to be unavailable. */
+      vision: m,
+      modelVar: 'GEMINI_MODEL',
+    };
+  }
+  const groq = process.env.GROQ_API_KEY;
+  if (groq) {
+    return {
+      name: 'groq',
+      url: 'https://api.groq.com/openai/v1/chat/completions',
+      key: groq,
+      model: process.env.GROQ_MODEL || 'openai/gpt-oss-20b',
+      /* Groq's image-capable line-up changes separately from its text one — Llama 4 Scout was
+         deprecated for free/developer tiers in June 2026 — so vision is its own setting here. */
+      vision: process.env.GROQ_VISION_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct',
+      modelVar: 'GROQ_MODEL',
+    };
+  }
+  return null;
+}
 
 const SYSTEM = [
   'You extract a grocery shopping list from a recipe.',
@@ -226,6 +249,12 @@ async function fetchRecipeText(rawUrl) {
 }
 
 // A vision model may ignore response_format, so accept a fenced or wrapped object too.
+/* v1.92: providers word "that model is gone" differently — Groq says model_decommissioned, Google
+   says "is not found for API version v1beta". Both mean the same thing to whoever has to fix it, so
+   both have to reach the same message: point at the model setting, not at a generic failure. Getting
+   this wrong is not cosmetic — it is the difference between a one-line fix and another three weeks. */
+const MODEL_GONE = /model_decommissioned|model_not_found|decommissioned|does not exist|is not found for API version|unsupported model|invalid model|not supported for this API/i;
+
 function looseJson(s) {
   const t = String(s).trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
   try { return JSON.parse(t); } catch (e) {}
@@ -245,8 +274,8 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) return fail(res, 500, 'not_configured', 'Server not configured');
+    const ai = aiProvider();
+    if (!ai) return fail(res, 500, 'not_configured', 'Server not configured');
 
     let body = req.body;
     if (typeof body === 'string') {
@@ -282,7 +311,7 @@ module.exports = async (req, res) => {
 
     const payload = image
       ? {
-        model: VISION_MODEL,
+        model: ai.vision,
         messages: [{
           role: 'user',
           content: [
@@ -294,7 +323,7 @@ module.exports = async (req, res) => {
         max_tokens: 1500,
       }
       : {
-        model: MODEL,
+        model: ai.model,
         messages: [
           { role: 'system', content: dish ? DISH_SYSTEM : SYSTEM },
           { role: 'user', content: text },
@@ -306,9 +335,9 @@ module.exports = async (req, res) => {
 
     let upstream;
     try {
-      upstream = await fetch(GROQ_URL, {
+      upstream = await fetch(ai.url, {
         method: 'POST',
-        headers: { 'authorization': 'Bearer ' + apiKey, 'content-type': 'application/json' },
+        headers: { 'authorization': 'Bearer ' + ai.key, 'content-type': 'application/json' },
         body: JSON.stringify(payload),
       });
     } catch (e) {
@@ -320,14 +349,17 @@ module.exports = async (req, res) => {
          same "Parse failed" and nothing in the log, which is exactly how the app sat broken for three
          weeks after Groq retired the model. The detail goes to the log only — never into a response. */
       const detail = await upstream.text().catch(() => '');
-      console.error('groq ' + upstream.status + ' ' + detail.slice(0, 300));
+      console.error(ai.name + ' ' + upstream.status + ' ' + detail.slice(0, 300));
       // A missing/renamed vision model is the one upstream failure worth naming:
       // Groq's image-capable line-up changes, and "parse failed" would send the
       // user hunting in the wrong place. See GROQ_VISION_MODEL in docs/ai-setup.md.
-      if (image && (upstream.status === 400 || upstream.status === 404)) {
+      /* v1.92: only Groq has a vision model that can be missing on its own. On Gemini the same
+         model reads the photo, so a failure there is a model or an image problem, and falls
+         through to the branches below rather than blaming a setting that does not exist. */
+      if (image && ai.name === 'groq' && (upstream.status === 400 || upstream.status === 404)) {
         return fail(res, 502, 'vision_model', 'Photo reading is not set up on this account');
       }
-      if (/model_decommissioned|model_not_found|does not exist|decommissioned/i.test(detail)) {
+      if (MODEL_GONE.test(detail)) {
         return fail(res, 502, 'model', 'The recipe reader\'s model is no longer available');
       }
       return fail(res, 502, 'upstream', 'Parse failed');

@@ -1,11 +1,11 @@
 // api/parse.js — Vercel Node serverless function (CommonJS).
 //
-// Turns free-form grocery text into structured items using Groq, keeping the
-// API key SERVER-SIDE so the client (index.html) never sees it.
+// Turns free-form grocery text into structured items using Gemini or Groq, keeping
+// the API key SERVER-SIDE so the client (index.html) never sees it.
 // Contract:  POST /api/parse  { text }  ->  { items: [{ name, qty, category }] }
 //
-// The key lives in the GROQ_API_KEY environment variable (Vercel Project
-// Settings -> Environment Variables). It is never logged, never returned to the
+// The key lives in the GEMINI_API_KEY or GROQ_API_KEY environment variable (Vercel
+// Project Settings -> Environment Variables). It is never logged, never returned to the
 // browser, and never embedded in any static asset. See docs/ai-setup.md.
 
 const MAX_INPUT_CHARS = 2000;
@@ -15,15 +15,62 @@ const CATEGORIES = [
   'asian', 'alcohol', 'health', 'others',
 ];
 
-// Groq is OpenAI-compatible. The default is a small, fast model, which is plenty
-// for grocery parsing; set GROQ_MODEL in Vercel to any model your account lists
-// (a larger one for higher accuracy on messy input, at more cost/latency).
-const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-/* v1.91: Groq retires models on its own schedule — llama-3.1-8b-instant was shut down for
-   free-tier traffic on 2026-08-16 and took every AI feature in the app down with it, silently,
-   because the name was compiled in. It is an env var now, like GROQ_VISION_MODEL already is, so
-   the next retirement is a Vercel setting rather than a deploy. See docs/ai-setup.md. */
-const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-20b';
+// Both providers are OpenAI-compatible. The defaults are small, fast models, which are
+// plenty for grocery parsing; set GEMINI_MODEL / GROQ_MODEL in Vercel to any model your
+// account lists (a larger one for higher accuracy on messy input, at more cost/latency).
+/* v1.92: two providers, one shape. Groq and Gemini both speak the OpenAI chat-completions API, so
+   the only things that differ are the URL, the key and the model name. Gemini is chosen when its
+   key is set, because a key someone went and created is the one they meant to use.
+
+   Both model names are env vars. v1.91 was the lesson: Groq retired llama-3.1-8b-instant on
+   2026-08-16 and took every AI feature down with it because the name was compiled in. Providers
+   retire models on their own schedule and this app should survive it as a settings change. */
+function aiProvider() {
+  const gem = process.env.GEMINI_API_KEY;
+  if (gem) {
+    const m = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+    return {
+      name: 'gemini',
+      url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+      key: gem,
+      model: m,
+      /* Gemini is natively multimodal — the same model reads a photo, so there is no separate
+         vision model to configure and no separate way for the photo path to be unavailable. */
+      vision: m,
+      modelVar: 'GEMINI_MODEL',
+    };
+  }
+  const groq = process.env.GROQ_API_KEY;
+  if (groq) {
+    return {
+      name: 'groq',
+      url: 'https://api.groq.com/openai/v1/chat/completions',
+      key: groq,
+      model: process.env.GROQ_MODEL || 'openai/gpt-oss-20b',
+      /* Groq's image-capable line-up changes separately from its text one — Llama 4 Scout was
+         deprecated for free/developer tiers in June 2026 — so vision is its own setting here. */
+      vision: process.env.GROQ_VISION_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct',
+      modelVar: 'GROQ_MODEL',
+    };
+  }
+  return null;
+}
+/* v1.92: providers word "that model is gone" differently — Groq says model_decommissioned, Google
+   says "is not found for API version v1beta". Both mean the same thing to whoever has to fix it, so
+   both have to reach the same message: point at the model setting, not at a generic failure. Getting
+   this wrong is not cosmetic — it is the difference between a one-line fix and another three weeks. */
+const MODEL_GONE = /model_decommissioned|model_not_found|decommissioned|does not exist|is not found for API version|unsupported model|invalid model|not supported for this API/i;
+
+/* v1.92: lifted from api/recipe.js. Strict JSON mode is a request, not a guarantee — a
+   compatibility layer in front of another provider may hand back a fenced block instead. Keep
+   asking for json_object; just do not fall over when something wraps it. */
+function looseJson(s) {
+  const t = String(s).trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+  try { return JSON.parse(t); } catch (e) {}
+  const a = t.indexOf('{'), b = t.lastIndexOf('}');
+  if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch (e) {} }
+  return null;
+}
 
 const SYSTEM = [
   'You parse free-form grocery shopping text into discrete items.',
@@ -58,8 +105,8 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const apiKey = process.env.GROQ_API_KEY;
-    if (!apiKey) {
+    const ai = aiProvider();
+    if (!ai) {
       // Never leak the reason beyond "not configured".
       res.status(500).json({ error: 'Server not configured' });
       return;
@@ -88,14 +135,14 @@ module.exports = async (req, res) => {
 
     let upstream;
     try {
-      upstream = await fetch(GROQ_URL, {
+      upstream = await fetch(ai.url, {
         method: 'POST',
         headers: {
-          'authorization': 'Bearer ' + apiKey,
+          'authorization': 'Bearer ' + ai.key,
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          model: MODEL,
+          model: ai.model,
           messages: [
             { role: 'system', content: SYSTEM },
             { role: 'user', content: text },
@@ -116,8 +163,8 @@ module.exports = async (req, res) => {
     if (!upstream.ok) {
       // Don't surface upstream status/body to the client — the detail goes to the log only.
       const detail = await upstream.text().catch(() => '');
-      console.error('groq ' + upstream.status + ' ' + detail.slice(0, 300));
-      if (/model_decommissioned|model_not_found|does not exist|decommissioned/i.test(detail)) {
+      console.error(ai.name + ' ' + upstream.status + ' ' + detail.slice(0, 300));
+      if (MODEL_GONE.test(detail)) {
         res.status(502).json({ error: 'The recipe reader\'s model is no longer available', code: 'model' });
         return;
       }
@@ -140,10 +187,8 @@ module.exports = async (req, res) => {
       return;
     }
 
-    let parsed;
-    try {
-      parsed = JSON.parse(reply);
-    } catch (e) {
+    const parsed = looseJson(reply);
+    if (!parsed) {
       res.status(502).json({ error: 'Parse failed' });
       return;
     }

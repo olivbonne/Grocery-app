@@ -46,7 +46,10 @@ let pages = {};
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (url, opts) => {
   calls.push({ url: String(url), opts });
-  if (String(url).indexOf('api.groq.com') >= 0) {
+  /* v1.92: the stub answers for EITHER provider's chat-completions endpoint. Routing only on
+     api.groq.com would drop a Gemini call into the page-fetch branch below and every provider
+     check would fail for the wrong reason. */
+  if (String(url).indexOf('api.groq.com') >= 0 || String(url).indexOf('generativelanguage.googleapis.com') >= 0) {
     if (groqStatus !== 200) return new Response(groqErrBody, { status: groqStatus });
     const content = typeof groqReply === 'string' ? groqReply : JSON.stringify(groqReply);
     return new Response(JSON.stringify({ choices: [{ message: { content } }] }),
@@ -73,6 +76,58 @@ const IMG = 'data:image/jpeg;base64,' + 'A'.repeat(200);
   const key = process.env.GROQ_API_KEY; delete process.env.GROQ_API_KEY;
   r = await call({ text: 'onions' });
   ok('no API key is reported as not configured, not as a parse failure',
+    r.code === 500 && r.body.code === 'not_configured', JSON.stringify(r.body));
+  process.env.GROQ_API_KEY = key;
+
+  /* ── which provider (v1.92) ────────────────────────────────────────────────
+     Two keys, one code path. Gemini wins when both are set, because a key someone went and made
+     is the one they meant to use. What must hold: the call goes to the right host, carries the
+     RIGHT key (sending the Groq key to Google would be both broken and a leak), and uses that
+     provider's model. And the Groq path must be exactly as it was — everything below this
+     section is the Groq path, and it is the regression guard. */
+  reset();
+  process.env.GEMINI_API_KEY = 'test-gemini-key';
+  r = await call({ text: 'onions' });
+  ok('a GEMINI_API_KEY sends the call to Google, not to Groq',
+    r.code === 200 && calls[0].url.indexOf('generativelanguage.googleapis.com') >= 0, calls[0] && calls[0].url);
+  ok('…carrying the Gemini key, never the Groq one',
+    calls[0].opts.headers.authorization === 'Bearer test-gemini-key'
+    && calls[0].opts.headers.authorization.indexOf(process.env.GROQ_API_KEY) < 0,
+    calls[0].opts.headers.authorization);
+  ok('…and Gemini\'s own default model, not GROQ_MODEL',
+    JSON.parse(calls[0].opts.body).model === 'gemini-3.8-flash', JSON.parse(calls[0].opts.body).model);
+
+  reset();
+  process.env.GEMINI_MODEL = 'test-gemini-model';
+  r = await call({ text: 'onions' });
+  ok('GEMINI_MODEL overrides that default, so the next retirement is a setting',
+    JSON.parse(calls[0].opts.body).model === 'test-gemini-model', JSON.parse(calls[0].opts.body).model);
+
+  reset();
+  r = await call({ image: IMG });
+  ok('on Gemini a PHOTO uses the same model as text — there is no second model to configure',
+    r.code === 200 && JSON.parse(calls[0].opts.body).model === 'test-gemini-model',
+    JSON.parse(calls[0].opts.body).model);
+
+  reset(); groqStatus = 400;
+  r = await call({ image: IMG });
+  ok('…so a Gemini photo failure never blames GROQ_VISION_MODEL, a setting that does not exist there',
+    r.code === 502 && r.body.code !== 'vision_model' && (r.body.code === 'model' || r.body.code === 'upstream'),
+    JSON.stringify(r.body));
+  delete process.env.GEMINI_MODEL;
+  delete process.env.GEMINI_API_KEY;
+
+  reset();
+  r = await call({ text: 'onions' });
+  ok('with only a GROQ_API_KEY the call still goes to Groq, unchanged',
+    r.code === 200 && calls[0].url.indexOf('api.groq.com') >= 0
+    && calls[0].opts.headers.authorization === 'Bearer test-key'
+    && JSON.parse(calls[0].opts.body).model === 'test-text-model', calls[0] && calls[0].url);
+
+  delete process.env.GROQ_API_KEY;
+  reset();
+  r = await call({ text: 'onions' });
+  ok('with NEITHER key it is still not configured, not a parse failure',
     r.code === 500 && r.body.code === 'not_configured', JSON.stringify(r.body));
   process.env.GROQ_API_KEY = key;
 
@@ -193,9 +248,25 @@ const IMG = 'data:image/jpeg;base64,' + 'A'.repeat(200);
   ok('…without the upstream body reaching the client',
     !/llama|decommissioned/i.test(JSON.stringify(r.body)), JSON.stringify(r.body));
 
+  /* v1.92: Google words the same thing entirely differently, and the whole value of naming this
+     failure is lost if only one provider's phrasing is recognised. A wrong GEMINI_MODEL is the most
+     likely way this endpoint breaks for someone setting it up, so it is the case that must not fall
+     through to "couldn't read that". */
+  reset(); groqStatus = 400;
+  groqErrBody = JSON.stringify({ error: { code: 404, status: 'NOT_FOUND',
+    message: 'models/gemini-9.9-flash is not found for API version v1beta, or is not supported for generateContent' } });
+  r = await call({ text: 'onions' });
+  ok('Google\'s wording for a model that is gone reaches the same message',
+    r.code === 502 && r.body.code === 'model', JSON.stringify(r.body));
+
   reset(); groqStatus = 500; groqErrBody = 'gateway blew up';
   r = await call({ text: 'onions' });
   ok('…while any other upstream failure stays generic', r.body.code === 'upstream', JSON.stringify(r.body));
+
+  /* The regex must not be so eager that a real content failure gets blamed on the model. */
+  reset(); groqStatus = 503; groqErrBody = 'upstream connect error or disconnect/reset before headers';
+  r = await call({ text: 'onions' });
+  ok('…and a transport failure is not blamed on the model', r.body.code === 'upstream', JSON.stringify(r.body));
 
   reset();
   groqReply = '```json\n{"title":"Pie","servings":2,"items":[{"name":"apple","qty":3,"category":"fruit"}]}\n```';

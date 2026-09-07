@@ -128,6 +128,36 @@ const reset = () => { calls = []; };
   ok('with neither key it says it is not set up', r.code === 500 && r.body.code === 'not_configured', JSON.stringify(r.body));
   process.env.GROQ_API_KEY = key;
 
+  /* ── which provider (v1.92) ────────────────────────────────────────────────
+     The suggestion path is the one that talks to a model, so it is the one that has to reach the
+     right provider. Gemini wins when both keys are set; the key that travels must be that
+     provider's own, since sending the Groq key to Google would be broken and a leak at once. */
+  reset();
+  process.env.GEMINI_API_KEY = 'test-gemini-key';
+  r = await call({ q: 'goulash' });
+  const gcall = calls[calls.length - 1];
+  ok('a GEMINI_API_KEY sends the suggestion call to Google, not to Groq',
+    r.code === 200 && gcall.url.indexOf('generativelanguage.googleapis.com') >= 0, gcall && gcall.url);
+  ok('…carrying the Gemini key and Gemini\'s model, never the Groq ones',
+    gcall.opts.headers.authorization === 'Bearer test-gemini-key'
+    && JSON.parse(gcall.opts.body).model === 'gemini-3.8-flash',
+    JSON.parse(gcall.opts.body).model);
+  delete process.env.GEMINI_API_KEY;
+
+  reset();
+  r = await call({ q: 'goulash' });
+  const qcall = calls[calls.length - 1];
+  ok('with only a GROQ_API_KEY the suggestion call still goes to Groq, unchanged',
+    r.code === 200 && qcall.url.indexOf('api.groq.com') >= 0
+    && qcall.opts.headers.authorization === 'Bearer test-groq-key', qcall && qcall.url);
+
+  delete process.env.GROQ_API_KEY;
+  reset();
+  r = await call({ q: 'goulash' });
+  ok('with NEITHER provider key it is not configured, not a generic search failure',
+    r.code === 500 && r.body.code === 'not_configured', JSON.stringify(r.body));
+  process.env.GROQ_API_KEY = key;
+
   // ── the answer is untrusted ───────────────────────────────────────────────
   reset();
   groq = { status: 200, content: JSON.stringify({ results: [
@@ -153,6 +183,16 @@ const reset = () => { calls = []; };
     r.code === 502 && r.body.code === 'model', JSON.stringify(r.body));
   ok('…without the upstream body reaching the client',
     !/llama|decommissioned/i.test(JSON.stringify(r.body)), JSON.stringify(r.body));
+
+  /* v1.92: Google words it differently. Same reasoning as api-recipe.js — a wrong GEMINI_MODEL is
+     the likeliest way this breaks for someone setting it up, and it must not read as "no results". */
+  reset();
+  groq = { status: 400, content: '' };
+  groqErrBody = JSON.stringify({ error: { code: 404, status: 'NOT_FOUND',
+    message: 'models/gemini-9.9-flash is not found for API version v1beta, or is not supported for generateContent' } });
+  r = await call({ q: 'goulash' });
+  ok('Google\'s wording for a model that is gone reaches the same message',
+    r.code === 502 && r.body.code === 'model', JSON.stringify(r.body));
   groqErrBody = '{}';
 
   reset();
