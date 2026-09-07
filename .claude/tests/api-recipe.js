@@ -43,13 +43,25 @@ let groqReply = { title: 'Stew', servings: 4, items: [{ name: 'onion', qty: 2, w
 let groqStatus = 200;
 let groqErrBody = '{}';   /* v1.91: what a failing upstream SAYS decides which error the app shows */
 let pages = {};
+/* v1.93: the endpoint may now call the model MORE THAN ONCE — an overloaded model is retried. A
+   single fixed reply cannot express "503, then 200", which is the whole behaviour of this version,
+   so the stub can be handed a queue of replies it shifts through. Empty queue = the old behaviour. */
+let modelQueue = [];
 const realFetch = globalThis.fetch;
+const modelBody = (reply) => JSON.stringify({ choices: [{ message: {
+  content: typeof reply === 'string' ? reply : JSON.stringify(reply) } }] });
 globalThis.fetch = async (url, opts) => {
   calls.push({ url: String(url), opts });
   /* v1.92: the stub answers for EITHER provider's chat-completions endpoint. Routing only on
      api.groq.com would drop a Gemini call into the page-fetch branch below and every provider
      check would fail for the wrong reason. */
   if (String(url).indexOf('api.groq.com') >= 0 || String(url).indexOf('generativelanguage.googleapis.com') >= 0) {
+    if (modelQueue.length) {
+      const q = modelQueue.shift();
+      if (q.status !== 200) return new Response(q.body === undefined ? '{}' : q.body, { status: q.status });
+      return new Response(modelBody(q.reply === undefined ? groqReply : q.reply),
+        { status: 200, headers: { 'content-type': 'application/json' } });
+    }
     if (groqStatus !== 200) return new Response(groqErrBody, { status: groqStatus });
     const content = typeof groqReply === 'string' ? groqReply : JSON.stringify(groqReply);
     return new Response(JSON.stringify({ choices: [{ message: { content } }] }),
@@ -60,7 +72,7 @@ globalThis.fetch = async (url, opts) => {
   if (p.redirect) return new Response(null, { status: 302, headers: { location: p.redirect } });
   return new Response(p.body, { status: p.status || 200, headers: { 'content-type': p.type || 'text/html' } });
 };
-const reset = () => { calls = []; groqStatus = 200; groqErrBody = '{}'; pages = {}; groqReply = { title: 'Stew', servings: 4, items: [{ name: 'onion', qty: 2, weight: '', category: 'vegetable' }] }; };
+const reset = () => { calls = []; modelQueue = []; groqStatus = 200; groqErrBody = '{}'; pages = {}; groqReply = { title: 'Stew', servings: 4, items: [{ name: 'onion', qty: 2, weight: '', category: 'vegetable' }] }; };
 
 const IMG = 'data:image/jpeg;base64,' + 'A'.repeat(200);
 
@@ -94,8 +106,12 @@ const IMG = 'data:image/jpeg;base64,' + 'A'.repeat(200);
     calls[0].opts.headers.authorization === 'Bearer test-gemini-key'
     && calls[0].opts.headers.authorization.indexOf(process.env.GROQ_API_KEY) < 0,
     calls[0].opts.headers.authorization);
+  /* SUPERSEDED by v1.93: this named gemini-3.8-flash, which was answering "high demand" to most
+     calls and allows 20 requests a day on the free tier. The default is now gemini-3.5-flash-lite —
+     500 a day, and multimodal, so the photo path still works. The thing that has to hold is
+     unchanged: Gemini's own default, never GROQ_MODEL. */
   ok('…and Gemini\'s own default model, not GROQ_MODEL',
-    JSON.parse(calls[0].opts.body).model === 'gemini-3.8-flash', JSON.parse(calls[0].opts.body).model);
+    JSON.parse(calls[0].opts.body).model === 'gemini-3.5-flash-lite', JSON.parse(calls[0].opts.body).model);
 
   reset();
   process.env.GEMINI_MODEL = 'test-gemini-model';
@@ -263,10 +279,70 @@ const IMG = 'data:image/jpeg;base64,' + 'A'.repeat(200);
   r = await call({ text: 'onions' });
   ok('…while any other upstream failure stays generic', r.body.code === 'upstream', JSON.stringify(r.body));
 
-  /* The regex must not be so eager that a real content failure gets blamed on the model. */
+  /* The regex must not be so eager that a real content failure gets blamed on the model.
+     SUPERSEDED by v1.93: a 503 used to read as a generic 'upstream'. It now reads as 'busy' — the
+     model is queueing, which is a different thing to say and a different thing to do about it. What
+     still has to hold is that it is NOT blamed on the model being gone. */
   reset(); groqStatus = 503; groqErrBody = 'upstream connect error or disconnect/reset before headers';
   r = await call({ text: 'onions' });
-  ok('…and a transport failure is not blamed on the model', r.body.code === 'upstream', JSON.stringify(r.body));
+  ok('…and a transport failure is not blamed on the model being gone',
+    r.body.code === 'busy' && r.body.code !== 'model', JSON.stringify(r.body));
+
+  /* ── v1.93: an overloaded model is waited out, not reported ────────────────
+     The production logs were full of `gemini 503 … "This model is currently experiencing high
+     demand"`, and the app told people it could not read their list. A queue is not a failure of
+     the input, and most of the time it clears in a second. */
+  reset();
+  modelQueue = [{ status: 503, body: JSON.stringify({ error: { code: 503, status: 'UNAVAILABLE', message: 'This model is currently experiencing high demand.' } }) }, { status: 200 }];
+  r = await call({ text: 'onions' });
+  ok('a 503 is retried, and a success on the second attempt is just a normal answer',
+    r.code === 200 && r.body.items.length === 1, JSON.stringify({ c: r.code, b: r.body }));
+  ok('…having actually called the model twice', calls.length === 2, calls.length);
+
+  reset(); groqStatus = 503;
+  groqErrBody = JSON.stringify({ error: { code: 503, status: 'UNAVAILABLE', message: 'This model is currently experiencing high demand. Please try again later.' } });
+  r = await call({ text: 'onions' });
+  ok('an overload that outlasts the retries is named "busy", not "upstream" and not "model"',
+    r.code === 502 && r.body.code === 'busy', JSON.stringify(r.body));
+
+  /* "Wait a moment" and "wait until tomorrow" are different advice, so they are different codes. */
+  reset(); groqStatus = 429; groqErrBody = '{}';
+  r = await call({ text: 'onions' });
+  ok('a 429 is "quota", not "busy"', r.code === 502 && r.body.code === 'quota', JSON.stringify(r.body));
+
+  reset(); groqStatus = 400;
+  groqErrBody = JSON.stringify({ error: { code: 429, status: 'RESOURCE_EXHAUSTED', message: 'Quota exceeded for this model' } });
+  r = await call({ text: 'onions' });
+  ok('…and a body naming RESOURCE_EXHAUSTED is "quota" whatever the status was',
+    r.code === 502 && r.body.code === 'quota', JSON.stringify(r.body));
+
+  /* The retry loop is where a timeout is easiest to lose: the first draft of it dropped the abort
+     signal the single-shot call used to carry. A model that accepts the connection and then goes
+     quiet would hold the function open until Vercel killed it at 60s — and a 504 says nothing at
+     all to the person waiting, which is the exact failure this version exists to remove. */
+  reset();
+  r = await call({ text: 'onions' });
+  const sig = calls[0] && calls[0].opts && calls[0].opts.signal;
+  ok('every model call carries an abort signal, so a silent model cannot hold the function open',
+    !!sig && typeof sig.aborted === 'boolean', String(sig && sig.constructor && sig.constructor.name));
+
+  /* And when that abort fires, it has to come back as a reachability failure rather than a hang. */
+  reset();
+  const prevFetch = globalThis.fetch;
+  globalThis.fetch = async () => { const e = new Error('aborted'); e.name = 'AbortError'; throw e; };
+  r = await call({ text: 'onions' });
+  globalThis.fetch = prevFetch;
+  ok('a model call that times out is reported, not left hanging',
+    r.code === 502 && !!r.body.code, JSON.stringify(r.body));
+
+  /* Retrying something that answers the same way every time only spends the function's clock. */
+  reset(); groqStatus = 400;
+  groqErrBody = JSON.stringify({ error: { message: 'The model `llama-3.1-8b-instant` has been decommissioned', code: 'model_decommissioned' } });
+  r = await call({ text: 'onions' });
+  ok('a model that is gone is still "model" under the retry logic',
+    r.code === 502 && r.body.code === 'model', JSON.stringify(r.body));
+  ok('…and is NOT retried — a permanent failure is answered once', calls.length === 1, calls.length);
+  groqErrBody = '{}';
 
   reset();
   groqReply = '```json\n{"title":"Pie","servings":2,"items":[{"name":"apple","qty":3,"category":"fruit"}]}\n```';

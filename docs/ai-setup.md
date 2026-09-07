@@ -30,7 +30,11 @@ The model name is a setting too:
 GEMINI_MODEL = <a model your Google AI Studio account lists>
 ```
 
-Unset, the default `gemini-3.8-flash` is used. The current line-up is at
+Unset, the default `gemini-3.5-flash-lite` is used. Flash-Lite is the default rather than the
+newest Flash for two reasons: **free-tier headroom** — 500 requests a day against 20 — and it is
+**multimodal**, so the photo path reads a photo with the same model. A grocery list parsed a few
+times an evening never comes near the former limit and runs out of the latter. Point `GEMINI_MODEL`
+at a larger model if you want the accuracy instead. The current line-up is at
 **ai.google.dev/gemini-api/docs/models**.
 
 Gemini is natively multimodal: **the same model reads a photo**, so there is no separate
@@ -79,13 +83,29 @@ GEMINI_MODEL = <a model your Google AI Studio account lists>
 ```
 
 Set it in the same place as the key (Vercel → Settings → Environment Variables), then redeploy.
-Unset, the defaults are `openai/gpt-oss-20b` on Groq and `gemini-3.8-flash` on Gemini — both
+Unset, the defaults are `openai/gpt-oss-20b` on Groq and `gemini-3.5-flash-lite` on Gemini — both
 support JSON object mode, which these endpoints rely on. The current line-ups are at
 **console.groq.com/docs/models** and **ai.google.dev/gemini-api/docs/models**. When the model in
 use is gone the endpoints answer with the code `model` and the app says *the recipe model is no
 longer available — set GEMINI_MODEL (or GROQ_MODEL) in Vercel*, so a retirement points straight at
 the knob that fixes it instead of reading as a generic failure. (The upstream status and body are
 logged server-side only; they are never returned to the browser.)
+
+**An overloaded model is waited out before the app gives up.** A `503` / `UNAVAILABLE` ("this model
+is currently experiencing high demand") is not a failure of your input, it is a queue — so the call
+is retried with backoff (about 0.7s, then 2.2s) and only then reported, as the code `busy`. A `429`
+or a body naming `RESOURCE_EXHAUSTED` is the day's free allowance instead: it is reported as `quota`
+and is *not* retried, because that one does not clear in two seconds. The app says which:
+*"the model is busy — give it a moment"* against *"today's free quota is used up; it resets
+tomorrow"*.
+
+**The functions may run for up to 60 seconds** (`maxDuration` in `vercel.json`). It was 15, and a
+photo genuinely needs longer — a real photo import came back as `504 Task timed out after 15
+seconds`. Retries are budgeted against this, so a retry is never started that the function has no
+time left to finish.
+
+Every path that answers `502` logs why first. A 502 with nothing in the log is what turned a
+one-line fix into three weeks of a broken app.
 
 **On Groq the photo path needs a separate vision model, and Groq's image-capable line-up changes** — Llama 4
 Scout was deprecated for free and developer tiers in June 2026. So the model name is an
@@ -165,6 +185,8 @@ Error responses (all JSON, never leaking the key or upstream details):
 | 405    | `{ "error": "Method not allowed" }` | Non-POST request                        |
 | 400    | `{ "error": "Missing text" }` etc.  | Empty / oversized / malformed input     |
 | 500    | `{ "error": "Server not configured" }` | neither `GEMINI_API_KEY` nor `GROQ_API_KEY` is set |
+| 502    | `{ "error": "Parse failed", "code": "busy" }` | The model is overloaded (`503`/UNAVAILABLE) — retried with backoff first |
+| 502    | `{ "error": "Parse failed", "code": "quota" }` | The day's free allowance for that model is spent (`429`/RESOURCE_EXHAUSTED) |
 | 502    | `{ "error": "Parse failed" }`       | Upstream error or unparseable model reply |
 
 The function validates the model's output server-side: `qty` is coerced to a
@@ -198,7 +220,7 @@ same editable preview.
 ## Model
 
 Whichever provider is in use, the default is a small, fast model — plenty for grocery
-parsing. To raise accuracy on messy or ambiguous input, set `GEMINI_MODEL` / `GROQ_MODEL`
+parsing (`gemini-3.5-flash-lite` on Gemini, `openai/gpt-oss-20b` on Groq). To raise accuracy on messy or ambiguous input, set `GEMINI_MODEL` / `GROQ_MODEL`
 to a larger model your account lists; it is a Vercel setting, not a code change. JSON mode
 (`response_format: json_object`) is asked for on every call, and a fenced or wrapped answer
 is still read, because a compatibility layer is free to ignore the request.
