@@ -21,6 +21,7 @@
 const MAX_Q = 120;
 const MAX_RESULTS = 8;
 const FETCH_TIMEOUT_MS = 7000;
+const MODEL_BUDGET_MS = 20000;  // smaller than the others: this endpoint also spends time on the web search
 
 /* v1.92: two providers, one shape. Groq and Gemini both speak the OpenAI chat-completions API, so
    the only things that differ are the URL, the key and the model name. Gemini is chosen when its
@@ -32,7 +33,13 @@ const FETCH_TIMEOUT_MS = 7000;
 function aiProvider() {
   const gem = process.env.GEMINI_API_KEY;
   if (gem) {
-    const m = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+    /* v1.93: Flash-Lite, not the newest Flash. gemini-3.8-flash was five days old and answering
+       "This model is currently experiencing high demand" to most calls, and its free tier allows
+       20 requests a day against Flash-Lite's 500 — a grocery list parsed a few times an evening
+       runs out on the former and never touches the latter. Flash-Lite is multimodal too, so the
+       photo path keeps working, and it is built for exactly this: small, structured extraction.
+       Point GEMINI_MODEL at something larger if you ever want the accuracy instead. */
+    const m = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
     return {
       name: 'gemini',
       url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
@@ -65,6 +72,62 @@ function aiProvider() {
    both have to reach the same message: point at the model setting, not at a generic failure. Getting
    this wrong is not cosmetic — it is the difference between a one-line fix and another three weeks. */
 const MODEL_GONE = /model_decommissioned|model_not_found|decommissioned|does not exist|is not found for API version|unsupported model|invalid model|not supported for this API/i;
+
+/* v1.93: a 503 from a model is not a failure, it is "not right now" — and the app was showing it
+   as "couldn't read that", which blames the input for a queue. Retried with backoff, then named.
+   Only where a retry can help: overload, rate limit, and a bare 500. A bad request or a model that
+   is gone is answered the same way every time, so retrying it just spends the clock. */
+const MODEL_BUSY = /UNAVAILABLE|high demand|overloaded|try again later/i;
+const MODEL_QUOTA = /RESOURCE_EXHAUSTED|quota|rate limit/i;
+
+async function callModel(ai, payload, budgetMs) {
+  const started = Date.now();
+  const waits = [700, 2200];
+  let last = null;
+  for (let attempt = 0; ; attempt++) {
+    /* v1.93: every attempt is bounded, and by what is LEFT of the budget rather than a fixed number
+       — otherwise a model that accepts the connection and then goes quiet holds the function open
+       until Vercel kills it at 60s, and a 504 tells the user nothing at all. That is the same
+       failure this version exists to remove, so it must not be reintroduced by the retry loop. */
+    const left = budgetMs - (Date.now() - started);
+    if (left < 1500) break;              // not enough left to be worth another attempt
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), left);
+    let r;
+    try {
+      r = await fetch(ai.url, {
+        method: 'POST',
+        signal: ctl.signal,
+        headers: { 'authorization': 'Bearer ' + ai.key, 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch (e) {
+      clearTimeout(timer);
+      console.error(ai.name + ' attempt' + (attempt + 1) + ' ' + (e && e.name === 'AbortError' ? 'timed out' : 'net fail'));
+      return { netFail: true };
+    }
+    clearTimeout(timer);
+    if (r.ok) return { ok: r };
+    const detail = await r.text().catch(() => '');
+    console.error(ai.name + ' ' + r.status + ' attempt' + (attempt + 1) + ' ' + detail.slice(0, 300));
+    last = { status: r.status, detail: detail };
+    const wait = waits[attempt];
+    const retryable = r.status === 503 || r.status === 429 || r.status === 500;
+    if (!retryable || wait === undefined) break;
+    /* Do not start a wait the function has no time left to finish — a 504 tells the user nothing. */
+    if (Date.now() - started + wait > budgetMs) break;
+    await new Promise((s) => setTimeout(s, wait));
+  }
+  return last;
+}
+
+/* One place decides what an upstream failure MEANS, so all three endpoints say the same thing. */
+function classifyUpstream(status, detail) {
+  if (MODEL_GONE.test(detail)) return 'model';
+  if (status === 429 || MODEL_QUOTA.test(detail)) return 'quota';
+  if (status === 503 || MODEL_BUSY.test(detail)) return 'busy';
+  return 'upstream';
+}
 
 /* v1.92: lifted from api/recipe.js. Strict JSON mode is a request, not a guarantee — a
    compatibility layer in front of another provider may hand back a fenced block instead. Keep
@@ -155,38 +218,46 @@ const IDEA_SYSTEM = [
 ].join('\n');
 
 async function modelIdeas(q, ai) {
-  const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), FETCH_TIMEOUT_MS);
   try {
-    const r = await fetch(ai.url, {
-      method: 'POST',
-      signal: ctl.signal,
-      headers: { 'authorization': 'Bearer ' + ai.key, 'content-type': 'application/json' },
-      body: JSON.stringify({
-        model: ai.model,
-        messages: [{ role: 'system', content: IDEA_SYSTEM }, { role: 'user', content: q }],
-        temperature: 0.4,
-        max_tokens: 700,
-        response_format: { type: 'json_object' },
-      }),
-    });
-    /* v1.91: read the body before bailing. A retired or renamed model comes back as a 400 naming
-       itself, and "Search failed" sent nobody to the setting that fixes it — that is exactly how the
-       app sat broken for three weeks. Logged for the next time, and named for the person using it. */
-    if (!r.ok) {
-      const detail = await r.text().catch(() => '');
-      console.error(ai.name + ' ' + r.status + ' ' + detail.slice(0, 300));
-      if (MODEL_GONE.test(detail)) return { code: 'model' };
+    const payload = {
+      model: ai.model,
+      messages: [{ role: 'system', content: IDEA_SYSTEM }, { role: 'user', content: q }],
+      temperature: 0.4,
+      max_tokens: 700,
+      response_format: { type: 'json_object' },
+    };
+    /* v1.93: one call, retried where a retry can help — callModel logs every attempt and
+       classifyUpstream decides what the failure MEANS, identically on all three endpoints. The
+       budget, not an AbortController, is what keeps this inside the function's time. */
+    const attempt = await callModel(ai, payload, MODEL_BUDGET_MS);
+    if (attempt && attempt.netFail) {
+      /* v1.93: a 502 with nothing in the log is a bug that costs an afternoon. Every bail says why. */
+      console.error(ai.name + ' network failure reaching the model');
       return { code: 'upstream' };
     }
-    const data = await r.json();
+    if (!attempt || !attempt.ok) return { code: classifyUpstream(attempt.status, attempt.detail) };
+    const r = attempt.ok;
+    let data;
+    try { data = await r.json(); } catch (e) {
+      console.error(ai.name + ' reply was not JSON');
+      return { code: 'upstream' };
+    }
     const reply = data && data.choices && data.choices[0]
       && data.choices[0].message && data.choices[0].message.content;
-    if (typeof reply !== 'string') return { code: 'upstream' };
+    if (typeof reply !== 'string') {
+      console.error(ai.name + ' reply was not a string ' + String(reply).slice(0, 200));
+      return { code: 'upstream' };
+    }
     const parsed = looseJson(reply);
-    if (!parsed) return { code: 'unreadable' };
+    if (!parsed) {
+      console.error(ai.name + ' unreadable ' + String(reply).slice(0, 200));
+      return { code: 'unreadable' };
+    }
     const raw = (parsed && Array.isArray(parsed.results)) ? parsed.results : null;
-    if (!raw) return { code: 'unreadable' };
+    if (!raw) {
+      console.error(ai.name + ' unreadable, no results ' + String(reply).slice(0, 200));
+      return { code: 'unreadable' };
+    }
     const results = raw.map((x) => ({
       title: String((x && x.title) || '').replace(/\s+/g, ' ').trim().slice(0, 90),
       url: '',
@@ -195,9 +266,9 @@ async function modelIdeas(q, ai) {
     })).filter((x) => x.title).slice(0, MAX_RESULTS);
     return { results };
   } catch (e) {
+    /* v1.93: a 502 with nothing in the log is a bug that costs an afternoon. Every bail says why. */
+    console.error(ai.name + ' ideas failed ' + String(e && e.message).slice(0, 200));
     return { code: 'upstream' };
-  } finally {
-    clearTimeout(timer);
   }
 }
 
@@ -226,17 +297,27 @@ module.exports = async (req, res) => {
       }
       // A configured-but-rejected key is worth naming; anything else falls through
       // to the model so the feature still does something useful.
-      if (got.code === 'search_key') return fail(res, 502, 'search_key', 'Web search rejected its key');
+      if (got.code === 'search_key') {
+        /* v1.93: a 502 with nothing in the log is a bug that costs an afternoon. Every bail says why. */
+        console.error('brave rejected its key');
+        return fail(res, 502, 'search_key', 'Web search rejected its key');
+      }
     }
 
     const ai = aiProvider();
     if (!ai) return fail(res, 500, 'not_configured', 'Server not configured');
 
     const ideas = await modelIdeas(q, ai);
-    if (ideas.code) return fail(res, 502, ideas.code, 'Search failed');
+    if (ideas.code) {
+      /* v1.93: a 502 with nothing in the log is a bug that costs an afternoon. Every bail says why. */
+      console.error('recipe-search bail ' + ideas.code);
+      return fail(res, 502, ideas.code, 'Search failed');
+    }
     if (!ideas.results.length) return fail(res, 404, 'no_results', 'Nothing found for that');
     res.status(200).json({ source: 'model', results: ideas.results });
   } catch (e) {
+    /* v1.93: a 502 with nothing in the log is a bug that costs an afternoon. Every bail says why. */
+    console.error('recipe-search unexpected ' + String(e && e.message).slice(0, 200));
     return fail(res, 502, 'unexpected', 'Search failed');
   }
 };

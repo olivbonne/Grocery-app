@@ -1520,7 +1520,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.92";
+const APP_VERSION = "v1.93";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -5033,6 +5033,10 @@ function planImpMessage(code){
   switch(code){
     case "not_configured": return "Recipe reading isn't set up yet — add a GEMINI_API_KEY (or GROQ_API_KEY) in Vercel (see docs/ai-setup.md). You can still type ingredients.";
     case "model":          return "The recipe model is no longer available — set GEMINI_MODEL (or GROQ_MODEL) in Vercel (see docs/ai-setup.md).";
+    /* v1.93: a queue and a spent allowance are not "couldn't read that" — one asks you to wait a
+       moment, the other until tomorrow, and neither is the input's fault. */
+    case "busy":            return "The model is busy right now — give it a moment and try again.";
+    case "quota":           return "Today's free quota for this model is used up. It resets tomorrow, or set GEMINI_MODEL in Vercel to a model with more headroom (see docs/ai-setup.md).";
     case "vision_model":   return "Reading photos needs a vision model set up (GROQ_VISION_MODEL — see docs/ai-setup.md). A link or pasted text works now.";
     case "bad_url": case "blocked_url": return "That link can't be opened. Paste the recipe's web address.";
     case "not_a_page":     return "That link isn't a web page.";
@@ -5073,6 +5077,9 @@ function planSearchMessage(code){
     case "search_key":      return "Web search refused its key (SEARCH_API_KEY — see docs/ai-setup.md).";
     case "not_configured":  return "Recipe reading isn't set up yet — add a GEMINI_API_KEY (or GROQ_API_KEY) in Vercel (see docs/ai-setup.md).";
     case "model":           return "The recipe model is no longer available — set GEMINI_MODEL (or GROQ_MODEL) in Vercel (see docs/ai-setup.md).";
+    /* v1.93: same two, said the same way, on the search path. */
+    case "busy":            return "The model is busy right now — give it a moment and try again.";
+    case "quota":           return "Today's free quota for this model is used up. It resets tomorrow, or set GEMINI_MODEL in Vercel to a model with more headroom (see docs/ai-setup.md).";
     case "too_long":        return "That's a long one — try just the dish name.";
     default:                return "Couldn't search just now — you can still paste a link or the text.";
   }
@@ -5751,9 +5758,15 @@ async function smartAdd(){
        server names what went wrong; say it. */
     smartLoading=false;
     let ecode=""; try{ ecode=((await res.json())||{}).code||""; }catch(e){}
+    /* v1.93: an overloaded model and a spent daily quota are not the input's fault either — telling
+       someone to rephrase while a queue clears is the same mistake in a smaller hat. */
     smartError = ecode==="model"
       ? "Smart add's model is no longer available — set GEMINI_MODEL (or GROQ_MODEL) in Vercel (see docs/ai-setup.md). You can still type items normally."
-      : "Couldn't read that — try rephrasing, or just type your items.";
+      : ecode==="busy"
+        ? "The model is busy right now — give it a moment and try again. You can still type items normally."
+        : ecode==="quota"
+          ? "Today's free quota for this model is used up. It resets tomorrow, or set GEMINI_MODEL in Vercel to a model with more headroom (see docs/ai-setup.md). You can still type items normally."
+          : "Couldn't read that — try rephrasing, or just type your items.";
     render(); return;
   }
   try{ data=await res.json(); }catch(e){ data=null; }

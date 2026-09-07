@@ -41,16 +41,26 @@ let groq = { status: 200, content: JSON.stringify({ results: [
   { title: 'Classic beef goulash', note: 'Paprika-heavy, slow cooked' },
   { title: 'Quick weeknight goulash', note: 'Under an hour' } ] }) };
 
+/* v1.93: the endpoint may now call the model MORE THAN ONCE — an overloaded model is retried. A
+   single fixed reply cannot express "503, then 200", which is the whole behaviour of this version,
+   so the stub can be handed a queue of replies it shifts through. Empty queue = the old behaviour. */
+let modelQueue = [];
 globalThis.fetch = async (url, opts) => {
   calls.push({ url: String(url), opts });
   if (String(url).indexOf('api.search.brave.com') >= 0) {
     return new Response(JSON.stringify(brave.body), { status: brave.status, headers: { 'content-type': 'application/json' } });
   }
+  if (modelQueue.length) {
+    const q = modelQueue.shift();
+    if (q.status !== 200) return new Response(q.body === undefined ? '{}' : q.body, { status: q.status });
+    return new Response(JSON.stringify({ choices: [{ message: { content: q.content === undefined ? groq.content : q.content } }] }),
+      { status: 200, headers: { 'content-type': 'application/json' } });
+  }
   if (groq.status !== 200) return new Response(groqErrBody, { status: groq.status });
   return new Response(JSON.stringify({ choices: [{ message: { content: groq.content } }] }),
     { status: groq.status, headers: { 'content-type': 'application/json' } });
 };
-const reset = () => { calls = []; };
+const reset = () => { calls = []; modelQueue = []; };
 
 (async () => {
   // ── basics ────────────────────────────────────────────────────────────────
@@ -140,7 +150,9 @@ const reset = () => { calls = []; };
     r.code === 200 && gcall.url.indexOf('generativelanguage.googleapis.com') >= 0, gcall && gcall.url);
   ok('…carrying the Gemini key and Gemini\'s model, never the Groq ones',
     gcall.opts.headers.authorization === 'Bearer test-gemini-key'
-    && JSON.parse(gcall.opts.body).model === 'gemini-3.8-flash',
+    /* SUPERSEDED by v1.93: the default was gemini-3.8-flash, which allows 20 free requests a day
+       and was answering "high demand" to most of them; it is now gemini-3.5-flash-lite, at 500. */
+    && JSON.parse(gcall.opts.body).model === 'gemini-3.5-flash-lite',
     JSON.parse(gcall.opts.body).model);
   delete process.env.GEMINI_API_KEY;
 
@@ -199,6 +211,38 @@ const reset = () => { calls = []; };
   groq = { status: 200, content: 'not json at all' };
   r = await call({ q: 'goulash' });
   ok('an unreadable answer is an error, not a crash', r.code === 502 && r.body.code === 'unreadable', JSON.stringify(r.body));
+
+  /* ── v1.93: an overloaded model is waited out, not reported ────────────────
+     The same 503 that broke the recipe reader broke the search, and "couldn't search just now"
+     blamed the query for a queue. */
+  reset();
+  groq = { status: 200, content: JSON.stringify({ results: [{ title: 'Classic beef goulash', note: 'Paprika-heavy' }] }) };
+  modelQueue = [{ status: 503, body: JSON.stringify({ error: { code: 503, status: 'UNAVAILABLE', message: 'This model is currently experiencing high demand.' } }) }, { status: 200 }];
+  r = await call({ q: 'goulash' });
+  ok('a 503 is retried, and a success on the second attempt is just a normal answer',
+    r.code === 200 && r.body.source === 'model' && r.body.results.length === 1, JSON.stringify({ c: r.code, b: r.body }));
+  ok('…having actually called the model twice', calls.length === 2, calls.length);
+
+  reset();
+  groq = { status: 503, content: '' };
+  groqErrBody = JSON.stringify({ error: { code: 503, status: 'UNAVAILABLE', message: 'This model is currently experiencing high demand. Please try again later.' } });
+  r = await call({ q: 'goulash' });
+  ok('an overload that outlasts the retries is named "busy", not "upstream" and not "model"',
+    r.code === 502 && r.body.code === 'busy', JSON.stringify(r.body));
+
+  reset();
+  groq = { status: 429, content: '' }; groqErrBody = '{}';
+  r = await call({ q: 'goulash' });
+  ok('a 429 is "quota" — a different wait, and different advice', r.code === 502 && r.body.code === 'quota', JSON.stringify(r.body));
+
+  reset();
+  groq = { status: 400, content: '' };
+  groqErrBody = JSON.stringify({ error: { code: 429, status: 'RESOURCE_EXHAUSTED', message: 'Quota exceeded for this model' } });
+  r = await call({ q: 'goulash' });
+  ok('…and so is a body naming RESOURCE_EXHAUSTED, whatever the status was',
+    r.code === 502 && r.body.code === 'quota', JSON.stringify(r.body));
+  ok('…answered once, because a spent quota does not clear in two seconds', calls.length === 1, calls.length);
+  groqErrBody = '{}';
 
   let pass = 0; results.forEach(([n, c, x]) => { if (c) pass++; console.log((c ? 'PASS' : 'FAIL') + '  ' + n + (x ? '   ' + x : '')); });
   console.log(`\n${pass}/${results.length} passed`);

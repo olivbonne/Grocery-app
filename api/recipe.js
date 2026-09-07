@@ -19,8 +19,9 @@
 const MAX_INPUT_CHARS = 8000;   // recipes are longer than a grocery jot
 const MAX_IMAGE_CHARS = 3500000; // ~2.6MB of image; Vercel caps the request body around 4.5MB
 const MAX_PAGE_BYTES = 1500000; // stop reading a fetched page after this much
-const FETCH_TIMEOUT_MS = 8000;  // the function itself is capped at 15s (vercel.json)
+const FETCH_TIMEOUT_MS = 8000;  // the function itself is capped at 60s (vercel.json)
 const MAX_REDIRECTS = 3;
+const MODEL_BUDGET_MS = 30000;  // room for a retry or two inside the 60s function cap
 
 const CATEGORIES = [
   'meat', 'vegetable', 'fruit', 'fresh', 'bulk',
@@ -37,7 +38,13 @@ const CATEGORIES = [
 function aiProvider() {
   const gem = process.env.GEMINI_API_KEY;
   if (gem) {
-    const m = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+    /* v1.93: Flash-Lite, not the newest Flash. gemini-3.8-flash was five days old and answering
+       "This model is currently experiencing high demand" to most calls, and its free tier allows
+       20 requests a day against Flash-Lite's 500 — a grocery list parsed a few times an evening
+       runs out on the former and never touches the latter. Flash-Lite is multimodal too, so the
+       photo path keeps working, and it is built for exactly this: small, structured extraction.
+       Point GEMINI_MODEL at something larger if you ever want the accuracy instead. */
+    const m = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
     return {
       name: 'gemini',
       url: 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
@@ -216,10 +223,14 @@ async function fetchRecipeText(rawUrl) {
         redirect: 'manual',
         signal: ctl.signal,
         headers: {
-          // Some sites serve a stub to unknown agents; identify honestly and ask for HTML.
-          'user-agent': 'MarketList/1.0 (+recipe import)',
-          'accept': 'text/html,application/xhtml+xml,text/plain;q=0.9',
-          'accept-language': 'en',
+          /* v1.93: a bot-shaped user-agent is refused by a good share of recipe sites, which is why
+             some links worked and some did not. This is one page, fetched because someone asked for
+             it, on their behalf — so it asks the way their browser would. The guards above (scheme,
+             host, redirect re-checks, size cap, timeout) are what keep this fetch safe; the header
+             was never doing that work. */
+          'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+          'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'accept-language': 'en-US,en;q=0.9',
         },
       });
       if (resp.status >= 300 && resp.status < 400) {
@@ -254,6 +265,62 @@ async function fetchRecipeText(rawUrl) {
    both have to reach the same message: point at the model setting, not at a generic failure. Getting
    this wrong is not cosmetic — it is the difference between a one-line fix and another three weeks. */
 const MODEL_GONE = /model_decommissioned|model_not_found|decommissioned|does not exist|is not found for API version|unsupported model|invalid model|not supported for this API/i;
+
+/* v1.93: a 503 from a model is not a failure, it is "not right now" — and the app was showing it
+   as "couldn't read that", which blames the input for a queue. Retried with backoff, then named.
+   Only where a retry can help: overload, rate limit, and a bare 500. A bad request or a model that
+   is gone is answered the same way every time, so retrying it just spends the clock. */
+const MODEL_BUSY = /UNAVAILABLE|high demand|overloaded|try again later/i;
+const MODEL_QUOTA = /RESOURCE_EXHAUSTED|quota|rate limit/i;
+
+async function callModel(ai, payload, budgetMs) {
+  const started = Date.now();
+  const waits = [700, 2200];
+  let last = null;
+  for (let attempt = 0; ; attempt++) {
+    /* v1.93: every attempt is bounded, and by what is LEFT of the budget rather than a fixed number
+       — otherwise a model that accepts the connection and then goes quiet holds the function open
+       until Vercel kills it at 60s, and a 504 tells the user nothing at all. That is the same
+       failure this version exists to remove, so it must not be reintroduced by the retry loop. */
+    const left = budgetMs - (Date.now() - started);
+    if (left < 1500) break;              // not enough left to be worth another attempt
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), left);
+    let r;
+    try {
+      r = await fetch(ai.url, {
+        method: 'POST',
+        signal: ctl.signal,
+        headers: { 'authorization': 'Bearer ' + ai.key, 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch (e) {
+      clearTimeout(timer);
+      console.error(ai.name + ' attempt' + (attempt + 1) + ' ' + (e && e.name === 'AbortError' ? 'timed out' : 'net fail'));
+      return { netFail: true };
+    }
+    clearTimeout(timer);
+    if (r.ok) return { ok: r };
+    const detail = await r.text().catch(() => '');
+    console.error(ai.name + ' ' + r.status + ' attempt' + (attempt + 1) + ' ' + detail.slice(0, 300));
+    last = { status: r.status, detail: detail };
+    const wait = waits[attempt];
+    const retryable = r.status === 503 || r.status === 429 || r.status === 500;
+    if (!retryable || wait === undefined) break;
+    /* Do not start a wait the function has no time left to finish — a 504 tells the user nothing. */
+    if (Date.now() - started + wait > budgetMs) break;
+    await new Promise((s) => setTimeout(s, wait));
+  }
+  return last;
+}
+
+/* One place decides what an upstream failure MEANS, so all three endpoints say the same thing. */
+function classifyUpstream(status, detail) {
+  if (MODEL_GONE.test(detail)) return 'model';
+  if (status === 429 || MODEL_QUOTA.test(detail)) return 'quota';
+  if (status === 503 || MODEL_BUSY.test(detail)) return 'busy';
+  return 'upstream';
+}
 
 function looseJson(s) {
   const t = String(s).trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
@@ -299,6 +366,8 @@ module.exports = async (req, res) => {
         const msg = got.code === 'bad_url' || got.code === 'blocked_url' ? 'That link cannot be opened'
           : got.code === 'not_a_page' ? 'That link is not a web page'
             : 'Could not read that page';
+        /* v1.93: a 502 with nothing in the log is a bug that costs an afternoon. Every bail says why. */
+        console.error('page fetch ' + got.code + ' for a link');
         return fail(res, got.code === 'bad_url' || got.code === 'blocked_url' ? 400 : 502, got.code, msg);
       }
       text = got.text;
@@ -333,51 +402,54 @@ module.exports = async (req, res) => {
         response_format: { type: 'json_object' },
       };
 
-    let upstream;
-    try {
-      upstream = await fetch(ai.url, {
-        method: 'POST',
-        headers: { 'authorization': 'Bearer ' + ai.key, 'content-type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-    } catch (e) {
+    /* v1.93: one call, retried where a retry can help — callModel logs every attempt and
+       classifyUpstream decides what the failure MEANS, identically on all three endpoints. */
+    const attempt = await callModel(ai, payload, MODEL_BUDGET_MS);
+    if (attempt && attempt.netFail) {
+      /* v1.93: a 502 with nothing in the log is a bug that costs an afternoon. Every bail says why. */
+      console.error(ai.name + ' network failure reaching the model');
       return fail(res, 502, 'upstream', 'Parse failed');
     }
-
-    if (!upstream.ok) {
-      /* v1.91: read the body before bailing, and log it. Every upstream failure used to leave the
-         same "Parse failed" and nothing in the log, which is exactly how the app sat broken for three
-         weeks after Groq retired the model. The detail goes to the log only — never into a response. */
-      const detail = await upstream.text().catch(() => '');
-      console.error(ai.name + ' ' + upstream.status + ' ' + detail.slice(0, 300));
+    if (!attempt || !attempt.ok) {
       // A missing/renamed vision model is the one upstream failure worth naming:
       // Groq's image-capable line-up changes, and "parse failed" would send the
       // user hunting in the wrong place. See GROQ_VISION_MODEL in docs/ai-setup.md.
       /* v1.92: only Groq has a vision model that can be missing on its own. On Gemini the same
          model reads the photo, so a failure there is a model or an image problem, and falls
          through to the branches below rather than blaming a setting that does not exist. */
-      if (image && ai.name === 'groq' && (upstream.status === 400 || upstream.status === 404)) {
+      if (image && ai.name === 'groq' && (attempt.status === 400 || attempt.status === 404)) {
         return fail(res, 502, 'vision_model', 'Photo reading is not set up on this account');
       }
-      if (MODEL_GONE.test(detail)) {
-        return fail(res, 502, 'model', 'The recipe reader\'s model is no longer available');
-      }
+      return fail(res, 502, classifyUpstream(attempt.status, attempt.detail), 'Parse failed');
+    }
+    const upstream = attempt.ok;
+
+    let data;
+    try { data = await upstream.json(); } catch (e) {
+      /* v1.93: a 502 with nothing in the log is a bug that costs an afternoon. Every bail says why. */
+      console.error(ai.name + ' reply was not JSON');
       return fail(res, 502, 'upstream', 'Parse failed');
     }
 
-    let data;
-    try { data = await upstream.json(); } catch (e) { return fail(res, 502, 'upstream', 'Parse failed'); }
-
     const reply = data && data.choices && data.choices[0]
       && data.choices[0].message && data.choices[0].message.content;
-    if (typeof reply !== 'string') return fail(res, 502, 'upstream', 'Parse failed');
+    if (typeof reply !== 'string') {
+      console.error(ai.name + ' reply was not a string ' + String(reply).slice(0, 200));
+      return fail(res, 502, 'upstream', 'Parse failed');
+    }
 
     const parsed = looseJson(reply);
-    if (!parsed) return fail(res, 502, 'unreadable', 'Parse failed');
+    if (!parsed) {
+      console.error(ai.name + ' unreadable ' + String(reply).slice(0, 200));
+      return fail(res, 502, 'unreadable', 'Parse failed');
+    }
 
     const rawItems = Array.isArray(parsed) ? parsed
       : (parsed && Array.isArray(parsed.items) ? parsed.items : null);
-    if (!rawItems) return fail(res, 502, 'unreadable', 'Parse failed');
+    if (!rawItems) {
+      console.error(ai.name + ' unreadable, no items ' + String(reply).slice(0, 200));
+      return fail(res, 502, 'unreadable', 'Parse failed');
+    }
 
     const items = rawItems.map(clampItem).filter(Boolean);
     let servings = parseInt(parsed && parsed.servings, 10);
@@ -387,6 +459,8 @@ module.exports = async (req, res) => {
 
     res.status(200).json({ title, servings, items });
   } catch (e) {
+    /* v1.93: a 502 with nothing in the log is a bug that costs an afternoon. Every bail says why. */
+    console.error('recipe unexpected ' + String(e && e.message).slice(0, 200));
     return fail(res, 502, 'unexpected', 'Parse failed');
   }
 };
