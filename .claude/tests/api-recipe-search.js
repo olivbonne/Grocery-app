@@ -36,6 +36,10 @@ let calls = [];
 let brave = { status: 200, body: { web: { results: [
   { title: 'Best Beef Goulash', url: 'https://recipes.example.com/goulash', description: 'A <b>classic</b> stew' },
   { title: 'Quick Goulash', url: 'https://cooking.example.org/quick', description: 'Weeknight version' } ] } } };
+let tavily = { status: 200, body: { results: [
+  { title: 'Tavily Goulash', url: 'https://recipes.example.com/tav', content: 'A stew, from Tavily' } ] } };
+let serper = { status: 200, body: { organic: [
+  { title: 'Serper Goulash', link: 'https://recipes.example.com/ser', snippet: 'A stew, from Serper' } ] } };
 let groqErrBody = '{}';   /* v1.91: what a failing upstream SAYS decides which error the app shows */
 let groq = { status: 200, content: JSON.stringify({ results: [
   { title: 'Classic beef goulash', note: 'Paprika-heavy, slow cooked' },
@@ -49,6 +53,14 @@ globalThis.fetch = async (url, opts) => {
   calls.push({ url: String(url), opts });
   if (String(url).indexOf('api.search.brave.com') >= 0) {
     return new Response(JSON.stringify(brave.body), { status: brave.status, headers: { 'content-type': 'application/json' } });
+  }
+  /* v1.96: two more search backends, routed the same way — on host, so a call to the wrong one is
+     visible rather than silently satisfied by another provider's stub. */
+  if (String(url).indexOf('api.tavily.com') >= 0) {
+    return new Response(JSON.stringify(tavily.body), { status: tavily.status, headers: { 'content-type': 'application/json' } });
+  }
+  if (String(url).indexOf('google.serper.dev') >= 0) {
+    return new Response(JSON.stringify(serper.body), { status: serper.status, headers: { 'content-type': 'application/json' } });
   }
   if (modelQueue.length) {
     const q = modelQueue.shift();
@@ -243,6 +255,120 @@ const reset = () => { calls = []; modelQueue = []; };
     r.code === 502 && r.body.code === 'quota', JSON.stringify(r.body));
   ok('…answered once, because a spent quota does not clear in two seconds', calls.length === 1, calls.length);
   groqErrBody = '{}';
+
+  /* ── v1.96: two free backends and a TikTok scope ───────────────────────────
+     Brave's free tier asks for a credit card, so Tavily and Serper are first-class. Each is a
+     SEPARATE mapping path, which is exactly where a host guard gets forgotten — so every provider
+     is checked for it, not just the one that had it first. */
+  process.env.TAVILY_API_KEY = 'test-tavily-key';
+  brave = { status: 200, body: { web: { results: [{ title: 'Brave Goulash', url: 'https://recipes.example.com/brave', description: 'b' }] } } };
+  reset();
+  r = await call({ q: 'goulash' });
+  let tcall = calls.find(c => c.url.indexOf('tavily') >= 0);
+  ok('a TAVILY_API_KEY searches Tavily, and says so',
+    r.code === 200 && r.body.source === 'web' && r.body.provider === 'tavily', JSON.stringify({ c: r.code, p: r.body && r.body.provider }));
+  ok('…mapping results[]/content into the app\'s shape',
+    r.body.results.length === 1 && r.body.results[0].url === 'https://recipes.example.com/tav'
+    && r.body.results[0].note === 'A stew, from Tavily', JSON.stringify(r.body.results));
+  ok('…with the key in the authorization header and never in the URL',
+    tcall && tcall.opts.headers.authorization === 'Bearer test-tavily-key'
+    && tcall.url.indexOf('test-tavily-key') < 0, tcall && tcall.url);
+  ok('…and nothing asked of the other two backends',
+    !calls.some(c => /brave|serper/.test(c.url)), JSON.stringify(calls.map(c => c.url.slice(0, 40))));
+
+  reset();
+  tavily = { status: 200, body: { results: [
+    { title: 'Inside', url: 'http://169.254.169.254/latest/meta-data/', content: '' },
+    { title: 'Fine', url: 'https://recipes.example.com/ok', content: '' } ] } };
+  r = await call({ q: 'goulash' });
+  ok('Tavily\'s own mapping drops a result only the server could reach',
+    r.code === 200 && r.body.results.length === 1 && r.body.results[0].title === 'Fine',
+    JSON.stringify(r.body.results.map(x => x.url)));
+
+  reset();
+  r = await call({ q: 'goulash', scope: 'tiktok' });
+  tcall = calls.find(c => c.url.indexOf('tavily') >= 0);
+  ok('the TikTok scope reaches Tavily as include_domains, which is what Tavily understands',
+    JSON.stringify(JSON.parse(tcall.opts.body).include_domains) === '["tiktok.com"]', tcall.opts.body);
+
+  reset();
+  r = await call({ q: 'goulash', scope: { evil: 1 } });
+  tcall = calls.find(c => c.url.indexOf('tavily') >= 0);
+  ok('a scope that is not a scope falls back to the web, never reaching the query',
+    JSON.parse(tcall.opts.body).include_domains === undefined
+    && !/evil|object/i.test(JSON.parse(tcall.opts.body).query), tcall.opts.body);
+  reset();
+  await call({ q: 'goulash', scope: '../../etc' });
+  ok('…and so does a path-shaped one', !/etc/.test(JSON.parse(calls.find(c => c.url.indexOf('tavily') >= 0).opts.body).query), '');
+  reset();
+  await call({ q: 'goulash', scope: 999 });
+  ok('…and a number', !/999/.test(JSON.parse(calls.find(c => c.url.indexOf('tavily') >= 0).opts.body).query), '');
+  tavily = { status: 200, body: { results: [{ title: 'Tavily Goulash', url: 'https://recipes.example.com/tav', content: 'A stew, from Tavily' }] } };
+
+  // ── Serper ────────────────────────────────────────────────────────────────
+  delete process.env.TAVILY_API_KEY;
+  process.env.SERPER_API_KEY = 'test-serper-key';
+  reset();
+  r = await call({ q: 'goulash' });
+  let scall = calls.find(c => c.url.indexOf('serper') >= 0);
+  ok('a SERPER_API_KEY searches Serper, and says so',
+    r.code === 200 && r.body.source === 'web' && r.body.provider === 'serper', JSON.stringify({ c: r.code, p: r.body && r.body.provider }));
+  ok('…mapping organic[]/link/snippet into the app\'s shape',
+    r.body.results.length === 1 && r.body.results[0].url === 'https://recipes.example.com/ser'
+    && r.body.results[0].note === 'A stew, from Serper', JSON.stringify(r.body.results));
+  ok('…with the key in x-api-key and never in the URL',
+    scall && scall.opts.headers['x-api-key'] === 'test-serper-key' && scall.url.indexOf('test-serper-key') < 0, scall && scall.url);
+
+  reset();
+  serper = { status: 200, body: { organic: [
+    { title: 'Inside', link: 'http://192.168.0.10/recipe', snippet: '' },
+    { title: 'Fine', link: 'https://recipes.example.com/ok', snippet: '' } ] } };
+  r = await call({ q: 'goulash' });
+  ok('Serper\'s own mapping drops a result only the server could reach',
+    r.code === 200 && r.body.results.length === 1 && r.body.results[0].title === 'Fine',
+    JSON.stringify(r.body.results.map(x => x.url)));
+  serper = { status: 200, body: { organic: [{ title: 'Serper Goulash', link: 'https://recipes.example.com/ser', snippet: 'A stew, from Serper' }] } };
+
+  reset();
+  await call({ q: 'goulash', scope: 'tiktok' });
+  scall = calls.find(c => c.url.indexOf('serper') >= 0);
+  ok('Serper takes the TikTok scope as site: in the query text, because that is all it accepts',
+    /site:tiktok\.com/.test(JSON.parse(scall.opts.body).q), scall.opts.body);
+
+  // ── Brave, and precedence ─────────────────────────────────────────────────
+  delete process.env.SERPER_API_KEY;
+  process.env.SEARCH_API_KEY = 'test-search-key';
+  reset();
+  r = await call({ q: 'goulash', scope: 'tiktok' });
+  const bcall = calls.find(c => c.url.indexOf('brave') >= 0);
+  ok('Brave takes it as site: too, and still names itself',
+    r.body.provider === 'brave' && /site%3Atiktok.com/i.test(bcall.url), bcall && bcall.url.slice(0, 120));
+  reset();
+  r = await call({ q: 'goulash' });
+  ok('a Brave-only setup still drops an inward-pointing result',
+    r.code === 200 && r.body.results.every(x => /^https:\/\/recipes\.example\.com/.test(x.url)), JSON.stringify(r.body.results.map(x => x.url)));
+
+  process.env.SERPER_API_KEY = 'test-serper-key';
+  reset();
+  r = await call({ q: 'goulash' });
+  ok('with Serper and Brave both set, Serper wins and Brave is not called',
+    r.body.provider === 'serper' && !calls.some(c => c.url.indexOf('brave') >= 0), JSON.stringify(calls.map(c => c.url.slice(0, 40))));
+
+  process.env.TAVILY_API_KEY = 'test-tavily-key';
+  reset();
+  r = await call({ q: 'goulash' });
+  ok('with all three set, Tavily wins and it is the ONLY backend called',
+    r.body.provider === 'tavily' && calls.length === 1 && calls[0].url.indexOf('tavily') >= 0,
+    JSON.stringify(calls.map(c => c.url.slice(0, 40))));
+  delete process.env.TAVILY_API_KEY; delete process.env.SERPER_API_KEY; delete process.env.SEARCH_API_KEY;
+
+  /* A dish name the model invented is not a TikTok video. With no search backend the honest answer
+     is to say so, not to ask the model and dress its output up as videos. */
+  reset();
+  r = await call({ q: 'goulash', scope: 'tiktok' });
+  ok('TikTok search with no search key says exactly that',
+    r.code === 404 && r.body.code === 'no_video_search', JSON.stringify(r.body));
+  ok('…and the model is not asked to invent videos', calls.length === 0, JSON.stringify(calls.map(c => c.url.slice(0, 40))));
 
   let pass = 0; results.forEach(([n, c, x]) => { if (c) pass++; console.log((c ? 'PASS' : 'FAIL') + '  ' + n + (x ? '   ' + x : '')); });
   console.log(`\n${pass}/${results.length} passed`);

@@ -3,12 +3,13 @@
 // Finds candidate recipes for a dish typed in the app, so a recipe can be started
 // without leaving to a browser, copying a link and coming back.
 //
-// Contract:  POST /api/recipe-search  { q }
-//            ->  { source: "web" | "model", results: [ { title, url, site, note } ] }
+// Contract:  POST /api/recipe-search  { q, scope?: "web" | "tiktok" }
+//            ->  { source: "web" | "model", provider, results: [ { title, url, site, note } ] }
 //            errors are { error, code }.
 //
 // TWO SOURCES, and the app is told which it got:
-//   "web"   — a real web search, when SEARCH_API_KEY is set (Brave Search).
+//   "web"   — a real web search, when a search key is set (TAVILY_API_KEY, SERPER_API_KEY
+//             or SEARCH_API_KEY for Brave, in that order); `provider` names which answered.
 //             Each result has a url, which the app hands to /api/recipe to read.
 //   "model" — no search key configured, so the recipe reader is asked for ideas
 //             instead. These have no url: picking one asks the model to write the
@@ -22,6 +23,21 @@ const MAX_Q = 120;
 const MAX_RESULTS = 8;
 const FETCH_TIMEOUT_MS = 7000;
 const MODEL_BUDGET_MS = 20000;  // smaller than the others: this endpoint also spends time on the web search
+
+/* v1.96: three search backends, one shape. Brave's free tier asks for a credit card, which is a
+   hard stop for a household app, so Tavily (1,000/month) and Serper (2,500 on signup) — both free
+   without a card — are first-class alongside it. Whichever key is present wins, in that order.
+   Google's Custom Search JSON API is deliberately absent: it is closed to new signups and shuts
+   down on 2027-01-01, so building on it would be building on sand. */
+function searchProvider() {
+  const tav = process.env.TAVILY_API_KEY;
+  if (tav) return { name: 'tavily', key: tav };
+  const ser = process.env.SERPER_API_KEY;
+  if (ser) return { name: 'serper', key: ser };
+  const brave = process.env.SEARCH_API_KEY;
+  if (brave) return { name: 'brave', key: brave };
+  return null;
+}
 
 /* v1.92: two providers, one shape. Groq and Gemini both speak the OpenAI chat-completions API, so
    the only things that differ are the URL, the key and the model name. Gemini is chosen when its
@@ -174,33 +190,83 @@ function fail(res, status, code, error) {
   res.status(status).json({ error: error || 'Search failed', code });
 }
 
-async function braveSearch(q, key) {
+const TAVILY_URL = 'https://api.tavily.com/search';
+const SERPER_URL = 'https://google.serper.dev/search';
+
+/* Every URL a backend hands back is fetched later by /api/recipe, so each mapping path goes through
+   publicUrl() — not just Brave's. One shaper, so that guard cannot be forgotten in a new backend. */
+function shapeResults(raw, pick) {
+  const results = [];
+  for (const x of raw) {
+    const got = pick(x || {});
+    const u = publicUrl(got.url);
+    if (!u) continue;
+    let site = '';
+    try { site = new URL(u).hostname.replace(/^www\./, ''); } catch (e) {}
+    results.push({
+      title: String(got.title || '').replace(/\s+/g, ' ').trim().slice(0, 90),
+      url: u,
+      site: site.slice(0, 40),
+      note: String(got.note || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().slice(0, 120),
+    });
+    if (results.length >= MAX_RESULTS) break;
+  }
+  return { results };
+}
+
+/* Scoping to TikTok is NOT uniform, and cannot be: Tavily takes a structured include_domains list,
+   while Brave and Serper only accept plain query text and understand site: there. Both spellings of
+   the same intent live here, in one place, so a new scope is one edit rather than three. */
+function scopedQuery(q, scope, provider) {
+  const base = q + ' recipe';
+  if (scope === 'tiktok' && provider !== 'tavily') return base + ' site:tiktok.com';
+  return base;
+}
+
+async function webSearch(q, scope, provider) {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), FETCH_TIMEOUT_MS);
   try {
-    const url = BRAVE_URL + '?q=' + encodeURIComponent(q + ' recipe') + '&count=' + MAX_RESULTS;
-    const r = await fetch(url, {
-      signal: ctl.signal,
-      headers: { 'accept': 'application/json', 'x-subscription-token': key },
-    });
+    const query = scopedQuery(q, scope, provider.name);
+    let r;
+    if (provider.name === 'tavily') {
+      r = await fetch(TAVILY_URL, {
+        method: 'POST',
+        signal: ctl.signal,
+        headers: { 'authorization': 'Bearer ' + provider.key, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          query: query,
+          max_results: MAX_RESULTS,
+          include_domains: scope === 'tiktok' ? ['tiktok.com'] : undefined,
+        }),
+      });
+    } else if (provider.name === 'serper') {
+      r = await fetch(SERPER_URL, {
+        method: 'POST',
+        signal: ctl.signal,
+        headers: { 'x-api-key': provider.key, 'content-type': 'application/json' },
+        body: JSON.stringify({ q: query, num: MAX_RESULTS }),
+      });
+    } else {
+      // Brave, unchanged: the key rides in a header and never in the query string.
+      const url = BRAVE_URL + '?q=' + encodeURIComponent(query) + '&count=' + MAX_RESULTS;
+      r = await fetch(url, {
+        signal: ctl.signal,
+        headers: { 'accept': 'application/json', 'x-subscription-token': provider.key },
+      });
+    }
     if (!r.ok) return { code: r.status === 401 || r.status === 403 ? 'search_key' : 'search_failed' };
     const data = await r.json();
-    const raw = (data && data.web && Array.isArray(data.web.results)) ? data.web.results : [];
-    const results = [];
-    for (const x of raw) {
-      const u = publicUrl(x && x.url);
-      if (!u) continue;
-      let site = '';
-      try { site = new URL(u).hostname.replace(/^www\./, ''); } catch (e) {}
-      results.push({
-        title: String((x && x.title) || '').replace(/\s+/g, ' ').trim().slice(0, 90),
-        url: u,
-        site: site.slice(0, 40),
-        note: String((x && x.description) || '').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().slice(0, 120),
-      });
-      if (results.length >= MAX_RESULTS) break;
+    if (provider.name === 'tavily') {
+      const raw = (data && Array.isArray(data.results)) ? data.results : [];
+      return shapeResults(raw, (x) => ({ title: x.title, url: x.url, note: x.content }));
     }
-    return { results };
+    if (provider.name === 'serper') {
+      const raw = (data && Array.isArray(data.organic)) ? data.organic : [];
+      return shapeResults(raw, (x) => ({ title: x.title, url: x.link, note: x.snippet }));
+    }
+    const raw = (data && data.web && Array.isArray(data.web.results)) ? data.web.results : [];
+    return shapeResults(raw, (x) => ({ title: x.title, url: x.url, note: x.description }));
   } catch (e) {
     return { code: 'search_failed' };
   } finally {
@@ -287,22 +353,29 @@ module.exports = async (req, res) => {
     if (!q) return fail(res, 400, 'missing', 'Nothing to search for');
     if (q.length > MAX_Q) return fail(res, 400, 'too_long', 'That is a very long search');
 
-    const searchKey = process.env.SEARCH_API_KEY;
-    if (searchKey) {
-      const got = await braveSearch(q, searchKey);
+    /* v1.96: an optional scope, validated to a known one — anything else is a plain web search. */
+    const scope = (body && body.scope === 'tiktok') ? 'tiktok' : 'web';
+
+    const sp = searchProvider();
+    if (sp) {
+      const got = await webSearch(q, scope, sp);
       if (!got.code) {
         if (!got.results.length) return fail(res, 404, 'no_results', 'Nothing found for that');
-        res.status(200).json({ source: 'web', results: got.results });
+        res.status(200).json({ source: 'web', provider: sp.name, results: got.results });
         return;
       }
       // A configured-but-rejected key is worth naming; anything else falls through
       // to the model so the feature still does something useful.
       if (got.code === 'search_key') {
         /* v1.93: a 502 with nothing in the log is a bug that costs an afternoon. Every bail says why. */
-        console.error('brave rejected its key');
+        console.error(sp.name + ' rejected its key');
         return fail(res, 502, 'search_key', 'Web search rejected its key');
       }
     }
+
+    /* v1.96: a dish name the model invented is not a TikTok video, and offering one as though it
+       were is exactly the pretending this app keeps refusing to do. Say what is missing instead. */
+    if (scope === 'tiktok') return fail(res, 404, 'no_video_search', 'Searching TikTok needs a search key');
 
     const ai = aiProvider();
     if (!ai) return fail(res, 500, 'not_configured', 'Server not configured');
@@ -314,7 +387,7 @@ module.exports = async (req, res) => {
       return fail(res, 502, ideas.code, 'Search failed');
     }
     if (!ideas.results.length) return fail(res, 404, 'no_results', 'Nothing found for that');
-    res.status(200).json({ source: 'model', results: ideas.results });
+    res.status(200).json({ source: 'model', provider: '', results: ideas.results });
   } catch (e) {
     /* v1.93: a 502 with nothing in the log is a bug that costs an afternoon. Every bail says why. */
     console.error('recipe-search unexpected ' + String(e && e.message).slice(0, 200));
