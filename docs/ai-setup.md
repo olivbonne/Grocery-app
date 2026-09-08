@@ -90,6 +90,7 @@ Error codes the read path can answer with:
 | `bad_url` / `blocked_url` | not a link, or a host the server must not reach |
 | `not_a_page` | the link is not HTML (a PDF, an image, a video file) |
 | `fetch_failed` | the page would not load, or had too little text in it |
+| `no_video_search` | a TikTok-scoped search with no search key set (v1.96) |
 | `no_caption` | a TikTok whose caption carries no recipe — usually a spoken one (v1.95) |
 | `bad_image` / `too_large` | the photo was not a photo, or was too big to send |
 | `too_long` | more pasted text than the endpoint accepts |
@@ -148,38 +149,62 @@ without it. On Gemini this variable does no work at all: the same model reads th
 
 ## Searching for a recipe
 
-`/api/recipe-search` takes `{ q }` and answers `{ source, results }`. It has two sources and it always
-says which one you got:
+`/api/recipe-search` takes `{ q, scope }` and answers `{ source, provider, results }`. It has two
+sources and it always says which one you got:
 
 | `source` | when | what a result carries |
 |---|---|---|
-| `web`   | `SEARCH_API_KEY` is set | a real page: `title`, `url`, `site`, `note` |
-| `model` | it is not | the recipe reader's own suggestions: `title`, `note`, no `url` |
+| `web`   | a search key is set | a real page: `title`, `url`, `site`, `note` |
+| `model` | none is | the recipe reader's own suggestions: `title`, `note`, no `url` |
 
 The app shows that distinction to the user rather than passing suggestions off as search results. Picking
 a web result sends its `url` to `/api/recipe`; picking a suggestion sends `{ dish }` instead, and the
 model writes that dish out.
 
-**To enable real web search**, set
+### Which search key
 
-```
-SEARCH_API_KEY = <a Brave Search API key>
-```
+Three backends are supported, and **two of them are free without a credit card** — which is the
+whole reason there is a choice. Set one (Vercel → Settings → Environment Variables), then redeploy.
 
-alongside the model key (Vercel → Settings → Environment Variables), then redeploy. Brave has a free
-tier; the endpoint asks for the top 8 results and appends "recipe" to the query. The key is sent as the
-`X-Subscription-Token` header, never in a URL.
+| Setting | Service | Free tier | Card needed |
+|---|---|---|---|
+| `TAVILY_API_KEY` | [Tavily](https://tavily.com) | 1,000 searches a month, recurring | no |
+| `SERPER_API_KEY` | [Serper](https://serper.dev) | 2,500 searches on signup | no |
+| `SEARCH_API_KEY` | Brave Search | free tier | **yes** — it asks for one at signup |
 
-**Without `SEARCH_API_KEY` there are no real pages in the results at all.** The search still works, but
+**Precedence:** if more than one is set, `TAVILY_API_KEY` wins, then `SERPER_API_KEY`, then
+`SEARCH_API_KEY`. Only one backend is ever called, and the answer's `provider` field names which one
+it was. Google's Custom Search JSON API is deliberately not an option: it is closed to new customers
+and shuts down on 2027-01-01.
+
+Whichever it is, the key travels in a **header** — `Authorization: Bearer` for Tavily, `X-API-Key`
+for Serper, `X-Subscription-Token` for Brave — never in a URL. The endpoint asks for the top 8
+results and appends "recipe" to the query.
+
+**With no search key at all there are no real pages in the results.** The search still works, but
 every result is the recipe reader's own suggestion — a dish name with nothing behind it — and the app
 says so above the list. Tapping one still writes the dish out into the form. Since v1.95 the ↗ beside a
 suggestion runs a **web search for that dish** rather than being absent, so there is always a way
-through to a website; with the key set, ↗ opens the page itself, which is the stronger promise of the
+through to a website; with a key set, ↗ opens the page itself, which is the stronger promise of the
 two and the reason they are worded differently.
 
-URLs a search hands back are checked with the same host guard as `/api/recipe`, because the app feeds
-them straight back to that endpoint to be fetched: a search engine is free to return a link pointing
-inside this network, and it is dropped here before the app ever sees it.
+### Searching TikTok (v1.96)
+
+The search panel has a **🌐 Web / 🎵 TikTok** toggle. On TikTok the search is scoped to
+`tiktok.com` — through Tavily's `include_domains`, or through `site:tiktok.com` in the query for
+Serper and Brave, since those two only accept plain query text.
+
+This scope **needs one of the search keys**. With none set it answers `no_video_search` rather than
+asking the model for dish names: an invented dish name is not a TikTok video, and offering it as one
+would be the app pretending. Pasting a TikTok link still works either way.
+
+Tapping a TikTok result sends its URL to `/api/recipe`, which routes TikTok hosts to the caption
+reader added in v1.95 — so the same limit applies: a video whose recipe is **only spoken aloud** has
+nothing in its caption to read, and that comes back as `no_caption`.
+
+URLs a search hands back are checked with the same host guard as `/api/recipe`, for every backend,
+because the app feeds them straight back to that endpoint to be fetched: a search engine is free to
+return a link pointing inside this network, and it is dropped here before the app ever sees it.
 
 ## Why the key stays server-side
 

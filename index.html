@@ -1529,7 +1529,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.95";
+const APP_VERSION = "v1.96";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -5150,7 +5150,7 @@ async function planSearch(){
   if(!q){ planAdd.impErr="Type what you want to cook."; render(); return; }
   planAdd.sq=q; planAdd.impBusy=true; planAdd.impErr=""; planAdd.sres=null; render();
   let res=null, data=null;
-  try{ res=await fetch("/api/recipe-search",{ method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({q}) }); }
+  try{ res=await fetch("/api/recipe-search",{ method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({q, scope:(planAdd.sscope||"web")}) }); }
   catch(e){ res=null; }
   if(!planAdd) return;
   planAdd.impBusy=false;
@@ -5168,7 +5168,9 @@ async function planSearch(){
 function planSearchMessage(code){
   switch(code){
     case "no_results":      return "Nothing found for that — try a different name.";
-    case "search_key":      return "Web search refused its key (SEARCH_API_KEY — see docs/ai-setup.md).";
+    case "search_key":      return "Web search refused its key (TAVILY_API_KEY / SERPER_API_KEY / SEARCH_API_KEY — see docs/ai-setup.md).";
+    /* v1.96: TikTok search needs a real search backend; the model cannot stand in for one here. */
+    case "no_video_search": return "Searching TikTok needs a search key — add TAVILY_API_KEY (free, no card) in Vercel (see docs/ai-setup.md). You can still paste a TikTok link.";
     case "not_configured":  return "Recipe reading isn't set up yet — add a GEMINI_API_KEY (or GROQ_API_KEY) in Vercel (see docs/ai-setup.md).";
     case "model":           return "The recipe model is no longer available — set GEMINI_MODEL (or GROQ_MODEL) in Vercel (see docs/ai-setup.md).";
     /* v1.93: same two, said the same way, on the search path. */
@@ -5234,8 +5236,11 @@ function planAddSheet(){
           <input id="paImpVal" placeholder="Paste a recipe link — a page or a TikTok" value="${esc(planAdd.impVal||"")}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="url" style="${ingCSS}" />
           <button class="pimpgo" id="paImpGo"${planAdd.impBusy?" disabled":""}>Read it</button>
         </div>` : ""}
-      ${planAdd.imp==='search' ? `<div class="pimppanel">
-          <input id="paImpVal" placeholder="What do you want to cook?" value="${esc(planAdd.sq||"")}" autocomplete="off" autocapitalize="none" spellcheck="false" style="${ingCSS}" />
+      ${planAdd.imp==='search' ? `${/* v1.96: the same search, pointed somewhere else. TikTok needs a search key of its own —
+             a made-up dish name is not a video — and a tapped result is read through the caption path. */""}
+        <div class="seg segfull" style="margin-bottom:8px"><button data-sscope="web" class="${(planAdd.sscope||'web')==='web'?'on':''}">🌐 Web</button><button data-sscope="tiktok" class="${planAdd.sscope==='tiktok'?'on':''}">🎵 TikTok</button></div>
+        <div class="pimppanel">
+          <input id="paImpVal" placeholder="${planAdd.sscope==='tiktok'?'Find a recipe video':'What do you want to cook?'}" value="${esc(planAdd.sq||"")}" autocomplete="off" autocapitalize="none" spellcheck="false" style="${ingCSS}" />
           <button class="pimpgo" id="paImpGo"${planAdd.impBusy?" disabled":""}>Find</button>
         </div>
         ${Array.isArray(planAdd.sres) ? (planAdd.sres.length ? `
@@ -5245,11 +5250,14 @@ function planAddSheet(){
                 escaped. An iframe was rejected — recipe sites refuse to be framed. */""}
           <div class="presults">${planAdd.sres.map((r,i)=>{
             /* v1.95: a suggestion has no page of its own, so ↗ searches the web for it instead of
-               disappearing. With no SEARCH_API_KEY set, every result is a suggestion — which left
+               disappearing. With no search key (TAVILY_API_KEY) set, every result is a suggestion — which left
                the search with no route to an actual website at all. The two cases stay distinct in
                what they promise: one opens THE page, the other goes looking for one. */
             const web=/^https?:\/\//i.test(r.url||"");
-            const u = web ? r.url : "https://duckduckgo.com/?q=" + encodeURIComponent(r.title + " recipe");
+            /* v1.96: and when the scope is TikTok, that fallback searches TikTok — otherwise ↗ would
+               quietly change what was asked for. */
+            const tk = planAdd.sscope==='tiktok';
+            const u = web ? r.url : "https://duckduckgo.com/?q=" + encodeURIComponent(r.title + (tk ? " recipe site:tiktok.com" : " recipe"));
             const lbl = web ? ("Open " + r.title) : ("Search the web for " + r.title);
             return `<div class="preswrap"><button class="presult" data-pres="${i}">
             <span class="pres-t">${esc(r.title)}</span>
@@ -5309,13 +5317,13 @@ function wirePlanTab(){
       if(longFired){
         const en=planEntries(day).find(x=>x.id===id);
         const r=en && en.kind==="recipe" ? recipeById(en.rid) : null;
-        if(r){ planAdd={ day, kind:"recipe", name:r.name, ing:(r.ing||[]).map(planIngNorm), rid:r.id, edit:true, q:"", imp:null, impVal:"", impBusy:false, impErr:"", sq:"", sres:null, ssrc:"" }; render(); return; }
+        if(r){ planAdd={ day, kind:"recipe", name:r.name, ing:(r.ing||[]).map(planIngNorm), rid:r.id, edit:true, q:"", imp:null, impVal:"", impBusy:false, impErr:"", sq:"", sres:null, ssrc:"", sscope:"web" }; render(); return; }
       }
       planPick={day,id}; render(); };
   });
 
   const pmBg=app.querySelector("#pmBg"); if(pmBg) pmBg.onclick=e=>{ if(e.target===pmBg){ planMenu=null; render(); } };
-  const pmR=app.querySelector("#pmRecipe"); if(pmR) pmR.onclick=()=>{ planAdd={day:planMenu,kind:"recipe",name:"",ing:[],rid:"",edit:false,q:"",imp:null,impVal:"",impBusy:false,impErr:"",sq:"",sres:null,ssrc:""}; planMenu=null; render(); };
+  const pmR=app.querySelector("#pmRecipe"); if(pmR) pmR.onclick=()=>{ planAdd={day:planMenu,kind:"recipe",name:"",ing:[],rid:"",edit:false,q:"",imp:null,impVal:"",impBusy:false,impErr:"",sq:"",sres:null,ssrc:"",sscope:"web"}; planMenu=null; render(); };
   const pmF=app.querySelector("#pmFood");   if(pmF) pmF.onclick=()=>{ planAdd={day:planMenu,kind:"food",name:"",ing:[],rid:"",edit:false,q:"",cat:"",emoji:""}; planMenu=null; render(); };
 
   const paBg=app.querySelector("#paBg"); if(paBg) paBg.onclick=e=>{ if(e.target===paBg){ planAdd=null; render(); } };
@@ -5342,6 +5350,9 @@ function wirePlanTab(){
     const k=b.dataset.pimp;
     if(k==="photo"){ const f=app.querySelector("#paPhoto"); if(f) f.click(); return; }
     planAdd.imp = (planAdd.imp===k) ? null : k; planAdd.impVal=""; planAdd.impErr=""; render(); });
+  app.querySelectorAll("[data-sscope]").forEach(b=>b.onclick=()=>{
+    if(!planAdd || planAdd.impBusy) return;
+    planAdd.sscope=b.dataset.sscope; planAdd.sres=null; planAdd.impErr=""; render(); });
   const paPh=app.querySelector("#paPhoto");
   if(paPh) paPh.onchange=()=>{ const file=paPh.files && paPh.files[0]; if(!file || !planAdd) return;
     planAdd.impBusy=true; planAdd.impErr=""; render();
@@ -5438,7 +5449,7 @@ function takeSharedRecipe(){
   if(!me) return;                  // not set up yet — there is nothing to import into
   optOpen=false; listsOpen=false; view="plan"; planWeek=0;
   planAdd = { day:dayKey(new Date()), kind:"recipe", name:"", ing:[], rid:"", edit:false, q:"",
-              imp:"link", impVal:u, impBusy:false, impErr:"", sq:"", sres:null, ssrc:"" };
+              imp:"link", impVal:u, impBusy:false, impErr:"", sq:"", sres:null, ssrc:"", sscope:"web" };
   render();
   planImport({ url:u });
 }
