@@ -10,7 +10,10 @@
 //              { dish }   the name of a dish, written out by the model (v1.89) —
 //                         used for search results that have no page behind them
 //            ->  { title, servings, items: [{ name, qty, weight, category }] }
-//            errors are { error, code } so the app can say something useful.
+//            errors are { error, code } so the app can say something useful:
+//            bad_url, blocked_url, not_a_page, fetch_failed, no_caption (v1.95 — a TikTok
+//            whose caption carries no recipe), bad_image, too_large, too_long, missing,
+//            not_configured, model, busy, quota, vision_model, upstream, unreadable.
 //
 // The key lives in the GEMINI_API_KEY or GROQ_API_KEY environment variable (Vercel
 // Project Settings -> Environment Variables). It is never logged, never returned to the
@@ -210,9 +213,48 @@ async function readCapped(resp) {
   return Buffer.concat(chunks).toString('utf8');
 }
 
+/* v1.93: a bot-shaped user-agent is refused by a good share of recipe sites, which is why some
+   links worked and some did not. This is one page, fetched because someone asked for it, on their
+   behalf — so it asks the way their browser would. The guards (scheme, host, redirect re-checks,
+   size cap, timeout) are what keep this fetch safe; the header was never doing that work. */
+const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
+
+/* v1.95: a TikTok page is assembled by script — its HTML holds no recipe, so the ordinary page
+   fetch returns nothing worth parsing. The caption is the part that IS published, through TikTok's
+   public key-free oEmbed endpoint, and a recipe TikTok usually puts the ingredients there. Anchored
+   to the END of the hostname: "tiktok.com.example.com" and "evil-tiktok.com" are NOT TikTok, and
+   must go down the ordinary path where the usual guards apply. */
+const TIKTOK_HOST = /(^|\.)tiktok\.com$/i;
+const TIKTOK_OEMBED = 'https://www.tiktok.com/oembed?url=';
+async function tiktokCaption(u) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const r = await fetch(TIKTOK_OEMBED + encodeURIComponent(u.toString()), {
+      signal: ctl.signal,
+      headers: { 'accept': 'application/json', 'user-agent': BROWSER_UA },
+    });
+    if (!r.ok) { console.error('tiktok oembed ' + r.status); return { code: 'fetch_failed' }; }
+    let j = null;
+    try { j = JSON.parse(await readCapped(r)); } catch (e) { return { code: 'fetch_failed' }; }
+    const cap = String((j && j.title) || '').replace(/\s+/g, ' ').trim();
+    /* A caption with nothing in it is the common case where the recipe is only spoken in the video.
+       Say that, rather than handing the model a sentence and letting it invent the rest. */
+    if (cap.replace(/\s/g, '').length < 40) { console.error('tiktok caption too short'); return { code: 'no_caption' }; }
+    return { text: cap.slice(0, MAX_INPUT_CHARS) };
+  } catch (e) {
+    return { code: 'fetch_failed' };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function fetchRecipeText(rawUrl) {
   let u = safeUrl(rawUrl);
   if (!u) return { code: 'bad_url' };
+
+  /* Short share links (vm.tiktok.com/…) are TikTok hosts too, and oEmbed resolves them itself. */
+  if (TIKTOK_HOST.test(u.hostname)) return tiktokCaption(u);
 
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), FETCH_TIMEOUT_MS);
@@ -223,12 +265,7 @@ async function fetchRecipeText(rawUrl) {
         redirect: 'manual',
         signal: ctl.signal,
         headers: {
-          /* v1.93: a bot-shaped user-agent is refused by a good share of recipe sites, which is why
-             some links worked and some did not. This is one page, fetched because someone asked for
-             it, on their behalf — so it asks the way their browser would. The guards above (scheme,
-             host, redirect re-checks, size cap, timeout) are what keep this fetch safe; the header
-             was never doing that work. */
-          'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+          'user-agent': BROWSER_UA,
           'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           'accept-language': 'en-US,en;q=0.9',
         },
@@ -365,7 +402,8 @@ module.exports = async (req, res) => {
       if (got.code) {
         const msg = got.code === 'bad_url' || got.code === 'blocked_url' ? 'That link cannot be opened'
           : got.code === 'not_a_page' ? 'That link is not a web page'
-            : 'Could not read that page';
+            : got.code === 'no_caption' ? 'That TikTok description has no ingredients in it'
+              : 'Could not read that page';
         /* v1.93: a 502 with nothing in the log is a bug that costs an afternoon. Every bail says why. */
         console.error('page fetch ' + got.code + ' for a link');
         return fail(res, got.code === 'bad_url' || got.code === 'blocked_url' ? 400 : 502, got.code, msg);

@@ -1529,7 +1529,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.94";
+const APP_VERSION = "v1.95";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -5133,6 +5133,7 @@ function planImpMessage(code){
     case "vision_model":   return "Reading photos needs a vision model set up (GROQ_VISION_MODEL — see docs/ai-setup.md). A link or pasted text works now.";
     case "bad_url": case "blocked_url": return "That link can't be opened. Paste the recipe's web address.";
     case "not_a_page":     return "That link isn't a web page.";
+    case "no_caption":     return "That TikTok's description doesn't list the ingredients — many put the recipe only in the video. Try pasting the ingredients as text.";
     case "fetch_failed":   return "Couldn't read that page — some sites block it. Try pasting the recipe text instead.";
     case "bad_image": case "too_large": return "That photo didn't work — try a closer, clearer shot.";
     case "too_long":       return "That's a lot of text — paste just the recipe.";
@@ -5230,7 +5231,7 @@ function planAddSheet(){
       ${planAdd.impBusy ? `<p class="pimpnote">Reading the recipe…</p>` : ""}
       ${planAdd.impErr ? `<p class="pimpnote err">${esc(planAdd.impErr)}</p>` : ""}
       ${planAdd.imp==='link' ? `<div class="pimppanel">
-          <input id="paImpVal" placeholder="Paste a recipe link" value="${esc(planAdd.impVal||"")}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="url" style="${ingCSS}" />
+          <input id="paImpVal" placeholder="Paste a recipe link — a page or a TikTok" value="${esc(planAdd.impVal||"")}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="url" style="${ingCSS}" />
           <button class="pimpgo" id="paImpGo"${planAdd.impBusy?" disabled":""}>Read it</button>
         </div>` : ""}
       ${planAdd.imp==='search' ? `<div class="pimppanel">
@@ -5238,17 +5239,23 @@ function planAddSheet(){
           <button class="pimpgo" id="paImpGo"${planAdd.impBusy?" disabled":""}>Find</button>
         </div>
         ${Array.isArray(planAdd.sres) ? (planAdd.sres.length ? `
-          <p class="pimpnote">${planAdd.ssrc==='web' ? 'From the web — tap one to read it into the form, or ↗ to open the page.' : 'No web search is set up, so these are the recipe reader\'s own suggestions.'}</p>
+          <p class="pimpnote">${planAdd.ssrc==='web' ? 'From the web — tap one to read it into the form, or ↗ to open the page.' : 'No web search is set up, so these are the recipe reader\'s own suggestions — tap one to write it out, or ↗ to search the web for it.'}</p>
           ${/* v1.94: the page opens in a new context so the phone\'s in-app browser handles it and Done
                 comes back here. The URL is from a search engine, so it is untrusted: only http(s), and
                 escaped. An iframe was rejected — recipe sites refuse to be framed. */""}
           <div class="presults">${planAdd.sres.map((r,i)=>{
-            const u=/^https?:\/\//i.test(r.url||"") ? r.url : "";
+            /* v1.95: a suggestion has no page of its own, so ↗ searches the web for it instead of
+               disappearing. With no SEARCH_API_KEY set, every result is a suggestion — which left
+               the search with no route to an actual website at all. The two cases stay distinct in
+               what they promise: one opens THE page, the other goes looking for one. */
+            const web=/^https?:\/\//i.test(r.url||"");
+            const u = web ? r.url : "https://duckduckgo.com/?q=" + encodeURIComponent(r.title + " recipe");
+            const lbl = web ? ("Open " + r.title) : ("Search the web for " + r.title);
             return `<div class="preswrap"><button class="presult" data-pres="${i}">
             <span class="pres-t">${esc(r.title)}</span>
             ${r.site?`<span class="pres-s">${esc(r.site)}</span>`:""}
             ${r.note?`<span class="pres-n">${esc(r.note)}</span>`:""}
-          </button>${u?`<a class="presopen" href="${esc(u)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${esc(r.title)} in a browser">↗</a>`:""}</div>`;
+          </button><a class="presopen" href="${esc(u)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(lbl)}" title="${esc(lbl)}">↗</a></div>`;
           }).join("")}</div>` : `<p class="pimpnote">Nothing found for that.</p>`) : ""}` : ""}
       ${planAdd.imp==='paste' ? `<div class="pimppanel col">
           <textarea id="paImpVal" rows="5" placeholder="Paste the recipe here — ingredients and all" style="width:100%;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;background:var(--card);color:var(--text);font-size:15px;box-sizing:border-box;resize:none">${esc(planAdd.impVal||"")}</textarea>

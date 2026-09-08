@@ -64,6 +64,7 @@ Groq has a generous free tier that easily covers a household. Its text model is
 | `{ text }` | pasted recipe text is parsed straight away |
 | `{ url }`  | the page is fetched **on the server**, reduced to text, then parsed |
 | `{ image }`| a data: URL of a photo is sent to a vision model |
+| `{ dish }` | the name of a dish, written out by the model |
 
 **The link path fetches a URL the user typed**, which is a request only the server can
 make — so it is fenced in: `http`/`https` only, no loopback, private, link-local or
@@ -71,6 +72,28 @@ make — so it is fenced in: `http`/`https` only, no loopback, private, link-loc
 inward), an 8s timeout, a 1.5MB read cap, and HTML/plain-text content types only. Where a page
 carries schema.org `Recipe` JSON-LD — most recipe sites do — the ingredient list is taken from
 that rather than from the prose, which is both cheaper and more accurate.
+
+**A TikTok link is read from the video's caption (v1.95).** A TikTok page is assembled by script, so
+fetching its HTML returns nothing worth parsing. The caption is the part that *is* published, through
+TikTok's own public oEmbed endpoint (`https://www.tiktok.com/oembed?url=…`) — no key, no account, no
+scraping — and a recipe TikTok usually puts the ingredients there. Share links (`vm.tiktok.com/…`)
+work too, because oEmbed resolves them itself. The host match is anchored to the end of the hostname,
+so `tiktok.com.example.com` and `evil-tiktok.com` are *not* TikTok and go down the ordinary page path
+with every guard above still applied. The honest limit: a video whose recipe is only **spoken aloud**
+has nothing to read, and the app says so rather than letting the model invent one — the code is
+`no_caption`, and the message asks you to paste the ingredients as text.
+
+Error codes the read path can answer with:
+
+| code | means |
+|---|---|
+| `bad_url` / `blocked_url` | not a link, or a host the server must not reach |
+| `not_a_page` | the link is not HTML (a PDF, an image, a video file) |
+| `fetch_failed` | the page would not load, or had too little text in it |
+| `no_caption` | a TikTok whose caption carries no recipe — usually a spoken one (v1.95) |
+| `bad_image` / `too_large` | the photo was not a photo, or was too big to send |
+| `too_long` | more pasted text than the endpoint accepts |
+| `not_configured` / `model` / `busy` / `quota` / `vision_model` | the model or its setup — see below |
 
 **The text model is a setting on both providers, because providers retire models on their own
 schedule** — Groq shut `llama-3.1-8b-instant` down for free and developer tiers on 16 August 2026,
@@ -145,8 +168,14 @@ SEARCH_API_KEY = <a Brave Search API key>
 
 alongside the model key (Vercel → Settings → Environment Variables), then redeploy. Brave has a free
 tier; the endpoint asks for the top 8 results and appends "recipe" to the query. The key is sent as the
-`X-Subscription-Token` header, never in a URL. Without it the search still works — it just answers from
-the model, and says so.
+`X-Subscription-Token` header, never in a URL.
+
+**Without `SEARCH_API_KEY` there are no real pages in the results at all.** The search still works, but
+every result is the recipe reader's own suggestion — a dish name with nothing behind it — and the app
+says so above the list. Tapping one still writes the dish out into the form. Since v1.95 the ↗ beside a
+suggestion runs a **web search for that dish** rather than being absent, so there is always a way
+through to a website; with the key set, ↗ opens the page itself, which is the stronger promise of the
+two and the reason they are worded differently.
 
 URLs a search hands back are checked with the same host guard as `/api/recipe`, because the app feeds
 them straight back to that endpoint to be fetched: a search engine is free to return a link pointing

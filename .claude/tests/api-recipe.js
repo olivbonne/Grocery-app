@@ -43,6 +43,9 @@ let groqReply = { title: 'Stew', servings: 4, items: [{ name: 'onion', qty: 2, w
 let groqStatus = 200;
 let groqErrBody = '{}';   /* v1.91: what a failing upstream SAYS decides which error the app shows */
 let pages = {};
+/* v1.95: a TikTok link is read through TikTok's public oEmbed endpoint, so the stub answers that
+   host too. `tiktokOembed` is what the endpoint gets back (null = the endpoint itself failing). */
+let tiktokOembed = { title: '' };
 /* v1.93: the endpoint may now call the model MORE THAN ONCE — an overloaded model is retried. A
    single fixed reply cannot express "503, then 200", which is the whole behaviour of this version,
    so the stub can be handed a queue of replies it shifts through. Empty queue = the old behaviour. */
@@ -67,12 +70,16 @@ globalThis.fetch = async (url, opts) => {
     return new Response(JSON.stringify({ choices: [{ message: { content } }] }),
       { status: 200, headers: { 'content-type': 'application/json' } });
   }
+  if (String(url).indexOf('tiktok.com/oembed') >= 0) {
+    if (!tiktokOembed) return new Response('nope', { status: 404 });
+    return new Response(JSON.stringify(tiktokOembed), { status: 200, headers: { 'content-type': 'application/json' } });
+  }
   const p = pages[String(url)];
   if (!p) return new Response('not found', { status: 404 });
   if (p.redirect) return new Response(null, { status: 302, headers: { location: p.redirect } });
   return new Response(p.body, { status: p.status || 200, headers: { 'content-type': p.type || 'text/html' } });
 };
-const reset = () => { calls = []; modelQueue = []; groqStatus = 200; groqErrBody = '{}'; pages = {}; groqReply = { title: 'Stew', servings: 4, items: [{ name: 'onion', qty: 2, weight: '', category: 'vegetable' }] }; };
+const reset = () => { calls = []; modelQueue = []; groqStatus = 200; groqErrBody = '{}'; pages = {}; tiktokOembed = { title: '' }; groqReply = { title: 'Stew', servings: 4, items: [{ name: 'onion', qty: 2, weight: '', category: 'vegetable' }] }; };
 
 const IMG = 'data:image/jpeg;base64,' + 'A'.repeat(200);
 
@@ -224,6 +231,50 @@ const IMG = 'data:image/jpeg;base64,' + 'A'.repeat(200);
   reset();
   r = await call({ url: 'https://recipes.example.com/missing' });
   ok('a link that will not load says so', r.body.code === 'fetch_failed', JSON.stringify(r.body));
+
+  /* ── v1.95: a recipe from a TikTok link ───────────────────────────────────
+     A TikTok page is built by script, so its HTML has no recipe in it. The caption IS published,
+     through a public key-free oEmbed endpoint, and a recipe TikTok usually puts the ingredients
+     there. The host match is anchored to the END of the hostname, and that is the check that
+     matters most here: a loose match would hand a URL down a different code path. */
+  const CAP = 'Easy beef goulash: 2 yellow onions, 500g beef chuck, 3 tbsp paprika, 2 cups stock. Serves 4.';
+  reset();
+  tiktokOembed = { title: CAP };
+  r = await call({ url: 'https://www.tiktok.com/@cook/video/123' });
+  ok('a TikTok link is read', r.code === 200 && r.body.items.length === 1, JSON.stringify({ c: r.code, b: r.body }));
+  ok('…through the oEmbed endpoint, with the video URL percent-encoded into it',
+    calls[0].url.indexOf('https://www.tiktok.com/oembed?url=') === 0
+    && calls[0].url.indexOf(encodeURIComponent('https://www.tiktok.com/@cook/video/123')) > 0, calls[0].url);
+  ok('…and the TikTok page itself is never fetched',
+    !calls.some(c => c.url === 'https://www.tiktok.com/@cook/video/123'), JSON.stringify(calls.map(c => c.url)));
+  ok('…with the caption handed to the model as the text to parse',
+    /beef chuck/.test(JSON.parse(calls[calls.length - 1].opts.body).messages[1].content),
+    JSON.parse(calls[calls.length - 1].opts.body).messages[1].content.slice(0, 80));
+
+  reset();
+  tiktokOembed = { title: 'so good 😍' };
+  r = await call({ url: 'https://vm.tiktok.com/ZM123/' });
+  ok('a caption with no recipe in it says exactly that, rather than failing generically',
+    r.code === 502 && r.body.code === 'no_caption', JSON.stringify({ c: r.code, b: r.body }));
+  ok('…and the model is NOT called — parsing an empty caption invents a recipe',
+    calls.length === 1 && calls[0].url.indexOf('oembed') > 0, JSON.stringify(calls.map(c => c.url)));
+
+  /* The one that matters: a hostname that merely CONTAINS "tiktok.com" is not TikTok. */
+  for (const host of ['tiktok.com.evil.example', 'evil-tiktok.com']) {
+    reset();
+    pages['https://' + host + '/x'] = { body: '<html><body><p>1 onion</p><p>2 carrots</p><p>Simmer twenty minutes and season to taste, then serve.</p></body></html>' };
+    r = await call({ url: 'https://' + host + '/x' });
+    ok(host + ' is NOT treated as TikTok — it goes down the ordinary page path',
+      r.code === 200 && calls[0].url === 'https://' + host + '/x'
+      && !calls.some(c => c.url.indexOf('oembed') >= 0), JSON.stringify(calls.map(c => c.url)));
+  }
+
+  reset();
+  pages['https://recipes.example.com/soup'] = { body: '<html><body><h1>Soup</h1><p>1 onion</p><p>2 carrots</p><p>Simmer for twenty minutes and season to taste.</p></body></html>' };
+  r = await call({ url: 'https://recipes.example.com/soup' });
+  ok('an ordinary recipe link still goes down the page path, untouched by the TikTok branch',
+    r.code === 200 && calls[0].url === 'https://recipes.example.com/soup'
+    && !calls.some(c => c.url.indexOf('oembed') >= 0), JSON.stringify(calls.map(c => c.url)));
 
   // ── photos ────────────────────────────────────────────────────────────────
   reset();

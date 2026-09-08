@@ -206,11 +206,21 @@ const SUGGESTED = { source:"model", results:[
     await tap('[data-pimp="search"]');
     await page.fill('#paImpVal', 'beef goulash');
     await tap('#paImpGo');
+    /* SUPERSEDED by v1.95: this asserted that a suggestion gets NO ↗ at all. That rule was right in
+       the narrow sense and a dead end in practice — with no SEARCH_API_KEY set every result is a
+       suggestion, so the ↗ never appeared and a search could not reach a website at all. v1.95 gives
+       it one that SEARCHES for the dish. What this check was really protecting is unchanged and is
+       what it now asserts: a suggestion must never be handed a page url, because it has no page —
+       inventing one would be the actual lie. */
     const none = await page.evaluate(()=>({
       results:document.querySelectorAll('[data-pres]').length,
-      opens:document.querySelectorAll('.presopen').length }));
+      opens:document.querySelectorAll('.presopen').length,
+      href:(document.querySelector('.presopen')||{}).getAttribute
+        ? document.querySelector('.presopen').getAttribute('href') : null }));
     ok('a suggestion with no page behind it does not pretend to have one',
-       none.results===1 && none.opens===0, JSON.stringify(none));
+       none.results===1 && none.opens===1
+       && /^https:\/\/duckduckgo\.com\/\?q=/.test(none.href||'')
+       && !/recipes\.example\.com/.test(none.href||''), JSON.stringify(none));
 
     if(out) await page.screenshot({ path: out });
   }catch(e){ ok('the suite ran to the end', false, e.message); }
