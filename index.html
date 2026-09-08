@@ -1529,7 +1529,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.96";
+const APP_VERSION = "v1.97";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1570,6 +1570,11 @@ function roundAmt(n){
   if(n>=10)  return String(Math.round(n));
   const r=Math.round(n*10)/10; return String(r).replace(/\.0$/,"");
 }
+/* v1.97: a spoon is a spoon. "2 tbsp" is written identically in a British and an American recipe,
+   so turning it into "30 ml" is noise dressed up as help. These units are neutral: never converted
+   out of, and — just as important — never converted INTO, or Imperial would keep reintroducing them
+   from millilitres and the problem would simply face the other way. */
+const NEUTRAL_UNITS = /^(tsp|teaspoons?|tbsp|tbs|tablespoons?)$/i;
 function showAmt(w){
   const s=String(w||"").trim(); if(!s) return s;
   const mode=unitsMode(); if(mode==="off") return s;
@@ -1577,6 +1582,7 @@ function showAmt(w){
   if(!m) return s;
   const n=parseNum(m[1]); const u=UNIT_TABLE[m[2].toLowerCase()];
   if(n===null || !u) return s;
+  if(NEUTRAL_UNITS.test(m[2])) return s;             // v1.97: spoons are left exactly as written
   const isMetric=!!u.metric;
   if(mode==="metric" && isMetric) return s;         // already the way they want it
   if(mode==="imperial" && !isMetric) return s;
@@ -1588,8 +1594,7 @@ function showAmt(w){
   const ml=n*u.ml;
   if(mode==="metric") return ml>=1000 ? roundAmt(ml/1000)+" l" : roundAmt(ml)+" ml";
   if(ml>=236.588){ const c=roundAmt(ml/236.588); return c+(c==="1"?" cup":" cups"); }
-  if(ml>=14.7868) return roundAmt(ml/14.7868)+" tbsp";
-  return roundAmt(ml/4.92892)+" tsp";
+  return roundAmt(ml/29.5735)+" fl oz";
 }
 
 /* v1.63 item 3: a slot can be marked as the look the app STARTS in. It is applied here, at the very
@@ -4936,9 +4941,14 @@ function atStorePrompt(){
    a meal plan is a household thing in exactly the way the list is — one additive field on
    the state, read defensively so an older document is simply an empty plan.
    DAY_MS is already declared up in the restock-cadence code — one per file. */
+/* v1.97: `saved` is carried explicitly. This function rebuilds state.plan from a fixed shape rather
+   than merging, so a field it does not name is destroyed by the next write — saved plans would have
+   disappeared the first time a meal was added. Any future field has to be added here too. */
 function planData(){ const p = (state.plan && typeof state.plan==="object") ? state.plan : null;
-  return { days:(p && p.days) || {}, recipes:(p && p.recipes) || [] }; }
-function writePlan(next){ state.plan = { days:next.days||{}, recipes:next.recipes||[] }; save(); }
+  return { days:(p && p.days) || {}, recipes:(p && p.recipes) || [],
+           saved:(p && Array.isArray(p.saved)) ? p.saved : [] }; }
+function writePlan(next){ state.plan = { days:next.days||{}, recipes:next.recipes||[],
+  saved:Array.isArray(next.saved)?next.saved:[] }; save(); }
 function dayKey(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function weekStart(off){ const d=new Date(); d.setHours(0,0,0,0);
   d.setDate(d.getDate() - ((d.getDay()+6)%7) + off*7);   // weeks run Monday to Sunday
@@ -4966,6 +4976,40 @@ function planDeleteRecipe(id){
   writePlan(P);
 }
 function recipeById(id){ return planData().recipes.find(r=>r.id===id) || null; }
+/* v1.97: ids are minted from the clock, and applying a week writes seven entries in the same
+   millisecond. Without a counter they would all share an id, and removing one chip would remove
+   every meal in the week — planRemoveEntry filters by id. */
+let _peSeq = 0;
+function planEntryId(){ return "pe" + Date.now().toString(36) + (_peSeq++).toString(36); }
+/* v1.97: a saved week is stored BY WEEKDAY (0 = Monday … 6 = Sunday) so it can be applied to any
+   other week. Entries keep only what a plan needs and never the old id — applying mints fresh ones. */
+function planWeekKeys(off){ const s=weekStart(off); const out=[];
+  for(let i=0;i<7;i++) out.push(dayKey(new Date(s.getTime()+i*DAY_MS)));
+  return out; }
+function planWeekCount(off){ const P=planData();
+  return planWeekKeys(off).reduce((n,k)=>n+((P.days[k]||[]).length),0); }
+function planSavedStrip(e){ return { kind:e.kind||"food", name:e.name||"", emoji:e.emoji||"",
+  cat:e.cat||"", rid:e.rid||"" }; }
+function planSaveWeek(off, name){
+  const P=planData(), ks=planWeekKeys(off), days={};
+  ks.forEach((k,i)=>{ const es=(P.days[k]||[]).map(planSavedStrip); if(es.length) days[String(i)]=es; });
+  const pl={ id:"pl"+Date.now().toString(36), name:String(name||"").trim().slice(0,40), days };
+  P.saved = P.saved.concat([pl]).slice(-20);
+  writePlan(P);
+}
+function planDeleteSaved(id){ const P=planData(); P.saved=P.saved.filter(x=>x.id!==id); writePlan(P); }
+function planClearWeek(off){ const P=planData(); P.days=Object.assign({},P.days);
+  planWeekKeys(off).forEach(k=>{ delete P.days[k]; }); writePlan(P); }
+/* Applying REPLACES the week rather than merging — merging silently doubles a plan applied twice. */
+function planApplySaved(id, off){
+  const P=planData(), pl=P.saved.find(x=>x.id===id); if(!pl) return;
+  P.days=Object.assign({},P.days);
+  const ks=planWeekKeys(off);
+  ks.forEach((k,i)=>{ const es=(pl.days&&pl.days[String(i)])||[];
+    if(es.length) P.days[k]=es.map(e=>Object.assign({id:planEntryId()}, planSavedStrip(e)));
+    else delete P.days[k]; });
+  writePlan(P);
+}
 /* v1.84: an ingredient carries its category now, so it can go onto the list as the real item rather
    than as loose text. Recipes written before this version hold plain strings — normalise on read. */
 /* v1.94: an ingredient is a name, a category and an AMOUNT. It was the first two, so everything the
@@ -4999,6 +5043,7 @@ function planIngFromText(t){
 }
 let planWeek = 0;        // which week the Plan tab is showing, 0 = this one
 let planMenu = null;     // dayKey whose + menu is open
+let planWeekOpen = false; // v1.97: the save/clear/apply sheet for the week on screen
 let planAdd = null;      // { day, kind:"food"|"recipe", name, ing:[{name,cat}], rid, edit, q, cat, emoji,
                          //   imp:null|"link"|"paste", impVal, impBusy, impErr }  // v1.86 recipe import
 let planPick = null;     // { day, id } — the chip whose actions are open
@@ -5036,12 +5081,14 @@ function renderPlanTab(){
         <button class="pwarrow" id="pwPrev" aria-label="Previous week">‹</button>
         <button class="pwlbl" id="pwNow">${esc(weekLabel(planWeek))}</button>
         <button class="pwarrow" id="pwNext" aria-label="Next week">›</button>
+        <button class="pwarrow" id="pwMore" aria-haspopup="dialog" aria-label="Save or clear this week">⋯</button>
       </div>
       ${days.join("")}
     </div></div>
   </div>
   ${bottomNav({planId:"planNavP",planActive:true,cartId:"cartNavP",cartActive:false,setId:"setNavP"})}${userTilesHTML()}
   ${planMenu?planMenuSheet():""}
+  ${planWeekOpen?planWeekSheet():""}
   ${planAdd?planAddSheet():""}
   ${planPick?planPickSheet():""}
   ${smartOpen?smartSheet():""}
@@ -5056,6 +5103,21 @@ function planMenuSheet(){
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${esc(d.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"}))}</div>
     <button class="optaction" id="pmRecipe">Add recipe</button>
     <button class="optaction" id="pmFood">Add food</button>
+  </div></div>`;
+}
+/* v1.97: save this week as a reusable plan, clear it, or apply one already saved. The heading names
+   the week being acted on — the sheet can be opened on any week, so "Clear this week" must never be
+   ambiguous about which. */
+function planWeekSheet(){
+  const P=planData(), lbl=weekLabel(planWeek), n=planWeekCount(planWeek);
+  const saved=P.saved||[];
+  return `<div class="sheet-bg" id="pwBg"><div class="sheet" id="pwSheet">
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">${esc(lbl)}</div>
+    <p class="hint" style="text-align:left;margin:0 0 12px">${n?`${n} meal${n===1?"":"s"} planned.`:"Nothing planned yet — nothing to save."}</p>
+    <button class="optaction" id="pwSave"${n?"":" disabled"}>💾 Save this week</button>
+    <button class="optaction" id="pwClear"${n?"":" disabled"} style="border-color:#C24A33;color:#C24A33">🧹 Clear this week</button>
+    ${saved.length?`<p class="palabel" style="margin-top:14px">Saved plans</p>
+      <div class="pills">${saved.map(pl=>`<span class="precwrap"><button class="sugchip" data-pwapply="${esc(pl.id)}">${esc(pl.name||"Plan")}</button><button class="precdel" data-pwdel="${esc(pl.id)}" aria-label="Delete ${esc(pl.name||"Plan")}">×</button></span>`).join("")}</div>`:""}
   </div></div>`;
 }
 /* v1.84: what you type is matched against the app's own items — the same addMatches() the add sheet
@@ -5307,6 +5369,26 @@ function wirePlanTab(){
   const pv=app.querySelector("#pwPrev"); if(pv) pv.onclick=()=>{ planWeek--; render(); };
   const nx=app.querySelector("#pwNext"); if(nx) nx.onclick=()=>{ planWeek++; render(); };
   const nw=app.querySelector("#pwNow");  if(nw) nw.onclick=()=>{ planWeek=0; render(); };
+  const mo=app.querySelector("#pwMore"); if(mo) mo.onclick=()=>{ planWeekOpen=true; render(); };
+  const pwBg=app.querySelector("#pwBg"); if(pwBg) pwBg.onclick=e=>{ if(e.target===pwBg){ planWeekOpen=false; render(); } };
+  const pwS=app.querySelector("#pwSave"); if(pwS) pwS.onclick=()=>{
+    if(!planWeekCount(planWeek)) return;
+    const nm=prompt("Name this plan", weekLabel(planWeek));
+    if(nm===null) return;
+    const t=String(nm).trim(); if(!t) return;
+    planSaveWeek(planWeek, t); planWeekOpen=false; render(); };
+  const pwC=app.querySelector("#pwClear"); if(pwC) pwC.onclick=()=>{
+    const n=planWeekCount(planWeek); if(!n) return;
+    if(!confirm(`Clear ${weekLabel(planWeek)}? That removes ${n} meal${n===1?"":"s"}.`)) return;
+    planClearWeek(planWeek); planWeekOpen=false; render(); };
+  app.querySelectorAll("[data-pwapply]").forEach(b=>b.onclick=()=>{
+    const id=b.dataset.pwapply, n=planWeekCount(planWeek);
+    if(n && !confirm(`Apply this plan to ${weekLabel(planWeek)}? It replaces the ${n} meal${n===1?"":"s"} already there.`)) return;
+    planApplySaved(id, planWeek); planWeekOpen=false; render(); });
+  app.querySelectorAll("[data-pwdel]").forEach(b=>b.onclick=()=>{
+    const pl=planData().saved.find(x=>x.id===b.dataset.pwdel);
+    if(!confirm(`Delete the saved plan “${pl?pl.name:""}”?`)) return;
+    planDeleteSaved(b.dataset.pwdel); render(); });
   app.querySelectorAll("[data-pd]").forEach(b=>b.onclick=()=>{ planMenu=b.dataset.pd; render(); });
   /* v1.84: tap opens what you can do with this entry; press-and-hold on a recipe opens the recipe
      itself for editing. Food has nothing behind it to edit, so a hold there does what a tap does. */
