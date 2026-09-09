@@ -85,8 +85,12 @@ const NO_CAPTION = { status:502, body:{ error:'That TikTok description has no in
     await search('mushroom pizza');
     let n = await page.evaluate(()=>({ res:document.querySelectorAll('[data-pres]').length,
                                        opens:document.querySelectorAll('.presopen').length }));
+    /* SUPERSEDED by v1.98: one way out per suggestion became TWO — a globe to the web and a note to
+       TikTok — because linking to a search never needed the key that listing results does. The
+       guarantee this check protects is unchanged: every suggestion offers a way out. It is the
+       count per row that moved, so count per row rather than assuming one. */
     ok('every suggestion now offers a way out, where none did before',
-       n.res===2 && n.opens===2, JSON.stringify(n));
+       n.res===2 && n.opens===n.res*2, JSON.stringify(n));
 
     let ls = await links();
     /* A suggestion has no page. Sending ↗ to a made-up url would be worse than offering nothing —
@@ -101,8 +105,12 @@ const NO_CAPTION = { status:502, body:{ error:'That TikTok description has no in
        ls.every(l=>l.target==='_blank' && /noopener/.test(l.rel||'') && /noreferrer/.test(l.rel||'')), JSON.stringify(ls));
 
     const hint = await page.evaluate(()=>{ const p=document.querySelector('.pimpnote'); return p?p.textContent.trim():null; });
+    /* SUPERSEDED by v1.98: the wording moved — "no web search is set up" became "no search key is
+       set", and the single ↗ became 🌐 / 🎵. What the check is for has not moved: the line must say
+       these are IDEAS rather than results, and must point at the way out. Assert the meaning, not
+       the sentence, so a future rewording does not read as a regression. */
     ok('…and the line above them explains why they are suggestions',
-       hint && /no web search is set up/i.test(hint) && /↗/.test(hint), JSON.stringify(hint));
+       hint && /idea|suggestion/i.test(hint) && /🌐|🎵/.test(hint), JSON.stringify(hint));
 
     /* ── B. a real web result still opens ITS page ──────────────────────── */
     /* The two cases collapsing into one would be a silent regression: a real page turned into a

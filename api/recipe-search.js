@@ -373,12 +373,16 @@ module.exports = async (req, res) => {
       }
     }
 
-    /* v1.96: a dish name the model invented is not a TikTok video, and offering one as though it
-       were is exactly the pretending this app keeps refusing to do. Say what is missing instead. */
-    if (scope === 'tiktok') return fail(res, 404, 'no_video_search', 'Searching TikTok needs a search key');
-
+    /* v1.98: v1.96 refused the TikTok scope here rather than offer model ideas, because an invented
+       dish name is not a video. The danger was real but the remedy was wrong: every result now carries
+       its own TikTok link, so a suggestion is openly an idea with a real route to TikTok's search
+       rather than something passed off as a video. So fall through to the same ideas the web scope
+       uses, and keep no_video_search only for when there is no model either — nothing to show at all. */
     const ai = aiProvider();
-    if (!ai) return fail(res, 500, 'not_configured', 'Server not configured');
+    if (!ai) {
+      if (scope === 'tiktok') return fail(res, 404, 'no_video_search', 'Nothing is set up to search with');
+      return fail(res, 500, 'not_configured', 'Server not configured');
+    }
 
     const ideas = await modelIdeas(q, ai);
     if (ideas.code) {

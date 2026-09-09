@@ -592,6 +592,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .pingrow #paIngIn { flex:1; }
   .preswrap { display:flex; align-items:stretch; gap:7px; }
   .preswrap .presult { flex:1; min-width:0; }
+  /* v1.98: two doors per result — both stay 40px tap targets, side by side. */
+  .preswrap .presopen + .presopen { margin-left:0; }
   .presopen { flex:none; width:40px; min-height:40px; border-radius:13px; border:1.5px solid var(--line);
     background:var(--card); color:var(--accent); font-weight:800; font-size:15px; text-decoration:none;
     display:flex; align-items:center; justify-content:center; }
@@ -1529,7 +1531,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.97";
+const APP_VERSION = "v1.98";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -5231,8 +5233,9 @@ function planSearchMessage(code){
   switch(code){
     case "no_results":      return "Nothing found for that — try a different name.";
     case "search_key":      return "Web search refused its key (TAVILY_API_KEY / SERPER_API_KEY / SEARCH_API_KEY — see docs/ai-setup.md).";
-    /* v1.96: TikTok search needs a real search backend; the model cannot stand in for one here. */
-    case "no_video_search": return "Searching TikTok needs a search key — add TAVILY_API_KEY (free, no card) in Vercel (see docs/ai-setup.md). You can still paste a TikTok link.";
+    /* v1.98: still reachable, but only when nothing at all is set up — no search key and no model,
+       so there is nothing to list. (v1.96 used this to refuse TikTok outright; it no longer does.) */
+    case "no_video_search": return "Nothing is set up to search with yet — add a search key (TAVILY_API_KEY, free) or a model key in Vercel (see docs/ai-setup.md). You can still paste a TikTok link.";
     case "not_configured":  return "Recipe reading isn't set up yet — add a GEMINI_API_KEY (or GROQ_API_KEY) in Vercel (see docs/ai-setup.md).";
     case "model":           return "The recipe model is no longer available — set GEMINI_MODEL (or GROQ_MODEL) in Vercel (see docs/ai-setup.md).";
     /* v1.93: same two, said the same way, on the search path. */
@@ -5298,34 +5301,44 @@ function planAddSheet(){
           <input id="paImpVal" placeholder="Paste a recipe link — a page or a TikTok" value="${esc(planAdd.impVal||"")}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="url" style="${ingCSS}" />
           <button class="pimpgo" id="paImpGo"${planAdd.impBusy?" disabled":""}>Read it</button>
         </div>` : ""}
-      ${planAdd.imp==='search' ? `${/* v1.96: the same search, pointed somewhere else. TikTok needs a search key of its own —
-             a made-up dish name is not a video — and a tapped result is read through the caption path. */""}
+      ${planAdd.imp==='search' ? `${/* v1.96: the same search, pointed somewhere else; a tapped result is read through the caption path.
+             v1.98: with no search key the TikTok scope offers dish ideas rather than refusing — each one
+             carries a 🎵 to TikTok's own search, which is a link, not a lookup. */""}
         <div class="seg segfull" style="margin-bottom:8px"><button data-sscope="web" class="${(planAdd.sscope||'web')==='web'?'on':''}">🌐 Web</button><button data-sscope="tiktok" class="${planAdd.sscope==='tiktok'?'on':''}">🎵 TikTok</button></div>
         <div class="pimppanel">
           <input id="paImpVal" placeholder="${planAdd.sscope==='tiktok'?'Find a recipe video':'What do you want to cook?'}" value="${esc(planAdd.sq||"")}" autocomplete="off" autocapitalize="none" spellcheck="false" style="${ingCSS}" />
           <button class="pimpgo" id="paImpGo"${planAdd.impBusy?" disabled":""}>Find</button>
         </div>
         ${Array.isArray(planAdd.sres) ? (planAdd.sres.length ? `
-          <p class="pimpnote">${planAdd.ssrc==='web' ? 'From the web — tap one to read it into the form, or ↗ to open the page.' : 'No web search is set up, so these are the recipe reader\'s own suggestions — tap one to write it out, or ↗ to search the web for it.'}</p>
+          ${/* v1.98: four honest cases — web results, TikTok results, and suggestions (no key), each
+                naming the buttons that are actually there. */""}
+          <p class="pimpnote">${planAdd.ssrc==='web' ? (planAdd.sscope==='tiktok' ? 'From TikTok — tap one to read its caption, 🎵 to watch it.' : 'From the web — tap one to read it into the form, 🌐 for the page, 🎵 for TikTok.') : 'No search key is set, so these are dish ideas — tap one to write it out, or 🌐 / 🎵 to go looking.'}</p>
           ${/* v1.94: the page opens in a new context so the phone\'s in-app browser handles it and Done
                 comes back here. The URL is from a search engine, so it is untrusted: only http(s), and
                 escaped. An iframe was rejected — recipe sites refuse to be framed. */""}
           <div class="presults">${planAdd.sres.map((r,i)=>{
-            /* v1.95: a suggestion has no page of its own, so ↗ searches the web for it instead of
-               disappearing. With no search key (TAVILY_API_KEY) set, every result is a suggestion — which left
-               the search with no route to an actual website at all. The two cases stay distinct in
-               what they promise: one opens THE page, the other goes looking for one. */
-            const web=/^https?:\/\//i.test(r.url||"");
-            /* v1.96: and when the scope is TikTok, that fallback searches TikTok — otherwise ↗ would
-               quietly change what was asked for. */
-            const tk = planAdd.sscope==='tiktok';
-            const u = web ? r.url : "https://duckduckgo.com/?q=" + encodeURIComponent(r.title + (tk ? " recipe site:tiktok.com" : " recipe"));
-            const lbl = web ? ("Open " + r.title) : ("Search the web for " + r.title);
+            /* v1.95: a suggestion has no page of its own, so the open button searches for it instead of
+               disappearing. The two cases stay distinct in what they promise: one opens THE page, the
+               other goes looking for one.
+               v1.98: two doors on every result, and neither needs a search key — these are links a
+               finger follows, not fetches the page makes. That is the whole trick: a key is only
+               needed to LIST results inside the app, never to send someone to a search. So even
+               with nothing configured, a dish name is one tap from real TikTok videos or real
+               pages. Each button says where it actually goes: the result's own page/video when it
+               has one, a search for it when it does not. */
+            const raw = String(r.url||"");
+            const isTk = /^https?:\/\/([a-z0-9-]+\.)*tiktok\.com\//i.test(raw);
+            const web  = (/^https?:\/\//i.test(raw) && !isTk) ? raw
+                       : "https://duckduckgo.com/?q=" + encodeURIComponent(r.title + " recipe");
+            const tok  = isTk ? raw
+                       : "https://www.tiktok.com/search?q=" + encodeURIComponent(r.title + " recipe");
+            const webL = (/^https?:\/\//i.test(raw) && !isTk) ? ("Open " + r.title) : ("Search the web for " + r.title);
+            const tokL = isTk ? ("Watch " + r.title + " on TikTok") : ("Find " + r.title + " on TikTok");
             return `<div class="preswrap"><button class="presult" data-pres="${i}">
             <span class="pres-t">${esc(r.title)}</span>
             ${r.site?`<span class="pres-s">${esc(r.site)}</span>`:""}
             ${r.note?`<span class="pres-n">${esc(r.note)}</span>`:""}
-          </button><a class="presopen" href="${esc(u)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(lbl)}" title="${esc(lbl)}">↗</a></div>`;
+          </button><a class="presopen" href="${esc(web)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(webL)}" title="${esc(webL)}">🌐</a><a class="presopen" href="${esc(tok)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(tokL)}" title="${esc(tokL)}">🎵</a></div>`;
           }).join("")}</div>` : `<p class="pimpnote">Nothing found for that.</p>`) : ""}` : ""}
       ${planAdd.imp==='paste' ? `<div class="pimppanel col">
           <textarea id="paImpVal" rows="5" placeholder="Paste the recipe here — ingredients and all" style="width:100%;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;background:var(--card);color:var(--text);font-size:15px;box-sizing:border-box;resize:none">${esc(planAdd.impVal||"")}</textarea>

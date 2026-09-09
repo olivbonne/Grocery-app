@@ -90,7 +90,7 @@ Error codes the read path can answer with:
 | `bad_url` / `blocked_url` | not a link, or a host the server must not reach |
 | `not_a_page` | the link is not HTML (a PDF, an image, a video file) |
 | `fetch_failed` | the page would not load, or had too little text in it |
-| `no_video_search` | a TikTok-scoped search with no search key set (v1.96) |
+| `no_video_search` | nothing at all is set up to search with — no search key *and* no model key (v1.98; before that, any TikTok-scoped search with no search key) |
 | `no_caption` | a TikTok whose caption carries no recipe — usually a spoken one (v1.95) |
 | `bad_image` / `too_large` | the photo was not a photo, or was too big to send |
 | `too_long` | more pasted text than the endpoint accepts |
@@ -181,12 +181,16 @@ Whichever it is, the key travels in a **header** — `Authorization: Bearer` for
 for Serper, `X-Subscription-Token` for Brave — never in a URL. The endpoint asks for the top 8
 results and appends "recipe" to the query.
 
-**With no search key at all there are no real pages in the results.** The search still works, but
-every result is the recipe reader's own suggestion — a dish name with nothing behind it — and the app
-says so above the list. Tapping one still writes the dish out into the form. Since v1.95 the ↗ beside a
-suggestion runs a **web search for that dish** rather than being absent, so there is always a way
-through to a website; with a key set, ↗ opens the page itself, which is the stronger promise of the
-two and the reason they are worded differently.
+**A search key is only needed to LIST results inside the app.** It is not needed to get a person to a
+recipe. Since v1.98 every result carries two buttons — **🌐** and **🎵** — and both are ordinary links
+a finger follows, not fetches the page makes, so they work with no key configured at all.
+
+**With no search key there are no real pages in the results.** The search still works, but every
+result is the recipe reader's own suggestion — a dish name with nothing behind it — and the app says
+so above the list. Tapping one writes the dish out into the form. 🌐 runs a **web search for that
+dish** (DuckDuckGo) and 🎵 runs **TikTok's own search** for it, so a dish name is always one tap from
+real pages or real videos. With a key set, 🌐 opens the found page itself and 🎵 opens the video when
+the result is a TikTok — the stronger promise, which is why the labels differ.
 
 ### Searching TikTok (v1.96)
 
@@ -194,9 +198,12 @@ The search panel has a **🌐 Web / 🎵 TikTok** toggle. On TikTok the search i
 `tiktok.com` — through Tavily's `include_domains`, or through `site:tiktok.com` in the query for
 Serper and Brave, since those two only accept plain query text.
 
-This scope **needs one of the search keys**. With none set it answers `no_video_search` rather than
-asking the model for dish names: an invented dish name is not a TikTok video, and offering it as one
-would be the app pretending. Pasting a TikTok link still works either way.
+With a search key set, this scope lists real videos. **With none set (since v1.98) it falls back to
+dish ideas from the model**, exactly as the web scope does. v1.96 refused instead, on the grounds
+that an invented dish name is not a TikTok video — true, and now moot: each idea is labelled as an
+idea and carries a 🎵 through to TikTok's real search, so nothing is being passed off as a video and
+the person still gets to one. `no_video_search` now means only that nothing whatsoever is configured
+— no search key and no model key. Pasting a TikTok link still works either way.
 
 Tapping a TikTok result sends its URL to `/api/recipe`, which routes TikTok hosts to the caption
 reader added in v1.95 — so the same limit applies: a video whose recipe is **only spoken aloud** has
