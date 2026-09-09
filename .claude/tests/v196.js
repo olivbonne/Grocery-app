@@ -14,9 +14,10 @@
      heading;
    - a tapped TikTok result is sent to the reader as a URL, which is what makes the search compose
      with the caption reader v1.95 built;
-   - with no search key, a TikTok search SAYS it needs one rather than showing invented dish names —
-     a made-up title is not a video, and this app's whole posture is to say so instead of pretending;
-   - the ↗ fallback follows the scope too, so it searches TikTok rather than the open web.
+   - with no search key, a TikTok search still gets somewhere: dish ideas, each openly an idea, each
+     carrying a link into TikTok's own search — which is what actually puts a video in front of the
+     person (SUPERSEDED by v1.98; see section C);
+   - every result offers both doors, 🌐 and 🎵, neither of which needs a key, because they are links.
 
    TEST-BUG NOTES CARRIED FORWARD:
    - v1.60: drive the real control, never seed localStorage in its place.
@@ -53,7 +54,6 @@ const WEB_HITS = { source:"web", provider:"tavily", results:[
   { title:"Best Beef Goulash", url:"https://recipes.example.com/goulash", site:"recipes.example.com", note:"A classic" } ] };
 const TIKTOK_HITS = { source:"web", provider:"tavily", results:[
   { title:"60-second goulash", url:"https://www.tiktok.com/@cook/video/123", site:"tiktok.com", note:"Quick" } ] };
-const NO_KEY_VIDEO = { status:404, body:{ error:"Search unavailable", code:"no_video_search" } };
 const SUGGESTED = { source:"model", provider:"", results:[
   { title:"Classic beef goulash", url:"", site:"", note:"Paprika-heavy" } ] };
 
@@ -126,36 +126,45 @@ const SUGGESTED = { source:"model", provider:"", results:[
        read.length===1 && read[0].body.url==='https://www.tiktok.com/@cook/video/123',
        JSON.stringify(read.map(x=>x.body)));
 
-    /* ── C. no search key: say so, do not invent videos ─────────────────── */
-    await mk(scope => scope==='tiktok' ? NO_KEY_VIDEO : SUGGESTED);
-    await openSearch();
-    await tap('[data-sscope="tiktok"]');
-    await find('beef goulash');
-    const msg = await page.evaluate(()=>{ const e=document.querySelector('.pimpnote.err');
-      return e ? e.textContent.trim() : null; });
-    ok('a TikTok search with no key says it needs one, naming the free one',
-       msg && /TAVILY_API_KEY/.test(msg), JSON.stringify(msg));
-    ok('…and shows no invented results, because a made-up title is not a video',
-       (await titles()).length===0, JSON.stringify(await titles()));
-    /* Pasting a link never needed a key and must not have started to. */
-    ok('…while it still says a pasted link works', msg && /paste/i.test(msg), JSON.stringify(msg));
-
-    /* ── D. the ↗ fallback follows the scope ───────────────────────────── */
-    await tap('[data-sscope="web"]');
-    await find('beef goulash');
-    let href = await page.evaluate(()=>{ const a=document.querySelector('.presopen');
-      return a ? a.getAttribute('href') : null; });
-    ok('with no key, a Web suggestion still offers a web search',
-       href && /duckduckgo/.test(href) && !/tiktok/.test(href), JSON.stringify(href));
-
+    /* ── C. no search key: ideas, plus a real way through to TikTok ─────
+       SUPERSEDED by v1.98: v1.96 asserted a TikTok search with no key showed a message naming
+       TAVILY_API_KEY and NO results, on the reasoning that an invented title is not a video. That was
+       right about the danger and wrong about the remedy. Refusing left the person with nothing; and
+       the danger — passing an idea off as a video — is gone now that every result carries its own 🎵
+       to TikTok's real search. Same concern, better answer: show the ideas, label them as ideas, and
+       hand each one a tap that lands on actual TikTok videos. */
     await mk(scope => SUGGESTED);
     await openSearch();
     await tap('[data-sscope="tiktok"]');
     await find('beef goulash');
-    href = await page.evaluate(()=>{ const a=document.querySelector('.presopen');
-      return a ? a.getAttribute('href') : null; });
-    ok('…and in TikTok scope it looks for the dish on TikTok instead of the open web',
-       href && /duckduckgo/.test(href) && /tiktok\.com/.test(decodeURIComponent(href)), JSON.stringify(href));
+    ok('a TikTok search with no key offers dish ideas rather than a dead end',
+       (await titles()).join()==='Classic beef goulash', JSON.stringify(await titles()));
+    const msg = await page.evaluate(()=>{ const e=document.querySelector('.pimpnote');
+      return e ? e.textContent.trim() : null; });
+    ok('…and says plainly that they are ideas, not search results',
+       msg && /idea/i.test(msg), JSON.stringify(msg));
+    let hrefs = await page.evaluate(()=>[...document.querySelectorAll('.presopen')].map(a=>a.getAttribute('href')));
+    ok('…each carrying a tap through to TikTok\'s own search, no key needed',
+       hrefs.length===2 && /^https:\/\/www\.tiktok\.com\/search\?q=/.test(hrefs[1]||'')
+       && /goulash/i.test(decodeURIComponent(hrefs[1]||'')), JSON.stringify(hrefs));
+
+    /* ── D. both doors, on both scopes ──────────────────────────────────── */
+    await tap('[data-sscope="web"]');
+    await find('beef goulash');
+    hrefs = await page.evaluate(()=>[...document.querySelectorAll('.presopen')].map(a=>a.getAttribute('href')));
+    ok('with no key, a Web suggestion still offers a web search and a TikTok search',
+       hrefs.length===2 && /duckduckgo/.test(hrefs[0]||'')
+       && /^https:\/\/www\.tiktok\.com\/search\?q=/.test(hrefs[1]||''), JSON.stringify(hrefs));
+
+    await mk(scope => scope==='tiktok' ? TIKTOK_HITS : WEB_HITS);
+    await openSearch();
+    await tap('[data-sscope="tiktok"]');
+    await find('beef goulash');
+    hrefs = await page.evaluate(()=>[...document.querySelectorAll('.presopen')].map(a=>a.getAttribute('href')));
+    ok('a real TikTok result points its 🎵 at the video itself',
+       hrefs.length===2 && hrefs[1]==='https://www.tiktok.com/@cook/video/123', JSON.stringify(hrefs));
+    ok('…and its 🌐 searches the web rather than claiming the tiktok url is a page',
+       /^https:\/\/duckduckgo\.com\/\?q=/.test(hrefs[0]||''), JSON.stringify(hrefs));
 
     if(out) await page.screenshot({ path: out });
   }catch(e){ ok('the suite ran to the end', false, e.message); }

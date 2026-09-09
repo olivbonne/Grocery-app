@@ -362,13 +362,30 @@ const reset = () => { calls = []; modelQueue = []; };
     JSON.stringify(calls.map(c => c.url.slice(0, 40))));
   delete process.env.TAVILY_API_KEY; delete process.env.SERPER_API_KEY; delete process.env.SEARCH_API_KEY;
 
-  /* A dish name the model invented is not a TikTok video. With no search backend the honest answer
-     is to say so, not to ask the model and dress its output up as videos. */
+  /* SUPERSEDED by v1.98: v1.96 refused the TikTok scope outright with no search key, because a dish
+     name the model invented is not a video. The concern was right; the remedy was not. The app now
+     puts a TikTok link on every result — a link, which needs no key — so an idea is offered as an
+     idea with a real route to actual videos, rather than being withheld. So the scope falls through
+     to model suggestions, and no_video_search survives for the one case where there is genuinely
+     nothing to show: no search key AND no model. Both are real, so both are checked. */
+  reset();
+  /* earlier sections leave the model stub in a failure state; the model has to answer here. */
+  groq = { status: 200, content: JSON.stringify({ results: [
+    { title: 'Classic beef goulash', note: 'Paprika-heavy, slow cooked' } ] }) };
+  r = await call({ q: 'goulash', scope: 'tiktok' });
+  ok('TikTok search with no search key falls through to model suggestions',
+    r.code === 200 && r.body.source === 'model' && r.body.provider === '' && r.body.results.length > 0,
+    JSON.stringify(r.body));
+  ok('…still labelled as ideas, with no page invented behind them',
+    r.body.results.every(x => x.url === ''), JSON.stringify(r.body.results.map(x => x.url)));
+
+  const k2 = process.env.GROQ_API_KEY; delete process.env.GROQ_API_KEY;
   reset();
   r = await call({ q: 'goulash', scope: 'tiktok' });
-  ok('TikTok search with no search key says exactly that',
+  ok('…but with no model either, there is nothing to show and it says so',
     r.code === 404 && r.body.code === 'no_video_search', JSON.stringify(r.body));
-  ok('…and the model is not asked to invent videos', calls.length === 0, JSON.stringify(calls.map(c => c.url.slice(0, 40))));
+  ok('…without asking anything of anyone', calls.length === 0, JSON.stringify(calls.map(c => c.url.slice(0, 40))));
+  process.env.GROQ_API_KEY = k2;
 
   let pass = 0; results.forEach(([n, c, x]) => { if (c) pass++; console.log((c ? 'PASS' : 'FAIL') + '  ' + n + (x ? '   ' + x : '')); });
   console.log(`\n${pass}/${results.length} passed`);

@@ -156,8 +156,11 @@ const IMPORTED = { title:"Beef Goulash", servings:6, items:[
     await tap('#paImpGo');
     await page.waitForTimeout(500);
     s = await sheet();
+    /* SUPERSEDED by v1.98: the sentence now says "dish ideas" rather than "suggestions". The point
+       of the check is that the app does not pass model-written names off as web results, which is
+       exactly as true of "ideas" — so it matches either word and still refuses "from the web". */
     ok('with no web search set up, the app says the results are suggestions',
-       /suggestion/i.test(s.note||'') && !/from the web/i.test(s.note||''), s.note);
+       /suggestion|idea/i.test(s.note||'') && !/from the web/i.test(s.note||''), s.note);
     ok('…and they carry no site, because there is no page', s.res.every(r=>!r.s), JSON.stringify(s.res));
     await tap('[data-pres]');
     await page.waitForTimeout(500);

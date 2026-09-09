@@ -212,15 +212,20 @@ const SUGGESTED = { source:"model", results:[
        it one that SEARCHES for the dish. What this check was really protecting is unchanged and is
        what it now asserts: a suggestion must never be handed a page url, because it has no page —
        inventing one would be the actual lie. */
+    /* SUPERSEDED by v1.98: there are TWO .presopen anchors on every result now — a web one and a
+       TikTok one — because both are plain links and neither needs a search key. Asserting "exactly
+       one" was never the guarantee; the guarantee is that a suggestion is never handed a fabricated
+       PAGE url. That still holds and is what this asserts: both hrefs are searches for the dish,
+       neither claims to be a page on a real recipe site. */
     const none = await page.evaluate(()=>({
       results:document.querySelectorAll('[data-pres]').length,
       opens:document.querySelectorAll('.presopen').length,
-      href:(document.querySelector('.presopen')||{}).getAttribute
-        ? document.querySelector('.presopen').getAttribute('href') : null }));
+      hrefs:[...document.querySelectorAll('.presopen')].map(a=>a.getAttribute('href')) }));
     ok('a suggestion with no page behind it does not pretend to have one',
-       none.results===1 && none.opens===1
-       && /^https:\/\/duckduckgo\.com\/\?q=/.test(none.href||'')
-       && !/recipes\.example\.com/.test(none.href||''), JSON.stringify(none));
+       none.results===1 && none.opens===2
+       && /^https:\/\/duckduckgo\.com\/\?q=/.test(none.hrefs[0]||'')
+       && /^https:\/\/www\.tiktok\.com\/search\?q=/.test(none.hrefs[1]||'')
+       && !none.hrefs.some(h=>/recipes\.example\.com/.test(h||'')), JSON.stringify(none));
 
     if(out) await page.screenshot({ path: out });
   }catch(e){ ok('the suite ran to the end', false, e.message); }
