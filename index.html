@@ -1531,7 +1531,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.98";
+const APP_VERSION = "v1.99";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -5338,7 +5338,7 @@ function planAddSheet(){
             <span class="pres-t">${esc(r.title)}</span>
             ${r.site?`<span class="pres-s">${esc(r.site)}</span>`:""}
             ${r.note?`<span class="pres-n">${esc(r.note)}</span>`:""}
-          </button><a class="presopen" href="${esc(web)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(webL)}" title="${esc(webL)}">🌐</a><a class="presopen" href="${esc(tok)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(tokL)}" title="${esc(tokL)}">🎵</a></div>`;
+          </button><a class="presopen" href="${esc(web)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(webL)}" title="${esc(webL)}">🌐</a><a class="presopen" href="${esc(tok)}" target="_blank" rel="noopener noreferrer"${isTk?"":` data-tkq="${esc(r.title + " recipe")}"`} aria-label="${esc(tokL)}" title="${esc(tokL)}">🎵</a></div>`;
           }).join("")}</div>` : `<p class="pimpnote">Nothing found for that.</p>`) : ""}` : ""}
       ${planAdd.imp==='paste' ? `<div class="pimppanel col">
           <textarea id="paImpVal" rows="5" placeholder="Paste the recipe here — ingredients and all" style="width:100%;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;background:var(--card);color:var(--text);font-size:15px;box-sizing:border-box;resize:none">${esc(planAdd.impVal||"")}</textarea>
@@ -5462,6 +5462,24 @@ function wirePlanTab(){
       if(e.key==="Enter" && planAdd.imp==="link"){ e.preventDefault(); planImpGo(); } }; }
   const paIG=app.querySelector("#paImpGo"); if(paIG){ paIG.onpointerdown=e=>e.preventDefault();
     paIG.onclick=()=>(planAdd && planAdd.imp==="search") ? planSearch() : planImpGo(); }
+  /* v1.99: TikTok drops the query when a tiktok.com/search link hands off to the installed app —
+     it opens its search screen with an empty box, so the dish has to be typed again. No URL shape
+     survives that handoff reliably, and a custom app scheme fails with nothing to fall back to when
+     the app is absent. Copying is the move that works either way: the link still opens TikTok, and
+     the dish is already on the clipboard for one paste. Only on the SEARCH links — a real video has
+     nothing to paste. */
+  app.querySelectorAll("[data-tkq]").forEach(a=>a.addEventListener("click", ()=>{
+    const q=a.dataset.tkq||""; if(!q) return;
+    const said=()=>showToast(`Copied “${q}” — paste it into TikTok's search`);
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(q).then(said, ()=>{}); return; }
+      const t=document.createElement("textarea"); t.value=q;
+      t.setAttribute("readonly",""); t.style.position="fixed"; t.style.opacity="0";
+      document.body.appendChild(t); t.select();
+      const okc=document.execCommand("copy"); document.body.removeChild(t);
+      if(okc) said();
+    }catch(e){}   // the link still opens; a failed copy just means typing it, as before
+  }));
   app.querySelectorAll("[data-pres]").forEach(b=>b.onclick=()=>{
     if(!planAdd || planAdd.impBusy) return;
     const r=(planAdd.sres||[])[+b.dataset.pres]; if(!r) return;
