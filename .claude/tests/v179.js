@@ -34,6 +34,16 @@ const SEED = (extra)=>`(() => {
   localStorage.setItem("ml_lastlist","v101"); localStorage.setItem("ml_me","O");
   localStorage.setItem("ml_lists", JSON.stringify([{code:"v101",name:"Groceries"}]));
   localStorage.setItem("ml_shop","1"); localStorage.setItem("ml_caton","1");
+  /* SUPERSEDED-STATE, v2.00: this suite drives controls that now live inside sections folded BY
+     DEFAULT (Colour, Bars and overlays, Category headings, Tiles, Layout & motion), so it starts from
+     a device where nothing is folded — a person reaching these taps the section header once and it
+     stays open. That is a PRECONDITION, not the thing under test: the folding itself is checked in
+     v200.js, by tapping the real headers.
+     TEST BUG, v2.00: written unconditionally at first, which re-ran on every navigation (v1.82) and
+     clobbered the fold state a suite had deliberately built — v177 folds Colour, reloads, and expects
+     it still folded. Seed it only when ABSENT: a starting state, never an override. */
+  if(localStorage.getItem("ml_optcoll")===null) localStorage.setItem("ml_optcoll", "[]");
+
   ${extra||""}
 })()`;
 
@@ -181,7 +191,7 @@ const SEED = (extra)=>`(() => {
     return Math.round(b.getBoundingClientRect().height)>=44; }), '');
 
   // ═══════════════════════════════════════════════════════════════════
-  // ITEM 3 — Page margins lives in Appearance
+  // ITEM 3 — Page margins lives in ONE section (Appearance in v1.79; Layout & motion since v2.00)
   // ═══════════════════════════════════════════════════════════════════
   await mk();
   await settings();
@@ -189,14 +199,20 @@ const SEED = (extra)=>`(() => {
     const sec = name => { const h=[...document.querySelectorAll('.optsect')].find(s=>s.dataset.sect===name);
       return h&&h.nextElementSibling; };
     const inside = (body, sel) => !!(body && body.querySelector(sel));
-    return { marginsInAppearance: inside(sec('Appearance'), '[data-opt-num="padl"]'),
+    return { marginsInLayout: inside(sec('Layout & motion'), '[data-opt-num="padl"]'),
              marginsInTiles:      inside(sec('Tiles'), '[data-opt-num="padl"]'),
              roundnessInTiles:    inside(sec('Tiles'), '[data-opt-num="rad"]'),
              gapInTiles:          inside(sec('Tiles'), '[data-opt-num="gapx"]'),
-             buttonsWithIt:       inside(sec('Appearance'), '#optNumSave') && inside(sec('Appearance'), '#optNumFactory'),
+             buttonsWithIt:       inside(sec('Layout & motion'), '#optNumSave') && inside(sec('Layout & motion'), '#optNumFactory'),
              padlCount:           document.querySelectorAll('[data-opt-num="padl"]').length };
   });
-  ok('Page margins now sits in Appearance', where.marginsInAppearance && !where.marginsInTiles, JSON.stringify(where));
+  /* SUPERSEDED by v2.00: v1.79 moved Page margins OUT of Tiles and into Appearance, and this pinned
+     it there. v2.00 moved it again — into the folded "Layout & motion", because four numeric margin
+     steppers are not what anyone opens Settings for. What the check has always been protecting is
+     unchanged, and is the half that matters: the control lives in exactly ONE place, it is not back
+     in Tiles, and its Save/Factory buttons travelled WITH it rather than being copied. Only the name
+     of the section holding it moved. */
+  ok('Page margins sits in one place, now Layout & motion', where.marginsInLayout && !where.marginsInTiles, JSON.stringify(where));
   ok('…and took its buttons with it rather than being copied', where.buttonsWithIt && where.padlCount===2,
      JSON.stringify({buttons:where.buttonsWithIt, steppers:where.padlCount}));
   ok('NOT CHANGED: the tile measurements stayed in Tiles', where.roundnessInTiles && where.gapInTiles,

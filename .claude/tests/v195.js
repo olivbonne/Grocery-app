@@ -109,8 +109,12 @@ const NO_CAPTION = { status:502, body:{ error:'That TikTok description has no in
        set", and the single ↗ became 🌐 / 🎵. What the check is for has not moved: the line must say
        these are IDEAS rather than results, and must point at the way out. Assert the meaning, not
        the sentence, so a future rewording does not read as a regression. */
+    /* SUPERSEDED by v2.00: the line was shortened to one clause and no longer names the buttons
+       mid-sentence — the 🌐 / 🎵 glyphs are gone from it, and from the buttons themselves, which are
+       drawn marks now. The honesty this check exists for is unchanged and still asserted: the line
+       must say these are IDEAS rather than results. The way out is asserted above, on the hrefs. */
     ok('…and the line above them explains why they are suggestions',
-       hint && /idea|suggestion/i.test(hint) && /🌐|🎵/.test(hint), JSON.stringify(hint));
+       hint && /idea|suggestion/i.test(hint), JSON.stringify(hint));
 
     /* ── B. a real web result still opens ITS page ──────────────────────── */
     /* The two cases collapsing into one would be a silent regression: a real page turned into a
