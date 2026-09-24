@@ -80,7 +80,7 @@ const IDEAS = { source:"model", provider:"", results:[
   const rows = ()=>page.evaluate(()=>[...document.querySelectorAll('.preswrap')].map(w=>({
     title:(w.querySelector('.pres-t')||{}).textContent||'',
     links:[...w.querySelectorAll('.presopen')].map(a=>({
-      icon:a.textContent.trim(), href:a.getAttribute('href'),
+      icon:a.dataset.icon||a.textContent.trim(), href:a.getAttribute('href'),
       target:a.getAttribute('target'), rel:a.getAttribute('rel') })) })));
 
   try{
@@ -89,8 +89,13 @@ const IDEAS = { source:"model", provider:"", results:[
     const r = await rows();
     ok('every result carries both doors', r.length===5 && r.every(x=>x.links.length===2),
        JSON.stringify(r.map(x=>({t:x.title,n:x.links.length}))));
-    ok('…the first a globe, the second a TikTok note, in that order',
-       r.every(x=>x.links[0].icon==='🌐' && x.links[1].icon==='🎵'),
+    /* SUPERSEDED by v2.00: the glyphs became drawn SVG marks under the rule v1.58 set — emoji are
+       the visual language for categories and items, while interface chrome gets marks that take
+       currentColor. So there is no text to read off the button any more. The order of the two doors
+       is the thing this check is about, and which BUTTON it is is not a rendering detail: the anchors
+       now carry data-icon="web" / "tiktok" and the check asserts on that. */
+    ok('…the first the web door, the second the TikTok door, in that order',
+       r.every(x=>x.links[0].icon==='web' && x.links[1].icon==='tiktok'),
        JSON.stringify(r[0].links.map(l=>l.icon)));
 
     const byTitle = t => r.find(x=>x.title===t);

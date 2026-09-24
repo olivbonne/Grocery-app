@@ -40,6 +40,16 @@ const SEED = `(() => {
   localStorage.setItem("ml_lists", JSON.stringify([{code:"v101",name:"Groceries"}]));
   localStorage.setItem("ml_lastlist","v101"); localStorage.setItem("ml_me","O");
   localStorage.setItem("ml_shop","1"); localStorage.setItem("ml_caton","1");
+  /* SUPERSEDED-STATE, v2.00: this suite drives controls that now live inside sections folded BY
+     DEFAULT (Colour, Bars and overlays, Category headings, Tiles, Layout & motion), so it starts from
+     a device where nothing is folded — a person reaching these taps the section header once and it
+     stays open. That is a PRECONDITION, not the thing under test: the folding itself is checked in
+     v200.js, by tapping the real headers.
+     TEST BUG, v2.00: written unconditionally at first, which re-ran on every navigation (v1.82) and
+     clobbered the fold state a suite had deliberately built — v177 folds Colour, reloads, and expects
+     it still folded. Seed it only when ABSENT: a starting state, never an override. */
+  if(localStorage.getItem("ml_optcoll")===null) localStorage.setItem("ml_optcoll", "[]");
+
 })()`;
 
 (async () => {

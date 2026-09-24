@@ -343,16 +343,24 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .storegrid { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px; }
   .storechip { border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:13px; padding:8px 12px; border-radius:11px; white-space:nowrap; flex:0 0 auto; }
   .storechip.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+  /* v2.00 item 1: 34vh, was 42vh. The drawer is a peek at what is already done; the list you are
+     still shopping is what needs the room. */
   .checkedbar { position:fixed; left:0; right:0; bottom:0; max-width:480px; margin:0 auto; z-index:35;
     background:var(--paper); border-top:1px solid var(--line); box-shadow:0 -7px 16px -10px rgba(20,30,22,.45);
-    display:flex; flex-direction:column; max-height:42vh; padding:6px 14px 10px; box-sizing:border-box; }
-  .checkedbarhead { flex:none; border:none; background:transparent; color:var(--muted); font-weight:800; font-size:13px;
-    display:flex; align-items:center; justify-content:space-between; padding:4px 2px; }
+    display:flex; flex-direction:column; max-height:34vh; padding:6px 14px 10px; box-sizing:border-box; }
+  /* v2.00 item 1: the count and the action share one row, and the scroll area opens ABOVE it so the
+     row does not jump when the drawer expands. */
+  .checkedfoot { flex:none; display:flex; align-items:center; gap:10px; }
+  .checkedbarhead { flex:1; min-width:0; border:none; background:transparent; color:var(--muted); font-weight:800; font-size:13px;
+    display:flex; align-items:center; justify-content:space-between; gap:7px; padding:4px 2px; }
   .checkedbarhead .chk-in { display:inline-flex; align-items:center; gap:7px; color:var(--text); }
   .checkedbarhead .chk-tick { display:inline-flex; align-items:center; justify-content:center; font-size:14px; width:22px; height:22px;
     border-radius:50%; background:#2F9E44; color:#fff; font-size:11px; font-weight:900; line-height:1; }
-  .checkedscroll { flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:2px 0 8px; }
-  .checkedbar .sweepbanner { flex:none; margin-top:0; }
+  /* v2.00: hug the contents rather than filling to the cap. With flex:1 the open drawer took the
+     whole 34vh to show a single chip — a panel of mostly nothing sitting over the list you are still
+     shopping. 0 1 auto grows with what is in it and the parent's max-height still bounds it. */
+  .checkedscroll { flex:0 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:2px 0 8px; }
+  .checkedbar .sweepbanner { flex:none; width:auto; padding:10px 16px; margin-top:0; }
   .listrows { display:flex; flex-direction:column; gap:8px; max-height:46vh; overflow:auto; }
   .listrow { display:flex; align-items:center; gap:6px; padding:8px 10px; border-radius:13px; border:1.5px solid var(--line); background:var(--card); }
   .listrow.cur { border-color:var(--accent); }
@@ -576,15 +584,22 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      text sitting above a left-aligned input. */
   .palabel { margin:0 0 6px; font-size:12px; font-weight:700; color:var(--muted); text-align:left; }
   /* v1.86 recipe import: three ways in, all landing in the same form */
-  .pimprow { display:flex; gap:7px; flex-wrap:wrap; margin:0 0 12px; }
-  .pimp { flex:1 1 auto; padding:9px 12px; border-radius:13px; border:1.5px solid var(--line);
+  /* v2.00 item 3a: four ways in, so a 2x2 grid rather than a wrapping row — flex-wrap put three on
+     one line and left "Paste text" stranded alone on the second, which reads as an afterthought
+     rather than as the fourth of four equal choices. */
+  .pimprow { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:0 0 12px; }
+  .pimp { padding:9px 12px; border-radius:13px; border:1.5px solid var(--line);
     background:var(--card); color:var(--text); font-family:'Outfit',system-ui,sans-serif;
-    font-weight:700; font-size:13.5px; white-space:nowrap; }
+    font-weight:700; font-size:13.5px; white-space:nowrap;
+    display:flex; align-items:center; justify-content:center; gap:6px; }
   .pimp.on { border-color:var(--accent); color:var(--accent); }
   .pimppanel { display:flex; gap:8px; align-items:stretch; margin:0 0 12px; }
   .pimppanel.col { flex-direction:column; }
-  .pimpgo { flex:none; padding:0 16px; border-radius:14px; border:none; background:var(--btn);
-    color:#fff; font-weight:800; font-size:14px; font-family:'Outfit',system-ui,sans-serif; }
+  /* v2.00 item 3b: Find/Read it is the SECOND filled button in this sheet, and the one that actually
+     commits is "Add to <day>" at the bottom. One filled action per sheet: this one goes outlined so
+     the accent-filled commit stays the only thing that looks like the end of the job. */
+  .pimpgo { flex:none; padding:0 16px; border-radius:14px; border:1.5px solid var(--ink); background:var(--card);
+    color:var(--text); font-weight:800; font-size:14px; font-family:'Outfit',system-ui,sans-serif; }
   .pimpgo.wide { padding:12px 16px; }
   .pimpgo[disabled] { opacity:.45; }
   /* v1.94 */
@@ -592,10 +607,14 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .pingrow #paIngIn { flex:1; }
   .preswrap { display:flex; align-items:stretch; gap:7px; }
   .preswrap .presult { flex:1; min-width:0; }
-  /* v1.98: two doors per result — both stay 40px tap targets, side by side. */
+  /* v1.98: two doors per result — side by side.
+     v2.00 item 4: these act ON the result, so they must not compete with it. Narrower (34px) and on a
+     transparent ground instead of the same var(--card) white as the result card, so they read as two
+     affordances beside the recipe rather than as two more cards louder than the title. The tap target
+     stays a full 44px high — the goal is a quieter button, not a smaller one. */
   .preswrap .presopen + .presopen { margin-left:0; }
-  .presopen { flex:none; width:40px; min-height:40px; border-radius:13px; border:1.5px solid var(--line);
-    background:var(--card); color:var(--accent); font-weight:800; font-size:15px; text-decoration:none;
+  .presopen { flex:none; width:34px; min-height:44px; border-radius:13px; border:1.5px solid var(--line);
+    background:transparent; color:var(--accent); font-weight:800; font-size:15px; text-decoration:none;
     display:flex; align-items:center; justify-content:center; }
   .pimpnote { margin:0 0 10px; font-size:12.5px; font-weight:600; color:var(--muted); line-height:1.45; }
   .pimpnote.err { color:var(--accent); }
@@ -1531,7 +1550,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v1.99";
+const APP_VERSION = "v2.00";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1605,7 +1624,11 @@ function showAmt(w){
    flash. `ml_appstart` unset (the default) leaves everything exactly as it was.
    The regex is duplicated deliberately: APP_EXCLUDE is declared far below with the rest of the slot
    machinery and would be in its temporal dead zone up here. Keep the two in step. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$)/;
+/* v2.00: ml_optcoll joins the list. Which Settings sections you have folded is not a LOOK — and
+   since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
+   them under someone who had opened them, with no way to tell why. Found by a suite that applies a
+   slot and then reaches for a colour control. */
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -3639,6 +3662,20 @@ const FLAG_TAG_SVG = `<svg viewBox="0 0 28 20" height="1em" width="1.4em" fill="
 /* the plainest clock that still reads as one: a ring and two hands, no ticks, no bezel */
 const FLAG_CLOCK_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.6"/><path d="M12 7.4V12l3.3 2"/></svg>`;
 const FLAG_ICON = { urgent:FLAG_STAR_SVG, discount:FLAG_TAG_SVG, convenient:FLAG_CLOCK_SVG };
+/* v2.00 item 5: the same rule v1.58 set above, applied to the interface chrome this time — "emoji are
+   still the app's visual language for CATEGORIES and items — these are status marks, which is a
+   different job". A link, a globe, a clipboard and a broom are not content; they are buttons, and as
+   emoji they rendered in cyan, blue and solid black, the only saturated non-brand colour anywhere on
+   a forest-ink/sage/burnt-orange screen. Drawn marks take `currentColor`, so they are whatever the
+   button they sit in is. Inline, so nothing is fetched. Category and food emoji are untouched. */
+const ICO = (d,sz) => `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const LINK_SVG   = sz => ICO('<path d="M10 13.5a4 4 0 006 .5l2.5-2.5a4.2 4.2 0 00-6-6L11 7"/><path d="M14 10.5a4 4 0 00-6-.5L5.5 12.5a4.2 4.2 0 006 6L13 17"/>', sz);
+const CAMERA_SVG = sz => ICO('<path d="M3 8.5h3.2l1.6-2.4h8.4l1.6 2.4H21v11H3z"/><circle cx="12" cy="13.6" r="3.4"/>', sz);
+const PASTE_SVG  = sz => ICO('<path d="M9 4.5H7a2 2 0 00-2 2V19a2 2 0 002 2h10a2 2 0 002-2V6.5a2 2 0 00-2-2h-2"/><rect x="9" y="2.8" width="6" height="3.6" rx="1.2"/>', sz);
+const GLOBE_SVG  = sz => ICO('<circle cx="12" cy="12" r="8.6"/><path d="M3.6 12h16.8"/><path d="M12 3.4a13 13 0 010 17.2a13 13 0 010-17.2z"/>', sz);
+const NOTE_SVG   = sz => ICO('<circle cx="8" cy="17.5" r="3"/><path d="M11 17.5V4.6l8-1.6v11"/><circle cx="16" cy="14" r="3"/>', sz);
+const SAVE_SVG   = sz => ICO('<path d="M12 3.6v10.2"/><path d="M8 10l4 4 4-4"/><path d="M4.5 16v3.4h15V16"/>', sz);
+const BROOM_SVG  = sz => ICO('<circle cx="12" cy="12" r="8.6"/><path d="M9 9l6 6M15 9l-6 6"/>', sz);
 const DICT_HIDE = new Set(["strawberr","blueberr","raspberr","berry","brocollini","choysum","chili","yogurt"]);   // matching stems / dupes, not for display
 /* v1.12 per-item emoji — first keyword match wins (multi-word/specific terms first), else the
    item's category emoji. Pure lookup, offline. */
@@ -4733,7 +4770,12 @@ function renderMain(){
     </section>`;
 
   const checkedItems = state.items.filter(i=>i.checked);
-  const checkedOpen = collapse.checked!==false;
+  /* v2.00: closed until asked for. This drawer is a peek at what is already IN the cart, and it was
+     opening itself on every visit — a translucent panel over the list you are still shopping, to show
+     you things you have finished with. The one row underneath says how many there are, which is the
+     part worth having at a glance. `===true` rather than `!==false` flips only the never-touched
+     case: anyone who has opened it keeps it open, exactly as before. */
+  const checkedOpen = collapse.checked===true;
 
   const pct = state.items.length ? Math.round(done/state.items.length*100) : 0;
   const disp = displayFor();
@@ -4785,9 +4827,14 @@ function renderMain(){
   }
   const listBody = bodyBlocks.join("");
   const checkedBar = done>0 ? `<div class="checkedbar shop" id="checkedbar">
-      <button class="checkedbarhead" id="checkedHead"><span class="chk-in"><span class="chk-tick">✓</span>${done} in cart</span><span>${checkedOpen?"▾":"▸"}</span></button>
       ${checkedOpen?`<div class="checkedscroll"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">${pillsMixed(checkedItems.slice().sort((a,b)=>(b.checkedAt||0)-(a.checkedAt||0)))}</div></div>`:""}
-      <button id="sweepBtn" class="sweepbtn sweepbanner">Finish · save ${done} to Regulars</button>
+      ${/* v2.00 item 1: one row, not two. The label varies because the row already says "N in cart":
+           collapsed there is no space and the count would be said twice, so it is just "Finish";
+           open there is room, and the longer wording explains what the tap is about to do. */""}
+      <div class="checkedfoot">
+        <button class="checkedbarhead" id="checkedHead"><span class="chk-in"><span class="chk-tick">✓</span>${done} in cart</span><span>${checkedOpen?"▾":"▸"}</span></button>
+        <button id="sweepBtn" class="sweepbtn sweepbanner">${checkedOpen?`Finish · save ${done} to Regulars`:"Finish"}</button>
+      </div>
     </div>` : "";
   app.innerHTML = `
     <div class="topfix" id="topfix">
@@ -5116,8 +5163,8 @@ function planWeekSheet(){
   return `<div class="sheet-bg" id="pwBg"><div class="sheet" id="pwSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">${esc(lbl)}</div>
     <p class="hint" style="text-align:left;margin:0 0 12px">${n?`${n} meal${n===1?"":"s"} planned.`:"Nothing planned yet — nothing to save."}</p>
-    <button class="optaction" id="pwSave"${n?"":" disabled"}>💾 Save this week</button>
-    <button class="optaction" id="pwClear"${n?"":" disabled"} style="border-color:#C24A33;color:#C24A33">🧹 Clear this week</button>
+    <button class="optaction" id="pwSave"${n?"":" disabled"}>${SAVE_SVG(16)} Save this week</button>
+    <button class="optaction" id="pwClear"${n?"":" disabled"} style="border-color:#C24A33;color:#C24A33">${BROOM_SVG(16)} Clear this week</button>
     ${saved.length?`<p class="palabel" style="margin-top:14px">Saved plans</p>
       <div class="pills">${saved.map(pl=>`<span class="precwrap"><button class="sugchip" data-pwapply="${esc(pl.id)}">${esc(pl.name||"Plan")}</button><button class="precdel" data-pwdel="${esc(pl.id)}" aria-label="Delete ${esc(pl.name||"Plan")}">×</button></span>`).join("")}</div>`:""}
   </div></div>`;
@@ -5289,10 +5336,10 @@ function planAddSheet(){
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${esc(head)}${planAdd.edit?"":` · ${esc(dayName)}`}</div>
     ${isR ? `<p class="palabel">Start from</p>
       <div class="pimprow">
-        <button class="pimp${planAdd.imp==='search'?' on':''}" data-pimp="search">🔎 Search</button>
-        <button class="pimp${planAdd.imp==='link'?' on':''}" data-pimp="link">🔗 A link</button>
-        <button class="pimp" data-pimp="photo">📷 A photo</button>
-        <button class="pimp${planAdd.imp==='paste'?' on':''}" data-pimp="paste">📋 Paste text</button>
+        <button class="pimp${planAdd.imp==='search'?' on':''}" data-pimp="search">${SEARCH_SVG}<span>Search</span></button>
+        <button class="pimp${planAdd.imp==='link'?' on':''}" data-pimp="link">${LINK_SVG(16)}<span>A link</span></button>
+        <button class="pimp" data-pimp="photo">${CAMERA_SVG(16)}<span>A photo</span></button>
+        <button class="pimp${planAdd.imp==='paste'?' on':''}" data-pimp="paste">${PASTE_SVG(16)}<span>Paste text</span></button>
       </div>
       <input id="paPhoto" type="file" accept="image/*" style="display:none" />
       ${planAdd.impBusy ? `<p class="pimpnote">Reading the recipe…</p>` : ""}
@@ -5304,7 +5351,7 @@ function planAddSheet(){
       ${planAdd.imp==='search' ? `${/* v1.96: the same search, pointed somewhere else; a tapped result is read through the caption path.
              v1.98: with no search key the TikTok scope offers dish ideas rather than refusing — each one
              carries a 🎵 to TikTok's own search, which is a link, not a lookup. */""}
-        <div class="seg segfull" style="margin-bottom:8px"><button data-sscope="web" class="${(planAdd.sscope||'web')==='web'?'on':''}">🌐 Web</button><button data-sscope="tiktok" class="${planAdd.sscope==='tiktok'?'on':''}">🎵 TikTok</button></div>
+        <div class="seg segfull" style="margin-bottom:8px"><button data-sscope="web" class="${(planAdd.sscope||'web')==='web'?'on':''}">${GLOBE_SVG(15)} Web</button><button data-sscope="tiktok" class="${planAdd.sscope==='tiktok'?'on':''}">${NOTE_SVG(15)} TikTok</button></div>
         <div class="pimppanel">
           <input id="paImpVal" placeholder="${planAdd.sscope==='tiktok'?'Find a recipe video':'What do you want to cook?'}" value="${esc(planAdd.sq||"")}" autocomplete="off" autocapitalize="none" spellcheck="false" style="${ingCSS}" />
           <button class="pimpgo" id="paImpGo"${planAdd.impBusy?" disabled":""}>Find</button>
@@ -5312,7 +5359,11 @@ function planAddSheet(){
         ${Array.isArray(planAdd.sres) ? (planAdd.sres.length ? `
           ${/* v1.98: four honest cases — web results, TikTok results, and suggestions (no key), each
                 naming the buttons that are actually there. */""}
-          <p class="pimpnote">${planAdd.ssrc==='web' ? (planAdd.sscope==='tiktok' ? 'From TikTok — tap one to read its caption, 🎵 to watch it.' : 'From the web — tap one to read it into the form, 🌐 for the page, 🎵 for TikTok.') : 'No search key is set, so these are dish ideas — tap one to write it out, or 🌐 / 🎵 to go looking.'}</p>
+          ${/* v2.00 item 3d: one clause each. The long versions named every button mid-sentence and
+                wrapped to two lines above the results they were introducing; the buttons carry their own
+                labels. The no-key line still has to say these are ideas rather than results — that is the
+                honesty, not the length. */""}
+          <p class="pimpnote">${planAdd.ssrc==='web' ? (planAdd.sscope==='tiktok' ? 'From TikTok — tap to read the caption.' : 'From the web — tap to read it in, or open it.') : 'No search key — these are ideas, not results. Tap to write one out, or go looking.'}</p>
           ${/* v1.94: the page opens in a new context so the phone\'s in-app browser handles it and Done
                 comes back here. The URL is from a search engine, so it is untrusted: only http(s), and
                 escaped. An iframe was rejected — recipe sites refuse to be framed. */""}
@@ -5338,7 +5389,7 @@ function planAddSheet(){
             <span class="pres-t">${esc(r.title)}</span>
             ${r.site?`<span class="pres-s">${esc(r.site)}</span>`:""}
             ${r.note?`<span class="pres-n">${esc(r.note)}</span>`:""}
-          </button><a class="presopen" href="${esc(web)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(webL)}" title="${esc(webL)}">🌐</a><a class="presopen" href="${esc(tok)}" target="_blank" rel="noopener noreferrer"${isTk?"":` data-tkq="${esc(r.title + " recipe")}"`} aria-label="${esc(tokL)}" title="${esc(tokL)}">🎵</a></div>`;
+          </button><a class="presopen" href="${esc(web)}" target="_blank" rel="noopener noreferrer" data-icon="web" aria-label="${esc(webL)}" title="${esc(webL)}">${GLOBE_SVG(17)}</a><a class="presopen" href="${esc(tok)}" target="_blank" rel="noopener noreferrer"${isTk?"":` data-tkq="${esc(r.title + " recipe")}"`} data-icon="tiktok" aria-label="${esc(tokL)}" title="${esc(tokL)}">${NOTE_SVG(17)}</a></div>`;
           }).join("")}</div>` : `<p class="pimpnote">Nothing found for that.</p>`) : ""}` : ""}
       ${planAdd.imp==='paste' ? `<div class="pimppanel col">
           <textarea id="paImpVal" rows="5" placeholder="Paste the recipe here — ingredients and all" style="width:100%;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;background:var(--card);color:var(--text);font-size:15px;box-sizing:border-box;resize:none">${esc(planAdd.impVal||"")}</textarea>
@@ -5347,7 +5398,11 @@ function planAddSheet(){
       ` : ""}
     ${/* v1.89: the picker stays out of edit mode on purpose — picking a different saved recipe while
           editing one would silently change which recipe "Save recipe" then overwrites. */""}
-    ${(isR && !planAdd.edit && saved.length) ? `<p class="palabel">Your recipes</p>
+    ${/* v2.00 item 3c: one picker at a time. The saved strip is how you start from something you
+          already have, but once a search has answered, the answer is what the screen is for — two
+          lists of things-you-could-pick stacked on one screen is two decisions where there is one.
+          It comes back the moment the results are cleared. */""}
+    ${(isR && !planAdd.edit && saved.length && !(planAdd.sres && planAdd.sres.length)) ? `<p class="palabel">Your recipes</p>
       <div class="pills" style="margin-bottom:14px">${saved.map(r=>`<span class="precwrap"><button class="sugchip" data-precipe="${esc(r.id)}">${esc(r.name)}</button><button class="precdel" data-precdel="${esc(r.id)}" aria-label="Delete ${esc(r.name)}">×</button></span>`).join("")}</div>` : ""}
     <input id="paName" placeholder="${isR?'Recipe name':'What are you eating?'}" value="${esc(planAdd.name||"")}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="${fieldCSS}" />
     ${isR?`<p class="palabel" style="margin-top:14px">Ingredients</p>
@@ -5751,9 +5806,20 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 /* v1.77 item 3: which sections are folded. Keyed by the section's own name rather than its index, so
-   adding or reordering a section cannot silently fold a different one. Everything starts open: this
-   makes Settings foldable, it does not decide for anyone which parts they never use. */
-function optColl(){ try{ const a=JSON.parse(localStorage.getItem("ml_optcoll")||"[]"); return new Set(Array.isArray(a)?a:[]); }catch(e){ return new Set(); } }
+   adding or reordering a section cannot silently fold a different one. Everything started open: this
+   makes Settings foldable, it does not decide for anyone which parts they never use — with the one
+   exception OPT_COLL_DEFAULT names below, which v2.00 added and argues for there. */
+/* v2.00: the sections nobody opens a grocery list's Settings to find. optColl() starts empty, which
+   means "nothing folded", so a default has to be NAMED rather than assumed. Between a person and
+   Sort, Smart add or Measurements sat nine appearance slots, four margin steppers, two colour
+   pickers with eleven swatches each, and per-bar size and place controls — real preferences, every
+   one, and none of them the reason anybody opens this page. Folded by default, never hidden: one tap
+   opens any of them and the choice sticks from then on. Appearance keeps Theme, Wallpaper and Text
+   size open, being the three with an immediate visible effect. Only the ABSENT case takes this
+   default, so anyone who has already folded or unfolded anything keeps exactly what they chose. */
+const OPT_COLL_DEFAULT = ["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tiles"];
+function optColl(){ try{ const raw=localStorage.getItem("ml_optcoll"); if(raw===null) return new Set(OPT_COLL_DEFAULT);
+    const a=JSON.parse(raw||"[]"); return new Set(Array.isArray(a)?a:[]); }catch(e){ return new Set(); } }
 /* Calls groupOptions() and NOT render(): folding a section must not rebuild the page and throw away
    the scroll position — that is the whole point of v1.75 item 2. */
 function toggleOptColl(name){ const s=optColl(); if(s.has(name)) s.delete(name); else s.add(name);
@@ -6293,7 +6359,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -6445,28 +6511,6 @@ function optionsBody(){
   if(curSort==="ai" && !aiSortOK()) curSort="location";
   return `
     ${sect("Appearance")}
-    ${/* v1.57 item 2: four slots. One saved look was not enough to compare two ideas — which is what
-          anyone actually does with this. Applying is one tap; saving is a deliberate second row, so a
-          mis-tap costs you a preview rather than the look you had. */""}
-    <div class="optrow optrow-wide optnl optrow-slots"><span class="optlabel">My appearance</span><div class="optwide">
-      <div class="slotrow"><span class="slotcap">Use</span><div class="slotgrid">${
-        appSlots().map((s,i)=>`<button data-app-use="${i}" class="colbtn2 slotbtn ${s?'':'empty'} ${String(appSel())===String(i)?'on':''} ${String(appStart())===String(i)?'start':''}" ${s?'':'disabled'} title="${s&&s.__preset?esc(s.__preset):'Slot '+(i+1)}">${s&&s.__preset?esc(s.__preset):(i+1)}</button>`).join("")}</div></div>
-      <div class="slotrow"><span class="slotcap">Save to</span><div class="slotgrid">${
-        [...Array(APP_SLOTS)].map((_,i)=>`<button data-app-save="${i}" class="colbtn2 slotbtn ${appSaveAsk===i?'on':''}">${i+1}</button>`).join("")}</div></div>
-      ${appSaveAsk===null ? "" : `<div class="slotrow"><span class="slotcap"></span><div class="slotgrid slotask">
-        <span class="slotasktxt">Replace slot ${appSaveAsk+1}?</span>
-        <button data-app-saveyes="${appSaveAsk}" class="colbtn2 slotbtn on">Save</button>
-        <button data-app-saveno="1" class="colbtn2 slotbtn">Cancel</button></div></div>`}
-      ${/* v1.63 item 3: which slot the app opens in. A third row of nine buttons would have made this
-            one block half the Appearance section, and it never needed nine: the slot you want to start
-            in is the one you are using, so this marks THAT one. Off (the default) is how the app has
-            always behaved — it opens with whatever you last left it as. With a start slot set, anything
-            you change afterwards is a try-out that lasts until the next launch, which is the point.
-            Which slot it is stays visible as a ring on the Use row above. */""}
-      <div class="numbtns"><button data-app-starthere="1" class="colbtn2 ${appStart()!==null&&appStart()===String(appSel())?'on':''}">${
-        appStart()===null ? "Start in this slot"
-        : appStart()===String(appSel()) ? "Starts in this slot"
-        : "Start in this slot (now "+(+appStart()+1)+")"}</button><button id="optAppFactory" class="colbtn2">Factory default</button></div></div></div>
     ${rowNL("Theme", `<div class="seg segfull" style="flex-wrap:wrap">${
       [{k:"light",label:"Light",bg:"#F6F2E7",br:"#DAD3C0",dot:"#D2542B"},
        {k:"dark", label:"Dark", bg:"#141C18",br:"#33433B",dot:"#E2502C"},
@@ -6506,8 +6550,36 @@ function optionsBody(){
     ${/* v1.57 item 2: Text size sits with the wallpaper and the theme — the three things that change
           the whole page at once — and with no rule between them, because they are one group. */""}
     ${rowNL("Text size", `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
-    ${/* v1.79 item 3: Page margins moved out of Tiles and in beside Text size. It measures the whole
-          page, not a tile — it belongs with the other settings that resize everything at once. */""}
+    ${/* v2.00 item 2: the appearance slots, the margin steppers and the page-transition controls
+          are real preferences, but they are not what someone opens Settings to find — and they sat
+          in front of Sort and Smart add. Their own section, folded by default. */""}
+    ${sectHR("Layout & motion")}
+    ${/* v1.57 item 2: four slots. One saved look was not enough to compare two ideas — which is what
+          anyone actually does with this. Applying is one tap; saving is a deliberate second row, so a
+          mis-tap costs you a preview rather than the look you had. */""}
+    <div class="optrow optrow-wide optnl optrow-slots"><span class="optlabel">My appearance</span><div class="optwide">
+      <div class="slotrow"><span class="slotcap">Use</span><div class="slotgrid">${
+        appSlots().map((s,i)=>`<button data-app-use="${i}" class="colbtn2 slotbtn ${s?'':'empty'} ${String(appSel())===String(i)?'on':''} ${String(appStart())===String(i)?'start':''}" ${s?'':'disabled'} title="${s&&s.__preset?esc(s.__preset):'Slot '+(i+1)}">${s&&s.__preset?esc(s.__preset):(i+1)}</button>`).join("")}</div></div>
+      <div class="slotrow"><span class="slotcap">Save to</span><div class="slotgrid">${
+        [...Array(APP_SLOTS)].map((_,i)=>`<button data-app-save="${i}" class="colbtn2 slotbtn ${appSaveAsk===i?'on':''}">${i+1}</button>`).join("")}</div></div>
+      ${appSaveAsk===null ? "" : `<div class="slotrow"><span class="slotcap"></span><div class="slotgrid slotask">
+        <span class="slotasktxt">Replace slot ${appSaveAsk+1}?</span>
+        <button data-app-saveyes="${appSaveAsk}" class="colbtn2 slotbtn on">Save</button>
+        <button data-app-saveno="1" class="colbtn2 slotbtn">Cancel</button></div></div>`}
+      ${/* v1.63 item 3: which slot the app opens in. A third row of nine buttons would have made this
+            one block half the Appearance section, and it never needed nine: the slot you want to start
+            in is the one you are using, so this marks THAT one. Off (the default) is how the app has
+            always behaved — it opens with whatever you last left it as. With a start slot set, anything
+            you change afterwards is a try-out that lasts until the next launch, which is the point.
+            Which slot it is stays visible as a ring on the Use row above. */""}
+      <div class="numbtns"><button data-app-starthere="1" class="colbtn2 ${appStart()!==null&&appStart()===String(appSel())?'on':''}">${
+        appStart()===null ? "Start in this slot"
+        : appStart()===String(appSel()) ? "Starts in this slot"
+        : "Start in this slot (now "+(+appStart()+1)+")"}</button><button id="optAppFactory" class="colbtn2">Factory default</button></div></div></div>
+    ${/* v1.79 item 3: Page margins moved out of Tiles and in with the other settings that resize
+          everything at once — it measures the whole page, not a tile.
+          v2.00: no longer beside Text size; the appearance machinery moved one section down, under
+          the folded "Layout & motion", and Page margins moved with it. */""}
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Page margins</span><div class="optwide">
       <div class="numgrid">${numCell("padl")}${numCell("padr")}${numCell("padt")}${numCell("padb")}</div>
       <div class="numbtns"><button id="optNumSave" class="colbtn2">Set as my default</button>${
