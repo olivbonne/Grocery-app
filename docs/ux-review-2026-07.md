@@ -1,5 +1,10 @@
 # Market List — UX walkthrough report (July 2026, v0.65)
 
+> **Historical.** Kept as a record of what was found and fixed at v0.65. The app has changed a great
+> deal since — the Lists page and the swipe-between-pages navigation it describes are gone, and the AI
+> features no longer use the provider it mentions. For the current state see
+> `README.md`; the most recent design review is recorded in the v2.00 changelog row and PR #147.
+
 Method: drove every major user path in headless Chromium at iPhone size (390×844),
 screenshotting each step; cross-checked against the "Mobile UI/UX Principles for AI-First
 Design" framework document. Fixes marked ✅ shipped in v0.65.

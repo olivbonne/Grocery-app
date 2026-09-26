@@ -11,11 +11,11 @@ works, and the UI renders correctly.
 
 ## Steps
 
-1. **Syntax check** the inline module script:
-   ```bash
-   awk '/<script>/{f=1;next} /<\/script>/{f=0} f' index.html > "$SCRATCH/app.js" && node --check "$SCRATCH/app.js"
-   ```
-   (`$SCRATCH` = the session scratchpad dir. Failure here = stop and fix before anything else.)
+1. **Syntax check:** `node .claude/tests/syntax.js` — must print `SYNTAX_OK`.
+   Failure here = stop and fix before anything else. (The awk one-liner this step used
+   to carry matched `<script>` rather than the module tag and saved as `.js`, where Node 22
+   passes anything with an `import` line — it checked nothing. The script proves itself
+   with a planted canary on every run.)
 
 2. **Install Playwright** into the scratchpad if not already there (browser is pre-installed;
    never run `playwright install`):
@@ -35,7 +35,7 @@ works, and the UI renders correctly.
 
 4. **Read the screenshot** and check: header "Groceries." renders in Outfit (rounded
    geometric G — if it looks like a system font, the font files broke), items appear under
-   correct category chips with counts, bottom nav shows Lists / Plan / Shop.
+   correct category chips with counts, bottom nav shows Plan / Shop / Settings.
 
 5. **Report** pass/fail with the screenshot. The console output also prints the app's rendered
    text — items missing from it means parsing broke.

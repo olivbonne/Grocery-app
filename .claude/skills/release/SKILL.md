@@ -1,38 +1,49 @@
 ---
 name: release
-description: Ship the current Market List changes — bump APP_VERSION, add a CHANGELOG row, commit to claude/review, push, and open or update the PR into main. Use when asked to release, ship, publish, or finish a batch of changes.
+description: Ship the current Market List changes — verify, bump APP_VERSION, add a CHANGELOG row, commit, push, open the PR into main, squash-merge it, and restart the working branch from main. Use when asked to release, ship, publish, or finish a batch of changes.
 ---
 
 # Release Market List changes
 
-The repo's inner-loop shipping workflow. Run `/verify-app` first if it hasn't been run for
-the current changes — do not release unverified work.
+The repo's shipping loop. Auto-merge is authorized (see CLAUDE.md), so this ends with the change
+live, not with a PR waiting. Never release unverified work.
 
 ## Steps
 
-1. **Verify** the working tree changes are complete (`git status`, `git diff --stat`) and that
-   `/verify-app` passed on them.
+1. **Verify**, in this order, once for the whole batch:
+   - `node .claude/tests/syntax.js` → `SYNTAX_OK`
+   - the full sweep: every `.claude/tests/v*.js` against a local server, plus
+     `node .claude/tests/api-recipe.js` and `node .claude/tests/api-recipe-search.js`
+   - `/verify-app`, and for a UI change, screenshots of the affected screens before and after.
+   Any red: stop. If a version deliberately changed what an old check asserts, rewrite that check in
+   place with a `SUPERSEDED by vX.YZ:` note — never delete it, never ship it failing.
 
-2. **Bump the version:** find `const APP_VERSION = "v0.NN"` in `index.html`, increment by 0.01.
+2. **Bump** `const APP_VERSION = "vN.NN"` in `index.html` by 0.01 — once per batch, not per item.
+   Docs-only changes do not bump.
 
-3. **Add a CHANGELOG row** at the top of the table in `CHANGELOG.md`:
-   `| v0.NN | YYYY-MM-DD | <plain-language summary, bold key features, user-facing wording> |`
-   Match the voice of existing rows (written for the household, not for developers).
+3. **CHANGELOG row** at the top of the table in `CHANGELOG.md`:
+   `| vN.NN | YYYY-MM-DD | <two to four plain sentences> |`
+   Written for the household: what changed for the person using the app, with the key feature in
+   bold. No regex names, retry budgets or file paths — those go in the commit and the PR.
 
-4. **Commit** to `claude/review` (create from latest `main` if it doesn't exist) with a message
-   like `v0.NN: <summary>`. Push with `git push -u origin claude/review`; on network failure
-   retry up to 4 times with exponential backoff.
+4. **Commit** on the session's working branch. The message carries the engineering why: what
+   changed, why, what was found along the way. Push with `git push -u origin <branch>`; on a network
+   failure retry up to 4 times with backoff (2s, 4s, 8s, 16s).
 
-5. **PR into `main`:** if an open PR for `claude/review` exists (GitHub MCP
-   `list_pull_requests`), update its title/body (`update_pull_request`) to cover the new commit;
-   otherwise create one (`create_pull_request`). Body: what changed, why, how it was verified
-   (mention the `/verify-app` screenshot), any known tradeoffs.
+5. **PR into `main`** (GitHub MCP `create_pull_request`). Body: what changed and why, how it was
+   verified with the actual sweep tally, anything not verified and why, and any judgement calls the
+   user should know about. Follow a PR template if the repo has one.
 
-6. **Report** the PR link and remind: merging deploys via Vercel; a PR preview URL is available
-   if the repo is connected to Vercel.
+6. **Squash-merge** it (`merge_pull_request`, `merge_method: squash`). This deploys via Vercel.
+
+7. **Restart the branch from the new `main`** — skipping this is how a later PR once conflicted:
+   ```bash
+   git fetch origin main && git checkout -B <branch> origin/main && git push -f -u origin <branch>
+   ```
+
+8. **Report** the version, the merge commit, the sweep tally, and what each agent did.
 
 ## Rules
 - Never push `main` directly.
-- One version bump per release, even if the batch has many edits.
-- If `main` has moved (`git fetch origin main`), rebase or re-apply on top before pushing —
-  never clobber newer `main` work (it has happened that `main` advanced mid-session).
+- One version bump per batch.
+- If `main` has moved, rebase or re-apply on top before pushing — never clobber newer `main` work.
