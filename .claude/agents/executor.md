@@ -1,7 +1,7 @@
 ---
 name: executor
 description: The code-editing "execution" step for Market List. Delegate any non-trivial code change here after it has been planned on the main thread — pass a precise, self-contained brief (exact files, exact edits, conventions, version bump, verification bar) and this agent applies the edits, runs a cheap syntax self-check, and returns its diff for review. It does NOT run behavioral verification, and does NOT commit, push, or open PRs — the main thread owns the authoritative verification and ships. Runs at low effort (the "80% grind"); the main thread keeps its higher-effort budget for planning, verification, and review.
-model: claude-opus-5-5
+model: opus
 effort: low
 tools: Read, Write, Edit, Glob, Grep, Bash
 ---
