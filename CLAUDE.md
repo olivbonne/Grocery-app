@@ -44,11 +44,11 @@ Three serverless functions in `api/` (CommonJS, Vercel, `maxDuration` 60s in `ve
   squash-merge its PR without asking, then restart the working branch from the updated `main`
   (`git checkout -B <branch> origin/main`) before the next change — forgetting that is how a later PR
   conflicted once. (Standing user instruction — merging deploys to prod.)
-- **Model split — Opus 5.5 high / Opus 5.5 low.** Plan, review and verify on the main thread
-  (**Opus 5.5, high effort** — `.claude/settings.json`); hand the mechanical code editing to the
-  **`executor`** subagent (**Opus 5.5, low effort** — `.claude/agents/executor.md`). Both are pinned
-  to `claude-opus-5-5` by ID, so a new model is a deliberate change to those two files, not a
-  surprise. (Standing user instruction, 2026-09-26; before it, Opus 5 medium / Opus 5 low.)
+- **Model split — latest Opus, high / low.** Plan, review and verify on the main thread
+  (**latest Opus, high effort** — `.claude/settings.json`); hand the mechanical code editing to the
+  **`executor`** subagent (**latest Opus, low effort** — `.claude/agents/executor.md`). Both use the
+  `opus` alias, so they move to each new Opus automatically — do not pin a version ID. (Standing user
+  instruction, 2026-09-26. Opus 5.5 at the time of writing.)
   Give it a self-contained brief — files, exact edits with exact anchors, conventions, self-check
   bar. It applies the edits, runs the syntax gate, and hands back its diff. It does not commit, push,
   or run behavioural checks. Trivial touch-ups can stay on the main thread.
