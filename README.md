@@ -83,15 +83,38 @@ the recipe already being read.
 
 ---
 
+## Optional: the AI features
+
+Smart add, reading recipes from links, TikToks and photos, and recipe search use an AI model on the
+server. They need **one** free key added in Vercel — without it the app still works, you just type
+items in yourself. Setup is in **[docs/ai-setup.md](docs/ai-setup.md)**.
+
+---
+
 ## Using it
-- **Paste** your whole note (even with `Meat:`, `Fruit:` labels) into the top box — items file into the right category and the labels are dropped.
-- Type plainly (`banana, 2 kimchi`) and items auto-sort; quantities like `2 kimchi` show as `2×`.
-- **+** next to a category adds straight into that category.
-- **Tap** an item to check it off; **hold** to edit name / quantity / category.
-- **Clear** button moves checked items into **Buy again** at the bottom — tap any of those to add it back next time.
-- Tap a category heading to collapse it; tap **Buy again** to expand/collapse it.
+
+The app has three tabs: **Plan · Shop · Settings**.
+
+**Shop** — your list.
+- Tap **+** at the bottom to add items. Type plainly (`bananas, 2 milk, 500g mince`) and they file
+  into the right category, with quantities and amounts kept. **✨** turns messy text or a whole
+  recipe into items.
+- The **+** beside a category adds straight into that category.
+- **Tap** an item to put it in the cart; **press and hold** it for its options.
+- The **"N in cart · Finish"** row saves what you bought to your regulars, ready to add back next time.
+- Tap the list's **name at the top** to switch lists or make a new one; press and hold a list for
+  rename, share, duplicate or delete.
+
+**Plan** — the week's meals.
+- Tap **+** on a day to add a recipe or a food. A recipe can start from a **search**, **a link**
+  (web page or TikTok), **a photo**, or **pasted text** — the app reads the ingredients for you.
+- Tap a planned recipe to add its ingredients to the Shop list; untick anything you already have.
+- **⋯** beside the week saves it as a plan to reuse, applies a saved one, or clears the week.
+
+**Settings** — Theme, text size and the measurement system (metric or imperial). The deeper
+customisation — colours, bars, tiles, layout — is folded away; tap a section to open it.
 
 ## Notes
-- I couldn't test this against a live Firebase from here, so if something doesn't sync, double-check the config values and that the Firestore rules were published.
-- Free tiers are generous; a household grocery list won't get close to any limit.
-- Want true push notifications or a real App Store app instead of a home-screen web app? That's a bigger build — happy to scope it.
+- Free tiers are generous; a household grocery list won't get close to any Firebase or Vercel limit.
+- The list code in the link is the only thing protecting a list (see the Firestore rules above). Fine
+  for a household; don't put anything private in it.

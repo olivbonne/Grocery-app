@@ -23,13 +23,23 @@ node .claude/tests/v178.js 8971 /tmp/<scratch>/v178.png
 Each prints one `PASS`/`FAIL` line per check and a tally, and writes a screenshot to the path given.
 A suite that cannot reach the server crashes with `ERR_CONNECTION_REFUSED` — start the server first.
 
-## The one that is not a browser suite
+## The syntax gate
 
-`api-recipe.js` tests the serverless endpoint directly — `node .claude/tests/api-recipe.js`, no server
-and no network, with the one outward call stubbed. It exists because v1.86 made `/api/recipe` fetch a
-URL that a user typed, which is a request only the deployment can make; the guards around that (no
-loopback, no private ranges, no link-local, every redirect hop re-checked) are the most
-security-relevant code in the repo and no browser suite can reach any of it.
+`node .claude/tests/syntax.js` — about a second, no server. It extracts the module to the LAST
+`</script>`, checks it as `.mjs`, checks `api/*.js`, and first plants a canary error to prove it CAN
+fail. Use it instead of any hand-rolled `node --check`: as `.js`, Node 22 passes a file with `import`
+lines whatever it contains, so the old one-liner had been checking nothing. The browser suites, which
+fail on any page error, were the real gate until 2026-09-26.
+
+## The ones that are not browser suites
+
+`api-recipe.js` and `api-recipe-search.js` test the serverless functions directly — `node
+.claude/tests/api-recipe.js`, no server and no network, with every outward call stubbed. They exist
+because `/api/recipe` fetches URLs a user typed and `/api/recipe-search` hands back URLs the app then
+fetches — requests only the deployment can make. The guards around that (no loopback, no private
+ranges, no link-local, every redirect hop re-checked, spoofed TikTok hosts rejected) are the most
+security-relevant code in the repo, and no browser suite can reach any of it. They also cover which
+provider is chosen, how an upstream failure is named (`model`, `busy`, `quota`), and the retry.
 
 ## What a good check looks like
 
@@ -46,6 +56,19 @@ and carries forward the test bugs found in earlier ones. The recurring lessons:
 - Playwright scrolls a control into view before clicking it, so take any scroll baseline *after*
   bringing the target into view (v1.77).
 - A page transition swallows the next tap while it runs — wait it out (v1.75).
+- **`addInitScript` re-runs on every navigation**, so a seed must be idempotent — write a key only
+  when it is absent, or a reload clobbers the state the suite just built (v1.82; hit again in v2.00).
+- **Dismiss whatever is open before tapping the next thing** — a sheet's scrim owns the screen (v1.86).
+- **Count what the APP did, in the page** — a Playwright route handler can see one `fetch()` twice
+  (v1.90).
+- **Assert WHICH value appeared**, not merely that something did (v1.91).
+- **The whole page's text is a haystack** — read the one surface under test, or an unrelated control
+  answers "yes" first (v1.94).
+- **Each page's nav carries its own ids** (`#planNav`, `#planNavP`, `#planNavS`…) — list them all
+  rather than assuming the one on the page you started from (v1.77, relearnt in v1.94).
+- **Identify a button by a stable hook**, not by its glyph — icons change (`data-icon`, v2.00).
+- When a check fails, **ask whether the app or the check is wrong** before fixing either. Several
+  suites record a test bug where the app was right; that is the direction that wastes the most time.
 
 ## Superseding a check
 

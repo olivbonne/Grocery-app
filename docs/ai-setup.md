@@ -163,14 +163,21 @@ model writes that dish out.
 
 ### Which search key
 
-Three backends are supported, and **two of them are free without a credit card** — which is the
-whole reason there is a choice. Set one (Vercel → Settings → Environment Variables), then redeploy.
+Three backends are supported. Set one (Vercel → Settings → Environment Variables), then redeploy.
 
-| Setting | Service | Free tier | Card needed |
+**You may not need any of them.** A search key only lets the app LIST results inside itself. Without
+one, a search still returns dish ideas — tap one and the reader writes out its ingredients — and every
+result's 🌐 / 🎵 buttons open a real web or TikTok search, because those are links, not lookups.
+
+| Setting | Service | Free tier | Card at signup |
 |---|---|---|---|
-| `TAVILY_API_KEY` | [Tavily](https://tavily.com) | 1,000 searches a month, recurring | no |
-| `SERPER_API_KEY` | [Serper](https://serper.dev) | 2,500 searches on signup | no |
-| `SEARCH_API_KEY` | Brave Search | free tier | **yes** — it asks for one at signup |
+| `SERPER_API_KEY` | [Serper](https://serper.dev) | 2,500 searches on signup | reportedly not — **unverified** |
+| `TAVILY_API_KEY` | [Tavily](https://tavily.com) | 1,000 searches a month | **yes** (confirmed Sept 2026) |
+| `SEARCH_API_KEY` | Brave Search | free tier | **yes** |
+
+A correction worth keeping: this table used to say Tavily needed no card. That came from third-party
+comparison articles, not from signing up, and it was wrong. Card requirements change without notice —
+check at signup rather than trusting this table, including the Serper row.
 
 **Precedence:** if more than one is set, `TAVILY_API_KEY` wins, then `SERPER_API_KEY`, then
 `SEARCH_API_KEY`. Only one backend is ever called, and the answer's `provider` field names which one
