@@ -1,6 +1,6 @@
 {
-  "model": "opus",
-  "effortLevel": "medium",
+  "model": "claude-opus-5-5",
+  "effortLevel": "high",
   "permissions": {
     "defaultMode": "acceptEdits",
     "allow": [
