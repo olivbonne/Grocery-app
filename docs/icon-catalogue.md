@@ -134,5 +134,8 @@ itself uses is a separate, open decision.
 ⬜ Potting soil · ⬜ Propane · ⬜ Road salt · ⬜ Seed · ⬜ Seedlings · ⬜ Seeds · ⬜ Snow chains ·
 ⬜ Snow shovel · ⬜ Watering can
 
+## Pet supplies
+⬜ Bird food · ⬜ Cat food · ⬜ Cat litter · ⬜ Cat treats · ⬜ Dog food · ⬜ Dog treats · ⬜ Fish food
+
 ## Also drawn, outside the reference list
 ✅ Dumplings (Asian) · ✅ Toilet rolls (Bulk)
