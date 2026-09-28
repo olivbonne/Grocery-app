@@ -11,6 +11,7 @@ Convention: bump the number by `0.01` for each batch of changes, add a dated row
 
 | Version | Date | Changes |
 |--------|------------|---------|
+| v2.05 | 2026-09-28 | **Your recipes can be folded away and sorted A–Z or by course** — Drinks, Entrée, Main, Dessert. Each recipe has a course you can set when adding or editing it; older recipes get a sensible guess from their name. **Search is one search now**: the Web / TikTok switch is gone, because every result already offers both a web page and TikTok. |
 | v2.04 | 2026-09-28 | **Line drawings for categories and items.** Each of the nine categories has its own simple line mark, and items on the list and in Regulars show a drawing of what they are — a drumstick, a flour bag, a jar of kimchi — in the category's colour. Anything without its own drawing shows its category's mark. Prefer the emoji? Settings › Icon style › Emoji brings them back. |
 | v2.03 | 2026-09-28 | **Adding a recipe to a day is two calm steps now.** First pick one of your recipes, or start a new one from a search, a link, a photo, pasted text or from scratch. Then check the meal, servings and ingredients and add it. The keyboard only appears when you tap a box to type. |
 | v2.02 | 2026-09-28 | **Export your list as a text file** from Settings: everything on the list, what's in the cart and all your saved Regulars, grouped by category. On the iPhone it opens the share sheet, so you can save it to Files, send it or print it. |

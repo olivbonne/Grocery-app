@@ -633,6 +633,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .precrow .precname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .precrow svg{flex:none;color:var(--muted2)}
   .palabelrow{display:flex;align-items:baseline;justify-content:space-between}
+  /* v2.05: "Your recipes" fold + sort. The sort's on-state is outlined like .slotseg — no accent on the choose step. */
+  #paRecToggle{display:inline-flex;align-items:center;gap:6px;background:none;border:0;padding:4px 0;color:var(--text);font-weight:800;font-size:14px}
+  #paRecToggle .reccount{color:var(--muted);font-weight:700}
+  .recgroup{margin:10px 0 6px}
+  .recsort{margin:0 0 10px}
+  .recsort button.on{background:var(--card);color:var(--text);border:2px solid var(--ink)}
   .patext{background:none;border:0;padding:6px 2px;color:var(--text);font-weight:700;font-size:14px}
   .paback{width:34px;height:34px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--text);display:inline-flex;align-items:center;justify-content:center;margin-right:8px;vertical-align:middle}
   .precwrap .sugchip { border-top-right-radius:0; border-bottom-right-radius:0; }
@@ -1589,7 +1595,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.04";
+const APP_VERSION = "v2.05";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1619,6 +1625,12 @@ const UNIT_TABLE = {
 function unitsMode(){ try{ const v=localStorage.getItem("ml_units"); return (v==="metric"||v==="imperial") ? v : "off"; }catch(e){ return "off"; } }
 /* v2.01: meal slots on a day — default ON. ml_mealslots is in APP_EXCLUDE_BOOT and APP_EXCLUDE. */
 function mealSlotsOn(){ try{ return localStorage.getItem("ml_mealslots")!=="0"; }catch(e){ return true; } }
+/* v2.05: "Your recipes" folded or open, and sorted A–Z or by course — per device. Both keys are in
+   APP_EXCLUDE_BOOT and APP_EXCLUDE (preferences, not a look). */
+function recOpen(){ try{ return localStorage.getItem("ml_recopen")!=="0"; }catch(e){ return true; } }
+function setRecOpen(on){ try{ localStorage.setItem("ml_recopen", on?"1":"0"); }catch(e){} }
+function recSort(){ try{ return localStorage.getItem("ml_recsort")==="course" ? "course" : "az"; }catch(e){ return "az"; } }
+function setRecSort(v){ try{ localStorage.setItem("ml_recsort", v==="course"?"course":"az"); }catch(e){} }
 function setMealSlots(on){ try{ localStorage.setItem("ml_mealslots", on?"1":"0"); }catch(e){} render(); }
 function setUnitsMode(m){ try{ localStorage.setItem("ml_units", m); }catch(e){} render(); }
 /* A number the way a recipe writes one: 2, 2.5, 1/2, 1 1/2. */
@@ -1721,7 +1733,7 @@ function mergeAmt(a, b){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -5613,6 +5625,20 @@ const SLOT_ORDER={breakfast:0,lunch:1,dinner:2,snack:3};
 function slotPicker(attr, cur){
   return `<div class="slotseg" role="group" aria-label="Meal">${MEAL_SLOTS.map(([k,l])=>`<button data-${attr}="${k}" class="${cur===k?'on':''}" aria-pressed="${cur===k?'true':'false'}">${l}</button>`).join("")}</div>`;
 }
+/* v2.05: recipe courses. recipe.course is optional — readers go through recipeCourse(). */
+const COURSES=[["drinks","Drinks"],["entree","Entrée"],["main","Main"],["dessert","Dessert"]];
+/* v2.05: a course for recipes saved before there were courses, and the starting choice for a new one —
+   read from the name, first match wins, "main" when nothing matches. Only a starting point: the form
+   shows it selected and one tap changes it. */
+function guessCourse(name){ const n=String(name||"").toLowerCase();
+  if(/(^|[^\w-])(drinks?|smoothie|juice|cocktail|mocktail|spritz|lemonade|tea|coffee|latte|milkshake|shake|punch|sangria|margarita|mojito|soda)(?=$|[^\w-])/.test(n)) return "drinks";   // a whole word: "Tea-smoked duck" is not a drink
+  if(/(cake|cheesecake|dessert|pudding|ice cream|tart\b|brownie|cookie|biscuit|mousse|crumble|pavlova|tiramisu|custard|sorbet|panna cotta|donut|doughnut|muffin|crepe|pancake)/.test(n)) return "dessert";
+  if(/\b(salad|soup|starter|entree|entrée|dip|bruschetta|spring rolls?|dumplings?|gyoza|satay|tapas|antipasto|canap)/.test(n)) return "entree";
+  return "main"; }
+function recipeCourse(r){ return (r && COURSES.some(c=>c[0]===r.course)) ? r.course : guessCourse(r && r.name); }
+function coursePicker(attr, cur){
+  return `<div class="slotseg" role="group" aria-label="Course">${COURSES.map(([k,l])=>`<button data-${attr}="${k}" class="${cur===k?'on':''}" aria-pressed="${cur===k?'true':'false'}">${l}</button>`).join("")}</div>`;
+}
 function planUpdateEntry(k, id, patch){ const P=planData(); P.days=Object.assign({},P.days);
   P.days[k]=(P.days[k]||[]).map(x=>x.id===id?Object.assign({},x,patch):x); writePlan(P); }
 function planIngNorm(x){
@@ -5819,7 +5845,7 @@ async function planSearch(){
   if(!q){ planAdd.impErr="Type what you want to cook."; render(); return; }
   planAdd.sq=q; planAdd.impBusy=true; planAdd.impErr=""; planAdd.sres=null; render();
   let res=null, data=null;
-  try{ res=await fetch("/api/recipe-search",{ method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({q, scope:(planAdd.sscope||"web")}) }); }
+  try{ res=await fetch("/api/recipe-search",{ method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({q, scope:(planAdd.sscope||"web")}) }); }   // v2.05: the TikTok scope still exists server-side, unused by the app — every result links to TikTok anyway
   catch(e){ res=null; }
   if(!planAdd) return;
   planAdd.impBusy=false;
@@ -5922,9 +5948,8 @@ function planAddSheet(){
       ${planAdd.imp==='search' ? `${/* v1.96: the same search, pointed somewhere else; a tapped result is read through the caption path.
              v1.98: with no search key the TikTok scope offers dish ideas rather than refusing — each one
              carries a 🎵 to TikTok's own search, which is a link, not a lookup. */""}
-        <div class="seg segfull" style="margin-bottom:8px"><button data-sscope="web" class="${(planAdd.sscope||'web')==='web'?'on':''}">${GLOBE_SVG(15)} Web</button><button data-sscope="tiktok" class="${planAdd.sscope==='tiktok'?'on':''}">${NOTE_SVG(15)} TikTok</button></div>
         <div class="pimppanel">
-          <input id="paImpVal" placeholder="${planAdd.sscope==='tiktok'?'Find a recipe video':'What do you want to cook?'}" value="${esc(planAdd.sq||"")}" autocomplete="off" autocapitalize="none" spellcheck="false" style="${ingCSS}" />
+          <input id="paImpVal" placeholder="What do you want to cook?" value="${esc(planAdd.sq||"")}" autocomplete="off" autocapitalize="none" spellcheck="false" style="${ingCSS}" />
           <button class="pimpgo" id="paImpGo"${planAdd.impBusy?" disabled":""}>Find</button>
         </div>
         ${Array.isArray(planAdd.sres) ? (planAdd.sres.length ? `
@@ -5934,7 +5959,7 @@ function planAddSheet(){
                 wrapped to two lines above the results they were introducing; the buttons carry their own
                 labels. The no-key line still has to say these are ideas rather than results — that is the
                 honesty, not the length. */""}
-          <p class="pimpnote">${planAdd.ssrc==='web' ? (planAdd.sscope==='tiktok' ? 'From TikTok — tap to read the caption.' : 'From the web — tap to read it in, or open it.') : 'No search key — these are ideas, not results. Tap to write one out, or go looking.'}</p>
+          <p class="pimpnote">${planAdd.ssrc==='web' ? 'From the web — tap to read it in, or open it.' : 'No search key — these are ideas, not results. Tap to write one out, or go looking.'}</p>
           ${/* v1.94: the page opens in a new context so the phone\'s in-app browser handles it and Done
                 comes back here. The URL is from a search engine, so it is untrusted: only http(s), and
                 escaped. An iframe was rejected — recipe sites refuse to be framed. */""}
@@ -5968,12 +5993,21 @@ function planAddSheet(){
         </div>` : ""}
   `;
   if(step==="choose"){
-    const shown = planAdd.allRecipes ? saved : saved.slice(0,6);
+    /* v2.05: "Your recipes" folds away and sorts A–Z (6-row cap kept) or by course (grouped, no cap). */
+    const rOpen = recOpen(), rSort = recSort();
+    const byName = (a,b)=>String(a.name||"").localeCompare(String(b.name||""),undefined,{sensitivity:"base"});
+    const sorted = saved.slice().sort(byName);
+    const shown = planAdd.allRecipes ? sorted : sorted.slice(0,6);
+    const recRow = r=>`<div class="precline"><button class="precrow" data-precipe="${esc(r.id)}"><span class="precname">${esc(r.name)}</span>${planAdd.manage?"":CHEV("6,3 11,8 6,13")}</button>${planAdd.manage?`<button class="precdel" data-precdel="${esc(r.id)}" aria-label="Delete ${esc(r.name)}">×</button>`:""}</div>`;
+    const recBody = rSort==="course"
+      ? COURSES.map(([k,l])=>{ const g=sorted.filter(r=>recipeCourse(r)===k); return g.length ? `<p class="palabel recgroup">${esc(l)} · ${g.length}</p><div class="preclist">${g.map(recRow).join("")}</div>` : ""; }).join("")
+      : `<div class="preclist">${shown.map(recRow).join("")}</div>
+      ${(saved.length>6 && !planAdd.allRecipes) ? `<button class="patext" id="paAllRec" style="margin:-10px 0 12px">Show all ${saved.length} recipes</button>` : ""}`;
     return `<div class="sheet-bg kbpin" id="paBg"><div class="sheet" id="paSheet">
     ${title}
-    ${(!planAdd.imp && saved.length) ? `<div class="palabelrow"><p class="palabel">Your recipes</p><button class="patext" id="paManage">${planAdd.manage?"Done":"Edit"}</button></div>
-      <div class="preclist">${shown.map(r=>`<div class="precline"><button class="precrow" data-precipe="${esc(r.id)}"><span class="precname">${esc(r.name)}</span>${planAdd.manage?"":CHEV("6,3 11,8 6,13")}</button>${planAdd.manage?`<button class="precdel" data-precdel="${esc(r.id)}" aria-label="Delete ${esc(r.name)}">×</button>`:""}</div>`).join("")}</div>
-      ${(saved.length>6 && !planAdd.allRecipes) ? `<button class="patext" id="paAllRec" style="margin:-10px 0 12px">Show all ${saved.length} recipes</button>` : ""}` : ""}
+    ${(!planAdd.imp && saved.length) ? `<div class="palabelrow"><button id="paRecToggle" aria-expanded="${rOpen?'true':'false'}">${CHEV(rOpen?"4 6 8 10 12 6":"6 4 10 8 6 12")}<span>Your recipes</span><span class="reccount">·&nbsp;${saved.length}</span></button>${rOpen?`<button class="patext" id="paManage">${planAdd.manage?"Done":"Edit"}</button>`:""}</div>
+      ${rOpen ? `<div class="seg recsort"><button data-recsort="az" class="${rSort==='az'?'on':''}">A–Z</button><button data-recsort="course" class="${rSort==='course'?'on':''}">Course</button></div>
+      ${recBody}` : ""}` : ""}
     ${planAdd.imp ? `<button class="patext" id="paBackChoose">${CHEV("10 4 6 8 10 12")} ${saved.length?"Back to your recipes":"Back"}</button>` : `<p class="palabel">New recipe</p>`}
     ${imports}
     ${planAdd.imp ? "" : `<button class="patext" id="paWrite" style="display:block;width:100%;text-align:center;margin-top:10px">Write it yourself</button>`}
@@ -5986,6 +6020,7 @@ function planAddSheet(){
     ${planAdd.edit ? imports : ""}
     ${(isR && srcHost) ? `<p class="pimpnote" style="margin:-6px 0 10px">From ${esc(srcHost)}</p>` : ""}
     ${mealSlotsOn() ? slotPicker("paslot", planAdd.slot||"") : ""}
+    ${isR ? coursePicker("pacourse", planAdd.course || guessCourse(planAdd.name)) : ""}
     <input id="paName" placeholder="${isR?'Recipe name':'What are you eating?'}" value="${esc(planAdd.name||"")}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="${fieldCSS}" />
     ${(isR && !planAdd.edit) ? `<div class="servrow" style="margin:12px 0 0"><span class="servlbl">Serves</span>
       <div class="qstep2"><button data-paserv="-1" aria-label="Fewer servings">−</button><span>${planAdd.serves||planAdd.servings||4}</span><button data-paserv="1" aria-label="More servings">+</button></div></div>` : ""}
@@ -6101,18 +6136,20 @@ function wirePlanTab(){
       if(longFired){
         const en=planEntries(day).find(x=>x.id===id);
         const r=en && en.kind==="recipe" ? recipeById(en.rid) : null;
-        if(r){ planAdd={ day, kind:"recipe", name:r.name, ing:(r.ing||[]).map(planIngNorm), rid:r.id, edit:true, step:"form", manage:false, allRecipes:false, src:r.src||"", steps:Array.isArray(r.steps)?r.steps.slice():[], servings:+r.servings||0, q:"", imp:null, impVal:"", impBusy:false, impErr:"", sq:"", sres:null, ssrc:"", sscope:"web", slot:"", serves:0 }; render(); return; }
+        if(r){ planAdd={ day, kind:"recipe", name:r.name, ing:(r.ing||[]).map(planIngNorm), rid:r.id, edit:true, step:"form", manage:false, allRecipes:false, src:r.src||"", steps:Array.isArray(r.steps)?r.steps.slice():[], servings:+r.servings||0, q:"", imp:null, impVal:"", impBusy:false, impErr:"", sq:"", sres:null, ssrc:"", sscope:"web", slot:"", serves:0, course:r.course||"" }; render(); return; }
       }
       planPick={day,id}; render(); };
   });
 
   const pmBg=app.querySelector("#pmBg"); if(pmBg) pmBg.onclick=e=>{ if(e.target===pmBg){ planMenu=null; render(); } };
-  const pmR=app.querySelector("#pmRecipe"); if(pmR) pmR.onclick=()=>{ planAdd={day:planMenu,kind:"recipe",name:"",ing:[],rid:"",edit:false,step:"choose",manage:false,allRecipes:false,q:"",imp:null,impVal:"",impBusy:false,impErr:"",sq:"",sres:null,ssrc:"",sscope:"web",src:"",steps:[],servings:0,slot:mealSlotsOn()?"dinner":"",serves:0}; planMenu=null; render(); };
+  const pmR=app.querySelector("#pmRecipe"); if(pmR) pmR.onclick=()=>{ planAdd={day:planMenu,kind:"recipe",name:"",ing:[],rid:"",edit:false,step:"choose",manage:false,allRecipes:false,q:"",imp:null,impVal:"",impBusy:false,impErr:"",sq:"",sres:null,ssrc:"",sscope:"web",src:"",steps:[],servings:0,slot:mealSlotsOn()?"dinner":"",serves:0,course:""}; planMenu=null; render(); };
   const pmF=app.querySelector("#pmFood");   if(pmF) pmF.onclick=()=>{ planAdd={day:planMenu,kind:"food",name:"",ing:[],rid:"",edit:false,q:"",cat:"",emoji:"",slot:mealSlotsOn()?"dinner":""}; planMenu=null; render(); };
 
   const paBg=app.querySelector("#paBg"); if(paBg) paBg.onclick=e=>{ if(e.target===paBg){ planAdd=null; render(); } };
   app.querySelectorAll("[data-paslot]").forEach(b=>b.onclick=()=>{ if(!planAdd) return; const k=b.dataset.paslot;
     planAdd.slot = (planAdd.slot===k) ? "" : k; render(); });
+  app.querySelectorAll("[data-pacourse]").forEach(b=>b.onclick=()=>{ if(!planAdd) return;
+    planAdd.course=b.dataset.pacourse; render(); });   // v2.05: a recipe always has a course — no toggle-off
   app.querySelectorAll("[data-paserv]").forEach(b=>b.onclick=()=>{ if(!planAdd) return;
     const cur=planAdd.serves||planAdd.servings||4;
     planAdd.serves=Math.max(1, Math.min(99, cur+(+b.dataset.paserv))); render(); });
@@ -6140,9 +6177,6 @@ function wirePlanTab(){
     const k=b.dataset.pimp;
     if(k==="photo"){ const f=app.querySelector("#paPhoto"); if(f) f.click(); return; }
     planAdd.imp = (planAdd.imp===k) ? null : k; planAdd.impVal=""; planAdd.impErr=""; render(); });
-  app.querySelectorAll("[data-sscope]").forEach(b=>b.onclick=()=>{
-    if(!planAdd || planAdd.impBusy) return;
-    planAdd.sscope=b.dataset.sscope; planAdd.sres=null; planAdd.impErr=""; render(); });
   const paPh=app.querySelector("#paPhoto");
   if(paPh) paPh.onchange=()=>{ const file=paPh.files && paPh.files[0]; if(!file || !planAdd) return;
     planAdd.impBusy=true; planAdd.impErr=""; render();
@@ -6190,7 +6224,11 @@ function wirePlanTab(){
     b.onclick=()=>{ const r=recipeById(b.dataset.precipe); if(!r || !planAdd) return;
       planAdd.name=r.name; planAdd.rid=r.id; planAdd.ing=(r.ing||[]).map(planIngNorm); planAdd.q="";
       planAdd.src=r.src||""; planAdd.steps=Array.isArray(r.steps)?r.steps.slice():[]; planAdd.servings=+r.servings||0;   // v2.01
+      planAdd.course=r.course||"";   // v2.05
       planAdd.step="form"; render(); }; });   // v2.03: the fields live on the form step
+  const paRT=app.querySelector("#paRecToggle"); if(paRT) paRT.onclick=()=>{ if(!planAdd) return;
+    const open=!recOpen(); setRecOpen(open); if(!open) planAdd.manage=false; render(); };
+  app.querySelectorAll("[data-recsort]").forEach(b=>b.onclick=()=>{ if(!planAdd) return; setRecSort(b.dataset.recsort); render(); });
   const paMg=app.querySelector("#paManage"); if(paMg) paMg.onclick=()=>{ if(!planAdd) return; planAdd.manage=!planAdd.manage; render(); };
   const paAR=app.querySelector("#paAllRec"); if(paAR) paAR.onclick=()=>{ if(!planAdd) return; planAdd.allRecipes=true; render(); };
   const paWr=app.querySelector("#paWrite"); if(paWr) paWr.onclick=()=>{ if(!planAdd) return; planAdd.step="form"; render(); };
@@ -6273,7 +6311,7 @@ function takeSharedRecipe(){
   if(!me) return;                  // not set up yet — there is nothing to import into
   optOpen=false; listsOpen=false; view="plan"; planWeek=0;
   planAdd = { day:dayKey(new Date()), kind:"recipe", name:"", ing:[], rid:"", edit:false, step:"choose", manage:false, allRecipes:false, q:"",
-              imp:"link", impVal:u, impBusy:false, impErr:"", sq:"", sres:null, ssrc:"", sscope:"web", src:"", steps:[], servings:0, slot:"", serves:0 };
+              imp:"link", impVal:u, impBusy:false, impErr:"", sq:"", sres:null, ssrc:"", sscope:"web", src:"", steps:[], servings:0, slot:"", serves:0, course:"" };
   render();
   planImport({ url:u });
 }
@@ -6300,7 +6338,8 @@ function planCommitAdd(){
     const prev = recipeById(rid) || {};
     planSaveRecipe({ id:rid, name:nm, emoji:"", ing, servings: planAdd.servings || prev.servings || 4,
                      src: planAdd.src || prev.src || "",
-                     steps: (planAdd.steps && planAdd.steps.length) ? planAdd.steps : (prev.steps||[]) });
+                     steps: (planAdd.steps && planAdd.steps.length) ? planAdd.steps : (prev.steps||[]),
+                     course: planAdd.course || prev.course || guessCourse(nm) });   // v2.05
     if(planAdd.edit){ planAdd=null; render(); return; }
     planAddEntry(day, { id:"pe"+Date.now().toString(36), kind:"recipe", name:nm, emoji:"", rid,
                         slot: planAdd.slot||"", serves: planAdd.serves||0 });
@@ -7038,7 +7077,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }

@@ -69,7 +69,10 @@ const IDEAS = { source:"model", provider:"", results:[{ title:"Mushroom pizza", 
     /* ── A. opening: a choice, no keyboard ─────────────────────────────── */
     ok('opening Add recipe focuses nothing, so no keyboard comes up', (await focusedField())===null, String(await focusedField()));
     const rows = await page.evaluate(()=>[...document.querySelectorAll('.precrow')].map(b=>b.textContent.trim()));
-    ok('saved recipes are rows, six at first', rows.length===6 && rows[0]==="Chicken in soya sauce with choysum", JSON.stringify(rows));
+    /* SUPERSEDED by v2.05: recipes are now listed A–Z by default (the household asked for A–Z or by
+       course), so the first row is the alphabetically first, not the first saved. Still protected: rows,
+       and six before "Show all". */
+    ok('saved recipes are rows, six at first, A–Z', rows.length===6 && rows[0]==="40 cloves garlic chicken", JSON.stringify(rows));
     ok('…with a way to see the rest', /Show all 9 recipes/.test(await page.locator('#paAllRec').textContent().catch(()=>'')), '');
     ok('the choice step has no form in it — no name box, no meal slots, no commit',
        !(await has('#paName')) && !(await has('.slotseg')) && !(await has('#paGo')), '');
