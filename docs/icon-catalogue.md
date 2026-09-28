@@ -12,7 +12,7 @@ have a list to work from.
   were taken from them. No drawing was copied.
 - **Size rule:** these read at tile size (about 56 px and up). List rows (18 px) keep the simple
   marks, because detail turns to noise at that size.
-- **Status (2026-09-28):** 141 drawings, 0 in the app. **Every Regular is drawn:** all 184 of the
+- **Status (2026-09-28):** 141 drawings, **in the app since v2.04** (`DRAWN` in index.html). **Every Regular is drawn:** all 184 of the
   household's Regulars (from the v2.02 export) map to a drawing, and items that look the same share
   one. For example, drumsticks, leg and thigh are all a drumstick, every flour is a flour bag and every
   ground spice is a spice jar. The mapping lives in the canvas's `Regulars` board. Line: clean, by

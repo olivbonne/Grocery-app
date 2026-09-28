@@ -25,6 +25,13 @@ Three serverless functions in `api/` (CommonJS, Vercel, `maxDuration` 60s in `ve
   `currentColor` (`SEARCH_SVG`, `GLOBE_SVG`, the flag marks…), because they are the only saturated
   non-brand colour on screen otherwise. Settled in v1.58, applied to the newer chrome in v2.00.
   Established feature marks (✨ Smart add, 📖) stay.
+  **v2.04: content is drawn too, by default** (Settings › Icon style). The nine standard categories
+  get `CATMARK` line marks; items get `DRAWN` illustrations, 48×48 in three layers — back lines, a
+  front shape filled with `--illbg` (the tile's own background, so it hides what is behind it) and
+  detail lines. Name → drawing: `DRAW_EXACT`, then `DRAW_HINTS` (first match wins, so specific phrases
+  go first). Emoji remain the fallback (household-made categories) and the opt-out. `itemIcon()` is
+  for DISPLAY and returns markup; anything that stores an icon keeps `itemEmoji()` — no SVG in state.
+  The drawings are designed on the canvas listed in `docs/icon-catalogue.md`.
 - **Security:** every provider key — `GEMINI_API_KEY`, `GROQ_API_KEY`, `TAVILY_API_KEY`,
   `SERPER_API_KEY`, `SEARCH_API_KEY` — stays server-side in `api/*.js` via `process.env`. Never in
   `index.html`, never logged, never in a response or a query string. The Firebase web config in
