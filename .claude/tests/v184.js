@@ -81,8 +81,9 @@ const SEED = (extra)=>`(() => {
     await page.mouse.move(b.x+b.width/2, b.y+b.height/2);
     await page.mouse.down(); await page.waitForTimeout(750); await page.mouse.up();
     await page.waitForTimeout(800); };
-  const openDay = async(i, which)=>{ await page.locator('.planday').nth(i).locator('[data-pd]').click();
-    await page.waitForTimeout(700); await tap(which==='recipe' ? '#pmRecipe' : '#pmFood'); };
+  const openDay = async(i, which, write=true)=>{ await page.locator('.planday').nth(i).locator('[data-pd]').click();
+    await page.waitForTimeout(700); await tap(which==='recipe' ? '#pmRecipe' : '#pmFood');
+    /* v2.03: Add recipe opens on a choice step; the form is one tap further ("Write it yourself"). */ if(which==='recipe' && write) await tap('#paWrite'); };
   const dayChips = (i)=>page.evaluate(n=>[...document.querySelectorAll('.planday')][n]
     ? [...[...document.querySelectorAll('.planday')][n].querySelectorAll('.pchip')].map(c=>c.textContent.trim()) : null, i);
   const addSheet = ()=>page.evaluate(()=>{
@@ -183,7 +184,7 @@ const SEED = (extra)=>`(() => {
     ok('adding puts the recipe on the day', (chips||[]).some(c=>/Bolognese/.test(c)), JSON.stringify(chips));
 
     /* ── 6. picking a saved recipe FILLS the form, and stays ────────────── */
-    await openDay(5,'recipe');
+    await openDay(5,'recipe',false);   // v2.03: saved recipes are on the choice step, before the form
     s = await addSheet();
     ok('a saved recipe is offered on another day', s.picks.some(p=>/Bolognese/.test(p)), JSON.stringify(s.picks));
     await tap('[data-precipe]');
@@ -243,7 +244,7 @@ const SEED = (extra)=>`(() => {
     await mk(`(()=>{ const c=JSON.parse(localStorage.getItem("ml_cache_v101"));
       c.plan={ days:{}, recipes:[{id:"old1",name:"Old stew",emoji:"",ing:["onion","stock"]}] };
       localStorage.setItem("ml_cache_v101", JSON.stringify(c)); })();`);
-    await openDay(0,'recipe');
+    await openDay(0,'recipe',false);   // v2.03: pick from the choice step
     await tap('[data-precipe]');
     s = await addSheet();
     ok('a recipe saved with plain-string ingredients still opens', s.name==='Old stew' && s.ing.length===2, JSON.stringify(s));

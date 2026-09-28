@@ -184,6 +184,7 @@ const seed = (units) => `(() => {
 
     /* ── C. the add sheet ──────────────────────────────────────────────── */
     await tap('.pdmore'); await tap('#pmRecipe');
+    await tap('#paWrite');   // v2.03: the form is one step past the choice
     const addSlot = await page.evaluate(()=>[...document.querySelectorAll('[data-paslot].on')].map(b=>b.dataset.paslot));
     ok('a new meal starts as Dinner', JSON.stringify(addSlot)==='["dinner"]', JSON.stringify(addSlot));
     ok('a new recipe asks how many it serves', await page.locator('[data-paserv="1"]').count()===1, '');

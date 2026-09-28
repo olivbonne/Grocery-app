@@ -130,6 +130,10 @@ const IDEAS = { source:"model", provider:"", results:[
 
     /* ── D. one filled action per sheet ────────────────────────────────── */
     await tap('#planNav, #planNavP'); await tap('.pdmore'); await tap('#pmRecipe');
+    /* SUPERSEDED by v2.03: the sheet opens on a choice step with NO commit button (v203 checks that);
+       the one-filled-button rule now applies to the form, one tap in. What this still protects: when
+       there is something to commit, exactly one button looks like the end of the job. */
+    await tap('#paWrite');
     const filled = await page.evaluate(()=>{
       const sheet=document.querySelector('#paSheet'); if(!sheet) return null;
       const solid=[...sheet.querySelectorAll('button')].filter(b=>{
@@ -143,6 +147,7 @@ const IDEAS = { source:"model", provider:"", results:[
        filled && filled.length===1 && /Add to/.test(filled[0]), JSON.stringify(filled));
 
     /* ── E. one picker at a time ───────────────────────────────────────── */
+    await tap('#paBack');   // v2.03: back to the choice step, where the saved recipes and the search live
     const before = await page.evaluate(()=>document.querySelectorAll('[data-precipe]').length);
     ok('precondition: the saved-recipe strip is there before a search', before>0, String(before));
     await tap('[data-pimp="search"]');
