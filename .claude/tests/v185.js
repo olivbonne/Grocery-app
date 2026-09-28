@@ -180,8 +180,11 @@ const PARSE_STUB = JSON.stringify({ items:[
     ok('…and it says what the list is for', /Items to add/i.test(r.hd||''), r.hd);
     /* The servings scaler belongs to Smart add's recipe parse, which knows how many a recipe serves.
        A recipe out of the plan's own book does not, so the sheet must not offer to "set servings". */
-    ok('…and does not promise a servings control it is not showing',
-       r.servings===false && !/set servings/i.test(r.sub||''), JSON.stringify({servings:r.servings, sub:r.sub}));
+    /* SUPERSEDED by v2.01: a planned recipe now carries its servings, so its review DOES show the
+       scaler. What this still protects is the original point — the sheet's words and its controls
+       agree: "set servings" is promised exactly when the control is on screen. */
+    ok('…and promises a servings control exactly when it shows one',
+       r.servings===true && /set servings/i.test(r.sub||''), JSON.stringify({servings:r.servings, sub:r.sub}));
 
     const b2 = await listNames();
     await tap('[data-smart-sel]');                       // "already have the beef"

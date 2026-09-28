@@ -2,13 +2,14 @@
 
 September 2026 · reviewed against Market List **v1.80**
 
-> **Status at v2.00 (late September 2026).** Of the roadmap in §3: shipped — **1** Plan tab (v1.82),
-> **2** list switcher (v1.81), **3** recipes as saved parses (v1.84), **6** recipe from a URL (v1.86,
-> plus photos, pasted text, search, and TikTok by v1.95). Partly — **4** a planned *recipe's*
-> ingredients go to the list with a review sheet (v1.85), but there is no one-tap "add the whole
-> week" yet; **10** the plan syncs across devices with the list, appearance is still device-local.
-> Not started — **5** pantry from evidence, **7** receipt import, **8** basket handoff, **9** price
-> memory. Nothing in §4 (money) has been acted on. The rest of this document is unchanged from when it
+> **Status at v2.01 (late September 2026).** Of the roadmap in §3: shipped — **1** Plan tab (v1.82),
+> **2** list switcher (v1.81), **3** recipes as saved parses (v1.84; source link, method and servings
+> since v2.01), **4** the whole week to the list in one tap, duplicates merged (v2.01), **5** pantry
+> from evidence — recently bought items arrive unticked as "probably have" (v2.01), **6** recipe from
+> a URL (v1.86, plus photos, pasted text, search, and TikTok by v1.95). v2.01 also added meal slots
+> and per-meal servings. Partly — **10** the plan syncs across devices with the list, appearance is
+> still device-local. Not started — **7** receipt import, **8** basket handoff, **9** price memory.
+> Nothing in §4 (money) has been acted on. The rest of this document is unchanged from when it
 > was written.
 
 Samsung Food (the rebuilt Whisk, folded into Samsung in 2023) is the strongest mainstream

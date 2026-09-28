@@ -25,8 +25,9 @@ const FETCH_TIMEOUT_MS = 7000;
 const MODEL_BUDGET_MS = 20000;  // smaller than the others: this endpoint also spends time on the web search
 
 /* v1.96: three search backends, one shape. Brave's free tier asks for a credit card, which is a
-   hard stop for a household app, so Tavily (1,000/month) and Serper (2,500 on signup) — both free
-   without a card — are first-class alongside it. Whichever key is present wins, in that order.
+   hard stop for a household app, so Tavily (1,000/month) and Serper (2,500 on signup) are
+   first-class alongside it. Whichever key is present wins, in that order. (v1.96 said both were
+   free without a card; Tavily turned out to ask for one too — docs/ai-setup.md has what is known.)
    Google's Custom Search JSON API is deliberately absent: it is closed to new signups and shuts
    down on 2027-01-01, so building on it would be building on sand. */
 function searchProvider() {

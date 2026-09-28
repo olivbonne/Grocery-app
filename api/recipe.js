@@ -9,7 +9,7 @@
 //              { image }  a data: URL of a photo of a recipe        (v1.86)
 //              { dish }   the name of a dish, written out by the model (v1.89) —
 //                         used for search results that have no page behind them
-//            ->  { title, servings, items: [{ name, qty, weight, category }] }
+//            ->  { title, servings, items: [{ name, qty, weight, category }], steps: [string] }
 //            errors are { error, code } so the app can say something useful:
 //            bad_url, blocked_url, not_a_page, fetch_failed, no_caption (v1.95 — a TikTok
 //            whose caption carries no recipe), bad_image, too_large, too_long, missing,
@@ -77,10 +77,10 @@ function aiProvider() {
 
 const SYSTEM = [
   'You extract a grocery shopping list from a recipe.',
-  'Ignore steps/instructions; output only the ingredients someone must buy.',
+  'The shopping list holds only the ingredients someone must buy; the method goes in "steps".',
   'Combine duplicate ingredients; skip water and plain tap water.',
   'Respond with a JSON object of exactly this shape:',
-  '{"title": string, "servings": integer, "items": [ ... ]}.',
+  '{"title": string, "servings": integer, "items": [ ... ], "steps": [string]}.',
   '"title": a short recipe name (or "" if unknown).',
   '"servings": how many the recipe makes as written (integer, default 4 if unstated).',
   'Each element of "items" has exactly these keys:',
@@ -89,6 +89,7 @@ const SYSTEM = [
   '  "weight": string — amount/measure if given, e.g. "500g", "2 cups", "1 tbsp"; else ""',
   '  "category": one of ' + CATEGORIES.map((c) => '"' + c + '"').join(', '),
   'Choose the closest category; use "others" when nothing fits.',
+  '"steps": the method as short imperative steps in order, at most 20, each under 200 characters; [] if the text has none.',
   'Return only the JSON object — no prose, no markdown fences.',
 ].join('\n');
 
@@ -100,7 +101,7 @@ const DISH_SYSTEM = SYSTEM
 
 const VISION_SYSTEM = SYSTEM
   + '\nThe recipe is in the attached image. Read the ingredient list from it.'
-  + '\nIf the image is not a recipe, return {"title":"","servings":4,"items":[]}.';
+  + '\nIf the image is not a recipe, return {"title":"","servings":4,"items":[],"steps":[]}.';
 
 // ── the model output is untrusted: coerce every field into a safe shape ──────
 function clampItem(x) {
@@ -149,6 +150,29 @@ function safeUrl(raw) {
 
 // Prefer schema.org Recipe JSON-LD when a page carries it — most recipe sites do,
 // and it is the ingredient list already separated from the prose.
+// v2.01: also carries recipeInstructions (string, strings, HowToStep {text}, HowToSection
+// {itemListElement}) as a "Method:" block, flattened and capped at 20 lines x 200 chars.
+function jsonLdSteps(ins) {
+  const lines = [];
+  const walk = (x, depth) => {
+    if (x == null || depth > 4 || lines.length >= 20) return;
+    if (typeof x === 'string') {
+      x.split(/\r?\n+/).forEach((l) => {
+        const t = l.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        if (t && lines.length < 20) lines.push(t.slice(0, 200));
+      });
+      return;
+    }
+    if (Array.isArray(x)) { x.forEach((y) => walk(y, depth + 1)); return; }
+    if (typeof x === 'object') {
+      if (Array.isArray(x.itemListElement)) { walk(x.itemListElement, depth + 1); return; }
+      if (x.text != null) walk(String(x.text), depth + 1);
+      else if (x.name != null) walk(String(x.name), depth + 1);
+    }
+  };
+  walk(ins, 0);
+  return lines;
+}
 function jsonLdIngredients(html) {
   const out = [];
   const re = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
@@ -173,8 +197,10 @@ function jsonLdIngredients(html) {
       if (!Array.isArray(ing) || !ing.length) continue;
       const name = String(n.name || '').trim().slice(0, 80);
       const yld = String(n.recipeYield == null ? '' : (Array.isArray(n.recipeYield) ? n.recipeYield[0] : n.recipeYield)).slice(0, 40);
+      const steps = jsonLdSteps(n.recipeInstructions);
       out.push([name ? ('Recipe: ' + name) : '', yld ? ('Serves: ' + yld) : '', 'Ingredients:',
-        ing.map((x) => '- ' + String(x).trim()).join('\n')].filter(Boolean).join('\n'));
+        ing.map((x) => '- ' + String(x).trim()).join('\n'),
+        steps.length ? ('Method:\n' + steps.map((x, i) => (i + 1) + '. ' + x).join('\n')) : ''].filter(Boolean).join('\n'));
     }
   }
   return out.length ? out.join('\n\n') : '';
@@ -427,7 +453,7 @@ module.exports = async (req, res) => {
           ],
         }],
         temperature: 0.2,
-        max_tokens: 1500,
+        max_tokens: 2500,
       }
       : {
         model: ai.model,
@@ -436,7 +462,7 @@ module.exports = async (req, res) => {
           { role: 'user', content: text },
         ],
         temperature: 0.2,
-        max_tokens: 1500,
+        max_tokens: 2500,
         response_format: { type: 'json_object' },
       };
 
@@ -495,7 +521,14 @@ module.exports = async (req, res) => {
     if (servings > 99) servings = 99;
     const title = String((parsed && parsed.title) || '').trim().slice(0, 80);
 
-    res.status(200).json({ title, servings, items });
+    // v2.01: the method. Untrusted like everything else — strings only, trimmed, capped.
+    const steps = (parsed && Array.isArray(parsed.steps) ? parsed.steps : [])
+      .filter((x) => typeof x === 'string')
+      .map((x) => x.replace(/\s+/g, ' ').trim().slice(0, 200))
+      .filter(Boolean)
+      .slice(0, 20);
+
+    res.status(200).json({ title, servings, items, steps });
   } catch (e) {
     /* v1.93: a 502 with nothing in the log is a bug that costs an afternoon. Every bail says why. */
     console.error('recipe unexpected ' + String(e && e.message).slice(0, 200));
