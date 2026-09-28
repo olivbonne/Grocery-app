@@ -1562,7 +1562,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.01";
+const APP_VERSION = "v2.02";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -3703,6 +3703,36 @@ function copyLink(){ const url=location.href;
   if(navigator.share){ navigator.share({title:"Market List", text:"Join our shared grocery list", url}).catch(()=>{}); }
   else if(navigator.clipboard){ navigator.clipboard.writeText(url); showToast("Link copied"); }
   else { showToast("Copy this URL from the address bar"); } }
+/* v2.02: export what is saved in the current list as plain text, grouped by category. Weights are the
+   stored text because the file is a record, not a display. */
+function buildExportText(){
+  const d=new Date().toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"});
+  const cats=catList(); const known=new Set(cats.map(c=>c.id));
+  const items=(state.items||[]).filter(i=>i&&String(i.name||"").trim());
+  const ba=(state.buyAgain||[]).filter(i=>i&&String(i.name||"").trim());
+  const line=i=>"  - "+((i.qty>1)?`${i.qty}× `:"")+(i.weight?i.weight+" ":"")+cap(i.name);
+  const byName=(a,b)=>String(a.name).localeCompare(String(b.name),undefined,{sensitivity:"base"});
+  const section=(title,list)=>{
+    if(!list.length) return null;
+    const groups=[];
+    cats.forEach(c=>{ const g=list.filter(i=>i.cat===c.id); if(g.length) groups.push(c.label+"\n"+g.sort(byName).map(line).join("\n")); });
+    const other=list.filter(i=>!known.has(i.cat)); if(other.length) groups.push("Other\n"+other.sort(byName).map(line).join("\n"));
+    return `${title} (${list.length})\n\n`+groups.join("\n\n"); };
+  const secs=[section("TO BUY",items.filter(i=>!i.checked)),section("IN THE CART",items.filter(i=>i.checked)),section("REGULARS",ba)].filter(Boolean);
+  return `${state.name || "Market List"} — exported ${d}\n\n`+(secs.length?secs.join("\n\n"):"Nothing saved yet.")+"\n"; }
+/* Share-with-a-file comes first because an iPhone home-screen app has no download folder. */
+async function exportListText(){
+  const txt=buildExportText(); const now=new Date(); const p=n=>String(n).padStart(2,"0");
+  const base=String(state.name||"list").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"list";
+  const fn=`${base}-${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())}.txt`;
+  try{ const f=new File([txt], fn, {type:"text/plain"});
+    if(navigator.canShare && navigator.canShare({files:[f]})){ await navigator.share({files:[f], title:fn}); return; } }
+  catch(e){ if(e && e.name==="AbortError") return; }
+  try{ const url=URL.createObjectURL(new Blob([txt],{type:"text/plain;charset=utf-8"}));
+    const a=document.createElement("a"); a.href=url; a.download=fn; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),4000); showToast("Saved "+fn); }
+  catch(e){ if(navigator.clipboard){ try{ await navigator.clipboard.writeText(txt); showToast("Copied the list as text"); }catch(_){ showToast("Could not export on this device"); } }
+    else showToast("Could not export on this device"); } }
 
 /* ---- voice input (Web Speech API) ---- */
 let recog=null, listening=false, micFinal="";
@@ -6199,6 +6229,7 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-style]").forEach(b=>b.onclick=()=>{ if(styl()!==b.dataset.optStyle) setStyle(b.dataset.optStyle); });
   app.querySelectorAll("[data-switch-user]").forEach(b=>b.onclick=()=>{ const nm=b.dataset.switchUser; if(nm && nm!==me){ me=nm; localStorage.setItem(LS.me, nm); } optOpen=false; render(); });
   const osh=app.querySelector("#optShare"); if(osh) osh.onclick=copyLink;
+  const oex=app.querySelector("#optExport"); if(oex) oex.onclick=exportListText;
   const vf=app.querySelector("#verFoot"); if(vf){ let _dt; const _cancel=()=>clearTimeout(_dt);
     vf.onpointerdown=()=>{ _dt=setTimeout(()=>{ diagOpen=true; render(); }, 550); };
     vf.onpointerup=_cancel; vf.onpointerleave=_cancel; vf.onpointercancel=_cancel; }
@@ -6967,6 +6998,7 @@ function optionsBody(){
         + `<button class="optaction" id="optHistClear" style="margin-top:2px">🗑 Clear this list’s history</button>`;
     })()}
     <button class="optaction" id="optShare">Share link</button>
+    <button class="optaction" id="optExport" style="margin-top:10px">Export list as text</button>
     <button class="optaction" id="optDiag" style="margin-top:10px">🔬 AI diagnostics</button>
     <div id="verFoot" style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted2);font-weight:600" title="Build: ${APP_BUILD_DATE} · hold for diagnostics">${APP_VERSION}</div>`;
 }
