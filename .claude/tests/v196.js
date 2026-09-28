@@ -97,25 +97,32 @@ const SUGGESTED = { source:"model", provider:"", results:[
     await openSearch();
     const toggle = await page.evaluate(()=>[...document.querySelectorAll('[data-sscope]')]
       .map(b=>({ v:b.dataset.sscope, on:b.classList.contains('on') })));
-    ok('the search offers a Web / TikTok choice', toggle.length===2
-       && toggle.map(t=>t.v).join('|')==='web|tiktok', JSON.stringify(toggle));
-    ok('…starting on Web, which is what it did before this version',
-       toggle[0].on===true && toggle[1].on===false, JSON.stringify(toggle));
+    /* SUPERSEDED by v2.05: the household asked for the Web / TikTok switch to go — every result already
+       carries a web button and a TikTok button, so the switch was a choice that changed nothing they
+       needed. What these two still protect: one search, and nothing on screen promising a scope the app
+       will not honour. */
+    ok('there is no Web / TikTok switch any more (v2.05)', toggle.length===0, JSON.stringify(toggle));
+    ok('…and the box asks what to cook, not where to look',
+       /what do you want to cook/i.test(await page.getAttribute('#paImpVal','placeholder')||''),
+       String(await page.getAttribute('#paImpVal','placeholder')));
 
     await find('beef goulash');
     let c = await calls();
     ok('a Web search asks the endpoint for the web scope',
        c.length===1 && c[0].body.scope==='web' && c[0].body.q==='beef goulash', JSON.stringify(c));
 
-    /* The toggle looking right while sending "web" regardless is the bug worth catching. */
-    await tap('[data-sscope="tiktok"]');
-    ok('switching to TikTok clears the web results rather than leaving them under it',
-       (await titles()).length===0, JSON.stringify(await titles()));
+    /* SUPERSEDED by v2.05: with no switch the app never asks for the tiktok scope. A TikTok video still
+       arrives when the web search returns one — that is what these now protect, so section B below
+       still has a video to hand to the caption reader. */
+    await mk(scope => TIKTOK_HITS);
+    await openSearch();
     await find('beef goulash');
+    ok('a TikTok video the search returns arrives as a result', (await titles()).join()==='60-second goulash',
+       JSON.stringify(await titles()));
     c = await calls();
-    ok('…and the next search really is asked for the tiktok scope',
-       c.length===2 && c[1].body.scope==='tiktok', JSON.stringify(c.map(x=>x.body)));
-    ok('…coming back with a video, not a page', (await titles()).join()==='60-second goulash',
+    ok('…though the app only ever asks for the web scope now',
+       c.length===1 && c[0].body.scope==='web', JSON.stringify(c.map(x=>x.body)));
+    ok('…and it is a video, not a page', (await titles()).join()==='60-second goulash',
        JSON.stringify(await titles()));
 
     /* ── B. the search composes with the caption reader from v1.95 ─────── */
@@ -134,8 +141,7 @@ const SUGGESTED = { source:"model", provider:"", results:[
        to TikTok's real search. Same concern, better answer: show the ideas, label them as ideas, and
        hand each one a tap that lands on actual TikTok videos. */
     await mk(scope => SUGGESTED);
-    await openSearch();
-    await tap('[data-sscope="tiktok"]');
+    await openSearch();   // v2.05: no scope to pick — the no-key ideas come from the one search
     await find('beef goulash');
     ok('a TikTok search with no key offers dish ideas rather than a dead end',
        (await titles()).join()==='Classic beef goulash', JSON.stringify(await titles()));
@@ -149,16 +155,14 @@ const SUGGESTED = { source:"model", provider:"", results:[
        && /goulash/i.test(decodeURIComponent(hrefs[1]||'')), JSON.stringify(hrefs));
 
     /* ── D. both doors, on both scopes ──────────────────────────────────── */
-    await tap('[data-sscope="web"]');
-    await find('beef goulash');
+    await find('beef goulash');   // v2.05: the same search again; there is no scope to switch back to
     hrefs = await page.evaluate(()=>[...document.querySelectorAll('.presopen')].map(a=>a.getAttribute('href')));
     ok('with no key, a Web suggestion still offers a web search and a TikTok search',
        hrefs.length===2 && /duckduckgo/.test(hrefs[0]||'')
        && /^https:\/\/www\.tiktok\.com\/search\?q=/.test(hrefs[1]||''), JSON.stringify(hrefs));
 
-    await mk(scope => scope==='tiktok' ? TIKTOK_HITS : WEB_HITS);
+    await mk(scope => TIKTOK_HITS);   // v2.05: a TikTok video returned by the one (web-scope) search
     await openSearch();
-    await tap('[data-sscope="tiktok"]');
     await find('beef goulash');
     hrefs = await page.evaluate(()=>[...document.querySelectorAll('.presopen')].map(a=>a.getAttribute('href')));
     ok('a real TikTok result points its 🎵 at the video itself',

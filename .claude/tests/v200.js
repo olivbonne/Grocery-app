@@ -176,10 +176,14 @@ const IDEAS = { source:"model", provider:"", results:[
     await page.evaluate(()=>{ const b=document.querySelector('#paBg'); if(b) b.click(); });
     await page.waitForTimeout(600);
     await tap('#cartNavP, #cartNav');
+    /* SUPERSEDED by v2.04: category headings are drawn by default now — the household asked for line
+       drawings on categories and items (Settings › Icon style keeps emoji one tap away). What this still
+       protects is the v2.00 point that a category keeps a visible mark of its own: every heading still
+       carries an icon, now a drawn one. */
     const catEmoji = await page.evaluate(()=>
-      [...document.querySelectorAll('.cemoji')].map(e=>e.textContent.trim()).filter(Boolean));
-    ok('…while category emoji are untouched, which is the whole distinction',
-       catEmoji.some(e=>/[\u{1F300}-\u{1FAFF}]/u.test(e)), JSON.stringify(catEmoji.slice(0,4)));
+      [...document.querySelectorAll('.cemoji')].map(e=>e.querySelector('svg.cmark') ? 'drawn' : e.textContent.trim()).filter(Boolean));
+    ok('…while every category heading still carries its own mark (drawn since v2.04)',
+       catEmoji.length>0 && catEmoji.every(e=>e==='drawn'), JSON.stringify(catEmoji.slice(0,4)));
 
     if(out) await page.screenshot({ path: out });
   }catch(e){ ok('the suite ran to the end', false, e.message); }
