@@ -204,7 +204,9 @@ const seed = (units) => `(() => {
     const bare = await page.evaluate(()=>document.querySelectorAll('.pcslot').length);
     ok('with slots off, no chip carries a meal label', bare===0, String(bare));
     await tap('[data-pchip$="|e1"]');
-    ok('…and the pick sheet has no slot picker', await page.locator('.slotseg').count()===0, '');
+    /* SUPERSEDED by v2.07: the recipe sheet now has a COURSE picker, drawn with the same .slotseg chips.
+       Still protected: with slots off there is no MEAL picker — no [data-ppslot] button. */
+    ok('…and the pick sheet has no slot picker', await page.locator('[data-ppslot]').count()===0, String(await page.locator('[data-ppslot]').count()));
     await dismiss();
 
     /* ── E. Metric: pounds convert, cups never do ──────────────────────── */
