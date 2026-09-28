@@ -437,6 +437,53 @@ const IMG = 'data:image/jpeg;base64,' + 'A'.repeat(200);
   ok('a quantity sent as a string is read', it[1].qty === 3, it[1].qty);
   ok('an absurd serving count is clamped', r.body.servings === 99, r.body.servings);
 
+  /* ── v2.01: the method comes back too ─────────────────────────────────────
+     Steps are untrusted like everything else: an array of strings, trimmed, capped at 20 × 200. */
+  reset();
+  groqReply = { title: 'Stew', servings: 4, items: [{ name: 'onion', qty: 1, weight: '', category: 'vegetable' }],
+    steps: ['  Chop   the onion. ', 'Simmer.'] };
+  r = await call({ text: 'onions' });
+  ok('v2.01: steps pass through, whitespace collapsed',
+    JSON.stringify(r.body.steps) === JSON.stringify(['Chop the onion.', 'Simmer.']), JSON.stringify(r.body.steps));
+  const sys = JSON.parse(calls[calls.length - 1].opts.body).messages[0].content;
+  ok('v2.01: the prompt asks for "steps"', /"steps"/.test(sys), sys.slice(0, 60));
+
+  reset(); groqReply = { title: 'Stew', servings: 4, items: [{ name: 'onion', qty: 1, weight: '', category: 'vegetable' }], steps: 'do stuff' };
+  r = await call({ text: 'onions' });
+  ok('v2.01: non-array steps become []', Array.isArray(r.body.steps) && r.body.steps.length === 0, JSON.stringify(r.body.steps));
+  reset(); groqReply = { title: 'Stew', servings: 4, items: [{ name: 'onion', qty: 1, weight: '', category: 'vegetable' }], steps: [1, null, {}, '', '  ', 'Real'] };
+  r = await call({ text: 'onions' });
+  ok('v2.01: garbage entries in steps are dropped', JSON.stringify(r.body.steps) === '["Real"]', JSON.stringify(r.body.steps));
+  reset(); groqReply = { title: 'Stew', servings: 4, items: [{ name: 'onion', qty: 1, weight: '', category: 'vegetable' }] };
+  r = await call({ text: 'onions' });
+  ok('v2.01: a reply with no steps gives []', Array.isArray(r.body.steps) && r.body.steps.length === 0, JSON.stringify(r.body.steps));
+  reset(); groqReply = { title: 'Stew', servings: 4, items: [{ name: 'onion', qty: 1, weight: '', category: 'vegetable' }],
+    steps: Array.from({ length: 30 }, (_, i) => 'step ' + i).concat([]) };
+  groqReply.steps[0] = 'x'.repeat(500);
+  r = await call({ text: 'onions' });
+  ok('v2.01: more than 20 steps are capped at 20', r.body.steps.length === 20, r.body.steps.length);
+  ok('v2.01: an overlong step is cut to 200', r.body.steps[0].length === 200, r.body.steps[0].length);
+
+  reset();
+  pages['https://recipes.example.com/howto'] = { body: `<html><head>
+    <script type="application/ld+json">{"@type":"Recipe","name":"Soup","recipeIngredient":["1 onion"],
+      "recipeInstructions":[{"@type":"HowToStep","text":"Brown the onion slowly."},
+        {"@type":"HowToSection","itemListElement":[{"@type":"HowToStep","text":"Add stock and simmer."}]}]}<\/script>
+    </head><body></body></html>` };
+  r = await call({ url: 'https://recipes.example.com/howto' });
+  const sent3 = JSON.parse(calls[calls.length - 1].opts.body).messages[1].content;
+  ok('v2.01: JSON-LD HowToStep / HowToSection instructions reach the model as a Method block',
+    /Method:/.test(sent3) && /Brown the onion slowly/.test(sent3) && /Add stock and simmer/.test(sent3), sent3.slice(0, 200));
+  reset();
+  pages['https://recipes.example.com/plainsteps'] = { body: `<html><head>
+    <script type="application/ld+json">{"@type":"Recipe","name":"Soup","recipeIngredient":["1 onion"],
+      "recipeInstructions":"Boil the water. Add everything."}<\/script>
+    </head><body></body></html>` };
+  r = await call({ url: 'https://recipes.example.com/plainsteps' });
+  const sent4 = JSON.parse(calls[calls.length - 1].opts.body).messages[1].content;
+  ok('v2.01: a plain-string recipeInstructions reaches the model too',
+    /Method:/.test(sent4) && /Boil the water/.test(sent4), sent4.slice(0, 200));
+
   globalThis.fetch = realFetch;
   let pass = 0; results.forEach(([n, c, x]) => { if (c) pass++; console.log((c ? 'PASS' : 'FAIL') + '  ' + n + (x ? '   ' + x : '')); });
   console.log(`\n${pass}/${results.length} passed`);
