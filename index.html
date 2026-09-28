@@ -1280,6 +1280,19 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   }
   /* v1.12 per-item emoji icon */
   .pemoji { flex:none; font-size:15px; margin-right:1px; }
+  /* v2.04: drawn marks. Stroke width is in screen pixels (non-scaling), so a 48-unit drawing at 20px
+     keeps a 1.4px line instead of shrinking to a hairline. */
+  .ill, .cmark { width:1.3em; height:1.3em; display:block; overflow:visible; }
+  .ill path, .cmark path { fill:none; stroke:currentColor; stroke-width:1.4px; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
+  .ill .if { fill:var(--illbg, var(--card)); }
+  .cmark path { stroke-width:1.7px; }
+  .cdraw { display:inline-flex; align-items:center; justify-content:center; }
+  .cdraw .cmark { width:100%; height:100%; }
+  .pemoji .ill, .pemoji .cmark { width:1.35em; height:1.35em; }
+  .pemoji:has(svg), .pcem:has(svg) { display:inline-flex; align-items:center; }
+  .pill { --illbg:var(--tilebg, var(--card)); }
+  .pill.done { --illbg:var(--done-bg); }
+  .pill.reg-out { --illbg:var(--utilebg, var(--paper)); }
   .shop .pemoji { font-size:18px; }
   .addrow .pemoji { font-size:17px; }
   /* v1.16 display picker (2×2) */
@@ -1576,7 +1589,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.03";
+const APP_VERSION = "v2.04";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -3253,6 +3266,7 @@ function CAT(id){ return catList().find(c=>c.id===id) || DEFAULT_CATS.find(c=>c.
 const DARK_VARIANTS = { "ramen.png":"ramen-dark.png" };
 function catIcon(cat, s){ s=s||16;
   if(!catEmojiOn()) return "";                               // v1.16 hide category icons entirely when off — emoji AND images (fresh/asian)
+  if(iconStyle()==="drawn" && cat && CAT_IDS.has(cat.id)) return `<span class="cdraw" style="color:${autoShade("cat", cat.color)};width:${s+2}px;height:${s+2}px">${catMarkSVG(cat.id)}</span>`;
   if(cat && cat.img){
     return `<img class="cicon" src="${esc(dispImg(cat.img))}" style="width:${s}px;height:${s}px" alt="" />`; }
   return `<span style="font-size:${(s-1)}px;line-height:1">${(cat&&cat.emoji)||"🛒"}</span>`; }
@@ -3795,7 +3809,8 @@ const FLAG_ICON = { urgent:FLAG_STAR_SVG, discount:FLAG_TAG_SVG, convenient:FLAG
    different job". A link, a globe, a clipboard and a broom are not content; they are buttons, and as
    emoji they rendered in cyan, blue and solid black, the only saturated non-brand colour anywhere on
    a forest-ink/sage/burnt-orange screen. Drawn marks take `currentColor`, so they are whatever the
-   button they sit in is. Inline, so nothing is fetched. Category and food emoji are untouched. */
+   button they sit in is. Inline, so nothing is fetched. Category and food emoji are untouched.
+   v2.04: at the household's request, categories and items are drawn too (Settings › Icon style); emoji remain the fallback and the opt-out. */
 const ICO = (d,sz) => `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const LINK_SVG   = sz => ICO('<path d="M10 13.5a4 4 0 006 .5l2.5-2.5a4.2 4.2 0 00-6-6L11 7"/><path d="M14 10.5a4 4 0 00-6-.5L5.5 12.5a4.2 4.2 0 006 6L13 17"/>', sz);
 const CAMERA_SVG = sz => ICO('<path d="M3 8.5h3.2l1.6-2.4h8.4l1.6 2.4H21v11H3z"/><circle cx="12" cy="13.6" r="3.4"/>', sz);
@@ -3821,6 +3836,404 @@ const EMOJI_HINTS = [
   ["chocolate","🍫"],["cookie","🍪"],["biscuit","🍪"],["honey","🍯"],["salt","🧂"],["sugar","🧂"],["flour","🌾"],["oats","🌾"],["cereal","🥣"],["oil","🫒"],["popcorn","🍿"],["pizza","🍕"],
   ["soap","🧼"],["shampoo","🧴"],["conditioner","🧴"],["detergent","🧴"],["sponge","🧽"],["toothpaste","🪥"],["toothbrush","🪥"],["vitamin","💊"],["medicine","💊"],["panadol","💊"],["sunscreen","🧴"],["battery","🔋"],["tissue","🤧"]
 ];
+/* v2.04: drawn marks — the illustrated set for items and the simple marks for the nine default
+   categories. Generated from the design canvas (docs/icon-catalogue.md): each item drawing is 48×48
+   in three layers — BACK (lines), FRONT (a shape filled with the tile's own colour, so it hides what is
+   behind it) and DETAIL (lines on top). Built once at load; no network. */
+const DRAWN = (function(){
+function r2(n){ return Math.round(n * 100) / 100; }
+  function C(cx, cy, r){ return "M" + r2(cx - r) + " " + r2(cy) + "a" + r + " " + r + " 0 1 0 " + r2(2 * r) + " 0a" + r + " " + r + " 0 1 0 " + r2(-2 * r) + " 0"; }
+  function E(cx, cy, rx, ry){ return "M" + r2(cx - rx) + " " + r2(cy) + "a" + rx + " " + ry + " 0 1 0 " + r2(2 * rx) + " 0a" + rx + " " + ry + " 0 1 0 " + r2(-2 * rx) + " 0"; }
+  function spokes(cx, cy, r0x, r0y, r1x, r1y, n, a0){ var s = "";
+    for (var i = 0; i < n; i++){ var a = a0 + i * 2 * Math.PI / n, c = Math.cos(a), si = Math.sin(a);
+      s += "M" + r2(cx + r0x * c) + " " + r2(cy + r0y * si) + "L" + r2(cx + r1x * c) + " " + r2(cy + r1y * si); }
+    return s; }
+  function dots(cx, cy, rx, ry, n, a0){ var s = "";
+    for (var i = 0; i < n; i++){ var a = a0 + i * 2 * Math.PI / n; s += C(cx + rx * Math.cos(a), cy + ry * Math.sin(a), 0.55); }
+    return s; }
+  var DEG = Math.PI / 180;
+  function apple(x, y){ return "M" + x + " " + y + "c-2.5-2-10-1.5-10 8 0 6 4 11.5 7.5 11.5 1.2 0 1.8-.6 2.5-.6s1.3.6 2.5.6c3.5 0 8-5.5 8-11.5 0-9.5-7.5-10-10.5-8z"; }
+  function carrot(x, y){ return "M" + x + " " + y + "c3-2 7-1 8.5 1.5 1.5 2.3 1 5-.5 7l-20 21.5c-1 .8-2.2-.3-1.6-1.4z"; }
+  function carrotRings(x, y){ return "M" + r2(x - 2.2) + " " + r2(y + 10.9) + "l2.8 1.8M" + r2(x - 5.2) + " " + r2(y + 16.3) + "l2.4 1.4M" + r2(x - 8) + " " + r2(y + 21.7) + "l1.7 1"; }
+  function carrotTop(x, y){ var ax = x + 5, ay = y + 1;
+    return "M" + ax + " " + ay + "l2-6M" + ax + " " + ay + "l5-4M" + ax + " " + ay + "l-1-6.5M" + (ax + 2) + " " + (ay - 6) + "l1.5-1.5M" + (ax + 5) + " " + (ay - 4) + "l2-.5M" + (ax - 1) + " " + (ay - 6.5) + "l-1.5-1.5"; }
+  function drum(x, y){ return "M" + x + " " + y + "c5.5 0 9.5 4.3 9.5 9.5 0 6.2-5.3 10.5-11.5 10.5-1.8 0-3.3-.4-4.5-1l-5 5c.4 1.3-.1 2.7-1.3 3.4-1.4.8-3.2.2-3.8-1.2-1.4.4-3-.3-3.5-1.8-.5-1.6.4-3.2 2-3.6 1.4-.3 2.8.4 3.3 1.5l5-5c-.7-1.3-1.1-2.8-1.1-4.4 0-7.2 4.6-12.9 10.9-12.9z"; }
+  function drumShine(x, y){ return "M" + (x + 2) + " " + (y + 4) + "c2.5.3 4.5 2 5.3 4.4"; }
+  function egg(cx, top, k){ var p = [-4.5,0,-8,7,-8,12.5, 0,5,3.6,8,8,8, 8,-3,8,-8, 0,-5.5,-3.5,-12.5,-8,-12.5].map(function(n){ return r2(n * k); });
+    return "M" + cx + " " + top + "c" + p.slice(0,6).join(" ") + " " + p.slice(6,12).join(" ") + "s" + p.slice(12,16).join(" ") + "c" + p.slice(16).join(" ") + "z"; }
+  function roll(cx, top){ var x = cx - 10;
+    return { body: "M" + x + " " + top + "a10 4 0 0 1 20 0v20a10 4 0 0 1-20 0z",
+             rim: "M" + x + " " + top + "a10 4 0 0 0 20 0" + E(cx, top, 3, 1.2) }; }
+  var BACK_ROLL = roll(17, 10), FRONT_ROLL = roll(30, 21);
+  function hatch(cx, cy, rx, ry, step, sgn){ var s = "", A = 1 / (rx * rx) + 1 / (ry * ry);
+    for (var c = -60; c <= 60; c += step){ var B = 2 * sgn * c / (ry * ry), Cq = c * c / (ry * ry) - 1, disc = B * B - 4 * A * Cq;
+      if (disc <= 0) continue; var q = Math.sqrt(disc), x1 = (-B - q) / (2 * A), x2 = (-B + q) / (2 * A), m = (x1 + x2) / 2;
+      x1 = m + (x1 - m) * 0.86; x2 = m + (x2 - m) * 0.86;
+      s += "M" + r2(cx + x1) + " " + r2(cy + sgn * x1 + c) + "L" + r2(cx + x2) + " " + r2(cy + sgn * x2 + c); }
+    return s; }
+  function frill(x, y){ return "M" + x + " " + y + "c-2-1-2-4 0-4.5 0-2 3-3 4-1 2-1 4 1 3 3 2 1 1 4-1 4-.5 1.5-3 2-4 .5-1 .5-2 0-2-2z"; }
+  function seeds(pts){ return pts.map(function(p){ return "M" + p[0] + " " + p[1] + "l.3 1.1"; }).join(""); }
+  var ILL = {
+    strawberry: {
+      back: "",
+      front: "M24 15c-7 0-12 3-12 9 0 8 6 16 12 18 6-2 12-10 12-18 0-6-5-9-12-9z",
+      detail: "M16 13.5c2.5-2.5 5.5-3 8-1 2.5-2 5.5-1.5 8 1-2.5 1.5-5.5 1.8-8 .6-2.5 1.2-5.5 1-8-.6zM24 12.5V7.5" + seeds([[19,20],[24,19.5],[29,20],[17,25],[21.5,24.5],[26.5,24.5],[31,25],[19.5,30],[24,29.5],[28.5,30],[22,35],[26,35]]) },
+    pineapple: {
+      back: "M17 21l-5-7 7 3-1-9 5 7 1-9 1 9 5-7-1 9 7-3-5 7z",
+      front: E(24, 31, 8.5, 11),
+      detail: hatch(24, 31, 8.5, 11, 6.2, 1) + hatch(24, 31, 8.5, 11, 6.2, -1) },
+    pear: {
+      back: "",
+      front: "M24 8c-2.5 0-3.5 3-3.5 6.5 0 3-4.5 5-6 10-2 7 2.5 16 9.5 16s11.5-9 9.5-16c-1.5-5-6-7-6-10C27.5 11 26.5 8 24 8z",
+      detail: "M24 8c0-2 .6-3.5 2-4.5M25.5 5.5c2-1.5 5-1.5 6.5 0-2 1.8-4.8 1.7-6.5 0zM17 28c0-2.5 1-4.5 2.5-6" },
+    orange: {
+      back: C(19, 22, 11) + "M19 11c0-2 1-3.5 2.5-4M21.5 8c2-2 5.5-2.5 7.5-1-2 2-5.5 2.5-7.5 1zM12 17l.4.3M11 24l.4.1M16 28.5l.4.2",
+      front: C(33, 32, 9),
+      detail: C(33, 32, 7.3) + spokes(33, 32, 1.4, 1.4, 6.2, 6.2, 10, 0) },
+    mandarins: {
+      back: C(24, 15, 7.5) + C(15.5, 30, 7.5) + C(32.5, 30, 7.5),
+      front: "",
+      detail: "M24 7.5V6M22.5 9l1.5 1 1.5-1M15.5 22.5V21M32.5 22.5V21M19 13c.4-1.2 1.2-2 2.3-2.4M10.5 28c.4-1.2 1.2-2 2.3-2.4M27.5 28c.4-1.2 1.2-2 2.3-2.4" },
+    mango: {
+      back: "M36 11c3-3 8-3 10-1-3 3-7 3.5-10 1z",
+      front: "M9 26c0-9 8-16 18-16 7 0 12 4 12 10 0 10-10 18-20 18-6 0-10-4-10-12z",
+      detail: "M36 11c1-2 2.5-3 4-3M14 24c1-4 4-7 8-8.5" },
+    watermelon: {
+      back: "",
+      front: "M6 20h36c0 11-8 20-18 20S6 31 6 20z",
+      detail: "M9.5 20c0 9 6.5 16.5 14.5 16.5S38.5 29 38.5 20" + seeds([[15,24],[21,25.5],[27,25.5],[33,24],[18,30],[24,31],[30,30]]) },
+    peach: {
+      back: "",
+      front: "M24 12c-8-3-16 3-16 13 0 8 7 15 16 15s16-7 16-15c0-10-8-16-16-13z",
+      detail: "M24 12c-3.5 6-4.5 15-1.5 27M24 12c0-2 .5-3.5 2-4.5M26 7.5c2-2.5 6-3 8.5-1.5-2.5 2.5-6 3-8.5 1.5zM13 22c.5-2.5 2-4.5 4-5.5" },
+    grapes: {
+      back: C(14.4, 15, 3.6) + C(21.6, 15, 3.6) + C(28.8, 15, 3.6) + C(36, 15, 3.6) + C(18, 21.2, 3.6) + C(25.2, 21.2, 3.6) + C(32.4, 21.2, 3.6) + C(21.6, 27.4, 3.6) + C(28.8, 27.4, 3.6) + C(25.2, 33.6, 3.6) + "M25 11.4c0-3 1-5 3-6.5M27 7.5c2.5-3 7-3.5 10-1.5-3 3-7.5 3.5-10 1.5z",
+      front: "",
+      detail: "M16.6 20c.3-.9.9-1.5 1.7-1.8M23.8 20c.3-.9.9-1.5 1.7-1.8M23.8 32.4c.3-.9.9-1.5 1.7-1.8" },
+    mushroom: {
+      back: "M19 26.5c0 5-1 10-1.5 13 0 1.5 1 2.5 2.5 2.5h8c1.5 0 2.5-1 2.5-2.5-.5-3-1.5-8-1.5-13",
+      front: "M8 24c0-9 7-15 16-15s16 6 16 15c0 1.5-1 2.5-2.5 2.5h-27C9 26.5 8 25.5 8 24z",
+      detail: "M15 17c1-2 2.8-3.2 5-3.6M28 13.6c1.8.3 3.3 1.3 4.2 2.8M19.3 31c3 1 6 1 9.4 0" },
+    corn: {
+      back: "M24 5c-4 0-6 6-6 16 0 9 2.5 17 6 17s6-8 6-17c0-10-2-16-6-16zM21.5 8.5v27M24 5v32M26.5 8.5v27M18.8 13h10.4M18.2 18h11.6M18.1 23h11.8M18.4 28h11.2M19.3 33h9.4",
+      front: "M24 42c-7-2-12-9-13-19 4 2.5 7.5 6.5 9.5 11.5.8 2.5 2 5 3.5 7.5zM24 42c7-2 12-9 13-19-4 2.5-7.5 6.5-9.5 11.5-.8 2.5-2 5-3.5 7.5z",
+      detail: "M22 39.5c-3-3-6-8-8-13M26 39.5c3-3 6-8 8-13M24 42v3" },
+    zucchini: {
+      back: "",
+      front: "M8 36c-2-2-1-5 2-7L33 11c3-2.5 6.5-2.5 8 0 1.5 2.5.5 5.5-2.5 7.5L15 37c-2.5 1.5-5 1.2-7-1z",
+      detail: "M39.5 10.5l2.5-3 1.6 1.4-2.2 2.6M13 32l20-16M16.5 34.3l19-15M9.3 32c.5 1.5 1.5 2.5 3 3" },
+    pumpkin: {
+      back: "M24 13c0-3 .5-5 2.5-7l2 1.5c-1.5 1.5-2 3.5-2 5.5",
+      front: "M24 13c-4-2.5-12-2-16 3-4 5.5-4 14 0 19 3.5 4.5 10 5.5 16 3.5 6 2 12.5 1 16-3.5 4-5 4-13.5 0-19-4-5-12-5.5-16-3z",
+      detail: "M24 13c-4 3-6 9-6 13.5s2 9 6 12M24 13c4 3 6 9 6 13.5s-2 9-6 12M16 14.5c-3 3.5-4 8-4 12s1.5 8 4 10.5M32 14.5c3 3.5 4 8 4 12s-1.5 8-4 10.5" },
+    potatoes: {
+      back: "M6 22c0-6 5-10 12-10s12 3.5 12 9-5 10-12 10S6 28 6 22zM12 18l.8.4M20 16l.8.2M14 24l.8.3",
+      front: "M17 32c0-6 6-10 13-10s12 4 12 9.5S37 41 30 41s-13-3-13-9z",
+      detail: "M24 30l.8.3M31 27l.8.2M36 33l.8.3M28 36l.8.2" },
+    spinach: {
+      back: "M10 38C8 26 14 12 30 8c2 14-4 26-20 30zM10 38c6-8 12-18 19-28M15 30l-2-4M19 24l-1-4.5M23 18l-.5-4M17 31l4 .3M21 25l4 0M10 38l-2 4",
+      front: "M20 42c0-12 6-22 20-26 1 13-6 23-20 26z",
+      detail: "M20 42c5-7 11-15 19-24M25 34l-3-4M28 30l-1.5-4.5M31 26l-.5-4M27 37l4 .5M31 32l4 0M20 42l-1.5 2.5" },
+    scallions: {
+      back: "M19 38c0-9 .5-20 2.5-33M21.5 38c0-9 .3-18 1.5-28M23 38c0-9 1-19 4.5-31M25.5 38c0-9 .8-17 3.5-26M27 38c0-8 2-15 7.5-25M29.5 38c.5-7 2.5-12 6.5-19M21.5 5l1.5 5M27.5 7l1.5 5M34.5 13l1.5 6",
+      front: E(20.2, 40, 2.4, 3) + E(24.2, 40.4, 2.4, 3) + E(28.2, 40, 2.4, 3),
+      detail: "M18.5 43l-1 2M20.2 43.3v2M24.2 43.6v2M28.2 43.3v2M30 43l1 2M17.8 33.5h13" },
+    parsley: {
+      back: "M24 43V21M24 31l-7-8M24 27l7-8M24 21l-4-8M24 21l4-8",
+      front: frill(15, 23) + frill(29, 19) + frill(18, 13) + frill(26, 13),
+      detail: "" },
+    peas: {
+      back: "M42 16l3-3",
+      front: "M6 30c6-8 18-13 36-14-4 9-16 15-30 16-3 0-5-.5-6-2z",
+      detail: C(14, 28.3, 2.7) + C(20.2, 26.4, 2.9) + C(26.6, 24.3, 2.9) + C(32.8, 21.8, 2.7) + "M8 31.5c8-1 20-5 31-13" },
+    apple: {
+      back: apple(17, 12) + "M17 12c0-2.5 1-4.5 3-5.5M19.5 8.5c2-2.8 5.5-3.2 7.5-1.8-2 2.8-5.2 3.2-7.5 1.8zM9.5 18c.3-1.8 1-3 2.2-3.8",
+      front: apple(31, 22),
+      detail: "M31 25v3" + E(29.3, 32, 0.9, 1.6) + E(32.7, 32, 0.9, 1.6) + "M24 30.5c.2 4.5 3 8.5 6 9.2" },
+    avocado: {
+      back: "M16 8c-4 0-6 5-7 10-1.5 6 .5 13 7 13s9-7 7.5-13C22.5 13 20 8 16 8zM16 8V5.8",
+      front: "M31 14c-4.5 0-7 5.5-8.5 11-2 7 .5 15.5 8.5 15.5s10.5-8.5 8.5-15.5C38 19.5 35.5 14 31 14z",
+      detail: "M31 16.8c-3.5 0-5.5 4.8-6.8 9.5-1.7 6 .5 12.2 6.8 12.2s8.5-6.2 6.8-12.2C36.5 21.6 34.5 16.8 31 16.8z" + C(31, 30, 4.5) + "M29 28.3c.5-1 1.3-1.6 2.3-1.8" },
+    banana: {
+      back: "M40 10c1 12-8 24-24 26-4 .5-8-.5-10-2.5 2.5-.2 5.5-1 8.5-2.5C26 26 33.5 19 35.5 10zM38 8c-2 6-6 12-13 15-2 .9-4 1-5.5.5 2-.7 4-1.7 5.5-3C30 17 33 12 35 8z",
+      front: "M39 9c-1 9-7 18-18 21-3 .8-6 .5-8-.8 2.5-.6 5-1.8 7-3.4C27.5 21 32 15 34 9z",
+      detail: "M37 11.5c-1.5 8-7 14.5-15.5 17M35 8c.3-2 1.3-3.5 2.8-4.2l2.2 1.2c-.8 1-1.3 2.2-1.5 3.5M6 33.5l-1.8-.6M13 29.2l-1.6-.1" },
+    lemon: {
+      back: "M5.5 21c1.5-.3 2-1 2.5-2 2-6 7.5-9.5 13.5-9.5S33 13 35 19c.4 1 1 1.7 2.5 2-1.5.3-2.1 1-2.5 2-2 6-7.5 9.5-13.5 9.5S10 29 8 23c-.4-1-1-1.7-2.5-2zM14 15.5l.4.2M19 13.2l.4.1M12.5 21l.4.1",
+      front: C(33, 33, 9),
+      detail: C(33, 33, 7.3) + spokes(33, 33, 1.3, 1.3, 6.2, 6.2, 8, 0) },
+    cherries: {
+      back: C(15, 33, 7) + "M15 26c1-7 6-14 13-18M31 27c-1-7-2-13-3-19M28 8c3-3 9-3.5 12-1.5-3 3-8.5 3.5-12 1.5zM28 8l8.5-1.5",
+      front: C(31, 34, 7.5),
+      detail: "M10.5 30.5c.6-1.5 1.8-2.4 3.2-2.7M26.3 31.3c.6-1.6 1.9-2.6 3.4-2.9" },
+    kiwi: {
+      back: E(18, 19, 12, 9.5) + "M10.5 13.5l-.8-.8M17 10.2l-.2-1M24.5 11l.5-.9M8 20.5l-1 .3M13 26l-.6.8",
+      front: E(31, 30, 11, 10),
+      detail: E(31, 30, 9, 8) + E(31, 30, 2.8, 2.2) + spokes(31, 30, 3.8, 3.2, 6.2, 5.4, 16, 0) },
+    carrot: {
+      back: carrot(22, 8) + carrotRings(22, 8) + carrotTop(22, 8),
+      front: carrot(30, 12),
+      detail: carrotRings(30, 12) + carrotTop(30, 12) },
+    broccoli: {
+      back: "M12 27c-4 0-6-3.5-5-6.5.6-2 2.4-3.3 4.4-3.4-.4-3.5 2.4-6.6 6-6.4 1-3 4-5 7.4-4.5 2.8.4 5 2.4 5.6 5 3.2-.6 6.3 1.7 6.6 5 2.6.4 4.4 3 3.8 5.7-.5 2.6-2.8 4.4-5.4 4.3zM14 22c.5-2 2.5-3 4.5-2.3M22 16c1-1.8 3.5-2.3 5-.8M28 22c.8-1.6 3-2 4.3-.6M19 13.5c.8-1 2-1.3 3-1",
+      front: "M18.5 26l2 15c.2 1 1 1.5 2 1.5h3c1 0 1.8-.5 2-1.5l2-15z",
+      detail: "M24 27v7M20.8 29.5l3.2 4.5M27.2 29.5l-3.2 4.5" },
+    tomato: {
+      back: "M8 22c0-7 6-11 13-11s13 4 13 11-6 13-13 13S8 29 8 22zM21 11l-2-3M21 11l-4.5-.8M21 11l4.5-.8M21 11l-2.5 2.5M21 11l2.8 2.3M21 11V7.5",
+      front: C(33, 33, 9),
+      detail: C(33, 33, 7.4) + spokes(33, 33, 1, 1, 6.8, 6.8, 3, -30 * DEG) + C(33, 29.4, 1.8) + C(36.1, 34.8, 1.8) + C(29.9, 34.8, 1.8) },
+    garlic: {
+      back: "M22 8c-1 3-3 4.5-6 6.5-5 3.3-8 7.3-8 12.5 0 7 6 12 14 12s14-5 14-12c0-5.2-3-9.2-8-12.5-3-2-5-3.5-6-6.5zM22 8V4.5M20.5 5l1.5-.5 1.5.5M22 12c-3 4-4.5 9-4 18M22 12c3 4 4.5 9 4 18M16 16c-3 3-4 7-3.5 12M18 38.8l-1 2M22 39v2.2M26 38.8l1 2",
+      front: "M38 25c-2.5 2.5-5 6-5 10 0 3.6 2.2 6.2 5.2 6.2S43 38.6 43 35.4c0-4-2.4-7.4-5-10.4z",
+      detail: "M38 28.5c-1.5 2.5-2 6-1.2 10.2" },
+    pepper: {
+      back: "M24 16.5c0-3 .5-5.5 2.5-7.5 1-1 2.5-1.2 3.5-.5",
+      front: "M24 17C21.5 14.8 17.5 14 14.5 15.5 10 17.8 8.5 23 9 29c.6 7 3.8 12 8 12 2 0 3.2-1 4-2.4.8 1 1.8 1.4 3 1.4s2.2-.4 3-1.4c.8 1.4 2 2.4 4 2.4 4.2 0 7.4-5 8-12 .5-6-1-11.2-5.5-13.5-3-1.5-7-.7-9.5 1.5z",
+      detail: "M20 20c-1.5 6-1.5 13 .5 18.5M28 20c1.5 6 1.5 13-.5 18.5M21.5 16.5c1-1.4 3-1.8 5-1M12.5 25c0-2.5.8-4.5 2-5.5" },
+    onion: {
+      back: "M20 7c0 4-11 8-11 18a11 10 0 0 0 22 0c0-10-11-14-11-18zM20 12c-3 3-5 7.5-5 13M20 12c3 3 5 7.5 5 13M20 7V4M20 5.2l-1.6-1.6M17 35l-1 2M20 35.5v2M23 35l1 2",
+      front: C(34, 33, 8.5),
+      detail: C(34, 33, 6.3) + C(34, 33, 4.1) + C(34, 33, 1.9) },
+    chicken: {
+      back: drum(27, 5) + drumShine(27, 5),
+      front: drum(36, 14),
+      detail: drumShine(36, 14) },
+    fish: {
+      back: "M9 24L3.5 17.5v13zM17 16.5c1.5-3.5 5-5.5 9-5.8",
+      front: "M8 24c5-8 13-12 22-11 5 .6 9 4 11 11-2 7-6 10.4-11 11-9 1-17-3-22-11z",
+      detail: "M31 15.5c-2 5-2 12 0 17" + C(35.5, 21, 1.3) + "M41 24.4l-2.2.5M20 31.5c1 2.5 3.5 4 6.5 4.3M20 20c1 1 1 3 0 4M24.5 19c1 1.2 1 3.8 0 5M20 25.5c1 1 1 3 0 4M24.5 25c1 1.2 1 3.8 0 5" },
+    steak: {
+      back: "",
+      front: "M9 20c-1-6 4-11 11-12 6-.8 10 1.5 14 1 5-.6 8 2 8 7 0 4-2 6-2 10 0 6-5 10-13 10-9 0-17-4-18-10-.5-3 .5-4.5 0-6z",
+      detail: "M12.5 21c-.5-4 3-8 8.5-8.8 5-.7 8.5 1.4 12 1 3.5-.4 6 1.5 6 5" + C(31, 25, 3) + "M17 26c2-1 4 .5 6-.5M20 31.5c2-1 3.5 0 5.5-1M13.5 29c1.5-.6 3 .2 4.5-.4" },
+    eggs: {
+      back: egg(15, 11, 1) + egg(34, 9, 1.05),
+      front: egg(24, 17.5, 1.15),
+      detail: "M17.6 31c0-3 .9-6 2.4-8" },
+    cheese: {
+      back: "",
+      front: "M6 26L30 13l12 13v12H6z",
+      detail: "M6 26h36" + C(13.5, 32.3, 2) + C(23.5, 33, 2.6) + C(35, 31.4, 1.6) + "M19.5 26a3 3 0 0 1 6 0" + E(28.5, 20.5, 2.4, 1.3) + E(20, 22.3, 1.2, 0.7) },
+    milk: {
+      back: "M13 15l3-7h12l3 7v27H13zM13 15h18M16 8l3 7M19 8V5h6v3M13 26c3-2 6 2 9 0s6-2 9 0",
+      front: "M28 24h13l-1.6 18h-9.8z",
+      detail: "M28.5 29.5h12M31.5 32.5v6.5" },
+    bread: {
+      back: "M6 30v-8c-1.5-1.3-2-3-2-4.5C4 13 9 10 17 10h10c8 0 13 3 13 7.5 0 1.5-.5 3.2-2 4.5v8zM13 14l3 4M20 13l3 4M27 13.5l3 4",
+      front: "M24 42V32c-2-.8-3-2.3-3-4 0-3.5 3.5-5.5 9-5.5h4c5.5 0 9 2 9 5.5 0 1.7-1 3.2-3 4v10z",
+      detail: "M26 40.3v-9.2c-1.6-.7-2.4-1.8-2.4-3.2 0-2.3 2.7-3.8 6.9-3.8h3c4.2 0 6.9 1.5 6.9 3.8 0 1.4-.8 2.5-2.4 3.2v9.2M30 32.5h.01M35 35.5h.01M31 38h.01M36.5 30h.01" },
+    rice: {
+      back: "M9 24c1-5 7-9 15-9s14 4 15 9M15 20l1.5-.7M20 17.3l1.6-.3M26.3 17.6l1.5.4M31 19.8l1.3.8M18 21.4l1.4.2M24 20.6l1.5-.2M29 22.2l1.3.3",
+      front: "M6 24h36c0 9-7 16-18 16S6 33 6 24z",
+      detail: "M17.5 39.2v3h13v-3M9.5 29.3c5 2 24 2 29 0" },
+    toilet: {
+      back: BACK_ROLL.body + BACK_ROLL.rim,
+      front: FRONT_ROLL.body,
+      detail: FRONT_ROLL.rim + "M40 26.5h2.5v13l-1.2-.8-1.3.8" },
+    noodles: {
+      back: "M29 3l-7 21M37 5L25 24M12 24c1-3 3-3 4 0s3 3 4 0 3-3 4 0 3 3 4 0 3-3 4 0 3 3 4 0M22 24c0-4 .5-7 1.2-9.5M25 24c0-3.5 1-6.5 2.2-8.5",
+      front: "M5 24h38c0 10-8.5 17-19 17S5 34 5 24z",
+      detail: "M8.5 30.5h31M17 40.3v2.2h14v-2.2" },
+    wine: {
+      back: "M14 4h6v9c3 1.5 4.5 4 4.5 7.5V42h-15V20.5C9.5 17 11 14.5 14 13zM9.5 26h15v9h-15zM14 7.5h6",
+      front: "M27 18h14c.5 6-2 11-7 11.5-5-.5-7.5-5.5-7-11.5z",
+      detail: "M34 29.5V40M29.5 40.5h9M27.4 23h13.2" },
+    soap: {
+      back: C(37, 13, 3) + C(41.5, 21, 2) + C(32.5, 7, 1.5),
+      front: "M15 18h14c2 0 3 1 3 3v19c0 1.5-1 2.5-2.5 2.5h-15C13 42.5 12 41.5 12 40V21c0-2 1-3 3-3z",
+      detail: "M19 18v-4h6v4M22 14V9h6M28 9v2.5M15.5 26h13v9h-13z" }
+  };
+  /* ── Regulars batch (2026-09-28): helpers for containers the cupboard is full of ── */
+  function rr(x, y, w, h, r){ return "M" + r2(x + r) + " " + r2(y) + "h" + r2(w - 2 * r) + "a" + r + " " + r + " 0 0 1 " + r + " " + r + "v" + r2(h - 2 * r) + "a" + r + " " + r + " 0 0 1 " + (-r) + " " + r + "h" + r2(-(w - 2 * r)) + "a" + r + " " + r + " 0 0 1 " + (-r) + " " + (-r) + "v" + r2(-(h - 2 * r)) + "a" + r + " " + r + " 0 0 1 " + r + " " + (-r) + "z"; }
+  function bottle(cx, top, bw, bottom, nw, nh, sh){ var x0 = cx - nw / 2, x1 = cx + nw / 2, L = cx - bw / 2, R = cx + bw / 2, ys = top + nh, yb = ys + sh;
+    return "M" + r2(x0) + " " + top + "H" + r2(x1) + "V" + ys + "C" + r2(x1) + " " + r2(ys + sh * 0.5) + " " + r2(R) + " " + r2(ys + sh * 0.4) + " " + r2(R) + " " + r2(yb) + "V" + (bottom - 2) + "Q" + r2(R) + " " + bottom + " " + r2(R - 2) + " " + bottom + "H" + r2(L + 2) + "Q" + r2(L) + " " + bottom + " " + r2(L) + " " + (bottom - 2) + "V" + r2(yb) + "C" + r2(L) + " " + r2(ys + sh * 0.4) + " " + r2(x0) + " " + r2(ys + sh * 0.5) + " " + r2(x0) + " " + ys + "Z"; }
+  function cap(cx, top, nw){ return rr(cx - nw / 2 - 0.6, top - 3, nw + 1.2, 3.2, 0.6); }
+  function jar(cx, top, w, h){ var L = cx - w / 2; return { body: rr(L, top + 4, w, h - 4, 3), lid: rr(L + 1, top, w - 2, 4.5, 1) }; }
+  function can(cx, top, w, h){ var L = cx - w / 2, a = w / 2; return { body: "M" + r2(L) + " " + top + "a" + a + " 2 0 0 1 " + w + " 0v" + h + "a" + a + " 2 0 0 1 " + (-w) + " 0z", rim: E(cx, top, a, 2) }; }
+  function packet(cx, top, w, h){ var L = cx - w / 2, R = cx + w / 2, b = top + h, zig = "M" + r2(L) + " " + (top + 3);
+    for (var i = 0; i < Math.round(w / 3); i++) zig += "l1.5-3 1.5 3";
+    return { body: "M" + r2(L) + " " + (top + 3) + "H" + r2(R) + "L" + r2(R + 1) + " " + (b - 2) + "Q" + r2(R + 1) + " " + b + " " + r2(R - 1) + " " + b + "H" + r2(L + 1) + "Q" + r2(L - 1) + " " + b + " " + r2(L - 1) + " " + (b - 2) + "Z",
+             top: zig + "M" + r2(L) + " " + (top + 5.5) + "H" + r2(R) }; }
+  function carton(x, y, w, h){ return { body: "M" + x + " " + (y + 6) + "l" + r2(w * 0.25) + " -5.5h" + r2(w * 0.5) + "l" + r2(w * 0.25) + " 5.5V" + (y + h) + "H" + x + "Z",
+    line: "M" + x + " " + (y + 6) + "H" + (x + w) + "M" + r2(x + w * 0.38) + " " + (y + 0.5) + "v-2.5h" + r2(w * 0.24) + "v2.5" }; }
+  function tub(cx, top, w, h){ var L = cx - w / 2; return { body: "M" + L + " " + (top + 3) + "H" + (L + w) + "L" + (L + w - 3) + " " + (top + h) + "H" + (L + 3) + "Z", lid: rr(L - 1, top, w + 2, 3.4, 1) }; }
+  function hex(cx, cy, r){ var s = ""; for (var i = 0; i < 6; i++){ var a = Math.PI / 6 + i * Math.PI / 3; s += (i ? "L" : "M") + r2(cx + r * Math.cos(a)) + " " + r2(cy + r * Math.sin(a)); } return s + "Z"; }
+  function drop(cx, top){ return "M" + cx + " " + top + "c-1.5 2-2.5 3.2-2.5 4.3a2.5 2.5 0 0 0 5 0c0-1.1-1-2.3-2.5-4.3z"; }
+  function boneR(cx, cy, len, deg){ var a = deg * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+    var P = function(x, y){ return r2(cx + x * c - y * s) + " " + r2(cy + x * s + y * c); }, h = 1.7, k = 2.5, e = len / 2;
+    return "M" + P(-e, -h) + "L" + P(e, -h) + "A" + k + " " + k + " 0 1 1 " + P(e + 1.9, 0) + "A" + k + " " + k + " 0 1 1 " + P(e, h) + "L" + P(-e, h) + "A" + k + " " + k + " 0 1 1 " + P(-e - 1.9, 0) + "A" + k + " " + k + " 0 1 1 " + P(-e, -h) + "Z"; }
+  function cube(x, y, s){ return "M" + x + " " + r2(y + s * 0.3) + "l" + r2(s * 0.5) + " " + r2(-s * 0.3) + "l" + r2(s * 0.5) + " " + r2(s * 0.3) + "v" + r2(s * 0.6) + "l" + r2(-s * 0.5) + " " + r2(s * 0.3) + "l" + r2(-s * 0.5) + " " + r2(-s * 0.3) + "z"; }
+  function cubeEdges(x, y, s){ return "M" + x + " " + r2(y + s * 0.3) + "l" + r2(s * 0.5) + " " + r2(s * 0.3) + "l" + r2(s * 0.5) + " " + r2(-s * 0.3) + "M" + r2(x + s * 0.5) + " " + r2(y + s * 0.6) + "v" + r2(s * 0.6); }
+  function chilliAt(x, y){ return "M" + x + " " + y + "c2-2 5-2 6 0 3 9 10 19 22 24 1 1 0 2.5-1.5 2.5-15.5-.5-27.5-12.5-26.5-26.5z"; }
+  function chilliStem(x, y){ return "M" + (x + 1) + " " + (y - .5) + "c-1-3 0-5 2-6"; }
+  function bean(x, y){ return "M" + x + " " + y + "c10-12 20-20 32-26 1 0 1.5 1 .5 2-10 7-20 15-29.5 26-1 1-3.5-.5-3-2z"; }
+  function clove(x, y){ return "M" + x + " " + y + "c-3 3-6 7-6 11 0 3 2.5 5 6 5s6-2 6-5c0-4-3-8-6-11z"; }
+  function sock(x, y){ return "M" + x + " " + y + "h8v14c0 2 1 3 3 4l4 2c2 1 3 3 2 5-1 2-3 3-5 2l-9-5c-2-1-3-3-3-5z"; }
+  function floret(x, y){ return "M" + (x - 4) + " " + y + "c-1.5-1.5 0-4 2-3.5.5-2 3.5-2 4 0 2-.5 3.5 2 2 3.5z"; }
+  var BOT = bottle(24, 9, 16, 43, 6, 5, 6), SPRAYB = "M15 20h14c1.5 0 2.5 1 2.5 2.5V41c0 1.5-1 2.5-2.5 2.5H15c-1.5 0-2.5-1-2.5-2.5V22.5c0-1.5 1-2.5 2.5-2.5z";
+  var J1 = jar(24, 9, 24, 33), PK = packet(24, 7, 24, 36), CN = can(24, 10, 22, 31), TB = tub(24, 13, 28, 28), CT = carton(13, 9, 22, 34);
+  var REG = {
+    bones: { back: boneR(22, 19, 24, -25), front: boneR(26, 31, 26, 18), detail: "" },
+    meatcubes: { back: cube(6, 12, 15) + cubeEdges(6, 12, 15) + cube(26, 9, 14) + cubeEdges(26, 9, 14), front: cube(14, 21, 19), detail: cubeEdges(14, 21, 19) + "M18 31c2 1 4 0 6 1M28 30c2-1 3 0 5-1" },
+    chickenbreast: { back: "M8 21c-2-6 3-12 10-11 6 1 9 5 9 9 0 5-5 8-11 8-4 0-7-2-8-6zM12 18c3 1 7 1 10-1", front: "M17 31c-1-6 4-11 12-10 7 1 11 5 11 10 0 6-6 9-13 9-6 0-9-4-10-9z", detail: "M22 29c3 1 8 1 12-1M23 34c3 1 6 1 10-.5" },
+    wings: { back: drum(33, 5) + drumShine(33, 5), front: "M5 33c0-5 4-9 10-9 3 0 5 1 7 3l6-4c2-1.2 4.5-.6 5.2 1.3.8 1.8 0 3.6-1.7 4.6l-6 4c.3 4-2.5 7-7 7.5-8 1-13.5-2-13.5-7.4z", detail: "M9 31c1-2 3-3 5-3" },
+    chickenfeet: { back: "M31 11v13M31 24l-7 10M31 24v13M31 24l7 9M24 34l-1.2 1.4M31 37v1.8M38 33l1.4 1", front: "", detail: "M18 5v15M18 20l-9 11M18 20v14M18 20l8 11M9 31l-1.5 1.5M18 34v2M26 31l1.5 1.5M18 20l-3.5-2.5" },
+    wholechicken: { back: "M13 22c-2-4-2-8 0-11M16 21c-1-3-1-6 0-8M35 22c2-4 2-8 0-11M32 21c1-3 1-6 0-8" + C(14.5, 10, 1.7) + C(33.5, 10, 1.7) + "M5 41h38", front: "M8 30c0-8 7-13 16-13s16 5 16 13c0 5-5 9-16 9S8 35 8 30z", detail: "M12 32c5 2 19 2 24 0M17 24c2-2 4-3 7-3" },
+    lambchop: { back: "M16 21l2-12M23 20.5l2-12M30 20.5l2-12M37 21l2-12" + C(18.2, 7.4, 1.5) + C(25.2, 7.4, 1.5) + C(32.2, 7.4, 1.5) + C(39.2, 7.4, 1.5), front: "M6 30c2-7 8-10 16-10h14c3 0 6 3 6 7v5c0 4-3 6-7 6H12c-4 0-7-3-6-8z", detail: "M9 27c4-3 10-4.5 16-4.5h12M15 31c3 1 7 1 10 0" },
+    mince: { back: "M3 40h42", front: "M5 37c1-9 9-15 19-15s18 6 19 15z", detail: "M11 33c1-1.5 2.5-1.5 3 0s2 1.5 3 0M20 28c1-1.5 2.5-1.5 3 0s2 1.5 3 0M28 33c1-1.5 2.5-1.5 3 0s2 1.5 3 0M16 35c1-1 2-1 2.5 0M25 35c1-1 2-1 2.5 0M33 30c1-1 2-1 2.5 0" },
+    prawn: { back: "M36 13l7-6M36 13l8-2", front: "M36 13c-9-5-22-1-24 10-1.5 8 3.5 13 10 13h3l-3 5 6-2 1 3 2-6c2-2 2-4 0-6-2-1.5-5-1-7-1-3 0-5-2.5-4.5-5.5.8-5 7-8 13-5.5z", detail: "M17 18l4 3M14 24l5 1M15 30l5-1M26 21l-1.5 3M29.5 20l-.5 3.2" + C(33, 15, .8) },
+    squid: { back: "M18 11l-5 5 5 2M30 11l5 5-5 2", front: "M24 4c4 5 6 11 6 18v6H18v-6c0-7 2-13 6-18z", detail: "M19 28c-1 5-3 9-6 12M22 28c0 5-1 10-2 14M24 28v15M26 28c0 5 1 10 2 14M29 28c1 5 3 9 6 12" + C(21.5, 25.5, 1) + C(26.5, 25.5, 1) },
+    fishfillet: { back: C(38, 36, 5.5) + spokes(38, 36, 1, 1, 4.5, 4.5, 6, 0), front: "M5 30c4-10 14-16 26-16 5 0 8 2 10 4-2 8-10 16-22 18-6 1-11-1-14-6z", detail: "M13 30c3-3 6-6 7-10M19 33c3-3 6-7 7-12M26 32c3-3 5-7 6-12M33 27c2-2 3-5 4-8" },
+    salmonslices: { back: "M6 15c6-3 10 3 16 0s10-3 16 0l3 7c-6-3-10 3-16 0s-10-3-16 0zM12 19c2 1 4 1 6 0M26 18c2 1 4 1 6 0", front: "M7 28c6-3 10 3 16 0s10-3 16 0l3 7c-6-3-10 3-16 0s-10-3-16 0z", detail: "M13 32c2 1 4 1 6 0M27 31c2 1 4 1 6 0" },
+    saucebottle: { back: "", front: BOT, detail: cap(24, 9, 6) + rr(17, 26, 14, 10, 1) + "M19.5 32c3 2.5 7 2.2 9.5-1.5M29 30.5l1.5-1.5" },
+    broccolini: { back: "M18 43L14 21M24 43V16M30 43l4-22M20 32l-4-2.5M28 30l4-2.5", front: "M8 21c-2.5-.5-3.5-4-1-5.5 0-3 3.5-4.5 6-3 2-2.5 6-1.5 6 1.5 2.5.5 3 4 .5 5.5zM18 16c-2.5-.5-3.5-4-1-5.5 0-3 3.5-4.5 6-3 2-2.5 6-1.5 6 1.5 2.5.5 3 4 .5 5.5zM28 21c-2.5-.5-3.5-4-1-5.5 0-3 3.5-4.5 6-3 2-2.5 6-1.5 6 1.5 2.5.5 3 4 .5 5.5z", detail: "M11 17c1-1 2.5-1.2 3.5-.5M21 12c1-1 2.5-1.2 3.5-.5M31 17c1-1 2.5-1.2 3.5-.5" },
+    cabbage: { back: "M6 30c-2-8 2-16 9-19M42 30c2-8-2-16-9-19", front: C(24, 26, 15), detail: "M24 11c-4 6-5 15-3 30M24 11c5 6 7 15 5 30M11 20c4 2 7 6 8 12M37 20c-4 2-7 6-8 12" },
+    napacabbage: { back: "", front: "M24 4c6 0 10 6 10 16 0 12-3 22-10 22s-10-10-10-22C14 10 18 4 24 4z", detail: "M16 14c3-2 5 0 8-2s5 0 8-2M24 12v28M19 20c2 5 3 12 3 20M29 20c-2 5-3 12-3 20" },
+    chilli: { back: chilliAt(16, 6) + chilliStem(16, 6), front: chilliAt(9, 14), detail: chilliStem(9, 14) + "M13 18c2 7 7 13 14 17" },
+    bokchoy: { back: "M18 22c-6-4-9-11-6-17 5-1 9 4 10 12M30 22c6-4 9-11 6-17-5-1-9 4-10 12M24 22c-3-6-3-14 0-19 3 5 3 13 0 19z", front: "M17 42c-3-6-3-14 1-20h12c4 6 4 14 1 20z", detail: "M21 24c-1 6-1 12 0 17M27 24c1 6 1 12 0 17" },
+    cucumber: { back: "M7 34c-2-2-1.5-5 1.5-7L30 10c3-2 6-2 7.5.5 1.2 2.4.2 5-2.5 6.8L13 35c-2.5 1.5-4.5 1-6-1zM15 26h.01M21 22h.01M27 17h.01M18 30h.01M24 25h.01", front: C(35, 34, 7.5), detail: C(35, 34, 6) + dots(35, 34, 3, 3, 6, 0) },
+    ginger: { back: "M30 14c1-3 5-4 7-1 2-1 5 1 4 4", front: "M6 28c0-4 3-6 6-5 1-4 5-5 7-2 2-3 6-3 8 0 2-2 6-2 7 1 3 0 6 2 6 5s-3 5-6 5c-1 3-5 4-7 1-2 2-6 2-8-1-3 2-7 2-8-1-3 0-5-1-5-3z", detail: "M14 25c0 2 0 5 1 7M22 24c0 3 0 6 1 8M30 24c0 3 0 6 1 8" },
+    greenbeans: { back: "", front: bean(7, 31) + bean(8, 36) + bean(9, 41), detail: "" },
+    leek: { back: "M26 20c2-5 4-9 6-14M28 22c4-4 8-7 12-10M30 24c5-2 9-3 14-4", front: "M8 38l18-18 4 4-18 18c-1 1-3 1-4 0s-1-3 0-4z", detail: "M12 34l4 4M16 30l4 4M8 42l-2 2M9.5 43l-1 2.5" },
+    lettuce: { back: "", front: "M8 30c-2-6 1-12 6-13 0-5 5-8 9-6 3-4 9-3 11 1 5 0 8 5 6 9 3 2 3 7 0 9-2 5-8 7-16 7s-14-2-16-7z", detail: "M16 24c2-3 5-3 7-1 2-3 6-2 7 1M24 21v15M17 30c2 3 5 4 7 4s5-1 7-4" },
+    mint: { back: "M24 43V12", front: "M24 30c-6 2-12 0-14-5 5-2 11-1 14 5zM24 30c6 2 12 0 14-5-5-2-11-1-14 5zM24 21c-5 1-10-1-11-5 4-2 9-1 11 5zM24 21c5 1 10-1 11-5-4-2-9-1-11 5zM24 13c-2-3-2-6 0-8 2 2 2 5 0 8z", detail: "M24 30l-10-5M24 30l10-5M24 21l-8-4.5M24 21l8-4.5" },
+    beansprouts: { back: "M14 13.8c1 7 1 15-2 24M22 10.8c.5 8 .5 18-1 28M30 13.8c-1 7-1 15 2 24M18 17.8c1 6 1 13-1 20M27 18.8c0 6 .5 12 2 18", front: C(14, 12, 1.9) + C(22, 9, 1.9) + C(30, 12, 1.9) + C(18, 16, 1.9) + C(27, 17, 1.9), detail: "" },
+    cherrytomatoes: { back: "M8 10c8 2 16 2 32-1M15 11v5.5M26 11.5v7.5M36 10.5v4.7", front: C(15, 22, 5.5) + C(26, 25, 6) + C(36, 20, 4.8), detail: "M13.5 17l1.5 1 1.5-1M24.5 19.5l1.5 1 1.5-1M34.5 15.5l1.5 1 1.5-1M12 21c.3-1 .8-1.6 1.6-2" },
+    garlicclove: { back: clove(15, 12) + clove(33, 12), front: clove(24, 20), detail: "M24 23c-1.5 3-2 7-1 11" },
+    longleaf: { back: "M14 42C12 30 16 18 26 10c2 12-2 24-12 32zM14 42C17 32 21 20 26 10", front: "M18 43C20 27 28 15 42 8c-2 16-10 28-24 35z", detail: "M18 43C26 31 34 19 42 8M26 32l-3-6M30 26l-2-6M34 20l-1-5M24 36l5-1M29 30l6-1M33 23l5-1" },
+    enoki: { back: "M18 38c-3-8-6-16-9-24M21 38c-2-9-3-18-4-27M24 38V9M27 38c2-9 3-18 4-27M30 38c3-8 6-16 9-24", front: E(9, 13.5, 2.5, 1.7) + E(17, 10, 2.5, 1.7) + E(24, 8.5, 2.5, 1.7) + E(31, 10, 2.5, 1.7) + E(39, 13.5, 2.5, 1.7) + rr(16, 36, 16, 8, 3), detail: "M19 40h10" },
+    berries: { back: "M36 31c3-2 7-1 8 2-3 2-7 1-8-2z", front: C(15, 28, 6) + C(28, 31, 6.5) + C(22, 17, 5.5) + C(34, 18, 5), detail: "M14 25l1 1.5 1-1.5M27 28l1 1.5 1-1.5M21 14l1 1.5 1-1.5M33 15l1 1.5 1-1.5" },
+    dates: { back: E(17, 19, 10, 5.2) + "M12 18c2 1.5 4 1.5 6 0", front: E(28, 30, 11, 5.8), detail: "M21 29c2 1.5 4 1.5 6 0M30 31c2 1.5 4 1.5 6 0M39 30h.5" },
+    lime: { back: C(19, 20, 11) + "M30 20h1.8M12 16l.4.3M13 24l.4.1", front: "M22 34h22a11 11 0 0 1-22 0z", detail: "M24.5 34a8.5 8.5 0 0 0 17 0M33 34l-5 5.5M33 34v7.5M33 34l5 5.5M33 34l-7.5 1.5M33 34l7.5 1.5" },
+    dragonfruit: { back: E(17, 22, 10, 13) + "M10 13l-3-3M14 9.5l-1-4M22 10l2-4M7.5 22l-4-1M27 19l4-1M10 31l-3 3M24 31l3 3", front: E(32, 30, 9.5, 11.5), detail: E(32, 30, 7.5, 9.5) + dots(32, 30, 4.5, 6, 8, 0) + dots(32, 30, 2, 3, 5, 0.6) },
+    baguette: { back: "", front: "M6 36c-2-2-1-5 2-7L32 9c3-2 7-2 9 0s2 6 0 8L15 39c-3 2-6 1.5-9-3z", detail: "M13 29l3 3M19 23l3 3M25 17l3 3M31 12l3 3" },
+    brioche: { back: "", front: "M8 40V26c0-4 2-7 5-7 1-4 4-6 7-6 2-3 6-3 8 0 3 0 6 2 7 6 3 0 5 3 5 7v14z", detail: "M13 19c2 2 3 5 3 8M20 13c1 3 1 6 0 9M28 13c-1 3-1 6 0 9M35 19c-2 2-3 5-3 8" },
+    butter: { back: "M4 34h40l-3 5H7z", front: "M10 22l20-6 10 4v10l-20 6-10-4z", detail: "M10 22l10 4 20-6M20 26v10M24 21c2-1 4-1 5 .5" },
+    cream: { back: "", front: CT.body, detail: CT.line + "M13 29c3-2 7 2 11 0s7-2 11 0" + drop(24, 20) },
+    frozenbag: { back: "", front: PK.body, detail: PK.top + spokes(24, 27, 0, 0, 6, 6, 6, Math.PI / 2) + "M22 22l2 1.5 2-1.5M22 32l2-1.5 2 1.5" },
+    cheeseslices: { back: rr(9, 8, 24, 24, 2) + C(15, 14, 1.4), front: rr(15, 15, 24, 24, 2), detail: C(21, 21, 1.6) + C(31, 31, 2.1) + C(25, 34, 1.1) + C(34, 20, 1.3) },
+    gratedcheese: { back: "", front: PK.body, detail: PK.top + "M17 24l3 3M24 22l2 4M30 25l3 2M18 31l4 1M26 30l3-2M21 36l3 1M29 35l3-1" },
+    tub: { back: "", front: TB.body, detail: TB.lid + "M13 27c4 2 8-2 12 0s8 2 10 0" },
+    icecream: { back: "M15 27l9 17 9-17M18 30l9 7M21 29l7 6M30 30l-9 7M27 29l-7 6", front: "M14 22c0-6 4-10 10-10s10 4 10 10c1.5 0 2.5 1.2 2.5 2.5S35.5 27 34 27H14c-1.5 0-2.5-1.2-2.5-2.5S12.5 22 14 22z", detail: "M20 27v2.5M29 27v3.5M17 18c2-2 4-3 7-3" },
+    juice: { back: "M29 9l4-6h4", front: CT.body, detail: CT.line + C(24, 29, 4.5) + spokes(24, 29, .8, .8, 3.8, 3.8, 6, 0) },
+    oilbottle: { back: "", front: bottle(24, 9, 14, 43, 5, 7, 6), detail: cap(24, 9, 5) + rr(18, 26, 12, 11, 1) + drop(24, 28) },
+    bun: { back: "M8 32h32c0 4-3 7-7 7H15c-4 0-7-3-7-7z", front: "M7 28c0-8 8-13 17-13s17 5 17 13z", detail: "M17 20l1 .5M24 18l1 .3M30 21l1 .5M21 23l1 .4M28 24l.8.6" },
+    cantomato: { back: "", front: CN.body, detail: CN.rim + "M13 19h22M13 35h22" + C(24, 27, 4) + "M22.5 23.5l1.5 1 1.5-1" },
+    canpineapple: { back: "", front: CN.body, detail: CN.rim + "M13 19h22M13 35h22" + C(24, 27, 4.5) + C(24, 27, 1.6) },
+    coconutmilk: { back: "", front: CN.body, detail: CN.rim + "M13 19h22M13 35h22M19 28h10a5 5 0 0 1-10 0zM20.5 28a3.5 3.5 0 0 0 7 0" },
+    stock: { back: cube(28, 8, 12) + cubeEdges(28, 8, 12), front: "M6 22l16-6 16 6v16l-16 6-16-6z", detail: "M6 22l16 6 16-6M22 28v16M10 29l8 3M10 33l8 3M26 32l8-3" },
+    chocchips: { back: "", front: PK.body, detail: PK.top + "M17 28l2-3.5 2 3.5zM26 31l2-3.5 2 3.5zM21 36l2-3.5 2 3.5zM29 24l2-3.5 2 3.5z" },
+    crackers: { back: "", front: PK.body, detail: PK.top + "M16 26c4-4 12-4 16 0-4 4-12 4-16 0zM18 34c3-3 9-3 12 0-3 3-9 3-12 0z" },
+    spicepacket: { back: "", front: PK.body, detail: PK.top + "M15 32c4 2.5 14 2.5 18 0M19 20c1-1 2.5-1 3 0 1.5 4.5 5 9.5 11 12 .5.5 0 1.2-.8 1.2-7.7-.2-13.7-6.2-13.2-13.2zM22 38h.01M26 38.5h.01M30 37.5h.01" },
+    asamkeping: { back: "", front: PK.body, detail: PK.top + E(19, 26, 3.5, 2.2) + E(28, 28, 3.5, 2.2) + E(22, 34, 3.5, 2.2) + E(30, 36, 3, 2) },
+    sachet: { back: "", front: rr(12, 9, 24, 31, 2), detail: "M12 13h24M12 36h24M26 18l-5 8h4l-2 7 6-9h-4l2-6z" },
+    detergent: { back: "M31 15h3.5c1.5 0 2.5 1 2.5 2.5v5c0 1.5-1 2.5-2.5 2.5H31", front: "M12 16c0-3 2-5 5-5h6V8h6v3h1c3 0 5 2 5 5v24c0 2-1.5 3-3 3H15c-1.5 0-3-1-3-3z", detail: "M17 27l3-2h6l3 2-2 2v8h-8v-8z" },
+    coconut: { back: C(18, 20, 11) + C(15, 16, 1) + C(21, 16, 1) + C(18, 21, 1), front: "M22 30h22a11 11 0 0 1-22 0z", detail: "M24.5 30a8.5 8.5 0 0 0 17 0M40 30l3-12" },
+    spicejar: { back: "", front: rr(14, 14, 20, 29, 3), detail: rr(15, 8, 18, 6, 1.5) + "M19 11h.01M24 11h.01M29 11h.01" + rr(17, 23, 14, 12, 1) + "M20 29h.01M23 27.5h.01M26 30h.01M28 27h.01M22 32h.01" },
+    herbjar: { back: "", front: rr(14, 14, 20, 29, 3), detail: rr(15, 8, 18, 6, 1.5) + rr(17, 23, 14, 12, 1) + "M24 33v-6M24 29c-3 0-5-2-5-4 3 0 5 2 5 4zM24 29c3 0 5-2 5-4-3 0-5 2-5 4z" },
+    flour: { back: "M13 12l2-4h18l2 4", front: "M13 12h22l2 31H11z", detail: "M24 38V24M24 28l-3-3M24 28l3-3M24 32l-3-3M24 32l3-3M24 24l-2-3M24 24l2-3" },
+    binbags: { back: "M18 18l-3-6 5 2 4-4 4 4 5-2-3 6", front: "M14 18c-4 4-6 10-6 15 0 6 5 9 16 9s16-3 16-9c0-5-2-11-6-15z", detail: "M16 26c2 4 3 9 2 14M30 26c-2 4-3 9-2 14" },
+    bin: { back: "M20 10V7h8v3", front: "M12 14h24l-2.5 28h-19z", detail: rr(9, 10, 30, 4, 1) + "M19 18l1 20M24 18v20M29 18l-1 20" },
+    spraybottle: { back: "M19 20v-4h6v4M16 16V9h14l4 4-4 1v2zM26 16l-2 6", front: SPRAYB, detail: rr(16, 28, 12, 10, 1) + "M37 9.5l3-1M37 13h3.5M37 16.5l3 1" },
+    sodacan: { back: "", front: can(24, 9, 18, 33).body, detail: can(24, 9, 18, 33).rim + "M22 8.5l3-1M15 24c3-2 6 2 9 0s6-2 9 0M15 30c3-2 6 2 9 0s6-2 9 0" },
+    honey: { back: "", front: J1.body, detail: J1.lid + hex(20, 26, 3) + hex(26, 26, 3) + hex(23, 31.2, 3) },
+    jam: { back: "", front: J1.body, detail: "M11 12c3 4 23 4 26 0M12 9h24" + C(24, 29, 4) + "M22.5 25.5l1.5 1 1.5-1" },
+    kitchenroll: { back: "", front: "M14 10a10 3.5 0 0 1 20 0v28a10 3.5 0 0 1-20 0z", detail: "M14 10a10 3.5 0 0 0 20 0" + E(24, 10, 3, 1.1) + "M34 20h5v18l-2-1.5-3 1.5" },
+    pasta: { back: "", front: "", detail: "M15 42L27 6M18 42L29 7M21 42L31 8M24 42l9-33M27 42l8-32M30 42l7-30M14 26h20" },
+    syrup: { back: "M27 17c3.5 0 5 3 3 6", front: bottle(22, 10, 16, 43, 5, 4, 7), detail: cap(22, 10, 5) + spokes(22, 31, 0, 0, 5, 5, 5, -Math.PI / 2) + "M22 31v5" },
+    oats: { back: "M10 26c2-4 7-6 14-6s12 2 14 6" + E(16, 23.5, 1.7, 1) + E(22, 21.5, 1.7, 1) + E(28, 22.5, 1.7, 1) + E(33, 24.5, 1.5, .9), front: "M6 26h36c0 9-8 16-18 16S6 35 6 26z", detail: "M17.5 41.2v2.5h13v-2.5M9.5 31c5 2 24 2 29 0" },
+    popcorn: { back: "M12 20c-2-3 0-6 3-5 0-3 4-4 5-1 1-3 5-3 6 0 1-3 5-3 6 0 2-2 6 0 5 3 2 1 1 3 0 3", front: "M13 20h22l-3 23H16z", detail: "M20 20l1 23M28 20l-1 23" },
+    salt: { back: "M38 30h.01M40 34h.01M37 37h.01", front: "M16 17c0-4 3-6 8-6s8 2 8 6v23c0 2-1 3-3 3H19c-2 0-3-1-3-3z", detail: "M16 17h16M21 14h.01M24 13h.01M27 14h.01" + rr(19, 26, 10, 9, 1) },
+    sparkling: { back: "", front: bottle(24, 8, 14, 43, 5, 5, 7), detail: cap(24, 8, 5) + "M17 25h14M17 36h14" + C(22, 30, 1.2) + C(26.5, 31.5, 1) + C(24, 27.5, .8) },
+    sponge: { back: "", front: "M8 22l24-6 8 4v10l-24 6-8-4z", detail: "M8 22l8 4 24-6M16 26v10M8 26.5l8 4 24-6M21 32h.01M27 30h.01M33 28.5h.01M24 33.5h.01" },
+    toiletcleaner: { back: "M26 20l4-10 4-2 2 2-3 3-3 7", front: "M16 20h14c2 0 3 1 3 3v17c0 2-1 3-3 3H16c-2 0-3-1-3-3V23c0-2 1-3 3-3z", detail: rr(17, 28, 12, 9, 1) },
+    tomatopaste: { back: "M12 36l-4 4 3 3 4-4", front: "M28 8l12 12-18 18c-3 3-9 3-12 0s-3-9 0-12z", detail: "M30 10l8 8" + C(24, 25, 4) + "M22.5 21.5l1.5 1 1.5-1" },
+    lensbottle: { back: "", front: bottle(24, 14, 16, 43, 5, 4, 5), detail: "M22 14v-4l2-3 2 3v4M18 31c3-3 9-3 12 0-3 3-9 3-12 0z" + C(24, 31, 1.3) },
+    cottonswabs: { back: "M10 30L30 10M14 34L34 14M18 38L38 18", front: C(10, 30, 2.4) + C(30, 10, 2.4) + C(14, 34, 2.4) + C(34, 14, 2.4) + C(18, 38, 2.4) + C(38, 18, 2.4), detail: "" },
+    floss: { back: "M36 18c4 0 6 4 4 8l-2 3", front: rr(12, 14, 24, 26, 6), detail: C(24, 27, 5.5) + C(24, 27, 1.5) + "M30 14l4-3" },
+    shampoo: { back: rr(19, 8, 10, 6, 1.5), front: "M17 14h14c3 6 3 22 0 29H17c-3-7-3-23 0-29z", detail: rr(19, 22, 10, 12, 2) + drop(24, 24) },
+    shavingfoam: { back: "M18 14c0-3 3-4.5 6-4.5s6 1.5 6 4.5M24 9.5V6.5h4M31 6c2-1.5 5-1 6 1 1.5 0 2.5 1.5 1.5 3", front: can(24, 14, 16, 29).body, detail: can(24, 14, 16, 29).rim + rr(18, 23, 12, 12, 1) },
+    eyedrops: { back: "M20 20l2-8h4l2 8M24 12V8", front: "M18 20h12v18c0 3-2 5-6 5s-6-2-6-5z", detail: drop(11, 28) + rr(20, 26, 8, 8, 1) },
+    toothpaste: { back: rr(40, 21, 5, 8, 1), front: "M6 18h26l8 5v4l-8 5H6z", detail: "M9 18v14M22 16c2-4 6-5 8-2M14 25c3-2 6 2 9 0s6-2 9 0" },
+    soysauce: { back: "", front: bottle(24, 8, 18, 43, 6, 5, 8), detail: cap(24, 8, 6) + rr(17, 27, 14, 11, 1) + drop(24, 29) },
+    fishsauce: { back: "", front: bottle(24, 8, 16, 43, 5, 7, 6), detail: cap(24, 8, 5) + rr(17, 26, 14, 11, 1) + "M19 31.5c2-2.5 6-2.5 8 0-2 2.5-6 2.5-8 0zM27 31.5l3-2v4z" },
+    oystersauce: { back: "", front: J1.body, detail: J1.lid + "M17 34c0-5 3-8 7-8s7 3 7 8zM20.5 34l2-6M24 34v-7M27.5 34l-2-6" },
+    edamame: { back: "M8 22c4-6 20-8 30-2 2 1 1 4-1 4-10 3-20 3-28 1-2 0-2-2-1-3z", front: "M10 32c6-6 22-7 30-1 2 1.5 1 4-1.5 4-10 2-20 2-27 0-2-.5-2.5-2-1.5-3z", detail: C(19, 32, 2.6) + C(26, 31.4, 2.6) + C(33, 32, 2.4) + "M40 31l3-1" },
+    lemongrass: { back: "M18 28l2-22M18 28l6-20M25 28l3-24M25 28l8-20M32 28l4-22M32 28l9-18", front: "M13 42l3-14h5l-2 14zM20 42l3-14h5l-2 14zM27 42l3-14h5l-2 14z", detail: "" },
+    gascan: { back: "M12 18c0-4 5-6 12-6s12 2 12 6M22 12V8h4v4", front: can(24, 18, 26, 22).body, detail: can(24, 18, 26, 22).rim + "M24 26c-2 2-3 4-1.5 6 1 1 3 1 3.5-1 .5-2-1-3-2-5z" },
+    tofu: { back: cube(28, 9, 12) + cubeEdges(28, 9, 12), front: "M6 24l16-6 16 6v12l-16 6-16-6z", detail: "M6 24l16 6 16-6M22 30v12" },
+    ramen: { back: "", front: rr(7, 12, 34, 25, 4), detail: "M12 21c2-2 4 2 6 0s4 2 6 0 4 2 6 0 4 2 6 0M12 27c2-2 4 2 6 0s4 2 6 0 4 2 6 0 4 2 6 0M7 16h34M7 33h34" },
+    kimchi: { back: "", front: J1.body, detail: J1.lid + "M17 34c1-6 4-9 7-9s6 3 7 9M24 25v10M20 29h.01M28 30h.01M22 33h.01" },
+    soju: { back: "", front: bottle(24, 5, 14, 43, 5, 9, 7), detail: cap(24, 5, 5) + rr(18, 27, 12, 10, 1) + "M20 32h8" },
+    vermicelli: { back: "", front: E(24, 26, 16, 11), detail: "M12 22c3-3 6 3 9 0s6 3 9 0 6 3 8 0M11 28c3-3 6 3 9 0s6 3 9 0 6 3 9 0M14 33c3-3 6 3 9 0s6 3 9 0M10 26h28" },
+    spritz: { back: bottle(14, 7, 12, 43, 4, 9, 5) + cap(14, 7, 4), front: "M26 16h15c.5 6-2 11-7.5 11.5-5.5-.5-8-5.5-7.5-11.5z", detail: "M33.5 27.5V40M29 40.5h9M27 21h13.5" + C(40, 16, 3.2) },
+    champagne: { back: bottle(16, 5, 12, 43, 4, 10, 5) + "M14 5v8M18 5v8", front: "M31 13h9l-1 12c-.3 2-1.6 3-3.5 3s-3.2-1-3.5-3z", detail: "M35.5 28v11M31 39.5h9M34 21h.01M36.5 18h.01M35 15.5h.01" },
+    whiskey: { back: "M9 18c0-2 1-3 3-3h2V9h6v6h2c2 0 3 1 3 3v24H9zM11 26h12v9H11z", front: "M26 26h15l-1.5 16h-12z", detail: "M29 32l3-1 1 3-3 1zM34.5 30.5l3 1-1 3-3-1zM26.8 36h13.4" },
+    card: { back: "M30 12l8 4v30l-8-4", front: "M10 12h20v30H10z", detail: "M20 23c-2-3-6-1-4 2l4 4 4-4c2-3-2-5-4-2zM14 34h12M14 37.5h8" },
+    socks: { back: sock(10, 6), front: sock(21, 12), detail: "M21 15h8M24 27l2.5-1.5" },
+    cordial: { back: "", front: bottle(24, 7, 16, 43, 5, 7, 7), detail: cap(24, 7, 5) + rr(17, 26, 14, 12, 1) + C(21.5, 32, 1.6) + C(25.5, 30.5, 1.6) + C(26, 34.2, 1.6) + "M24 27l2-2" }
+  };
+  for (var _k in REG) ILL[_k] = REG[_k];
+  
+  return ILL;
+})();
+const CATMARK = (function(){
+function arcCircle(cx, cy, r){ return "M" + (cx - r) + " " + cy + "a" + r + " " + r + " 0 1 0 " + (2 * r) + " 0a" + r + " " + r + " 0 1 0 " + (-2 * r) + " 0"; }
+var ICONS = {
+  meat: "M17 6c2.75 0 4.75 2.15 4.75 4.75 0 3.1-2.65 5.25-5.75 5.25-.9 0-1.65-.2-2.25-.5l-2.5 2.5c.2.65-.05 1.35-.65 1.7-.7.4-1.6.1-1.9-.6-.7.2-1.5-.15-1.75-.9-.25-.8.2-1.6 1-1.8.7-.15 1.4.2 1.65.75l2.5-2.5c-.35-.65-.55-1.4-.55-2.2 0-3.6 2.3-6.45 5.45-6.45z",   // v2.04: a drumstick reads as meat at 18px; the steak read as an eye
+  fruit: "M4.5 12.5c1.5 5 8.5 7.5 13.5 3.5 2.2-1.8 2.8-5 2.3-10M4.5 12.5c3.5 2 9 1.5 12.5-2.5 1.5-1.7 2.6-3 3.3-4M20.3 6l.7-2.5M4.5 12.5l-1-.6",
+  vegetable: "M7.5 13a3 3 0 0 1-.8-5.9A3.5 3.5 0 0 1 12 4.5a3.5 3.5 0 0 1 5.3 2.6 3 3 0 0 1-.8 5.9zM10 13l.6 7h2.8l.6-7M12 13v3.5",
+  fresh: "M8 3h8v3l2 3v12H6V9l2-3zM6 9h12M8 6h8",
+  bulk: "M3 8l9-4 9 4v9l-9 4-9-4zM3 8l9 4 9-4M12 12v9",
+  health: "M9.67 19.27L19.27 9.67A3.5 3.5 0 0 0 14.33 4.73L4.73 14.33A3.5 3.5 0 0 0 9.67 19.27zM9.53 9.53l4.94 4.94",
+  asian: "M3.5 10.5h17a8.5 8.5 0 0 1-17 0zM9 21h6M13 3l-3.5 7.5M19 4.5l-6 6",
+  alcohol: "M7 3h10l-.5 5a4.5 4.5 0 0 1-9 0zM12 12.5V20M8.5 20h7M7.3 6.5h9.4",
+  others: "M3 9h18l-2 11H5zM8 9l3-5M16 9l-3-5M9 13v4M12 13v4M15 13v4",
+  apple: "M12 7.5c-2-1.5-7-1-7 5 0 4 3 8 5 8 1 0 1.3-.5 2-.5s1 .5 2 .5c2 0 5-4 5-8 0-6-5-6.5-7-5zM12 7.5c0-2 1-3.5 3-4.5",
+  lemon: "M4 12c0-4 4-7 8-7s8 3 8 7-4 7-8 7-8-3-8-7zM4 12H2.5M20 12h1.5",
+  avocado: "M12 3c-3 0-5 4-6 8-1 4 1.5 9 6 9s7-5 6-9c-1-4-3-8-6-8z" + arcCircle(12, 14, 2.5),
+  carrot: "M14.5 9.5c-1.5-1.5-3.5-1-4.8.3L3 20l10.2-6.7c1.3-1.3 1.8-2.3 1.3-3.8zM15 9l3.5-3.5M15 9l5-.5M15 9l.5-5",
+  tomato: arcCircle(12, 13.5, 7) + "M9 6.5l3 2 3-2M12 8.5V5",
+  onion: "M12 3c0 3-7 5-7 11a7 6 0 0 0 14 0c0-6-7-8-7-11zM12 8c-2 2-3 4-3 7M12 8c2 2 3 4 3 7",
+  garlic: "M12 4c-4 2-7 5-7 9a7 7 0 0 0 14 0c0-4-3-7-7-9zM12 4V2.5M12 8c-2 2.5-2.5 6-1.5 12M12 8c2 2.5 2.5 6 1.5 12",
+  chicken: "M14.5 4.5a5 5 0 0 1 5 5c0 3.5-3.5 6-7 5L9 18a1.8 1.8 0 1 1-2.5 2.5 1.8 1.8 0 1 1-2.5-2.5 1.8 1.8 0 1 1 2.5-2.5L10.5 12c-1-3.5 1-7.5 4-7.5z",
+  fish: "M6 12c2.5-4 6.5-5.5 10-4.6 2.5.7 4.3 2.6 5 4.6-.7 2-2.5 3.9-5 4.6-3.5.9-7.5-.6-10-4.6zM6 12L2.5 8.5v7z" + arcCircle(16.5, 11, 0.8),
+  egg: "M12 3c-3.5 0-6 5.5-6 10a6 6 0 0 0 12 0c0-4.5-2.5-10-6-10z",
+  cheese: "M3 17v-6l14-6 4 6v6zM3 11h18" + arcCircle(9, 14.3, 1) + arcCircle(15, 14.8, 1.2),
+  bread: "M5 20v-9a3.5 3.5 0 0 1-1-2.5C4 6 7 4 12 4s8 2 8 4.5a3.5 3.5 0 0 1-1 2.5v9zM9 8.5l1.5 2M13 8.5l1.5 2",
+  rice: "M8 4h8l-1 3c3 2 4 5 4 8a5 5 0 0 1-5 5h-4a5 5 0 0 1-5-5c0-3 1-6 4-8zM9 7h6",
+  coffee: "M4 9h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 11h1.5a2.5 2.5 0 0 1 0 5H17M8 3.5c-.8 1 .8 2 0 3M12 3.5c-.8 1 .8 2 0 3",
+  toilet: arcCircle(8, 8, 4) + arcCircle(8, 8, 1.2) + "M8 4h9a4 4 0 0 1 4 4v12H8M4 8v12h4",
+  soap: "M9 9h6a2 2 0 0 1 2 2v9H7v-9a2 2 0 0 1 2-2zM11 9V6h2v3M13 6h3",
+  dumpling: "M3 15c0-5 4-8 9-8s9 3 9 8zM3 15c2 1.5 16 1.5 18 0M8 9.5l1 2.5M12 8.5v3M16 9.5l-1 2.5",
+  beer: "M5 8h10v12H5zM15 10.5h2a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M5 8a2.5 2.5 0 0 1 2.5-3 3 3 0 0 1 5 0A2.5 2.5 0 0 1 15 8"
+};
+
+  return ICONS;
+})();
+/* Names from the household's own Regulars map straight to their drawing; anything else goes
+   through DRAW_HINTS, first keyword match wins, so the specific phrases come first. */
+const DRAW_EXACT = {"beef bones": "bones", "beef cubes": "meatcubes", "chicken breast": "chickenbreast", "chicken drumlets": "wings", "chicken drumsticks": "chicken", "chicken feet": "chickenfeet", "chicken leg": "chicken", "chicken rice chilli": "saucebottle", "chicken thigh": "chicken", "chicken winglets": "wings", "fish fillet": "fishfillet", "lamb": "lambchop", "lamb chops": "lambchop", "lamb diced": "meatcubes", "lamb rump": "lambchop", "lean mince beef": "mince", "mackeral cut": "fish", "mince beef": "mince", "prawns": "prawn", "squid": "squid", "steak": "steak", "steaks": "steak", "topside steak": "steak", "whole chicken": "wholechicken", "avocados": "avocado", "brocollini": "broccolini", "cabbage": "cabbage", "carrot": "carrot", "carrots": "carrot", "chillies big green": "chilli", "chillies big red": "chilli", "chillies small red": "chilli", "choysum": "bokchoy", "coriander": "parsley", "cucumber": "cucumber", "cucumber small": "cucumber", "galangal": "ginger", "garlic": "garlic", "ginger": "ginger", "green beans": "greenbeans", "jalapenos": "chilli", "kangkung": "spinach", "leek": "leek", "lettuce": "lettuce", "mint": "mint", "mushroom": "mushroom", "napa cabbage 1/2": "napacabbage", "parsley": "parsley", "peeled garlic": "garlicclove", "potatoes": "potatoes", "pumpkin": "pumpkin", "red onion": "onion", "salad": "lettuce", "small tomatoes": "cherrytomatoes", "spinach": "spinach", "spring onion": "scallions", "taugeh": "beansprouts", "thai basil": "mint", "tomatoes small": "cherrytomatoes", "tumeric": "ginger", "tumeric leaves": "longleaf", "white onion": "onion", "banana": "banana", "berries": "berries", "dates": "dates", "kiwi": "kiwi", "lemon": "lemon", "lime": "lime", "orange": "orange", "pear": "pear", "pineapple": "pineapple", "red dragonfruit": "dragonfruit", "baguette": "baguette", "brioche bread": "brioche", "butter": "butter", "cream": "cream", "eggs": "eggs", "frozen mango": "frozenbag", "frozen raspberries": "frozenbag", "goat milk": "milk", "gruyère": "cheese", "high protein cottage cheese": "tub", "high protein yogurt": "tub", "ice cream": "icecream", "juice": "juice", "parmesan cheese": "cheese", "pizza cheese": "gratedcheese", "slice cheese": "cheeseslices", "smoke salmon": "salmonslices", "yoghurt": "tub", "avocado oil": "oilbottle", "burger bun brioche": "bun", "can pineapples": "canpineapple", "canned tomatoes": "cantomato", "chicken stock": "stock", "chocolate chip": "chocchips", "clothes detergent": "detergent", "coconut oil": "oilbottle", "coconut water": "coconut", "corn crackers": "crackers", "dry basil": "herbjar", "flour plain": "flour", "flour self-raising": "flour", "flour wholemeal": "flour", "garbage bags": "binbags", "general cleaner spray": "spraybottle", "ginger beer no sugar": "sodacan", "ground black pepper": "spicejar", "ground white pepper": "spicejar", "honey": "honey", "jam": "jam", "kitchen towel": "kitchenroll", "light cheese": "cheeseslices", "linguine": "pasta", "long life milk": "milk", "maple syrup": "syrup", "oats": "oats", "popcorn butter": "popcorn", "popcorn sweet & salty": "popcorn", "popcorn sweet and salty": "popcorn", "rubbish bin": "bin", "salt": "salt", "spaghetti": "pasta", "sparkling water": "sparkling", "sponge": "sponge", "sprite zero": "sodacan", "toilet cleaner": "toiletcleaner", "toilet paper": "toilet", "tomato paste": "tomatopaste", "window cleaner": "spraybottle", "boston cleaning": "lensbottle", "cotton tips": "cottonswabs", "electrolytes": "sachet", "floss": "floss", "hydrolites": "sachet", "saline": "lensbottle", "shampoo": "shampoo", "shaving foam": "shavingfoam", "soap": "soap", "systane ultra": "eyedrops", "toothpaste": "toothpaste", "babas kari meat powder": "spicepacket", "bihoon": "vermicelli", "coconut milk": "coconutmilk", "cornflour": "flour", "dark soy sauce": "soysauce", "edamame": "edamame", "fish sauce": "fishsauce", "fish stock": "stock", "five spice powder": "spicejar", "frozen lemongrass": "lemongrass", "garlic powder": "spicejar", "gas can": "gascan", "hard tofu": "tofu", "hoisin sauce": "saucebottle", "hokkien noodle": "noodles", "ice cream sesame": "icecream", "jin ramen": "ramen", "kicap manis": "soysauce", "kimchi": "kimchi", "light soy sauce": "soysauce", "oyster sauce": "oystersauce", "peanut oil": "oilbottle", "prawn cracker": "crackers", "prawn crackers": "crackers", "rice": "rice", "sesame oil": "oilbottle", "shan fried chop": "spicepacket", "sichuan pepper powder": "spicejar", "sushi rice": "rice", "tofu soft": "tofu", "tumeric powder": "spicejar", "udon": "noodles", "vermicelli": "vermicelli", "zero sugar soju": "soju", "aperol": "spritz", "champagne": "champagne", "prosecco": "champagne", "sparkling wine": "champagne", "whiskey": "whiskey", "birthday card": "card", "socks": "socks", "enoki": "enoki", "cordial blackcurrant": "cordial", "asam keping": "asamkeping"};
+const DRAW_HINTS = [["chicken rice chilli", "saucebottle"], ["chilli sauce", "saucebottle"], ["hoisin", "saucebottle"], ["sriracha", "saucebottle"], ["ketchup", "saucebottle"], ["fish sauce", "fishsauce"], ["oyster sauce", "oystersauce"], ["soy sauce", "soysauce"], ["kicap", "soysauce"], ["chicken stock", "stock"], ["fish stock", "stock"], ["beef stock", "stock"], ["stock", "stock"], ["broth", "stock"], ["coconut milk", "coconutmilk"], ["coconut oil", "oilbottle"], ["coconut water", "coconut"], ["coconut", "coconut"], ["ice cream", "icecream"], ["cottage cheese", "tub"], ["cream cheese", "tub"], ["yoghurt", "tub"], ["yogurt", "tub"], ["pizza cheese", "gratedcheese"], ["grated", "gratedcheese"], ["mozzarella", "gratedcheese"], ["slice cheese", "cheeseslices"], ["sliced cheese", "cheeseslices"], ["light cheese", "cheeseslices"], ["cheese", "cheese"], ["parmesan", "cheese"], ["gruy", "cheese"], ["long life milk", "milk"], ["milk", "milk"], ["cream", "cream"], ["butter", "butter"], ["egg", "eggs"], ["smoke salmon", "salmonslices"], ["smoked salmon", "salmonslices"], ["salmon", "fishfillet"], ["fillet", "fishfillet"], ["mackerel", "fish"], ["mackeral", "fish"], ["tuna", "fish"], ["fish", "fish"], ["prawn cracker", "crackers"], ["cracker", "crackers"], ["chip", "crackers"], ["prawn", "prawn"], ["shrimp", "prawn"], ["squid", "squid"], ["calamari", "squid"], ["chicken breast", "chickenbreast"], ["drumlet", "wings"], ["winglet", "wings"], ["wing", "wings"], ["chicken feet", "chickenfeet"], ["whole chicken", "wholechicken"], ["chicken", "chicken"], ["turkey", "chicken"], ["bone", "bones"], ["cube", "meatcubes"], ["diced", "meatcubes"], ["mince", "mince"], ["ground beef", "mince"], ["lamb", "lambchop"], ["chop", "lambchop"], ["steak", "steak"], ["topside", "steak"], ["beef", "steak"], ["pork", "steak"], ["garlic powder", "spicejar"], ["tumeric powder", "spicejar"], ["turmeric powder", "spicejar"], ["five spice", "spicejar"], ["pepper powder", "spicejar"], ["ground black pepper", "spicejar"], ["ground white pepper", "spicejar"], ["paprika", "spicejar"], ["cumin", "spicejar"], ["cinnamon", "spicejar"], ["curry powder", "spicepacket"], ["meat powder", "spicepacket"], ["dry basil", "herbjar"], ["dried basil", "herbjar"], ["oregano", "herbjar"], ["peeled garlic", "garlicclove"], ["garlic", "garlic"], ["ginger beer", "sodacan"], ["tumeric leaves", "longleaf"], ["turmeric leaves", "longleaf"], ["pandan", "longleaf"], ["tumeric", "ginger"], ["turmeric", "ginger"], ["galangal", "ginger"], ["ginger", "ginger"], ["lemongrass", "lemongrass"], ["spring onion", "scallions"], ["scallion", "scallions"], ["red onion", "onion"], ["white onion", "onion"], ["onion", "onion"], ["leek", "leek"], ["broccolini", "broccolini"], ["brocollini", "broccolini"], ["broccoli", "broccoli"], ["napa", "napacabbage"], ["wombok", "napacabbage"], ["cabbage", "cabbage"], ["choysum", "bokchoy"], ["choy sum", "bokchoy"], ["bok choy", "bokchoy"], ["pak choi", "bokchoy"], ["kangkung", "spinach"], ["spinach", "spinach"], ["kale", "spinach"], ["lettuce", "lettuce"], ["salad", "lettuce"], ["coriander", "parsley"], ["cilantro", "parsley"], ["parsley", "parsley"], ["mint", "mint"], ["basil", "mint"], ["taugeh", "beansprouts"], ["bean sprout", "beansprouts"], ["green bean", "greenbeans"], ["edamame", "edamame"], ["enoki", "enoki"], ["mushroom", "mushroom"], ["small tomato", "cherrytomatoes"], ["tomatoes small", "cherrytomatoes"], ["cherry tomato", "cherrytomatoes"], ["canned tomato", "cantomato"], ["tomato paste", "tomatopaste"], ["tomato puree", "tomatopaste"], ["tomato", "tomato"], ["jalapeno", "chilli"], ["chilli", "chilli"], ["chili", "chilli"], ["capsicum", "pepper"], ["bell pepper", "pepper"], ["cucumber", "cucumber"], ["zucchini", "zucchini"], ["pumpkin", "pumpkin"], ["potato", "potatoes"], ["carrot", "carrot"], ["corn crackers", "crackers"], ["popcorn", "popcorn"], ["cornflour", "flour"], ["corn", "corn"], ["peas", "peas"], ["avocado oil", "oilbottle"], ["avocado", "avocado"], ["banana", "banana"], ["strawberr", "strawberry"], ["raspberr", "berries"], ["berr", "berries"], ["date", "dates"], ["kiwi", "kiwi"], ["lemon", "lemon"], ["lime", "lime"], ["mandarin", "mandarins"], ["orange", "orange"], ["pear", "pear"], ["can pineapple", "canpineapple"], ["pineapple", "pineapple"], ["dragonfruit", "dragonfruit"], ["dragon fruit", "dragonfruit"], ["mango", "mango"], ["apple", "apple"], ["grape", "grapes"], ["cherr", "cherries"], ["peach", "peach"], ["watermelon", "watermelon"], ["frozen lemongrass", "lemongrass"], ["frozen", "frozenbag"], ["baguette", "baguette"], ["burger bun", "bun"], ["bun", "bun"], ["brioche", "brioche"], ["bread", "bread"], ["flour", "flour"], ["oats", "oats"], ["porridge", "oats"], ["muesli", "oats"], ["sushi rice", "rice"], ["rice paper", "ramen"], ["rice noodle", "vermicelli"], ["bihoon", "vermicelli"], ["vermicelli", "vermicelli"], ["rice", "rice"], ["ramen", "ramen"], ["udon", "noodles"], ["noodle", "noodles"], ["linguine", "pasta"], ["spaghetti", "pasta"], ["pasta", "pasta"], ["penne", "pasta"], ["tofu", "tofu"], ["kimchi", "kimchi"], ["soju", "soju"], ["oil", "oilbottle"], ["honey", "honey"], ["jam", "jam"], ["maple", "syrup"], ["syrup", "syrup"], ["cordial", "cordial"], ["chocolate chip", "chocchips"], ["chocolate", "chocchips"], ["asam", "asamkeping"], ["salt", "salt"], ["sugar", "salt"], ["pepper", "spicejar"], ["sparkling water", "sparkling"], ["water", "sparkling"], ["sprite", "sodacan"], ["coke", "sodacan"], ["soda", "sodacan"], ["juice", "juice"], ["aperol", "spritz"], ["champagne", "champagne"], ["prosecco", "champagne"], ["sparkling wine", "champagne"], ["whisk", "whiskey"], ["wine", "wine"], ["beer", "sodacan"], ["detergent", "detergent"], ["laundry", "detergent"], ["garbage bag", "binbags"], ["bin bag", "binbags"], ["rubbish bin", "bin"], ["bin", "bin"], ["cleaner spray", "spraybottle"], ["window cleaner", "spraybottle"], ["spray", "spraybottle"], ["toilet cleaner", "toiletcleaner"], ["kitchen towel", "kitchenroll"], ["paper towel", "kitchenroll"], ["toilet", "toilet"], ["sponge", "sponge"], ["gas", "gascan"], ["cotton", "cottonswabs"], ["floss", "floss"], ["electrolyte", "sachet"], ["hydrolite", "sachet"], ["saline", "lensbottle"], ["boston", "lensbottle"], ["lens", "lensbottle"], ["systane", "eyedrops"], ["eye drop", "eyedrops"], ["shampoo", "shampoo"], ["conditioner", "shampoo"], ["shaving", "shavingfoam"], ["soap", "soap"], ["toothpaste", "toothpaste"], ["card", "card"], ["sock", "socks"], ["steak", "steak"]];
+/* v2.04: which icons the app draws. "drawn" (default) = line drawings; "emoji" = the old emoji. A LOOK,
+   like ml_emoji_cat / ml_emoji_item, so it is deliberately NOT in APP_EXCLUDE — an appearance slot carries it. */
+function iconStyle(){ try{ return localStorage.getItem("ml_icons")==="emoji" ? "emoji" : "drawn"; }catch(e){ return "drawn"; } }
+function setIconStyle(v){ try{ localStorage.setItem("ml_icons", v==="emoji"?"emoji":"drawn"); }catch(e){} render(); }
+const CAT_IDS = new Set(["meat","fruit","vegetable","fresh","bulk","health","asian","alcohol","others"]);
+function drawKey(name){ const n=String(name||"").trim().toLowerCase(); if(!n) return null;
+  if(DRAW_EXACT[n]) return DRAW_EXACT[n];
+  for(const [k,v] of DRAW_HINTS){ if(n.includes(k)) return v; }
+  return null; }
+function illSVG(key){ const d=DRAWN[key]; if(!d) return "";
+  return `<svg class="ill" viewBox="0 0 48 48" aria-hidden="true"><path class="ib" d="${d.back}"/><path class="if" d="${d.front}"/><path class="id" d="${d.detail}"/></svg>`; }
+function catMarkSVG(id){ return CATMARK[id] ? `<svg class="cmark" viewBox="0 0 24 24" aria-hidden="true"><path d="${CATMARK[id]}"/></svg>` : ""; }
+/* For DISPLAY only — returns markup. Anything that STORES an icon (a plan entry's emoji) keeps calling
+   itemEmoji(), so no SVG ever reaches the database. */
+function itemIcon(name, cat){
+  if(!itemEmojiOn()) return "";
+  if(iconStyle()==="drawn"){ const k=drawKey(name); if(k) return illSVG(k);
+    const c=CAT(cat); if(c && CAT_IDS.has(c.id)) return catMarkSVG(c.id); }
+  return itemEmoji(name, cat); }
 function itemEmoji(name, cat){ if(!itemEmojiOn()) return "";
   const n=(name||"").toLowerCase();
   for(const [k,e] of EMOJI_HINTS){ if(n.includes(k)) return e; }
@@ -3851,7 +4264,7 @@ function addPillHTML(m){
   const qcol = metaCol(cat.color, !!on, full);
   const meta=[(m.qty>1?m.qty+"×":""), m.weight].filter(Boolean).join(" ");
   const metaS = meta?`<span class="pill-meta"><span class="qty" style="color:${qcol}">${esc(meta)}</span></span>`:"";
-  const em=itemEmoji(m.name,m.cat); const emS=em?`<span class="pemoji" aria-hidden="true">${em}</span>`:"";
+  const em=itemIcon(m.name,m.cat); const emS=em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
   const attr = on ? `data-add-inc="${m.onId}"` : (m.predKey?`data-add-pred="${esc(m.predKey)}"` : m.ba?`data-add-ba="${esc(m.name)}|${m.cat}"` : `data-add-dict="${esc(m.name)}|${m.cat}"`);
   return `<button class="pill" ${attr} style="${style}">${emS}${esc(cap(m.name))}${metaS}</button>`;
 }
@@ -4657,10 +5070,10 @@ function fullStyle(catColor, sel){
        genuine pastel (L≈0.8), white on it is unreadable. onAccent picks by luminance, so a dark fill
        still gets white and nothing changes for anyone not using Calm. */
     const fill = tileBgHex()||catFill(catColor,true);
-    return `background:${fill};border:1.5px solid ${tileBrdHex()||catEdge(catColor,true)};color:${tileTxtHex()||onAccent(fill)};`;
+    return `background:${fill};border:1.5px solid ${tileBrdHex()||catEdge(catColor,true)};color:${tileTxtHex()||onAccent(fill)};--illbg:${fill};`;
   }
   /* an unselected tile is an OUTLINE in Full — transparent unless a background was picked. */
-  return `background:${uTileBgHex()||"transparent"};border:1.5px solid ${uTileBrdHex()||catEdge(catColor,false)};color:${uTileTxtHex()||"var(--muted)"};`;
+  return `background:${uTileBgHex()||"transparent"};border:1.5px solid ${uTileBrdHex()||catEdge(catColor,false)};color:${uTileTxtHex()||"var(--muted)"};--illbg:${uTileBgHex()||"var(--paper)"};`;
 }
 /* v1.67 item 1: one rule for every scrap of text on a tile. A chosen tile-text colour owns the WHOLE
    tile — name, quantity and weight — because a "text colour" that leaves two of the three in the
@@ -4702,8 +5115,8 @@ function pillHTML(i, cat){
   const marks = markInner ? `<span class="pmarks">${markInner}</span>` : "";
   // v1.20 unified row anatomy (shared with regPill): emoji · name, then qty/weight pushed to the right.
   // No check circle — tapping the whole row checks it. Selected/on-list uses the Full/Empty tile look.
-  const em = itemEmoji(i.name, i.cat);
-  const emS = em?`<span class="pemoji" aria-hidden="true">${em}</span>`:"";
+  const em = itemIcon(i.name, i.cat);
+  const emS = em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
   return `<button class="pill ${checked?'done':''} ${urgent?'urgent-dup':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="${style}">`
     +`${emS}${marks}${esc(cap(i.name))}${meta?`<span class="pill-meta">${meta}</span>`:""}`
     +`</button>`;
@@ -4757,8 +5170,8 @@ function regPill(entry, cat, it){
   const w = selected ? (it.weight||"") : (entry.weight||"");
   const full = selected && fillMode()==="full";
   const qcol = metaCol(cat.color, selected, full);
-  const em = itemEmoji(entry.name, cat.id);
-  const emS = em?`<span class="pemoji" aria-hidden="true">${em}</span>`:"";
+  const em = itemIcon(entry.name, cat.id);
+  const emS = em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
   const meta = `${q>1?`<span class="qty" style="color:${qcol}">${q}×</span>`:""}${w?`<span class="qty" style="color:${qcol}">${esc(w)}</span>`:""}`;
   const metaS = meta?`<span class="pill-meta">${meta}</span>`:"";
   const name = esc(cap(entry.name));
@@ -5076,8 +5489,8 @@ function planFilledPill(i, cat){ const checked=i.checked; const full=fillMode()=
   /* v1.61 item 2: this tile was missed by v1.60 — it is drawn by its own function and still wrote
      the Full colours inline, so the six pickers had no effect here either. */
   const style=full?fullStyle(cat.color,true):(fillMode()==="empty"?`border-left:1.5px solid var(--line)`:`border-left:4px solid ${catEdge(edge, true)}`);
-  const em=itemEmoji(i.name,i.cat);
-  return `<button class="pill plan-in ${checked?'done':''}" data-plan-rm="${i.id}" style="${style}">${em?`<span class="pemoji" aria-hidden="true">${em}</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(showAmt(i.weight))} </span>`:""}${esc(cap(i.name))}${checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit"${full?' style="color:rgba(255,255,255,.92)"':''}>▾</span></button>`; }
+  const em=itemIcon(i.name,i.cat);
+  return `<button class="pill plan-in ${checked?'done':''}" data-plan-rm="${i.id}" style="${style}">${em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(showAmt(i.weight))} </span>`:""}${esc(cap(i.name))}${checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit"${full?' style="color:rgba(255,255,255,.92)"':''}>▾</span></button>`; }
 /* A18/v1.08 — the quantity + weight editor for the selected plan item, shown as a banner
    fixed above the bottom nav (rather than inline in the list). */
 function planQBannerHTML(){
@@ -5247,7 +5660,10 @@ function renderPlanTab(){
       const nm = r ? r.name : e.name;                       // a renamed recipe renames every day it is on
       /* v1.84: names picked from the app's items arrive as the dictionary holds them ("milk"), so the
          chip title-cases exactly the way every other item label in the app does. */
-      const em = e.emoji || (e.cat ? itemEmoji(nm, e.cat) : "");
+      /* v2.04: a meal's OWN drawing when there is one; otherwise the emoji it was saved with. No
+         category-mark fallback here — a recipe name ("Pad Thai") has no category, and CAT("") is Others. */
+      const dk = (iconStyle()==="drawn" && itemEmojiOn()) ? drawKey(nm) : null;
+      const em = dk ? illSVG(dk) : (e.emoji || (e.cat ? itemEmoji(nm, e.cat) : ""));
       return `<button class="pchip${e.kind==='recipe'?' recipe':''}" data-pchip="${esc(k)}|${esc(e.id)}">${(slotsOn && SLOT_LABEL[e.slot])?`<span class="pcslot">${SLOT_LABEL[e.slot]}</span>`:""}${em?`<span class="pcem" aria-hidden="true">${em}</span>`:""}<span class="pcname">${esc(cap(nm))}</span></button>`;
     }).join("");
     days.push(`<section class="planday${k===todayK?' today':''}">
@@ -5320,12 +5736,12 @@ function planDynHTML(){
   const q = String(isR ? (planAdd.q||"") : (planAdd.name||"")).trim().toLowerCase();
   const ms = q ? addMatches(q).slice(0,12) : [];
   const sug = ms.length ? `<div class="catsug">${ms.map(m=>{ const c=CAT(m.cat)||{color:"var(--line)"};
-      const em=itemEmoji(m.name,m.cat);
-      return `<button class="catsugchip" data-psug="${esc(m.name)}|${esc(m.cat)}" style="border-color:${c.color}">${em?em+" ":""}${esc(cap(m.name))}</button>`;
+      const em=itemIcon(m.name,m.cat);
+      return `<button class="catsugchip" data-psug="${esc(m.name)}|${esc(m.cat)}" style="border-color:${c.color}">${em?`<span class="pcem" aria-hidden="true" style="color:${c.color}">${em}</span> `:""}${esc(cap(m.name))}</button>`;
     }).join("")}</div>` : "";
   const chips = (isR && planAdd.ing.length)
     ? `<div class="pdchips" style="margin-top:10px">${planAdd.ing.map((x,i)=>{ const n=planIngNorm(x);
-        const em=itemEmoji(n.name,n.cat); const amt=showAmt(planIngAmt(x));
+        const em=itemIcon(n.name,n.cat); const amt=showAmt(planIngAmt(x));
         return `<button class="pchip" data-pingrm="${i}">${em?`<span class="pcem" aria-hidden="true">${em}</span>`:""}${amt?`<span class="pcamt">${esc(amt)}</span>`:""}<span class="pcname">${esc(cap(n.name))}</span><span class="pcx" aria-hidden="true">×</span></button>`;
       }).join("")}</div>` : "";
   return sug + chips;
@@ -6245,6 +6661,7 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-units]").forEach(b=>b.onclick=()=>setUnitsMode(b.dataset.optUnits));
   app.querySelectorAll("[data-opt-mealslots]").forEach(b=>b.onclick=()=>setMealSlots(b.dataset.optMealslots==="1"));
   app.querySelectorAll("[data-opt-catemoji]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optCatemoji==="1"; if(catEmojiOn()!==want) setCatEmoji(want); });
+  app.querySelectorAll("[data-opt-iconstyle]").forEach(b=>b.onclick=()=>{ if(iconStyle()!==b.dataset.optIconstyle) setIconStyle(b.dataset.optIconstyle); });
   app.querySelectorAll("[data-opt-itememoji]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optItememoji==="1"; if(itemEmojiOn()!==want) setItemEmoji(want); });
   app.querySelectorAll("[data-opt-useloc]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optUseloc==="1"; if(useLoc!==want){ useLoc=want; localStorage.setItem("ml_useloc", want?"1":"0"); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(want) ensureLocCheck(); render(); } });
   app.querySelectorAll("[data-opt-store]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optStore; if(storeSel!==v){ storeSel=v; localStorage.setItem("ml_store", v); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(v==="auto") ensureLocCheck(); render(); } });
@@ -6940,6 +7357,8 @@ function optionsBody(){
     ${colRow("Background", "opt-reghdbg", regHdBg, "reghdbg", {page:true})}
     ${colRow("Border", "opt-reghdbrd", regHdBrd, "reghdbrd", {page:true})}
     ${rowNL("Category icons", `<div class="seg"><button data-opt-catemoji="1" class="${catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">🥦</span>On</button><button data-opt-catemoji="0" class="${!catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
+    ${rowNL("Icon style", `<div class="seg"><button data-opt-iconstyle="drawn" class="${iconStyle()==='drawn'?'on':''}"><span class="tdswatch tdswatch-ico">${catMarkSVG("vegetable")}</span>Drawn</button><button data-opt-iconstyle="emoji" class="${iconStyle()==='emoji'?'on':''}">Emoji</button></div>`)}
+    <p class="hint" style="text-align:left;margin:0 0 12px">Drawn uses line drawings for items and the nine standard categories; categories you made keep their emoji.</p>
 
     ${sectHR("Tiles")}
     ${view!=="lists" ? `<div class="optrow optrow-wide optnl"><span class="optlabel">Tile display</span><div class="optwide">

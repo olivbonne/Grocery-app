@@ -39,7 +39,7 @@ const seed = (fill) => `(() => {
     buyAgain:[{name:"Coconut milk",cat:"asian",qty:1,weight:"",sub:"",ts:1}],
     baTomb:{}, stores:[], storeMeta:{}, members:["O"], categories:cats, name:"Groceries",
     baMeta:{label:"Buy again",emoji:"b",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[],saved:[]} }));
-  localStorage.setItem("ml_collapse_v101", JSON.stringify({cats:[],ba:false,regAll:true,regOpen:[]}));
+  localStorage.setItem("ml_collapse_v101", JSON.stringify({cats:[],ba:false,regAll:true,regOpen:["asian"],checked:true}));
   localStorage.setItem("ml_lists", JSON.stringify([{code:"v101",name:"Groceries"}]));
   localStorage.setItem("ml_lastlist","v101"); localStorage.setItem("ml_me","O");
   localStorage.setItem("ml_shop","1"); localStorage.setItem("ml_caton","1"); localStorage.setItem("ml_optcoll","[]");
@@ -97,6 +97,8 @@ const seed = (fill) => `(() => {
     ok('an item in a household-made category keeps an emoji fallback, not a blank', dog && dog.kind!=='ill' && dog.kind!=='cmark', JSON.stringify(dog));
     ok('the drawing takes the tile\'s meta colour', thigh && norm(thigh.iconColor)===norm(thigh.qtyColor), JSON.stringify({i:thigh.iconColor,q:thigh.qtyColor}));
     ok('its front shape is filled with the tile\'s own background', thigh && norm(thigh.frontFill)===norm(thigh.bg), JSON.stringify({f:thigh.frontFill,bg:thigh.bg}));
+    await page.evaluate(()=>{ const h=document.querySelector('#checkedHead'); if(h && !document.querySelector('.checkedscroll')) h.click(); });   // the cart drawer starts closed (v2.00)
+    await page.waitForTimeout(500);
     const sq = await pill('Squid');
     ok('…on a checked tile too', sq && sq.kind==='ill' && norm(sq.frontFill)===norm(sq.bg), JSON.stringify(sq && {f:sq.frontFill,bg:sq.bg}));
     const reg = await pill('Coconut milk');
@@ -122,10 +124,13 @@ const seed = (fill) => `(() => {
     await tap('#setNav, #setNavP, #setNavS'); await tap('[data-opt-iconstyle="drawn"]');
     await page.evaluate(()=>{ const b=document.querySelector('[data-opt-itememoji="0"]'); if(b) b.scrollIntoView(); });
     const hasItemToggle = await page.locator('[data-opt-itememoji="0"]').count();
-    if(hasItemToggle){ await page.locator('[data-opt-itememoji="0"]').first().click({force:true}); await page.waitForTimeout(500); }
+    /* TEST BUG, v2.04: a forced pointer click landed on whatever covered the row (the bottom bar), so the
+       setting never changed. The button's own click handler is the real control; dispatch it there. */
+    if(hasItemToggle){ await page.evaluate(()=>document.querySelector('[data-opt-itememoji="0"]').click()); await page.waitForTimeout(500); }
+    const itemKey = await page.evaluate(()=>localStorage.getItem('ml_emoji_item'));
     await tap('#cartNavP, #cartNav');
     const none = await pill('Chicken thigh');
-    ok('Item icons Off still means no icon at all', hasItemToggle===0 || (none && none.kind==='none'), JSON.stringify(none));
+    ok('Item icons Off still means no icon at all', hasItemToggle===0 || (none && none.kind==='none'), JSON.stringify({none, itemKey, hasItemToggle}));
 
     /* ── D. nothing drawn is ever saved ─────────────────────────────────── */
     await mk();
