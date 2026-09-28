@@ -217,13 +217,13 @@ const GOOD = { title:"Beef Goulash", servings:6, items:[
     await page.evaluate(()=>{ const b=document.querySelector('#paBg'); if(b) b.click(); });
     await page.waitForTimeout(600);
     const chip = page.locator('.pchip').filter({ hasText:'Goulash' }).first();
-    await chip.scrollIntoViewIfNeeded();
-    const bb = await chip.boundingBox();
-    await page.mouse.move(bb.x+bb.width/2, bb.y+bb.height/2);
-    await page.mouse.down(); await page.waitForTimeout(750); await page.mouse.up();
-    await page.waitForTimeout(800);
+    /* SUPERSEDED by v2.07: no press-and-hold any more — the editor is reached from the tap sheet
+       (Edit, then "Add from a link, a photo or text"). The guard below is unchanged. */
+    await chip.scrollIntoViewIfNeeded(); await chip.click(); await page.waitForTimeout(700);
+    await page.locator('#ppEdit').click(); await page.waitForTimeout(500);
+    await page.locator('#ppFull').click(); await page.waitForTimeout(800);
     s = await sheet();
-    ok('precondition: holding a recipe opens it for editing', s.open===true && s.ing.length===3, JSON.stringify(s.ing));
+    ok('precondition: the recipe opens for editing', s.open===true && s.ing.length===3, JSON.stringify(s.ing));
     /* SUPERSEDED by v1.89: editing now offers the same four ways in as adding — the user asked for it,
        and an import while editing appends to the recipe being edited rather than starting a new one.
        What must still NOT be offered while editing is the picker for a DIFFERENT saved recipe, which
