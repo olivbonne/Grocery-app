@@ -626,11 +626,25 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .presult .pres-s { font-size:11.5px; font-weight:700; color:var(--accent); }
   .presult .pres-n { font-size:12px; color:var(--muted2); line-height:1.35; }
   .precwrap { display:inline-flex; align-items:stretch; }
+  /* v2.03: the recipe sheet's "choose" step — saved recipes as full-width rows, quiet text buttons. */
+  .preclist{display:flex;flex-direction:column;gap:8px;margin:0 0 16px}
+  .precline{display:flex;gap:8px;align-items:stretch}
+  .precrow{flex:1;min-width:0;display:flex;align-items:center;gap:10px;min-height:48px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--card);color:var(--text);font-size:15px;font-weight:700;text-align:left}
+  .precrow .precname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .precrow svg{flex:none;color:var(--muted2)}
+  .palabelrow{display:flex;align-items:baseline;justify-content:space-between}
+  .patext{background:none;border:0;padding:6px 2px;color:var(--text);font-weight:700;font-size:14px}
+  .paback{width:34px;height:34px;border-radius:10px;border:1.5px solid var(--line);background:var(--card);color:var(--text);display:inline-flex;align-items:center;justify-content:center;margin-right:8px;vertical-align:middle}
   .precwrap .sugchip { border-top-right-radius:0; border-bottom-right-radius:0; }
   .precdel { flex:none; padding:0 10px; border:1.5px solid var(--line); border-left:none;
     border-top-right-radius:999px; border-bottom-right-radius:999px;
     background:var(--card); color:var(--muted2); font-weight:800; font-size:15px; line-height:1; }
   .precdel:active { color:var(--accent); }
+  /* v2.03: beside a recipe row (manage mode) the delete stands on its own, not glued to a chip. */
+  .precline .precdel { border-left:1.5px solid var(--line); border-radius:14px; }
+  .patext svg { vertical-align:-3px; }
+  /* v2.03: the ingredient Add sits beside a 46px box and matches it, rather than floating at half height. */
+  .pingrow .pimpgo { height:46px; align-self:center; }
   /* A19 AI-order note — visible in shop mode (unlike .hint) */
   .aihint { margin:0 0 10px; font-size:12px; font-weight:700; color:var(--muted); text-align:left; }
   /* B7 AI aisle-order proposal (accept/revert) */
@@ -1562,7 +1576,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.02";
+const APP_VERSION = "v2.03";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -5456,6 +5470,7 @@ async function planImport(payload){
   if(data && Number.isInteger(data.servings) && data.servings>0) planAdd.servings=data.servings;
   if(payload && typeof payload.url==="string" && /^https?:\/\//i.test(payload.url.trim())) planAdd.src=payload.url.trim();
   planAdd.imp=null; planAdd.impVal=""; planAdd.sres=null; planAdd.sq=""; planAdd.impErr="";
+  planAdd.step="form";   // v2.03: a successful import moves on to the check-and-add step
   render();
 }
 function planAddSheet(){
@@ -5465,9 +5480,16 @@ function planAddSheet(){
   const head = planAdd.edit ? "Edit recipe" : (isR ? "Add recipe" : "Add food");
   const fieldCSS = "width:100%;height:48px;padding:0 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:16px;box-sizing:border-box";
   const ingCSS   = "width:100%;height:46px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;background:var(--card);color:var(--text);font-size:16px;box-sizing:border-box";
-  return `<div class="sheet-bg kbpin" id="paBg"><div class="sheet" id="paSheet">
-    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${esc(head)}${planAdd.edit?"":` · ${esc(dayName)}`}</div>
-    ${isR ? `<p class="palabel">Start from</p>
+  /* v2.03: two steps. The one-screen sheet had eleven things on it — four import buttons, a search panel,
+     every saved recipe, the meal, the name, servings, ingredients and Add — and focused the name field on
+     open, so the keyboard came up over all of it. "choose" picks where the recipe comes from; "form" checks
+     it and adds it. Food and edit mode go straight to the form, as before. Nothing is focused on open. */
+  const step = (isR && !planAdd.edit) ? (planAdd.step || "choose") : "form";
+  const CHEV = pts => `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="${pts}"/></svg>`;
+  const title = `<div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${step==="form" && isR && !planAdd.edit ? `<button class="paback" id="paBack" aria-label="Back">${CHEV("10,3 5,8 10,13")}</button>` : ""}${esc(head)}${planAdd.edit?"":` · ${esc(dayName)}`}</div>`;
+  /* The ways in — shared by the choose step and by edit mode (v1.89: editing offers them too, and an
+     import while editing appends to the recipe being edited). */
+  const imports = `
       <div class="pimprow">
         <button class="pimp${planAdd.imp==='search'?' on':''}" data-pimp="search">${SEARCH_SVG}<span>Search</span></button>
         <button class="pimp${planAdd.imp==='link'?' on':''}" data-pimp="link">${LINK_SVG(16)}<span>A link</span></button>
@@ -5528,15 +5550,25 @@ function planAddSheet(){
           <textarea id="paImpVal" rows="5" placeholder="Paste the recipe here — ingredients and all" style="width:100%;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;background:var(--card);color:var(--text);font-size:15px;box-sizing:border-box;resize:none">${esc(planAdd.impVal||"")}</textarea>
           <button class="pimpgo wide" id="paImpGo"${planAdd.impBusy?" disabled":""}>Read it</button>
         </div>` : ""}
-      ` : ""}
-    ${/* v1.89: the picker stays out of edit mode on purpose — picking a different saved recipe while
-          editing one would silently change which recipe "Save recipe" then overwrites. */""}
-    ${/* v2.00 item 3c: one picker at a time. The saved strip is how you start from something you
-          already have, but once a search has answered, the answer is what the screen is for — two
-          lists of things-you-could-pick stacked on one screen is two decisions where there is one.
-          It comes back the moment the results are cleared. */""}
-    ${(isR && !planAdd.edit && saved.length && !(planAdd.sres && planAdd.sres.length)) ? `<p class="palabel">Your recipes</p>
-      <div class="pills" style="margin-bottom:14px">${saved.map(r=>`<span class="precwrap"><button class="sugchip" data-precipe="${esc(r.id)}">${esc(r.name)}</button><button class="precdel" data-precdel="${esc(r.id)}" aria-label="Delete ${esc(r.name)}">×</button></span>`).join("")}</div>` : ""}
+  `;
+  if(step==="choose"){
+    const shown = planAdd.allRecipes ? saved : saved.slice(0,6);
+    return `<div class="sheet-bg kbpin" id="paBg"><div class="sheet" id="paSheet">
+    ${title}
+    ${(!planAdd.imp && saved.length) ? `<div class="palabelrow"><p class="palabel">Your recipes</p><button class="patext" id="paManage">${planAdd.manage?"Done":"Edit"}</button></div>
+      <div class="preclist">${shown.map(r=>`<div class="precline"><button class="precrow" data-precipe="${esc(r.id)}"><span class="precname">${esc(r.name)}</span>${planAdd.manage?"":CHEV("6,3 11,8 6,13")}</button>${planAdd.manage?`<button class="precdel" data-precdel="${esc(r.id)}" aria-label="Delete ${esc(r.name)}">×</button>`:""}</div>`).join("")}</div>
+      ${(saved.length>6 && !planAdd.allRecipes) ? `<button class="patext" id="paAllRec" style="margin:-10px 0 12px">Show all ${saved.length} recipes</button>` : ""}` : ""}
+    ${planAdd.imp ? `<button class="patext" id="paBackChoose">${CHEV("10 4 6 8 10 12")} ${saved.length?"Back to your recipes":"Back"}</button>` : `<p class="palabel">New recipe</p>`}
+    ${imports}
+    ${planAdd.imp ? "" : `<button class="patext" id="paWrite" style="display:block;width:100%;text-align:center;margin-top:10px">Write it yourself</button>`}
+  </div></div>`;
+  }
+  let srcHost = "";
+  if(/^https?:\/\//i.test(planAdd.src||"")){ try{ srcHost = new URL(planAdd.src).hostname.replace(/^www\./,""); }catch(e){} }
+  return `<div class="sheet-bg kbpin" id="paBg"><div class="sheet" id="paSheet">
+    ${title}
+    ${planAdd.edit ? imports : ""}
+    ${(isR && srcHost) ? `<p class="pimpnote" style="margin:-6px 0 10px">From ${esc(srcHost)}</p>` : ""}
     ${mealSlotsOn() ? slotPicker("paslot", planAdd.slot||"") : ""}
     <input id="paName" placeholder="${isR?'Recipe name':'What are you eating?'}" value="${esc(planAdd.name||"")}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="${fieldCSS}" />
     ${(isR && !planAdd.edit) ? `<div class="servrow" style="margin:12px 0 0"><span class="servlbl">Serves</span>
@@ -5653,13 +5685,13 @@ function wirePlanTab(){
       if(longFired){
         const en=planEntries(day).find(x=>x.id===id);
         const r=en && en.kind==="recipe" ? recipeById(en.rid) : null;
-        if(r){ planAdd={ day, kind:"recipe", name:r.name, ing:(r.ing||[]).map(planIngNorm), rid:r.id, edit:true, src:r.src||"", steps:Array.isArray(r.steps)?r.steps.slice():[], servings:+r.servings||0, q:"", imp:null, impVal:"", impBusy:false, impErr:"", sq:"", sres:null, ssrc:"", sscope:"web", slot:"", serves:0 }; render(); return; }
+        if(r){ planAdd={ day, kind:"recipe", name:r.name, ing:(r.ing||[]).map(planIngNorm), rid:r.id, edit:true, step:"form", manage:false, allRecipes:false, src:r.src||"", steps:Array.isArray(r.steps)?r.steps.slice():[], servings:+r.servings||0, q:"", imp:null, impVal:"", impBusy:false, impErr:"", sq:"", sres:null, ssrc:"", sscope:"web", slot:"", serves:0 }; render(); return; }
       }
       planPick={day,id}; render(); };
   });
 
   const pmBg=app.querySelector("#pmBg"); if(pmBg) pmBg.onclick=e=>{ if(e.target===pmBg){ planMenu=null; render(); } };
-  const pmR=app.querySelector("#pmRecipe"); if(pmR) pmR.onclick=()=>{ planAdd={day:planMenu,kind:"recipe",name:"",ing:[],rid:"",edit:false,q:"",imp:null,impVal:"",impBusy:false,impErr:"",sq:"",sres:null,ssrc:"",sscope:"web",src:"",steps:[],servings:0,slot:mealSlotsOn()?"dinner":"",serves:0}; planMenu=null; render(); };
+  const pmR=app.querySelector("#pmRecipe"); if(pmR) pmR.onclick=()=>{ planAdd={day:planMenu,kind:"recipe",name:"",ing:[],rid:"",edit:false,step:"choose",manage:false,allRecipes:false,q:"",imp:null,impVal:"",impBusy:false,impErr:"",sq:"",sres:null,ssrc:"",sscope:"web",src:"",steps:[],servings:0,slot:mealSlotsOn()?"dinner":"",serves:0}; planMenu=null; render(); };
   const pmF=app.querySelector("#pmFood");   if(pmF) pmF.onclick=()=>{ planAdd={day:planMenu,kind:"food",name:"",ing:[],rid:"",edit:false,q:"",cat:"",emoji:"",slot:mealSlotsOn()?"dinner":""}; planMenu=null; render(); };
 
   const paBg=app.querySelector("#paBg"); if(paBg) paBg.onclick=e=>{ if(e.target===paBg){ planAdd=null; render(); } };
@@ -5669,7 +5701,8 @@ function wirePlanTab(){
     const cur=planAdd.serves||planAdd.servings||4;
     planAdd.serves=Math.max(1, Math.min(99, cur+(+b.dataset.paserv))); render(); });
   const paN=app.querySelector("#paName");
-  if(paN){ if(!planAdd.edit && !planAdd.name) paN.focus();
+  /* v2.03: only food focuses its name — a recipe sheet raised the keyboard over everything on open. */
+  if(paN){ if(planAdd.kind==="food" && !planAdd.edit && !planAdd.name) paN.focus();
     /* v1.45: a render tears a focused field out of the document and drops the keyboard, so typing only
        updates the draft and refreshes the ONE block that depends on it — never the page. */
     paN.oninput=()=>{ planAdd.name=paN.value; if(planAdd.kind!=="recipe") refreshPlanDyn(); };
@@ -5741,9 +5774,12 @@ function wirePlanTab(){
     b.onclick=()=>{ const r=recipeById(b.dataset.precipe); if(!r || !planAdd) return;
       planAdd.name=r.name; planAdd.rid=r.id; planAdd.ing=(r.ing||[]).map(planIngNorm); planAdd.q="";
       planAdd.src=r.src||""; planAdd.steps=Array.isArray(r.steps)?r.steps.slice():[]; planAdd.servings=+r.servings||0;   // v2.01
-      const n=document.querySelector("#paName"); if(n) n.value=r.name;
-      const ii=document.querySelector("#paIngIn"); if(ii) ii.value="";
-      refreshPlanDyn(); }; });
+      planAdd.step="form"; render(); }; });   // v2.03: the fields live on the form step
+  const paMg=app.querySelector("#paManage"); if(paMg) paMg.onclick=()=>{ if(!planAdd) return; planAdd.manage=!planAdd.manage; render(); };
+  const paAR=app.querySelector("#paAllRec"); if(paAR) paAR.onclick=()=>{ if(!planAdd) return; planAdd.allRecipes=true; render(); };
+  const paWr=app.querySelector("#paWrite"); if(paWr) paWr.onclick=()=>{ if(!planAdd) return; planAdd.step="form"; render(); };
+  const paBk=app.querySelector("#paBack"); if(paBk) paBk.onclick=()=>{ if(!planAdd) return; planAdd.step="choose"; render(); };
+  const paBC=app.querySelector("#paBackChoose"); if(paBC) paBC.onclick=()=>{ if(!planAdd) return; planAdd.imp=null; planAdd.sres=null; planAdd.impErr=""; render(); };
   app.querySelectorAll("[data-precdel]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
     b.onclick=()=>{ const id=b.dataset.precdel; const r=recipeById(id); if(!r) return;
       if(!confirm('Delete the recipe "'+r.name+'"?\n\nDays it is already on keep it.')) return;
@@ -5820,7 +5856,7 @@ function takeSharedRecipe(){
      and would have made this whole path untestable, since the suites run local-only by design. */
   if(!me) return;                  // not set up yet — there is nothing to import into
   optOpen=false; listsOpen=false; view="plan"; planWeek=0;
-  planAdd = { day:dayKey(new Date()), kind:"recipe", name:"", ing:[], rid:"", edit:false, q:"",
+  planAdd = { day:dayKey(new Date()), kind:"recipe", name:"", ing:[], rid:"", edit:false, step:"choose", manage:false, allRecipes:false, q:"",
               imp:"link", impVal:u, impBusy:false, impErr:"", sq:"", sres:null, ssrc:"", sscope:"web", src:"", steps:[], servings:0, slot:"", serves:0 };
   render();
   planImport({ url:u });

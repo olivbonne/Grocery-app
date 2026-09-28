@@ -100,6 +100,7 @@ const fmtDate = d => d.toLocaleDateString(undefined,{day:"numeric",month:"short"
     const more = page.locator('.planday').nth(dayIdx).locator('[data-pd]');
     await more.click(); await page.waitForTimeout(700);
     await tap(kind==='recipe' ? '#pmRecipe' : '#pmFood');
+    /* v2.03: Add recipe opens on a choice step; the form is one tap further ("Write it yourself"). */ if(kind==='recipe') await tap('#paWrite');
     await page.locator('#paName').fill(name);
     if(ing!==undefined){
       for(const one of String(ing).split(/[\n,]/).map(x=>x.trim()).filter(Boolean)){

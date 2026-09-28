@@ -184,7 +184,11 @@ const IMPORTED = { title:"Beef Goulash", servings:6, items:[
     await openRecipe(4);
     s = await sheet();
     ok('precondition: a saved recipe is offered', s.picks.some(p=>/Old Stew/.test(p)), JSON.stringify(s.picks));
-    ok('…and every saved recipe has a delete beside it', s.dels===s.picks.length && s.dels>0,
+    /* SUPERSEDED by v2.03: a delete beside every recipe was a × on every row of the first thing you
+       see. Deleting now sits behind "Edit". What this still protects: once asked for, every saved
+       recipe can be deleted, and none is left without the option. */
+    await tap('#paManage'); s = await sheet();
+    ok('…and, behind Edit, every saved recipe has a delete beside it', s.dels===s.picks.length && s.dels>0,
        JSON.stringify({dels:s.dels, picks:s.picks.length}));
 
     confirmAnswer=false; confirmSeen=null;
