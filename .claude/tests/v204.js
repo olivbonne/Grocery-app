@@ -35,7 +35,7 @@ const seed = (fill) => `(() => {
   const it=(id,n,c,q,w,ck)=>({id,name:n,cat:c,weight:w||"",qty:q||1,sub:"",checked:!!ck,tags:[],starred:false});
   localStorage.setItem("ml_cache_v101", JSON.stringify({
     items:[it("1","Chicken thigh","meat",2),it("2","Chicken stock","bulk"),it("3","Widget","meat"),
-           it("4","Kimchi","asian"),it("5","Dog food","pets"),it("6","Squid","meat",1,"",true)],
+           it("4","Kimchi","asian"),it("5","Dog food","pets"),it("6","Squid","meat",1,"",true),it("7","Aquarium gravel","pets")],
     buyAgain:[{name:"Coconut milk",cat:"asian",qty:1,weight:"",sub:"",ts:1}],
     baTomb:{}, stores:[], storeMeta:{}, members:["O"], categories:cats, name:"Groceries",
     baMeta:{label:"Buy again",emoji:"b",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[],saved:[]} }));
@@ -94,7 +94,11 @@ const seed = (fill) => `(() => {
        stock && stock.kind==='ill' && thigh && stock.front!==thigh.front, JSON.stringify({stock:stock&&stock.front, thigh:thigh&&thigh.front}));
     ok('an item with no drawing of its own shows its category\'s mark, never nothing', widget && widget.kind==='cmark', JSON.stringify(widget));
     ok('Kimchi has its own drawing', kimchi && kimchi.kind==='ill', JSON.stringify(kimchi));
-    ok('an item in a household-made category keeps an emoji fallback, not a blank', dog && dog.kind!=='ill' && dog.kind!=='cmark', JSON.stringify(dog));
+    /* SUPERSEDED by v2.06: the whole catalogue is drawn now, so "Dog food" has its own drawing. Still
+       protected: an item with NO drawing in a household-made category keeps an emoji fallback, not a blank. */
+    const gravel = await pill('Aquarium gravel');
+    ok('an item in a household-made category keeps an emoji fallback, not a blank', gravel && gravel.kind!=='ill' && gravel.kind!=='cmark' && gravel.text!=='', JSON.stringify(gravel));
+    ok('…while Dog food, now in the catalogue, is drawn (v2.06)', dog && dog.kind==='ill', JSON.stringify(dog));
     ok('the drawing takes the tile\'s meta colour', thigh && norm(thigh.iconColor)===norm(thigh.qtyColor), JSON.stringify({i:thigh.iconColor,q:thigh.qtyColor}));
     ok('its front shape is filled with the tile\'s own background', thigh && norm(thigh.frontFill)===norm(thigh.bg), JSON.stringify({f:thigh.frontFill,bg:thigh.bg}));
     await page.evaluate(()=>{ const h=document.querySelector('#checkedHead'); if(h && !document.querySelector('.checkedscroll')) h.click(); });   // the cart drawer starts closed (v2.00)

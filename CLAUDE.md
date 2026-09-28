@@ -29,7 +29,10 @@ Three serverless functions in `api/` (CommonJS, Vercel, `maxDuration` 60s in `ve
   get `CATMARK` line marks; items get `DRAWN` illustrations, 48×48 in three layers — back lines, a
   front shape filled with `--illbg` (the tile's own background, so it hides what is behind it) and
   detail lines. Name → drawing: `DRAW_EXACT`, then `DRAW_HINTS` (first match wins, so specific phrases
-  go first). Emoji remain the fallback (household-made categories) and the opt-out. `itemIcon()` is
+  go first). **A hint matches anywhere in the name, so a short stem hides inside longer words**
+  ("toilet" and "foil" contain "oil", "eggplant" contains "egg"). Those phrases sit at the START of
+  `DRAW_HINTS`, and new broad stems go at the END, where they can never change a Regular (v2.06,
+  guarded by `.claude/tests/v206.js`). Emoji remain the fallback (household-made categories) and the opt-out. `itemIcon()` is
   for DISPLAY and returns markup; anything that stores an icon keeps `itemEmoji()` — no SVG in state.
   The drawings are designed on the canvas listed in `docs/icon-catalogue.md`.
 - **Security:** every provider key — `GEMINI_API_KEY`, `GROQ_API_KEY`, `TAVILY_API_KEY`,
