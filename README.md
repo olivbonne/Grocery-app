@@ -113,6 +113,8 @@ The app has three tabs: **Plan · Shop · Settings**.
 
 **Settings** — Theme, text size and the measurement system (metric or imperial). The deeper
 customisation — colours, bars, tiles, layout — is folded away; tap a section to open it.
+**Export list as text**, at the bottom, saves or shares a `.txt` of the list, the cart and every
+Regular, grouped by category.
 
 ## Notes
 - Free tiers are generous; a household grocery list won't get close to any Firebase or Vercel limit.
