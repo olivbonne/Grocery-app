@@ -207,9 +207,13 @@ const IMPORTED = { title:"Beef Goulash", servings:6, items:[
 
     /* ── C. editing offers the same ways in ─────────────────────────────── */
     await mk();
-    await hold(page.locator('.pchip').filter({ hasText:'Old Stew' }).first());
+    /* SUPERSEDED by v2.07: the hold is gone; the editor is reached from the tap sheet (Edit, then
+       "Add from a link, a photo or text"). What this protects — editing offers the ways in — is unchanged. */
+    await page.locator('.pchip').filter({ hasText:'Old Stew' }).first().click(); await page.waitForTimeout(700);
+    await page.locator('#ppEdit').click(); await page.waitForTimeout(500);
+    await page.locator('#ppFull').click(); await page.waitForTimeout(800);
     s = await sheet();
-    ok('precondition: holding a recipe opens it for editing', /Edit recipe/.test(s.head||''), s.head);
+    ok('precondition: the recipe opens for editing', /Edit recipe/.test(s.head||''), s.head);
     ok('editing offers the same four ways in', s.imports.length===4, JSON.stringify(s.imports));
     ok('…but not the picker for a different recipe, which would change what you are saving over',
        s.picks.length===0, JSON.stringify(s.picks));

@@ -81,6 +81,12 @@ const SEED = (extra)=>`(() => {
     await page.mouse.move(b.x+b.width/2, b.y+b.height/2);
     await page.mouse.down(); await page.waitForTimeout(750); await page.mouse.up();
     await page.waitForTimeout(800); };
+  /* SUPERSEDED by v2.07: the press-and-hold on a planned recipe is gone (the household asked for one tap
+     that shows everything). The full editor these checks drive is now reached from that tap: the recipe
+     sheet's Edit, then "Add from a link, a photo or text". What they protect is unchanged — the editor
+     opens prefilled, saves over the recipe, and a rename follows it onto every day. */
+  const openEditor = async(loc)=>{ await loc.scrollIntoViewIfNeeded(); await loc.click(); await page.waitForTimeout(700);
+    await tap('#ppEdit'); await tap('#ppFull'); };
   const openDay = async(i, which, write=true)=>{ await page.locator('.planday').nth(i).locator('[data-pd]').click();
     await page.waitForTimeout(700); await tap(which==='recipe' ? '#pmRecipe' : '#pmFood');
     /* v2.03: Add recipe opens on a choice step; the form is one tap further ("Write it yourself"). */ if(which==='recipe' && write) await tap('#paWrite'); };
@@ -198,10 +204,10 @@ const SEED = (extra)=>`(() => {
     ok('…and only then does it land on the day', ((await dayChips(5))||[]).some(c=>/Bolognese/.test(c)),
        JSON.stringify(await dayChips(5)));
 
-    /* ── 7. press-and-hold edits the recipe ─────────────────────────────── */
-    await hold(page.locator('.planday').nth(3).locator('.pchip').first());
+    /* ── 7. the recipe opens for editing (a hold until v2.07, the tap sheet since) ── */
+    await openEditor(page.locator('.planday').nth(3).locator('.pchip').first());
     s = await addSheet();
-    ok('holding a recipe opens the recipe itself', s.open===true && /Edit recipe/.test(s.head||''), s.head);
+    ok('a planned recipe opens the recipe itself for editing', s.open===true && /Edit recipe/.test(s.head||''), s.head);
     ok('…prefilled with its name and ingredients', s.name==='Bolognese' && s.ing.length===2, JSON.stringify({n:s.name,i:s.ing}));
     ok('…and the button saves rather than adds', /Save/i.test(s.go||''), s.go);
     ok('…and it does not offer to pick a different recipe while editing one', s.picks.length===0, JSON.stringify(s.picks));
@@ -250,7 +256,7 @@ const SEED = (extra)=>`(() => {
     ok('a recipe saved with plain-string ingredients still opens', s.name==='Old stew' && s.ing.length===2, JSON.stringify(s));
     await tap('#paGo');
     ok('…and still adds', ((await dayChips(0))||[]).some(c=>/Old stew/.test(c)), JSON.stringify(await dayChips(0)));
-    await hold(page.locator('.planday').nth(0).locator('.pchip').first());
+    await openEditor(page.locator('.planday').nth(0).locator('.pchip').first());
     s = await addSheet();
     ok('…and still edits', /Edit recipe/.test(s.head||'') && s.ing.length===2, JSON.stringify({h:s.head,i:s.ing}));
     await page.evaluate(()=>{ const b=document.querySelector('#paBg'); if(b) b.click(); });
