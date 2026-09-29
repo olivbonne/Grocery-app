@@ -191,6 +191,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     display:flex; align-items:center; justify-content:center; }
   .smartbtn:active{ transform:scale(0.96); }
   .smartchips{ display:flex; flex-direction:column; gap:8px; }
+  .smartchips .recgroup{margin:8px 2px 2px}   /* v2.08 */
   .smartchip{ border-radius:13px; background:var(--card); border:1px solid var(--line); overflow:hidden; }
   .smartchip.open{ border-color:var(--ink); }
   .smartchip-top{ display:flex; align-items:center; gap:8px; padding:9px 10px 9px 12px; }
@@ -635,6 +636,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .precrow{flex:1;min-width:0;display:flex;align-items:center;gap:10px;min-height:48px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--card);color:var(--text);font-size:15px;font-weight:700;text-align:left}
   .precrow .precname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .precrow svg{flex:none;color:var(--muted2)}
+  .precedit{flex:none;color:var(--muted2);font-size:13px;font-weight:700}
   .palabelrow{display:flex;align-items:baseline;justify-content:space-between}
   /* v2.05: "Your recipes" fold + sort. The sort's on-state is outlined like .slotseg — no accent on the choose step. */
   #paRecToggle{display:inline-flex;align-items:center;gap:6px;background:none;border:0;padding:4px 0;color:var(--text);font-weight:800;font-size:14px}
@@ -810,10 +812,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   a.optaction { display:flex; align-items:center; justify-content:center; gap:8px; box-sizing:border-box; text-decoration:none; }
   .ppserves-note { margin:-6px 2px 12px; font-size:12px; color:var(--muted2); font-weight:600; }
   /* v2.07: the recipe sheet — where it came from, and its ingredients, read or edited in place */
-  .ppsrc{display:flex;align-items:center;gap:8px;text-decoration:none;text-align:left}
-  .ppsrc .ppsrchost{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .ppsrc .ppsrcgo{flex:none;color:var(--muted2);font-size:13px}
-  .ppinghead{align-items:center;margin:14px 0 8px}
+  .ppsrc{display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+  .ppsrcname{margin:5px 2px 2px;text-align:center;font-size:12px;color:var(--muted2);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ppingpanel{margin:8px 0 2px}
   .ppings{list-style:none;margin:0 0 6px;padding:0}
   .pping{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line);font-size:15px;font-weight:600;color:var(--text)}
   .pping:last-child{border-bottom:0}
@@ -821,13 +822,6 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .ppingico .ill, .ppingico .cmark{width:24px;height:24px}
   .ppingname{flex:1;min-width:0;overflow-wrap:anywhere}
   .ppingamt{flex:none;color:var(--muted);font-weight:700;font-size:13px}
-  .ppingrow{display:flex;gap:6px;margin:0 0 6px}
-  .ppingrow input{height:44px;padding:0 12px;border-radius:12px;border:1.5px solid var(--line);outline:none;background:var(--card);color:var(--text);font-size:16px;box-sizing:border-box;min-width:0}
-  .ppingrow input[data-ppingname]{flex:1}
-  .ppingrow input[data-ppingamt]{flex:0 0 92px}
-  .ppingdel{flex:none;width:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--muted2);font-weight:800;font-size:17px}
-  .ppedbtns{display:flex;gap:8px;margin-top:12px}
-  .ppedbtns .optaction, .ppedbtns .newlist{margin-top:0;flex:1}
   .qmore { margin-left:6px; width:22px; height:22px; flex:none; border-radius:7px; display:inline-flex; align-items:center; justify-content:center;
     color:var(--muted); font-size:13px; font-weight:800; background:var(--chip); transition:transform .15s ease; }
   .qmore.open { transform:rotate(180deg); color:var(--on-accent); background:var(--accent); }
@@ -1315,9 +1309,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v2.04: drawn marks. Stroke width is in screen pixels (non-scaling), so a 48-unit drawing at 20px
      keeps a 1.4px line instead of shrinking to a hairline. */
   .ill, .cmark { width:1.3em; height:1.3em; display:block; overflow:visible; }
-  .ill path, .cmark path { fill:none; stroke:currentColor; stroke-width:1.4px; stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
+  .ill path, .cmark path { fill:none; stroke:currentColor; stroke-width:calc(1.4px * var(--linek,1) / var(--illzoom,1)); stroke-linecap:round; stroke-linejoin:round; vector-effect:non-scaling-stroke; }
   .ill .if { fill:var(--illbg, var(--card)); }
-  .cmark path { stroke-width:1.7px; }
+  .cmark path { stroke-width:calc(1.7px * var(--linek,1) / var(--illzoom,1)); }
+  /* v2.08: Line weight (Settings). --linek scales every drawn line; --illzoom undoes the icon-size zoom so
+     a bigger icon keeps the same line instead of a bolder one (zoom multiplies even a non-scaling stroke). */
+  html[data-linew="fine"]{--linek:.6} html[data-linew="thin"]{--linek:.8} html[data-linew="bold"]{--linek:1.35}
   .cdraw { display:inline-flex; align-items:center; justify-content:center; }
   .cdraw .cmark { width:100%; height:100%; }
   .pemoji .ill, .pemoji .cmark { width:1.35em; height:1.35em; }
@@ -1329,9 +1326,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .addrow .pemoji { font-size:17px; }
   /* v2.07: Icon size (Settings › Tiles). zoom scales the icon's own box, so the tile makes room for it —
      emoji and drawings alike, in every tile layout. */
-  html[data-icosize="m"] .shop .zoomer .pill .pemoji { zoom:1.3; }
-  html[data-icosize="l"] .shop .zoomer .pill .pemoji { zoom:1.7; margin:0; }
-  html[data-icosize="xl"] .shop .zoomer .pill .pemoji { zoom:2.2; margin:0; }
+  html[data-icosize="m"] .shop .zoomer .pill .pemoji { zoom:1.3; --illzoom:1.3; }
+  html[data-icosize="l"] .shop .zoomer .pill .pemoji { zoom:1.7; --illzoom:1.7; margin:0; }
+  html[data-icosize="xl"] .shop .zoomer .pill .pemoji { zoom:2.2; --illzoom:2.2; margin:0; }
   /* …and at L and XL a row tile stacks: the icon on top, the name and amount centred under it, so the
      text is not squeezed beside an icon twice its height. */
   html[data-icosize="l"] .shop .zoomer .pill, html[data-icosize="xl"] .shop .zoomer .pill,
@@ -1634,7 +1631,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.07";
+const APP_VERSION = "v2.08";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2410,7 +2407,7 @@ function applyTheme(){ const t = THEMES[theme] || THEMES.light;
        with the Settings swatches, so it must mean the same thing in both places. */
     (typeof wall!=="undefined" && wall && isTintWall(wall)) ? "luminosity, normal" : "normal");
   if(typeof fill!=="undefined") applyFill();
-  applyIcoSize(); }
+  applyIcoSize(); applyLineW(); }
 function setTheme(v){ if(!THEMES[v]) return; theme = v; localStorage.setItem("ml_theme", theme); applyTheme(); render(); }
 function toggleTheme(){ setTheme(theme==="dark" ? "light" : "dark"); }   // kept for back-compat
 /* v1.41 item 2: three looks now — full (solid category colour), accent (transparent + coloured left
@@ -2434,6 +2431,11 @@ function setFill(m){ fill=m; localStorage.setItem("ml_fill", m); applyFill(); re
 function icoSize(){ try{ const v=localStorage.getItem("ml_icosize"); return /^(s|m|l|xl)$/.test(v||"") ? v : "s"; }catch(e){ return "s"; } }
 function applyIcoSize(){ try{ document.documentElement.setAttribute("data-icosize", icoSize()); }catch(e){} }
 function setIcoSize(v){ try{ localStorage.setItem("ml_icosize", /^(s|m|l|xl)$/.test(v||"") ? v : "s"); }catch(e){} applyIcoSize(); render(); }
+/* v2.08: how heavy the drawn lines are — fine, thin, regular (the v2.04 weight) or bold. A LOOK, like the
+   icon size, so it is deliberately NOT in APP_EXCLUDE. */
+function lineW(){ try{ const v=localStorage.getItem("ml_linew"); return /^(fine|thin|regular|bold)$/.test(v||"") ? v : "regular"; }catch(e){ return "regular"; } }
+function applyLineW(){ try{ document.documentElement.setAttribute("data-linew", lineW()); }catch(e){} }
+function setLineW(v){ try{ localStorage.setItem("ml_linew", /^(fine|thin|regular|bold)$/.test(v||"") ? v : "regular"); }catch(e){} applyLineW(); render(); }
 // v1.23 wallpaper — "" (none, default) or wall-1..wall-4, applied as a fixed full-screen backdrop via applyTheme()
 let wall = localStorage.getItem("ml_wall") || "";
 /* v1.67 item 2: the red wallpaper is retired. Custom colours exist now, so rather than dropping
@@ -5839,11 +5841,6 @@ function setIngSort(v){ try{ localStorage.setItem("ml_ingsort", v==="cat"?"cat":
 function ingCatId(x){ const allowed=catList().map(c=>c.id), n=planIngNorm(x);
   if(allowed.includes(n.cat)) return n.cat;
   const k=knownEntry(n.name); return (k && allowed.includes(k.cat)) ? k.cat : "others"; }
-/* v2.07: the amount box reads back the way planIngAmt writes it — "3×" or "3" is a count, anything else
-   ("500 g", "a pinch") is kept as the amount's own words. */
-function ingAmtParse(t){ const s=String(t||"").trim(); if(!s) return { qty:1, weight:"" };
-  const m=s.match(/^(\d{1,2})\s*[×x]?$/); if(m){ const n=parseInt(m[1],10); if(n>=1 && n<=99) return { qty:n, weight:"" }; }
-  return { qty:1, weight:s.slice(0,24) }; }
 function planUpdateEntry(k, id, patch){ const P=planData(); P.days=Object.assign({},P.days);
   P.days[k]=(P.days[k]||[]).map(x=>x.id===id?Object.assign({},x,patch):x); writePlan(P); }
 function planIngNorm(x){
@@ -6203,7 +6200,7 @@ function planAddSheet(){
     const byName = (a,b)=>String(a.name||"").localeCompare(String(b.name||""),undefined,{sensitivity:"base"});
     const sorted = saved.slice().sort(byName);
     const shown = planAdd.allRecipes ? sorted : sorted.slice(0,6);
-    const recRow = r=>`<div class="precline"><button class="precrow" data-precipe="${esc(r.id)}"><span class="precname">${esc(r.name)}</span>${planAdd.manage?"":CHEV("6,3 11,8 6,13")}</button>${planAdd.manage?`<button class="precdel" data-precdel="${esc(r.id)}" aria-label="Delete ${esc(r.name)}">×</button>`:""}</div>`;
+    const recRow = r=>`<div class="precline"><button class="precrow" data-precipe="${esc(r.id)}"><span class="precname">${esc(r.name)}</span>${planAdd.manage?`<span class="precedit">Edit</span>`:CHEV("6,3 11,8 6,13")}</button>${planAdd.manage?`<button class="precdel" data-precdel="${esc(r.id)}" aria-label="Delete ${esc(r.name)}">×</button>`:""}</div>`;
     const recBody = rSort==="course"
       ? COURSES.map(([k,l])=>{ const g=sorted.filter(r=>recipeCourse(r)===k); return g.length ? `<p class="palabel recgroup">${esc(l)} · ${g.length}</p><div class="preclist">${g.map(recRow).join("")}</div>` : ""; }).join("")
       : `<div class="preclist">${shown.map(recRow).join("")}</div>
@@ -6256,32 +6253,20 @@ function planPickSheet(){
   let host = ""; if(src){ try{ host = new URL(src).hostname.replace(/^www\./,""); }catch(err){} }
   const steps = (r && Array.isArray(r.steps)) ? r.steps.filter(x=>String(x||"").trim()) : [];
   const ns = steps.length;
-  const inCSS = "width:100%;height:46px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;background:var(--card);color:var(--text);font-size:16px;box-sizing:border-box";
-  /* v2.07: editing happens in this sheet — the name and the ingredients, one row each, saved together. */
-  if(r && planPick.edit){ const ed = planPick.edit;
-    return `<div class="sheet-bg kbpin" id="ppBg"><div class="sheet" id="ppSheet">
-    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">Edit recipe</div>
-    <input id="ppName" value="${esc(ed.name||"")}" placeholder="Recipe name" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="${inCSS};border:2px solid var(--ink)" />
-    <p class="palabel" style="margin-top:14px">Ingredients · ${ed.ing.length}</p>
-    <div class="ppinged">${ed.ing.map((x,i)=>`<div class="ppingrow"><input data-ppingname="${i}" value="${esc(x.name||"")}" placeholder="Ingredient" aria-label="Ingredient ${i+1}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" /><input data-ppingamt="${i}" value="${esc(x.amt||"")}" placeholder="Amount" aria-label="Amount for ingredient ${i+1}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" /><button class="ppingdel" data-ppingdel="${i}" aria-label="Remove ${esc(x.name||"this ingredient")}">×</button></div>`).join("")}</div>
-    <div class="pingrow"><input id="ppIngIn" placeholder="Add an ingredient — “2 lb beef”" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="${inCSS}" /><button class="pimpgo" id="ppIngAdd" aria-label="Add this ingredient">Add</button></div>
-    <div class="ppedbtns"><button class="optaction" id="ppCancel">Cancel</button><button class="newlist" id="ppSave">Save</button></div>
-    <button class="patext" id="ppFull" style="display:block;width:100%;text-align:center;margin-top:8px">Add from a link, a photo or text</button>
-  </div></div>`; }
+  /* v2.08: the ingredients fold behind their own button, under Method, and there is no Edit here any
+     more (the household's call). The order choice stays inside the fold. */
   let ingHTML = "";
-  if(r){
+  if(r && n){
     const list = (r.ing||[]).map(planIngNorm);
     const li = x=>{ const cid=ingCatId(x), c=CAT(cid)||{}; const em=itemIcon(x.name, cid); const amt=showAmt(planIngAmt(x));
       return `<li class="pping">${em?`<span class="ppingico" aria-hidden="true" style="color:${c.color||"inherit"}">${em}</span>`:""}<span class="ppingname">${esc(cap(x.name))}</span>${amt?`<span class="ppingamt">${esc(amt)}</span>`:""}</li>`; };
     const ids = catList().map(c=>c.id);
-    const body = !n ? `<p class="pimpnote">No ingredients yet — tap Edit to add them.</p>`
-      : ingSort()==="cat"
+    const body = ingSort()==="cat"
         ? catList().map(c=>{ const g=list.filter(x=>ingCatId(x)===c.id); return g.length ? `<p class="palabel recgroup">${esc(c.label)} · ${g.length}</p><ul class="ppings">${g.map(li).join("")}</ul>` : ""; }).join("")
           + (()=>{ const g=list.filter(x=>!ids.includes(ingCatId(x))); return g.length ? `<p class="palabel recgroup">Others · ${g.length}</p><ul class="ppings">${g.map(li).join("")}</ul>` : ""; })()
         : `<ul class="ppings">${list.map(li).join("")}</ul>`;
-    ingHTML = `<div class="palabelrow ppinghead"><span class="palabel" style="margin:0">Ingredients · ${n}</span><button class="patext" id="ppEdit">Edit</button></div>
-      ${n>1 ? `<div class="recsort" role="group" aria-label="Order ingredients"><button data-ppingsort="recipe" class="${ingSort()==='recipe'?'on':''}" aria-pressed="${ingSort()==='recipe'?'true':'false'}">Recipe order</button><button data-ppingsort="cat" class="${ingSort()==='cat'?'on':''}" aria-pressed="${ingSort()==='cat'?'true':'false'}">Category</button></div>` : ""}
-      ${body}`;
+    ingHTML = `<button class="optaction" id="ppIng" aria-expanded="${planPick.ing?'true':'false'}">Ingredients · ${n}</button>
+      ${planPick.ing ? `<div class="ppingpanel">${n>1 ? `<div class="recsort" role="group" aria-label="Order ingredients"><button data-ppingsort="recipe" class="${ingSort()==='recipe'?'on':''}" aria-pressed="${ingSort()==='recipe'?'true':'false'}">Recipe order</button><button data-ppingsort="cat" class="${ingSort()==='cat'?'on':''}" aria-pressed="${ingSort()==='cat'?'true':'false'}">Category</button></div>` : ""}${body}</div>` : ""}`;
   }
   return `<div class="sheet-bg" id="ppBg"><div class="sheet" id="ppSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${e.emoji?esc(e.emoji)+" ":""}${esc(r ? (r.name||e.name) : e.name)}</div>
@@ -6290,11 +6275,11 @@ function planPickSheet(){
     ${r ? `<div class="servrow"><span class="servlbl">Serves</span>
       <div class="qstep2"><button data-ppserv="-1" aria-label="Fewer servings">−</button><span>${e.serves||r.servings||4}</span><button data-ppserv="1" aria-label="More servings">+</button></div></div>
     <div class="ppserves-note">as written it serves ${esc(String(r.servings||4))}</div>` : ""}
-    ${src ? `<a class="optaction ppsrc" href="${esc(src)}" target="_blank" rel="noopener noreferrer">${GLOBE_SVG(16)}<span class="ppsrchost">From ${esc(host||"the web")}</span><span class="ppsrcgo">Open</span></a>` : ""}
+    ${src ? `<a class="optaction ppsrc" href="${esc(src)}" target="_blank" rel="noopener noreferrer">${GLOBE_SVG(16)}<span>Open link</span></a><div class="ppsrcname">${esc(host||src)}</div>` : ""}
     ${ns ? `<button class="optaction" id="ppMethod" aria-expanded="${planPick.method?'true':'false'}">Method · ${ns} step${ns===1?"":"s"}</button>
       ${planPick.method ? `<ol class="ppsteps">${steps.map(x=>`<li>${esc(String(x))}</li>`).join("")}</ol>` : ""}` : ""}
     ${ingHTML}
-    ${r && n ? `<button class="optaction" id="ppList">Review ${n} ingredient${n===1?"":"s"}</button>`
+    ${r && n ? `<button class="optaction" id="ppList">Add to shopping list</button>`
              : `<button class="optaction" id="ppList">Add to the shopping list</button>`}
     <button class="optaction" id="ppDel" style="border-color:#C24A33;color:#C24A33">Remove from this day</button>
   </div></div>`;
@@ -6452,6 +6437,9 @@ function wirePlanTab(){
      keyboard survives. */
   app.querySelectorAll("[data-precipe]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
     b.onclick=()=>{ const r=recipeById(b.dataset.precipe); if(!r || !planAdd) return;
+      /* v2.08: in Edit mode a tap opens the recipe itself for editing — the v1.89 editor, which the plan
+         sheet's hold (v1.84) and then its Edit (v2.07) used to open. */
+      if(planAdd.manage){ planAdd={ day:planAdd.day, kind:"recipe", name:r.name, ing:(r.ing||[]).map(planIngNorm), rid:r.id, edit:true, step:"form", manage:false, allRecipes:false, src:r.src||"", steps:Array.isArray(r.steps)?r.steps.slice():[], servings:+r.servings||0, q:"", imp:null, impVal:"", impBusy:false, impErr:"", sq:"", sres:null, ssrc:"", sscope:"web", slot:"", serves:0, course:r.course||"" }; render(); return; }
       planAdd.name=r.name; planAdd.rid=r.id; planAdd.ing=(r.ing||[]).map(planIngNorm); planAdd.q="";
       planAdd.src=r.src||""; planAdd.steps=Array.isArray(r.steps)?r.steps.slice():[]; planAdd.servings=+r.servings||0;   // v2.01
       planAdd.course=r.course||"";   // v2.05
@@ -6472,35 +6460,13 @@ function wirePlanTab(){
 
   const ppBg=app.querySelector("#ppBg"); if(ppBg) ppBg.onclick=e=>{ if(e.target===ppBg){ planPick=null; render(); } };
   const ppM=app.querySelector("#ppMethod"); if(ppM) ppM.onclick=()=>{ if(!planPick) return; planPick.method=!planPick.method; render(); };
-  /* v2.07: the recipe sheet — course, ingredient order, and editing in place. */
+  const ppI=app.querySelector("#ppIng"); if(ppI) ppI.onclick=()=>{ if(!planPick) return; planPick.ing=!planPick.ing; render(); };   // v2.08
+  /* v2.07: the recipe sheet — course and ingredient order. (v2.08: no editing here; see [data-precipe].) */
   const ppRecipe=()=>{ if(!planPick) return null; const e=planEntries(planPick.day).find(x=>x.id===planPick.id);
     return (e && e.kind==="recipe") ? recipeById(e.rid) : null; };
   app.querySelectorAll("[data-ppcourse]").forEach(b=>b.onclick=()=>{ const r=ppRecipe(); if(!r) return;
     planSaveRecipe(Object.assign({}, r, { course:b.dataset.ppcourse })); render(); });   // Object.assign keeps every other field (the fixed-shape trap)
   app.querySelectorAll("[data-ppingsort]").forEach(b=>b.onclick=()=>{ setIngSort(b.dataset.ppingsort); render(); });
-  const ppE=app.querySelector("#ppEdit"); if(ppE) ppE.onclick=()=>{ const r=ppRecipe(); if(!r) return;
-    planPick.edit={ name:r.name||"", ing:(r.ing||[]).map(planIngNorm).map(x=>({ name:x.name, n0:x.name, cat:x.cat, amt:planIngAmt(x) })) }; render(); };
-  const ppN=app.querySelector("#ppName"); if(ppN) ppN.oninput=()=>{ if(planPick && planPick.edit) planPick.edit.name=ppN.value; };
-  app.querySelectorAll("[data-ppingname]").forEach(i=>i.oninput=()=>{ const o=planPick && planPick.edit && planPick.edit.ing[+i.dataset.ppingname]; if(o) o.name=i.value; });
-  app.querySelectorAll("[data-ppingamt]").forEach(i=>i.oninput=()=>{ const o=planPick && planPick.edit && planPick.edit.ing[+i.dataset.ppingamt]; if(o) o.amt=i.value; });
-  app.querySelectorAll("[data-ppingdel]").forEach(b=>b.onclick=()=>{ if(!planPick || !planPick.edit) return; planPick.edit.ing.splice(+b.dataset.ppingdel,1); render(); });
-  const ppTake=()=>{ const ii=document.querySelector("#ppIngIn"); if(!ii || !planPick || !planPick.edit) return false;
-    const x=planIngFromText(ii.value); if(!x) return false;
-    planPick.edit.ing.push({ name:x.name, n0:"", cat:"", amt:planIngAmt(x) }); return true; };
-  const ppIA=app.querySelector("#ppIngAdd"); if(ppIA) ppIA.onclick=()=>{ if(ppTake()){ render(); const ii=document.querySelector("#ppIngIn"); if(ii) ii.focus(); } };
-  const ppII=app.querySelector("#ppIngIn"); if(ppII) ppII.onkeydown=ev=>{ if(ev.key==="Enter"){ ev.preventDefault(); if(ppTake()){ render(); const ii=document.querySelector("#ppIngIn"); if(ii) ii.focus(); } } };
-  const ppC=app.querySelector("#ppCancel"); if(ppC) ppC.onclick=()=>{ if(planPick){ planPick.edit=null; render(); } };
-  const ppS=app.querySelector("#ppSave"); if(ppS) ppS.onclick=()=>{ const r=ppRecipe(); if(!r || !planPick.edit){ if(planPick) planPick.edit=null; render(); return; }
-    ppTake();   // a line typed in the add box but not yet added is kept, not lost
-    /* a renamed ingredient loses its old category — "beef" renamed to "carrot" is not meat any more */
-    const ing=planPick.edit.ing.filter(o=>String(o.name||"").trim()).map(o=>{ const a=ingAmtParse(o.amt), nm=String(o.name).trim();
-      return planIngNorm({ name:nm, cat: nm.toLowerCase()===String(o.n0||"").trim().toLowerCase() ? (o.cat||"") : "", qty:a.qty, weight:a.weight }); });
-    planSaveRecipe(Object.assign({}, r, { name:String(planPick.edit.name||"").trim() || r.name, ing }));
-    planPick.edit=null; render(); showToast("Recipe saved"); };
-  /* the v1.89 full editor stays one step away, for importing into a recipe that already exists */
-  const ppF=app.querySelector("#ppFull"); if(ppF) ppF.onclick=()=>{ const r=ppRecipe(); if(!r) return; const day=planPick.day;
-    planPick=null;
-    planAdd={ day, kind:"recipe", name:r.name, ing:(r.ing||[]).map(planIngNorm), rid:r.id, edit:true, step:"form", manage:false, allRecipes:false, src:r.src||"", steps:Array.isArray(r.steps)?r.steps.slice():[], servings:+r.servings||0, q:"", imp:null, impVal:"", impBusy:false, impErr:"", sq:"", sres:null, ssrc:"", sscope:"web", slot:"", serves:0, course:r.course||"" }; render(); };
   app.querySelectorAll("[data-ppslot]").forEach(b=>b.onclick=()=>{ if(!planPick) return;
     const e=planEntries(planPick.day).find(x=>x.id===planPick.id); if(!e) return; const k=b.dataset.ppslot;
     planUpdateEntry(planPick.day, planPick.id, { slot: e.slot===k ? "" : k }); render(); });
@@ -6962,6 +6928,7 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-iconstyle]").forEach(b=>b.onclick=()=>{ if(iconStyle()!==b.dataset.optIconstyle) setIconStyle(b.dataset.optIconstyle); });
   app.querySelectorAll("[data-opt-itememoji]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optItememoji==="1"; if(itemEmojiOn()!==want) setItemEmoji(want); });
   app.querySelectorAll("[data-opt-icosize]").forEach(b=>b.onclick=()=>{ if(icoSize()!==b.dataset.optIcosize) setIcoSize(b.dataset.optIcosize); });
+  app.querySelectorAll("[data-opt-linew]").forEach(b=>b.onclick=()=>{ if(lineW()!==b.dataset.optLinew) setLineW(b.dataset.optLinew); });
   app.querySelectorAll("[data-opt-useloc]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optUseloc==="1"; if(useLoc!==want){ useLoc=want; localStorage.setItem("ml_useloc", want?"1":"0"); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(want) ensureLocCheck(); render(); } });
   app.querySelectorAll("[data-opt-store]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optStore; if(storeSel!==v){ storeSel=v; localStorage.setItem("ml_store", v); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(v==="auto") ensureLocCheck(); render(); } });
   const sadd=app.querySelector("[data-store-add]"); if(sadd) sadd.onclick=()=>{ const id="c"+uid().slice(0,6); state.stores=state.stores||[]; state.stores.push({id,name:"New store",aisles:[]}); storeSel=id; localStorage.setItem("ml_store", id); save(); render(); };
@@ -7098,6 +7065,7 @@ function wireSmartSheet(){
   app.querySelectorAll("[data-smart-addcat]").forEach(b=>{ b.onclick=()=>{ const it=smartItems[+b.dataset.smartAddcat]; if(!it) return; const nm=prompt("New category name:",""); if(nm&&nm.trim()){ const id=makeCategory(nm); if(id){ it.category=id; it.sub=""; render(); } } }; });
   app.querySelectorAll("[data-smart-addsub]").forEach(b=>{ b.onclick=()=>{ const it=smartItems[+b.dataset.smartAddsub]; if(!it) return; const nm=prompt("New subcategory name:",""); if(nm&&nm.trim()){ const id=makeSub(it.category,nm); if(id){ it.sub=id; render(); } } }; });
   app.querySelectorAll("[data-smart-wt]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartWt.split("|"); const i=+p[0], w=p[1]||""; const it=smartItems[i]; if(it){ it.weight = (it.weight===w ? "" : w); render(); } }; });
+  app.querySelectorAll("[data-smartsort]").forEach(b=>b.onclick=()=>{ setIngSort(b.dataset.smartsort); render(); });   // v2.08
 }
 function smartSheet(){
   let inner;
@@ -7109,7 +7077,7 @@ function smartSheet(){
   } else {
     const n=smartItems.length;
     const WOPTS=["","100g","200g","300g","500g","750g","1kg","2kg","5kg"];
-    const chips=smartItems.map((it,idx)=>{ const c=CAT(it.category); const open=smartEdit===idx;
+    const chipOf=(it,idx)=>{ const c=CAT(it.category); const open=smartEdit===idx;
       const have=state.items.some(i=>!i.checked && (i.name||"").toLowerCase()===it.name.toLowerCase());
       const subs=(c.subs&&c.subs.length)?c.subs:[];
       const editor = open ? `<div class="smartedit">
@@ -7139,7 +7107,19 @@ function smartSheet(){
           </button>
           <button class="smartcheck ${it.sel===false?'':'on'}" data-smart-sel="${idx}" role="checkbox" aria-checked="${it.sel===false?'false':'true'}" aria-label="${it.sel===false?'Add':'Do not add'} ${esc(cap(it.name))}">✓</button>
         </div>${editor}
-      </div>`; }).join("");
+      </div>`; };
+    /* v2.08: a review that came from a recipe (or the week) can be read in recipe order or grouped by
+       category — the same ml_ingsort choice as the recipe sheet. Only the DISPLAY order changes: every
+       row keeps its own index, so select/edit still act on the right item. */
+    const fromRecipe = !!smartServings || !!smartTitle;
+    const byCat = fromRecipe && n>1 && ingSort()==="cat";
+    let chips;
+    if(byCat){ const ids=catList().map(c=>c.id);
+      const groups=ids.concat([...new Set(smartItems.map(it=>it.category))].filter(id=>!ids.includes(id)));
+      chips=groups.map(id=>{ const g=smartItems.map((it,idx)=>[it,idx]).filter(([it])=>it.category===id); if(!g.length) return "";
+        const c=CAT(id)||{label:"Others"}; return `<p class="palabel recgroup">${esc(c.label)} · ${g.length}</p>` + g.map(([it,idx])=>chipOf(it,idx)).join(""); }).join("");
+    } else chips=smartItems.map(chipOf).join("");
+    const sortRow = (fromRecipe && n>1) ? `<div class="recsort" role="group" aria-label="Order ingredients"><button data-smartsort="recipe" class="${ingSort()==='recipe'?'on':''}" aria-pressed="${ingSort()==='recipe'?'true':'false'}">Recipe order</button><button data-smartsort="cat" class="${ingSort()==='cat'?'on':''}" aria-pressed="${ingSort()==='cat'?'true':'false'}">Category</button></div>` : "";
     const scaler = smartServings ? `<div class="servrow">
         <span class="servlbl">Serves</span>
         <div class="qstep2"><button data-recipe-serv="-1" aria-label="Fewer servings">−</button><span>${smartServings.target}</span><button data-recipe-serv="1" aria-label="More servings">+</button></div>
@@ -7148,7 +7128,7 @@ function smartSheet(){
     const nSel=smartItems.filter(it=>it.sel!==false).length;
     const head=`<div class="smarthd"><span class="lbl">Items to add</span>
       <button id="smartToggleAll">${nSel?"Deselect all":"Select all"}</button></div>`;
-    inner=`${scaler}${head}<div class="smartchips">${chips}</div>
+    inner=`${scaler}${head}${sortRow}<div class="smartchips">${chips}</div>
       <div style="display:flex;gap:8px;margin-top:14px">
         <button class="optaction" id="smartCancel" style="flex:1">Cancel</button>
         <button class="optaction" id="smartConfirm" style="flex:1;background:var(--accent);color:var(--on-accent);border-color:var(--accent)${nSel?'':';opacity:.4'}"${nSel?'':' disabled'}>Add ${nSel} item${nSel===1?'':'s'}</button>
@@ -7691,6 +7671,7 @@ function optionsBody(){
     ${row("Item icons", `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">${iconStyle()==="drawn"?illSVG("bread"):"🍞"}</span>On</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
     ${itemEmojiOn() ? row("Icon size", `<div class="seg">${[["s","S"],["m","M"],["l","L"],["xl","XL"]].map(([k,l])=>`<button data-opt-icosize="${k}" class="${icoSize()===k?'on':''}" aria-label="Icon size ${l}">${l}</button>`).join("")}</div>`) : ""}
     ${(itemEmojiOn() && /^(l|xl)$/.test(icoSize())) ? `<div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">At this size each tile shows its name under the icon.</div>` : ""}
+    ${iconStyle()==="drawn" ? row("Line weight", `<div class="seg">${[["fine","Fine"],["thin","Thin"],["regular","Regular"],["bold","Bold"]].map(([k,l])=>`<button data-opt-linew="${k}" class="${lineW()===k?'on':''}">${l}</button>`).join("")}</div>`) : ""}
     ${sect("Sort")}
     ${rowNL("Location", `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">On</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">Off</button></div>`)}
     <div class="optrow optrow-wide optnl"><span class="optlabel">Store</span><div class="optwide">

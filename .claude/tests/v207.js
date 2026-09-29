@@ -98,14 +98,18 @@ const SEED = `(() => {
     await page.mouse.move(bb.x+bb.width/2, bb.y+bb.height/2); await page.mouse.down(); await page.waitForTimeout(800); await page.mouse.up(); await page.waitForTimeout(600);
     ok('a press-and-hold no longer opens an editor', !(await has('#paSheet')), '');
     ok('…any press opens the recipe sheet', await has('#ppSheet'), '');
+    /* SUPERSEDED by v2.08: the ingredients fold behind their own "Ingredients" button, and the link reads
+       "Open link" with the site's name UNDER it. Still protected: course, source and ingredients are all
+       one tap from the plan, in order, with amounts. */
+    await tap('#ppIng');
     const sh = await page.evaluate(()=>{ const s=document.querySelector('#ppSheet');
       const a=s.querySelector('a.ppsrc');
       return { course:[...s.querySelectorAll('[data-ppcourse]')].map(b=>b.dataset.ppcourse+(b.classList.contains('on')?'*':'')),
-        srcText:a?a.textContent.replace(/\s+/g,' ').trim():null, href:a?a.getAttribute('href'):null,
+        srcText:a?a.textContent.replace(/\s+/g,' ').trim()+' | '+((s.querySelector('.ppsrcname')||{}).textContent||''):null, href:a?a.getAttribute('href'):null,
         ing:[...s.querySelectorAll('.pping .ppingname')].map(x=>x.textContent.trim()),
         amt:[...s.querySelectorAll('.pping')].map(x=>(x.querySelector('.ppingamt')||{textContent:''}).textContent.trim()) }; });
     ok('it shows the four courses, the guess selected', JSON.stringify(sh.course)==='["drinks","entree","main*","dessert"]', JSON.stringify(sh.course));
-    ok('it says where the recipe came from, and links there', /From recipetineats\.com/.test(sh.srcText||'') && sh.href==='https://www.recipetineats.com/pad-thai/', JSON.stringify(sh));
+    ok('it says where the recipe came from, and links there', /^Open link \| recipetineats\.com$/.test(sh.srcText||'') && sh.href==='https://www.recipetineats.com/pad-thai/', JSON.stringify(sh));
     ok('its ingredients are listed in recipe order, with amounts', JSON.stringify(sh.ing)==='["Rice noodles","Prawns","Eggs","Bean sprouts","Lime"]' && sh.amt[0]==='200 g' && sh.amt[2]==='2×',
        JSON.stringify(sh));
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-sheet.png') });
@@ -122,31 +126,22 @@ const SEED = `(() => {
     await tap('[data-ppcourse="dessert"]');
     ok('choosing a course saves it on the recipe', (await recipe()).course==='dessert', JSON.stringify((await recipe()).course));
 
-    /* ── C. editing in place ───────────────────────────────────────────── */
-    await tap('#ppEdit');
-    ok('Edit turns the list into boxes, one per ingredient', (await page.locator('[data-ppingname]').count())===5, String(await page.locator('[data-ppingname]').count()));
-    await page.fill('[data-ppingname="0"]', 'glass noodles'); await page.fill('[data-ppingamt="0"]', '250 g');
-    await tap('#ppCancel');
-    ok('Cancel changes nothing', JSON.stringify((await recipe()).ing)===JSON.stringify(PAD), JSON.stringify((await recipe()).ing));
-    await tap('#ppEdit');
-    await page.fill('[data-ppingamt="0"]', '250 g');
-    await page.fill('[data-ppingname="4"]', 'lemon');
-    await tap('[data-ppingdel="3"]');
-    await page.fill('#ppIngIn', '2 carrots'); await tap('#ppIngAdd');
-    await page.fill('#ppName', 'Pad Thai for two');
-    await tap('#ppSave');
+    /* ── C. editing ────────────────────────────────────────────────────── */
+    /* SUPERSEDED by v2.08: the household asked for the recipe sheet's Edit to go. A saved recipe is edited
+       from Add recipe › Your recipes › Edit instead (the v1.89 editor). Still protected: the save keeps the
+       recipe's link, method, servings and course, and the day follows a rename at once. */
+    ok('the recipe sheet no longer offers editing', !(await has('#ppEdit')) && (await page.locator('#ppSheet input').count())===0, '');
+    await page.evaluate(()=>{ const b=document.querySelector('#ppBg'); if(b) b.click(); }); await page.waitForTimeout(400);
+    await tap('.pdmore'); await tap('#pmRecipe'); await tap('#paManage');
+    await page.locator('[data-precipe]', { hasText:'Pad Thai' }).first().click(); await page.waitForTimeout(600);
+    ok('Your recipes › Edit › tap opens the recipe for editing', /Edit recipe/.test(await page.locator('#paSheet .disp').first().textContent().catch(()=>'')) && (await page.inputValue('#paName'))==='Pad Thai', '');
+    await page.fill('#paName', 'Pad Thai for two'); await tap('#paGo');
     const r = await recipe();
-    const byName = Object.fromEntries((r.ing||[]).map(x=>[x.name,x]));
     ok('Save writes the name', r.name==='Pad Thai for two', r.name);
-    ok('…a changed amount', byName['rice noodles'] && byName['rice noodles'].weight==='250 g', JSON.stringify(byName['rice noodles']));
-    ok('…a removed ingredient is gone, an added one is there with its count', !byName['bean sprouts'] && byName.carrots && byName.carrots.qty===2, JSON.stringify(r.ing));
-    ok('…and in the same order', (r.ing||[]).map(x=>x.name).join()==='rice noodles,prawns,eggs,lemon,carrots', (r.ing||[]).map(x=>x.name).join());
-    ok('a renamed ingredient drops its old category (lime was fruit; lemon is re-read)', byName.lemon && byName.lemon.cat==='', JSON.stringify(byName.lemon));
-    ok('…while an untouched one keeps its category', byName.prawns && byName.prawns.cat==='meat', JSON.stringify(byName.prawns));
     ok('the recipe keeps its link, method, servings and course (nothing dropped by the save)',
        r.src==='https://www.recipetineats.com/pad-thai/' && (r.steps||[]).length===2 && r.servings===4 && r.course==='dessert', JSON.stringify({src:r.src,steps:r.steps,s:r.servings,c:r.course}));
+    ok('…and its ingredients', JSON.stringify(r.ing)===JSON.stringify(PAD), JSON.stringify(r.ing));
     ok('the day shows the new name at once', await page.evaluate(()=>[...document.querySelectorAll('.pchip')].some(c=>/Pad Thai for two/.test(c.textContent))), '');
-    ok('…and the sheet shows it too', /Pad Thai for two/.test(await page.locator('#ppSheet .disp').first().textContent().catch(()=>'')), '');
 
     /* ── D. Add recipe: the ways in first ──────────────────────────────── */
     await page.evaluate(()=>{ const b=document.querySelector('#ppBg'); if(b) b.click(); }); await page.waitForTimeout(400);

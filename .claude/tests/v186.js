@@ -220,8 +220,13 @@ const GOOD = { title:"Beef Goulash", servings:6, items:[
     /* SUPERSEDED by v2.07: no press-and-hold any more — the editor is reached from the tap sheet
        (Edit, then "Add from a link, a photo or text"). The guard below is unchanged. */
     await chip.scrollIntoViewIfNeeded(); await chip.click(); await page.waitForTimeout(700);
-    await page.locator('#ppEdit').click(); await page.waitForTimeout(500);
-    await page.locator('#ppFull').click(); await page.waitForTimeout(800);
+    /* SUPERSEDED by v2.08: no Edit on the recipe sheet either; the editor is Add recipe › Your recipes ›
+       Edit › the recipe. */
+    await page.evaluate(()=>{ const b=document.querySelector('#ppBg'); if(b) b.click(); }); await page.waitForTimeout(400);
+    await page.locator('[data-pd]').first().click(); await page.waitForTimeout(700);
+    await page.locator('#pmRecipe').click(); await page.waitForTimeout(600);
+    await page.locator('#paManage').click(); await page.waitForTimeout(500);
+    await page.locator('[data-precipe]', { hasText:'Goulash' }).first().click(); await page.waitForTimeout(800);
     s = await sheet();
     ok('precondition: the recipe opens for editing', s.open===true && s.ing.length===3, JSON.stringify(s.ing));
     /* SUPERSEDED by v1.89: editing now offers the same four ways in as adding — the user asked for it,
