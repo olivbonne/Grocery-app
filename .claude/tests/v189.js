@@ -210,8 +210,13 @@ const IMPORTED = { title:"Beef Goulash", servings:6, items:[
     /* SUPERSEDED by v2.07: the hold is gone; the editor is reached from the tap sheet (Edit, then
        "Add from a link, a photo or text"). What this protects — editing offers the ways in — is unchanged. */
     await page.locator('.pchip').filter({ hasText:'Old Stew' }).first().click(); await page.waitForTimeout(700);
-    await page.locator('#ppEdit').click(); await page.waitForTimeout(500);
-    await page.locator('#ppFull').click(); await page.waitForTimeout(800);
+    /* SUPERSEDED by v2.08: no Edit on the recipe sheet either; the editor is Add recipe › Your recipes ›
+       Edit › the recipe. */
+    await page.evaluate(()=>{ const b=document.querySelector('#ppBg'); if(b) b.click(); }); await page.waitForTimeout(400);
+    await page.locator('[data-pd]').first().click(); await page.waitForTimeout(700);
+    await page.locator('#pmRecipe').click(); await page.waitForTimeout(600);
+    await page.locator('#paManage').click(); await page.waitForTimeout(500);
+    await page.locator('[data-precipe]', { hasText:'Old Stew' }).first().click(); await page.waitForTimeout(800);
     s = await sheet();
     ok('precondition: the recipe opens for editing', /Edit recipe/.test(s.head||''), s.head);
     ok('editing offers the same four ways in', s.imports.length===4, JSON.stringify(s.imports));

@@ -168,7 +168,9 @@ const PARSE_STUB = JSON.stringify({ items:[
     const btn = await page.evaluate(()=>{ const s=document.querySelector('#ppSheet');
       return s ? [...s.querySelectorAll('.optaction')].map(b=>b.textContent.trim()) : null; });
     ok('precondition: a planned recipe offers its ingredients', !!btn, JSON.stringify(btn));
-    ok('…and the button says it is a review, not an add', /Review 4 ingredients/.test((btn||[])[0]||''),
+    /* SUPERSEDED by v2.08: the household renamed it "Add to shopping list". Still protected, and checked
+       right below: pressing it opens the review, not a straight add. */
+    ok('…and the button is there, under its v2.08 name', (btn||[]).includes('Add to shopping list'),
        JSON.stringify(btn));
     await tap('#ppList');
     r = await review();
