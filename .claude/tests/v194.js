@@ -126,7 +126,9 @@ const SUGGESTED = { source:"model", results:[
     await tap('.pchip.recipe, .planday .pchip');
     await page.waitForTimeout(500);
     const toList = await page.evaluate(()=>{
-      const b=[...document.querySelectorAll('button,.optaction')].find(x=>/ingredient|shopping list|add to list/i.test(x.textContent||''));
+      /* SUPERSEDED by v2.08: the first button mentioning "ingredient" is now the Ingredients fold; the
+         list button is #ppList ("Add to shopping list"). Prefer it, keep the text fallback. */
+      const b=document.querySelector('#ppList') || [...document.querySelectorAll('button,.optaction')].find(x=>/shopping list|add to list/i.test(x.textContent||''));
       if(b){ b.click(); return true; } return false; });
     await page.waitForTimeout(900);
     const review = await page.evaluate(()=>[...document.querySelectorAll('.smartchip-name')].map(n=>n.textContent.trim()));
@@ -140,8 +142,9 @@ const SUGGESTED = { source:"model", results:[
        before the feature did. Read the one surface the person is actually looking at instead. */
     const toReview = async()=>{
       await tap('.planday .pchip');
-      await page.evaluate(()=>{ const b=[...document.querySelectorAll('button,.optaction')]
-        .find(x=>/ingredient|shopping list|add to list/i.test(x.textContent||'')); if(b) b.click(); });
+      /* SUPERSEDED by v2.08: as above — #ppList, not the first button saying "ingredient" (now the fold). */
+      await page.evaluate(()=>{ const b=document.querySelector('#ppList') || [...document.querySelectorAll('button,.optaction')]
+        .find(x=>/shopping list|add to list/i.test(x.textContent||'')); if(b) b.click(); });
       await page.waitForTimeout(900);
       return page.evaluate(()=>[...document.querySelectorAll('.smartchip-name')].map(n=>n.textContent.trim()));
     };

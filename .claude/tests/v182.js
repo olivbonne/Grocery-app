@@ -214,8 +214,10 @@ const fmtDate = d => d.toLocaleDateString(undefined,{day:"numeric",month:"short"
     const pick = await page.evaluate(()=>{
       const s=document.querySelector('#ppSheet'); if(!s) return null;
       return { actions:[...s.querySelectorAll('.optaction')].map(b=>b.textContent.trim()) }; });
+    /* SUPERSEDED by v2.08: a recipe's sheet also has an "Ingredients" fold now, and the list button reads
+       "Add to shopping list". Still protected: the two ACTIONS — to the list, and off the day — are there. */
     ok('tapping what you planned offers the list and the day',
-       pick && pick.actions.length===2 && /ingredient/i.test(pick.actions[0]) && /Remove/i.test(pick.actions[1]),
+       pick && pick.actions.includes('Add to shopping list') && pick.actions.some(a=>/^Remove/i.test(a)),
        JSON.stringify(pick));
     /* SUPERSEDED by v1.85: this used to write the ingredients straight to the list. They now go through
        the review sheet first, where each one can be turned off — some of a recipe is usually already in
