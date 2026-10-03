@@ -147,6 +147,20 @@ a generic failure that sends you looking in the wrong place. The link and paste 
 without it. On Gemini this variable does no work at all: the same model reads the photo, so the
 `vision_model` code is never returned there.
 
+## Reading a receipt (v2.09)
+
+`POST /api/receipt` with `{ image }` (a `data:` URL of a receipt photo) returns
+`{ store, date, total, items: [{ raw, name, qty, weight, price, category }] }`. It uses
+the same key and the same vision model as recipe photos — `GEMINI_MODEL` on Gemini, or
+`GROQ_VISION_MODEL` on Groq — so there is nothing new to set up. Errors are
+`{ error, code }` with the same codes as `/api/recipe`'s photo path (`vision_model` when
+Groq's vision model is missing).
+
+A receipt is a household's shopping, so the endpoint never logs the photo or what was
+read from it — only the reason for a failure and the reply's length. In the app the
+lines are reviewed before anything is kept; the prices go into the list's own document,
+shared only with the people on that list. Each phone reads at most 10 receipts a day.
+
 ## Searching for a recipe
 
 `/api/recipe-search` takes `{ q, scope }` and answers `{ source, provider, results }`. It has two
