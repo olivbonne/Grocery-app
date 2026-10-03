@@ -822,6 +822,27 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .ppingico .ill, .ppingico .cmark{width:24px;height:24px}
   .ppingname{flex:1;min-width:0;overflow-wrap:anywhere}
   .ppingamt{flex:none;color:var(--muted);font-weight:700;font-size:13px}
+  /* v2.09: receipt review + price memory */
+  .rcstores{flex-wrap:wrap}
+  .rcstores button{flex:0 0 auto;padding:7px 12px}
+  .rcnote{font-size:12px;color:var(--muted);font-weight:600;margin:0 0 12px}
+  .rcmeta{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-size:13px;font-weight:700;color:var(--text)}
+  .rcmeta input{height:40px;padding:0 10px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--text);font-size:15px}
+  .rcsum{font-size:13px;font-weight:700;color:var(--muted);margin:0 0 8px}
+  .rclines{display:flex;flex-direction:column;gap:6px;max-height:46vh;overflow:auto}
+  .rcrow{display:flex;align-items:center;gap:10px;padding:6px 8px;border:1.5px solid var(--line);border-radius:14px;background:var(--card)}
+  .rcrow.off{opacity:.45}
+  .rcmid{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .rcname{width:100%;border:0;background:transparent;color:var(--text);font-size:15px;font-weight:700;padding:2px 0;outline:none;min-width:0}
+  .rcraw{font-size:11px;color:var(--muted2);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rcraw b{color:var(--text);font-weight:800}
+  .rcprice{flex:none;font-weight:800;font-size:15px;font-variant-numeric:tabular-nums;color:var(--text)}
+  .pricemem{margin:10px 2px 0;font-size:13px;color:var(--muted);font-weight:600;line-height:1.45}
+  .pricemem b{color:var(--text);font-weight:800}
+  .pricemem-o{display:block;font-size:12px;color:var(--muted2)}
+  /* v2.09: re-added (deleted in v2.08) for the receipt sheet's Cancel / Save pair */
+  .ppedbtns{display:flex;gap:8px;margin-top:12px}
+  .ppedbtns .optaction, .ppedbtns .newlist{margin-top:0;flex:1}
   .qmore { margin-left:6px; width:22px; height:22px; flex:none; border-radius:7px; display:inline-flex; align-items:center; justify-content:center;
     color:var(--muted); font-size:13px; font-weight:800; background:var(--chip); transition:transform .15s ease; }
   .qmore.open { transform:rotate(180deg); color:var(--on-accent); background:var(--accent); }
@@ -1631,7 +1652,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.08";
+const APP_VERSION = "v2.09";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1769,7 +1790,7 @@ function mergeAmt(a, b){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -3253,7 +3274,7 @@ function switchList(code){ const wasPlan = (view==="plan"); listsOpen=false; if(
   LS = { me:"ml_me", collapse:"ml_collapse_"+code, cache:"ml_cache_"+code };
   reloadLearn();
   try{ collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}'); }catch(e){ collapse={cats:[],ba:false}; }
-  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]} };
+  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{} };
   try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state=c; }catch(e){}
   if(!state.purch || typeof state.purch!=="object") state.purch={};
   state.purch = purchMerge(state.purch, purch);   // fold any legacy per-device history into the shared copy
@@ -3291,7 +3312,7 @@ function playPlan(add){ if(!soundOn) return;
   } catch(e){} }
 let lastPop=null;
 
-let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]} };
+let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{} };
 rememberList(listCode);
 try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state = c; } catch(e){}
 if(!state.purch || typeof state.purch!=="object") state.purch={};
@@ -3418,7 +3439,8 @@ function subscribe(){
     if(snap.exists() && !snap.metadata.hasPendingWrites){ const d = snap.data();
       const mg = baMerge(d.buyAgain||[], d.baTomb||{}, state.buyAgain||[], state.baTomb||{});   // A24 conflict-free Buy-again
       const mgPurch = purchMerge(d.purch||{}, purch||{});                                        // B4 shared restock history (union merge)
-      state = { items:d.items||[], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]} };
+      /* v2.09: prices rides along like plan does. This line rebuilds state from a fixed shape, so a field it does not name is wiped by the next snapshot (CLAUDE.md, the fixed-shape trap). */
+      state = { items:d.items||[], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]}, prices: d.prices||{} };
       purch = state.purch;                                                                        // keep the working ref pointed at the shared copy
       if(!state.name){ const ln=(getLists().find(l=>l.code===listCode)||{}).name; if(ln){ state.name=ln; save(); } }
       if(state.name) rememberList(listCode, state.name);
@@ -3602,6 +3624,38 @@ function purchMerge(A, B){                                          // B4 confli
   return out;
 }
 function purchSig(p){ return Object.keys(p||{}).sort().map(k=>k+"@"+((p[k].ts||[]).join(","))).join(";"); }
+/* v2.09: price memory — what the household paid, per item, per store, per date, from receipts it chose
+   to read. It lives in the list's own document (state.prices), so it is shared with the people on the
+   list and nobody else. { key: [{ p, s, sn, d, q, w, t }] }, oldest first: p price in dollars, s store
+   id ("" if not a saved store), sn store name, d YYYY-MM-DD, q qty, w weight, t when recorded. At most 8
+   per item and 600 items, so the list document stays far under Firestore's 1 MiB limit. */
+const PRICE_PER_ITEM = 8, PRICE_ITEMS = 600;
+function priceWord(w){ return (w.length>3 && /s$/.test(w) && !/ss$/.test(w)) ? (/ies$/.test(w) ? w.slice(0,-3)+"y" : w.slice(0,-1)) : w; }
+function priceKey(name){ return String(name||"").toLowerCase().replace(/[^a-z0-9 ]+/g," ").split(/\s+/).filter(Boolean).map(priceWord).join(" "); }
+function priceLastT(a){ return (a && a.length) ? (a[a.length-1].t||0) : 0; }
+function priceRecord(name, rec){ const k=priceKey(name); if(!k) return;
+  if(!state.prices || typeof state.prices!=="object") state.prices={};
+  /* the same receipt read twice is one record, not two */
+  const a=(state.prices[k]||[]).filter(x=>!(x.d===rec.d && x.sn===rec.sn && Math.abs((+x.p||0)-rec.p)<0.005));
+  a.push(rec); state.prices[k]=a.slice(-PRICE_PER_ITEM);
+  const ks=Object.keys(state.prices);
+  if(ks.length>PRICE_ITEMS){ ks.sort((x,y)=>priceLastT(state.prices[x])-priceLastT(state.prices[y])); ks.slice(0, ks.length-PRICE_ITEMS).forEach(x=>{ delete state.prices[x]; }); } }
+/* whole-word containment either way: the receipt's "free range egg" answers for the list's "egg" */
+function priceWordsIn(a, b){ return (" "+b+" ").indexOf(" "+a+" ")>=0; }
+function priceLookup(name){ const P=state.prices||{}, k=priceKey(name); if(!k) return null; if(P[k] && P[k].length) return P[k];
+  let best=null; for(const key in P){ if(!(P[key]||[]).length) continue;
+    if((k.length>=3 && priceWordsIn(k,key)) || (key.length>=3 && priceWordsIn(key,k))){ if(!best || priceLastT(P[key])>priceLastT(best)) best=P[key]; } }
+  return best; }
+function priceMoney(p){ return "$"+(Math.round((+p||0)*100)/100).toFixed(2); }
+function priceDay(d){ try{ return new Date(d+"T00:00:00").toLocaleDateString(undefined,{day:"numeric",month:"short"}); }catch(e){ return d||""; } }
+/* "Last paid $5.50 at Coles Dandenong · 2 Oct", plus the latest at up to two other stores. */
+function priceLine(name){ const a=priceLookup(name); if(!a || !a.length) return "";
+  const last=a[a.length-1], seen={}, others=[]; seen[last.sn||""]=1;
+  for(let i=a.length-2;i>=0 && others.length<2;i--){ const x=a[i]; if(seen[x.sn||""]) continue; seen[x.sn||""]=1; others.push(x); }
+  return `<div class="pricemem">Last paid <b>${priceMoney(last.p)}</b>${last.sn?` at ${esc(last.sn)}`:""} · ${esc(priceDay(last.d))}${others.map(x=>`<span class="pricemem-o">${priceMoney(x.p)}${x.sn?` at ${esc(x.sn)}`:""} · ${esc(priceDay(x.d))}</span>`).join("")}</div>`; }
+/* a receipt line ticks off the list item it names — same whole-word rule, unchecked items only */
+function rcMatchItem(name, used){ const k=priceKey(name); if(!k) return null;
+  return state.items.find(i=>!i.checked && !(used && used.has(i.id)) && (()=>{ const ik=priceKey(i.name); return ik && (ik===k || (ik.length>=3 && priceWordsIn(ik,k)) || (k.length>=3 && priceWordsIn(k,ik))); })()) || null; }
 function moveToBuyAgain(entries){
   state.baTomb = state.baTomb || {};
   for(const e of entries){ const k=baKey(e);
@@ -5623,7 +5677,7 @@ function renderMain(){
   ${fabMoveOpen?fabMoveSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
-  ${smartOpen?smartSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -5718,6 +5772,7 @@ function finishSheet(){ const n=state.items.filter(i=>i.checked).length;
   return `<div class="sheet-bg" id="finishBg"><div class="sheet" id="finishSheetEl">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:6px">Done shopping?</div>
     <p style="margin:0 0 14px;font-size:13.5px;color:var(--muted);font-weight:600">${n} bought ${n===1?"item":"items"} in the cart. Save ${n===1?"it":"them"} to Regulars for one-tap re-adding next time?</p>
+    <button class="optaction" id="finishRcpt">${CAMERA_SVG(16)} Read the receipt</button>
     <button class="optaction" id="finishSave" style="background:var(--btn);color:var(--btn-text);border-color:var(--btn)">Save ${n} to Regulars &amp; finish</button>
     <button class="optaction" id="finishKeep">Keep on list &amp; finish</button>
   </div></div>`; }
@@ -5926,7 +5981,7 @@ function renderPlanTab(){
   ${planWeekOpen?planWeekSheet():""}
   ${planAdd?planAddSheet():""}
   ${planPick?planPickSheet():""}
-  ${smartOpen?smartSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}
   ${listsOpen?listsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
@@ -6015,6 +6070,93 @@ function planShrinkImage(file, maxPx, quality){
     };
     fr.readAsDataURL(file);
   });
+}
+/* v2.09: receipt reading. rcpt is null when closed; otherwise
+   { busy, err, store:{id,name}, detected, date, total, lines:[{raw,name,qty,weight,price,cat,keep,match}] }. */
+let rcpt = null;
+/* free, with a soft daily cap per device — the model call is the one real cost. A count, not a look,
+   so ml_rcptday is in BOTH exclusion lists. */
+const RCPT_DAY_CAP = 10;
+function rcptToday(){ const d=dayKey(new Date()); try{ const v=String(localStorage.getItem("ml_rcptday")||"").split("|"); return v[0]===d ? (+v[1]||0) : 0; }catch(e){ return 0; } }
+function rcptCount(){ const d=dayKey(new Date()); try{ localStorage.setItem("ml_rcptday", d+"|"+(rcptToday()+1)); }catch(e){} }
+function rcPick(){ const f=document.createElement("input"); f.type="file"; f.accept="image/*";
+  f.onchange=()=>{ const file=f.files && f.files[0]; if(file) rcRead(file); }; f.click(); }
+/* v2.09: the saved real stores, in one place — rcStoreFor, the sheet's chips and their wiring all agree. */
+function rcSavedStores(){ return [...STORES.filter(s=>!storeOverride(s.id).hidden).map(s=>storeById(s.id)), ...(state.stores||[]).filter(s=>!storeOverride(s.id).hidden)].filter(s=>s && s.name); }
+function rcStoreFor(detected){ const n=String(detected||"").toLowerCase().trim();
+  const saved=rcSavedStores();
+  if(n){ const hit=saved.find(s=>{ const sn=s.name.toLowerCase(); return sn===n || n.indexOf(sn)>=0 || sn.indexOf(n)>=0; }); if(hit) return { id:hit.id, name:hit.name }; }
+  const act=activeStore(); if(!n && act && isRealStore(act.id)) return { id:act.id, name:act.name };
+  return { id:"", name:String(detected||"").trim() }; }
+function rcRead(file){
+  if(rcptToday()>=RCPT_DAY_CAP){ rcpt={ err:`That's ${RCPT_DAY_CAP} receipts today, the free limit on this phone. It resets tomorrow.` }; render(); return; }
+  rcpt={ busy:true }; render();
+  planShrinkImage(file, 2000, 0.8)
+    .then(img=>fetch("/api/receipt", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ image:img }) }))
+    .then(r=>r.json().catch(()=>({})).then(j=>({ ok:r.ok, j })))
+    .then(({ok,j})=>{ if(!rcpt) return;
+      if(!ok){ const c=j && j.code;
+        rcpt={ err: c==="not_configured" ? "Receipt reading isn't set up on the server yet."
+          : c==="quota" ? "The free reading allowance is used up for today. Try again tomorrow."
+          : c==="busy" ? "The reader is busy. Try again in a minute."
+          : (c==="bad_image" || c==="too_large") ? "Couldn't use that photo. Try a closer, flatter one."
+          : c==="vision_model" ? "Photo reading isn't set up on this account."
+          : "Couldn't read that receipt." }; render(); return; }
+      rcptCount();
+      const allowed=catList().map(c=>c.id), used=new Set();
+      const lines=(Array.isArray(j.items)?j.items:[]).map(x=>{ const known=knownEntry(x.name);
+        const cat=allowed.includes(x.category) ? x.category : ((known && known.cat) || "others");
+        const m=rcMatchItem(x.name, used); if(m) used.add(m.id);
+        return { raw:String(x.raw||""), name:String(x.name||""), qty:+x.qty||1, weight:String(x.weight||""), price:+x.price||0, cat, keep:true, match:m?m.id:null }; });
+      if(!lines.length){ rcpt={ err:"Couldn't find any items on that. Is it a receipt?" }; render(); return; }
+      rcpt={ store:rcStoreFor(j.store), detected:String(j.store||""), date:(/^\d{4}-\d{2}-\d{2}$/.test(j.date||"") ? j.date : dayKey(new Date())), total:+j.total||0, lines };
+      render(); })
+    .catch(()=>{ if(rcpt){ rcpt={ err: navigator.onLine===false ? "No connection. Try again when you're online." : "Couldn't read that receipt." }; render(); } }); }
+function rcSave(){ if(!rcpt || !rcpt.lines) return;
+  const used=new Set(); let n=0, m=0; const t=Date.now();
+  for(const L of rcpt.lines){ const nm=String(L.name||"").trim(); if(!L.keep || !nm || !isFinite(L.price)) continue;
+    priceRecord(nm, { p:Math.round(L.price*100)/100, s:rcpt.store.id||"", sn:rcpt.store.name||"", d:rcpt.date, q:L.qty||1, w:L.weight||"", t }); n++;
+    /* the name may have been corrected in the sheet, so match again on what was saved */
+    const it=rcMatchItem(nm, used); if(it){ used.add(it.id); it.checked=true; it.checkedBy=me; it.checkedAt=t; markDirty(it.id); m++; } }
+  save(); rcpt=null; render(); showToast(`Saved ${n} price${n===1?"":"s"}${m?` · ticked off ${m}`:""}`); }
+function rcptSheet(){
+  const head=`<div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">${CAMERA_SVG(18)} Receipt</div>`;
+  if(rcpt.busy) return `<div class="sheet-bg kbpin" id="rcBg"><div class="sheet" id="rcSheet">${head}
+    <div style="padding:22px 4px;text-align:center;color:var(--muted);font-weight:700">Reading the receipt…</div></div></div>`;
+  if(rcpt.err || !rcpt.lines) return `<div class="sheet-bg kbpin" id="rcBg"><div class="sheet" id="rcSheet">${head}
+    <div style="padding:6px 2px 16px;color:var(--text);font-weight:600;line-height:1.5">${esc(rcpt.err||"Couldn't read that receipt.")}</div>
+    <button class="optaction" id="rcOk">OK</button></div></div>`;
+  const keptL=rcpt.lines.filter(L=>L.keep), kept=keptL.length, sumKept=Math.round(keptL.reduce((a,L)=>a+(+L.price||0),0)*100)/100;
+  const stores=rcSavedStores();
+  const chips=stores.map(s=>`<button data-rcstore="${esc(s.id)}" class="${rcpt.store.id===s.id?'on':''}">${esc(s.name)}</button>`).join("")
+    + ((rcpt.detected && rcpt.store.id==="") ? `<button data-rcstore="" class="on">${esc(rcpt.detected)}</button>` : "");
+  return `<div class="sheet-bg kbpin" id="rcBg"><div class="sheet" id="rcSheet">
+  ${head}
+  <div class="rcnote">Check the names. The app remembers each price for this store and ticks off what's on your list.</div>
+  <p class="palabel">Store</p>
+  <div class="slotseg rcstores">${chips}</div>
+  <div class="rcmeta"><label for="rcDate">Date</label><input id="rcDate" type="date" value="${esc(rcpt.date)}" /></div>
+  <div class="rcsum">${kept} item${kept===1?"":"s"} · ${priceMoney(sumKept)}${rcpt.total && Math.abs(rcpt.total-sumKept)>0.05 ? ` · receipt says ${priceMoney(rcpt.total)}` : ""}</div>
+  <div class="rclines">${rcpt.lines.map((L,i)=>`<div class="rcrow${L.keep?"":" off"}">
+     <button class="smartcheck ${L.keep?"on":""}" data-rckeep="${i}" role="checkbox" aria-checked="${L.keep?"true":"false"}" aria-label="${L.keep?"Leave out":"Keep"} ${esc(L.name)}">✓</button>
+     <div class="rcmid"><input class="rcname" data-rcname="${i}" value="${esc(L.name)}" aria-label="Item ${i+1}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
+       <span class="rcraw">${esc(L.raw)}${L.qty>1?` · ${L.qty}×`:""}${L.weight?` · ${esc(L.weight)}`:""}${L.match?` · <b>on your list</b>`:""}</span></div>
+     <span class="rcprice">${priceMoney(L.price)}</span></div>`).join("")}</div>
+  <div class="ppedbtns"><button class="optaction" id="rcCancel">Cancel</button><button class="newlist" id="rcSaveBtn">Save ${kept} price${kept===1?"":"s"}</button></div>
+</div></div>`; }
+function wireRcptSheet(){
+  const close=()=>{ rcpt=null; render(); };
+  const bg=app.querySelector("#rcBg"); if(bg) bg.onclick=e=>{ if(e.target===bg) close(); };
+  const ok=app.querySelector("#rcOk"); if(ok) ok.onclick=close;
+  const cc=app.querySelector("#rcCancel"); if(cc) cc.onclick=close;
+  if(!rcpt || !rcpt.lines) return;
+  app.querySelectorAll("[data-rcstore]").forEach(b=>{ b.onclick=()=>{ const id=b.dataset.rcstore;
+    if(!id){ rcpt.store={ id:"", name:rcpt.detected }; render(); return; }
+    const s=rcSavedStores().find(x=>x.id===id); if(s){ rcpt.store={ id:s.id, name:s.name }; render(); } }; });
+  const dt=app.querySelector("#rcDate"); if(dt) dt.onchange=()=>{ if(/^\d{4}-\d{2}-\d{2}$/.test(dt.value)) rcpt.date=dt.value; };   // no re-render
+  app.querySelectorAll("[data-rckeep]").forEach(b=>{ b.onclick=()=>{ const L=rcpt.lines[+b.dataset.rckeep]; if(L){ L.keep=!L.keep; render(); } }; });
+  app.querySelectorAll("[data-rcname]").forEach(inp=>{ inp.oninput=()=>{ const L=rcpt.lines[+inp.dataset.rcname]; if(L) L.name=inp.value; }; });   // no re-render: keep focus while typing (v1.45)
+  const sv=app.querySelector("#rcSaveBtn"); if(sv) sv.onclick=rcSave;
 }
 /* Every failure the server can name gets a sentence that says what to do about it. A generic
    "couldn't read that" sends someone hunting in the wrong place — the whole reason the endpoint
@@ -6506,6 +6648,7 @@ function wirePlanTab(){
   const st=app.querySelector("#setNavP"); if(st) st.onclick=()=>{ settingsFrom=0; gotoPage(2); };
   wireListsSheet();
   wireSmartSheet();
+  wireRcptSheet();
   wireUserTiles();
 }
 /* v1.90: a recipe page shared into the app. Android hands it over directly through the manifest's
@@ -6653,7 +6796,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>Add items…</span></button></div>`:""}
-  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}
+  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -6716,6 +6859,7 @@ function wirePlanPage(){
   const qbc=app.querySelector("#qbannerClose"); if(qbc) qbc.onclick=()=>{ quickEdit=null; render(); };
   const qbr=app.querySelector("#qbannerRemove"); if(qbr) qbr.onclick=()=>{ const it=state.items.find(i=>i.id===quickEdit); const nm=it?cap(it.name):""; const id=quickEdit; quickEdit=null; planRemove(id); if(nm) showToast(nm+" moved to Regulars"); };
   wireSmartSheet();
+  wireRcptSheet();
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>gotoPage(0);
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireUserTiles();
@@ -6730,6 +6874,7 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
   const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{};   // already on Settings
   wireOptions();
   wireEditSheet();
+  wireRcptSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 /* v1.77 item 3: which sections are folded. Keyed by the section's own name rather than its index, so
@@ -6801,6 +6946,8 @@ function wireOptions(){
   app.querySelectorAll("[data-hist-toggle]").forEach(b=>b.onclick=()=>{ const k=b.dataset.histToggle;
     if(histOpen.has(k)) histOpen.delete(k); else histOpen.add(k); render(); });
   const hc=app.querySelector("#optHistClear"); if(hc) hc.onclick=()=>{ histClear(histView||listCode); render(); };
+  const orc=app.querySelector("#optRcpt"); if(orc) orc.onclick=()=>rcPick();   // v2.09
+  const opc=app.querySelector("#optPriceClear"); if(opc) opc.onclick=()=>{ if(confirm("Forget every remembered price in this list?")){ state.prices={}; save(); render(); } };
   app.querySelectorAll("[data-opt-fill]").forEach(b=>b.onclick=()=>{ if(fillMode()!==b.dataset.optFill) setFill(b.dataset.optFill); });
   const ozm=app.querySelector("#optZoomMinus"); if(ozm) ozm.onclick=()=>setDensity(dens()-0.1);
   const ozp=app.querySelector("#optZoomPlus"); if(ozp) ozp.onclick=()=>setDensity(dens()+0.1);
@@ -7317,7 +7464,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -7693,6 +7840,10 @@ function optionsBody(){
     <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">Changes how amounts are shown, not what is stored — a recipe\'s own wording comes back if you turn this off. Amounts it can\'t read, like “a pinch”, are left alone.</div>` : ""}
     ${(view!=="lists") ? `${sect("Plan")}${row("Meal slots", `<div class="seg"><button data-opt-mealslots="1" class="${mealSlotsOn()?'on':''}">On</button><button data-opt-mealslots="0" class="${!mealSlotsOn()?'on':''}">Off</button></div>`)}
     <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">Breakfast, lunch, dinner or snack on each planned meal.</div>` : ""}
+    ${(view!=="lists") ? `${sect("Prices")}
+      <button class="optaction" id="optRcpt" style="margin-top:2px">${CAMERA_SVG(16)} Read a receipt</button>
+      <div style="margin:6px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${(()=>{ const pc=Object.keys(state.prices||{}).length; return pc ? `${pc} item${pc===1?"":"s"} with a remembered price. Kept in this list, shared only with the people on it.` : "Read a receipt after a shop and the app remembers what you paid at each store. Free."; })()}</div>
+      ${Object.keys(state.prices||{}).length ? `<button class="optaction" id="optPriceClear">${BIN_SVG(16)} Clear price memory</button>` : ""}` : ""}
     ${(view!=="lists") ? `${sect("Predictions")}${rowNL("Suggest restocks", `<div class="seg"><button data-pred-on="1" class="${predictCfg.on?'on':''}">On</button><button data-pred-on="0" class="${!predictCfg.on?'on':''}">Off</button></div>`)}
     ${predictCfg.on ? `${rowNL("Remind me", `<div class="seg"><button data-pred-freq="weekly" class="${predictCfg.freq==='weekly'?'on':''}">Weekly</button><button data-pred-freq="monthly" class="${predictCfg.freq==='monthly'?'on':''}">Monthly</button></div>`)}
     ${predictCfg.freq==='weekly' ? `<div class="optrow optrow-wide optnl"><span class="optlabel">Day</span><div class="optwide">
@@ -7758,6 +7909,7 @@ function renderSettingsPage(){
     ${bottomNav({planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
     ${diagOpen?diagSheet():""}
     ${listsOpen?listsSheet():""}
+    ${rcpt?rcptSheet():""}
     ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
     ${editing?editSheet():""}
@@ -7885,6 +8037,7 @@ function editSheet(){
       <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:15px" />
     </div>
     ${weightChips("edit", editing.weight)}
+    ${priceLine(editing.name)}
     ${isItem ? `<div style="display:flex;flex-wrap:nowrap;gap:6px;margin-top:12px">${[{k:"urgent",label:"Urgent"},{k:"discount",label:"If discounted"},{k:"convenient",label:"If convenient"}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}
     <button class="editsec" id="ecHead"><span class="editsec-l">Category</span><span class="editsec-v">${selCat?`${catIcon(selCat,14)} ${esc(selCat.label)}`:'—'}<span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></button>
     ${editCatOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${chipsHTML(editing.cat)}<button class="catchip" id="ecAddCat" style="border-style:dashed;font-weight:800">＋ New</button></div>` : ""}
@@ -7927,6 +8080,7 @@ function wireAddBar(){
 function wire(){
   wireAddSheet();
   wireSmartSheet();
+  wireRcptSheet();
   const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>i.cat===c.id)).map(c=>c.id);
     const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);
@@ -8001,6 +8155,7 @@ function wire(){
   const dsh=app.querySelector("#doneShop"); if(dsh) dsh.onclick=()=>{ if(state.items.some(i=>i.checked)){ finishOpen=true; render(); } else gotoPage(1); };
   const fbg=app.querySelector("#finishBg"); if(fbg) fbg.onclick=e=>{ if(e.target===fbg){ finishOpen=false; render(); } };
   const fsv=app.querySelector("#finishSave"); if(fsv) fsv.onclick=()=>{ finishOpen=false; sweep(); gotoPage(1); };
+  const frc=app.querySelector("#finishRcpt"); if(frc) frc.onclick=()=>{ finishOpen=false; render(); rcPick(); };
   const fkp=app.querySelector("#finishKeep"); if(fkp) fkp.onclick=()=>{ finishOpen=false; gotoPage(1); };
   const ssh=app.querySelector("#startShop"); if(ssh) ssh.onclick=()=>gotoPage(1);
   const aiAp=app.querySelector("[data-ai-apply]"); if(aiAp) aiAp.onclick=aiApplyProposal;   // B7 accept the proposed aisle order

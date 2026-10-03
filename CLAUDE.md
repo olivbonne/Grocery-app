@@ -5,9 +5,10 @@ A single-file vanilla-JS PWA: `index.html` holds the inline CSS and one `<script
 (several thousand lines). No build step, no framework. Firebase Firestore for live household sync,
 Vercel serves `main` as static files. Used as an iPhone home-screen app, portrait-only, max-width 480px.
 
-Three serverless functions in `api/` (CommonJS, Vercel, `maxDuration` 60s in `vercel.json`):
-`parse.js` (Smart add), `recipe.js` (recipe from text, a link, a TikTok or a photo) and
-`recipe-search.js`. Their keys and settings are env vars — see `docs/ai-setup.md`.
+Four serverless functions in `api/` (CommonJS, Vercel, `maxDuration` 60s in `vercel.json`):
+`parse.js` (Smart add), `recipe.js` (recipe from text, a link, a TikTok or a photo),
+`recipe-search.js` and `receipt.js` (a receipt photo → items and prices, v2.09; it never logs the photo
+or what it read). Their keys and settings are env vars — see `docs/ai-setup.md`.
 
 ## Conventions
 - **Versioning:** bump `APP_VERSION` in `index.html` by 0.01 per batch of app changes and add a
@@ -45,7 +46,8 @@ Three serverless functions in `api/` (CommonJS, Vercel, `maxDuration` 60s in `ve
   appearance slot wipes them. This has bitten twice (`ml_lastview`, then `ml_optcoll` in v2.00).
 - **Normalisers that rebuild an object from a fixed shape drop unknown fields.** `writePlan` and
   `planIngNorm` both did, silently (v1.94 amounts, v1.97 saved plans). Adding a field means adding it
-  there too.
+  there too. The list document itself is one: `subscribe()` rebuilds `state` field by field, so a new
+  top-level field (v2.09 `prices`) must be named there and in the two default `state` literals.
 
 ## Workflow
 - Develop on the branch the session is given, push, and open a PR into `main`.
@@ -76,7 +78,7 @@ Three serverless functions in `api/` (CommonJS, Vercel, `maxDuration` 60s in `ve
   matter what is in it — found 2026-09-26, after which every earlier SYNTAX_OK was known vacuous),
   and plants a canary error first so it cannot go vacuous silently again. It checks `api/*.js` too.
 - **Per-version suites live in `.claude/tests/`** — one browser suite per version, plus
-  `api-recipe.js` and `api-recipe-search.js`, which test the serverless functions directly with no
+  `api-recipe.js`, `api-recipe-search.js` and `api-receipt.js`, which test the serverless functions directly with no
   network. See `.claude/tests/README.md` for how to run them and what a check has to prove. Never
   leave a suite in the scratchpad: it is not durable, and every suite up to v1.76 was lost that way.
 - Behaviour: the `/verify-app` skill serves the repo, launches headless Chromium
