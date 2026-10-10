@@ -73,7 +73,10 @@ const GRID4 = 'localStorage.setItem("ml_displays", JSON.stringify({shop:"large"}
     await mk(Array.from({length:120},(_,i)=>it(String(i),"Item "+i,"fresh",1,"",true)));
     const c120 = await page.evaluate(()=>{ const t=document.querySelector('#cartNum'), p=t && t.querySelector('.cartplus');
       return t ? { txt:t.textContent, px:p&&p.getAttribute('x'), py:p&&p.getAttribute('y'), ps:p&&getComputedStyle(p).fontSize } : null; });
-    ok('over 99 it reads "99+", the + at (77, 29) in 20 units — the household\'s third example', c120 && c120.txt==='99+' && c120.px==='77' && c120.py==='29' && c120.ps==='20px', JSON.stringify(c120));
+    /* SUPERSEDED by v2.12: the + at (77,29) landed on the second 9 in the app's font; the household chose
+       option B — "99" at 30 units with a raised 24-unit + flowing after it (v212.js measures the glyphs).
+       Still protects that past 99 the count reads "99+" with the + as its own, separately sized tspan. */
+    ok('over 99 it reads "99+", the + its own smaller, raised piece', c120 && c120.txt==='99+' && c120.px===null && c120.ps==='24px', JSON.stringify(c120));
 
     /* ── 3. a tall tile grows only its row ─────────────────────────────── */
     const list = [["Chicken","meat",8,"500g"],["Shrimp","meat"],["Scallop","meat"],["Dragonfruit","fruit"],["Lemon","fruit",1,"1/2"],["Chilli","vegetable",2,"large"],
