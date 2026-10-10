@@ -79,6 +79,15 @@ const seed = (extra, checkedStore) => `(() => {
     await mk({ ls:'localStorage.setItem("ml_displays", JSON.stringify({shop:"large"})); localStorage.setItem("ml_largecols","3");' });
     h = await heights();
     ok('large tiles in 3 columns: every tile the same height', new Set(h).size===1, JSON.stringify(h));
+    /* the household's Sandbox: large tiles, 4 columns, Full colour, no category groups. A bare 1fr column
+       cannot shrink below its longest word, so "Coriander/cilantro leaf" widened its whole column. */
+    await mk({ ls:'localStorage.setItem("ml_displays", JSON.stringify({shop:"large"})); localStorage.setItem("ml_largecols","4"); localStorage.setItem("ml_fill","full"); localStorage.setItem("ml_caton","0");'
+      + 'const c=JSON.parse(localStorage.getItem("ml_cache_v101")); c.items.push({id:"20",name:"Coriander/cilantro leaf",cat:"fresh",qty:1,weight:"1 cup",checked:false,tags:[]},{id:"21",name:"Flat-leaf italian parsley",cat:"fresh",qty:1,weight:"",checked:false,tags:[]}); localStorage.setItem("ml_cache_v101", JSON.stringify(c));' });
+    const wh = await page.evaluate(()=>[...document.querySelectorAll('#zoomer .pill[data-pill]')].map(p=>{ const r=p.getBoundingClientRect(), n=p.querySelector('.pname').getBoundingClientRect();
+      return { w:Math.round(r.width), h:Math.round(r.height), inside: n.left>=r.left-1 && n.right<=r.right+1 }; }));
+    ok('large tiles in 4 columns (the Sandbox): every tile the same width AND height', new Set(wh.map(x=>x.w+'x'+x.h)).size===1, JSON.stringify([...new Set(wh.map(x=>x.w+'x'+x.h))]));
+    ok('…and a long name stays inside its tile', wh.every(x=>x.inside), JSON.stringify(wh.filter(x=>!x.inside)));
+    if(out) await page.screenshot({ path: out.replace(/\.png$/,'-large4.png') });
 
     /* ── C. the cart under the header ──────────────────────────────────── */
     await mk();

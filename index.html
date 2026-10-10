@@ -915,9 +915,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .shop .zoomer.compact .catheadchip .cname { font-size:14px; }
   /* v1.22 "Grid" display — equal-width tiles, 3 per row, qty/weight stacked below the name */
   .shop .zoomer.gridmode .pills { display:grid; gap:max(0px, var(--tilegapy,8px)) max(0px, var(--tilegapx,8px)); }
-  .shop .zoomer.grid3 .pills { grid-template-columns:repeat(3,1fr); }
-  .shop .zoomer.grid4 .pills { grid-template-columns:repeat(4,1fr); }
-  .shop .zoomer.grid5 .pills { grid-template-columns:repeat(5,1fr); }
+  /* v2.10: minmax(0,1fr), not 1fr — a bare 1fr column cannot shrink below its longest word, so one
+     "Coriander/cilantro" made its whole column wider than the others (the household's Sandbox, 4 columns).
+     The small-tile grids learned this in v1.41; the large ones had not. */
+  .shop .zoomer.grid3 .pills { grid-template-columns:repeat(3, minmax(0,1fr)); }
+  .shop .zoomer.grid4 .pills { grid-template-columns:repeat(4, minmax(0,1fr)); }
+  .shop .zoomer.grid5 .pills { grid-template-columns:repeat(5, minmax(0,1fr)); }
   .shop .zoomer.gridmode .pill { flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:82px; padding:10px 6px; gap:2px; }
   .shop .zoomer.gridmode .pill .pemoji { margin:0; }
   .shop .zoomer.gridmode .pill .pill-meta { margin-left:0; padding-left:0; justify-content:center; }
@@ -933,8 +936,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     text-align:center; min-height:82px; padding:10px 14px; gap:2px; }
   .shop .zoomer.largevar .pill .pemoji { margin:0; }
   .shop .zoomer.largevar .pill .pill-meta { margin-left:0; padding-left:0; justify-content:center; }
-  .shop .zoomer.grid2 .pills { grid-template-columns:repeat(2,1fr); }
-  .shop .zoomer.grid6 .pills { grid-template-columns:repeat(6,1fr); }
+  .shop .zoomer.grid2 .pills { grid-template-columns:repeat(2, minmax(0,1fr)); }
+  .shop .zoomer.grid6 .pills { grid-template-columns:repeat(6, minmax(0,1fr)); }
   .shop .zoomer.grid6 .pill { font-size:10.5px; min-height:60px; padding:6px 2px; gap:1px; }
   .shop .zoomer.grid6 .pill .pemoji { font-size:13px; }
   .shop .zoomer.grid6 .pill .pill-meta { font-size:10px; }
@@ -967,7 +970,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v2.10: every tile in a layout is the same height (equalizeTiles() sets it) and a long name stops at
      two lines rather than making its tile taller than its neighbours. In fixed-column small tiles the row
      never wraps, so a tile whose name runs to two lines keeps its icon on the left like the rest. */
-  .shop .zoomer .pill .pname { min-width:0; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; overflow-wrap:break-word; }
+  .shop .zoomer .pill .pname { min-width:0; max-width:100%; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; overflow-wrap:break-word; }
   /* in fixed-column small tiles the icon and name share the first line and the amount takes its own line
      under the name — on one line the amount left a 115px tile no room for "Chicken thigh" */
   .shop .zoomer.smalltile.gridmode .pill { flex-wrap:wrap; align-content:center; row-gap:0; column-gap:5px; padding:6px 8px; font-size:14px; }
