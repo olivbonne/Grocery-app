@@ -68,8 +68,9 @@ const SEED = `(() => {
   const recipe = ()=>page.evaluate(()=>{ const c=JSON.parse(localStorage.getItem('ml_cache_v101')||'{}'); return ((c.plan||{}).recipes||[]).find(r=>r.id==='r2'); });
   const tile = (name)=>page.evaluate(n=>{ const p=[...document.querySelectorAll('.pill')].find(b=>b.textContent.includes(n)); if(!p) return null;
     const e=p.querySelector('.pemoji'), r=e.getBoundingClientRect();
-    const range=document.createRange(); const tn=[...p.childNodes].find(x=>x.nodeType===3 && x.textContent.trim()); if(tn) range.selectNode(tn);
-    const t=tn ? range.getBoundingClientRect() : null;
+    /* SUPERSEDED by v2.10: the name is in its own <span class="pname"> now (it is clamped and measured), not a
+       bare text node. Still protected: at L/XL the name sits UNDER the icon. */
+    const pn=p.querySelector('.pname'); const t=pn ? pn.getBoundingClientRect() : null;
     return { icoH:Math.round(r.height), icoBottom:Math.round(r.bottom), textTop:t?Math.round(t.top):null, dir:getComputedStyle(p).flexDirection }; }, name);
   const src = fs.readFileSync(path.join(__dirname,'..','..','index.html'),'utf8');
   const rx = (name)=>new RegExp(((src.match(new RegExp('const '+name+' = (\\/.*\\/);'))||[])[1]||'//').slice(1,-1));

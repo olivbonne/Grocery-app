@@ -2551,6 +2551,8 @@ function ensureLocCheck(){
     pos=>{ const here={lat:pos.coords.latitude,lng:pos.coords.longitude};
       let best=null,bd=Infinity; for(const s of [HOME_STORE,...STORES,...(state.stores||[])].filter(x=>!storeOverride(x.id).hidden)){ const c=storeCoord(s); if(!c) continue; const d=distM(here,c); if(d<bd){ bd=d; best=s; } }
       locState={checked:true, nearId:(best&&bd<=LOC_RADIUS_M)?best.id:null, busy:false, ts:Date.now(), err:0, dist:bd};
+      /* a fix that lands during start-up waits for the first render, or that render wipes the Undo toast */
+      if(!_booted){ _pendingFinish=locState.nearId; render(); return; }
       if(autoFinishAt(locState.nearId)) return;
       render(); },
     err=>{ locState={checked:true, nearId:null, busy:false, ts:Date.now(), err:(err&&err.code)||1}; render(); },
@@ -2561,6 +2563,7 @@ function ensureLocCheck(){
    does, with the same Undo. Only a positive match counts. No fix, home, or an unknown store never finish
    anything, and neither does a cart whose items were ticked with no store known. A web app cannot watch
    location in the background, so this happens the next time the app is opened or checks location. */
+let _booted=false, _pendingFinish=null;   // v2.10: see ensureLocCheck and the last lines of the module
 function autoFinishAt(nearId){
   if(!nearId || !isRealStore(nearId)) return false;
   const ck=state.items.filter(i=>i.checked); if(!ck.length) return false;
@@ -8420,6 +8423,7 @@ if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ try{ 
    into it. Every launch after that picks the start slot up at the top of the module, no reload. */
 if(migrateAppSlots163()){ applyStoredAppearance(appSlots()[0]); }
 render();
+_booted=true; if(_pendingFinish){ const n=_pendingFinish; _pendingFinish=null; autoFinishAt(n); }   // v2.10
 takeSharedRecipe();   // v1.90 a page shared in from the phone's share sheet
 </script>
 </body>

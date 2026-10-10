@@ -35,6 +35,10 @@ const seed = (extra, checkedStore) => `(() => {
   localStorage.setItem("ml_lists", JSON.stringify([{code:"v101",name:"Sandbox"}]));
   localStorage.setItem("ml_lastlist","v101"); localStorage.setItem("ml_me","O");
   localStorage.setItem("ml_shop","1"); localStorage.setItem("ml_optcoll","[]");
+  /* a fresh profile runs the one-time v1.63 slot migration, which reloads the page; a location fix that lands
+     before that reload finishes the cart and the reload then discards its Undo toast. A real phone migrated
+     long ago, so the seed says so too. (This was the v2.10 "flaky toast".) */
+  localStorage.setItem("ml_appmig163","1");
   localStorage.setItem("ml_collapse_v101", JSON.stringify({cats:[],ba:false,checked:true}));   // left OPEN last time
   ${extra||''}
 })()`;
@@ -106,7 +110,7 @@ const seed = (extra, checkedStore) => `(() => {
     const locOpts = (where)=>({ geolocation:where, permissions:['geolocation'] });
     await mk({ checkedStore:'rich', ls:'localStorage.setItem("ml_store","auto"); localStorage.setItem("ml_useloc","1");' }, locOpts(DAND));
     /* the toast lives five seconds: wait for it rather than for a fixed time */
-    await page.waitForFunction(()=>{ const t=document.getElementById('toast'); return t && /Finished/.test(t.textContent); }, null, { timeout:6000 }).catch(()=>{});
+    await page.waitForFunction(()=>(window.__toasts||[]).some(t=>/Finished/.test(t)), null, { timeout:8000 }).catch(()=>{});
     let c = await cache();
     /* every toast is recorded as it appears (an observer set up before the app boots), so the check
        cannot miss a five-second toast on a slow run */
