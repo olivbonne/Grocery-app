@@ -1267,8 +1267,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   @keyframes cartpop { 0%{transform:scale(1)} 48%{transform:scale(1.25)} 100%{transform:scale(1)} }
   .cartpop { animation:cartpop 1s cubic-bezier(.33,0,.2,1); transform-origin:center; }
   @keyframes cartnumpop { 0%{transform:translate(-50%,-50%) scale(1)} 45%{transform:translate(-50%,-50%) scale(1.4)} 100%{transform:translate(-50%,-50%) scale(1)} }
-  .cartnum { position:absolute; left:59%; top:46%; transform:translate(-50%,-50%); font-size:12px; font-weight:800; color:var(--accent); line-height:1; pointer-events:none; text-align:center; font-variant-numeric:proportional-nums; letter-spacing:-.3px; }
+  /* v2.10: placed as in the household's drawing (viewBox 10 10 80 72 at 26px): centred on x=57.24, digits 35
+     units tall with their baseline at y=42 — so 12.6px, sitting high in the open basket. Over 99 reads "99+". */
+  .cartnum { position:absolute; left:59.05%; top:28%; transform:translate(-50%,-50%); font-size:12.6px; font-weight:800; color:var(--accent); line-height:1; pointer-events:none; text-align:center; font-variant-numeric:proportional-nums; letter-spacing:-.3px; }
   .cartnum.pop { animation:cartnumpop 1s cubic-bezier(.33,0,.2,1); }
+  .cartplus { position:absolute; left:100%; top:-.08em; margin-left:.04em; font-size:.57em; }
   .spark { position:fixed; z-index:70; pointer-events:none; line-height:1; animation:spark .66s ease-out forwards; }
   @keyframes spark { 0%{opacity:0; transform:translate(-50%,-50%) scale(.3)} 25%{opacity:1} 100%{opacity:0; transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1)} }
   /* A22 flying item → cart: a live clone of the checked tile arcs down into the cart */
@@ -2938,8 +2941,9 @@ function optMode(){ return shopMode ? "shop" : "plan"; }
 let _prevPlanned=null, _prevChecked=null;
 let _cartPending = 0;   // items mid-flight to the cart — counted in the badge only once the flyer lands (bumpCart)
 function cartCount(){ return Math.max(0, state.items.filter(i=>i.checked).length - _cartPending); }
+function cartNumHTML(n){ return n>99 ? '99<span class="cartplus">+</span>' : String(n); }   // v2.10: "99+", the + small and raised, as drawn
 function cartBadgeHTML(iconHTML){
-  return `<span class="cartwrap" id="cartWrap">${iconHTML}<span class="cartnum" id="cartNum">${cartCount()}</span></span>`;
+  return `<span class="cartwrap" id="cartWrap">${iconHTML}<span class="cartnum" id="cartNum">${cartNumHTML(cartCount())}</span></span>`;
 }
 // A23 bottom-nav stats flanking the cart: "N to buy" (left) and "N in cart" (right)
 function navStatHTML(){
@@ -3023,7 +3027,7 @@ function bumpCart(){
   if(_cartPending>0) _cartPending--;                    // this flyer has landed — now count it in the badge
   const cart = document.querySelector("#cartWrap");
   const cnum = cart && cart.querySelector(".cartnum");
-  if(cnum){ cnum.textContent = cartCount();
+  if(cnum){ cnum.innerHTML = cartNumHTML(cartCount());
     cnum.classList.remove("pop"); void cnum.offsetWidth; cnum.classList.add("pop"); setTimeout(()=>cnum.classList.remove("pop"), 1000); }
   if(cart){ cart.classList.remove("cartpop"); void cart.offsetWidth; cart.classList.add("cartpop"); setTimeout(()=>cart.classList.remove("cartpop"), 1000); }
   if(cart) sparkleCart(cart);

@@ -107,14 +107,14 @@ const seed = (extra, checkedStore) => `(() => {
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-cart.png') });
 
     /* ── C2. the nav cart: count centred between two equal walls ─────── */
-    /* The household's drawing, viewBox cropped to 10 10 80 72: at the count's height (y≈44) the left wall
-       stands at x≈31.5 and the right at x≈83, so the basket's middle is x≈57.25 — (57.25-10)/80 of the width. */
+    /* The household's drawing (viewBox cropped to 10 10 80 72): the count is centred on x=57.24 as in their
+       examples; at the digits' foot (y≈42) the left wall stands at x≈31.5 and the right at x≈83. */
     const cart = await page.evaluate(()=>{ const sv=document.querySelector('#cartWrap svg').getBoundingClientRect(), n=document.querySelector('#cartNum').getBoundingClientRect();
-      const u=sv.width/80, mid=sv.left+47.25*u, lw=sv.left+21.5*u, rw=sv.left+73*u;
+      const u=sv.width/80, mid=sv.left+47.24*u, lw=sv.left+21.5*u, rw=sv.left+73*u;
       return { off:Math.round((n.left+n.width/2-mid)*10)/10, gapL:Math.round(n.left-lw), gapR:Math.round(rw-n.right), txt:document.querySelector('#cartNum').textContent }; });
-    ok('the nav cart\'s count sits centred in the basket, clear of both walls', Math.abs(cart.off)<=1.5 && cart.gapL>=2 && cart.gapR>=2, JSON.stringify(cart));
+    ok('the nav cart\'s count sits where the household drew it, clear of both walls', Math.abs(cart.off)<=1.5 && cart.gapL>=2 && cart.gapR>=2, JSON.stringify(cart));
     ok('…at its full size, 12px, not shrunk to fit (the household: "I don\'t want the number to look smaller")',
-       await page.evaluate(()=>getComputedStyle(document.querySelector('#cartNum')).fontSize)==='12px', '');
+       await page.evaluate(()=>parseFloat(getComputedStyle(document.querySelector('#cartNum')).fontSize))>=12, '');
 
     /* ── D. the cart finishes itself at a different store ─────────────── */
     const locOpts = (where)=>({ geolocation:where, permissions:['geolocation'] });
