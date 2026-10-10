@@ -83,8 +83,11 @@ const IDEAS = { source:"model", provider:"", results:[
     await tap('#setNav, #setNavP');
     const s = await sections();
     const folded = s.filter(x=>x.folded).map(x=>x.name).sort();
+    /* SUPERSEDED by v2.18: the five heavy sections are the "Customise the look" page's — the tiles' colours and shape
+       are "Tile colours and shape" there, and everyday Tiles (display, grouping, icons) starts open. Still protects:
+       the heavy sections start folded, by name. */
     ok('the five heavy sections start folded',
-       JSON.stringify(folded)===JSON.stringify(['Bars and overlays','Category headings','Colour','Layout & motion','Tiles']),
+       JSON.stringify(folded)===JSON.stringify(['Bars and overlays','Category headings','Colour','Layout & motion','Tile colours and shape']),
        JSON.stringify(folded));
     ok('…and Appearance is not among them, since Theme and Text size are why people come',
        s.some(x=>x.name==='Appearance' && !x.folded), JSON.stringify(s.map(x=>x.name+(x.folded?'*':''))));
@@ -100,7 +103,10 @@ const IDEAS = { source:"model", provider:"", results:[
     const hiddenFirst = await page.evaluate(()=>!!document.querySelector('[data-opt-tilebg]')
       && document.querySelector('[data-opt-tilebg]').getBoundingClientRect().height===0);
     ok('a control inside a folded section is in the DOM but not on screen', hiddenFirst===true, '');
-    await page.evaluate(()=>{ const h=[...document.querySelectorAll('.optsect')].find(x=>x.dataset.sect==='Tiles');
+    /* SUPERSEDED by v2.18: the tile colours sit in "Tile colours and shape" on the look page — open that page, then
+       tap the section's header. Still protects: one tap on a folded header shows what it holds. */
+    await tap('#optLook');
+    await page.evaluate(()=>{ const h=[...document.querySelectorAll('.optsect')].find(x=>x.dataset.sect==='Tile colours and shape');
       if(h) h.click(); });
     await page.waitForTimeout(500);
     const shown = await page.evaluate(()=>{ const b=document.querySelector('[data-opt-tilebg]');
@@ -110,7 +116,7 @@ const IDEAS = { source:"model", provider:"", results:[
     /* A default that overrode a choice would be worse than no default at all. */
     const remembered = await page.evaluate(()=>{ try{ return localStorage.getItem("ml_optcoll"); }catch(e){ return null; } });
     ok('…and the choice is written down, so the default never applies again',
-       remembered!==null && !/Tiles/.test(remembered), JSON.stringify(remembered));
+       remembered!==null && !/Tile colours and shape/.test(remembered), JSON.stringify(remembered));   // SUPERSEDED by v2.18: the section opened is "Tile colours and shape"
 
     /* ── C. the Shop page gets its screen back ─────────────────────────── */
     await mk();

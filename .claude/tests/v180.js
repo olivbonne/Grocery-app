@@ -69,7 +69,10 @@ const SEED = (extra)=>`(() => {
   const tap = async(sel)=>{ const l=page.locator(sel).first(); await l.click(); await page.waitForTimeout(900); };
   /* v1.87: each page's nav carries its own ids (the v1.77 note above) — with the Lists page gone the
      set is Shop / Plan / Settings, so the helpers name all three variants rather than the old L pair. */
-  const settings = ()=>tap('#setNav, #setNavP, #setNavS');
+  /* SUPERSEDED by v2.18: tiles of your own (Bars and overlays) and the colour rows live on the "Customise the look"
+     page now, so opening Settings for this suite means Settings and then that page — unless Settings reopens on it
+     (it remembers, in memory). Still protects everything below unchanged: the same controls, one tap further in. */
+  const settings = async()=>{ await tap('#setNav, #setNavP, #setNavS'); if(!(await page.locator('#lookBack').count())) await tap('#optLook'); };
   const shop = ()=>tap('#cartNav, #cartNavP, #cartNavS');
   const openTiles = async()=>{ await settings();
     const h=page.locator('.optsect[data-sect="Bars and overlays"]');

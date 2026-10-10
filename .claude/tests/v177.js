@@ -186,11 +186,14 @@ const SEED = (extra)=>`(() => {
     const b=h&&h.nextElementSibling; if(!b) return null;
     return { vis:getComputedStyle(b).display!=='none', rows:b.querySelectorAll('.optrow').length }; }, n);
 
+  /* SUPERSEDED by v2.18: Colour moved to the "Customise the look" page, so it is hidden on the everyday page
+     whatever its fold says. The "only its own" neighbour is Sort now. Still protects: folding one section
+     leaves every other section's rows alone. */
   const tilesBefore = await rowsIn('Tiles');
-  const colourBefore = await rowsIn('Colour');
+  const colourBefore = await rowsIn('Sort');
   await page.locator('.optsect[data-sect="Tiles"]').click(); await page.waitForTimeout(400);
   const tilesAfter = await rowsIn('Tiles');
-  const colourAfter = await rowsIn('Colour');
+  const colourAfter = await rowsIn('Sort');
   ok('folding a section hides its rows',
      tilesBefore.vis===true && tilesAfter.vis===false && tilesAfter.rows===tilesBefore.rows,
      JSON.stringify({before:tilesBefore, after:tilesAfter}));
@@ -204,14 +207,17 @@ const SEED = (extra)=>`(() => {
   /* TEST BUG (fixed): reading the offset before the click measured PLAYWRIGHT's scroll, not the app's
      — it scrolls a control into view before clicking it, so a header far down the page moved the
      window itself and the check blamed the app. Bring it into view first, THEN take the baseline. */
-  const soundHdr = page.locator('.optsect[data-sect="Sound"]');
+  /* SUPERSEDED by v2.18: everyday Settings is shorter now that the look has its own page, and Sound sits in
+     the first screen — no scroll, so the check would be hollow. The probe header is Predictions, further down.
+     Still protects: folding never rebuilds the page or loses the scroll position. */
+  const soundHdr = page.locator('.optsect[data-sect="Predictions"]');
   await soundHdr.scrollIntoViewIfNeeded(); await page.waitForTimeout(400);
   const yBefore = await page.evaluate(()=>window.scrollY);
   ok('settings is long enough to scroll (the check would be hollow otherwise)', yBefore>200, String(yBefore));
-  await page.evaluate(()=>{ const h=document.querySelector('.optsect[data-sect="Sound"]'); h.dataset.probe="1"; });
+  await page.evaluate(()=>{ const h=document.querySelector('.optsect[data-sect="Predictions"]'); h.dataset.probe="1"; });
   await soundHdr.click(); await page.waitForTimeout(400);
   const survived = await page.evaluate(()=>({
-    y:window.scrollY, sameNode:(document.querySelector('.optsect[data-sect="Sound"]')||{}).dataset?.probe==='1' }));
+    y:window.scrollY, sameNode:(document.querySelector('.optsect[data-sect="Predictions"]')||{}).dataset?.probe==='1' }));
   ok('folding does not rebuild the page — the marked header is the same element afterwards',
      survived.sameNode===true, JSON.stringify(survived));
   ok('…so the scroll position is not thrown away', Math.abs(survived.y-yBefore)<=40,
@@ -220,14 +226,20 @@ const SEED = (extra)=>`(() => {
   await page.locator('.optsect[data-sect="Tiles"]').click(); await page.waitForTimeout(400);
   ok('unfolding brings the rows back', (await rowsIn('Tiles')).vis===true, '');
 
-  await page.locator('.optsect[data-sect="Colour"]').click(); await page.waitForTimeout(400);
+  /* SUPERSEDED by v2.18: the section folded across a relaunch is Sort (Colour is on the look page now).
+     Still protects: a fold is remembered, and only that one. */
+  await page.locator('.optsect[data-sect="Sort"]').click(); await page.waitForTimeout(400);
   await page.reload({ waitUntil:'domcontentloaded' }); await page.waitForTimeout(1300);
   await settings();
-  const afterReload = await rowsIn('Colour');
+  const afterReload = await rowsIn('Sort');
   ok('a folded section is still folded after a relaunch', afterReload.vis===false, JSON.stringify(afterReload));
   ok('…and the ones you left open are still open', (await rowsIn('Tiles')).vis===true, '');
 
   /* the rows inside a folded-then-opened section must still work */
+  /* SUPERSEDED by v2.18: Colour lives behind "Customise the look", so open that page, then fold and open
+     Colour there. Still protects: a control in a section that was folded and opened again works. */
+  await page.locator('#optLook').click(); await page.waitForTimeout(500);
+  await page.locator('.optsect[data-sect="Colour"]').click(); await page.waitForTimeout(400);
   await page.locator('.optsect[data-sect="Colour"]').click(); await page.waitForTimeout(400);
   await page.locator('[data-opt-accent="blue"]').click(); await page.waitForTimeout(600);
   ok('a control still works after its section has been folded and opened',

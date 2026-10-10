@@ -65,6 +65,10 @@ or what it read) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, 
   measures each tile ONCE, as an unstretched copy in a hidden probe, remembered by what it shows until the layout
   signature changes (v2.16). v2.10–v2.11's per-tile measuring was over half of every redraw. A single stand-in
   probe tile was tried first and was wrong whenever most names wrap (three small columns) — CI caught it.
+- **Settings has two layers (v2.18).** Sections named in `LOOK_SECTS` show only on the "Customise the look" page
+  (`#optLook` opens it, `#lookBack` or the Settings tab returns); everything else is everyday Settings. A new section
+  is everyday unless it is added there. The search (`filterOptions`) only toggles classes — never `render()` from it,
+  or the field loses focus and the keyboard drops. A suite that drives a look control opens that page first.
 - **Views group items with `catShown(i.cat)`, never `i.cat === cat.id`** (v2.17). An item whose category is gone
   (removed on another phone mid-edit, or old data) otherwise vanishes from the list while still counted in "N to
   buy". It is display only: never rewrite a stored `cat` to tidy an orphan, the categories may still be arriving.

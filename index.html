@@ -1218,6 +1218,29 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .optsect.coll .optcaret::after { content:"▸"; }
   .optgrpbody { display:block; }
   .optgrpbody.coll { display:none; }
+  /* v2.18 (R12): Settings in two layers. groupOptions() tags each section's header and body with data-layer;
+     everyday Settings shows "main", the look page shows "look", a search shows both. */
+  .optpage:not(.look):not(.searching) [data-layer="look"] { display:none; }
+  .optpage.look [data-layer="main"], .optpage.look .optsearch, .optpage.look .optnone { display:none; }
+  .optpage:not(.searching) .optsect.layerfirst { border-top:none; padding-top:0; }
+  .optpage.searching .optgrpbody.coll { display:block; }
+  .optpage.searching .optsect .optcaret { visibility:hidden; }
+  .optpage .optnomatch { display:none !important; }
+  .optsect .optlayertag { display:none; }
+  .optpage.searching .optsect .optlayertag { display:inline; margin-left:auto; margin-right:8px; font-size:11px; font-weight:700; color:var(--muted2); letter-spacing:0; text-transform:none; }
+  .optsearch { display:flex; align-items:center; gap:8px; margin:2px 0 14px; padding:0 4px 0 12px; min-height:46px; border-radius:14px;
+    border:1.5px solid var(--line); background:var(--card); color:var(--muted2); box-sizing:border-box; }
+  .optsearch-ic { display:inline-flex; flex:none; }
+  .optsearch input { flex:1; min-width:0; border:none; outline:none; background:transparent; color:var(--text); font:inherit; font-size:16px; font-weight:600; padding:10px 0; -webkit-appearance:none; appearance:none; }
+  .optsearch input::placeholder { color:var(--muted2); }
+  .optsearch input::-webkit-search-cancel-button { -webkit-appearance:none; display:none; }
+  .optsearch button { flex:none; border:none; background:transparent; color:var(--muted2); min-width:40px; min-height:40px; font-size:22px; font-weight:700; line-height:1; border-radius:10px; }
+  .optsearch:not(.has) button { visibility:hidden; }
+  .optnone { margin:4px 2px 14px; font-size:13px; font-weight:600; color:var(--muted2); }
+  .optlookbtn { display:flex; align-items:center; gap:10px; text-align:left; margin-top:4px; margin-bottom:6px; }
+  .optlookbtn .olb-t { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .optlookbtn .olb-s { font-size:11.5px; font-weight:600; color:var(--muted2); }
+  .optlookbtn .olb-c { flex:none; font-size:24px; font-weight:700; color:var(--muted2); line-height:1; }
   /* v1.57 item 2: Roundness, Tile gap and Page margins are one family and should read as a block —
      a shared label column stops their controls stepping in and out by a few pixels per row.
      v1.59 item 2: the label moves ABOVE the steppers rather than beside them. A stepper cell needs
@@ -1806,7 +1829,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.17";
+const APP_VERSION = "v2.18";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -7452,9 +7475,16 @@ function wirePlanPage(){
 }
 function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay sheet); v1.20 slides in/out
   const bk=app.querySelector("#setBack"); if(bk) bk.onclick=()=>gotoPage(settingsFrom);   // ‹ back slides to where we came from
-  const pns=app.querySelector("#planNavS"); if(pns) pns.onclick=()=>gotoPage(0);   // Plan tab
-  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(1);   // Shop lies to the left → slides in from the left
-  const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{};   // already on Settings
+  const pns=app.querySelector("#planNavS"); if(pns) pns.onclick=()=>{ optQuery=""; gotoPage(0); };   // Plan tab
+  const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>{ optQuery=""; gotoPage(1); };   // Shop lies to the left → slides in from the left
+  const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{ if(setLook){ setLook=false; render(); window.scrollTo(0,0); } };   // already on Settings; v2.18: from the look page, back to everyday Settings
+  const ol=app.querySelector("#optLook"); if(ol) ol.onclick=()=>{ _lookY=window.scrollY||0; setLook=true; optQuery=""; render(); window.scrollTo(0,0); };
+  const lb=app.querySelector("#lookBack"); if(lb) lb.onclick=()=>{ setLook=false; render(); const y=_lookY; window.scrollTo(0,y); requestAnimationFrame(()=>window.scrollTo(0,y)); };
+  const os=app.querySelector("#optSearch"); if(os){
+    os.oninput=e=>{ optQuery=e.target.value; os.parentElement.classList.toggle("has", !!optQuery); filterOptions(); };
+    os.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); os.blur(); } }; }
+  const oc=app.querySelector("#optSearchClear"); if(oc) oc.onclick=()=>{ optQuery=""; const i=app.querySelector("#optSearch");
+    if(i){ i.value=""; i.parentElement.classList.remove("has"); i.focus(); } filterOptions(); };
   wireOptions();
   wireEditSheet();
   wireRcptSheet(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
@@ -7471,8 +7501,14 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
    one, and none of them the reason anybody opens this page. Folded by default, never hidden: one tap
    opens any of them and the choice sticks from then on. Appearance keeps Theme, Wallpaper and Text
    size open, being the three with an immediate visible effect. Only the ABSENT case takes this
-   default, so anyone who has already folded or unfolded anything keeps exactly what they chose. */
-const OPT_COLL_DEFAULT = ["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tiles"];
+   default, so anyone who has already folded or unfolded anything keeps exactly what they chose.
+   v2.18: everyday Tiles is open by default now that its colours moved to the look page; the look page's sections start folded, as its index. */
+/* v2.18 (R12): Settings has two layers — everyday settings, and "Customise the look" on its own page — and a
+   search across both. Memory only: the look page is where you are, not a preference, and a search left on would
+   make Settings look broken the next time. var, not let: boot-order rule. */
+var setLook = false, optQuery = "", _lookY = 0;
+const LOOK_SECTS = new Set(["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tile colours and shape"]);
+const OPT_COLL_DEFAULT = ["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tile colours and shape"];
 function optColl(){ try{ const raw=localStorage.getItem("ml_optcoll"); if(raw===null) return new Set(OPT_COLL_DEFAULT);
     const a=JSON.parse(raw||"[]"); return new Set(Array.isArray(a)?a:[]); }catch(e){ return new Set(); } }
 /* Calls groupOptions() and NOT render(): folding a section must not rebuild the page and throw away
@@ -7492,6 +7528,7 @@ function groupOptions(){
   page.querySelectorAll(".optgrpbody").forEach(b=>{ const p=b.parentNode;
     while(b.firstChild) p.insertBefore(b.firstChild, b);
     b.remove(); });
+  let firstMain=true, firstLook=true;
   [...page.querySelectorAll(".optsect")].forEach(h=>{
     const name=h.dataset.sect||"";
     const body=document.createElement("div");
@@ -7501,12 +7538,51 @@ function groupOptions(){
       const next=n.nextSibling; body.appendChild(n); n=next;
     }
     h.insertAdjacentElement("afterend", body);
+    const layer = LOOK_SECTS.has(name) ? "look" : "main";
+    h.dataset.layer = layer; body.dataset.layer = layer;
+    h.classList.toggle("layerfirst", layer==="look" ? firstLook : firstMain);
+    if(layer==="look") firstLook=false; else firstMain=false;
+    if(layer==="look" && !h.querySelector(".optlayertag")){ const c=h.querySelector(".optcaret");
+      const tag=document.createElement("span"); tag.className="optlayertag"; tag.textContent="Customise the look";
+      if(c) h.insertBefore(tag, c); else h.appendChild(tag); }
     const shut=coll.has(name);
     body.classList.toggle("coll", shut);
     h.classList.toggle("coll", shut);
     h.setAttribute("aria-expanded", shut?"false":"true");
-    h.onclick=()=>toggleOptColl(name);
+    h.onclick=()=>{ if(optQuery.trim()) return; toggleOptColl(name); };
   });
+  filterOptions();
+}
+/* v2.18 (R12): the search. Classes only — no render — so the field keeps its focus and the keyboard stays up.
+   A section whose NAME matches shows whole; otherwise each row shows if its text matches (every word, any order),
+   a subhead shows with any row under it (or whole, if the subhead itself matches), and a note shows with the
+   row above it. Folded sections open while searching. Runs again after every render, so a setting changed
+   from the results keeps the results. */
+function optNorm(s){ return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/color/g,"colour").replace(/gray/g,"grey"); }
+function filterOptions(){ const page=document.querySelector(".optpage"); if(!page) return;
+  const q=optNorm(optQuery).trim(), words=q.split(/\s+/).filter(Boolean);
+  page.classList.toggle("searching", words.length>0);
+  page.querySelectorAll(".optnomatch").forEach(e=>e.classList.remove("optnomatch"));
+  const none=page.querySelector("#optNoMatch");
+  if(!words.length){ if(none){ none.hidden=true; none.textContent=""; } return; }
+  const hit=t=>{ const n=optNorm(t); return words.every(w=>n.includes(w)); };
+  let any=0;
+  page.querySelectorAll(".optsect").forEach(h=>{ const body=h.nextElementSibling;
+    if(!body || !body.classList.contains("optgrpbody")) return;
+    const secHit=hit(h.dataset.sect||"");
+    let shown=0, sub=null, subHit=false, subShown=0, lastShown=false;
+    const closeSub=()=>{ if(sub && !subHit && !subShown) sub.classList.add("optnomatch"); };
+    for(const k of [...body.children]){
+      if(k.classList.contains("optsub")){ closeSub(); sub=k; subHit=!secHit && hit(k.textContent); subShown=0; lastShown=false; continue; }
+      const isNote=(k.tagName==="P" || k.tagName==="DIV") && !k.classList.contains("optrow") && !k.querySelector("button,input,select,textarea");
+      const show = secHit || subHit ? true : (isNote ? lastShown : hit(k.textContent));
+      if(show){ shown++; subShown++; } else k.classList.add("optnomatch");
+      if(!isNote) lastShown=show;
+    }
+    closeSub();
+    if(shown || secHit) any++; else { h.classList.add("optnomatch"); body.classList.add("optnomatch"); }
+  });
+  if(none){ none.hidden=any>0; none.textContent=any>0 ? "" : `No settings match “${optQuery.trim()}”.`; }
 }
 function wireOptions(){
   const optBg=app.querySelector("#optBg"); if(optBg) optBg.onclick=()=>{ optOpen=false; render(); };
@@ -8209,6 +8285,8 @@ function optionsBody(){
   let curSort = (displayFor()==="cat" && (sortModeFor()==="location"||sortModeFor()==="ai")) ? "cat" : sortModeFor();
   if(curSort==="ai" && !aiSortOK()) curSort="location";
   return `
+    ${view!=="lists" ? `<div class="optsearch${optQuery?' has':''}"><span class="optsearch-ic" aria-hidden="true">${SEARCH_SVG}</span><input id="optSearch" type="search" placeholder="Search settings" aria-label="Search settings" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" value="${esc(optQuery)}"><button id="optSearchClear" type="button" aria-label="Clear search">×</button></div>
+    <p class="optnone" id="optNoMatch" role="status" hidden></p>` : ""}
     ${sect("Appearance")}
     ${rowNL("Theme", `<div class="seg segfull" style="flex-wrap:wrap">${
       [{k:"light",label:"Light",bg:"#F6F2E7",br:"#DAD3C0",dot:"#D2542B"},
@@ -8252,6 +8330,7 @@ function optionsBody(){
     ${/* v2.00 item 2: the appearance slots, the margin steppers and the page-transition controls
           are real preferences, but they are not what someone opens Settings to find — and they sat
           in front of Sort and Smart add. Their own section, folded by default. */""}
+    <button class="optaction optlookbtn" id="optLook"><span class="olb-t"><span>Customise the look</span><span class="olb-s">Layout, colours, bars, headings and tiles</span></span><span class="olb-c" aria-hidden="true">›</span></button>
     ${sectHR("Layout & motion")}
     ${/* v1.57 item 2: four slots. One saved look was not enough to compare two ideas — which is what
           anyone actually does with this. Applying is one tap; saving is a deliberate second row, so a
@@ -8370,6 +8449,7 @@ function optionsBody(){
           kinds of thing and someone who wants them to differ has no other way to say so. Category
           text moved out of Colour to sit with the surface it paints on, and Category icons moved up
           from the bottom of Tiles: it is a heading control, not a tile one. */""}
+    ${/* v2.18: Category icons and Icon style moved again, into everyday Tiles — this section is colours only now, on the look page. */""}
     ${subhead("On the list")}
     ${colRow("Text", "opt-cattext", catTxt, "cat", {pal:TEXTCOLS, page:true})}
     ${colRow("Background", "opt-cathdbg", catHdBg, "cathdbg", {page:true})}
@@ -8378,9 +8458,6 @@ function optionsBody(){
     ${colRow("Text", "opt-reghdtext", regHdTxt, "reghdtext", {pal:TEXTCOLS, page:true})}
     ${colRow("Background", "opt-reghdbg", regHdBg, "reghdbg", {page:true})}
     ${colRow("Border", "opt-reghdbrd", regHdBrd, "reghdbrd", {page:true})}
-    ${rowNL("Category icons", `<div class="seg"><button data-opt-catemoji="1" class="${catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">${iconStyle()==="drawn"?catMarkSVG("vegetable"):"🥦"}</span>On</button><button data-opt-catemoji="0" class="${!catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
-    ${rowNL("Icon style", `<div class="seg"><button data-opt-iconstyle="drawn" class="${iconStyle()==='drawn'?'on':''}"><span class="tdswatch tdswatch-ico">${catMarkSVG("vegetable")}</span>Drawn</button><button data-opt-iconstyle="emoji" class="${iconStyle()==='emoji'?'on':''}">Emoji</button></div>`)}
-    <p class="hint" style="text-align:left;margin:0 0 12px">Drawn uses line drawings for items and the nine standard categories; categories you made keep their emoji.</p>
 
     ${sectHR("Tiles")}
     ${view!=="lists" ? `<div class="optrow optrow-wide optnl"><span class="optlabel">Tile display</span><div class="optwide">
@@ -8396,6 +8473,15 @@ function optionsBody(){
       </div></div></div>
     ${rowNL("Group by category", `<div class="seg"><button data-opt-caton="1" class="${catOn?'on':''}">On</button><button data-opt-caton="0" class="${!catOn?'on':''}">Off</button></div>`)}
     ${catOn ? rowNL("Group by subcategory", `<div class="seg"><button data-opt-subon="1" class="${subOn?'on':''}">On</button><button data-opt-subon="0" class="${!subOn?'on':''}">Off</button></div>`) : ""}` : ""}
+    ${row("Item icons", `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">${iconStyle()==="drawn"?illSVG("bread"):"🍞"}</span>On</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
+    ${itemEmojiOn() ? row("Icon size", `<div class="seg">${[["s","S"],["m","M"],["l","L"],["xl","XL"]].map(([k,l])=>`<button data-opt-icosize="${k}" class="${icoSize()===k?'on':''}" aria-label="Icon size ${l}">${l}</button>`).join("")}</div>`) : ""}
+    ${(itemEmojiOn() && /^(l|xl)$/.test(icoSize())) ? `<div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">At this size each tile shows its name under the icon.</div>` : ""}
+    ${rowNL("Category icons", `<div class="seg"><button data-opt-catemoji="1" class="${catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">${iconStyle()==="drawn"?catMarkSVG("vegetable"):"🥦"}</span>On</button><button data-opt-catemoji="0" class="${!catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
+    ${rowNL("Icon style", `<div class="seg"><button data-opt-iconstyle="drawn" class="${iconStyle()==='drawn'?'on':''}"><span class="tdswatch tdswatch-ico">${catMarkSVG("vegetable")}</span>Drawn</button><button data-opt-iconstyle="emoji" class="${iconStyle()==='emoji'?'on':''}">Emoji</button></div>`)}
+    <p class="hint" style="text-align:left;margin:0 0 12px">Drawn uses line drawings for items and the nine standard categories; categories you made keep their emoji.</p>
+    ${iconStyle()==="drawn" ? row("Line weight", `<div class="seg">${[["fine","Fine"],["thin","Thin"],["regular","Regular"],["bold","Bold"]].map(([k,l])=>`<button data-opt-linew="${k}" class="${lineW()===k?'on':''}">${l}</button>`).join("")}</div>`) : ""}
+    ${/* v2.18 (R12): the tiles' colours and shape are the look page's; what a tile shows stays in everyday Tiles. */""}
+    ${sectHR("Tile colours and shape")}
     ${rowNL("Tile appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}"><span class="tdswatch" data-sw="full" style="background:var(--accent)"></span>Full</button><button data-opt-fill="accent" class="${fillMode()==='accent'?'on':''}"><span class="tdswatch" data-sw="accent" style="border:1.5px solid var(--muted2);border-left:4px solid var(--accent)"></span>Accent</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}"><span class="tdswatch" data-sw="empty" style="border:1.5px solid var(--muted2)"></span>Empty</button></div>`)}
     ${/* v1.57 item 2: the two tile states, each with the same three colours in the same order, so the
           two blocks can be read against each other. */""}
@@ -8407,14 +8493,12 @@ function optionsBody(){
     ${colRow("Text", "opt-utiletext", uTileTxt, "utiletext", {pal:TEXTCOLS, page:true})}
     ${colRow("Background", "opt-utilebg", uTileBg, "utilebg", {page:true})}
     ${colRow("Border", "opt-utilebrd", uTileBrd, "utilebrd", {page:true})}
+    ${/* v2.18: roundness and gap are the tiles' shape, not part of "Unselected tiles" above them — their own subhead */""}
+    ${subhead("Shape")}
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Tile roundness</span><div class="optwide">
       <div class="numgrid">${numCell("rad")}</div></div></div>
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Tile gap</span><div class="optwide">
       <div class="numgrid">${numCell("gapx")}${numCell("gapy")}</div></div></div>
-    ${row("Item icons", `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">${iconStyle()==="drawn"?illSVG("bread"):"🍞"}</span>On</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
-    ${itemEmojiOn() ? row("Icon size", `<div class="seg">${[["s","S"],["m","M"],["l","L"],["xl","XL"]].map(([k,l])=>`<button data-opt-icosize="${k}" class="${icoSize()===k?'on':''}" aria-label="Icon size ${l}">${l}</button>`).join("")}</div>`) : ""}
-    ${(itemEmojiOn() && /^(l|xl)$/.test(icoSize())) ? `<div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">At this size each tile shows its name under the icon.</div>` : ""}
-    ${iconStyle()==="drawn" ? row("Line weight", `<div class="seg">${[["fine","Fine"],["thin","Thin"],["regular","Regular"],["bold","Bold"]].map(([k,l])=>`<button data-opt-linew="${k}" class="${lineW()===k?'on':''}">${l}</button>`).join("")}</div>`) : ""}
     ${sect("Sort")}
     ${rowNL("Location", `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">On</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">Off</button></div>`)}
     <div class="optrow optrow-wide optnl"><span class="optlabel">Store</span><div class="optwide">
@@ -8500,14 +8584,15 @@ function renderSettingsPage(){
     <div class="topfix" id="topfix">
       <header>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span class="title disp" role="heading" aria-level="1">Settings</span>
+          ${setLook ? `<button class="backbtn" id="lookBack" aria-label="Back to Settings">‹</button><span class="title disp" role="heading" aria-level="1">Customise the look</span>`
+                    : `<span class="title disp" role="heading" aria-level="1">Settings</span>`}
         </div>
         <div style="display:flex;align-items:center;gap:8px">${syncChip()}</div>
       </header>
     </div>
     <div class="wrap" role="main">
     <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
-      <div class="optpage">${optionsBody()}</div>
+      <div class="optpage${setLook?' look':''}">${optionsBody()}</div>
     </div></div>
     </div>
     ${bottomNav({planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}

@@ -69,7 +69,10 @@ const SEED = `(() => {
     await page.waitForTimeout(1300);
   };
   const tap = async(sel)=>{ const l=page.locator(sel).first(); await l.scrollIntoViewIfNeeded(); await l.click(); await page.waitForTimeout(750); };
-  const settings = ()=>tap('#setNav, #setNavP, #setNavS');
+  /* SUPERSEDED by v2.18: the search bar's controls (Bars and overlays) live on the "Customise the look" page now, so
+     opening Settings for this suite means Settings and then that page — unless Settings reopens on it (it remembers,
+     in memory). Still protects everything below unchanged: the same controls, one tap further in. */
+  const settings = async()=>{ await tap('#setNav, #setNavP, #setNavS'); if(!(await page.locator('#lookBack').count())) await tap('#optLook'); };
   const shop = ()=>tap('#cartNav, #cartNavP, #cartNavS');
   const align = async(k)=>{ await settings(); await tap(`[data-opt-srchalign="${k}"]`); await shop(); };
   const bumpN = async(k,n)=>{ await settings();
