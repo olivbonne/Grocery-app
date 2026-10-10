@@ -57,10 +57,17 @@ or what it read) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, 
 - **New `localStorage` keys that are preferences or data (not a LOOK) must be added to BOTH
   `APP_EXCLUDE_BOOT` and `APP_EXCLUDE`** — they are duplicated deliberately. Otherwise applying an
   appearance slot wipes them. This has bitten twice (`ml_lastview`, then `ml_optcoll` in v2.00).
+- **Module top level runs in order, and `applyTheme()` runs at boot (≈ line 3100).** A module-level `let`/`const`
+  that anything called at boot touches must be declared above that call, or be `var` — otherwise the app dies
+  at start-up with "Cannot access … before initialization" (v2.16 `_cardHexMemo`, caught by the suite).
+- **Never measure every tile on a render.** Per-row equal heights are CSS (rows stretch their tiles); the usual
+  tile height is `--tileh`, measured on one probe tile only when the layout signature changes (`syncTileH`,
+  v2.16). v2.10–v2.11's per-tile measuring was over half of every redraw.
 - **Normalisers that rebuild an object from a fixed shape drop unknown fields.** `writePlan` and
   `planIngNorm` both did, silently (v1.94 amounts, v1.97 saved plans). Adding a field means adding it
   there too. The list document itself is one: `subscribe()` rebuilds `state` field by field, so a new
-  top-level field (v2.09 `prices`) must be named there and in the two default `state` literals.
+  top-level field (v2.09 `prices`, v2.16 `aisle`) must be named there, in the two default `state` literals and in
+  `listDoc()` (the v2.15 backups).
 
 ## Workflow
 - Develop on the branch the session is given, push, and open a PR into `main`.
@@ -108,7 +115,9 @@ or what it read) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, 
   suite (4 shards, 300 s per suite) on each pull request. Check its result on the PR before merging.
 - **RULE — sweep ONCE, at the end of the batch.** While building, run only the new version's suite
   plus the syntax gate. The full sweep and `/verify-app` run once, after the last change, right
-  before shipping. (Standing user instruction, 2026-09-06.)
+  before shipping. (Standing user instruction, 2026-09-06.) Since v2.16 the sweep of record is the CI
+  run on the PR — the same suites, four shards, about six minutes against 25+ locally; run them locally
+  only when CI is unavailable, and never merge on a red or missing CI run.
 - **RULE — one version per batch, not one per item.** A batch of numbered requests is ONE
   `APP_VERSION` bump, one CHANGELOG row, one PR. Ship mid-batch only when an item is genuinely
   independent — and say why.

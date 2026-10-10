@@ -101,12 +101,13 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   @font-face{ font-family:'Outfit'; font-style:normal; font-weight:400 800; font-display:swap;
     src:url('outfit-latin-ext.woff2') format('woff2');
     unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF; }
+  /* v2.16: --muted and --muted2 darkened (lightened on dark themes) so small grey text — counts, dates, section names, hints — reads at 4.5:1 or better on the page and on cards (the app review measured 2.4–2.7:1). */
   :root{
     --ink:#232019; --paper:#F6F2E7; --accent:#D2542B;
     /* v1.42 item 8: text colour is user-selectable, but --ink is also load-bearing for borders and
        box edges. --text is the READABLE-TEXT half of it; the picker overrides only this. */
     --text:var(--ink);
-    --card:#FFFDF7; --line:#DAD3C0; --chip:#EDE7D6; --muted:#9A9484; --muted2:#A49E8E;
+    --card:#FFFDF7; --line:#DAD3C0; --chip:#EDE7D6; --muted:#6F695A; --muted2:#746E5F;
     --btn:#232019; --btn-text:#ffffff;
     /* v1.41 item 4: the readable text colour on an accent-filled surface. Every theme's accent is
        dark enough for white — except Noir, whose accent is pure white, which made filled buttons and
@@ -118,7 +119,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   }
   body.dark, html.dark{
     --ink:#E7EEE5; --paper:#141C18; --accent:#E2502C;
-    --card:#1E2B25; --line:#33433B; --chip:#27352E; --muted:#9DB0A4; --muted2:#7E9286;
+    --card:#1E2B25; --line:#33433B; --chip:#27352E; --muted:#9DB0A4; --muted2:#8D9F95;
     --btn:#2F4A2C; --btn-text:#EAF2E7;
     --done-bg:#212E28; --done-line:#33433B; --done-text:#7E9286; --done-edge:#52685C;
     --mic-img:url('img/mic-dark.png');
@@ -131,7 +132,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.37 "Ink" — true two-colour monochrome: black on white, greys only, no hue anywhere. */
   html[data-theme="ink"], body[data-theme="ink"]{
     --ink:#000000; --paper:#FFFFFF; --accent:#000000;
-    --card:#FFFFFF; --line:#D8D8D8; --chip:#F0F0F0; --muted:#6B6B6B; --muted2:#8E8E8E;
+    --card:#FFFFFF; --line:#D8D8D8; --chip:#F0F0F0; --muted:#6B6B6B; --muted2:#717171;
     --btn:#000000; --btn-text:#FFFFFF;
     --done-bg:#F4F4F4; --done-line:#E2E2E2; --done-text:#8E8E8E; --done-edge:#BDBDBD;
     --mic-img:url('img/mic-light.png');
@@ -140,7 +141,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v1.39 "Noir" — Ink inverted: white on black, greys only. */
   html[data-theme="noir"], body[data-theme="noir"]{
     --ink:#FFFFFF; --paper:#000000; --accent:#FFFFFF;
-    --card:#0E0E0E; --line:#333333; --chip:#1A1A1A; --muted:#9A9A9A; --muted2:#767676;
+    --card:#0E0E0E; --line:#333333; --chip:#1A1A1A; --muted:#9A9A9A; --muted2:#848484;
     --btn:#FFFFFF; --btn-text:#000000; --on-accent:#000000;
     --done-bg:#141414; --done-line:#2A2A2A; --done-text:#767676; --done-edge:#4A4A4A;
     --mic-img:url('img/mic-dark.png');
@@ -1052,10 +1053,14 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .shop .zoomer.smalltile.gridmode .pill .pill-meta { flex:none; white-space:nowrap; }
   .shop .zoomer.smalltile .pill .pemoji { font-size:16px; }
   .shop .zoomer.smalltile .pill .pill-meta { font-size:12px; padding-left:7px; }
-  /* v2.10: every tile in a layout is the same height (equalizeTiles() sets it) and a long name stops at
+  /* v2.10: every tile in a layout is the same height (syncTileH() and the rows' CSS stretch set it) and a long name stops at
      two lines rather than making its tile taller than its neighbours. In fixed-column small tiles the row
      never wraps, so a tile whose name runs to two lines keeps its icon on the left like the rest. */
   .shop .zoomer .pill .pname { min-width:0; max-width:100%; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; overflow-wrap:break-word; }
+  /* v2.16: per-row equal heights by the layout itself — a row stretches every tile to its tallest — with
+     --tileh (syncTileH: one probe tile, measured when the layout changes) as every tile's floor. */
+  .shop .zoomer .pills { align-items:stretch; }
+  .shop .zoomer .pills > .pill { min-height:var(--tileh, 0px); }
   /* in fixed-column small tiles the icon and name share the first line and the amount takes its own line
      under the name — on one line the amount left a 115px tile no room for "Chicken thigh" */
   .shop .zoomer.smalltile.gridmode .pill { flex-wrap:wrap; align-content:center; row-gap:0; column-gap:5px; padding:6px 8px; font-size:14px; }
@@ -1349,6 +1354,17 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      shape, and therefore every Across/Down/Width/Height/Corner/colour setting v1.78 gave it. */
   .addpill-plus { flex:1; text-align:center; font-family:'Outfit',system-ui,sans-serif;
     font-size:26px; font-weight:700; line-height:1; }
+  /* v2.16: the bar says what it does in words too — the empty list says "Tap Add items below", and a bare "+"
+     left that to guesswork (the app review). The words drop out when the bar is set narrow in Settings. */
+  .addpill { container-type:inline-size; }
+  .addpill-in { flex:1; display:flex; align-items:center; justify-content:center; gap:8px; min-width:0; }
+  .addpill-in .addpill-plus { flex:none; }
+  .addpill-lbl { font-size:16px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  @container (max-width:150px){ .addpill-lbl { display:none; } }
+  /* v2.16: the empty-week hint on Plan says what the page is for and offers a first step. */
+  .planhint { margin:4px 0 14px; padding:14px; border-radius:14px; background:var(--card); border:1.5px solid var(--line); }
+  .planhint p { margin:0 0 10px; font-size:14px; font-weight:600; line-height:1.45; color:var(--text); }
+  .planhint .newlist { margin:0; }
   .addpill-ai { pointer-events:auto; flex:none; width:54px; border:none; background:var(--btn); color:var(--btn-text);
     font-size:20px; border-radius:999px; box-shadow:0 8px 22px rgba(20,30,22,.22); transition:transform .12s ease; }
   .addpill-ai:active { transform:scale(.96); }
@@ -1780,7 +1796,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.15";
+const APP_VERSION = "v2.16";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -1920,7 +1936,7 @@ function mergeAmt(a, b){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -2459,7 +2475,7 @@ if(["red","blue","yellow","pink","grey"].includes(theme)){
 }
 if(!THEMES[theme]) theme = "light";
 try{ localStorage.setItem("ml_theme", theme); }catch(e){}
-function applyTheme(){ const t = THEMES[theme] || THEMES.light;
+function applyTheme(){ _cardHexMemo=null; const t = THEMES[theme] || THEMES.light;
   document.documentElement.setAttribute("data-theme", theme); document.body.setAttribute("data-theme", theme);
   document.body.classList.toggle("dark", t.dark); document.documentElement.classList.toggle("dark", t.dark);
   const tc=document.getElementById("themeColor"); if(tc) tc.content = t.tc;
@@ -2885,6 +2901,28 @@ function aiDismissProposal(){
   const p=aiProposal(); if(p){ aiDismiss[p.key]=p.propKey; try{ localStorage.setItem(lkey("ml_aidismiss"), JSON.stringify(aiDismiss)); }catch(e){} }
   render();
 }
+/* v2.16: the learned shop order travels with the list. When a shop is finished (Save to Regulars, or the cart
+   finishing itself), this phone writes its learned order for that store into the list — state.aisle[store] =
+   { items, cats, ts }. Every phone adopts a store's entry when it is newer than the last one it took, merging
+   it over what it learned itself; it takes effect from the next trip. */
+function aiAdopt(){ try{
+  const A=(state && state.aisle) || {}; let seen={};
+  try{ seen=JSON.parse(localStorage.getItem(lkey("ml_aiseen"))||"{}")||{}; }catch(e){}
+  let changed=false;
+  Object.keys(A).forEach(k=>{ const r=A[k]; if(!r || typeof r!=="object" || !(+r.ts>(+seen[k]||0))) return;
+    if(r.items && typeof r.items==="object") aiItems[k]=Object.assign({}, aiItems[k]||{}, r.items);
+    if(r.cats && typeof r.cats==="object") aiOrder[k]=Object.assign({}, aiOrder[k]||{}, r.cats);
+    seen[k]=+r.ts; changed=true; });
+  if(changed){ try{ localStorage.setItem(lkey("ml_aiitems"),JSON.stringify(aiItems)); localStorage.setItem(lkey("ml_aiorder"),JSON.stringify(aiOrder));
+    localStorage.setItem(lkey("ml_aiseen"),JSON.stringify(seen)); }catch(e){} }
+}catch(e){} }
+function aiPublish(){ try{
+  if(!aiSortOK()) return; const k=aiStoreKey(); if(!k || k==="default") return;
+  const items=aiItems[k]||{}, cats=aiOrder[k]||{}; if(!Object.keys(items).length && !Object.keys(cats).length) return;
+  const ts=Date.now();
+  state.aisle=Object.assign({}, state.aisle||{}, { [k]:{ items:Object.assign({}, items), cats:Object.assign({}, cats), ts } });
+  try{ const seen=JSON.parse(localStorage.getItem(lkey("ml_aiseen"))||"{}")||{}; seen[k]=ts; localStorage.setItem(lkey("ml_aiseen"),JSON.stringify(seen)); }catch(e){}
+}catch(e){} }
 
 /* B4 predictive replenishment — on-device. Logs a purchase whenever items are
    swept (bought), estimates each item's typical interval, and on the user's
@@ -3068,6 +3106,20 @@ function optMode(){ return shopMode ? "shop" : "plan"; }
 let _prevPlanned=null, _prevChecked=null;
 let _cartPending = 0;   // items mid-flight to the cart — counted in the badge only once the flyer lands (bumpCart)
 function cartCount(){ return Math.max(0, state.items.filter(i=>i.checked).length - _cartPending); }
+/* v2.16: keep the screen awake while the cart has something in it, so the phone does not dim and lock mid-aisle
+   (Settings › Sound › Keep screen on, on unless switched off). The browser drops the lock whenever the app is
+   hidden; it is asked for again when the app comes back. Refused or unsupported: nothing happens. */
+let _wl=null, _wlAsking=false;
+function wakePref(){ try{ return localStorage.getItem("ml_wakelock")!=="0"; }catch(e){ return true; } }
+function wakeWanted(){ try{ return wakePref() && configured && !!me && !optOpen && view!=="plan" && cartCount()>0 && document.visibilityState==="visible"; }catch(e){ return false; } }
+function syncWakeLock(){ try{
+  const want=wakeWanted();
+  if(want && !_wl && !_wlAsking && navigator.wakeLock && navigator.wakeLock.request){ _wlAsking=true;
+    navigator.wakeLock.request("screen").then(l=>{ _wlAsking=false; _wl=l; l.addEventListener("release", ()=>{ if(_wl===l) _wl=null; });
+      if(!wakeWanted()){ _wl=null; l.release().catch(()=>{}); } }).catch(()=>{ _wlAsking=false; }); }
+  else if(!want && _wl){ const l=_wl; _wl=null; l.release().catch(()=>{}); }
+}catch(e){} }
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") syncWakeLock(); });
 /* v2.11: the count is drawn INSIDE the cart's SVG at the household's own coordinates (x 57.24, baseline 42,
    35 units; "+" at 77,29 in 20 units) — an HTML label positioned by percentages over the icon landed in a
    different place on the phone than in the drawing, because font metrics differ between devices. */
@@ -3469,8 +3521,8 @@ function switchList(code){ const wasPlan = (view==="plan"); listsOpen=false; if(
   reloadLearn();
   try{ collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}'); }catch(e){ collapse={cats:[],ba:false}; }
   collapse.checked = false;   // v2.10: the cart always opens folded; a tap unfolds it for the session
-  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{} };
-  try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state=c; dropTube(); } }catch(e){}
+  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{} };
+  try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state=c; dropTube(); aiAdopt(); } }catch(e){}
   if(!state.purch || typeof state.purch!=="object") state.purch={};
   state.purch = purchMerge(state.purch, purch);   // fold any legacy per-device history into the shared copy
   purch = state.purch;
@@ -3507,9 +3559,9 @@ function playPlan(add){ if(!soundOn) return;
   } catch(e){} }
 let lastPop=null;
 
-let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{} };
+let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{} };
 rememberList(listCode);
-try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state = c; dropTube(); } } catch(e){}
+try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state = c; dropTube(); aiAdopt(); } } catch(e){}
 if(!state.purch || typeof state.purch!=="object") state.purch={};
 state.purch = purchMerge(state.purch, purch);   // fold any legacy per-device history into the shared copy
 purch = state.purch;
@@ -3635,10 +3687,10 @@ function subscribe(){
       const mg = baMerge(d.buyAgain||[], d.baTomb||{}, state.buyAgain||[], state.baTomb||{});   // A24 conflict-free Buy-again
       const mgPurch = purchMerge(d.purch||{}, purch||{});                                        // B4 shared restock history (union merge)
       /* v2.09: prices rides along like plan does. This line rebuilds state from a fixed shape, so a field it does not name is wiped by the next snapshot (CLAUDE.md, the fixed-shape trap). */
-      state = { items:d.items||[], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]}, prices: d.prices||{} };
+      state = { items:d.items||[], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]}, prices: d.prices||{}, aisle: d.aisle||{} };
       purch = state.purch;                                                                        // keep the working ref pointed at the shared copy
       if(!state.name){ const ln=(getLists().find(l=>l.code===listCode)||{}).name; if(ln){ state.name=ln; save(); } }
-      if(dropTube()) save();
+      if(dropTube()) save(); aiAdopt();
       if(state.name) rememberList(listCode, state.name);
       if((state.predictReset||0) > _predReset) applyPredictReset(state.predictReset);   // household-wide predictions reset propagated via the synced epoch
       // converge: if our merged view holds Buy-again / restock history the server was missing, write it back once
@@ -3879,7 +3931,7 @@ function sweep(msg){ const checked=state.items.filter(i=>i.checked); if(!checked
   moveToBuyAgain(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||""})));
   for(const i of checked){ histLog("buy", i.name); histLog("regadd", i.name); }
   state.items = state.items.filter(i=>!i.checked);
-  save(); render(); showUndo(prev, msg || (checked.length+" saved to Regulars")); }   // v2.10: msg from autoFinishAt
+  aiPublish(); save(); render(); showUndo(prev, msg || (checked.length+" saved to Regulars")); }   // v2.10: msg from autoFinishAt
 /* v1.10 add-sheet variant of restore(): copies the regular onto the list but KEEPS it in
    Buy-again, so the sheet row stays put and flips to ✓ (second tap bumps quantity). */
 function addFromRegular(name,cat){ playPlan(true);
@@ -4093,7 +4145,7 @@ async function exportListText(){
 const SNAP_KEEP = 7;
 function listDoc(s){ return { items:s.items||[], buyAgain:s.buyAgain||[], baTomb:s.baTomb||{}, stores:s.stores||[], storeMeta:s.storeMeta||{},
   members:s.members||[], categories:s.categories===undefined?null:s.categories, name:s.name||"", baMeta:s.baMeta||null, predictReset:s.predictReset||0,
-  purch:s.purch||{}, plan:s.plan||{days:{},recipes:[]}, prices:s.prices||{} }; }
+  purch:s.purch||{}, plan:s.plan||{days:{},recipes:[]}, prices:s.prices||{}, aisle:s.aisle||{} }; }
 function snapKey(code){ return "ml_snap_"+code; }
 function snapList(code){ try{ const a=JSON.parse(localStorage.getItem(snapKey(code))||"[]"); return Array.isArray(a)?a.filter(x=>x && x.list && x.at):[]; }catch(e){ return []; } }
 function maybeSnapshot(){ try{
@@ -4842,9 +4894,9 @@ function addPillHTML(m){
   const on=!!m.onId;
   const full=fillMode()==='full';
   const style = full ? fullStyle(cat.color, !!on) : (fillMode()==="empty" ? `border-left:1.5px solid var(--line)` : `border-left:4px solid ${catEdge(cat.color, !!on)}`);
-  const qcol = metaCol(cat.color, !!on, full);
+  const qcol = metaCol(cat.color, !!on, full); const qtxt = (full) ? qcol : readableOn(qcol, tileGroundHex(!!on));
   const meta=[(m.qty>1?m.qty+"×":""), m.weight].filter(Boolean).join(" ");
-  const metaS = meta?`<span class="pill-meta"><span class="qty" style="color:${qcol}">${esc(meta)}</span></span>`:"";
+  const metaS = meta?`<span class="pill-meta"><span class="qty" style="color:${qtxt}">${esc(meta)}</span></span>`:"";
   const em=itemIcon(m.name,m.cat); const emS=em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
   const attr = on ? `data-add-inc="${m.onId}"` : (m.predKey?`data-add-pred="${esc(m.predKey)}"` : m.ba?`data-add-ba="${esc(m.name)}|${m.cat}"` : `data-add-dict="${esc(m.name)}|${m.cat}"`);
   return `<button class="pill" ${attr} style="${style}">${emS}${esc(cap(m.name))}${metaS}</button>`;
@@ -5436,18 +5488,28 @@ function watchZoomer(z){ if(!z || typeof ResizeObserver==="undefined" || _zoomEl
    Every tile gets at least the page's usual height (the 90th percentile of natural heights, so one tall
    "Wombok cabbage · 6× heaped cups" cannot set it); each row then takes its own tallest tile. The household:
    "when adding wombok cabbage the height increase for all tile, I only want height to increase for that line". */
-function equalizeTiles(){
-  // Natural heights are read with the stretch switched off: a grid stretches every tile to its row, which made one
-  // two-line name lift the base for every row (v2.11). The base is the usual tile; only a taller row grows past it.
-  const eq=ps=>{ if(!ps.length) return; ps.forEach(p=>{ p.style.minHeight=""; p.style.alignSelf="start"; });
-    const nat=new Map(ps.map(p=>[p,p.offsetHeight])), hs=[...nat.values()].sort((a,b)=>a-b), base=hs[Math.floor(0.9*(hs.length-1))]||0;
-    const box=new Map(), rows=new Map(); ps.forEach(p=>{ const par=p.parentElement; if(!box.has(par)) box.set(par, box.size); const k=box.get(par)+":"+p.offsetTop;
-      if(!rows.has(k)) rows.set(k,[]); rows.get(k).push(p); });
-    ps.forEach(p=>{ p.style.alignSelf=""; });
-    rows.forEach(r=>{ const h=Math.max(base, ...r.map(p=>nat.get(p))); r.forEach(p=>{ p.style.minHeight=h+"px"; }); }); };
-  eq([...document.querySelectorAll("#zoomer .pill[data-pill], #zoomer .pill[data-reg-rm], #zoomer .pill[data-reg-add]")]);
-  eq([...document.querySelectorAll("#checkedbar .pill")]); }
-function syncZoomHeight(){ equalizeTiles(); const z=document.getElementById("zoomer"); const bb=document.getElementById("bottomnav"); const tf=document.getElementById("topfix");
+/* v2.16: tiles in a row match the row's tallest and are never shorter than the usual tile — without measuring
+   every tile on every tap. v2.10–v2.11 did that (equalizeTiles), and it was over half of each redraw (27–41 ms
+   for a 60-item list). Now the rows stretch their tiles by themselves (CSS), and the usual height, --tileh, is
+   measured on ONE hidden probe tile, again only when something that can change it changes: the layout, the
+   icons, the theme, line weight, fill, the screen width, or the fonts arriving. */
+let _tileSig = "";
+function syncTileH(){ try{
+  const z=document.getElementById("zoomer"); if(!z || !z.closest(".shop")) return;
+  const h=document.documentElement;
+  const sig=[z.className, h.getAttribute("data-icosize"), h.getAttribute("data-theme"), h.getAttribute("data-linew"), h.getAttribute("data-tilebg"),
+    document.body.className, fillMode(), itemEmojiOn(), iconStyle(), innerWidth, document.fonts ? document.fonts.status : ""].join("|");
+  if(sig===_tileSig) return;
+  const first=z.querySelector(".pills > .pill");
+  const host=document.createElement("div"); host.className="tileprobe"; host.setAttribute("aria-hidden","true");
+  host.style.cssText="position:absolute;left:0;top:0;width:"+Math.max(80, first ? first.offsetWidth : 160)+"px;visibility:hidden;pointer-events:none";
+  host.innerHTML=pillHTML({ id:"__tileprobe", name:"Milk", cat:"fresh", qty:2, weight:"", checked:false, tags:[] }, CAT("fresh"));
+  z.appendChild(host);
+  const ph=host.firstElementChild ? host.firstElementChild.offsetHeight : 0;
+  host.remove();
+  if(ph>0){ h.style.setProperty("--tileh", ph+"px"); _tileSig=sig; }
+}catch(e){} }
+function syncZoomHeight(){ syncTileH(); const z=document.getElementById("zoomer"); const bb=document.getElementById("bottomnav"); const tf=document.getElementById("topfix");
   const zw=z?z.parentElement:null;
   /* v1.78: the BOTTOM edge, not the height. What the content has to clear is where the bar actually
      ends, and --topy moves the bar down the screen without changing how tall it is — measured by height
@@ -5608,6 +5670,7 @@ function pinAddSheet(){
   if(instant){ void as.offsetHeight; as.style.transition = prevTrans; }   // reflow before the transition comes back
 }
 function render(){
+  queueMicrotask(syncWakeLock);   // v2.16 keep-screen-on follows every change of page and cart
   if(_colorPicking) return;
   ensureCats();
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
@@ -5693,6 +5756,26 @@ function fullStyle(catColor, sel){
    category colour is not a text colour. On **Auto** the old split stays, and that is the point of
    Auto: the meta takes the category colour (or, on a Full tile, whatever contrasts with the fill), so
    "2× 500g" reads as a qualifier on the name rather than part of it. */
+/* v2.16: an amount printed in its category's colour must still be readable on its tile (4.5:1) — the yellow
+   fruit amounts were 2.9:1. The colour moves toward black (toward white on a dark tile) only as far as it has
+   to; the icons keep the category's true colour. */
+const _readMemo = new Map();
+function hexLum(h){ h=String(h).replace("#",""); if(h.length!==6) return null;
+  const c=[0,2,4].map(i=>parseInt(h.slice(i,i+2),16)/255).map(x=>x<=0.03928?x/12.92:Math.pow((x+0.055)/1.055,2.4));
+  return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2]; }
+function hexMix(h, t, k){ const a=String(h).replace("#",""), b=String(t).replace("#","");
+  return "#"+[0,2,4].map(i=>Math.round(parseInt(a.slice(i,i+2),16)*(1-k)+parseInt(b.slice(i,i+2),16)*k).toString(16).padStart(2,"0")).join("").toUpperCase(); }
+function readableOn(fg, bg){
+  if(typeof fg!=="string" || !/^#[0-9a-fA-F]{6}$/.test(fg) || typeof bg!=="string" || !/^#[0-9a-fA-F]{6}$/.test(bg)) return fg;
+  const key=fg+bg; if(_readMemo.has(key)) return _readMemo.get(key);
+  const lb=hexLum(bg), toward = lb>0.35 ? "#000000" : "#FFFFFF";
+  const cr=x=>{ const la=hexLum(x); return (Math.max(la,lb)+0.05)/(Math.min(la,lb)+0.05); };
+  let out=fg; for(let k=0.05; k<=1.0001 && cr(out)<4.5; k+=0.05) out=hexMix(fg, toward, Math.min(1,k));
+  _readMemo.set(key,out); return out; }
+var _cardHexMemo = null;   // the theme's --card, read once per theme. var, not let: applyTheme() resets it at boot, long before this line runs
+function tileGroundHex(sel){ const pick = sel ? tileBgHex() : uTileBgHex(); if(pick && /^#[0-9a-fA-F]{6}$/.test(pick)) return pick;
+  if(!_cardHexMemo){ try{ _cardHexMemo=(getComputedStyle(document.body).getPropertyValue("--card")||"").trim().toUpperCase(); }catch(e){} }
+  return _cardHexMemo; }
 function metaCol(catColor, sel, full){
   const chosen = sel ? tileTxtHex() : uTileTxtHex();
   if(chosen) return chosen;
@@ -5707,11 +5790,11 @@ function pillHTML(i, cat){
   // as "bought" without collapsing into an anonymous empty tile.
   const checked=i.checked; const full=fillMode()==="full";
   const edge = cat.color;
-  const qcol = metaCol(cat.color, true, full);
+  const qcol = metaCol(cat.color, true, full); const qtxt = (full) ? qcol : readableOn(qcol, tileGroundHex(true));
   // --edge carries the category colour so `.shop .pill.done` can keep it (the base `.pill.done`
   // rule forces border-left-color to grey with !important, which is what flattened cart tiles).
   const style = `--edge:${catEdge(cat.color, true)};` + (full ? fullStyle(cat.color, true) : (fillMode()==="empty" ? `border-left:1.5px solid var(--line)` : `border-left:4px solid ${catEdge(edge, true)}`));
-  const meta = `${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(showAmt(i.weight))}</span>`:""}`;
+  const meta = `${(i.qty||1)>1?`<span class="qty" style="color:${qtxt}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qtxt}">${esc(showAmt(i.weight))}</span>`:""}`;
   /* v1.58 item 1: all three flags show on the tile now, not just the star. `starred` OR the urgent
      tag counts — the chip writes both, but an item saved before v1.58 has only `starred`. */
   const tg = Array.isArray(i.tags) ? i.tags : [];
@@ -5761,7 +5844,7 @@ function calmHead(cat, done, total, collapsed, attr, entryOpen){
      so the dot goes and the LABEL takes the category's colour. `var(--cattext, …)` keeps the Category
      text picker winning when one is set; the category colour is only the fallback, exactly as
      everywhere else. With an icon, nothing changes. */
-  return `<div class="chead"><button class="lbl catheadchip catcalm" ${attr}="${cat.id}">`
+  return `<div class="chead" role="heading" aria-level="2"><button class="lbl catheadchip catcalm" ${attr}="${cat.id}">`
     +(ic ? `<span class="cemoji">${ic}</span>` : "")
     +`<span class="cname"${ic ? "" : ` style="color:var(--cattext, ${autoShade("cat", cat.color)})"`}>${esc(cat.label)}</span>`
     +`<span class="cnum">${done}/${total}${collapsed?' ▸':''}</span></button>`
@@ -5782,10 +5865,10 @@ function regPill(entry, cat, it){
   const q = selected ? (it.qty||1) : (entry.qty||1);
   const w = selected ? (it.weight||"") : (entry.weight||"");
   const full = selected && fillMode()==="full";
-  const qcol = metaCol(cat.color, selected, full);
+  const qcol = metaCol(cat.color, selected, full); const qtxt = (full) ? qcol : readableOn(qcol, tileGroundHex(selected));
   const em = itemIcon(entry.name, cat.id);
   const emS = em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
-  const meta = `${q>1?`<span class="qty" style="color:${qcol}">${q}×</span>`:""}${w?`<span class="qty" style="color:${qcol}">${esc(w)}</span>`:""}`;
+  const meta = `${q>1?`<span class="qty" style="color:${qtxt}">${q}×</span>`:""}${w?`<span class="qty" style="color:${qtxt}">${esc(w)}</span>`:""}`;
   const metaS = meta?`<span class="pill-meta">${meta}</span>`:"";
   const name = `<span class="pname">${esc(cap(tileName(entry.name)))}</span>`;   // v2.10: own span so it can be clamped and measured
   if(selected){
@@ -5887,7 +5970,7 @@ function renderMain(){
     const chipBorder = has ? cat.color : 'var(--line)';
     const chead = CALM_THEMES.has(theme)
       ? calmHead(cat, all.filter(i=>i.checked).length, all.length, collapsed, "data-cat", catEntry===cat.id)
-      : `<div class="chead">
+      : `<div class="chead" role="heading" aria-level="2">
         <button class="lbl catheadchip" data-cat="${cat.id}" style="background:${chipBg};border:1.5px solid ${chipBorder};color:${chipText}">
           <span class="cemoji">${catIcon(cat,16)}</span>
           <span class="cname" style="color:${chipText}">${esc(cat.label)}</span>
@@ -6001,7 +6084,7 @@ function renderMain(){
             save a row; it only costs one when a store is actually active, which is the trade taken. */""}
       <header class="hstack">
         <div class="hrow">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap" role="heading" aria-level="1">
             ${/* v1.90: the 52px held for a back arrow goes with the arrow — the title starts where the
                   tiles and category headings start. Settings keeps its own back button. */""}
             <button class="title disp listswitch" id="listSwitch" aria-haspopup="dialog" aria-expanded="${listsOpen?'true':'false'}">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="lschev" aria-hidden="true">${CHEV_BIG_SVG}</span></button>
@@ -6015,12 +6098,12 @@ function renderMain(){
       </header>
     </div>
     ${checkedBar}
-    <div class="wrap ${shopMode?'shop':''}">
+    <div class="wrap ${shopMode?'shop':''}" role="main">
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${installCardHTML()}${(state.items.length===0)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">Your list is empty</p>
-          <p class="empty-sub">Tap <b>Add</b> below — or start from these:</p>
+          <p class="empty-sub">Tap <b>Add items</b> below — or start from these:</p>
           <div class="pills" style="justify-content:center">${["Milk","Eggs","Bananas","Bread"].map(x=>`<button class="sugchip" data-example="${x}">+ ${x}</button>`).join("")}</div>
           <p class="empty-sub" style="margin-top:16px">Shared via this link — open <b>Settings › Share link</b> to invite up to 4 people.</p>
         </div>`:""}
@@ -6029,7 +6112,7 @@ function renderMain(){
       ${planningSection()}
     </div></div>
   </div>
-  ${!addOpen?`<div class="addpill-wrap" id="shopAddFabWrap"><button class="addpill" id="shopAddFab" aria-label="Add an item"><span class="addpill-plus" aria-hidden="true">+</span></button></div>`:""}${/* v1.36 item 4: search bar shows even on an empty list */""}
+  ${!addOpen?`<div class="addpill-wrap" id="shopAddFabWrap"><button class="addpill" id="shopAddFab" aria-label="Add items"><span class="addpill-in"><span class="addpill-plus" aria-hidden="true">+</span><span class="addpill-lbl">Add items</span></span></button></div>`:""}${/* v1.36 item 4: search bar shows even on an empty list */""}
   ${bottomNav({planId:"planNav",planActive:false,cartId:"cartNav",cartActive:true,setId:"setNav"})}${userTilesHTML()}  ${finishOpen?finishSheet():""}
   ${listsOpen?listsSheet():""}
   ${fabMoveOpen?fabMoveSheet():""}
@@ -6108,12 +6191,12 @@ const SIZE_LEAD = /^((?:extra[ -]large|extra[ -]small|small|big|large|medium|min
 function tileName(n){ const s=String(n||"").trim(); const m=s.match(SIZE_LEAD); if(!m || m[0].length>=s.length) return s;
   return s.slice(m[0].length).trim()+" "+m[0].trim().toLowerCase(); }
 function planFilledPill(i, cat){ const checked=i.checked; const full=fillMode()==="full"&&!checked;
-  const edge=checked?'var(--done-edge)':cat.color; const qcol = checked ? 'var(--muted2)' : metaCol(cat.color, true, full);
+  const edge=checked?'var(--done-edge)':cat.color; const qcol = checked ? 'var(--muted2)' : metaCol(cat.color, true, full); const qtxt = (checked||full) ? qcol : readableOn(qcol, tileGroundHex(true));
   /* v1.61 item 2: this tile was missed by v1.60 — it is drawn by its own function and still wrote
      the Full colours inline, so the six pickers had no effect here either. */
   const style=full?fullStyle(cat.color,true):(fillMode()==="empty"?`border-left:1.5px solid var(--line)`:`border-left:4px solid ${catEdge(edge, true)}`);
   const em=itemIcon(i.name,i.cat);
-  return `<button class="pill plan-in ${checked?'done':''}" data-plan-rm="${i.id}" style="${style}">${em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qcol}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qcol}">${esc(showAmt(i.weight))} </span>`:""}${esc(cap(i.name))}${checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit"${full?' style="color:rgba(255,255,255,.92)"':''}>▾</span></button>`; }
+  return `<button class="pill plan-in ${checked?'done':''}" data-plan-rm="${i.id}" style="${style}">${em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:""}${(i.qty||1)>1?`<span class="qty" style="color:${qtxt}">${i.qty}×</span>`:""}${i.weight?`<span class="qty" style="color:${qtxt}">${esc(showAmt(i.weight))} </span>`:""}${esc(cap(i.name))}${checked?' <span style="color:var(--muted2)">✓</span>':''}<span class="qmore ${quickEdit===i.id?'open':''}" data-qmore="${i.id}" aria-label="Quick edit"${full?' style="color:rgba(255,255,255,.92)"':''}>▾</span></button>`; }
 /* A18/v1.08 — the quantity + weight editor for the selected plan item, shown as a banner
    fixed above the bottom nav (rather than inline in the list). */
 function planQBannerHTML(){
@@ -6295,6 +6378,7 @@ let planAdd = null;      // { day, kind:"food"|"recipe", name, ing:[{name,cat}],
 let planPick = null;     // { day, id } — the chip whose actions are open
 function renderPlanTab(){
   const P = planData(), s = weekStart(planWeek), todayK = dayKey(new Date());
+  const hintK = planWeek===0 ? todayK : dayKey(s);   // v2.16 the empty-week hint plans today, or the shown week's Monday
   const days = [];
   for(let i=0;i<7;i++){
     const d = new Date(s.getTime()+i*DAY_MS), k = dayKey(d), es0 = P.days[k]||[];
@@ -6324,11 +6408,11 @@ function renderPlanTab(){
   app.innerHTML = `
     <div class="topfix" id="topfix">
       <header>
-        <div style="display:flex;align-items:center;gap:8px"><button class="title disp listswitch" id="listSwitch" aria-haspopup="dialog" aria-expanded="${listsOpen?'true':'false'}">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="lschev" aria-hidden="true">${CHEV_BIG_SVG}</span></button></div>
+        <div style="display:flex;align-items:center;gap:8px" role="heading" aria-level="1"><button class="title disp listswitch" id="listSwitch" aria-haspopup="dialog" aria-expanded="${listsOpen?'true':'false'}">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="lschev" aria-hidden="true">${CHEV_BIG_SVG}</span></button></div>
         <div style="display:flex;align-items:center;gap:8px">${syncChip()}</div>
       </header>
     </div>
-    <div class="wrap">
+    <div class="wrap" role="main">
     <div class="zoomwrap"><div class="zoomer" id="zoomer">
       <div class="planweek">
         <button class="pwarrow" id="pwPrev" aria-label="Previous week">‹</button>
@@ -6336,6 +6420,7 @@ function renderPlanTab(){
         <button class="pwarrow" id="pwNext" aria-label="Next week">›</button>
         <button class="pwarrow" id="pwMore" aria-haspopup="dialog" aria-label="Save or clear this week">⋯</button>
       </div>
+      ${planWeekCount(planWeek) ? "" : `<div class="planhint" role="note"><p>Plan your dinners here, then add every ingredient to the shopping list in one tap.</p><button class="newlist" id="pwHint" data-pd="${esc(hintK)}">Plan ${planWeek===0 ? "today" : "Monday"}</button></div>`}
       ${days.join("")}
       ${planWeekCount(planWeek) ? `<button class="newlist" id="pwToList" style="margin-top:14px">Add this week to the list</button>` : ""}
     </div></div>
@@ -6898,6 +6983,7 @@ function planWeekToList(){
 }
 function wirePlanTab(){
   const lsw=app.querySelector("#listSwitch"); if(lsw) lsw.onclick=()=>{ listsOpen=true; render(); };
+  const pwh=app.querySelector("#pwHint"); if(pwh) pwh.onclick=()=>{ const b=app.querySelector('.pdmore[data-pd="'+pwh.dataset.pd+'"]'); if(b) b.click(); };   // v2.16
   const pv=app.querySelector("#pwPrev"); if(pv) pv.onclick=()=>{ planWeek--; render(); };
   const nx=app.querySelector("#pwNext"); if(nx) nx.onclick=()=>{ planWeek++; render(); };
   const nw=app.querySelector("#pwNow");  if(nw) nw.onclick=()=>{ planWeek=0; render(); };
@@ -7209,7 +7295,7 @@ function renderPlanPage(){
     planBody = filled ? `<section class="cat"><div class="pills">${filled}</div></section>` : "";
   }
   const hasAny = catList().some(c=> state.items.some(i=>i.cat===c.id) || c.custom);
-  app.innerHTML = `<div class="wrap">
+  app.innerHTML = `<div class="wrap" role="main">
     <div class="topfix" id="topfix">
       <header>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -7385,6 +7471,7 @@ function wireOptions(){
   const ozm=app.querySelector("#optZoomMinus"); if(ozm) ozm.onclick=()=>setDensity(dens()-0.1);
   const ozp=app.querySelector("#optZoomPlus"); if(ozp) ozp.onclick=()=>setDensity(dens()+0.1);
   app.querySelectorAll("[data-opt-sound]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optSound==="1"; if(soundOn!==want) toggleSound(); });
+  app.querySelectorAll("[data-opt-wake]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_wakelock", b.dataset.optWake); }catch(e){} render(); });   // v2.16
   app.querySelectorAll("[data-pred-on]").forEach(b=>b.onclick=()=>{ predictCfg.on=(b.dataset.predOn==="1"); savePredictCfg(); render(); });   // B4 predictions
   app.querySelectorAll("[data-pred-freq]").forEach(b=>b.onclick=()=>{ predictCfg.freq=b.dataset.predFreq; savePredictCfg(); render(); });
   app.querySelectorAll("[data-pred-day]").forEach(b=>b.onclick=()=>{ predictCfg.day=+b.dataset.predDay; savePredictCfg(); render(); });
@@ -7906,7 +7993,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -8279,6 +8366,8 @@ function optionsBody(){
     ${(displayFor()==="flat" && curSort==="ai" && aiSeenCount()>0) ? `<button class="optaction" id="optResetAI" style="margin:-2px 0 10px">♻︎ Reset AI — restart from category</button>` : ""}` : ""}
     ${sectHR("Sound")}
     ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
+    ${row("Keep screen on", `<div class="seg"><button data-opt-wake="1" class="${wakePref()?'on':''}">On</button><button data-opt-wake="0" class="${!wakePref()?'on':''}">Off</button></div>`)}
+    <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">While the cart has something in it, so the phone does not dim and lock mid-aisle.</div>
     ${(view!=="lists") ? `${sect("Smart add")}${row("Smart add", `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">On</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">Off</button></div>`)}` : ""}
     ${(view!=="lists") ? `${sect("Measurements")}${row("Convert amounts", `<div class="seg"><button data-opt-units="off" class="${unitsMode()==='off'?'on':''}">Off</button><button data-opt-units="metric" class="${unitsMode()==='metric'?'on':''}">Metric</button><button data-opt-units="imperial" class="${unitsMode()==='imperial'?'on':''}">Imperial</button></div>`)}
     <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">Changes how amounts are shown, not what is stored — a recipe\'s own wording comes back if you turn this off. Amounts it can\'t read, like “a pinch”, are left alone.</div>` : ""}
@@ -8345,12 +8434,12 @@ function renderSettingsPage(){
     <div class="topfix" id="topfix">
       <header>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <span class="title disp">Settings</span>
+          <span class="title disp" role="heading" aria-level="1">Settings</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">${syncChip()}</div>
       </header>
     </div>
-    <div class="wrap">
+    <div class="wrap" role="main">
     <div class="zoomwrap"><div class="zoomer ${styl()}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       <div class="optpage">${optionsBody()}</div>
     </div></div>
