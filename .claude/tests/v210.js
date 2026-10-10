@@ -106,6 +106,14 @@ const seed = (extra, checkedStore) => `(() => {
     ok('…and the page below it is not clipped (the wrap reaches the list\'s bottom edge)', clip.wrap>=clip.zoomer-1, JSON.stringify(clip));
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-cart.png') });
 
+    /* ── C2. the nav cart: count centred between two equal walls ─────── */
+    /* At the count's height (y≈10 of the 24-unit drawing) the basket's walls stand at x≈4.9 and x≈20.4,
+       so its middle is 12.65/24 of the drawing's width and it is 15.5 units wide. */
+    const cart = await page.evaluate(()=>{ const sv=document.querySelector('#cartWrap svg').getBoundingClientRect(), n=document.querySelector('#cartNum').getBoundingClientRect();
+      const u=sv.width/24, mid=sv.left+12.65*u, lw=sv.left+4.9*u, rw=sv.left+20.4*u;
+      return { off:Math.round((n.left+n.width/2-mid)*10)/10, gapL:Math.round(n.left-lw), gapR:Math.round(rw-n.right), txt:document.querySelector('#cartNum').textContent }; });
+    ok('the nav cart\'s count sits centred in the basket, clear of both walls', Math.abs(cart.off)<=1.5 && cart.gapL>=2 && cart.gapR>=2, JSON.stringify(cart));
+
     /* ── D. the cart finishes itself at a different store ─────────────── */
     const locOpts = (where)=>({ geolocation:where, permissions:['geolocation'] });
     await mk({ checkedStore:'rich', ls:'localStorage.setItem("ml_store","auto"); localStorage.setItem("ml_useloc","1");' }, locOpts(DAND));
