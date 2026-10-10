@@ -20,7 +20,14 @@ or what it read) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, 
   designed, user-customisable system (`--glass-bg`, per-bar `--navbar-bg` etc.); leave it alone.
 - **Brand (preserve):** forest ink `#21351F`, sage paper `#F2F6EE`, burnt-orange accent `#E2502C`,
   Outfit variable font (self-hosted `outfit-*.woff2` — no Google Fonts links; every asset lives in
-  the repo so the PWA works offline).
+  the repo so the PWA works offline). Since v2.15 that includes the Firebase SDK
+  (`vendor/firebasejs/10.12.2/`, see its README for the one-line change and how to upgrade).
+- **The service worker (`sw.js`, v2.15)** is what lets the app open with no signal. The app page is
+  network-first with a 4-second fallback to the stored copy; other same-origin files answer from the
+  stored copy and refresh in the background; `/api/*`, non-GETs and anything cross-origin are never
+  touched. A broken worker can strand phones on an old copy, so its header holds a **kill switch** —
+  paste it over the file and deploy. Changing the SDK means a new versioned `vendor/` folder, never
+  editing files in place (they are served `immutable`).
 - **Emoji are for CONTENT; interface chrome gets drawn marks.** Emoji are the visual language for
   categories and items (🥩 🥦 🍌) — keep them. Buttons, toggles and status marks are inline SVGs in
   `currentColor` (`SEARCH_SVG`, `GLOBE_SVG`, the flag marks…), because they are the only saturated
@@ -88,9 +95,17 @@ or what it read) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, 
   network. See `.claude/tests/README.md` for how to run them and what a check has to prove. Never
   leave a suite in the scratchpad: it is not durable, and every suite up to v1.76 was lost that way.
 - Behaviour: the `/verify-app` skill serves the repo, launches headless Chromium
-  (`executablePath: '/opt/pw-browsers/chromium'`), stubs `www.gstatic.com/firebasejs/**` (egress
-  blocks it; the app runs local-only when `firebaseConfig.apiKey === "REPLACE_ME"`), adds a sample
-  list and screenshots at 390×844. For a UI change, screenshot the affected screens before and after.
+  (`executablePath: '/opt/pw-browsers/chromium'`), stubs the Firebase SDK with the route
+  `**/firebasejs/**` (it lives at `/vendor/firebasejs/` since v2.15; the stub makes the app run on its
+  local cache), adds a sample list and screenshots at 390×844. For a UI change, screenshot the affected
+  screens before and after.
+- **RULE — the real Firebase SDK must never run in a test.** GitHub's runners have internet, so it
+  would reach the household's real database. Every suite routes `**/firebasejs/**` to the stub. The
+  service worker is not registered under automation (`navigator.webdriver`) because Playwright 1.56
+  cannot stub a worker's own requests; a suite that needs it sets localStorage `ml_swtest` to "1" and
+  must swap the worker's cached SDK for the stub before reloading (v215.js shows how).
+- **CI (v2.15):** `.github/workflows/tests.yml` runs the syntax gate, the api suites and every browser
+  suite (4 shards, 300 s per suite) on each pull request. Check its result on the PR before merging.
 - **RULE — sweep ONCE, at the end of the batch.** While building, run only the new version's suite
   plus the syntax gate. The full sweep and `/verify-app` run once, after the last change, right
   before shipping. (Standing user instruction, 2026-09-06.)

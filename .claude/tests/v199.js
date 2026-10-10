@@ -60,7 +60,7 @@ const VIDEO = { source:"web", provider:"tavily", results:[
   const mk = async(answer, failCopy)=>{
     if(ctx) await ctx.close();
     ctx = await browser.newContext({ viewport:{width:390,height:844}, deviceScaleFactor:2, hasTouch:true });
-    await ctx.route('**www.gstatic.com/firebasejs/**', r => r.fulfill({ status:200, contentType:'text/javascript', body: STUB }));
+    await ctx.route('**/firebasejs/**', r => r.fulfill({ status:200, contentType:'text/javascript', body: STUB }));
     await ctx.route('**/api/recipe-search', r => r.fulfill({ status:200, contentType:'application/json',
       body:JSON.stringify(answer) }));
     page = await ctx.newPage(); page.setDefaultTimeout(9000);

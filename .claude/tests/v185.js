@@ -66,7 +66,7 @@ const PARSE_STUB = JSON.stringify({ items:[
   const mk = async()=>{
     if(ctx) await ctx.close();
     ctx = await browser.newContext({ viewport:{width:390,height:844}, deviceScaleFactor:2, hasTouch:true });
-    await ctx.route('**www.gstatic.com/firebasejs/**', r => r.fulfill({ status:200, contentType:'text/javascript', body: STUB }));
+    await ctx.route('**/firebasejs/**', r => r.fulfill({ status:200, contentType:'text/javascript', body: STUB }));
     /* There is no backend in this environment, so Smart add's endpoint is stubbed. The app's own
        request, response handling, review sheet and commit all run for real against it. */
     await ctx.route('**/api/parse', r => r.fulfill({ status:200, contentType:'application/json', body: PARSE_STUB }));

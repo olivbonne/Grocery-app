@@ -1,9 +1,15 @@
 # Behavioural suites
 
 One file per version, named for the version that introduced it. Each is a standalone headless-Chromium
-script: it seeds a list into `localStorage`, stubs the Firebase CDN (egress blocks it, and the app runs
-local-only when `firebaseConfig.apiKey === "REPLACE_ME"`), drives the **real controls**, and asserts on
-what the browser actually computed.
+script: it seeds a list into `localStorage`, stubs the Firebase SDK with the route `**/firebasejs/**`
+(since v2.15 the SDK lives in the repo at `/vendor/firebasejs/`; the stub keeps the app on its local cache
+and away from the real database), drives the **real controls**, and asserts on what the browser actually
+computed. GitHub Actions runs every suite on each pull request (`.github/workflows/tests.yml`, v2.15).
+
+The service worker is off under automation unless a suite sets localStorage `ml_swtest` to "1"
+(Playwright 1.56 cannot stub a worker's own requests). A suite that turns it on must replace the
+worker's cached copy of the SDK with the stub before it reloads, as `v215.js` does — the real SDK must
+never run here.
 
 They live here rather than in a scratch directory because a scratch directory is not durable — the one
 holding every suite up to v1.76 was cleared mid-batch on 2026-08-03, and those checks are simply gone.
