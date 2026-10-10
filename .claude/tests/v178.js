@@ -67,7 +67,10 @@ const SEED = (extra)=>`(() => {
     await page.waitForTimeout(1300);
   };
   const tap = async(sel)=>{ const l=page.locator(sel).first(); await l.click(); await page.waitForTimeout(900); };
-  const settings = ()=>tap('#setNav, #setNavL');
+  /* SUPERSEDED by v2.18: the bars' controls live on the "Customise the look" page now, so opening Settings for
+     this suite means Settings and then that page — unless Settings reopens on it (it remembers, in memory).
+     Still protects everything below unchanged: the controls are the same, one tap further in. */
+  const settings = async()=>{ await tap('#setNav, #setNavL'); if(!(await page.locator('#lookBack').count())) await tap('#optLook'); };
   const shop = ()=>tap('#cartNav, #cartNavL');
   /* every stepper is driven by its real button, N times */
   const bump = async(key, n)=>{ const d=n<0?-1:1;
@@ -266,9 +269,11 @@ const SEED = (extra)=>`(() => {
   // ═══════════════════════════════════════════════════════════════════
   // NOT CHANGED
   // ═══════════════════════════════════════════════════════════════════
+  /* SUPERSEDED by v2.18: the section folded here is Colour — this suite is on the look page, where everyday
+     Tiles is not shown. Still protects: the sections fold. */
   ok('the sections still fold (v1.77)', await (async()=>{
-    await page.locator('.optsect[data-sect="Tiles"]').click(); await page.waitForTimeout(400);
-    return page.evaluate(()=>{ const h=[...document.querySelectorAll('.optsect')].find(s=>s.dataset.sect==='Tiles');
+    await page.locator('.optsect[data-sect="Colour"]').click(); await page.waitForTimeout(400);
+    return page.evaluate(()=>{ const h=[...document.querySelectorAll('.optsect')].find(s=>s.dataset.sect==='Colour');
       return getComputedStyle(h.nextElementSibling).display==='none'; }); })(), '');
   await mk();
   ok('the shop list still renders', (await page.locator('.pill').count())>0, '');

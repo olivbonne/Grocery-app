@@ -154,14 +154,16 @@ const SEED = (extra)=>`(() => {
   // ═══════════════════════════════════════════════════════════════════
   await mk();
   await settings();
+  /* SUPERSEDED by v2.18: Layout & motion is on the "Customise the look" page — open it to reach the stepper. */
+  await tap('#optLook');
   const where = await page.evaluate(()=>{
     const sec = name => { const h=[...document.querySelectorAll('.optsect')].find(s=>s.dataset.sect===name);
       return h&&h.nextElementSibling; };
     const inside = (body, sel) => !!(body && body.querySelector(sel));
     return { marginsInLayout: inside(sec('Layout & motion'), '[data-opt-num="padl"]'),
              marginsInTiles:      inside(sec('Tiles'), '[data-opt-num="padl"]'),
-             roundnessInTiles:    inside(sec('Tiles'), '[data-opt-num="rad"]'),
-             gapInTiles:          inside(sec('Tiles'), '[data-opt-num="gapx"]'),
+             roundnessInTiles:    inside(sec('Tile colours and shape'), '[data-opt-num="rad"]'),
+             gapInTiles:          inside(sec('Tile colours and shape'), '[data-opt-num="gapx"]'),
              buttonsWithIt:       inside(sec('Layout & motion'), '#optNumSave') && inside(sec('Layout & motion'), '#optNumFactory'),
              padlCount:           document.querySelectorAll('[data-opt-num="padl"]').length };
   });
@@ -174,7 +176,9 @@ const SEED = (extra)=>`(() => {
   ok('Page margins sits in one place, now Layout & motion', where.marginsInLayout && !where.marginsInTiles, JSON.stringify(where));
   ok('…and took its buttons with it rather than being copied', where.buttonsWithIt && where.padlCount===2,
      JSON.stringify({buttons:where.buttonsWithIt, steppers:where.padlCount}));
-  ok('NOT CHANGED: the tile measurements stayed in Tiles', where.roundnessInTiles && where.gapInTiles,
+  /* SUPERSEDED by v2.18: the tiles' shape moved with their colours to "Tile colours and shape" on the look page.
+     Still protects: roundness and gap stay with the tiles, not with the page margins. */
+  ok('NOT CHANGED: the tile measurements stayed with the tiles (Tile colours and shape)', where.roundnessInTiles && where.gapInTiles,
      JSON.stringify(where));
 
   /* it has to still work where it landed */
@@ -190,9 +194,11 @@ const SEED = (extra)=>`(() => {
   // ═══════════════════════════════════════════════════════════════════
   await mk();
   await settings();
-  const rules = await page.evaluate(()=>[...document.querySelectorAll('.optsect')]
-    .map(s=>({ name:s.dataset.sect, top:getComputedStyle(s).borderTopWidth,
-               first:s===document.querySelector('.optpage > .optsect') })));
+  /* SUPERSEDED by v2.18: Settings is two pages, everyday and "Customise the look", and each starts with a section
+     that has nothing above it. "The first" is the first on ITS page. Still protects: one rule above every other. */
+  const rules = await page.evaluate(()=>{ const all=[...document.querySelectorAll('.optsect')];
+    return all.map(s=>({ name:s.dataset.sect, top:getComputedStyle(s).borderTopWidth,
+               first:s===all.find(x=>x.dataset.layer===s.dataset.layer) })); });
   ok('every section after the first is separated the same way',
      rules.filter(r=>!r.first).every(r=>parseFloat(r.top)>0),
      JSON.stringify(rules.filter(r=>parseFloat(r.top)===0).map(r=>r.name)));
@@ -200,13 +206,13 @@ const SEED = (extra)=>`(() => {
      rules.length>0 && parseFloat(rules[0].top)===0, JSON.stringify(rules[0]));
   ok('…which holds with every section folded, where it actually shows',
      await (async()=>{
-       for(const n of ['Appearance','Colour','Tiles','Sort','Sound']){
+       for(const n of ['Appearance','Smart add','Tiles','Sort','Sound']){   // SUPERSEDED by v2.18: Colour is on the look page; Smart add stands in
          const h=page.locator(`.optsect[data-sect="${n}"]`);
          await h.scrollIntoViewIfNeeded(); await h.click(); await page.waitForTimeout(250);
        }
-       return page.evaluate(()=>[...document.querySelectorAll('.optsect')]
-         .filter(s=>s!==document.querySelector('.optpage > .optsect'))
-         .every(s=>parseFloat(getComputedStyle(s).borderTopWidth)>0));
+       return page.evaluate(()=>{ const all=[...document.querySelectorAll('.optsect')];
+         return all.filter(s=>s!==all.find(x=>x.dataset.layer===s.dataset.layer))
+           .every(s=>parseFloat(getComputedStyle(s).borderTopWidth)>0); });
      })(), '');
 
   // ═══════════════════════════════════════════════════════════════════
