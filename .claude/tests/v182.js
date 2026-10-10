@@ -58,6 +58,9 @@ const DAY_MS = 86400000;
 function mondayOf(off){ const d=new Date(); d.setHours(0,0,0,0);
   d.setDate(d.getDate() - ((d.getDay()+6)%7) + off*7); return d; }
 const fmtDay  = d => d.toLocaleDateString(undefined,{weekday:"long"});
+/* SUPERSEDED by v2.11: the week's day names are three letters ("Mon"). The check still protects a real
+   Monday-to-Sunday week with the right dates, in order; the day menu's heading keeps the long name. */
+const fmtDayShort = d => d.toLocaleDateString(undefined,{weekday:"short"}).replace(/\.$/,"");
 const fmtDate = d => d.toLocaleDateString(undefined,{day:"numeric",month:"short"});
 
 (async () => {
@@ -136,7 +139,7 @@ const fmtDate = d => d.toLocaleDateString(undefined,{day:"numeric",month:"short"
     /* ── 2. the week is a real week ─────────────────────────────────────── */
     const mon = mondayOf(0);
     const expect = [...Array(7)].map((_,i)=>{ const d=new Date(mon.getTime()+i*DAY_MS);
-      return { name:fmtDay(d), date:fmtDate(d) }; });
+      return { name:fmtDayShort(d), date:fmtDate(d) }; });
     ok('it opens on this week', w.label==='This week', w.label);
     ok('…showing Monday to Sunday of it, in order',
        w.days.map(d=>d.name+' '+d.date).join(' | ')===expect.map(d=>d.name+' '+d.date).join(' | '),
