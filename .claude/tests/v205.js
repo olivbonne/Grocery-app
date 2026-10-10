@@ -127,7 +127,8 @@ const IDEAS = { source:"model", provider:"", results:[{ title:"Mushroom pizza", 
     ok('…and the recipe moves to that course', moved==='Dessert', moved);
 
     /* ── F. kept out of appearance slots ───────────────────────────────── */
-    const src = fs.readFileSync(path.join(__dirname,'..','..','index.html'),'utf8');
+    /* SUPERSEDED by v2.19: the app's module lives in js/app.js now (the module split, byte for byte) — read from there. */
+    const src = fs.readFileSync(path.join(__dirname,'..','..','js','app.js'),'utf8');
     const boot = (src.match(/const APP_EXCLUDE_BOOT = (\/.*\/);/)||[])[1]||'', main = (src.match(/const APP_EXCLUDE = (\/.*\/);/)||[])[1]||'';
     ok('ml_recopen and ml_recsort are in BOTH exclusion lists', ['ml_recopen','ml_recsort'].every(k=>new RegExp(boot.slice(1,-1)).test(k) && new RegExp(main.slice(1,-1)).test(k)),
        JSON.stringify({boot:boot.slice(-60), main:main.slice(-60)}));

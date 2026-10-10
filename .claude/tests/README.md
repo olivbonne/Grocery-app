@@ -31,9 +31,12 @@ A suite that cannot reach the server crashes with `ERR_CONNECTION_REFUSED` — s
 
 ## The syntax gate
 
-`node .claude/tests/syntax.js` — about a second, no server. It extracts the module to the LAST
-`</script>`, checks it as `.mjs`, checks `api/*.js`, and first plants a canary error to prove it CAN
-fail. Use it instead of any hand-rolled `node --check`: as `.js`, Node 22 passes a file with `import`
+`node .claude/tests/syntax.js` — about a second, no server. It checks every module under `js/` as
+`.mjs`, links each relative import to an export of its target, refuses an inline module or `<style>`
+back in `index.html`, checks `api/*.js`, and first plants a canary error in a copy of `js/app.js` to
+prove it CAN fail. (Until v2.18 the app was inline in `index.html` and the gate extracted it to the
+LAST `</script>`.) A suite that reads the app's source reads `js/app.js` (the drawings:
+`js/data/drawings.js`) — since v2.19, not `index.html`. Use it instead of any hand-rolled `node --check`: as `.js`, Node 22 passes a file with `import`
 lines whatever it contains, so the old one-liner had been checking nothing. The browser suites, which
 fail on any page error, were the real gate until 2026-09-26.
 

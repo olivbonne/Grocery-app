@@ -59,7 +59,8 @@ const SEED = `(() => {
   await load();
   const tap = async(sel)=>{ await page.locator(sel).first().click(); await page.waitForTimeout(550); };
   const has = (sel)=>page.evaluate(s=>!!document.querySelector(s), sel);
-  const src = fs.readFileSync(path.join(__dirname,'..','..','index.html'),'utf8');
+  /* SUPERSEDED by v2.19: the app's module lives in js/app.js now (the module split, byte for byte) — read from there. */
+  const src = fs.readFileSync(path.join(__dirname,'..','..','js','app.js'),'utf8');
   const rx = (name)=>new RegExp(((src.match(new RegExp('const '+name+' = (\\/.*\\/);'))||[])[1]||'//').slice(1,-1));
   const stroke = ()=>page.evaluate(()=>{ const p=[...document.querySelectorAll('.pill')].find(b=>/Croissant/.test(b.textContent));
     const path=p && p.querySelector('svg.ill path'); const e=p && p.querySelector('.pemoji');

@@ -62,7 +62,8 @@ const SEED = `(() => {
   const cache = ()=>page.evaluate(()=>JSON.parse(localStorage.getItem('ml_cache_v101')||'{}'));
   const readReceipt = async(sel)=>{ const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.locator(sel).first().click()]);
     await fc.setFiles({ name:'receipt.png', mimeType:'image/png', buffer:PNG }); await page.waitForTimeout(1200); };
-  const src = fs.readFileSync(path.join(__dirname,'..','..','index.html'),'utf8');
+  /* SUPERSEDED by v2.19: the app's module lives in js/app.js now (the module split, byte for byte) — read from there. */
+  const src = fs.readFileSync(path.join(__dirname,'..','..','js','app.js'),'utf8');
   const rx = (name)=>new RegExp(((src.match(new RegExp('const '+name+' = (\\/.*\\/);'))||[])[1]||'//').slice(1,-1));
 
   try{

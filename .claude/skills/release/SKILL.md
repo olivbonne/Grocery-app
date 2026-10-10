@@ -12,14 +12,17 @@ live, not with a PR waiting. Never release unverified work.
 
 1. **Verify**, in this order, once for the whole batch:
    - `node .claude/tests/syntax.js` → `SYNTAX_OK`
-   - the full sweep: every `.claude/tests/v*.js` against a local server, plus
-     `node .claude/tests/api-recipe.js` and `node .claude/tests/api-recipe-search.js`
+   - the new version's suite, plus any older suite the batch rewrote, against a local server. The full
+     sweep — every `.claude/tests/v*.js` and every `api-*.js` — is the PR's CI run (the sweep of record
+     since v2.16): wait for all its jobs, and never merge on red or on a run that is missing.
    - `/verify-app`, and for a UI change, screenshots of the affected screens before and after.
    Any red: stop. If a version deliberately changed what an old check asserts, rewrite that check in
    place with a `SUPERSEDED by vX.YZ:` note — never delete it, never ship it failing.
 
-2. **Bump** `const APP_VERSION = "vN.NN"` in `index.html` by 0.01 — once per batch, not per item.
-   Docs-only changes do not bump.
+2. **Bump** with `node .claude/tools/bump.js N.NN` — 0.01 up, once per batch, not per item. It sets
+   `const APP_VERSION = "vN.NN"` in `js/app.js` and every `?v=` in `index.html`, `js/` and `sw.js`'s
+   PRECACHE together (v2.19), so a phone never pairs a new page with an old file; `v219.js` fails if they
+   disagree. Never edit a `?v=` by hand. Docs-only changes do not bump.
 
 3. **CHANGELOG row** at the top of the table in `CHANGELOG.md`:
    `| vN.NN | YYYY-MM-DD | <two to four plain sentences> |`
