@@ -9,7 +9,7 @@ export const onSnapshot=()=>()=>{};export const setDoc=async()=>{};export defaul
   const [port, out] = process.argv.slice(2);
   const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
-  await page.route('**www.gstatic.com/firebasejs/**', r =>
+  await page.route('**/firebasejs/**', r =>
     r.fulfill({ status: 200, contentType: 'text/javascript', body: STUB }));
   // safety net: fonts are self-hosted, but stub Google Fonts in case an old revision is tested
   await page.route('**fonts.googleapis.com/**', r =>

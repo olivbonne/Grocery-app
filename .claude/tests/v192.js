@@ -51,7 +51,7 @@ const NO_MODEL = { status:502, body:{ error:'The recipe reader\'s model is no lo
   const mk = async(api)=>{
     if(ctx) await ctx.close();
     ctx = await browser.newContext({ viewport:{width:390,height:844}, deviceScaleFactor:2, hasTouch:true });
-    await ctx.route('**www.gstatic.com/firebasejs/**', r => r.fulfill({ status:200, contentType:'text/javascript', body: STUB }));
+    await ctx.route('**/firebasejs/**', r => r.fulfill({ status:200, contentType:'text/javascript', body: STUB }));
     await ctx.route('**/api/**', r =>
       r.fulfill({ status:api.status, contentType:'application/json', body:JSON.stringify(api.body) }));
     page = await ctx.newPage(); page.setDefaultTimeout(9000);

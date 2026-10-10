@@ -68,7 +68,7 @@ const GOOD = { title:"Beef Goulash", servings:6, items:[
   const mk = async()=>{
     if(ctx) await ctx.close();
     ctx = await browser.newContext({ viewport:{width:390,height:844}, deviceScaleFactor:2, hasTouch:true });
-    await ctx.route('**www.gstatic.com/firebasejs/**', r => r.fulfill({ status:200, contentType:'text/javascript', body: STUB }));
+    await ctx.route('**/firebasejs/**', r => r.fulfill({ status:200, contentType:'text/javascript', body: STUB }));
     /* The endpoint is exercised for real by api-recipe.js. Here it is stubbed so the CLIENT's half —
        what it sends and what it does with the answer — can be driven without a backend. */
     await ctx.route('**/api/recipe', r => {

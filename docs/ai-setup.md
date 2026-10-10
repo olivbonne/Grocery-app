@@ -163,7 +163,9 @@ shared only with the people on that list. Each phone reads at most 10 receipts a
 
 ## Report a problem (v2.13)
 
-`POST /api/feedback` with `{ kind, text, diag }` — `kind` is `broken`, `looks`, `idea` or `complaint`,
+`POST /api/feedback` with `{ kind, text, diag }` — `kind` is `broken`, `looks`, `idea`, `complaint`, or
+`crash` (v2.15: sent by the app itself when it hits an error — the version, the page, the message and the
+first line of its stack, at most 3 a day per phone, never the list),
 `text` is 1–2000 characters, and `diag` (only when the box in the sheet is ticked) is the app version,
 page, layout, icon setting, theme, screen size and browser. Never the list. It returns
 `{ ok:true, via, ref? }`.

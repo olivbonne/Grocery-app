@@ -1,0 +1,79 @@
+# The household's tests on every pull request (v2.15). Before this they only ran when an assistant
+# session ran them. "quick" is the syntax gate and the server-function suites (no browser, under a
+# minute); "browser" runs every browser suite against the app served locally, split across 4 runners.
+# The suites stub the Firebase SDK, so nothing here talks to the real database.
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax gate
+        run: node .claude/tests/syntax.js
+      - name: Server-function suites
+        run: |
+          fail=0
+          for f in .claude/tests/api-*.js; do
+            echo "::group::$f"
+            out=$(node "$f" 2>&1) || fail=1
+            echo "$out"
+            echo "$out" | grep -q '^FAIL' && fail=1
+            echo "::endgroup::"
+          done
+          exit $fail
+
+  browser:
+    needs: quick
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Playwright and Chromium (the version the sessions use)
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+          sudo mkdir -p /opt/pw-browsers
+          sudo ln -sf "$(node -e "console.log(require('playwright').chromium.executablePath())")" /opt/pw-browsers/chromium
+      - name: Serve the app
+        run: |
+          python3 -m http.server 8971 >/dev/null 2>&1 &
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:8971/index.html && break; sleep 0.5; done
+      - name: Browser suites, shard ${{ matrix.shard }} of 4
+        run: |
+          i=0; fail=0
+          for f in .claude/tests/v*.js; do
+            if [ $((i % 4)) -eq ${{ matrix.shard }} ]; then
+              echo "::group::$f"
+              out=$(timeout 300 node "$f" 8971 2>&1) || fail=1    # a suite that hangs fails alone, not the whole shard
+              echo "$out"
+              echo "$out" | grep -q '^FAIL' && { fail=1; echo "::error file=$f::a check failed"; }
+              echo "::endgroup::"
+            fi
+            i=$((i+1))
+          done
+          exit $fail

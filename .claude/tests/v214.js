@@ -44,7 +44,7 @@ const SMALL = n => SMALL0(n);
   let ctx, page;
   const mk = async(items, extra)=>{ if(ctx) await ctx.close();
     ctx = await browser.newContext({ viewport:{width:390,height:844}, deviceScaleFactor:2, hasTouch:true });
-    await ctx.route('**www.gstatic.com/firebasejs/**', r => r.fulfill({ status:200, contentType:'text/javascript', body: STUB }));
+    await ctx.route('**/firebasejs/**', r => r.fulfill({ status:200, contentType:'text/javascript', body: STUB }));
     page = await ctx.newPage(); page.setDefaultTimeout(9000);
     page.on('console',m=>{ if(m.type()!=='error') return; const t=m.text(); if(/Failed to load resource/i.test(t)) return; errors.push(t.slice(0,160)); });
     page.on('pageerror',e=>errors.push('PAGEERR '+e.message));
