@@ -1058,9 +1058,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      never wraps, so a tile whose name runs to two lines keeps its icon on the left like the rest. */
   .shop .zoomer .pill .pname { min-width:0; max-width:100%; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; overflow-wrap:break-word; }
   /* v2.16: per-row equal heights by the layout itself — a row stretches every tile to its tallest — with
-     --tileh (syncTileH: one probe tile, measured when the layout changes) as every tile's floor. */
+     --tileh (syncTileH: the usual tile height on the list) as every tile's floor, and the cart's own as --tileh-cart.
+     The attribute in each selector is there for weight: without it, small tiles in fixed columns kept their own
+     44px and the categories came out at different heights. */
   .shop .zoomer .pills { align-items:stretch; }
-  .shop .zoomer .pills > .pill { min-height:var(--tileh, 0px); }
+  .shop .zoomer .pills > .pill[data-pill], .shop .zoomer .pills > .pill[data-reg-rm], .shop .zoomer .pills > .pill[data-reg-add] { min-height:var(--tileh, 0px); }
+  .checkedbar.shop .zoomer .pills > .pill[data-pill] { min-height:var(--tileh-cart, 0px); }
   /* in fixed-column small tiles the icon and name share the first line and the amount takes its own line
      under the name — on one line the amount left a 115px tile no room for "Chicken thigh" */
   .shop .zoomer.smalltile.gridmode .pill { flex-wrap:wrap; align-content:center; row-gap:0; column-gap:5px; padding:6px 8px; font-size:14px; }
@@ -5491,23 +5494,40 @@ function watchZoomer(z){ if(!z || typeof ResizeObserver==="undefined" || _zoomEl
 /* v2.16: tiles in a row match the row's tallest and are never shorter than the usual tile — without measuring
    every tile on every tap. v2.10–v2.11 did that (equalizeTiles), and it was over half of each redraw (27–41 ms
    for a 60-item list). Now the rows stretch their tiles by themselves (CSS), and the usual height, --tileh, is
-   measured on ONE hidden probe tile, again only when something that can change it changes: the layout, the
-   icons, the theme, line weight, fill, the screen width, or the fonts arriving. */
-let _tileSig = "";
+   still the 90th percentile of the tiles' natural heights (so one tall "Wombok cabbage · 6× heaped cups" cannot
+   set it) — but each tile is measured ONCE, as an unstretched copy in a hidden probe, and remembered by what it
+   shows (its words, its marks, in the cart or not) until the layout changes: the layout, icons, theme, line
+   weight, fill, tile width or the fonts arriving. A tap that only moves or folds tiles measures nothing.
+   (One stand-in probe tile, "Milk 2×", was tried first: in three columns most names take two lines, and the
+   categories came out at different heights.) The cart is its own group, as it was in v2.11. */
+const _tileSig = {}, _tileNat = {};
+function tileKey(p){ return (p.classList.contains("done") ? "d" : "") + "|" + p.querySelectorAll(".pemoji,.pmark,.penddot").length + "|" + p.textContent; }
 function syncTileH(){ try{
-  const z=document.getElementById("zoomer"); if(!z || !z.closest(".shop")) return;
   const h=document.documentElement;
-  const sig=[z.className, h.getAttribute("data-icosize"), h.getAttribute("data-theme"), h.getAttribute("data-linew"), h.getAttribute("data-tilebg"),
-    document.body.className, fillMode(), itemEmojiOn(), iconStyle(), innerWidth, document.fonts ? document.fonts.status : ""].join("|");
-  if(sig===_tileSig) return;
-  const first=z.querySelector(".pills > .pill");
-  const host=document.createElement("div"); host.className="tileprobe"; host.setAttribute("aria-hidden","true");
-  host.style.cssText="position:absolute;left:0;top:0;width:"+Math.max(80, first ? first.offsetWidth : 160)+"px;visibility:hidden;pointer-events:none";
-  host.innerHTML=pillHTML({ id:"__tileprobe", name:"Milk", cat:"fresh", qty:2, weight:"", checked:false, tags:[] }, CAT("fresh"));
-  z.appendChild(host);
-  const ph=host.firstElementChild ? host.firstElementChild.offsetHeight : 0;
-  host.remove();
-  if(ph>0){ h.style.setProperty("--tileh", ph+"px"); _tileSig=sig; }
+  [["--tileh", document.getElementById("zoomer"), "#zoomer .pill[data-pill], #zoomer .pill[data-reg-rm], #zoomer .pill[data-reg-add]"],
+   ["--tileh-cart", document.querySelector("#checkedbar .zoomer"), "#checkedbar .pill[data-pill]"]].forEach(([v, z, sel])=>{
+    if(!z || !z.closest(".shop")) return;
+    const tiles=[...document.querySelectorAll(sel)].filter(p=>p.offsetParent!==null);   // not the hidden urgent duplicates
+    if(!tiles.length) return;
+    const grid=z.classList.contains("gridmode"), full=grid || z.classList.contains("linelist");
+    const w=grid ? tiles[0].offsetWidth : tiles[0].parentElement.clientWidth;
+    const sig=[z.className, h.getAttribute("data-icosize"), h.getAttribute("data-theme"), h.getAttribute("data-linew"), h.getAttribute("data-tilebg"),
+      document.body.className, fillMode(), itemEmojiOn(), iconStyle(), w, document.fonts ? document.fonts.status : ""].join("|");
+    if(_tileSig[v]!==sig || _tileNat[v].size>2000){ _tileSig[v]=sig; _tileNat[v]=new Map(); }   // a new layout, or a long day of edits
+    const nat=_tileNat[v], keys=tiles.map(tileKey), miss=new Map();
+    keys.forEach((k,i)=>{ if(!nat.has(k) && !miss.has(k)) miss.set(k, tiles[i]); });
+    if(miss.size){
+      // grid tiles are the column's width; free-width tiles take their own width, up to the row's
+      const host=document.createElement("div"); host.className="tileprobe"; host.setAttribute("aria-hidden","true");
+      host.style.cssText="position:absolute;left:0;top:0;width:"+Math.max(40, w)+"px;visibility:hidden;pointer-events:none;display:flex;flex-direction:column;align-items:"+(full?"stretch":"flex-start");
+      miss.forEach(p=>{ const c=p.cloneNode(true); c.classList.remove("justpop"); host.appendChild(c); });
+      z.appendChild(host);
+      const ks=[...miss.keys()]; [...host.children].forEach((c,i)=>nat.set(ks[i], c.offsetHeight));
+      host.remove();
+    }
+    const hs=keys.map(k=>nat.get(k)).sort((a,b)=>a-b), base=hs[Math.floor(0.9*(hs.length-1))]||0;
+    if(base>0 && h.style.getPropertyValue(v)!==base+"px") h.style.setProperty(v, base+"px");
+  });
 }catch(e){} }
 function syncZoomHeight(){ syncTileH(); const z=document.getElementById("zoomer"); const bb=document.getElementById("bottomnav"); const tf=document.getElementById("topfix");
   const zw=z?z.parentElement:null;

@@ -4,7 +4,8 @@
 
    WHAT THESE CHECKS HAVE TO PROVE: contrast measured on the rendered text against its real background (counts,
    coloured amounts, Plan dates, Settings section names; the other themes' grey tokens); that a tap no longer
-   reads every tile's height (offsetHeight is counted during a redraw) while rows stay even; the bar's words,
+   reads every tile's height (offsetHeight is counted during a redraw) while rows stay even, and tiles in every
+   category (and in the cart) still share one height; the bar's words,
    and their absence when the bar is narrow; the wake lock requested and released with the cart, and never
    when switched off; one main landmark and the right headings per page; the empty-week hint and where its
    button goes; another phone's learned order adopted on load, and this phone's written back on finishing.
@@ -106,9 +107,20 @@ function cr(a,b){ const x=lum(a), y=lum(b); return (Math.max(x,y)+0.05)/(Math.mi
       return { reads, tiles:document.querySelectorAll('#zoomer .pill').length, tileh:getComputedStyle(document.documentElement).getPropertyValue('--tileh').trim(),
         inline:[...document.querySelectorAll('#zoomer .pill')].filter(p=>p.style.minHeight).length }; });
     ok('a tap no longer measures every tile (v2.11 read each tile\'s height on every redraw)', probe.reads <= 4, JSON.stringify(probe));
-    ok('…the usual tile height comes from one probe tile, as --tileh, and no tile carries its own min-height', /^\d+px$/.test(probe.tileh) && parseInt(probe.tileh)>40 && probe.inline===0, JSON.stringify(probe));
+    ok('…the usual tile height is one value, --tileh, and no tile carries its own min-height', /^\d+px$/.test(probe.tileh) && parseInt(probe.tileh)>40 && probe.inline===0, JSON.stringify(probe));
     const rows = await page.evaluate(()=>{ const m={}; [...document.querySelectorAll('#zoomer .pills')].forEach((g,gi)=>[...g.querySelectorAll(':scope > .pill')].forEach(p=>{ const r=p.getBoundingClientRect(); const k=gi+':'+Math.round(r.top); (m[k]=m[k]||[]).push(Math.round(r.height)); })); return Object.values(m); });
     ok('…and every row is still even: each tile as tall as the tallest in its row', rows.length>=3 && rows.every(r=>new Set(r).size===1), JSON.stringify(rows));
+    /* The first build took the usual height from one stand-in tile ("Milk 2×"). In three small columns most names
+       take two lines, so the stand-in was shorter than the usual tile, its 44px lost to the small-tile rule anyway,
+       and categories came out at different heights (CI caught it, in v210). The floor is the list's own usual
+       height again, and the cart keeps its own. */
+    await mk(L16.map((x,i)=>Object.assign({},x,{checked:i>=5})), SMALL0(3)+'localStorage.setItem("ml_caton","1");');
+    const across = await page.evaluate(()=>[...document.querySelectorAll('#zoomer .pill[data-pill]')].map(p=>Math.round(p.getBoundingClientRect().height)));
+    ok('small tiles in three columns: one height across every category', across.length>=4 && new Set(across).size===1, JSON.stringify(across));
+    await page.locator('#checkedHead').click(); await page.waitForTimeout(500);
+    const cartT = await page.evaluate(()=>({ hs:[...document.querySelectorAll('#checkedbar .pill[data-pill]')].map(p=>Math.round(p.getBoundingClientRect().height)),
+      v:document.documentElement.style.getPropertyValue('--tileh-cart') }));
+    ok('…and the cart, opened, one height over both its rows, from its own usual tile', cartT.hs.length===5 && new Set(cartT.hs).size===1 && cartT.hs[0]===parseInt(cartT.v), JSON.stringify(cartT));
 
     /* ── R8. the add bar says what it does ─────────────────────────────── */
     await mk(L16);
