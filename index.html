@@ -889,6 +889,13 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .snaprow span { flex:1; min-width:0; }
   .snaprow button { flex:none; }
   .snapnote { margin:8px 2px 0; font-size:11.5px; color:var(--muted2); font-weight:600; line-height:1.45; }
+  /* v2.17 the cart's running total, and the receipt card (it borrows the install card's shape) */
+  /* the total sits on its own line under "N in cart", so the count never wraps ("4 in / cart" on one phone) */
+  .checkedbarhead .chk-in { min-width:0; }
+  .checkedbarhead .chk-txt { display:flex; flex-direction:column; align-items:flex-start; min-width:0; line-height:1.15; }
+  .checkedbarhead .chk-n { white-space:nowrap; }
+  .cartest { color:var(--muted); font-size:11.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+  .rcnudge .ic-t svg { vertical-align:-3px; margin-right:2px; }
   .slotseg button { flex:1; min-width:0; padding:7px 4px; border-radius:10px; background:var(--card); border:1.5px solid var(--line); color:var(--text); font-size:13px; font-weight:600; }
   .slotseg button.on { border:2px solid var(--ink); font-weight:800; }
   /* v2.01: a planned recipe's method, read in the pick sheet. */
@@ -1799,7 +1806,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.16";
+const APP_VERSION = "v2.17";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -1939,7 +1946,7 @@ function mergeAmt(a, b){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -3594,6 +3601,15 @@ function ensureCats(){
 }
 function catList(){ ensureCats(); return state.categories; }
 function CAT(id){ return catList().find(c=>c.id===id) || DEFAULT_CATS.find(c=>c.id===id) || DEFAULT_CATS[DEFAULT_CATS.length-1]; }
+/* v2.17: the category an item is SHOWN under. An item whose category is gone (another phone removed it while this
+   one added to it, or older data) shows under Others — or the last category, if Others itself was removed —
+   instead of vanishing from the list while still counted in "N to buy". Display only: the stored category is left
+   alone, so nothing is rewritten while the categories may still be arriving. var, not let: boot-order rule. */
+var _catShownMemo = null;
+function catShown(id){ const cs=(Array.isArray(state.categories) && state.categories.length) ? state.categories : catList();   // catList() re-checks every category per call; this runs per item per category
+  if(!_catShownMemo || _catShownMemo.cs!==cs || _catShownMemo.n!==cs.length)
+    _catShownMemo={ cs, n:cs.length, ids:new Set(cs.map(c=>c.id)), fb:((cs.find(c=>c.id==="others")||cs[cs.length-1])||{}).id };
+  return _catShownMemo.ids.has(id) ? id : _catShownMemo.fb; }
 const DARK_VARIANTS = { "ramen.png":"ramen-dark.png" };
 function catIcon(cat, s){ s=s||16;
   if(!catEmojiOn()) return "";                               // v1.16 hide category icons entirely when off — emoji AND images (fresh/asian)
@@ -3911,6 +3927,18 @@ function priceLookup(name){ const P=state.prices||{}, k=priceKey(name); if(!k) r
     if((k.length>=3 && priceWordsIn(k,key)) || (key.length>=3 && priceWordsIn(key,k))){ if(!best || priceLastT(P[key])>priceLastT(best)) best=P[key]; } }
   return best; }
 function priceMoney(p){ return "$"+(Math.round((+p||0)*100)/100).toFixed(2); }
+/* v2.17: what the cart is likely to cost, from the prices this household has read off its receipts. Each item uses
+   its newest price at the store you are in (else its newest anywhere), as a unit price times the quantity on the
+   list. Items with no price are left out and counted, so the total never pretends to be complete. */
+function cartEstimate(){ const s=activeStore(), sid=(s && s.id) || "";
+  let total=0, priced=0, n=0;
+  for(const i of state.items){ if(!i.checked) continue; n++;
+    const a=priceLookup(i.name); if(!a || !a.length) continue;
+    let r=null; for(let k=a.length-1;k>=0;k--){ if(sid && a[k].s===sid){ r=a[k]; break; } }
+    if(!r) r=a[a.length-1];
+    const unit=(+r.p||0)/Math.max(1, +r.q||1); if(!(unit>0)) continue;
+    total+=unit*Math.max(1, +i.qty||1); priced++; }
+  return { total:Math.round(total*100)/100, priced, n }; }
 function priceDay(d){ try{ return new Date(d+"T00:00:00").toLocaleDateString(undefined,{day:"numeric",month:"short"}); }catch(e){ return d||""; } }
 /* "Last paid $5.50 at Coles Dandenong · 2 Oct", plus the latest at up to two other stores. */
 function priceLine(name){ const a=priceLookup(name); if(!a || !a.length) return "";
@@ -3934,7 +3962,7 @@ function sweep(msg){ const checked=state.items.filter(i=>i.checked); if(!checked
   moveToBuyAgain(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||""})));
   for(const i of checked){ histLog("buy", i.name); histLog("regadd", i.name); }
   state.items = state.items.filter(i=>!i.checked);
-  aiPublish(); save(); render(); showUndo(prev, msg || (checked.length+" saved to Regulars")); }   // v2.10: msg from autoFinishAt
+  aiPublish(); rcptNudgeSet(); save(); render(); showUndo(prev, msg || (checked.length+" saved to Regulars")); }   // v2.10: msg from autoFinishAt
 /* v1.10 add-sheet variant of restore(): copies the regular onto the list but KEEPS it in
    Buy-again, so the sheet row stays put and flips to ✓ (second tap bumps quantity). */
 function addFromRegular(name,cat){ playPlan(true);
@@ -5910,11 +5938,11 @@ function regPill(entry, cat, it){
 function planningSection(){
   // v1.24 the "Regulars" section shows its categories by default; each category is collapsed by default.
   const groups = catList().map(cat=>{
-    const regs = state.buyAgain.filter(e=>e.cat===cat.id).slice().sort((a,b)=>a.name.localeCompare(b.name));   // A–Z
+    const regs = state.buyAgain.filter(e=>catShown(e.cat)===cat.id).slice().sort((a,b)=>a.name.localeCompare(b.name));   // A–Z
     if(!regs.length) return "";
     const ccol = !(collapse.regOpen||[]).includes(cat.id);   // v1.24 per-category collapse — collapsed unless the user opened it
     const pills = ccol ? "" : `<div class="pills" style="margin-top:6px">${regs.map(e=>{
-      const it = state.items.find(i=>!i.checked && i.name.toLowerCase()===e.name.toLowerCase() && i.cat===cat.id);   // show selected ones too
+      const it = state.items.find(i=>!i.checked && i.name.toLowerCase()===e.name.toLowerCase() && catShown(i.cat)===cat.id);   // show selected ones too
       return regPill(e,cat,it); }).join("")}</div>`;
     return `<div class="regcat"><button class="regcatlbl" data-regc="${cat.id}"><span>${esc(cat.label)}</span><span class="regcnum">${regs.length}${ccol?' ▸':' ▾'}</span></button>${pills}</div>`;
   }).filter(Boolean).join("");
@@ -5929,7 +5957,7 @@ function planningSection(){
    Wrapping chips, never a sideways scroller — see v1.66 for why that shape kept failing. */
 function catSuggest(cat){
   const f=(draftCatText||"").trim().toLowerCase();
-  const ms=addMatches(f).filter(m=>m.cat===cat.id && !m.onId).slice(0,18);
+  const ms=addMatches(f).filter(m=>catShown(m.cat)===cat.id && !m.onId).slice(0,18);
   if(!ms.length) return "";
   return `<div class="catsug">${ms.map(m=>
     `<button class="catsugchip" data-catsug="${esc(m.name)}|${cat.id}" style="border-color:${cat.color}">${esc(cap(m.name))}</button>`
@@ -5961,11 +5989,11 @@ function renderMain(){
   const open = state.items.filter(i=>!i.checked).length;
   const done = state.items.filter(i=>i.checked).length;
 
-  const anyOpen = catList().some(c=> state.items.some(i=>i.cat===c.id) && !collapse.cats.includes(c.id)) || (state.buyAgain.length>0 && collapse.ba);
-  const firstCatId = (catList().find(c=>state.items.some(i=>i.cat===c.id))||{}).id;
+  const anyOpen = catList().some(c=> state.items.some(i=>catShown(i.cat)===c.id) && !collapse.cats.includes(c.id)) || (state.buyAgain.length>0 && collapse.ba);
+  const firstCatId = (catList().find(c=>state.items.some(i=>catShown(i.cat)===c.id))||{}).id;
 
   const buildCatBlocks = (flatWithin)=> catList().map(cat=>{
-    const all = sortList(state.items.filter(i=>i.cat===cat.id));
+    const all = sortList(state.items.filter(i=>catShown(i.cat)===cat.id));
     const list = all.filter(i=>!i.checked);   // checked items live in the Checked section now
     const collapsed = collapse.cats.includes(cat.id);
     const has = list.length>0;
@@ -6002,7 +6030,7 @@ function renderMain(){
   }).filter(Boolean);
 
   const baGroups = catList().map(cat=>{
-    const its = state.buyAgain.filter(e=>e.cat===cat.id);
+    const its = state.buyAgain.filter(e=>catShown(e.cat)===cat.id);
     if(!its.length) return "";
     return `<div class="pills" style="margin-top:2px">${its.map(e=>
       `<button class="bapill ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="border:1.5px dashed ${cat.color}">`
@@ -6092,7 +6120,7 @@ function renderMain(){
            collapsed there is no space and the count would be said twice, so it is just "Finish";
            open there is room, and the longer wording explains what the tap is about to do. */""}
       <div class="checkedfoot">
-        <button class="checkedbarhead" id="checkedHead"><span class="chk-in"><span class="chk-tick">✓</span>${done} in cart</span><svg class="cbtri${checkedOpen?' open':''}" width="8" height="9.5" viewBox="0 0 8 9.5" aria-hidden="true"><path d="M1 .6 L7.4 4.75 L1 8.9 Z" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg></button>
+        <button class="checkedbarhead" id="checkedHead"><span class="chk-in"><span class="chk-tick">✓</span><span class="chk-txt"><span class="chk-n">${done} in cart</span>${(()=>{ const e=cartEstimate(); return e.priced ? `<span class="cartest">about ${priceMoney(e.total)}${e.priced<e.n?` for ${e.priced} of ${e.n}`:""}</span>` : ""; })()}</span></span><svg class="cbtri${checkedOpen?' open':''}" width="8" height="9.5" viewBox="0 0 8 9.5" aria-hidden="true"><path d="M1 .6 L7.4 4.75 L1 8.9 Z" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg></button>
         <button id="sweepBtn" class="sweepbtn sweepbanner">Save to Regulars</button>
       </div>
       ${checkedOpen?`<div class="checkedscroll"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">${pillsMixed(checkedItems.slice().sort((a,b)=>(b.checkedAt||0)-(a.checkedAt||0)))}</div></div>`:""}
@@ -6120,7 +6148,7 @@ function renderMain(){
     ${checkedBar}
     <div class="wrap ${shopMode?'shop':''}" role="main">
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
-      ${installCardHTML()}${(state.items.length===0)?`<div class="empty">
+      ${installCardHTML()}${rcptNudgeHTML()}${(state.items.length===0)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">Your list is empty</p>
           <p class="empty-sub">Tap <b>Add items</b> below — or start from these:</p>
@@ -6655,7 +6683,23 @@ function rcSave(){ if(!rcpt || !rcpt.lines) return;
     priceRecord(nm, { p:Math.round(L.price*100)/100, s:rcpt.store.id||"", sn:rcpt.store.name||"", d:rcpt.date, q:L.qty||1, w:L.weight||"", t }); n++;
     /* the name may have been corrected in the sheet, so match again on what was saved */
     const it=rcMatchItem(nm, used); if(it){ used.add(it.id); it.checked=true; it.checkedBy=me; it.checkedAt=t; it.checkedStore=rcpt.store.id||""; markDirty(it.id); m++; } }
-  save(); rcpt=null; render(); showToast(`Saved ${n} price${n===1?"":"s"}${m?` · ticked off ${m}`:""}`); }
+  rcptNudgeClear(); save(); rcpt=null; render(); showToast(`Saved ${n} price${n===1?"":"s"}${m?` · ticked off ${m}`:""}`); }
+/* v2.17: the receipt is in your hand at the till, not at the bottom of Settings. After a shop is finished the Shop
+   page asks for it for up to three hours ("Got the receipt?"). Off in Settings › Prices; never past the day's free
+   receipts; gone once a receipt is read or "Not now" is tapped. The time is kept on the phone (ml_rcptnudge). */
+const RCPT_NUDGE_MS = 3*60*60*1000;
+function rcptAskOn(){ try{ return localStorage.getItem("ml_rcptask")!=="0"; }catch(e){ return true; } }
+function rcptNudgeSet(){ try{ localStorage.setItem("ml_rcptnudge", String(Date.now())); }catch(e){} }
+function rcptNudgeClear(){ try{ localStorage.removeItem("ml_rcptnudge"); }catch(e){} }
+function rcptNudgeOn(){ if(!rcptAskOn() || rcpt) return false;
+  let at=0; try{ at=+localStorage.getItem("ml_rcptnudge")||0; }catch(e){}
+  return at>0 && Date.now()-at < RCPT_NUDGE_MS && rcptToday() < RCPT_DAY_CAP; }
+function rcptNudgeHTML(){ if(!rcptNudgeOn()) return "";
+  return `<div class="installcard rcnudge" id="rcNudge" role="note">
+    <div class="ic-t">${CAMERA_SVG(16)} Got the receipt?</div>
+    <div class="ic-b">Snap it and the app remembers what you paid at each store.</div>
+    <div class="ic-btns"><button class="newlist" id="rcNudgeGo">Read receipt</button><button class="optaction" id="rcNudgeNo">Not now</button></div>
+  </div>`; }
 function rcptSheet(){
   const head=`<div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">${CAMERA_SVG(18)} Receipt</div>`;
   if(rcpt.busy) return `<div class="sheet-bg kbpin" id="rcBg"><div class="sheet" id="rcSheet">${head}
@@ -7270,7 +7314,7 @@ function renderPlanPage(){
     const alpha = sortModeFor()==="alpha";                                   // A–Z sorts ALL items in each category by name (ignoring subcategory)
     const byName = (a,b)=>(a.name||"").localeCompare(b.name||"");
     planBody = catList().map(cat=>{
-      let inList = state.items.filter(i=>i.cat===cat.id);
+      let inList = state.items.filter(i=>catShown(i.cat)===cat.id);
       const total = inList.length;
       if(!total && !cat.custom) return "";
       const collapsed = (collapse.planCats||[]).includes(cat.id);
@@ -7288,7 +7332,7 @@ function renderPlanPage(){
     }).join("");
   } else if(psm==="auto"){
     planBody = catList().map(cat=>{
-      const inList = state.items.filter(i=>i.cat===cat.id);
+      const inList = state.items.filter(i=>catShown(i.cat)===cat.id);
       const total = inList.length;
       if(!total && !cat.custom) return "";
       const collapsed = (collapse.planCats||[]).includes(cat.id);
@@ -7314,7 +7358,7 @@ function renderPlanPage(){
     const filled = inList.map(i=>planFilledPill(i, CAT(i.cat))).join("");
     planBody = filled ? `<section class="cat"><div class="pills">${filled}</div></section>` : "";
   }
-  const hasAny = catList().some(c=> state.items.some(i=>i.cat===c.id) || c.custom);
+  const hasAny = catList().some(c=> state.items.some(i=>catShown(i.cat)===c.id) || c.custom);
   app.innerHTML = `<div class="wrap" role="main">
     <div class="topfix" id="topfix">
       <header>
@@ -7469,11 +7513,11 @@ function wireOptions(){
   const optS=app.querySelector("#optSheet"); if(optS) optS.onclick=e=>e.stopPropagation();
   const oca=app.querySelector("#optCollapseAll"); if(oca) oca.onclick=()=>{
     if(!shopMode){
-      const ids=catList().filter(c=> state.items.some(i=>i.cat===c.id)||state.buyAgain.some(e=>e.cat===c.id)||c.custom).map(c=>c.id);
+      const ids=catList().filter(c=> state.items.some(i=>catShown(i.cat)===c.id)||state.buyAgain.some(e=>catShown(e.cat)===c.id)||c.custom).map(c=>c.id);
       const pc=collapse.planCats||[]; const open=ids.some(id=>!pc.includes(id));
       collapse.planCats = open ? ids.slice() : [];
     } else {
-      const ids=catList().filter(c=>state.items.some(i=>i.cat===c.id)).map(c=>c.id);
+      const ids=catList().filter(c=>state.items.some(i=>catShown(i.cat)===c.id)).map(c=>c.id);
       const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);
       collapse.cats = open ? ids.slice() : []; collapse.ba = open ? false : true;
     }
@@ -7486,6 +7530,7 @@ function wireOptions(){
     if(histOpen.has(k)) histOpen.delete(k); else histOpen.add(k); render(); });
   const hc=app.querySelector("#optHistClear"); if(hc) hc.onclick=()=>{ histClear(histView||listCode); render(); };
   const orc=app.querySelector("#optRcpt"); if(orc) orc.onclick=()=>rcPick();   // v2.09
+  app.querySelectorAll("[data-opt-rcptask]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_rcptask", b.dataset.optRcptask); }catch(e){} render(); });   // v2.17
   const opc=app.querySelector("#optPriceClear"); if(opc) opc.onclick=()=>{ if(confirm("Forget every remembered price in this list?")){ state.prices={}; save(); render(); } };
   app.querySelectorAll("[data-opt-fill]").forEach(b=>b.onclick=()=>{ if(fillMode()!==b.dataset.optFill) setFill(b.dataset.optFill); });
   const ozm=app.querySelector("#optZoomMinus"); if(ozm) ozm.onclick=()=>setDensity(dens()-0.1);
@@ -8013,7 +8058,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -8395,6 +8440,7 @@ function optionsBody(){
     <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">Breakfast, lunch, dinner or snack on each planned meal.</div>` : ""}
     ${(view!=="lists") ? `${sect("Prices")}
       <button class="optaction" id="optRcpt" style="margin-top:2px">${CAMERA_SVG(16)} Read a receipt</button>
+      ${row("Ask after a shop", `<div class="seg"><button data-opt-rcptask="1" class="${rcptAskOn()?'on':''}">On</button><button data-opt-rcptask="0" class="${!rcptAskOn()?'on':''}">Off</button></div>`)}
       <div style="margin:6px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${(()=>{ const pc=Object.keys(state.prices||{}).length; return pc ? `${pc} item${pc===1?"":"s"} with a remembered price. Kept in this list, shared only with the people on it.` : "Read a receipt after a shop and the app remembers what you paid at each store. Free."; })()}</div>
       ${Object.keys(state.prices||{}).length ? `<button class="optaction" id="optPriceClear">${BIN_SVG(16)} Clear price memory</button>` : ""}` : ""}
     ${(view!=="lists") ? `${sect("Predictions")}${rowNL("Suggest restocks", `<div class="seg"><button data-pred-on="1" class="${predictCfg.on?'on':''}">On</button><button data-pred-on="0" class="${!predictCfg.on?'on':''}">Off</button></div>`)}
@@ -8545,7 +8591,7 @@ function editSheet(){
     </div></div>`;
   }
   if(editing.kind==="bacat"){
-    const shown = catList().filter(c=> state.items.some(i=>i.cat===c.id) || c.custom).length;
+    const shown = catList().filter(c=> state.items.some(i=>catShown(i.cat)===c.id) || c.custom).length;
     const n = shown+1; const idx = Math.max(0, Math.min(editing.pos|0, shown));
     return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
       <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">Edit “Buy again”</div>
@@ -8640,7 +8686,7 @@ function wire(){
   wireSmartSheet();
   wireRcptSheet(); wireRptSheet(); wireRstSheet();
   const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
-  const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>i.cat===c.id)).map(c=>c.id);
+  const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>catShown(i.cat)===c.id)).map(c=>c.id);
     const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);
     collapse.cats = open ? ids.slice() : [];
     collapse.ba = open ? false : true;
@@ -8665,7 +8711,7 @@ function wire(){
 
   /* category header: tap = collapse, hold = edit/reorder/remove */
   app.querySelectorAll("[data-cat]").forEach(b=>{ const id=b.dataset.cat;
-    const has=state.items.some(i=>i.cat===id);
+    const has=state.items.some(i=>catShown(i.cat)===id);   // v2.17: Others holding only items whose category is gone still folds
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
     b.onpointerup=()=>{ pressCancel(); if(longFired){ const c=CAT(id); editing={kind:"cat", id, label:c.label, emoji:c.img?"":(c.emoji||""), img:c.img||"", color:c.color, iconManual:!!c.img}; render(); }
@@ -8721,6 +8767,8 @@ function wire(){
   const lsw=app.querySelector("#listSwitch"); if(lsw) lsw.onclick=()=>{ listsOpen=true; render(); };   // v1.81 title opens the switcher
   const shr=app.querySelector("#shopReport"); if(shr) shr.onclick=()=>{ rpt={ kind:"broken", text:"", diag:true }; render(); };   // v2.13 replaces the share button
   const icd=app.querySelector("#installDone"); if(icd) icd.onclick=installDismiss;   // v2.15 install card
+  const rng=app.querySelector("#rcNudgeGo"); if(rng) rng.onclick=()=>{ rcptNudgeClear(); rcPick(); };   // v2.17 the receipt at the till
+  const rnn=app.querySelector("#rcNudgeNo"); if(rnn) rnn.onclick=()=>{ rcptNudgeClear(); render(); };
   const icg=app.querySelector("#installGo"); if(icg) icg.onclick=()=>{ const p=_bip; _bip=null; if(!p){ installDismiss(); return; }
     try{ p.prompt(); (p.userChoice||Promise.resolve()).finally(installDismiss); }catch(e){ installDismiss(); } };
   const pnv=app.querySelector("#planNav"); if(pnv) pnv.onclick=()=>gotoPage(0);   // Plan tab
@@ -8788,7 +8836,7 @@ function wireEditSheet(){
     } else if(editing.kind==="bacat"){
       const cn=app.querySelector("#catName"); if(cn) cn.oninput=e=>{ editing.label=e.target.value; };
       wireIconEditor();
-      const shown = catList().filter(c=> state.items.some(i=>i.cat===c.id) || c.custom).length;
+      const shown = catList().filter(c=> state.items.some(i=>catShown(i.cat)===c.id) || c.custom).length;
       const persistPos=()=>{ state.baMeta={label:editing.label||"Buy again", emoji:editing.img?"":(editing.emoji||"↩"), img:editing.img||"", pos:editing.pos}; save(); };
       const bu=app.querySelector("#baUp"); if(bu) bu.onclick=()=>{ editing.pos=Math.max(0,(Math.min(editing.pos|0,shown))-1); persistPos(); render(); };
       const bd=app.querySelector("#baDown"); if(bd) bd.onclick=()=>{ editing.pos=Math.min(shown,(Math.min(editing.pos|0,shown))+1); persistPos(); render(); };
