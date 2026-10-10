@@ -216,8 +216,10 @@ const IMPORTED = { title:"Beef Goulash", servings:6, items:[
       return { titleL:Math.round(t.getBoundingClientRect().left), back:!!b,
                backW:b?Math.round(b.getBoundingClientRect().width):0 };
     });
-    ok('Settings keeps its real back arrow', set.back===true && set.backW>=40, JSON.stringify(set));
-    ok('…so its title is still offset by it, which is correct', set.titleL>plan.titleL, JSON.stringify(set));
+    /* SUPERSEDED by v2.13: the household asked for Settings' arrow to go as well, so Settings now lines up with
+       the others. Still protects v1.90's point: no page reserves room for an arrow it does not have. */
+    ok('Settings has no back arrow now (v2.13)', set.back===false, JSON.stringify(set));
+    ok('…so its title starts where Plan\'s does', set.titleL===plan.titleL, JSON.stringify(set));
 
     ok('no console errors anywhere in the run', errors.length===0, errors.slice(0,3).join(' | '));
     if(out) await page.screenshot({ path: out, fullPage:false });

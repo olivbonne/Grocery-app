@@ -138,9 +138,11 @@ const seed = (extra, checkedStore) => `(() => {
     ok('a cart ticked with no store known is never finished for you', c.items.filter(i=>i.checked).length===2, '');
 
     /* ── E. share the list ─────────────────────────────────────────────── */
-    await tap('#shopShare');
+    /* SUPERSEDED by v2.13: the banner's share button became "Report a problem"; sending the list to another app
+       moved to Settings › Other. Still protects the text that is sent: what is to buy, grouped, with amounts. */
+    await tap('#setNav'); await tap('#optSendList');
     const sh = await page.evaluate(()=>window.__shared);
-    ok('the Shop page shares the list with another app', sh && /^Sandbox — 6 to buy/.test(sh.text||''), JSON.stringify(sh && sh.text && sh.text.slice(0,60)));
+    ok('Settings › Other shares the list with another app', sh && /^Sandbox — 6 to buy/.test(sh.text||''), JSON.stringify(sh && sh.text && sh.text.slice(0,60)));
     ok('…what is still to buy, grouped, with amounts — not the cart', sh && /• 4× Small can corn kernel/.test(sh.text) && /• 1 kg Chicken thigh/.test(sh.text) && !/Milk|Bread/.test(sh.text), JSON.stringify(sh && sh.text));
 
     /* ── F. Settings ───────────────────────────────────────────────────── */

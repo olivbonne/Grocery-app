@@ -33,7 +33,7 @@ fail on any page error, were the real gate until 2026-09-26.
 
 ## The ones that are not browser suites
 
-`api-recipe.js`, `api-recipe-search.js` and `api-receipt.js` (v2.09) test the serverless functions directly — `node
+`api-recipe.js`, `api-recipe-search.js`, `api-receipt.js` (v2.09) and `api-feedback.js` (v2.13) test the serverless functions directly — `node
 .claude/tests/api-recipe.js`, no server and no network, with every outward call stubbed. They exist
 because `/api/recipe` fetches URLs a user typed and `/api/recipe-search` hands back URLs the app then
 fetches — requests only the deployment can make. The guards around that (no loopback, no private

@@ -428,10 +428,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v2.12: the list name sits in a tile with its chevron (no brand full stop any more); the chevron is the
      name's own colour. The "N to buy" count is the name's size and colour; the store under it is ink at the
      size of the bottom bar's labels. */
-  .topfix .listswitch { background:var(--chip); border-radius:12px; padding:3px 8px 3px 11px; align-items:center; }
+  .topfix .listswitch { background:var(--toptile-bg, var(--chip)); color:var(--toptile-text, var(--topbar-text, inherit)); border-radius:12px; padding:3px 8px 3px 11px; align-items:center; }
   .topfix .lschev { opacity:1; margin-left:5px; }
-  .topfix .hcount { font-size:20px; font-weight:800; color:var(--topbar-text, var(--text)); padding:3px 12px; letter-spacing:-.02em; }
-  .topfix header .locchip { font-size:11px; font-weight:800; font-family:'Outfit',system-ui,sans-serif; color:var(--topbar-text, var(--text)); }
+  .topfix .hcount { font-size:20px; font-weight:800; color:var(--toptile-text, var(--topbar-text, var(--text))); background:var(--toptile-bg, var(--chip)); padding:3px 12px; letter-spacing:-.02em; }
+  .topfix header .locchip { font-size:11px; font-weight:800; font-family:'Outfit',system-ui,sans-serif; color:var(--toptile-text, var(--topbar-text, var(--text))); background:var(--toptile-bg, var(--chip)); }
   .count { font-size:12px; color:var(--muted); font-weight:600; }
   .hcount { font-size:12px; font-weight:800; color:var(--accent); background:var(--chip); border-radius:999px; padding:3px 10px; white-space:nowrap; }
   /* v1.37 item 7: the total sits dead-centre of the banner, independent of the title/sync widths */
@@ -766,7 +766,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     font-size:12px; font-weight:700; }
   .movebtn { flex:1; padding:12px; border-radius:14px; border:2px solid var(--ink); background:var(--card); color:var(--text);
     font-weight:700; font-size:14px; }
-  .toast { position:fixed; bottom:calc(92px + env(safe-area-inset-bottom)); left:50%; transform:translate(-50%,0); background:var(--btn); color:var(--btn-text);
+  /* v2.13: messages show near the top, just under the top banner (and the cart, when it is down) —
+     syncZoomHeight publishes --toasttop — where the eye already is, and clear of the thumb. */
+  .toast { position:fixed; top:var(--toasttop, calc(84px + env(safe-area-inset-top))); bottom:auto; left:50%; transform:translate(-50%,0); background:var(--btn); color:var(--btn-text);
     padding:8px 16px; border-radius:999px; font-size:13px; font-weight:700; animation:toastrise .2s ease; z-index:60; display:flex; align-items:center; max-width:92vw; }
   .center { min-height:100vh; min-height:100dvh; display:flex; align-items:center; justify-content:center; font-weight:600; }
   .onb { max-width:420px; margin:0 auto; padding:48px 24px; }
@@ -832,6 +834,14 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      not an action, so it never competes with the sheet's one accent-filled button. */
   .pchip .pcslot { font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted2); font-weight:800; margin-right:5px; }
   .slotseg { display:flex; gap:6px; margin:0 0 12px; }
+  /* v2.13 Report a problem */
+  .slotseg.rptkinds { flex-wrap:wrap; margin-top:10px; }
+  .rpttext { width:100%; box-sizing:border-box; padding:10px 12px; border-radius:12px; border:2px solid var(--ink); background:var(--card); color:var(--text);
+    font:inherit; font-size:15px; line-height:1.4; resize:vertical; outline:none; }
+  .rptdiag { display:flex; align-items:center; gap:10px; margin:10px 2px 4px; font-size:13px; color:var(--muted); font-weight:600; line-height:1.35; }
+  .rptdiag .smartcheck { flex:none; }
+  .rpterr { margin:8px 2px 2px; color:#C24A33; font-weight:700; font-size:13.5px; line-height:1.4; }
+  .rpterr .linkbtn { border:none; background:none; padding:0; color:var(--text); text-decoration:underline; font:inherit; font-weight:800; }
   .slotseg button { flex:1; min-width:0; padding:7px 4px; border-radius:10px; background:var(--card); border:1.5px solid var(--line); color:var(--text); font-size:13px; font-weight:600; }
   .slotseg button.on { border:2px solid var(--ink); font-weight:800; }
   /* v2.01: a planned recipe's method, read in the pick sheet. */
@@ -1354,7 +1364,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
     box-shadow: inset 0 1px 0 var(--glass-hi), 0 12px 30px rgba(20,30,22,.25); }
   .bottomnav .navbtn { color:var(--navbar-text, var(--muted)); }
   .bottomnav .navbtn.active { color:var(--navbar-text, var(--text)); }
-  .navbtn.active { background:var(--chip); border-radius:999px; }
+  .navbtn.active { background:var(--navsel-bg, var(--chip)); border-radius:999px; }
+  .bottomnav .navbtn.active { color:var(--navsel-text, var(--navbar-text, var(--text))); }
   .navbtn.active::before { display:none; }
   .checkedbar { border:solid var(--glass-brd); border-width:0 0 1px; border-radius:0 0 18px 18px; box-shadow:0 8px 16px -12px rgba(20,30,22,.45); }
   .qbanner { border-radius:18px 18px 0 0; }
@@ -1411,6 +1422,13 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   html[data-icosize="l"] .shop .zoomer .pill .pill-meta, html[data-icosize="xl"] .shop .zoomer .pill .pill-meta,
   html[data-icosize="l"] .shop .zoomer.smalltile.gridmode .pill .pill-meta, html[data-icosize="xl"] .shop .zoomer.smalltile.gridmode .pill .pill-meta {
     margin-left:0; padding-left:0; justify-content:center; }
+  /* v2.13: stacked, the name keeps its own height. Small fixed-column tiles give the name flex:1 1 0 so it
+     shares a ROW with the icon; once L/XL turns the tile into a column that same rule made the name's
+     HEIGHT come from leftover space — nothing, with icons off — and the clamp's overflow:hidden cut the
+     name away (the household's screenshot, every small-tile setting at L/XL). */
+  html[data-icosize="l"] .shop .zoomer .pill .pname, html[data-icosize="xl"] .shop .zoomer .pill .pname,
+  html[data-icosize="l"] .shop .zoomer.smalltile.gridmode .pill .pname, html[data-icosize="xl"] .shop .zoomer.smalltile.gridmode .pill .pname { flex:0 0 auto; }
+  html[data-icosize="l"] .shop .zoomer.smalltile.gridmode .pill, html[data-icosize="xl"] .shop .zoomer.smalltile.gridmode .pill { flex-wrap:nowrap; }
   /* v2.12: a tile with its icon on top reads in three fixed bands — the icon, then the name in two lines'
      room (a one-line name leaves the second empty), then the amount on the bottom line. Every name starts
      at the same height across the row, and every amount sits on the same bottom line. The flags move to
@@ -1694,7 +1712,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .pill.picking .pcheck { animation:tickpop .3s cubic-bezier(.32,.72,.3,1); }
   @keyframes sheetup { 0%{opacity:0;transform:translateY(28px)} 70%{opacity:1;transform:translateY(-4px)} 100%{opacity:1;transform:translateY(0)} }
   .sheet { animation:sheetup .24s cubic-bezier(.32,.72,.3,1); }
-  @keyframes toastup { 0%{opacity:0;transform:translate(-50%,10px)} 70%{opacity:1;transform:translate(-50%,-3px)} 100%{opacity:1;transform:translate(-50%,0)} }
+  @keyframes toastup { 0%{opacity:0;transform:translate(-50%,-10px)} 70%{opacity:1;transform:translate(-50%,3px)} 100%{opacity:1;transform:translate(-50%,0)} }
   .toast { animation:toastup .24s cubic-bezier(.32,.72,.3,1); }
   /* A14 respect reduced motion */
   @media (prefers-reduced-motion: reduce){
@@ -1714,7 +1732,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.12";
+const APP_VERSION = "v2.13";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1852,7 +1870,7 @@ function mergeAmt(a, b){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -2041,7 +2059,10 @@ const SHADE_KEYS = { accent:"ml_accentshade", text:"ml_textcolshade", cat:"ml_ca
                      cathdbg:"ml_cathdbgshade", cathdbrd:"ml_cathdbrdshade",
                      reghdtext:"ml_reghdtextshade", reghdbg:"ml_reghdbgshade", reghdbrd:"ml_reghdbrdshade",
                      /* v1.78: the search bar is the third overlay tile, so it joins on the same terms. */
-                     srchbar:"ml_srchbarshade" };
+                     srchbar:"ml_srchbarshade",
+                     /* v2.13: the tiles ON the bars — the top banner's name, count and store, and the bottom
+                        bar's selected tab — get their own colour, on the same terms. */
+                     toptile:"ml_toptileshade", navsel:"ml_navselshade" };
 const SHADE_MAX = 5;
 (function(){ const OLD = { accent:"ml_accentcalm", text:"ml_textcolcalm", cat:"ml_cattextcalm",
     tiletext:"ml_tiletextcalm", tilebg:"ml_tilebgcalm", tilebrd:"ml_tilebrdcalm",
@@ -2100,6 +2121,13 @@ let navBar  = localStorage.getItem("ml_navbar") || "auto";
    same Auto/100 default, the same "nothing is written until you touch it" rule, the same alpha-in-the-
    colour rather than an opacity that would fade the text inside it. */
 let srchBar = localStorage.getItem("ml_srchbar") || "auto";
+/* v2.13: the household asked to colour the overlays on the bars — the tiles behind the list name, "N to buy"
+   and the store, and the bottom bar's selected tab. Auto and untouched writes nothing: the theme's --chip
+   still paints them, so an install that never opens these rows is unchanged. */
+let topTile = localStorage.getItem("ml_toptile") || "auto";
+let navSel  = localStorage.getItem("ml_navsel")  || "auto";
+function setTopTile(v, quiet){ topTile=v; setLS("ml_toptile",v); applyTheme(); if(!quiet) render(); }
+function setNavSel(v, quiet){ navSel=v; setLS("ml_navsel",v); applyTheme(); if(!quiet) render(); }
 function setSrchBar(v, quiet){ srchBar=v; setLS("ml_srchbar",v); applyTheme(); if(!quiet) render(); }
 /* v1.88: the search bar could be nudged with "Across" but never actually reach an edge — the wrap holds
    a 14px inset on both sides, and a 2px-per-tap stepper is the wrong instrument for crossing a screen.
@@ -2471,6 +2499,11 @@ function applyTheme(){ const t = THEMES[theme] || THEMES.light;
     if(tOn){ rs.setProperty("--topbar-text", tOn); } else { rs.removeProperty("--topbar-text"); }
     if(nOn){ rs.setProperty("--navbar-text", nOn); } else { rs.removeProperty("--navbar-text"); }
     if(sOn){ rs.setProperty("--srchbar-text", sOn); } else { rs.removeProperty("--srchbar-text"); }
+    /* v2.13: the bar tiles. The text on them follows the colour, as the bars' own text does. */
+    [["toptile",topTile,"--toptile"],["navsel",navSel,"--navsel"]].forEach(([k,sel,v])=>{
+      if(sel==="auto" && !(shadeOn[k]||0)){ rs.removeProperty(v+"-bg"); rs.removeProperty(v+"-text"); return; }
+      const hex=autoShade(k, pickHex(sel) || themeToken("--chip") || "#EDE7D6");
+      rs.setProperty(v+"-bg", hex); const on=onAccent(hex); if(on) rs.setProperty(v+"-text", on); else rs.removeProperty(v+"-text"); });
   });
   /* v1.54 item 1: the qty and weight are painted from the CATEGORY colour by an inline style, which
      no stylesheet rule can outrank without !important — and a category red on a chosen blue tile is
@@ -3028,7 +3061,9 @@ const CAL_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" str
 /* v2.12: the bar's Plan and Settings marks are drawn the same size as the cart — 26px tall, their viewBoxes
    cropped to the drawing so the mark (not its margin) fills the box — so all three labels sit on one line. */
 const CAL_NAV_SVG = CAL_SVG.replace('width="20" height="20" viewBox="0 0 24 24"', 'class="navico" width="26" height="26" viewBox="2 2 20 20"');
-const GEAR_NAV_SVG = GEAR_SVG.replace('width="21" height="21" viewBox="0 0 24 24"', 'class="navico" width="26" height="26" viewBox="1.1 1.1 21.8 21.8"');
+/* v2.13: the gear's viewBox is the whole 24-unit canvas plus a margin — v2.12 cropped it to 21.8 units and
+   the stroke at the teeth was cut off, and the gear read bigger than the cart and the calendar. */
+const GEAR_NAV_SVG = GEAR_SVG.replace('width="21" height="21" viewBox="0 0 24 24"', 'class="navico" width="26" height="26" viewBox="-1.5 -1.5 27 27"');
 /* v1.82: ⋯ is not in the self-hosted Outfit subset and would render as nothing, so the three dots are drawn. */
 function bottomNav(o){
   // v1.16 three tabs: Lists · Shop (middle, cart) · Settings (right). Adding is the floating "+ Add" pill.
@@ -3343,6 +3378,10 @@ function histLog(action, name, code){
 function histClear(code){ try{ localStorage.removeItem(histKey(code)); }catch(e){} }
 function getLists(){ try{ return JSON.parse(localStorage.getItem("ml_lists")||"[]"); }catch(e){ return []; } }
 function saveLists(a){ localStorage.setItem("ml_lists", JSON.stringify(a)); }
+/* v2.13: the Sandbox was created as "🧪 Sandbox" until now; the household asked for the test tube to go.
+   Renames a list still carrying that exact name, wherever the list is loaded from (cache or sync). */
+function dropTube(){ if(!/^🧪\s*Sandbox$/u.test(String(state && state.name || ""))) return false;
+  state.name="Sandbox"; try{ rememberList(listCode, "Sandbox"); }catch(e){} return true; }
 function rememberList(code,name){ const a=getLists(); const i=a.findIndex(x=>x.code===code);
   if(i>=0){ if(name && a[i].name!==name){ a[i].name=name; saveLists(a); } }
   else { a.push({code, name:name||"Groceries"}); saveLists(a); } }
@@ -3374,7 +3413,7 @@ function switchList(code){ const wasPlan = (view==="plan"); listsOpen=false; if(
   try{ collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}'); }catch(e){ collapse={cats:[],ba:false}; }
   collapse.checked = false;   // v2.10: the cart always opens folded; a tap unfolds it for the session
   state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{} };
-  try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state=c; }catch(e){}
+  try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state=c; dropTube(); } }catch(e){}
   if(!state.purch || typeof state.purch!=="object") state.purch={};
   state.purch = purchMerge(state.purch, purch);   // fold any legacy per-device history into the shared copy
   purch = state.purch;
@@ -3413,7 +3452,7 @@ let lastPop=null;
 
 let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{} };
 rememberList(listCode);
-try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c) state = c; } catch(e){}
+try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state = c; dropTube(); } } catch(e){}
 if(!state.purch || typeof state.purch!=="object") state.purch={};
 state.purch = purchMerge(state.purch, purch);   // fold any legacy per-device history into the shared copy
 purch = state.purch;
@@ -3542,6 +3581,7 @@ function subscribe(){
       state = { items:d.items||[], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]}, prices: d.prices||{} };
       purch = state.purch;                                                                        // keep the working ref pointed at the shared copy
       if(!state.name){ const ln=(getLists().find(l=>l.code===listCode)||{}).name; if(ln){ state.name=ln; save(); } }
+      if(dropTube()) save();
       if(state.name) rememberList(listCode, state.name);
       if((state.predictReset||0) > _predReset) applyPredictReset(state.predictReset);   // household-wide predictions reset propagated via the synced epoch
       // converge: if our merged view holds Buy-again / restock history the server was missing, write it back once
@@ -4047,6 +4087,8 @@ const PIN_SVG     = sz => ICO('<path d="M12 21s-6.5-6.2-6.5-11.2a6.5 6.5 0 0113 
 const RESTOCK_SVG = sz => ICO('<path d="M19.5 8.5A8 8 0 005.2 7.4"/><path d="M5 3.8v3.9h3.9"/><path d="M4.5 15.5a8 8 0 0014.3 1.1"/><path d="M19 20.2v-3.9h-3.9"/>', sz);
 const FLASK_SVG   = sz => ICO('<path d="M9.5 3.5h5"/><path d="M10.5 3.5v5.2L5.3 18a1.8 1.8 0 001.6 2.5h10.2a1.8 1.8 0 001.6-2.5l-5.2-9.3V3.5"/><path d="M7.6 14.5h8.8"/>', sz);
 const BIN_SVG     = sz => ICO('<path d="M4.5 6.5h15"/><path d="M9.5 6.5V4.2h5v2.3"/><path d="M6.5 6.5l1 13.3h9l1-13.3"/><path d="M10.2 10v6.6M13.8 10v6.6"/>', sz);
+/* v2.13: Report a problem — a speech bubble with an exclamation mark, for the top banner's right-hand button */
+const REPORT_SVG  = sz => ICO('<path d="M5 4.5h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7l-4.5 3.5v-3.5H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z"/><path d="M12 8.2v3.8"/><path d="M12 15h.01"/>', sz);
 const SHARE_SVG   = sz => ICO('<path d="M12 3.5v11"/><path d="M8 7.2l4-3.7 4 3.7"/><path d="M8.5 10.5H6.5a1.5 1.5 0 0 0-1.5 1.5v7a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5h-2"/>', sz);
 const NOTE_SVG   = sz => ICO('<circle cx="8" cy="17.5" r="3"/><path d="M11 17.5V4.6l8-1.6v11"/><circle cx="16" cy="14" r="3"/>', sz);
 const SAVE_SVG   = sz => ICO('<path d="M12 3.6v10.2"/><path d="M8 10l4 4 4-4"/><path d="M4.5 16v3.4h15V16"/>', sz);
@@ -5247,7 +5289,8 @@ function syncZoomHeight(){ equalizeTiles(); const z=document.getElementById("zoo
   /* v2.12: the cart hangs from the header's bottom edge, and the list starts under the cart */
   const cb=document.getElementById("checkedbar");
   if(zw && tf){ const tb=Math.max(0, tf.getBoundingClientRect().bottom); if(cb) cb.style.top = Math.floor(tb) + "px";
-    zw.style.marginTop = Math.ceil(cb ? Math.floor(tb) + cb.offsetHeight : tb) + "px"; }
+    zw.style.marginTop = Math.ceil(cb ? Math.floor(tb) + cb.offsetHeight : tb) + "px";
+    document.documentElement.style.setProperty("--toasttop", (Math.ceil(cb ? Math.floor(tb) + cb.offsetHeight : tb) + 10) + "px"); }
   const navH = bb ? Math.max(0, Math.ceil(window.innerHeight - bb.getBoundingClientRect().top)) : 0;   // v1.12 floating nav: stack everything above its top edge
   const qb=document.getElementById("qbanner"); if(qb) qb.style.bottom = Math.ceil(navH) + "px";   // quantity banner sits on top of the nav
   const qbH = qb ? qb.getBoundingClientRect().height : 0;
@@ -5268,7 +5311,7 @@ function syncZoomHeight(){ equalizeTiles(); const z=document.getElementById("zoo
   const utH = utw ? utw.getBoundingClientRect().height + 10 : 0;
   /* v1.43 item 2: the toast's CSS bottom is a fixed 92px, which lands it on top of the search pill.
      Once the real heights are known, lift it above everything that floats. CSS keeps the fallback. */
-  const tt=document.getElementById("toast"); if(tt) tt.style.bottom = Math.ceil(navH + fabH + cbH + apH + utH + 10) + "px";
+  /* v2.13: messages sit under the top banner now (--toasttop, set above); the old bottom stacking is gone */
   /* v1.54 item 1: the trailing constant was a flat 24px of breathing room under the last row. It is
      the "Bottom" page margin now — everything before it is clearance the floating chrome genuinely
      needs, which is why the setting is added rather than substituted. */
@@ -5798,7 +5841,7 @@ function renderMain(){
           </div>
           ${open>0?`<span class="hcount hcount-mid">${open} to buy</span>`:""}
           <div style="display:flex;align-items:center;gap:8px">
-            ${syncChip()}<button class="iconbtn hshare" id="shopShare" aria-label="Share the list with another app">${SHARE_SVG(18)}</button>
+            ${syncChip()}<button class="iconbtn hshare" id="shopReport" aria-label="Report a problem with the app" title="Report a problem">${REPORT_SVG(19)}</button>
           </div>
         </div>
         ${locChip()?`<div class="hloc">${locChip()}</div>`:""}
@@ -5825,7 +5868,7 @@ function renderMain(){
   ${fabMoveOpen?fabMoveSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${rpt?rptSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -6135,7 +6178,7 @@ function renderPlanTab(){
   ${planWeekOpen?planWeekSheet():""}
   ${planAdd?planAddSheet():""}
   ${planPick?planPickSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${rpt?rptSheet():""}
   ${listsOpen?listsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
@@ -6228,6 +6271,58 @@ function planShrinkImage(file, maxPx, quality){
 /* v2.09: receipt reading. rcpt is null when closed; otherwise
    { busy, err, store:{id,name}, detected, date, total, lines:[{raw,name,qty,weight,price,cat,keep,match}] }. */
 let rcpt = null;
+/* v2.13: Report a problem. The household asked for a way to send issues and complaints from inside the app.
+   It goes to /api/feedback, which files it where the person who builds the app will see it (a GitHub issue
+   when configured, otherwise the server log). App details — version, page, layout, screen — are attached
+   only when the box is ticked, and never the list itself. Every wait is visible and ends: a spinner while
+   sending, a 20s limit, and on failure a message plus a way to share the text instead. */
+let rpt = null;   // { kind, text, diag, busy, err, sent }
+const RPT_KINDS = { broken:"Something's broken", looks:"Looks wrong", idea:"An idea", complaint:"A complaint" };
+const RPT_DAY_CAP = 10;
+function rptToday(){ const d=dayKey(new Date()); try{ const v=String(localStorage.getItem("ml_rptday")||"").split("|"); return v[0]===d ? (+v[1]||0) : 0; }catch(e){ return 0; } }
+function rptCount(){ const d=dayKey(new Date()); try{ localStorage.setItem("ml_rptday", d+"|"+(rptToday()+1)); }catch(e){} }
+function rptDiag(){ let th=""; try{ th=document.documentElement.getAttribute("data-theme")||(document.body.classList.contains("dark")?"dark":"light"); }catch(e){}
+  return { version:APP_VERSION, page:["plan","shop","settings"][curPageIdx()]||String(curPageIdx()), layout:dispBase()+" "+(dispBase()==="small"?smallCols():largeCols())+" cols",
+    icons:itemEmojiOn()?(iconStyle()+" "+icoSize()):"off", theme:th, screen:innerWidth+"x"+innerHeight, ua:String(navigator.userAgent||"").slice(0,120) }; }
+function rptSheet(){
+  const head=`<div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">${REPORT_SVG(18)} Report a problem</div>`;
+  const wrap=b=>`<div class="sheet-bg kbpin" id="rptBg"><div class="sheet" id="rptSheet">${head}${b}</div></div>`;
+  if(rpt.busy) return wrap(`<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>Sending…</div>`);
+  if(rpt.sent) return wrap(`<div role="status" style="padding:6px 2px 16px;color:var(--text);font-weight:600;line-height:1.5">Thanks — it's been sent.</div><button class="optaction" id="rptOk">OK</button>`);
+  return wrap(`<div class="rcnote">Tell us what went wrong, or what you'd change. It goes to the person who builds the app.</div>
+    <div class="slotseg rptkinds">${Object.keys(RPT_KINDS).map(k=>`<button data-rptkind="${k}" class="${rpt.kind===k?'on':''}">${RPT_KINDS[k]}</button>`).join("")}</div>
+    <textarea id="rptText" class="rpttext" maxlength="2000" rows="5" placeholder="What happened? What did you expect?">${esc(rpt.text||"")}</textarea>
+    <div class="rptdiag"><button class="smartcheck ${rpt.diag?"on":""}" id="rptDiag" role="checkbox" aria-checked="${rpt.diag?"true":"false"}" aria-label="Include app details">✓</button>
+      <span>Include app details — version, screen and layout. Never your list.</span></div>
+    ${rpt.err?`<div class="rpterr" role="alert">${esc(rpt.err)}${rpt.canShare?` <button class="linkbtn" id="rptShare">Share it instead</button>`:""}</div>`:""}
+    <div class="ppedbtns"><button class="optaction" id="rptCancel">Cancel</button><button class="newlist" id="rptSend">Send</button></div>`); }
+function rptSend(){ const text=String(rpt.text||"").trim();
+  if(!text){ rpt.err="Write a few words first."; rpt.canShare=false; render(); return; }
+  if(rptToday()>=RPT_DAY_CAP){ rpt.err=`That's ${RPT_DAY_CAP} reports today from this phone. Try again tomorrow.`; rpt.canShare=true; render(); return; }
+  const body={ kind:rpt.kind, text, diag: rpt.diag ? rptDiag() : {} };
+  rpt.busy=true; rpt.err=""; render();
+  const ctl=(typeof AbortController!=="undefined") ? new AbortController() : null;
+  const timer=setTimeout(()=>{ if(ctl) ctl.abort(); }, 20000);
+  fetch("/api/feedback", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify(body), signal: ctl ? ctl.signal : undefined })
+    .then(r=>r.json().catch(()=>({})).then(j=>({ ok:r.ok, j })))
+    .then(({ok,j})=>{ if(!rpt) return; if(!ok || !j || j.ok!==true) throw new Error("not sent");
+      rptCount(); rpt={ sent:true }; render(); })
+    .catch(e=>{ if(!rpt) return; rpt.busy=false; rpt.canShare=true;
+      rpt.err = (e && e.name==="AbortError") ? "That took too long. Check the connection and try again." : "Couldn't send it. Try again, or share it instead.";
+      render(); })
+    .finally(()=>clearTimeout(timer)); }
+async function rptShare(){ const t=`Market List ${APP_VERSION} — ${RPT_KINDS[rpt.kind]||"Report"}\n\n${String(rpt.text||"").trim()}`;
+  try{ if(navigator.share){ await navigator.share({ text:t }); return; } }catch(e){ if(e && e.name==="AbortError") return; }
+  try{ await navigator.clipboard.writeText(t); showToast("Copied — paste it into a message"); }catch(e){ showToast("Couldn't share on this device"); } }
+function wireRptSheet(){ if(!rpt) return;
+  const close=()=>{ rpt=null; render(); };
+  const bg=app.querySelector("#rptBg"); if(bg) bg.onclick=e=>{ if(e.target===bg && !rpt.busy) close(); };
+  ["#rptOk","#rptCancel"].forEach(id=>{ const b=app.querySelector(id); if(b) b.onclick=close; });
+  app.querySelectorAll("[data-rptkind]").forEach(b=>b.onclick=()=>{ rpt.kind=b.dataset.rptkind; render(); });
+  const ta=app.querySelector("#rptText"); if(ta) ta.oninput=()=>{ rpt.text=ta.value; };   // no re-render while typing
+  const dg=app.querySelector("#rptDiag"); if(dg) dg.onclick=()=>{ rpt.diag=!rpt.diag; render(); };
+  const sd=app.querySelector("#rptSend"); if(sd) sd.onclick=rptSend;
+  const sh=app.querySelector("#rptShare"); if(sh) sh.onclick=rptShare; }
 /* free, with a soft daily cap per device — the model call is the one real cost. A count, not a look,
    so ml_rcptday is in BOTH exclusion lists. */
 const RCPT_DAY_CAP = 10;
@@ -6818,7 +6913,7 @@ function wirePlanTab(){
   const st=app.querySelector("#setNavP"); if(st) st.onclick=()=>{ settingsFrom=0; gotoPage(2); };
   wireListsSheet();
   wireSmartSheet();
-  wireRcptSheet();
+  wireRcptSheet(); wireRptSheet();
   wireUserTiles();
 }
 /* v1.90: a recipe page shared into the app. Android hands it over directly through the manifest's
@@ -6966,7 +7061,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>Add items…</span></button></div>`:""}
-  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}
+  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${rpt?rptSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -7029,7 +7124,7 @@ function wirePlanPage(){
   const qbc=app.querySelector("#qbannerClose"); if(qbc) qbc.onclick=()=>{ quickEdit=null; render(); };
   const qbr=app.querySelector("#qbannerRemove"); if(qbr) qbr.onclick=()=>{ const it=state.items.find(i=>i.id===quickEdit); const nm=it?cap(it.name):""; const id=quickEdit; quickEdit=null; planRemove(id); if(nm) showToast(nm+" moved to Regulars"); };
   wireSmartSheet();
-  wireRcptSheet();
+  wireRcptSheet(); wireRptSheet();
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>gotoPage(0);
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireUserTiles();
@@ -7044,7 +7139,7 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
   const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{};   // already on Settings
   wireOptions();
   wireEditSheet();
-  wireRcptSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
+  wireRcptSheet(); wireRptSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 /* v1.77 item 3: which sections are folded. Keyed by the section's own name rather than its index, so
@@ -7142,6 +7237,8 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-topbar]").forEach(b=>b.onclick=()=>setTopBar(b.dataset.optTopbar));
   app.querySelectorAll("[data-opt-navbar]").forEach(b=>b.onclick=()=>setNavBar(b.dataset.optNavbar));
   app.querySelectorAll("[data-opt-srchbar]").forEach(b=>b.onclick=()=>setSrchBar(b.dataset.optSrchbar));
+  app.querySelectorAll("[data-opt-toptile]").forEach(b=>b.onclick=()=>setTopTile(b.dataset.optToptile));   // v2.13
+  app.querySelectorAll("[data-opt-navsel]").forEach(b=>b.onclick=()=>setNavSel(b.dataset.optNavsel));
   app.querySelectorAll("[data-opt-cathdbg]").forEach(b=>b.onclick=()=>setCatHdBg(b.dataset.optCathdbg));
   app.querySelectorAll("[data-opt-cathdbrd]").forEach(b=>b.onclick=()=>setCatHdBrd(b.dataset.optCathdbrd));
   app.querySelectorAll("[data-opt-reghdtext]").forEach(b=>b.onclick=()=>setRegHdTxt(b.dataset.optReghdtext));
@@ -7162,6 +7259,7 @@ function wireOptions(){
     "opt-topbar":setTopBar, "opt-navbar":setNavBar,
     /* v1.78: the third overlay tile. */
     "opt-srchbar":setSrchBar,
+    "opt-toptile":setTopTile, "opt-navsel":setNavSel,   // v2.13
     "opt-cathdbg":setCatHdBg, "opt-cathdbrd":setCatHdBrd,
     "opt-reghdtext":setRegHdTxt, "opt-reghdbg":setRegHdBg, "opt-reghdbrd":setRegHdBrd };
   app.querySelectorAll("[data-opt-custom]").forEach(inp=>{
@@ -7266,6 +7364,8 @@ function wireOptions(){
   app.querySelectorAll("[data-switch-user]").forEach(b=>b.onclick=()=>{ const nm=b.dataset.switchUser; if(nm && nm!==me){ me=nm; localStorage.setItem(LS.me, nm); } optOpen=false; render(); });
   const osh=app.querySelector("#optShare"); if(osh) osh.onclick=copyLink;
   const oex=app.querySelector("#optExport"); if(oex) oex.onclick=exportListText;
+  const osl=app.querySelector("#optSendList"); if(osl) osl.onclick=shareListText;   // v2.13: was the Shop page's top-right button
+  const orp=app.querySelector("#optReport"); if(orp) orp.onclick=()=>{ rpt={ kind:"broken", text:"", diag:true }; render(); };
   const vf=app.querySelector("#verFoot"); if(vf){ let _dt; const _cancel=()=>clearTimeout(_dt);
     vf.onpointerdown=()=>{ _dt=setTimeout(()=>{ diagOpen=true; render(); }, 550); };
     vf.onpointerup=_cancel; vf.onpointerleave=_cancel; vf.onpointercancel=_cancel; }
@@ -7549,7 +7649,7 @@ function diagStoreHTML(){
     <div style="font-size:11px;color:var(--muted2);margin-top:6px;line-height:1.5">Shared Buy-again items across the household. ${n>=BA_CAP?"Cap reached — oldest items drop off first.":"Room for "+(BA_CAP-n)+" more."}</div>`;
 }
 function openSandbox(){ const code="sbx-"+(((me||"me").toLowerCase().replace(/[^a-z0-9]/g,"")||"me").slice(0,6));
-  rememberList(code,"🧪 Sandbox"); diagOpen=false; optOpen=false; switchList(code); }
+  rememberList(code,"Sandbox"); diagOpen=false; optOpen=false; switchList(code); }
 function diagSheet(){ const hd=t=>`<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px">${t}</div>`;
   return `<div class="sheet-bg" id="diagBg"><div class="sheet" id="diagSheetEl" style="max-height:84vh;overflow:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
@@ -7634,7 +7734,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -7887,6 +7987,7 @@ function optionsBody(){
           versions — this one is only the numbers. */""}
     ${subhead("Top bar")}
     ${colRow("Colour", "opt-topbar", topBar, "topbar", {page:true})}
+    ${colRow("Name, count and store", "opt-toptile", topTile, "toptile", {page:true})}
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Size and place</span><div class="optwide">
       <div class="numgrid">${numCell("topx")}${numCell("topy")}${numCell("topw")}${numCell("barT")}${numCell("topr")}</div></div></div>
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Transparency</span><div class="optwide">
@@ -7895,6 +7996,7 @@ function optionsBody(){
       </div></div></div>
     ${subhead("Bottom bar")}
     ${colRow("Colour", "opt-navbar", navBar, "navbar", {page:true})}
+    ${colRow("Selected tab", "opt-navsel", navSel, "navsel", {page:true})}
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Size and place</span><div class="optwide">
       <div class="numgrid">${numCell("navx")}${numCell("navy")}${numCell("navw")}${numCell("barB")}${numCell("navr")}</div></div></div>
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Transparency</span><div class="optwide">
@@ -8057,7 +8159,9 @@ function optionsBody(){
     })()}
     ${sectHR("Other")}
     <button class="optaction" id="optShare" style="margin-top:2px">Share link</button>
+    <button class="optaction" id="optSendList" style="margin-top:10px">${SHARE_SVG(16)} Send what's to buy to another app</button>
     <button class="optaction" id="optExport" style="margin-top:10px">Export list as text</button>
+    <button class="optaction" id="optReport" style="margin-top:10px">${REPORT_SVG(16)} Report a problem</button>
     <button class="optaction" id="optDiag" style="margin-top:10px">${FLASK_SVG(16)} AI diagnostics</button>
     <div id="verFoot" style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted2);font-weight:600" title="Build: ${APP_BUILD_DATE} · hold for diagnostics">${APP_VERSION}</div>`;
 }
@@ -8066,8 +8170,7 @@ function renderSettingsPage(){
     <div class="topfix" id="topfix">
       <header>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <button class="backbtn" id="setBack" aria-label="Back">‹</button>
-          <span class="title disp">Settings<span class="dot">.</span></span>
+          <span class="title disp">Settings</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">${syncChip()}</div>
       </header>
@@ -8080,7 +8183,7 @@ function renderSettingsPage(){
     ${bottomNav({planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
     ${diagOpen?diagSheet():""}
     ${listsOpen?listsSheet():""}
-    ${rcpt?rcptSheet():""}
+    ${rcpt?rcptSheet():""}${rpt?rptSheet():""}
     ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
     ${editing?editSheet():""}
@@ -8251,7 +8354,7 @@ function wireAddBar(){
 function wire(){
   wireAddSheet();
   wireSmartSheet();
-  wireRcptSheet();
+  wireRcptSheet(); wireRptSheet();
   const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>i.cat===c.id)).map(c=>c.id);
     const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);
@@ -8303,7 +8406,7 @@ function wire(){
   wireCatSuggest();
   if(cab){ cab.onpointerdown=e=>e.preventDefault(); cab.onclick=()=>{ const v=app.querySelector("#catInput").value; addEntries(v,catEntry); draftCatText=""; render(); const x=app.querySelector("#catInput"); if(x){ x.focus(); grow(x); } }; }
 
-  const sb=app.querySelector("#sweepBtn"); if(sb) sb.onclick=sweep;
+  const sb=app.querySelector("#sweepBtn"); if(sb) sb.onclick=()=>sweep();   // v2.13: not onclick=sweep — the click event became the toast's text ("[object PointerEvent]")
   app.querySelectorAll("[data-merge-go]").forEach(b=>b.onclick=()=>mergeCluster(b.dataset.mergeGo));   // v1.15 merge-duplicates card now lives on the combined page
   app.querySelectorAll("[data-merge-x]").forEach(b=>b.onclick=()=>mergeDismiss(b.dataset.mergeX));
   const mHide=app.querySelector("[data-merge-hide]"); if(mHide) mHide.onclick=mergeHideAll;
@@ -8332,7 +8435,7 @@ function wire(){
   const aiAp=app.querySelector("[data-ai-apply]"); if(aiAp) aiAp.onclick=aiApplyProposal;   // B7 accept the proposed aisle order
   const aiKp=app.querySelector("[data-ai-keep]"); if(aiKp) aiKp.onclick=aiDismissProposal;   // B7 revert / keep current
   const lsw=app.querySelector("#listSwitch"); if(lsw) lsw.onclick=()=>{ listsOpen=true; render(); };   // v1.81 title opens the switcher
-  const shs=app.querySelector("#shopShare"); if(shs) shs.onclick=shareListText;   // v2.10 the list to another app
+  const shr=app.querySelector("#shopReport"); if(shr) shr.onclick=()=>{ rpt={ kind:"broken", text:"", diag:true }; render(); };   // v2.13 replaces the share button
   const pnv=app.querySelector("#planNav"); if(pnv) pnv.onclick=()=>gotoPage(0);   // Plan tab
   const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(1);
   const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{ settingsFrom=1; gotoPage(2); };   // Settings tab (bottom-right) — slides in from the right
