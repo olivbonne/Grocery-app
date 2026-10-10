@@ -1267,7 +1267,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   @keyframes cartpop { 0%{transform:scale(1)} 48%{transform:scale(1.25)} 100%{transform:scale(1)} }
   .cartpop { animation:cartpop 1s cubic-bezier(.33,0,.2,1); transform-origin:center; }
   @keyframes cartnumpop { 0%{transform:translate(-50%,-50%) scale(1)} 45%{transform:translate(-50%,-50%) scale(1.4)} 100%{transform:translate(-50%,-50%) scale(1)} }
-  .cartnum { position:absolute; left:53%; top:42%; transform:translate(-50%,-50%); font-size:11px; font-weight:800; color:var(--accent); line-height:1; pointer-events:none; text-align:center; font-variant-numeric:proportional-nums; letter-spacing:-.3px; }
+  .cartnum { position:absolute; left:59%; top:46%; transform:translate(-50%,-50%); font-size:11px; font-weight:800; color:var(--accent); line-height:1; pointer-events:none; text-align:center; font-variant-numeric:proportional-nums; letter-spacing:-.3px; }
   .cartnum.pop { animation:cartnumpop 1s cubic-bezier(.33,0,.2,1); }
   .spark { position:fixed; z-index:70; pointer-events:none; line-height:1; animation:spark .66s ease-out forwards; }
   @keyframes spark { 0%{opacity:0; transform:translate(-50%,-50%) scale(.3)} 25%{opacity:1} 100%{opacity:0; transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1)} }
@@ -2958,10 +2958,10 @@ function navCartStatHTML(){
 const CART_SVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1.6"/><circle cx="18" cy="21" r="1.6"/><path d="M2.5 3h2l2.2 12.4a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.2L21.5 7H6"/></svg>';
 // A27 bottom-nav cart: the app cart with an OPEN top (no top rail) and scaled up, so the
 // in-cart count sits inside the open basket with even spacing and fits double-digit numbers (matches the reference art)
-/* v2.10: redrawn so both walls of the basket start at the same height and slope at the same angle — the
-   left wall used to drop almost straight from the handle and the count sat against it. The handle steps
-   down into the left wall; the count is centred in the basket (.cartnum). */
-const CART_NAV_SVG = '<svg width="29" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="8.6" cy="21" r="1.5"/><circle cx="17.2" cy="21" r="1.5"/><path d="M1 3h1.9l1 3.8L6.4 15.2a1.5 1.5 0 0 0 1.45 1.1h9.2a1.5 1.5 0 0 0 1.45-1.1L21.4 6.8"/></svg>';
+/* v2.10: the household's own cart drawing (100×90), drawn in currentColor so it follows the theme and the
+   active tab. Its paths are untouched; the viewBox is cropped to the drawing (10 10 80 72) so the cart
+   fills the icon instead of its margins. The count sits in the open basket between the walls (.cartnum). */
+const CART_NAV_SVG = '<svg width="29" height="26" viewBox="10 10 80 72" aria-hidden="true"><path d="M14 14 H24 L35.47 60 H79 L85.48 34" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="41.23" cy="76" r="6" fill="currentColor"/><circle cx="73.23" cy="76" r="6" fill="currentColor"/></svg>';
 // v1.81 the switcher's chevron. Drawn, not typed: U+2304 is not in the self-hosted Outfit subset, so
 // the character renders as blank — and there is no web font to fall back to in an offline PWA.
 const CHEV_SVG = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"/></svg>';

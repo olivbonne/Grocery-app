@@ -107,10 +107,10 @@ const seed = (extra, checkedStore) => `(() => {
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-cart.png') });
 
     /* ── C2. the nav cart: count centred between two equal walls ─────── */
-    /* At the count's height (y≈10 of the 24-unit drawing) the basket's walls stand at x≈4.9 and x≈20.4,
-       so its middle is 12.65/24 of the drawing's width and it is 15.5 units wide. */
+    /* The household's drawing, viewBox cropped to 10 10 80 72: at the count's height (y≈44) the left wall
+       stands at x≈31.5 and the right at x≈83, so the basket's middle is x≈57.25 — (57.25-10)/80 of the width. */
     const cart = await page.evaluate(()=>{ const sv=document.querySelector('#cartWrap svg').getBoundingClientRect(), n=document.querySelector('#cartNum').getBoundingClientRect();
-      const u=sv.width/24, mid=sv.left+12.65*u, lw=sv.left+4.9*u, rw=sv.left+20.4*u;
+      const u=sv.width/80, mid=sv.left+47.25*u, lw=sv.left+21.5*u, rw=sv.left+73*u;
       return { off:Math.round((n.left+n.width/2-mid)*10)/10, gapL:Math.round(n.left-lw), gapR:Math.round(rw-n.right), txt:document.querySelector('#cartNum').textContent }; });
     ok('the nav cart\'s count sits centred in the basket, clear of both walls', Math.abs(cart.off)<=1.5 && cart.gapL>=2 && cart.gapR>=2, JSON.stringify(cart));
 
