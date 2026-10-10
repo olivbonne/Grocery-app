@@ -6,7 +6,9 @@
    4. "small tile numbers 3x 200g is not placed the same as the big tile";
    5. header: no orange dot; the name in a tile with a bigger chevron in its colour; "N to buy" the name's
       size and colour; the store in the name's font and colour at the size of "Shop" on the bottom bar;
-   6. the cart's Finish becomes one "Save to Regulars" button; a bigger triangle in the words' colour.
+   6. the cart's Finish becomes one "Save to Regulars" button; a bigger triangle in the words' colour;
+   7. (later the same evening) with icons shown: names at most two lines, every name's first line level,
+      a one-line name leaving its second line empty, and the amount on a third line at the tile's bottom.
 
    WHAT THESE CHECKS HAVE TO PROVE: each of the above, measured in the page — glyph extents for the "+",
    rects for alignment and gaps, computed styles for sizes and colours.
@@ -127,6 +129,23 @@ const LIST = [["Frozen raspberries","frozen",2],["Ginger beer no sugar","drinks"
     ok('…the chevron bigger (17px, was 11) and the name\'s own colour', hd.chevH>=16 && hd.chevCol===hd.tCol && hd.chevOp==='1', JSON.stringify(hd));
     ok('"N to buy" is the name\'s size and colour', hd.cSize===hd.tSize && hd.cCol===hd.tCol, JSON.stringify(hd));
     ok('the store is in the name\'s font and colour, at the size of "Shop" on the bottom bar', hd.lSize===hd.shopSize && hd.lCol===hd.tCol && hd.lFont===hd.tFont, JSON.stringify(hd));
+
+    /* ── 7. tiles with the icon on top: names start level, amounts on one bottom line ── */
+    const TALL = [["Chicken","meat",8,"500g"],["Cooked chicken breast","meat",2,"400g"],["Scallop","meat"],["Dates","fruit"],["Coriander leaf","herbs",1,"1 cup"],
+      ["Egg large","fresh",11],["Sprig of herb","herbs"],["All-purpose flour","pantry",1,"4.5 tbsp"],["Pizza dough","pantry",1,"455 g"],["Sweet soya sauce","asian",2],
+      ["White wine","alcohol"],["Kosher salt","pantry",7]].map((x,i)=>it(String(i),x[0],x[1],x[2],x[3]));
+    for(const [cols,size] of [[4,'l'],[3,'xl'],[4,'s']]){
+      await mk(TALL, `localStorage.setItem("ml_displays", JSON.stringify({shop:"large"})); localStorage.setItem("ml_largecols","${cols}"); localStorage.setItem("ml_caton","0"); localStorage.setItem("ml_icosize","${size}");`);
+      const rows = await page.evaluate(()=>{ const m={}; [...document.querySelectorAll('#zoomer .pill[data-pill]')].forEach(p=>{ const r=p.getBoundingClientRect(), n=p.querySelector('.pname').getBoundingClientRect(), mt=p.querySelector('.pill-meta');
+        const k=Math.round(r.top); (m[k]=m[k]||[]).push({ name:p.querySelector('.pname').textContent.trim(), nameTop:Math.round(n.top), nameH:Math.round(n.height), lh:parseFloat(getComputedStyle(p.querySelector('.pname')).lineHeight),
+          metaBottom: mt ? Math.round(r.bottom - mt.getBoundingClientRect().bottom) : null }); }); return Object.values(m); });
+      const level = rows.every(r=>new Set(r.map(x=>x.nameTop)).size===1);
+      const twoLines = rows.flat().every(x=>Math.abs(x.nameH - 2*x.lh) <= 1);
+      const metas = rows.flat().filter(x=>x.metaBottom!==null).map(x=>x.metaBottom);
+      ok(`icon on top (${cols} columns, icon ${size.toUpperCase()}): every name starts at the same height in its row, with two lines' room`, level && twoLines, JSON.stringify(rows.map(r=>r.map(x=>[x.name,x.nameTop,x.nameH]))));
+      ok(`…and every amount sits on the same bottom line`, metas.length>=6 && new Set(metas).size===1, JSON.stringify(metas));
+      await shot('icons'+cols+size);
+    }
   } catch(e){ ok('suite ran to the end', false, e.message.slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));
   await browser.close();

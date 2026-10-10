@@ -1411,6 +1411,15 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   html[data-icosize="l"] .shop .zoomer .pill .pill-meta, html[data-icosize="xl"] .shop .zoomer .pill .pill-meta,
   html[data-icosize="l"] .shop .zoomer.smalltile.gridmode .pill .pill-meta, html[data-icosize="xl"] .shop .zoomer.smalltile.gridmode .pill .pill-meta {
     margin-left:0; padding-left:0; justify-content:center; }
+  /* v2.12: a tile with its icon on top reads in three fixed bands — the icon, then the name in two lines'
+     room (a one-line name leaves the second empty), then the amount on the bottom line. Every name starts
+     at the same height across the row, and every amount sits on the same bottom line. The flags move to
+     the top-left corner so a starred tile's name does not start lower than its neighbours'. */
+  .shop .zoomer.gridmode:not(.smalltile) .pill:has(> .pemoji), .shop .zoomer.largevar .pill:has(> .pemoji), html[data-icosize="l"] .shop .zoomer .pill:has(> .pemoji), html[data-icosize="xl"] .shop .zoomer .pill:has(> .pemoji) {
+    justify-content:flex-start; position:relative; }
+  .shop .zoomer.gridmode:not(.smalltile) .pill:has(> .pemoji) .pname, .shop .zoomer.largevar .pill:has(> .pemoji) .pname, html[data-icosize="l"] .shop .zoomer .pill:has(> .pemoji) .pname, html[data-icosize="xl"] .shop .zoomer .pill:has(> .pemoji) .pname { line-height:1.2; min-height:2.4em; }
+  .shop .zoomer.gridmode:not(.smalltile) .pill:has(> .pemoji) .pill-meta, .shop .zoomer.largevar .pill:has(> .pemoji) .pill-meta, html[data-icosize="l"] .shop .zoomer .pill:has(> .pemoji) .pill-meta, html[data-icosize="xl"] .shop .zoomer .pill:has(> .pemoji) .pill-meta { margin-top:auto; }
+  .shop .zoomer.gridmode:not(.smalltile) .pill:has(> .pemoji) > .pmarks, .shop .zoomer.largevar .pill:has(> .pemoji) > .pmarks, html[data-icosize="l"] .shop .zoomer .pill:has(> .pemoji) > .pmarks, html[data-icosize="xl"] .shop .zoomer .pill:has(> .pemoji) > .pmarks { position:absolute; top:7px; left:9px; }
   /* v1.16 display picker (2×2) */
   .dispgrid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
   .dispopt { border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:12.5px; padding:10px 6px; border-radius:11px; }
