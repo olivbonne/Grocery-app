@@ -60,9 +60,14 @@ or what it read) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, 
 - **Module top level runs in order, and `applyTheme()` runs at boot (≈ line 3100).** A module-level `let`/`const`
   that anything called at boot touches must be declared above that call, or be `var` — otherwise the app dies
   at start-up with "Cannot access … before initialization" (v2.16 `_cardHexMemo`, caught by the suite).
-- **Never measure every tile on a render.** Per-row equal heights are CSS (rows stretch their tiles); the usual
-  tile height is `--tileh`, measured on one probe tile only when the layout signature changes (`syncTileH`,
-  v2.16). v2.10–v2.11's per-tile measuring was over half of every redraw.
+- **Never measure every tile on a render.** Per-row equal heights are CSS (rows stretch their tiles); the floor is
+  `--tileh` (the cart's own is `--tileh-cart`), the 90th percentile of the tiles' natural heights. `syncTileH`
+  measures each tile ONCE, as an unstretched copy in a hidden probe, remembered by what it shows until the layout
+  signature changes (v2.16). v2.10–v2.11's per-tile measuring was over half of every redraw. A single stand-in
+  probe tile was tried first and was wrong whenever most names wrap (three small columns) — CI caught it.
+- **Views group items with `catShown(i.cat)`, never `i.cat === cat.id`** (v2.17). An item whose category is gone
+  (removed on another phone mid-edit, or old data) otherwise vanishes from the list while still counted in "N to
+  buy". It is display only: never rewrite a stored `cat` to tidy an orphan, the categories may still be arriving.
 - **Normalisers that rebuild an object from a fixed shape drop unknown fields.** `writePlan` and
   `planIngNorm` both did, silently (v1.94 amounts, v1.97 saved plans). Adding a field means adding it
   there too. The list document itself is one: `subscribe()` rebuilds `state` field by field, so a new
