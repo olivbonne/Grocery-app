@@ -1,12 +1,16 @@
 /*
-  Market List service worker (v2.15).
+  Market List service worker (v2.15; versioned files since v2.19).
 
   Why it exists: the app has to open with no signal (in a supermarket) after iOS has closed it.
   Without a worker, a reload with no connection simply fails.
 
   What it caches (cache "ml-shell-1"): the page, the manifest, the two Outfit font files, the
   home-screen icons and the Firebase SDK, which now lives in the repo under /vendor/firebasejs/,
-  so everything the app needs to start is same-origin.
+  so everything the app needs to start is same-origin. Since v2.19 also the stylesheet, the app module
+  and its two data modules, all under versioned URLs (?v=<version>) that change with every release,
+  so a new page never meets an old file. A release therefore changes this file: the new worker
+  fetches only the new versioned files (plus the page and the manifest, always re-fetched) and drops
+  the previous release's ones on activate.
 
   Two strategies:
   - The app's page ("/" or "/index.html", any query string such as "/?list=abc") is network first.
@@ -37,18 +41,23 @@
 const SHELL = "ml-shell-1";        // bump only if the meaning of the precache changes; old ml-* caches are deleted on activate
 const PRECACHE = ["/", "/index.html", "/manifest.webmanifest", "/outfit-latin.woff2", "/outfit-latin-ext.woff2",
   "/img/icon-180.png", "/img/icon-192.png", "/img/icon-512.png",
-  "/vendor/firebasejs/10.12.2/firebase-app.js", "/vendor/firebasejs/10.12.2/firebase-firestore.js"];
+  "/vendor/firebasejs/10.12.2/firebase-app.js", "/vendor/firebasejs/10.12.2/firebase-firestore.js",
+  "/app.css?v=2.19", "/js/app.js?v=2.19", "/js/data/catalog.js?v=2.19", "/js/data/drawings.js?v=2.19"];
 const NAV_TIMEOUT_MS = 4000;       // every wait ends: a slow network never holds the app back longer than this when a copy is on the phone
 
+const ALWAYS = new Set(["/", "/index.html", "/manifest.webmanifest"]);   // re-fetched on every install; the rest only when missing
 self.addEventListener("install", event => {
   self.skipWaiting();
-  // Each file is added on its own, so one missing file never blocks the install;
-  // cache: "reload" bypasses the HTTP cache.
-  event.waitUntil(caches.open(SHELL).then(c => Promise.all(PRECACHE.map(u => c.add(new Request(u, { cache: "reload" })).catch(() => {})))));
+  // Each file is added on its own, so one missing file never blocks the install; cache: "reload" bypasses the HTTP cache.
+  event.waitUntil(caches.open(SHELL).then(c => Promise.all(PRECACHE.map(u =>
+    (ALWAYS.has(u) ? Promise.resolve(undefined) : c.match(u)).then(hit => hit || c.add(new Request(u, { cache: "reload" })).catch(() => {}))))));
 });
 
 self.addEventListener("activate", event => {
-  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith("ml-") && k !== SHELL).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith("ml-") && k !== SHELL).map(k => caches.delete(k))))
+    .then(() => caches.open(SHELL)).then(c => c.keys().then(reqs => Promise.all(reqs.filter(r => { const u = new URL(r.url);
+      return u.searchParams.has("v") && !PRECACHE.includes(u.pathname + u.search); }).map(r => c.delete(r)))))
+    .then(() => self.clients.claim()));
 });
 
 self.addEventListener("fetch", event => {

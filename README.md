@@ -30,9 +30,9 @@ You'll set up two free things: a **Firebase** database and **Vercel** hosting. ~
 
 ## 2. Paste your config
 
-Open **index.html**, find the block near the top marked
-`/* Firebase config — PASTE YOURS HERE */`, and replace the `REPLACE_ME`
-values with the ones Firebase gave you. Save the file.
+Open **index.html**, find the `window.FIREBASE_CONFIG = { … }` block at the very top, and replace its
+values with the ones Firebase gave you. Save the file. (The app itself is `js/app.js`; it reads the
+config from there.)
 
 ## 3. Put the app online (Vercel)
 

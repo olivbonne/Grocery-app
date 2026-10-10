@@ -198,7 +198,8 @@ const today = ()=>{ const d=new Date(); return d.getFullYear()+"-"+String(d.getM
     const wf = fs.existsSync(path.join(root,'.github/workflows/tests.yml')) ? fs.readFileSync(path.join(root,'.github/workflows/tests.yml'),'utf8') : '';
     ok('a GitHub workflow runs the syntax gate, the server suites and every browser suite on each pull request',
        /pull_request/.test(wf) && /node \.claude\/tests\/syntax\.js/.test(wf) && /api-\*\.js/.test(wf) && /v\*\.js/.test(wf) && /timeout 300/.test(wf) && /\^FAIL/.test(wf), '');
-    const html = fs.readFileSync(path.join(root,'index.html'),'utf8');
+    /* SUPERSEDED by v2.19: the app's module lives in js/app.js now (the module split, byte for byte) — read from there. */
+    const html = fs.readFileSync(path.join(root,'js','app.js'),'utf8');
     const ex = (html.match(/const APP_EXCLUDE(?:_BOOT)? = \/\^\(([^)]*)\)\//g)||[]);
     ok('the new data keys survive applying an appearance slot (in both exclude lists)', ex.length===2 && ex.every(r=>/ml_crashday\$/.test(r) && /ml_installhint\$/.test(r) && /ml_snap_/.test(r)), JSON.stringify(ex.map(r=>r.slice(-60))));
     ok('the app loads the Firebase SDK from the repo, not from gstatic', /from "\/vendor\/firebasejs\/10\.12\.2\/firebase-app\.js"/.test(html) && !/import[^;]*gstatic\.com\/firebasejs/.test(html), '');

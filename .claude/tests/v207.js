@@ -72,7 +72,8 @@ const SEED = `(() => {
        bare text node. Still protected: at L/XL the name sits UNDER the icon. */
     const pn=p.querySelector('.pname'); const t=pn ? pn.getBoundingClientRect() : null;
     return { icoH:Math.round(r.height), icoBottom:Math.round(r.bottom), textTop:t?Math.round(t.top):null, dir:getComputedStyle(p).flexDirection }; }, name);
-  const src = fs.readFileSync(path.join(__dirname,'..','..','index.html'),'utf8');
+  /* SUPERSEDED by v2.19: the app's module lives in js/app.js now (the module split, byte for byte) — read from there. */
+  const src = fs.readFileSync(path.join(__dirname,'..','..','js','app.js'),'utf8');
   const rx = (name)=>new RegExp(((src.match(new RegExp('const '+name+' = (\\/.*\\/);'))||[])[1]||'//').slice(1,-1));
 
   try{

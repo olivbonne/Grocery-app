@@ -28,7 +28,9 @@ const results=[]; const ok=(n,c,x)=>results.push([n,!!c,x||'']);
 
 /* ── the drawings and the map, read from the file itself ─────────────────── */
 const ROOT = path.join(__dirname,'..','..');
-const src = fs.readFileSync(path.join(ROOT,'index.html'),'utf8');
+/* SUPERSEDED by v2.19: the drawings and the name maps live in js/data/drawings.js now (the module split, byte for
+   byte) — read from there. */
+const src = fs.readFileSync(path.join(ROOT,'js','data','drawings.js'),'utf8');
 const a = src.indexOf('const DRAWN = (function(){')+'const DRAWN = (function(){'.length;
 const ILL = new Function(src.slice(a, src.indexOf('})();', src.indexOf('  return ILL;', a))))();
 const EXACT = JSON.parse(src.match(/const DRAW_EXACT = (\{.*?\});/)[1]);

@@ -1,9 +1,13 @@
 # Market List — project notes for Claude
 
 ## What this is
-A single-file vanilla-JS PWA: `index.html` holds the inline CSS and one `<script type="module">`
-(several thousand lines). No build step, no framework. Firebase Firestore for live household sync,
-Vercel serves `main` as static files. Used as an iPhone home-screen app, portrait-only, max-width 480px.
+A vanilla-JS PWA, no build step, no framework. Since v2.19 (the module split, phase 1) `index.html` is the
+shell — markup, the Firebase config and three small boot scripts — the styles are `app.css`, and the app is
+one ES module, `js/app.js` (several thousand lines), importing the reference data (`js/data/catalog.js`)
+and the drawings (`js/data/drawings.js`). Until v2.18 all of it lived inline in `index.html`; it moved byte
+for byte. Later phases move cohesive parts of `js/app.js` into modules of their own. Firebase Firestore for
+live household sync, Vercel serves `main` as static files. Used as an iPhone home-screen app, portrait-only,
+max-width 480px.
 
 Five serverless functions in `api/` (CommonJS, Vercel, `maxDuration` 60s in `vercel.json`):
 `parse.js` (Smart add), `recipe.js` (recipe from text, a link, a TikTok or a photo),
@@ -11,11 +15,12 @@ Five serverless functions in `api/` (CommonJS, Vercel, `maxDuration` 60s in `ver
 or what it read) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, or a `[feedback]` log line). Their keys and settings are env vars — see `docs/ai-setup.md`.
 
 ## Conventions
-- **Versioning:** bump `APP_VERSION` in `index.html` by 0.01 per batch of app changes and add a
+- **Versioning:** bump the version by 0.01 per batch of app changes with `node .claude/tools/bump.js N.NN`
+  (it sets `APP_VERSION` in `js/app.js` and every `?v=` — see "Versioned files" below) and add a
   dated row at the top of the `CHANGELOG.md` table (newest first). Docs-only changes do not bump.
 - **Changelog rows are for the household**, not for developers: two to four plain sentences on
   what changed for the person using the app. The engineering why goes in the commit and the PR.
-- **CSS:** design tokens live in `:root` (light), `body.dark`/`html.dark` (dark) and
+- **CSS** (in `app.css` since v2.19): design tokens live in `:root` (light), `body.dark`/`html.dark` (dark) and
   `html[data-theme="ink"|"noir"]` — change colours there, not inline. The bars' frosted glass is a
   designed, user-customisable system (`--glass-bg`, per-bar `--navbar-bg` etc.); leave it alone.
 - **Brand (preserve):** forest ink `#21351F`, sage paper `#F2F6EE`, burnt-orange accent `#E2502C`,
@@ -36,7 +41,7 @@ or what it read) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, 
   **v2.04: content is drawn too, by default** (Settings › Icon style). The nine standard categories
   get `CATMARK` line marks; items get `DRAWN` illustrations, 48×48 in three layers — back lines, a
   front shape filled with `--illbg` (the tile's own background, so it hides what is behind it) and
-  detail lines. Name → drawing: `DRAW_EXACT`, then `DRAW_HINTS` (first match wins, so specific phrases
+  detail lines (the drawings and the name maps are in `js/data/drawings.js` since v2.19). Name → drawing: `DRAW_EXACT`, then `DRAW_HINTS` (first match wins, so specific phrases
   go first). **A hint matches anywhere in the name, so a short stem hides inside longer words**
   ("toilet" and "foil" contain "oil", "eggplant" contains "egg"). Those phrases sit at the START of
   `DRAW_HINTS`, and new broad stems go at the END, where they can never change a Regular (v2.06,
@@ -57,7 +62,13 @@ or what it read) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, 
 - **New `localStorage` keys that are preferences or data (not a LOOK) must be added to BOTH
   `APP_EXCLUDE_BOOT` and `APP_EXCLUDE`** — they are duplicated deliberately. Otherwise applying an
   appearance slot wipes them. This has bitten twice (`ml_lastview`, then `ml_optcoll` in v2.00).
-- **Module top level runs in order, and `applyTheme()` runs at boot (≈ line 3100).** A module-level `let`/`const`
+- **Versioned files (v2.19).** `app.css`, `js/app.js` and every module it imports are loaded as `…?v=<version>`,
+  and `sw.js` PRECACHE lists the same URLs — so a phone never pairs a new page with an old file (the worker
+  answers assets from its copy first). Never edit a `?v=` or `APP_VERSION` by hand: `bump.js` changes them all
+  together, and `v219.js` fails if any disagree. A new module needs a versioned import, a PRECACHE entry and,
+  when it is pure data, no imports of its own. Imported bindings are read-only: move only what is never
+  reassigned (`syntax.js` links every relative import to an export of its target).
+- **Module top level runs in order, and `applyTheme()` runs at boot (`js/app.js` ≈ line 1200).** A module-level `let`/`const`
   that anything called at boot touches must be declared above that call, or be `var` — otherwise the app dies
   at start-up with "Cannot access … before initialization" (v2.16 `_cardHexMemo`, caught by the suite).
 - **Never measure every tile on a render.** Per-row equal heights are CSS (rows stretch their tiles); the floor is
@@ -101,11 +112,12 @@ or what it read) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, 
 - Use `/release` for the bump → changelog → commit → PR → merge loop.
 
 ## Verification
-- **Syntax: `node .claude/tests/syntax.js`.** Do not hand-roll the command. It extracts the module to
-  the LAST `</script>` (the module holds one inside a template literal, so the first compiles only a
-  prefix — v1.82), saves it as **`.mjs`** (as `.js`, Node 22 passes a file with `import` lines no
-  matter what is in it — found 2026-09-26, after which every earlier SYNTAX_OK was known vacuous),
-  and plants a canary error first so it cannot go vacuous silently again. It checks `api/*.js` too.
+- **Syntax: `node .claude/tests/syntax.js`.** Do not hand-roll the command. It checks every module under
+  `js/` as **`.mjs`** (as `.js`, Node 22 passes a file with `import` lines no matter what is in it — found
+  2026-09-26, after which every earlier SYNTAX_OK was known vacuous), plants a canary error in a copy of
+  `js/app.js` first so it cannot go vacuous silently again, links every relative import to an export of its
+  target, refuses an inline module or `<style>` back in `index.html`, and checks `api/*.js` too. (Until v2.18
+  it extracted the inline module to the LAST `</script>` — the module holds one inside a template literal.)
 - **Per-version suites live in `.claude/tests/`** — one browser suite per version, plus
   `api-recipe.js`, `api-recipe-search.js`, `api-receipt.js` and `api-feedback.js`, which test the serverless functions directly with no
   network. See `.claude/tests/README.md` for how to run them and what a check has to prove. Never

@@ -2,11 +2,12 @@
 
 September 2026 · reviewed against Market List **v1.80**
 
-> **Status at v2.18 (11 October 2026).** From the §7 review, R1–R5 shipped in v2.15 (the safety net: opens with
+> **Status at v2.19 (11 October 2026).** From the §7 review, R1–R5 shipped in v2.15 (the safety net: opens with
 > no signal, crash reports, backups and restore, install card, tests on every pull request), R6–R8, R11 and
 > R13–R15 in v2.16 (the polish batch), and R9–R10 in v2.17 (the receipt card after a shop, a running total in
 > the cart). R12 shipped in v2.18: everyday Settings with a search across everything, and "Customise the look" on a
-> page of its own. Next is the published plan below, starting with the module split.
+> page of its own. v2.19 began the module split (plan item 1, review R23): the styles, the app and its data are
+> separate files now, each loaded under the release's version. Next: the 10% shop, then the rest of the plan.
 >
 > **Status at v2.14 (11 October 2026).** The live, more detailed version of this report is the published
 > page "Market List vs Samsung Food" (the plan of what is left, the supermarkets' memberships, pricing in
