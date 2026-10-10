@@ -1,5 +1,5 @@
 /* v2.12 — the household's batch of 2026-10-10, evening (screenshots of the Sandbox and Groceries lists):
-   1. "the + in 99+ is too small and overlap with the 9" — they picked from samples (option B);
+   1. "the + in 99+ is too small and overlap with the 9" — they picked option A from samples, "with the 99 centred like it was before";
    2. bottom bar: "Shop" centred on the cart, the three labels on one line, Plan and Settings the cart's size;
    3. the cart "glued to the top banner … coming down from the top banner when 1st item is checked",
       rounded at the bottom, its tiles moving "only up/down";
@@ -61,10 +61,12 @@ const LIST = [["Frozen raspberries","frozen",2],["Ginger beer no sugar","drinks"
     await mk(Array.from({length:120},(_,i)=>it(String(i),"Item "+i,"fresh",1,"",true)));
     const n99 = await page.evaluate(()=>{ const t=document.querySelector('#cartNum'); if(!t) return null;
       const ex=[0,1,2].map(i=>t.getExtentOfChar(i)), bb=t.getBBox(), pl=t.querySelector('.cartplus');
-      return { txt:t.textContent, nineR:ex[1].x+ex[1].width, plusL:ex[2].x, left:bb.x, right:bb.x+bb.width, plusX:pl&&pl.getAttribute('x') }; });
-    ok('over 99 the "+" starts after the second 9 instead of over it (household, v2.12 item 1, option B)',
+      return { txt:t.textContent, nineR:ex[1].x+ex[1].width, plusL:ex[2].x, left:ex[0].x, right:bb.x+bb.width, plusX:pl&&pl.getAttribute('x'), size:getComputedStyle(t).fontSize, psize:pl&&getComputedStyle(pl).fontSize }; });
+    ok('over 99 the "+" starts after the second 9 instead of over it (household, v2.12 item 1)',
        n99 && n99.txt==='99+' && n99.plusX===null && n99.plusL >= n99.nineR - 0.5, JSON.stringify(n99));
-    ok('…and "99+" stays between the cart\'s walls (x 28 to 87 of the drawing)', n99 && n99.left >= 28 && n99.right <= 87, JSON.stringify(n99));
+    const c99 = n99 && (n99.left + n99.nineR)/2;
+    ok('…while the "99" itself is centred where every count sits (x 57.24), at full size, the + bigger (option A, centred)',
+       n99 && Math.abs(c99-57.24) <= 0.6 && n99.size==='35px' && n99.psize==='26px', JSON.stringify({c99, size:n99&&n99.size, psize:n99&&n99.psize}));
 
     /* ── 2. the bottom bar ─────────────────────────────────────────────── */
     const nav = await page.evaluate(()=>{ const b=[...document.querySelectorAll('#bottomnav .navbtn')]; if(b.length!==3) return null;

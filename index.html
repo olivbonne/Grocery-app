@@ -1305,8 +1305,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v2.11: SVG text in the cart's own units (see cartBadgeHTML) — 35 units is the household's size */
   .cartnum { font-size:35px; font-weight:800; fill:var(--accent); pointer-events:none; font-variant-numeric:proportional-nums; transform-box:fill-box; transform-origin:center; }
   .cartnum.pop { animation:cartnumpop 1s cubic-bezier(.33,0,.2,1); }
-  .cart99 { font-size:30px; }
-  .cartplus { font-size:24px; }
+  .cartplus { font-size:26px; }
+  .cartwrap svg { overflow:visible; }
   .spark { position:fixed; z-index:70; pointer-events:none; line-height:1; animation:spark .66s ease-out forwards; }
   @keyframes spark { 0%{opacity:0; transform:translate(-50%,-50%) scale(.3)} 25%{opacity:1} 100%{opacity:0; transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1)} }
   /* A22 flying item → cart: a live clone of the checked tile arcs down into the cart */
@@ -2988,10 +2988,13 @@ function cartCount(){ return Math.max(0, state.items.filter(i=>i.checked).length
 /* v2.11: the count is drawn INSIDE the cart's SVG at the household's own coordinates (x 57.24, baseline 42,
    35 units; "+" at 77,29 in 20 units) — an HTML label positioned by percentages over the icon landed in a
    different place on the phone than in the drawing, because font metrics differ between devices. */
-/* v2.12: past 99 the count is one centred chunk — "99" a little smaller with a raised "+" flowing after it.
-   v2.11 pinned the + at (77,29), which landed on the second 9 in the app's own font. The outer tspan's
-   absolute x starts the chunk; the inner + has only dy, so text-anchor centres "99+" as a whole. */
-function cartNumHTML(n){ return n>99 ? '<tspan class="cart99" x="56" y="41">99<tspan class="cartplus" dy="-10">+</tspan></tspan>' : String(n); }
+/* v2.12: past 99 the "99" stays exactly where any count sits — 35 units, centred on x 57.24 — and a bigger
+   raised "+" (26 units) follows it (the household chose option A, with the 99 centred). v2.11 pinned the +
+   at (77,29), which landed on the second 9. "99" and "+" are one text chunk (the + has only dy), centred at
+   57.24 + half the +'s advance: in Outfit 800, "99" at 35 is 40.53 wide and "+" at 26 is 14.86, so the
+   chunk centre is 57.24 + 7.43 = 64.67 and the 99 spans 36.97–77.51. The + reaches past the drawing's
+   right edge (x 90), so the nav cart's svg shows overflow. */
+function cartNumHTML(n){ return n>99 ? '<tspan x="64.67" y="42">99<tspan class="cartplus" dy="-12">+</tspan></tspan>' : String(n); }
 function cartBadgeHTML(iconHTML){
   return `<span class="cartwrap" id="cartWrap">${iconHTML.replace('</svg>', `<text class="cartnum" id="cartNum" x="57.24" y="42" text-anchor="middle">${cartNumHTML(cartCount())}</text></svg>`)}</span>`;
 }
