@@ -157,8 +157,10 @@ const SEED = `(() => {
     await page.evaluate(()=>{ const b=document.querySelector('[data-pwapply]'); if(b) b.click(); });
     await page.waitForTimeout(800);
     const applied = await week();
+    /* SUPERSEDED by v2.11: day names are three letters, so Monday reads "Mon". Still protects that the
+       meals land on the matching weekdays (Monday first, Wednesday third). */
     ok('applying puts the meals on the matching weekdays of the week on screen',
-       /Monday/i.test(applied[0].day) && applied[0].meals.some(m=>/Bolognese/i.test(m))
+       /^Mon/i.test(applied[0].day) && applied[0].meals.some(m=>/Bolognese/i.test(m))
        && applied[2].meals.some(m=>/Fish pie/i.test(m)),
        JSON.stringify(applied.map(d=>({d:d.day,m:d.meals}))));
 

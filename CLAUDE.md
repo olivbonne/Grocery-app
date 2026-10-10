@@ -36,6 +36,12 @@ or what it read). Their keys and settings are env vars — see `docs/ai-setup.md
   guarded by `.claude/tests/v206.js`). Emoji remain the fallback (household-made categories) and the opt-out. `itemIcon()` is
   for DISPLAY and returns markup; anything that stores an icon keeps `itemEmoji()` — no SVG in state.
   The drawings are designed on the canvas listed in `docs/icon-catalogue.md`.
+- **Every wait is visible, and every wait ends** (household principle, v2.11). Anything that takes
+  longer than a tap — a network call, an AI read, a photo resize — shows at once that it started
+  (spinner plus the step it is on, in a `role="status"` element), and ends in either the result or a
+  plain message: a timeout (AbortController), an error code turned into words, never a silent nothing.
+  On iOS a file `<input>` must be attached to the DOM, or `change` never fires and the wait never starts
+  (`rcPick`, v2.11). The suite for any new wait checks the busy state AND the failure message.
 - **Security:** every provider key — `GEMINI_API_KEY`, `GROQ_API_KEY`, `TAVILY_API_KEY`,
   `SERPER_API_KEY`, `SEARCH_API_KEY` — stays server-side in `api/*.js` via `process.env`. Never in
   `index.html`, never logged, never in a response or a query string. The Firebase web config in

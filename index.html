@@ -351,11 +351,14 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
      still shopping is what needs the room. */
   /* v2.10: the cart sits under the header, in the page, folded by default — at the household's request.
      It used to float above the + at the bottom of the screen. */
-  .checkedbar { position:relative; z-index:1; margin:8px 14px 6px; background:var(--paper); border:1px solid var(--line);
-    border-radius:18px; display:flex; flex-direction:column; max-height:44vh; padding:6px 12px 8px; box-sizing:border-box; }
+  /* v2.11: a full-width band whose tiles sit on the page's own side margins (the inner .zoomer carries
+     --padl/--padr exactly as the list does), so a cart tile is the same width as a list tile. Inset as a card
+     with its own padding, the cart's tiles were 26px narrower on each side (the household's screenshots). */
+  .checkedbar { position:relative; z-index:1; margin:8px 0 6px; background:var(--paper); border:solid var(--line); border-width:1px 0;
+    border-radius:0; display:flex; flex-direction:column; max-height:44vh; padding:6px 0 8px; box-sizing:border-box; }
   /* v2.00 item 1: the count and the action share one row. v2.10: the scroll area now opens DOWNWARDS,
      under that row, so the row stays put under the header when the drawer expands. */
-  .checkedfoot { flex:none; display:flex; align-items:center; gap:10px; }
+  .checkedfoot { flex:none; display:flex; align-items:center; gap:10px; padding:0 var(--padr,14px) 0 var(--padl,14px); }
   .checkedbarhead { flex:1; min-width:0; border:none; background:transparent; color:var(--muted); font-weight:800; font-size:13px;
     display:flex; align-items:center; justify-content:space-between; gap:7px; padding:4px 2px; }
   .checkedbarhead .chk-in { display:inline-flex; align-items:center; gap:7px; color:var(--text); }
@@ -829,6 +832,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v2.09: receipt review + price memory */
   .rcstores{flex-wrap:wrap}
   .rcstores button{flex:0 0 auto;padding:7px 12px}
+  .rcbusy{display:flex;align-items:center;justify-content:center;gap:10px;padding:22px 4px 8px;color:var(--text);font-weight:700}
+  .spin{width:18px;height:18px;border-radius:50%;border:2.5px solid var(--line);border-top-color:var(--accent);animation:spin .8s linear infinite;flex:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){ .spin{animation-duration:2.4s} }
   .rcnote{font-size:12px;color:var(--muted);font-weight:600;margin:0 0 12px}
   .rcmeta{display:flex;align-items:center;gap:10px;margin:0 0 10px;font-size:13px;font-weight:700;color:var(--text)}
   .rcmeta input{height:40px;padding:0 10px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--text);font-size:15px}
@@ -1266,12 +1273,11 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .cartpulse { animation:cartbounce .42s ease; }
   @keyframes cartpop { 0%{transform:scale(1)} 48%{transform:scale(1.25)} 100%{transform:scale(1)} }
   .cartpop { animation:cartpop 1s cubic-bezier(.33,0,.2,1); transform-origin:center; }
-  @keyframes cartnumpop { 0%{transform:translate(-50%,-50%) scale(1)} 45%{transform:translate(-50%,-50%) scale(1.4)} 100%{transform:translate(-50%,-50%) scale(1)} }
-  /* v2.10: placed as in the household's drawing (viewBox 10 10 80 72 at 26px): centred on x=57.24, digits 35
-     units tall with their baseline at y=42 — so 12.6px, sitting high in the open basket. Over 99 reads "99+". */
-  .cartnum { position:absolute; left:59.05%; top:28%; transform:translate(-50%,-50%); font-size:12.6px; font-weight:800; color:var(--accent); line-height:1; pointer-events:none; text-align:center; font-variant-numeric:proportional-nums; letter-spacing:-.3px; }
+  @keyframes cartnumpop { 0%{transform:scale(1)} 45%{transform:scale(1.4)} 100%{transform:scale(1)} }
+  /* v2.11: SVG text in the cart's own units (see cartBadgeHTML) — 35 units is the household's size */
+  .cartnum { font-size:35px; font-weight:800; fill:var(--accent); pointer-events:none; font-variant-numeric:proportional-nums; transform-box:fill-box; transform-origin:center; }
   .cartnum.pop { animation:cartnumpop 1s cubic-bezier(.33,0,.2,1); }
-  .cartplus { position:absolute; left:100%; top:-.08em; margin-left:.04em; font-size:.57em; }
+  .cartplus { font-size:20px; }
   .spark { position:fixed; z-index:70; pointer-events:none; line-height:1; animation:spark .66s ease-out forwards; }
   @keyframes spark { 0%{opacity:0; transform:translate(-50%,-50%) scale(.3)} 25%{opacity:1} 100%{opacity:0; transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1)} }
   /* A22 flying item → cart: a live clone of the checked tile arcs down into the cart */
@@ -1321,7 +1327,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .bottomnav .navbtn.active { color:var(--navbar-text, var(--text)); }
   .navbtn.active { background:var(--chip); border-radius:999px; }
   .navbtn.active::before { display:none; }
-  .checkedbar { border:1px solid var(--glass-brd); border-radius:18px; box-shadow: inset 0 1px 0 var(--glass-hi); }
+  .checkedbar { border:solid var(--glass-brd); border-width:1px 0; border-radius:0; box-shadow: inset 0 1px 0 var(--glass-hi); }
   .qbanner { border-radius:18px 18px 0 0; }
   .sheet { border:1px solid var(--glass-brd); border-bottom:none;
     box-shadow: inset 0 1px 0 var(--glass-hi), 0 -10px 34px rgba(20,30,22,.28); }
@@ -1670,7 +1676,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.10";
+const APP_VERSION = "v2.11";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2941,9 +2947,12 @@ function optMode(){ return shopMode ? "shop" : "plan"; }
 let _prevPlanned=null, _prevChecked=null;
 let _cartPending = 0;   // items mid-flight to the cart — counted in the badge only once the flyer lands (bumpCart)
 function cartCount(){ return Math.max(0, state.items.filter(i=>i.checked).length - _cartPending); }
-function cartNumHTML(n){ return n>99 ? '99<span class="cartplus">+</span>' : String(n); }   // v2.10: "99+", the + small and raised, as drawn
+/* v2.11: the count is drawn INSIDE the cart's SVG at the household's own coordinates (x 57.24, baseline 42,
+   35 units; "+" at 77,29 in 20 units) — an HTML label positioned by percentages over the icon landed in a
+   different place on the phone than in the drawing, because font metrics differ between devices. */
+function cartNumHTML(n){ return n>99 ? '99<tspan class="cartplus" x="77" y="29">+</tspan>' : String(n); }
 function cartBadgeHTML(iconHTML){
-  return `<span class="cartwrap" id="cartWrap">${iconHTML}<span class="cartnum" id="cartNum">${cartNumHTML(cartCount())}</span></span>`;
+  return `<span class="cartwrap" id="cartWrap">${iconHTML.replace('</svg>', `<text class="cartnum" id="cartNum" x="57.24" y="42" text-anchor="middle">${cartNumHTML(cartCount())}</text></svg>`)}</span>`;
 }
 // A23 bottom-nav stats flanking the cart: "N to buy" (left) and "N in cart" (right)
 function navStatHTML(){
@@ -5164,13 +5173,19 @@ function watchZoomer(z){ if(!z || typeof ResizeObserver==="undefined" || _zoomEl
   if(_zoomRO) _zoomRO.disconnect(); _zoomEl=z;
   _zoomRO=new ResizeObserver(()=>{ if(!z.isConnected) return; const zw=z.parentElement; if(zw) zw.style.height=zoomWrapH(z, zw)+"px"; });
   _zoomRO.observe(z); }
-/* v2.10: one height for every tile on the page. Names, amounts and icons give tiles different natural
-   heights, so after each layout the tallest tile sets a min-height for the rest. Measured, not fixed, so
-   it holds for every layout, density and icon size. */
+/* v2.10, changed in v2.11: tiles share a height, but a tile with more to say grows only its own row.
+   Every tile gets at least the page's usual height (the 90th percentile of natural heights, so one tall
+   "Wombok cabbage · 6× heaped cups" cannot set it); each row then takes its own tallest tile. The household:
+   "when adding wombok cabbage the height increase for all tile, I only want height to increase for that line". */
 function equalizeTiles(){
-  /* the list and Regulars share one height; the cart's tiles share their own. Plan chips are not tiles. */
-  const eq=ps=>{ if(!ps.length) return; ps.forEach(p=>{ p.style.minHeight=""; });
-    const h=Math.max(...ps.map(p=>p.offsetHeight)); if(h>0) ps.forEach(p=>{ p.style.minHeight=h+"px"; }); };
+  // Natural heights are read with the stretch switched off: a grid stretches every tile to its row, which made one
+  // two-line name lift the base for every row (v2.11). The base is the usual tile; only a taller row grows past it.
+  const eq=ps=>{ if(!ps.length) return; ps.forEach(p=>{ p.style.minHeight=""; p.style.alignSelf="start"; });
+    const nat=new Map(ps.map(p=>[p,p.offsetHeight])), hs=[...nat.values()].sort((a,b)=>a-b), base=hs[Math.floor(0.9*(hs.length-1))]||0;
+    const box=new Map(), rows=new Map(); ps.forEach(p=>{ const par=p.parentElement; if(!box.has(par)) box.set(par, box.size); const k=box.get(par)+":"+p.offsetTop;
+      if(!rows.has(k)) rows.set(k,[]); rows.get(k).push(p); });
+    ps.forEach(p=>{ p.style.alignSelf=""; });
+    rows.forEach(r=>{ const h=Math.max(base, ...r.map(p=>nat.get(p))); r.forEach(p=>{ p.style.minHeight=h+"px"; }); }); };
   eq([...document.querySelectorAll("#zoomer .pill[data-pill], #zoomer .pill[data-reg-rm], #zoomer .pill[data-reg-add]")]);
   eq([...document.querySelectorAll("#checkedbar .pill")]); }
 function syncZoomHeight(){ equalizeTiles(); const z=document.getElementById("zoomer"); const bb=document.getElementById("bottomnav"); const tf=document.getElementById("topfix");
@@ -6035,7 +6050,7 @@ function renderPlanTab(){
     }).join("");
     days.push(`<section class="planday${k===todayK?' today':''}">
       <div class="pdhead">
-        <span class="pdwhen"><span class="pdname">${esc(d.toLocaleDateString(undefined,{weekday:"long"}))}</span><span class="pddate">${esc(d.toLocaleDateString(undefined,{day:"numeric",month:"short"}))}</span></span>
+        <span class="pdwhen"><span class="pdname">${esc(d.toLocaleDateString(undefined,{weekday:"short"}).replace(/\.$/,""))}</span><span class="pddate">${esc(d.toLocaleDateString(undefined,{day:"numeric",month:"short"}))}</span></span>
         ${chips ? `<div class="pdchips">${chips}</div>` : `<span class="pdempty">Nothing planned</span>`}
         <button class="pdmore" data-pd="${esc(k)}" aria-haspopup="dialog" aria-label="Add to ${esc(d.toLocaleDateString(undefined,{weekday:"long"}))}">+</button>
       </div>
@@ -6163,8 +6178,14 @@ let rcpt = null;
 const RCPT_DAY_CAP = 10;
 function rcptToday(){ const d=dayKey(new Date()); try{ const v=String(localStorage.getItem("ml_rcptday")||"").split("|"); return v[0]===d ? (+v[1]||0) : 0; }catch(e){ return 0; } }
 function rcptCount(){ const d=dayKey(new Date()); try{ localStorage.setItem("ml_rcptday", d+"|"+(rcptToday()+1)); }catch(e){} }
+/* v2.11: the picker is ATTACHED to the page before it opens. iOS Safari does not reliably fire "change" on a
+   file input that is not in the document, so the photo was chosen and then nothing happened at all — no
+   sheet, no error (the household: "no indication that something is happening or failed"). */
 function rcPick(){ const f=document.createElement("input"); f.type="file"; f.accept="image/*";
-  f.onchange=()=>{ const file=f.files && f.files[0]; if(file) rcRead(file); }; f.click(); }
+  f.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
+  document.body.appendChild(f);
+  f.onchange=()=>{ const file=f.files && f.files[0]; f.remove(); if(file) rcRead(file); };
+  f.click(); }
 /* v2.09: the saved real stores, in one place — rcStoreFor, the sheet's chips and their wiring all agree. */
 function rcSavedStores(){ return [...STORES.filter(s=>!storeOverride(s.id).hidden).map(s=>storeById(s.id)), ...(state.stores||[]).filter(s=>!storeOverride(s.id).hidden)].filter(s=>s && s.name); }
 function rcStoreFor(detected){ const n=String(detected||"").toLowerCase().trim();
@@ -6174,9 +6195,15 @@ function rcStoreFor(detected){ const n=String(detected||"").toLowerCase().trim()
   return { id:"", name:String(detected||"").trim() }; }
 function rcRead(file){
   if(rcptToday()>=RCPT_DAY_CAP){ rcpt={ err:`That's ${RCPT_DAY_CAP} receipts today, the free limit on this phone. It resets tomorrow.` }; render(); return; }
-  rcpt={ busy:true }; render();
+  /* v2.11: every wait is visible, and every wait ends — either in the review or in a message. The sheet
+     opens the moment a photo is chosen and says which step it is on; the request is abandoned after 75s
+     (the function itself stops at 60s), so a dead connection can never leave the sheet spinning. */
+  rcpt={ busy:true, step:"Preparing the photo…" }; render();
+  const ctl=(typeof AbortController!=="undefined") ? new AbortController() : null;
+  const timer=setTimeout(()=>{ if(ctl) ctl.abort(); }, 75000);
   planShrinkImage(file, 2000, 0.8)
-    .then(img=>fetch("/api/receipt", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ image:img }) }))
+    .then(img=>{ if(rcpt && rcpt.busy){ rcpt.step="Reading the receipt…"; render(); }
+      return fetch("/api/receipt", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ image:img }), signal: ctl ? ctl.signal : undefined }); })
     .then(r=>r.json().catch(()=>({})).then(j=>({ ok:r.ok, j })))
     .then(({ok,j})=>{ if(!rcpt) return;
       if(!ok){ const c=j && j.code;
@@ -6195,7 +6222,10 @@ function rcRead(file){
       if(!lines.length){ rcpt={ err:"Couldn't find any items on that. Is it a receipt?" }; render(); return; }
       rcpt={ store:rcStoreFor(j.store), detected:String(j.store||""), date:(/^\d{4}-\d{2}-\d{2}$/.test(j.date||"") ? j.date : dayKey(new Date())), total:+j.total||0, lines };
       render(); })
-    .catch(()=>{ if(rcpt){ rcpt={ err: navigator.onLine===false ? "No connection. Try again when you're online." : "Couldn't read that receipt." }; render(); } }); }
+    .catch(e=>{ if(rcpt){ rcpt={ err: navigator.onLine===false ? "No connection. Try again when you're online."
+        : (e && e.name==="AbortError") ? "That took too long. Try again, or with a closer photo."
+        : "Couldn't read that receipt." }; render(); } })
+    .finally(()=>clearTimeout(timer)); }
 function rcSave(){ if(!rcpt || !rcpt.lines) return;
   const used=new Set(); let n=0, m=0; const t=Date.now();
   for(const L of rcpt.lines){ const nm=String(L.name||"").trim(); if(!L.keep || !nm || !isFinite(L.price)) continue;
@@ -6206,7 +6236,8 @@ function rcSave(){ if(!rcpt || !rcpt.lines) return;
 function rcptSheet(){
   const head=`<div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">${CAMERA_SVG(18)} Receipt</div>`;
   if(rcpt.busy) return `<div class="sheet-bg kbpin" id="rcBg"><div class="sheet" id="rcSheet">${head}
-    <div style="padding:22px 4px;text-align:center;color:var(--muted);font-weight:700">Reading the receipt…</div></div></div>`;
+    <div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>${esc(rcpt.step||"Reading the receipt…")}</div>
+    <div class="rcnote" style="text-align:center">This usually takes 5–20 seconds.</div></div></div>`;
   if(rcpt.err || !rcpt.lines) return `<div class="sheet-bg kbpin" id="rcBg"><div class="sheet" id="rcSheet">${head}
     <div style="padding:6px 2px 16px;color:var(--text);font-weight:600;line-height:1.5">${esc(rcpt.err||"Couldn't read that receipt.")}</div>
     <button class="optaction" id="rcOk">OK</button></div></div>`;
