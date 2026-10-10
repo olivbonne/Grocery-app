@@ -428,7 +428,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v2.12: the list name sits in a tile with its chevron (no brand full stop any more); the chevron is the
      name's own colour. The "N to buy" count is the name's size and colour; the store under it is ink at the
      size of the bottom bar's labels. */
-  .topfix .listswitch { background:var(--toptile-bg, var(--chip)); color:var(--toptile-text, var(--topbar-text, inherit)); border-radius:12px; padding:3px 8px 3px 11px; align-items:center; }
+  /* v2.14: .title.listswitch, not .listswitch — the later `.topfix .title { color:var(--topbar-text) }` has the
+     same weight and won, so on a dark tile colour the name stayed dark while the count beside it turned white. */
+  .topfix .title.listswitch { background:var(--toptile-bg, var(--chip)); color:var(--toptile-text, var(--topbar-text, inherit)); border-radius:12px; padding:3px 8px 3px 11px; align-items:center; }
   .topfix .lschev { opacity:1; margin-left:5px; }
   .topfix .hcount { font-size:20px; font-weight:800; color:var(--toptile-text, var(--topbar-text, var(--text))); background:var(--toptile-bg, var(--chip)); padding:3px 12px; letter-spacing:-.02em; }
   .topfix header .locchip { font-size:11px; font-weight:800; font-family:'Outfit',system-ui,sans-serif; color:var(--toptile-text, var(--topbar-text, var(--text))); background:var(--toptile-bg, var(--chip)); }
@@ -500,6 +502,9 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   body.dark .iconbtn img.uiicon { filter:invert(1) brightness(1.6); }
   /* v2.10: the Shop header's share button — a 36px round tap target, sized to sit in the header row */
   .hshare{ color:var(--text); width:36px; height:36px; border-radius:50%; flex:none; }
+  /* v2.14: the banner's Report button is one of the banner's tiles, so it takes their colour (Settings ›
+     Bars and overlays › Name, count and store) — on Auto that is still the theme's --chip. */
+  .topfix .hshare{ background:var(--toptile-bg, var(--chip)); color:var(--toptile-text, var(--topbar-text, var(--text))); }
   .icongrid { display:flex; flex-wrap:wrap; gap:6px; max-height:148px; overflow-y:auto; margin-top:8px; }
   .iconopt { width:42px; height:42px; border-radius:12px; border:2px solid var(--line); background:var(--card);
     display:flex; align-items:center; justify-content:center; font-size:20px; padding:0; }
@@ -1732,7 +1737,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.13";
+const APP_VERSION = "v2.14";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -3060,10 +3065,17 @@ const GEAR_SVG = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" st
 const CAL_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
 /* v2.12: the bar's Plan and Settings marks are drawn the same size as the cart — 26px tall, their viewBoxes
    cropped to the drawing so the mark (not its margin) fills the box — so all three labels sit on one line. */
-const CAL_NAV_SVG = CAL_SVG.replace('width="20" height="20" viewBox="0 0 24 24"', 'class="navico" width="26" height="26" viewBox="2 2 20 20"');
+/* v2.14: one line weight across the bar. Each mark is drawn in its own units, so the same kind of stroke-width
+   attribute renders at different widths: the cart 6 × 26/72 = 2.17px, the calendar 1.9 × 26/20 = 2.47px (the
+   household: "plan looks thicker") and the gear 1.8 × 26/27 = 1.73px. NAV_LINE_PX is the cart's; the other two
+   are given the attribute that renders at exactly it. (Settings › Line weight is for the item drawings only.) */
+const NAV_LINE_PX = 6 * 26 / 72;
+const CAL_NAV_SVG = CAL_SVG.replace('width="20" height="20" viewBox="0 0 24 24"', 'class="navico" width="26" height="26" viewBox="2 2 20 20"')
+  .replace('stroke-width="1.9"', `stroke-width="${(NAV_LINE_PX * 20 / 26).toFixed(4)}"`);
 /* v2.13: the gear's viewBox is the whole 24-unit canvas plus a margin — v2.12 cropped it to 21.8 units and
    the stroke at the teeth was cut off, and the gear read bigger than the cart and the calendar. */
-const GEAR_NAV_SVG = GEAR_SVG.replace('width="21" height="21" viewBox="0 0 24 24"', 'class="navico" width="26" height="26" viewBox="-1.5 -1.5 27 27"');
+const GEAR_NAV_SVG = GEAR_SVG.replace('width="21" height="21" viewBox="0 0 24 24"', 'class="navico" width="26" height="26" viewBox="-1.5 -1.5 27 27"')
+  .replace('stroke-width="1.8"', `stroke-width="${(NAV_LINE_PX * 27 / 26).toFixed(4)}"`);
 /* v1.82: ⋯ is not in the self-hosted Outfit subset and would render as nothing, so the three dots are drawn. */
 function bottomNav(o){
   // v1.16 three tabs: Lists · Shop (middle, cart) · Settings (right). Adding is the floating "+ Add" pill.

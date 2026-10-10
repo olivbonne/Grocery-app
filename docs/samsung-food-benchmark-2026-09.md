@@ -2,15 +2,16 @@
 
 September 2026 · reviewed against Market List **v1.80**
 
-> **Status at v2.01 (late September 2026).** Of the roadmap in §3: shipped — **1** Plan tab (v1.82),
-> **2** list switcher (v1.81), **3** recipes as saved parses (v1.84; source link, method and servings
-> since v2.01), **4** the whole week to the list in one tap, duplicates merged (v2.01), **5** pantry
-> from evidence — recently bought items arrive unticked as "probably have" (v2.01), **6** recipe from
-> a URL (v1.86, plus photos, pasted text, search, and TikTok by v1.95). v2.01 also added meal slots
-> and per-meal servings. Partly — **10** the plan syncs across devices with the list, appearance is
-> still device-local. Not started — **7** receipt import, **8** basket handoff, **9** price memory.
-> Nothing in §4 (money) has been acted on. The rest of this document is unchanged from when it
-> was written.
+> **Status at v2.14 (11 October 2026).** The live, more detailed version of this report is the published
+> page "Market List vs Samsung Food" (the plan of what is left, the supermarkets' memberships, pricing in
+> AUD). Of the roadmap in §3, everything in "Next" has shipped, and so have **7** receipt import and
+> **9** price memory (v2.09, from the household's own receipts). **10** is half done (the plan syncs,
+> appearance does not), **8** basket handoff has not started, and nothing in §4 has been acted on.
+> **§7 below is a full app review from 11 October**: what to fix first, quick wins, bigger features and
+> the long-term calls.
+>
+> (Status at v2.01: shipped — 1 Plan tab, 2 list switcher, 3 recipes as saved parses, 4 the week to the
+> list, 5 pantry from evidence, 6 recipe from a URL; v2.01 also added meal slots and per-meal servings.)
 
 Samsung Food (the rebuilt Whisk, folded into Samsung in 2023) is the strongest mainstream
 product in this category, so it is the right thing to measure against. This note is in three
@@ -176,6 +177,61 @@ around item 6 it needs to become modules — before, not during, the feature tha
 3. **v1.84** — "add the week to the list", deduped and summed
 4. **v1.85** — pantry from restock evidence
 5. **then** — identity layer, and only then anything with a price on it
+
+## 7. App review — 11 October 2026 (v2.14)
+
+Method: every main screen driven in headless Chromium at iPhone size (390×844) with a realistic household
+list (40 items, 30 regulars, two lists), plus three measurements — opening with no connection, the time one
+tap takes to redraw a list, and an automated accessibility scan (axe-core 4.10). Measured on a desktop-class
+CPU, not on an iPhone; the 4× slow-down figures stand in for an older phone.
+
+**The verdict.** The app looks finished and is fast enough today. What it lacks is a safety net — it
+cannot open without signal, it cannot restore a backup, and it cannot tell you when it breaks on someone's
+phone — and a guided path for anyone who is not the person who built it: Settings has outgrown one page,
+and several features wait at the bottom of it rather than at the moment they are useful.
+
+### Fix first — trust (each small)
+| # | Change | Evidence and why | Cost |
+|---|---|---|---|
+| R1 | **Open without signal.** A service worker that caches the app, its fonts and icons and the Firebase SDK — never `/api/*`. | Reloading with no connection fails outright (`ERR_INTERNET_DISCONNECTED`); there is no service worker. Supermarkets are where signal drops, and iOS often closes a backgrounded app. The ledger's "fully offline" is only true while the app stays open. It is also the base for notifications (R18). | Small–medium |
+| R2 | **The app reports its own crashes.** `window.onerror` and unhandled rejections go to `/api/feedback` as kind "crash" — version, page, first stack line, at most 3 a day per phone, never the list. | Today a broken phone is invisible until someone mentions it. The endpoint already exists (v2.13). | Small |
+| R3 | **Backups you can restore.** "Restore from an export", plus an automatic weekly snapshot of the list. | Export exists (v2.02); import does not, so an export cannot bring anything back. Undo covers one action, not a bad afternoon. | Small–medium |
+| R4 | **Install guidance, and ask the browser to keep data.** On iPhone Safari (not installed), a one-time card with the three Add-to-Home-Screen steps; `navigator.storage.persist()`. | Safari can clear a website's stored data after about 7 days without use; installed home-screen apps are exempt. Stored per phone today: your name on the list, appearance, history and the learned aisle order. (Apple's rule as of iOS 17 — not re-checkable from here.) | Small |
+| R5 | **The tests run on every pull request.** GitHub Actions running the syntax gate, the api suites and the browser suites in Chromium. | 41 suites exist (37 in the browser, 4 for the server functions), but they only run when Claude runs them. | Small |
+
+### Quick wins — UI and UX
+| # | Change | Evidence and why | Cost |
+|---|---|---|---|
+| R6 | **Readable greys.** `--muted` to about `#746E5F`; a darker text shade for category-coloured amounts. | axe: 30 failures on Shop, 17 on Plan, 37 in Settings. Counts ("0/8"), dates and "Nothing planned" are 2.4:1 against the page, section names 2.7:1, and yellow fruit amounts 2.9:1 on their tiles; WCAG AA asks 4.5:1. The look stays; the small text becomes legible in a bright store. | Small |
+| R7 | **Faster taps.** Do the per-row tile stretching in CSS (grid rows already stretch to their tallest tile) and measure the usual tile height once per layout change, not on every tap. | One redraw: 27–41 ms for a list your size (60 items, 95 regulars). On a 4× slower CPU: 100–135 ms with 40 items, 275–525 ms with 150 items and 120 regulars. Over half is `equalizeTiles` (v2.10–v2.11) re-measuring every tile; building the tiles takes under 2 ms. About twice as fast on older phones. | Small |
+| R8 | **Label the add bar.** "Add items…" inside the floating bar. | The empty list says "Tap **Add** below", but the bar shows only "+". | Tiny |
+| R9 | **The receipt at the till.** After "Save to Regulars": "Got the receipt? Snap it and the app remembers the prices." | Receipt reading lives at the bottom of Settings › Prices — the one place nobody is when the receipt is in their hand. | Small |
+| R10 | **A running total while shopping.** "4 in cart · about $38", from price memory. | The prices are already stored (v2.09); this makes reading receipts pay off on the next trip. | Small |
+| R11 | **Keep the screen on while shopping** (Screen Wake Lock), on while the cart has items. | The phone dims and locks mid-aisle. Supported in recent iOS — check on the phone. | Tiny |
+| R12 | **Settings in two layers, with search.** Everyday settings first (theme, text size, tiles, store and sort, Smart add, plan, predictions, people, sharing); "Customise the look" as its own page for the 19 colour rows, bars, slots and margins. | With everything open: 16 sections, 483 buttons, about seven screens. Built row by row at the household's request, and worth keeping — but a new member has to scroll past about 300 colour buttons to find "Share link". | Medium |
+| R13 | **Structure for VoiceOver.** A `main` landmark and real headings (list name, categories). | axe flags both on every page: a screen-reader user cannot jump between categories. Pinch-zoom is off (`user-scalable=no`); Text size covers most of it. | Small |
+| R14 | **Plan says what it is for.** Empty week: one line ("Plan dinners and add all their ingredients to the list in one tap") and a button. | A new week is seven rows of "Nothing planned". The 2026-07 review found the same problem with the old Plan page. | Tiny |
+| R15 | **Share the learned aisle order.** Keep it in the list, per store, like restock history. | It is learned per phone today ("Learned shop order is per-device"), so the second shopper starts from nothing. | Small |
+
+### Bigger features (ranked by value to a household)
+| # | Change | Why | Cost |
+|---|---|---|---|
+| R16 | **Notes and a photo on an item** — "the green bottle", "no-name is fine". | "Which one?" is the most common message between two people shopping. Notes are cheap; photos need storage (Firebase Storage, or small thumbnails inside the 1 MB list document). | Small (notes) · medium (photos) |
+| R17 | **Where to buy it.** Tag an item with a store; at a store the list shows what is for there and folds the rest under "Elsewhere". | This household's list mixes supermarket and Asian-grocer items (kangkung, galangal, taugeh). | Medium |
+| R18 | **Notifications** (needs R1): "Sam added 3 things", "Olive is at Coles — anything else?", the restock reminder on your day. | iOS home-screen web apps can receive push since iOS 16.4. Needs a small server piece to send. | Medium |
+| R19 | **Who is shopping now.** When someone starts ticking at a store, the others see "Olive is at Coles". Opt-in, the store name only. | Stops double-buying, and gives the people at home a window to add the last things. | Small–medium |
+| R20 | **What we spend.** Monthly spend by category and by store, from the receipts already read. | The data exists. A free summary; trends and alerts fit Market List+. | Medium |
+| R21 | **Lists for occasions.** Save a list as a template — "BBQ", "Camping", "Christmas" — and drop it into the current one. | Saved weeks already do this for the plan. | Small |
+| R22 | **Siri.** "Add milk to Market List" through an iOS Shortcut calling a small endpoint that writes to the list. | Hands-free capture at the fridge. Needs a Firebase service account on the server, so it waits on R25's security work. | Medium |
+
+### Long term — the calls to make
+- **R23 Modules before features.** `index.html` is 8,638 lines now (6,200 when this report was written). Plain ES modules keep the no-build, offline approach. Already item 1 on the published plan.
+- **R24 PWA or App Store — decide before charging.** A native shell (Capacitor or similar) brings widgets, Siri, reliable push, "you're near Coles" reminders and store discovery; it costs app review and 15–30% of subscriptions sold in the app. Recommendation: stay a PWA until identity and one paid feature (the 10% shop) prove people will pay, then wrap it.
+- **R25 Security before strangers.** Fine for one household, not for a public product: list codes are 8 characters, 7 of them from `Math.random()`; the 4-person limit is checked in the app's own code; and the Firestore rules that would enforce anything live only in the Firebase console, where nobody can review or test them. Use 128-bit codes from `crypto.getRandomValues` for new lists, and keep the rules in the repo with emulator tests.
+- **R26 A privacy page and "delete my data".** Needed for an app store, and for trust once prices are shared between households.
+
+**Suggested order:** R1, R2 and R5 together (the safety net) → R6–R8 and R11 (one polish batch) →
+R9–R10 (receipts pay off) → R12 (Settings) → then the published plan: modules, the 10% shop, identity.
 
 Sources: [Samsung Food](https://samsungfood.com/), [Food+](https://samsungfood.com/food-plus/),
 [what Food+ includes](https://support.samsungfood.com/hc/en-us/articles/32709269852052-What-s-Included-in-Your-Samsung-Food-Subscription),
