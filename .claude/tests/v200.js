@@ -126,7 +126,9 @@ const IDEAS = { source:"model", provider:"", results:[
     ok('…with the count and the action on one row', drawer && drawer.sameRow===true, JSON.stringify(drawer));
     /* Closed it should be a row, not a panel — the number is what is worth a glance. */
     ok('…and the whole bar is one row tall', drawer && drawer.h < 110, JSON.stringify({h:drawer.h}));
-    ok('…labelled for the room it has', drawer && drawer.label==='Finish', JSON.stringify(drawer.label));
+    /* SUPERSEDED by v2.12: the household asked for one button that says what it does, open or shut —
+       "Save to Regulars" (v212.js checks both states). Still protects that the closed bar's action is labelled. */
+    ok('…labelled with what it does', drawer && drawer.label==='Save to Regulars', JSON.stringify(drawer.label));
 
     /* ── D. one filled action per sheet ────────────────────────────────── */
     await tap('#planNav, #planNavP'); await tap('.pdmore'); await tap('#pmRecipe');

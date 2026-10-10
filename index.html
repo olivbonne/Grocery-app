@@ -293,6 +293,10 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .navbtn.active { color:var(--text); }
   .navbtn.active::before { content:""; position:absolute; top:-6px; left:50%; transform:translateX(-50%); width:42px; height:3px; border-radius:0 0 6px 6px; background:var(--accent); }
   .cartwrap { position:relative; display:inline-flex; align-items:center; justify-content:center; }
+  /* v2.12: the basket's middle (x 57.24 of the 10–90 viewBox) is 2.6px right of the icon's middle, so the
+     cart moves left by that much and "Shop" sits under the basket and its wheels. */
+  .bottomnav .cartwrap { left:-2.6px; height:26px; }
+  .bottomnav .navico { flex:none; display:block; }
   .cartcount { position:absolute; left:100%; top:50%; transform:translateY(-50%); margin-left:3px; font-size:11px; font-weight:800; color:var(--accent); line-height:1; white-space:nowrap; }
   .cartbadge { position:absolute; top:-7px; right:-12px; min-width:17px; height:17px; padding:0 5px; border-radius:999px; background:var(--accent); color:var(--on-accent); font-size:10px; font-weight:800; line-height:1; white-space:nowrap; display:flex; align-items:center; justify-content:center; box-sizing:border-box; }
   .baheadchip { background:transparent !important; border:1.5px solid var(--muted) !important; color:var(--muted) !important; }
@@ -354,20 +358,31 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v2.11: a full-width band whose tiles sit on the page's own side margins (the inner .zoomer carries
      --padl/--padr exactly as the list does), so a cart tile is the same width as a list tile. Inset as a card
      with its own padding, the cart's tiles were 26px narrower on each side (the household's screenshots). */
-  .checkedbar { position:relative; z-index:1; margin:8px 0 6px; background:var(--paper); border:solid var(--line); border-width:1px 0;
-    border-radius:0; display:flex; flex-direction:column; max-height:44vh; padding:6px 0 8px; box-sizing:border-box; }
+  /* v2.12: the cart hangs from the header — fixed, glued to its bottom edge (syncZoomHeight sets top), the
+     same width as the header, rounded at the bottom corners, and it slides down out of it when the first
+     item goes in. Its tiles scroll up and down only. */
+  .checkedbar { position:fixed; z-index:29; left:var(--topleft, 0px); right:var(--topright, 0px); margin:0 auto; max-width:var(--topw, 480px);
+    top:0; background:var(--paper); border:solid var(--line); border-width:0 0 1px; overflow:hidden;
+    border-radius:0 0 18px 18px; display:flex; flex-direction:column; max-height:44vh; padding:6px 0 8px; box-sizing:border-box;
+    box-shadow:0 8px 16px -12px rgba(20,30,22,.45); }
+  .checkedbar.drop { animation:cartdrop .32s cubic-bezier(.2,.7,.2,1); }
+  @keyframes cartdrop { from { transform:translateY(-100%); } to { transform:none; } }
+  @media (prefers-reduced-motion: reduce) { .checkedbar.drop { animation:none; } }
   /* v2.00 item 1: the count and the action share one row. v2.10: the scroll area now opens DOWNWARDS,
      under that row, so the row stays put under the header when the drawer expands. */
   .checkedfoot { flex:none; display:flex; align-items:center; gap:10px; padding:0 var(--padr,14px) 0 var(--padl,14px); }
   .checkedbarhead { flex:1; min-width:0; border:none; background:transparent; color:var(--muted); font-weight:800; font-size:13px;
     display:flex; align-items:center; justify-content:space-between; gap:7px; padding:4px 2px; }
   .checkedbarhead .chk-in { display:inline-flex; align-items:center; gap:7px; color:var(--text); }
+  /* v2.12: a drawn triangle the height of the "t" in "cart", in the same ink as the words */
+  .checkedbarhead .cbtri { flex:none; color:var(--text); transition:transform .2s ease; }
+  .checkedbarhead .cbtri.open { transform:rotate(90deg); }
   .checkedbarhead .chk-tick { display:inline-flex; align-items:center; justify-content:center; font-size:14px; width:22px; height:22px;
     border-radius:50%; background:#2F9E44; color:#fff; font-size:11px; font-weight:900; line-height:1; }
   /* v2.00: hug the contents rather than filling to the cap. With flex:1 the open drawer took the
      whole 34vh to show a single chip — a panel of mostly nothing sitting over the list you are still
      shopping. 0 1 auto grows with what is in it and the parent's max-height still bounds it. */
-  .checkedscroll { flex:0 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:2px 0 8px; }
+  .checkedscroll { flex:0 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; touch-action:pan-y; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; padding:2px 0 8px; }
   .checkedbar .sweepbanner { flex:none; width:auto; padding:10px 16px; margin-top:0; }
   .checkedbar .zoomer { padding-bottom:0 !important; }   /* v2.10: the list's clearance for the floating + has no business inside the cart */
   .listrows { display:flex; flex-direction:column; gap:8px; max-height:46vh; overflow:auto; }
@@ -410,6 +425,13 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .lschev { display:inline-flex; align-items:center; opacity:.5; flex:none; margin-left:6px;
     align-self:center; }
   .dot { color:var(--accent); }
+  /* v2.12: the list name sits in a tile with its chevron (no brand full stop any more); the chevron is the
+     name's own colour. The "N to buy" count is the name's size and colour; the store under it is ink at the
+     size of the bottom bar's labels. */
+  .topfix .listswitch { background:var(--chip); border-radius:12px; padding:3px 8px 3px 11px; align-items:center; }
+  .topfix .lschev { opacity:1; margin-left:5px; }
+  .topfix .hcount { font-size:20px; font-weight:800; color:var(--topbar-text, var(--text)); padding:3px 12px; letter-spacing:-.02em; }
+  .topfix header .locchip { font-size:11px; font-weight:800; font-family:'Outfit',system-ui,sans-serif; color:var(--topbar-text, var(--text)); }
   .count { font-size:12px; color:var(--muted); font-weight:600; }
   .hcount { font-size:12px; font-weight:800; color:var(--accent); background:var(--chip); border-radius:999px; padding:3px 10px; white-space:nowrap; }
   /* v1.37 item 7: the total sits dead-centre of the banner, independent of the title/sync widths */
@@ -983,6 +1005,12 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .shop .zoomer.smalltile.gridmode .pill { flex-wrap:wrap; align-content:center; row-gap:0; column-gap:5px; padding:6px 8px; font-size:14px; }
   .shop .zoomer.smalltile.gridmode .pill .pname { flex:1 1 0; }
   .shop .zoomer.smalltile.gridmode .pill .pill-meta { flex:0 0 100%; margin-left:0; padding-left:27px; justify-content:flex-start; text-align:left; }
+  /* v2.12: the amount sits where it does on a big tile — at the right. In one or two columns that is the
+     same line as the name; in three or more there is no room beside the name, so it takes the next line,
+     still at the right (the 27px indent under the icon read as a stray gap, worst with icons off). */
+  .shop .zoomer.smalltile.gridmode .pill .pill-meta { padding-left:0; justify-content:flex-end; text-align:right; }
+  .shop .zoomer.smalltile.grid1 .pill, .shop .zoomer.smalltile.grid2 .pill { flex-wrap:nowrap; }
+  .shop .zoomer.smalltile.grid1 .pill .pill-meta, .shop .zoomer.smalltile.grid2 .pill .pill-meta { flex:none; margin-left:auto; padding-left:7px; }
   /* v1.22 item 6 — settings rows with a wide control laid out label-left / control-right (like Theme) */
   .optrow-wide { align-items:center; }
   /* v1.55 item 2: a label beside a multi-row control should head the FIRST row, not float between
@@ -1277,7 +1305,8 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   /* v2.11: SVG text in the cart's own units (see cartBadgeHTML) — 35 units is the household's size */
   .cartnum { font-size:35px; font-weight:800; fill:var(--accent); pointer-events:none; font-variant-numeric:proportional-nums; transform-box:fill-box; transform-origin:center; }
   .cartnum.pop { animation:cartnumpop 1s cubic-bezier(.33,0,.2,1); }
-  .cartplus { font-size:20px; }
+  .cartplus { font-size:26px; }
+  .cartwrap svg { overflow:visible; }
   .spark { position:fixed; z-index:70; pointer-events:none; line-height:1; animation:spark .66s ease-out forwards; }
   @keyframes spark { 0%{opacity:0; transform:translate(-50%,-50%) scale(.3)} 25%{opacity:1} 100%{opacity:0; transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1)} }
   /* A22 flying item → cart: a live clone of the checked tile arcs down into the cart */
@@ -1327,7 +1356,7 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .bottomnav .navbtn.active { color:var(--navbar-text, var(--text)); }
   .navbtn.active { background:var(--chip); border-radius:999px; }
   .navbtn.active::before { display:none; }
-  .checkedbar { border:solid var(--glass-brd); border-width:1px 0; border-radius:0; box-shadow: inset 0 1px 0 var(--glass-hi); }
+  .checkedbar { border:solid var(--glass-brd); border-width:0 0 1px; border-radius:0 0 18px 18px; box-shadow:0 8px 16px -12px rgba(20,30,22,.45); }
   .qbanner { border-radius:18px 18px 0 0; }
   .sheet { border:1px solid var(--glass-brd); border-bottom:none;
     box-shadow: inset 0 1px 0 var(--glass-hi), 0 -10px 34px rgba(20,30,22,.28); }
@@ -1382,6 +1411,15 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   html[data-icosize="l"] .shop .zoomer .pill .pill-meta, html[data-icosize="xl"] .shop .zoomer .pill .pill-meta,
   html[data-icosize="l"] .shop .zoomer.smalltile.gridmode .pill .pill-meta, html[data-icosize="xl"] .shop .zoomer.smalltile.gridmode .pill .pill-meta {
     margin-left:0; padding-left:0; justify-content:center; }
+  /* v2.12: a tile with its icon on top reads in three fixed bands — the icon, then the name in two lines'
+     room (a one-line name leaves the second empty), then the amount on the bottom line. Every name starts
+     at the same height across the row, and every amount sits on the same bottom line. The flags move to
+     the top-left corner so a starred tile's name does not start lower than its neighbours'. */
+  .shop .zoomer.gridmode:not(.smalltile) .pill:has(> .pemoji), .shop .zoomer.largevar .pill:has(> .pemoji), html[data-icosize="l"] .shop .zoomer .pill:has(> .pemoji), html[data-icosize="xl"] .shop .zoomer .pill:has(> .pemoji) {
+    justify-content:flex-start; position:relative; }
+  .shop .zoomer.gridmode:not(.smalltile) .pill:has(> .pemoji) .pname, .shop .zoomer.largevar .pill:has(> .pemoji) .pname, html[data-icosize="l"] .shop .zoomer .pill:has(> .pemoji) .pname, html[data-icosize="xl"] .shop .zoomer .pill:has(> .pemoji) .pname { line-height:1.2; min-height:2.4em; }
+  .shop .zoomer.gridmode:not(.smalltile) .pill:has(> .pemoji) .pill-meta, .shop .zoomer.largevar .pill:has(> .pemoji) .pill-meta, html[data-icosize="l"] .shop .zoomer .pill:has(> .pemoji) .pill-meta, html[data-icosize="xl"] .shop .zoomer .pill:has(> .pemoji) .pill-meta { margin-top:auto; }
+  .shop .zoomer.gridmode:not(.smalltile) .pill:has(> .pemoji) > .pmarks, .shop .zoomer.largevar .pill:has(> .pemoji) > .pmarks, html[data-icosize="l"] .shop .zoomer .pill:has(> .pemoji) > .pmarks, html[data-icosize="xl"] .shop .zoomer .pill:has(> .pemoji) > .pmarks { position:absolute; top:7px; left:9px; }
   /* v1.16 display picker (2×2) */
   .dispgrid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
   .dispopt { border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:12.5px; padding:10px 6px; border-radius:11px; }
@@ -1676,7 +1714,7 @@ import { getFirestore, initializeFirestore, persistentLocalCache, persistentMult
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.11";
+const APP_VERSION = "v2.12";
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -2950,7 +2988,13 @@ function cartCount(){ return Math.max(0, state.items.filter(i=>i.checked).length
 /* v2.11: the count is drawn INSIDE the cart's SVG at the household's own coordinates (x 57.24, baseline 42,
    35 units; "+" at 77,29 in 20 units) — an HTML label positioned by percentages over the icon landed in a
    different place on the phone than in the drawing, because font metrics differ between devices. */
-function cartNumHTML(n){ return n>99 ? '99<tspan class="cartplus" x="77" y="29">+</tspan>' : String(n); }
+/* v2.12: past 99 the "99" stays exactly where any count sits — 35 units, centred on x 57.24 — and a bigger
+   raised "+" (26 units) follows it (the household chose option A, with the 99 centred). v2.11 pinned the +
+   at (77,29), which landed on the second 9. "99" and "+" are one text chunk (the + has only dy), centred at
+   57.24 + half the +'s advance: in Outfit 800, "99" at 35 is 40.53 wide and "+" at 26 is 14.86, so the
+   chunk centre is 57.24 + 7.43 = 64.67 and the 99 spans 36.97–77.51. The + reaches past the drawing's
+   right edge (x 90), so the nav cart's svg shows overflow. */
+function cartNumHTML(n){ return n>99 ? '<tspan x="64.67" y="42">99<tspan class="cartplus" dy="-12">+</tspan></tspan>' : String(n); }
 function cartBadgeHTML(iconHTML){
   return `<span class="cartwrap" id="cartWrap">${iconHTML.replace('</svg>', `<text class="cartnum" id="cartNum" x="57.24" y="42" text-anchor="middle">${cartNumHTML(cartCount())}</text></svg>`)}</span>`;
 }
@@ -2978,16 +3022,21 @@ const CART_NAV_SVG = '<svg width="29" height="26" viewBox="10 10 80 72" aria-hid
 // v1.81 the switcher's chevron. Drawn, not typed: U+2304 is not in the self-hosted Outfit subset, so
 // the character renders as blank — and there is no web font to fall back to in an offline PWA.
 const CHEV_SVG = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7"/></svg>';
+const CHEV_BIG_SVG = CHEV_SVG.replace('width="11" height="11"', 'width="17" height="17"');   // v2.12 the title's chevron, bigger
 const GEAR_SVG = '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 const CAL_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
+/* v2.12: the bar's Plan and Settings marks are drawn the same size as the cart — 26px tall, their viewBoxes
+   cropped to the drawing so the mark (not its margin) fills the box — so all three labels sit on one line. */
+const CAL_NAV_SVG = CAL_SVG.replace('width="20" height="20" viewBox="0 0 24 24"', 'class="navico" width="26" height="26" viewBox="2 2 20 20"');
+const GEAR_NAV_SVG = GEAR_SVG.replace('width="21" height="21" viewBox="0 0 24 24"', 'class="navico" width="26" height="26" viewBox="1.1 1.1 21.8 21.8"');
 /* v1.82: ⋯ is not in the self-hosted Outfit subset and would render as nothing, so the three dots are drawn. */
 function bottomNav(o){
   // v1.16 three tabs: Lists · Shop (middle, cart) · Settings (right). Adding is the floating "+ Add" pill.
   // v1.87 three tabs again: the Lists page is gone (the title's switcher replaced it) — Plan · Shop · Settings.
   return `<nav class="bottomnav" id="bottomnav">
-    <button class="navbtn ${o.planActive?'active':''}" id="${o.planId}">${CAL_SVG}<span>Plan</span></button>
+    <button class="navbtn ${o.planActive?'active':''}" id="${o.planId}">${CAL_NAV_SVG}<span>Plan</span></button>
     <button class="navbtn ${o.cartActive?'active':''}" id="${o.cartId}">${cartBadgeHTML(CART_NAV_SVG)}<span>Shop</span></button>
-    <button class="navbtn ${o.setActive?'active':''}" id="${o.setId}">${GEAR_SVG}<span>Settings</span></button>
+    <button class="navbtn ${o.setActive?'active':''}" id="${o.setId}">${GEAR_NAV_SVG}<span>Settings</span></button>
   </nav>`;
 }
 // A22 fly a live clone of the just-checked tile along a smooth downward arc into the cart
@@ -5169,6 +5218,7 @@ function nudgeHeaderCount(){
 /* v2.10: measured to the zoomer's bottom edge, so whatever sits above it inside the wrap (the cart) counts too */
 function zoomWrapH(z, zw){ return Math.ceil(Math.max(0, z.getBoundingClientRect().bottom - zw.getBoundingClientRect().top)); }
 let _zoomRO=null, _zoomEl=null;
+var _cartWasShown=false;   // v2.12 var, not let: render() can run before this line is reached
 function watchZoomer(z){ if(!z || typeof ResizeObserver==="undefined" || _zoomEl===z) return;
   if(_zoomRO) _zoomRO.disconnect(); _zoomEl=z;
   _zoomRO=new ResizeObserver(()=>{ if(!z.isConnected) return; const zw=z.parentElement; if(zw) zw.style.height=zoomWrapH(z, zw)+"px"; });
@@ -5194,7 +5244,10 @@ function syncZoomHeight(){ equalizeTiles(); const z=document.getElementById("zoo
      ends, and --topy moves the bar down the screen without changing how tall it is — measured by height
      alone the content would slide under a bar the user had nudged down. The rect is post-transform, so
      the bottom edge already carries the offset. Clamped at 0 for a bar pulled up off the top. */
-  if(zw && tf){ zw.style.marginTop = Math.ceil(Math.max(0, tf.getBoundingClientRect().bottom)) + "px"; }
+  /* v2.12: the cart hangs from the header's bottom edge, and the list starts under the cart */
+  const cb=document.getElementById("checkedbar");
+  if(zw && tf){ const tb=Math.max(0, tf.getBoundingClientRect().bottom); if(cb) cb.style.top = Math.floor(tb) + "px";
+    zw.style.marginTop = Math.ceil(cb ? Math.floor(tb) + cb.offsetHeight : tb) + "px"; }
   const navH = bb ? Math.max(0, Math.ceil(window.innerHeight - bb.getBoundingClientRect().top)) : 0;   // v1.12 floating nav: stack everything above its top edge
   const qb=document.getElementById("qbanner"); if(qb) qb.style.bottom = Math.ceil(navH) + "px";   // quantity banner sits on top of the nav
   const qbH = qb ? qb.getBoundingClientRect().height : 0;
@@ -5720,13 +5773,14 @@ function renderMain(){
     bodyBlocks = [`<section class="cat urgentsec${uCollapsed?' ucoll':''}">${uHead}${uCollapsed?"":pillsMixed(urgentItems.slice().sort(bySortKey))}</section>`].concat(bodyBlocks);
   }
   const listBody = bodyBlocks.join("");
-  const checkedBar = done>0 ? `<div class="checkedbar shop" id="checkedbar">
+  const cartDrop = done>0 && !_cartWasShown; _cartWasShown = done>0;   // v2.12 slides down only when the first item goes in
+  const checkedBar = done>0 ? `<div class="checkedbar shop${cartDrop?' drop':''}" id="checkedbar">
       ${/* v2.00 item 1: one row, not two. The label varies because the row already says "N in cart":
            collapsed there is no space and the count would be said twice, so it is just "Finish";
            open there is room, and the longer wording explains what the tap is about to do. */""}
       <div class="checkedfoot">
-        <button class="checkedbarhead" id="checkedHead"><span class="chk-in"><span class="chk-tick">✓</span>${done} in cart</span><span>${checkedOpen?"▾":"▸"}</span></button>
-        <button id="sweepBtn" class="sweepbtn sweepbanner">${checkedOpen?`Finish · save ${done} to Regulars`:"Finish"}</button>
+        <button class="checkedbarhead" id="checkedHead"><span class="chk-in"><span class="chk-tick">✓</span>${done} in cart</span><svg class="cbtri${checkedOpen?' open':''}" width="8" height="9.5" viewBox="0 0 8 9.5" aria-hidden="true"><path d="M1 .6 L7.4 4.75 L1 8.9 Z" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg></button>
+        <button id="sweepBtn" class="sweepbtn sweepbanner">Save to Regulars</button>
       </div>
       ${checkedOpen?`<div class="checkedscroll"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">${pillsMixed(checkedItems.slice().sort((a,b)=>(b.checkedAt||0)-(a.checkedAt||0)))}</div></div>`:""}
     </div>` : "";
@@ -5740,7 +5794,7 @@ function renderMain(){
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             ${/* v1.90: the 52px held for a back arrow goes with the arrow — the title starts where the
                   tiles and category headings start. Settings keeps its own back button. */""}
-            <button class="title disp listswitch" id="listSwitch" aria-haspopup="dialog" aria-expanded="${listsOpen?'true':'false'}">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="dot">.</span><span class="lschev" aria-hidden="true">${CHEV_SVG}</span></button>
+            <button class="title disp listswitch" id="listSwitch" aria-haspopup="dialog" aria-expanded="${listsOpen?'true':'false'}">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="lschev" aria-hidden="true">${CHEV_BIG_SVG}</span></button>
           </div>
           ${open>0?`<span class="hcount hcount-mid">${open} to buy</span>`:""}
           <div style="display:flex;align-items:center;gap:8px">
@@ -5750,8 +5804,9 @@ function renderMain(){
         ${locChip()?`<div class="hloc">${locChip()}</div>`:""}
       </header>
     </div>
+    ${checkedBar}
     <div class="wrap ${shopMode?'shop':''}">
-    <div class="zoomwrap">${checkedBar}<div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
+    <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${(state.items.length===0)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">Your list is empty</p>
@@ -6059,7 +6114,7 @@ function renderPlanTab(){
   app.innerHTML = `
     <div class="topfix" id="topfix">
       <header>
-        <div style="display:flex;align-items:center;gap:8px"><button class="title disp listswitch" id="listSwitch" aria-haspopup="dialog" aria-expanded="${listsOpen?'true':'false'}">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="dot">.</span><span class="lschev" aria-hidden="true">${CHEV_SVG}</span></button></div>
+        <div style="display:flex;align-items:center;gap:8px"><button class="title disp listswitch" id="listSwitch" aria-haspopup="dialog" aria-expanded="${listsOpen?'true':'false'}">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Market List")}<span class="lschev" aria-hidden="true">${CHEV_BIG_SVG}</span></button></div>
         <div style="display:flex;align-items:center;gap:8px">${syncChip()}</div>
       </header>
     </div>
