@@ -113,6 +113,8 @@ const seed = (extra, checkedStore) => `(() => {
       const u=sv.width/80, mid=sv.left+47.25*u, lw=sv.left+21.5*u, rw=sv.left+73*u;
       return { off:Math.round((n.left+n.width/2-mid)*10)/10, gapL:Math.round(n.left-lw), gapR:Math.round(rw-n.right), txt:document.querySelector('#cartNum').textContent }; });
     ok('the nav cart\'s count sits centred in the basket, clear of both walls', Math.abs(cart.off)<=1.5 && cart.gapL>=2 && cart.gapR>=2, JSON.stringify(cart));
+    ok('…at its full size, 12px, not shrunk to fit (the household: "I don\'t want the number to look smaller")',
+       await page.evaluate(()=>getComputedStyle(document.querySelector('#cartNum')).fontSize)==='12px', '');
 
     /* ── D. the cart finishes itself at a different store ─────────────── */
     const locOpts = (where)=>({ geolocation:where, permissions:['geolocation'] });
