@@ -62,7 +62,7 @@ const IDEAS = { source:"model", provider:"", results:[
   const mk = async()=>{
     if(ctx) await ctx.close();
     ctx = await browser.newContext({ viewport:{width:390,height:844}, deviceScaleFactor:2, hasTouch:true });
-    await ctx.route('**www.gstatic.com/firebasejs/**', r => r.fulfill({ status:200, contentType:'text/javascript', body: STUB }));
+    await ctx.route('**/firebasejs/**', r => r.fulfill({ status:200, contentType:'text/javascript', body: STUB }));
     await ctx.route('**/api/recipe-search', r => r.fulfill({ status:200, contentType:'application/json',
       body:JSON.stringify(IDEAS) }));
     page = await ctx.newPage(); page.setDefaultTimeout(9000);

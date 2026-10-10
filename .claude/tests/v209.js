@@ -48,7 +48,7 @@ const SEED = `(() => {
   const errors=[], sent=[]; let replyStatus=200, replyBody=RECEIPT;
   const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
   const ctx = await browser.newContext({ viewport:{width:390,height:844}, deviceScaleFactor:2, hasTouch:true });
-  await ctx.route('**www.gstatic.com/firebasejs/**', r => r.fulfill({ status:200, contentType:'text/javascript', body: STUB }));
+  await ctx.route('**/firebasejs/**', r => r.fulfill({ status:200, contentType:'text/javascript', body: STUB }));
   await ctx.route('**/api/receipt', r => { try{ sent.push(JSON.parse(r.request().postData()||'{}')); }catch(e){ sent.push({}); }
     r.fulfill({ status:replyStatus, contentType:'application/json', body:JSON.stringify(replyBody) }); });
   const page = await ctx.newPage(); page.setDefaultTimeout(9000);

@@ -12,6 +12,8 @@
    - diag keeps only its seven keys, each cut to 120 characters;
    - configured -> one issue POST to the right repo, with the token in the header, a labelled title
      and the from-app + kind labels; the issue number comes back as ref;
+   - a crash report (kind "crash", sent by the app itself, v2.15) is accepted: logged with kind
+     "crash" when not configured, and filed as "[Crash] …" with the from-app + crash labels when it is;
    - any GitHub failure (status, throw) falls back to the log; a bad repo name is never fetched;
    - the token never appears in any console output or any response. */
 const handler = require('../../api/feedback.js');
@@ -68,6 +70,11 @@ const TOKEN = 'SECRET-TOKEN-123';
     await call({ kind: 'idea', text: 'diag not an object', diag: 'nope' });
     ok('a non-object diag becomes {}', JSON.stringify(JSON.parse(fbLines()[0].slice(11)).diag) === '{}', fbLines()[0]);
 
+    reset();
+    r = await call({ kind: 'crash', text: 'TypeError: x is undefined\nat render (index.html:5300:12)', diag: { version: 'v2.15', page: 'shop' } });
+    ok('a crash report, not configured, goes via log', r.code === 200 && r.body.ok === true && r.body.via === 'log', JSON.stringify(r.body));
+    ok('…and the logged line has kind "crash"', fbLines().length === 1 && JSON.parse(fbLines()[0].slice(11)).kind === 'crash', JSON.stringify(logs));
+
     /* ── configured: GitHub ─────────────────────────────────────────── */
     process.env.FEEDBACK_GITHUB_TOKEN = TOKEN; process.env.FEEDBACK_REPO = 'owner/repo';
     reset(); status = 201; reply = { number: 42 };
@@ -81,6 +88,12 @@ const TOKEN = 'SECRET-TOKEN-123';
     ok('…body has the text then the diag', /second line\n\n---\nversion: 2\.13\npage: list/.test(sent.body || ''), sent.body);
     ok('201 + {number:42} -> via github, ref 42', r.code === 200 && r.body.ok === true && r.body.via === 'github' && r.body.ref === 42, JSON.stringify(r.body));
     ok('nothing is logged on success', fbLines().length === 0, JSON.stringify(logs));
+
+    reset(); status = 201; reply = { number: 43 };
+    r = await call({ kind: 'crash', text: 'TypeError: x is undefined\nat render (index.html:5300:12)', diag: { version: 'v2.15', page: 'shop' } });
+    const sentCrash = calls[0] ? JSON.parse(calls[0].opts.body) : {};
+    ok('a crash goes to GitHub, title starts "[Crash] "', calls.length === 1 && r.body.via === 'github' && (sentCrash.title || '').startsWith('[Crash] '), sentCrash.title);
+    ok('…labels include from-app and crash', Array.isArray(sentCrash.labels) && sentCrash.labels.includes('from-app') && sentCrash.labels.includes('crash'), JSON.stringify(sentCrash.labels));
 
     reset(); status = 500; reply = { message: 'boom ' + TOKEN };
     r = await call({ kind: 'idea', text: 'github is down' });

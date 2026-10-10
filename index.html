@@ -63,6 +63,35 @@ window.addEventListener('unhandledrejection', function(e){
 setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById('app');
   if(el && /Opening the list/.test(el.textContent||'')) __mlShow('The list did not load.'); } }, 7000);
 </script>
+<script>
+/* v2.15: the app reports its own crashes to /api/feedback (kind "crash") so a phone that breaks is not invisible
+   until someone mentions it. At most 3 a day per phone, each message once per session, and never the list:
+   query strings (the list code is one) and hosts are stripped, and only the message and the first line of the
+   stack are sent. Network failures, aborts, ResizeObserver noise and opaque "Script error." are not crashes. */
+(function(){
+  var KEY='ml_crashday', CAP=3, seen={};
+  function today(){ var d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  function count(){ try{ var v=String(localStorage.getItem(KEY)||'').split('|'); return v[0]===today() ? (+v[1]||0) : 0; }catch(e){ return CAP; } }
+  function bump(){ try{ localStorage.setItem(KEY, today()+'|'+(count()+1)); }catch(e){} }
+  function clean(s){ return String(s||'').replace(/\?[^\s:)'"]*/g,'').replace(/https?:\/\/[^\s/]+/g,'').slice(0,200); }
+  function noise(m){ return !m || /^Script error/.test(m) || /ResizeObserver loop/.test(m)
+    || /^(Failed to fetch|Load failed|NetworkError|The network connection was lost|Importing a module script failed|The user aborted|The operation was aborted|signal is aborted|Fetch is aborted)/i.test(m); }
+  function report(msg, stack){
+    msg=clean(msg); if(noise(msg) || seen[msg]) return; seen[msg]=1;
+    if(navigator.onLine===false || count()>=CAP) return; bump();
+    var bare=msg.replace(/^Uncaught (\w*Error: )?/,'');   // the stack's own first line repeats the message as "Error: …"
+    var first=String(stack||'').split('\n').map(function(l){ return clean(l.trim()); }).filter(function(l){ return l && l.indexOf(bare)<0; })[0]||'';
+    var page=''; try{ page=typeof window.__mlPageName==='function' ? window.__mlPageName() : ''; }catch(e){}
+    var body={ kind:'crash', text:(msg+(first?'\n'+first:'')).slice(0,2000),
+      diag:{ version:String(window.__mlVersion||'unknown'), page:String(page||''), screen:innerWidth+'x'+innerHeight, ua:String(navigator.userAgent||'').slice(0,120) } };
+    try{ fetch('/api/feedback',{ method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(body), keepalive:true }).catch(function(){}); }catch(e){}
+  }
+  window.__mlReport=report;
+  window.addEventListener('error', function(e){ report(e && e.message, e && e.error && e.error.stack); });
+  window.addEventListener('unhandledrejection', function(e){ var r=e && e.reason; if(r && r.name==='AbortError') return;   // a request we cancelled on purpose (timeouts)
+    report(r && r.message ? r.message : String(r), r && r.stack); });
+})();
+</script>
 <link rel="preload" as="font" type="font/woff2" href="outfit-latin.woff2" crossorigin>
 <style>
   /* Outfit variable font, self-hosted so type loads offline (home-screen PWA) and without a third-party request */
@@ -847,6 +876,18 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
   .rptdiag .smartcheck { flex:none; }
   .rpterr { margin:8px 2px 2px; color:#C24A33; font-weight:700; font-size:13.5px; line-height:1.4; }
   .rpterr .linkbtn { border:none; background:none; padding:0; color:var(--text); text-decoration:underline; font:inherit; font-weight:800; }
+  /* v2.15 the install card, and Settings › Other's backups */
+  .installcard { margin:2px 0 12px; padding:12px 14px; border-radius:14px; background:var(--card); border:1.5px solid var(--line); color:var(--text); }
+  .installcard .ic-t { font-weight:800; font-size:15px; margin-bottom:4px; }
+  .installcard .ic-b { font-size:13.5px; line-height:1.45; }
+  .installcard .ic-b svg { vertical-align:-3px; }
+  .installcard .ic-btns { display:flex; gap:8px; margin-top:10px; }
+  .installcard .ic-btns > * { flex:1; margin:0; }
+  .snaphd { margin:16px 2px 4px; font-size:12px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+  .snaprow { display:flex; align-items:center; gap:10px; padding:8px 2px; border-bottom:1px solid var(--line); font-size:13.5px; font-weight:600; color:var(--text); }
+  .snaprow span { flex:1; min-width:0; }
+  .snaprow button { flex:none; }
+  .snapnote { margin:8px 2px 0; font-size:11.5px; color:var(--muted2); font-weight:600; line-height:1.45; }
   .slotseg button { flex:1; min-width:0; padding:7px 4px; border-radius:10px; background:var(--card); border:1.5px solid var(--line); color:var(--text); font-size:13px; font-weight:600; }
   .slotseg button.on { border:2px solid var(--ink); font-weight:800; }
   /* v2.01: a planned recipe's method, read in the pick sheet. */
@@ -1731,13 +1772,17 @@ setTimeout(function(){ if(!window.__mlRendered){ var el=document.getElementById(
 <div id="app"><div class="center">Opening the list…</div></div>
 <div id="rotate-lock"><div class="rl-emoji">📱</div><div class="rl-title">Rotate to portrait</div><div class="rl-sub">Market List works best upright — turn your phone back to portrait to continue.</div></div>
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+/* v2.15: the Firebase SDK lives in the repo (vendor/firebasejs/, see its README), so the service worker can keep
+   it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
+import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
 
 /* Firebase config is set at the very top of this file (window.FIREBASE_CONFIG). */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.14";
+const APP_VERSION = "v2.15";
+window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
+window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
   return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
@@ -1875,7 +1920,7 @@ function mergeAmt(a, b){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -3613,6 +3658,19 @@ try {
     subscribe();
   }
 } catch(e){ console.error(e); }
+/* v2.15: the service worker (sw.js) keeps the app, its fonts, its icons and the Firebase SDK on the phone, so it
+   opens with no signal once iOS has closed it. Not under test automation unless a suite asks for it (ml_swtest):
+   Playwright 1.56 cannot stub a worker's own requests, so a worker there would load the real Firebase SDK. */
+try{ if("serviceWorker" in navigator && (!navigator.webdriver || localStorage.getItem("ml_swtest")==="1")){
+  const regSW=()=>{ navigator.serviceWorker.register("/sw.js").catch(()=>{}); };
+  if(document.readyState==="complete") regSW(); else window.addEventListener("load", regSW); } }catch(e){}
+/* v2.15: ask the browser to keep this app's data. Safari can clear a website's stored data after weeks without
+   use; installed home-screen apps are exempt, and this asks for the same treatment where it is offered. */
+try{ if(navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(p=>{ if(!p && navigator.storage.persist) return navigator.storage.persist(); }).catch(()=>{}); }catch(e){}
+/* v2.15: one backup of the list a day, the last 7, on this phone (Settings › Other). Taken a few seconds after
+   start-up, so the household's newest copy has arrived, and whenever the app goes to the background. */
+setTimeout(()=>maybeSnapshot(), 5000);
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden") maybeSnapshot(); });
 if(typeof window!=="undefined"){
   window.addEventListener("online",  ()=>{ netOnline=true;  render(); });
   window.addEventListener("offline", ()=>{ netOnline=false; render(); });
@@ -4026,6 +4084,103 @@ async function exportListText(){
     setTimeout(()=>URL.revokeObjectURL(url),4000); showToast("Saved "+fn); }
   catch(e){ if(navigator.clipboard){ try{ await navigator.clipboard.writeText(txt); showToast("Copied the list as text"); }catch(_){ showToast("Could not export on this device"); } }
     else showToast("Could not export on this device"); } }
+/* v2.15: backups. A list is one shared document, and Undo covers one action, not a bad afternoon. "Back up" writes
+   the list to a file (JSON, so it can come back); the app also keeps one copy a day for a week on this phone.
+   Restoring replaces the items, the plan, the prices and the stores for everyone on the list, and adds the
+   backup's Regulars back. It never removes a Regular: Regulars merge across phones (baMerge), so a removal here
+   would be undone by the next phone that syncs. Undo is offered straight after. The list code is never written
+   into a backup — it is the key to the list. */
+const SNAP_KEEP = 7;
+function listDoc(s){ return { items:s.items||[], buyAgain:s.buyAgain||[], baTomb:s.baTomb||{}, stores:s.stores||[], storeMeta:s.storeMeta||{},
+  members:s.members||[], categories:s.categories===undefined?null:s.categories, name:s.name||"", baMeta:s.baMeta||null, predictReset:s.predictReset||0,
+  purch:s.purch||{}, plan:s.plan||{days:{},recipes:[]}, prices:s.prices||{} }; }
+function snapKey(code){ return "ml_snap_"+code; }
+function snapList(code){ try{ const a=JSON.parse(localStorage.getItem(snapKey(code))||"[]"); return Array.isArray(a)?a.filter(x=>x && x.list && x.at):[]; }catch(e){ return []; } }
+function maybeSnapshot(){ try{
+  if(!state || !listCode) return;
+  const has=(state.items||[]).length || (state.buyAgain||[]).length || ((state.plan&&state.plan.recipes)||[]).length;
+  if(!has) return;
+  const today=dayKey(new Date()), a=snapList(listCode);
+  if(a[0] && a[0].day===today) return;
+  let next=[{ day:today, at:Date.now(), v:APP_VERSION, list:JSON.parse(JSON.stringify(listDoc(state))) }, ...a].slice(0, SNAP_KEEP);
+  for(;;){ try{ localStorage.setItem(snapKey(listCode), JSON.stringify(next)); break; }
+    catch(e){ if(next.length<=1) break; next=next.slice(0,-1); } }   // over the storage quota: drop the oldest until it fits
+}catch(e){} }
+function backupFileName(){ const now=new Date(), p=n=>String(n).padStart(2,"0");
+  const base=String(state.name||"list").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"list";
+  return `${base}-backup-${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())}.json`; }
+async function backupToFile(){
+  const txt=JSON.stringify({ app:"Market List", kind:"list-backup", format:1, appVersion:APP_VERSION, savedAt:new Date().toISOString(), list:listDoc(state) });
+  const fn=backupFileName();
+  try{ const f=new File([txt], fn, {type:"application/json"});
+    if(navigator.canShare && navigator.canShare({files:[f]})){ await navigator.share({files:[f], title:fn}); return; } }
+  catch(e){ if(e && e.name==="AbortError") return; }
+  try{ const url=URL.createObjectURL(new Blob([txt],{type:"application/json"}));
+    const a=document.createElement("a"); a.href=url; a.download=fn; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),4000); showToast("Saved "+fn); }
+  catch(e){ showToast("Could not save a backup on this device"); } }
+/* the picker is attached to the page before it opens: iOS skips "change" on a detached file input (v2.11) */
+function restorePick(){ const f=document.createElement("input"); f.type="file"; f.accept=".json,application/json,text/plain";
+  f.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
+  document.body.appendChild(f);
+  f.onchange=()=>{ const file=f.files && f.files[0]; f.remove(); if(!file) return;
+    file.text().then(t=>{ let d=null; try{ d=JSON.parse(t); }catch(e){}
+      if(!d || d.kind!=="list-backup" || !d.list || typeof d.list!=="object"){ showToast("That file isn't a Market List backup"); return; }
+      const when=d.savedAt ? new Date(d.savedAt) : null;
+      rst={ list:d.list, label:"The backup file"+(when && !isNaN(when.getTime()) ? " from "+when.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"}) : "") }; render(); })
+    .catch(()=>showToast("Couldn't read that file")); };
+  f.click(); }
+function restoreList(list, label){
+  const prev=JSON.parse(JSON.stringify(state));
+  const P=(list.plan && typeof list.plan==="object") ? list.plan : null;
+  state.items = Array.isArray(list.items) ? list.items : [];
+  if(P) state.plan = { days:P.days||{}, recipes:P.recipes||[], saved:Array.isArray(P.saved)?P.saved:[] };
+  if(list.prices && typeof list.prices==="object") state.prices = list.prices;
+  if(Array.isArray(list.stores)) state.stores = list.stores;
+  if(list.storeMeta && typeof list.storeMeta==="object") state.storeMeta = list.storeMeta;
+  if(list.categories!==undefined) state.categories = list.categories;
+  const have=new Set((state.buyAgain||[]).map(b=>String(b&&b.name||"").toLowerCase()));
+  state.buyAgain = state.buyAgain || [];
+  (Array.isArray(list.buyAgain)?list.buyAgain:[]).forEach(b=>{ const k=String(b&&b.name||"").toLowerCase();
+    if(k && !have.has(k)){ have.add(k); state.buyAgain.push(Object.assign({}, b, { ts:Date.now() })); } });
+  save(); showUndo(prev, "Restored from "+label.charAt(0).toLowerCase()+label.slice(1)); }
+function snapsHTML(){ const a=snapList(listCode);
+  if(!a.length) return `<div class="snapnote">Backups on this phone: none yet. The app keeps one a day for a week.</div>`;
+  return `<div class="snaphd">Backups on this phone</div>` + a.map((s,i)=>{ const L=s.list||{}, n=(L.items||[]).length, m=(L.buyAgain||[]).length;
+    const d=new Date(s.at).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"});
+    return `<div class="snaprow"><span>${esc(d)} · ${n} item${n===1?"":"s"} · ${m} regular${m===1?"":"s"}</span><button class="storechip" data-snaprestore="${i}">Restore</button></div>`; }).join("")
+    + `<div class="snapnote">One a day, the last seven days. Kept on this phone only.</div>`; }
+function rstSheet(){ const L=rst.list||{}, n=(L.items||[]).length, m=(L.buyAgain||[]).length, r=((L.plan&&L.plan.recipes)||[]).length;
+  return `<div class="sheet-bg kbpin" id="rstBg"><div class="sheet" id="rstSheet">
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:6px">Restore this list?</div>
+    <div class="rcnote">${esc(rst.label)}: ${n} item${n===1?"":"s"}, ${m} regular${m===1?"":"s"}, ${r} recipe${r===1?"":"s"}.</div>
+    <div class="rcnote">This replaces the list's items, plan and prices for everyone on it. Regulars in the backup are added back; none are removed. You can undo straight after.</div>
+    <div class="ppedbtns"><button class="optaction" id="rstCancel">Cancel</button><button class="newlist" id="rstGo">Restore</button></div>
+  </div></div>`; }
+function wireRstSheet(){ if(!rst) return;
+  const close=()=>{ rst=null; render(); };
+  const bg=app.querySelector("#rstBg"); if(bg) bg.onclick=e=>{ if(e.target===bg) close(); };
+  const c=app.querySelector("#rstCancel"); if(c) c.onclick=close;
+  const g=app.querySelector("#rstGo"); if(g) g.onclick=()=>{ const L=rst.list, label=rst.label; rst=null; restoreList(L, label); }; }
+/* v2.15: put the app on the Home Screen. In Safari it is a website: it does not open full screen, the service
+   worker is all that stands between it and no signal, and Safari can clear its data after weeks without use.
+   Installed, none of that applies. iPhone Safari has no install prompt, so a one-time card says how; where the
+   browser offers a prompt (Android, desktop Chrome) the card's button opens it. Hidden for good once dismissed. */
+let _bip=null;
+window.addEventListener("beforeinstallprompt", e=>{ e.preventDefault(); _bip=e; try{ render(); }catch(_){} });
+function isIOSDevice(){ const ua=navigator.userAgent||""; return /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints>1); }
+function installHintOn(){ try{ if(localStorage.getItem("ml_installhint")==="1") return false; }catch(e){ return false; }
+  const standalone = navigator.standalone===true || !!(window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+  if(standalone) return false;
+  return !!_bip || (isIOSDevice() && navigator.standalone===false); }
+function installCardHTML(){ if(!installHintOn()) return "";
+  const ios=!_bip;
+  return `<div class="installcard" id="installCard" role="note">
+    <div class="ic-t">Put Market List on your Home Screen</div>
+    <div class="ic-b">${ios ? `Tap ${SHARE_SVG(15)} <b>Share</b>, then <b>Add to Home Screen</b>.` : `Install it as an app.`} It opens full screen, works without signal and keeps your settings.</div>
+    <div class="ic-btns">${ios ? "" : `<button class="newlist" id="installGo">Install</button>`}<button class="optaction" id="installDone">${ios ? "Got it" : "Not now"}</button></div>
+  </div>`; }
+function installDismiss(){ try{ localStorage.setItem("ml_installhint","1"); }catch(e){} render(); }
 /* v2.10: the list to another app, from the Shop page — what is still to buy, grouped by category, as
    plain text the other app can show (Notes, WhatsApp, Messages). The full export stays in Settings. */
 function buildShareText(){ const cats=catList(), known=new Set(cats.map(c=>c.id));
@@ -5862,7 +6017,7 @@ function renderMain(){
     ${checkedBar}
     <div class="wrap ${shopMode?'shop':''}">
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
-      ${(state.items.length===0)?`<div class="empty">
+      ${installCardHTML()}${(state.items.length===0)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">Your list is empty</p>
           <p class="empty-sub">Tap <b>Add</b> below — or start from these:</p>
@@ -5880,7 +6035,7 @@ function renderMain(){
   ${fabMoveOpen?fabMoveSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${rpt?rptSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -6190,7 +6345,7 @@ function renderPlanTab(){
   ${planWeekOpen?planWeekSheet():""}
   ${planAdd?planAddSheet():""}
   ${planPick?planPickSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${rpt?rptSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${listsOpen?listsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
@@ -6289,6 +6444,7 @@ let rcpt = null;
    only when the box is ticked, and never the list itself. Every wait is visible and ends: a spinner while
    sending, a 20s limit, and on failure a message plus a way to share the text instead. */
 let rpt = null;   // { kind, text, diag, busy, err, sent }
+let rst = null;   // v2.15 the restore confirmation sheet: { list, label }
 const RPT_KINDS = { broken:"Something's broken", looks:"Looks wrong", idea:"An idea", complaint:"A complaint" };
 const RPT_DAY_CAP = 10;
 function rptToday(){ const d=dayKey(new Date()); try{ const v=String(localStorage.getItem("ml_rptday")||"").split("|"); return v[0]===d ? (+v[1]||0) : 0; }catch(e){ return 0; } }
@@ -6925,7 +7081,7 @@ function wirePlanTab(){
   const st=app.querySelector("#setNavP"); if(st) st.onclick=()=>{ settingsFrom=0; gotoPage(2); };
   wireListsSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireRptSheet();
+  wireRcptSheet(); wireRptSheet(); wireRstSheet();
   wireUserTiles();
 }
 /* v1.90: a recipe page shared into the app. Android hands it over directly through the manifest's
@@ -7073,7 +7229,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>Add items…</span></button></div>`:""}
-  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${rpt?rptSheet():""}
+  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -7136,7 +7292,7 @@ function wirePlanPage(){
   const qbc=app.querySelector("#qbannerClose"); if(qbc) qbc.onclick=()=>{ quickEdit=null; render(); };
   const qbr=app.querySelector("#qbannerRemove"); if(qbr) qbr.onclick=()=>{ const it=state.items.find(i=>i.id===quickEdit); const nm=it?cap(it.name):""; const id=quickEdit; quickEdit=null; planRemove(id); if(nm) showToast(nm+" moved to Regulars"); };
   wireSmartSheet();
-  wireRcptSheet(); wireRptSheet();
+  wireRcptSheet(); wireRptSheet(); wireRstSheet();
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>gotoPage(0);
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireUserTiles();
@@ -7151,7 +7307,7 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
   const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{};   // already on Settings
   wireOptions();
   wireEditSheet();
-  wireRcptSheet(); wireRptSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
+  wireRcptSheet(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 /* v1.77 item 3: which sections are folded. Keyed by the section's own name rather than its index, so
@@ -7376,6 +7532,10 @@ function wireOptions(){
   app.querySelectorAll("[data-switch-user]").forEach(b=>b.onclick=()=>{ const nm=b.dataset.switchUser; if(nm && nm!==me){ me=nm; localStorage.setItem(LS.me, nm); } optOpen=false; render(); });
   const osh=app.querySelector("#optShare"); if(osh) osh.onclick=copyLink;
   const oex=app.querySelector("#optExport"); if(oex) oex.onclick=exportListText;
+  const obk=app.querySelector("#optBackup"); if(obk) obk.onclick=backupToFile;   // v2.15 backups
+  const orf=app.querySelector("#optRestoreFile"); if(orf) orf.onclick=restorePick;
+  app.querySelectorAll("[data-snaprestore]").forEach(b=>b.onclick=()=>{ const s=snapList(listCode)[+b.dataset.snaprestore]; if(!s) return;
+    rst={ list:s.list, label:"The backup from "+new Date(s.at).toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"}) }; render(); });
   const osl=app.querySelector("#optSendList"); if(osl) osl.onclick=shareListText;   // v2.13: was the Shop page's top-right button
   const orp=app.querySelector("#optReport"); if(orp) orp.onclick=()=>{ rpt={ kind:"broken", text:"", diag:true }; render(); };
   const vf=app.querySelector("#verFoot"); if(vf){ let _dt; const _cancel=()=>clearTimeout(_dt);
@@ -7746,7 +7906,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -8173,6 +8333,9 @@ function optionsBody(){
     <button class="optaction" id="optShare" style="margin-top:2px">Share link</button>
     <button class="optaction" id="optSendList" style="margin-top:10px">${SHARE_SVG(16)} Send what's to buy to another app</button>
     <button class="optaction" id="optExport" style="margin-top:10px">Export list as text</button>
+    <button class="optaction" id="optBackup" style="margin-top:10px">Back up this list to a file</button>
+    <button class="optaction" id="optRestoreFile" style="margin-top:10px">Restore from a backup file</button>
+    ${snapsHTML()}
     <button class="optaction" id="optReport" style="margin-top:10px">${REPORT_SVG(16)} Report a problem</button>
     <button class="optaction" id="optDiag" style="margin-top:10px">${FLASK_SVG(16)} AI diagnostics</button>
     <div id="verFoot" style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted2);font-weight:600" title="Build: ${APP_BUILD_DATE} · hold for diagnostics">${APP_VERSION}</div>`;
@@ -8195,7 +8358,7 @@ function renderSettingsPage(){
     ${bottomNav({planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
     ${diagOpen?diagSheet():""}
     ${listsOpen?listsSheet():""}
-    ${rcpt?rcptSheet():""}${rpt?rptSheet():""}
+    ${rcpt?rcptSheet():""}${rpt?rptSheet():""}${rst?rstSheet():""}
     ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
     ${editing?editSheet():""}
@@ -8366,7 +8529,7 @@ function wireAddBar(){
 function wire(){
   wireAddSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireRptSheet();
+  wireRcptSheet(); wireRptSheet(); wireRstSheet();
   const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>i.cat===c.id)).map(c=>c.id);
     const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);
@@ -8448,6 +8611,9 @@ function wire(){
   const aiKp=app.querySelector("[data-ai-keep]"); if(aiKp) aiKp.onclick=aiDismissProposal;   // B7 revert / keep current
   const lsw=app.querySelector("#listSwitch"); if(lsw) lsw.onclick=()=>{ listsOpen=true; render(); };   // v1.81 title opens the switcher
   const shr=app.querySelector("#shopReport"); if(shr) shr.onclick=()=>{ rpt={ kind:"broken", text:"", diag:true }; render(); };   // v2.13 replaces the share button
+  const icd=app.querySelector("#installDone"); if(icd) icd.onclick=installDismiss;   // v2.15 install card
+  const icg=app.querySelector("#installGo"); if(icg) icg.onclick=()=>{ const p=_bip; _bip=null; if(!p){ installDismiss(); return; }
+    try{ p.prompt(); (p.userChoice||Promise.resolve()).finally(installDismiss); }catch(e){ installDismiss(); } };
   const pnv=app.querySelector("#planNav"); if(pnv) pnv.onclick=()=>gotoPage(0);   // Plan tab
   const cn=app.querySelector("#cartNav"); if(cn) cn.onclick=()=>gotoPage(1);
   const stn=app.querySelector("#setNav"); if(stn) stn.onclick=()=>{ settingsFrom=1; gotoPage(2); };   // Settings tab (bottom-right) — slides in from the right

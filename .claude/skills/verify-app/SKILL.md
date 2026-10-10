@@ -29,7 +29,8 @@ works, and the UI renders correctly.
    cd "$SCRATCH" && node /path/to/Grocery-app/.claude/skills/verify-app/shot.js 8901 verify.png
    ```
    `shot.js` launches Chromium via `executablePath: '/opt/pw-browsers/chromium'`, stubs
-   `www.gstatic.com/firebasejs/**` (egress-blocked; the stub makes the app run local-only),
+   `**/firebasejs/**` (the SDK lives in the repo at `/vendor/firebasejs/` since v2.15; the stub keeps the
+   app on its local cache and away from the real database),
    fills the onboarding name, taps Join, pastes a sample grocery list, and screenshots
    390×844 @2x.
 

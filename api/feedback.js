@@ -4,7 +4,9 @@
 // a token is configured, and written to the server log otherwise.
 //
 // Contract:  POST /api/feedback  { kind, text, diag }
-//            kind  one of "broken", "looks", "idea", "complaint"
+//            kind  one of "broken", "looks", "idea", "complaint", "crash"
+//                  "crash" is sent by the app itself when it hits an error (v2.15) — version, page, the
+//                  error's first line — never the list.
 //            text  1–2000 characters after trimming
 //            diag  optional { version, page, layout, icons, theme, screen, ua } — anything else is dropped
 //            ->  { ok: true, via: "github" | "log", ref? }   (ref is the issue number)
@@ -14,8 +16,8 @@
 // never appears in a log line, a response or a URL. Request headers and the IP are never logged; the
 // note itself is meant for the developer, so the log path writes it — and nothing else from the request.
 
-const KINDS = ['broken', 'looks', 'idea', 'complaint'];
-const LABELS = { broken: 'Broken', looks: 'Looks wrong', idea: 'Idea', complaint: 'Complaint' };
+const KINDS = ['broken', 'looks', 'idea', 'complaint', 'crash'];
+const LABELS = { broken: 'Broken', looks: 'Looks wrong', idea: 'Idea', complaint: 'Complaint', crash: 'Crash' };
 const DIAG_KEYS = ['version', 'page', 'layout', 'icons', 'theme', 'screen', 'ua'];
 const MAX_TEXT = 2000;
 const GITHUB_TIMEOUT_MS = 10000;

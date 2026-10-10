@@ -72,7 +72,7 @@ const IMPORTED = { title:"Beef Goulash", servings:6, items:[
   const mk = async()=>{
     if(ctx) await ctx.close();
     ctx = await browser.newContext({ viewport:{width:390,height:844}, deviceScaleFactor:2, hasTouch:true });
-    await ctx.route('**www.gstatic.com/firebasejs/**', r => r.fulfill({ status:200, contentType:'text/javascript', body: STUB }));
+    await ctx.route('**/firebasejs/**', r => r.fulfill({ status:200, contentType:'text/javascript', body: STUB }));
     await ctx.route('**/api/recipe-search', r => {
       try{ searchSent = r.request().postDataJSON(); }catch(e){ searchSent=null; }
       r.fulfill({ status:searchReply.status, contentType:'application/json', body:JSON.stringify(searchReply.body) }); });
