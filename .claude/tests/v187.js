@@ -113,13 +113,14 @@ const SEED = (extra)=>`(() => {
     ok('Shop → Plan', (await where())==='plan', await where());
     await tap('#setNavP');
     ok('Plan → Settings', (await where())==='settings', await where());
-    await tap('#setBack');
-    ok('…and Settings goes back to where it was opened from', (await where())==='plan', await where());
+    /* SUPERSEDED by v2.13: Settings has no back arrow any more; the bar's own tab returns to each page. */
+    await tap('#planNavS');
+    ok('…and the bar takes Settings back to Plan', (await where())==='plan', await where());
     await tap('#cartNavP');
     ok('Plan → Shop', (await where())==='shop', await where());
     await tap('#setNav');
     ok('Shop → Settings', (await where())==='settings', await where());
-    await tap('#setBack');
+    await tap('#cartNav');
     ok('…and back to the shop this time', (await where())==='shop', await where());
     await tap('#planNavS, #planNav');
     ok('Settings → Plan is one tap from the nav', (await where())==='plan', await where());

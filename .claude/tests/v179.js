@@ -137,58 +137,17 @@ const SEED = (extra)=>`(() => {
      shopT.h===setT.h && setT.h===listT.h, JSON.stringify({shop:shopT.h, set:setT.h, plan:listT.h}));
   ok('…without giving the root page something to go back to', listT.back===null,
      JSON.stringify(listT.back));
-  /* SUPERSEDED by v1.90: the inert placeholder is gone — that space was what item 3 asked us to remove.
-     Settings is the one page that still has a real arrow, and it is still the one page whose title is
-     pushed in by it; both halves are what is left of the original guarantee. */
-  ok('Settings still has a real back button', setT.back && setT.back.tappable===true,
-     JSON.stringify({settings:setT.back, shop:shopT.back}));
-  ok('…and it is the only page whose title is pushed in by one',
-     shopT.back===null && listT.back===null && setT.x>shopT.x,
-     JSON.stringify({shop:shopT.back, plan:listT.back, setX:setT.x, shopX:shopT.x}));
-
-  /* nothing inert may be left behind in the bar to be tabbed into */
+  /* SUPERSEDED by v2.13: the household asked for Settings' back arrow to go too ("remove the back arrow on
+     left hand side of settings") — the bottom bar is how every page is reached. So no page has an arrow,
+     and v1.79's original promise comes back whole: every page's title starts in the same place. Item 2's
+     ink measurements (the arrow sitting level with the title) have nothing left to measure and are
+     replaced by the check that no arrow, real or placeholder, is left in any bar. */
+  ok('no page has a back arrow now — not even Settings (v2.13)', shopT.back===null && listT.back===null && setT.back===null,
+     JSON.stringify({settings:setT.back, shop:shopT.back, plan:listT.back}));
+  ok('…so Settings\' title starts where Shop\'s and Plan\'s do', setT.x===shopT.x,
+     JSON.stringify({setX:setT.x, shopX:shopT.x}));
   ok('…and no empty placeholder is left to focus', await page.evaluate(()=>
     document.querySelectorAll('.topfix .backbtn').length===0), '');
-
-  // ═══════════════════════════════════════════════════════════════════
-  // ITEM 2 — the arrow's ink sits level with the title's ink
-  // ═══════════════════════════════════════════════════════════════════
-  /* SUPERSEDED by v1.87: this was measured on the shop page, whose arrow is now a placeholder with no
-     ink to measure. Settings is where the real arrow lives, so that is where the optical centring this
-     version bought is checked — the guarantee is unchanged, only the page carrying it is. */
-  await mk();
-  await settings();
-  const boxes = await page.evaluate(()=>{
-    const tf=document.querySelector('.topfix');
-    const t=tf.querySelector('.title'), b=tf.querySelector('.backbtn');
-    const c=e=>{ const r=e.getBoundingClientRect(); return +(r.top+r.height/2).toFixed(2); };
-    return { title:c(t), back:c(b) };
-  });
-  const inkTitle = await inkCentre('.topfix .title');
-  const inkBack  = await inkCentre('.topfix .backbtn');
-  ok('the two boxes were already centred together (which is why this needed looking at)',
-     Math.abs(boxes.title-boxes.back) <= 1.5, JSON.stringify(boxes));
-  /* SUPERSEDED by v1.87: comparing the arrow's ink to the TITLE's ink only works on a title with no
-     descender. v1.79 measured it beside "Groceries."; the page that still has a real arrow is Settings,
-     and "Settings." has a g, which drags the word's ink band ~1.75px lower for reasons that have
-     nothing to do with the arrow. So the check now asserts the property v1.79 actually engineered and
-     which no neighbouring word can move: 5px of bottom padding lifts the centred chevron about 2.5px
-     above its own box centre, which is what made it look level in the first place. The boxes being
-     centred together is still checked above. */
-  const inkBox = await page.evaluate(()=>{
-    const b=document.querySelector('.topfix .backbtn'); const r=b.getBoundingClientRect();
-    return +(r.top+r.height/2).toFixed(2); });
-  /* The chevron's ink sits BELOW its box centre — measured at −3.5px before this version, which is the
-     1.5px it visibly hung low by. The 5px of bottom padding lifts the centred content by half that, so
-     what should remain is a little over one pixel low. Strip the padding and this returns to −3.5;
-     over-correct it and it goes positive. Either would fail. */
-  const belowBy = +(inkBack - inkBox).toFixed(2);   // y grows downward, so positive means the ink sits low
-  ok('and the ARROW\'S INK is still lifted most of the way off its box centre by the padding',
-     inkBack!==null && belowBy >= 0.5 && belowBy <= 2.0,
-     JSON.stringify({ inkCentre:inkBack, boxCentre:inkBox, belowCentreBy:belowBy, titleInk:inkTitle }));
-  ok('…and the hit area is still a full 44px', await page.evaluate(()=>{
-    const b=document.querySelector('.topfix .backbtn');
-    return Math.round(b.getBoundingClientRect().height)>=44; }), '');
 
   // ═══════════════════════════════════════════════════════════════════
   // ITEM 3 — Page margins lives in ONE section (Appearance in v1.79; Layout & motion since v2.00)

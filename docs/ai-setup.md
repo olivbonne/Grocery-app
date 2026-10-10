@@ -161,6 +161,25 @@ read from it — only the reason for a failure and the reply's length. In the ap
 lines are reviewed before anything is kept; the prices go into the list's own document,
 shared only with the people on that list. Each phone reads at most 10 receipts a day.
 
+## Report a problem (v2.13)
+
+`POST /api/feedback` with `{ kind, text, diag }` — `kind` is `broken`, `looks`, `idea` or `complaint`,
+`text` is 1–2000 characters, and `diag` (only when the box in the sheet is ticked) is the app version,
+page, layout, icon setting, theme, screen size and browser. Never the list. It returns
+`{ ok:true, via, ref? }`.
+
+Where it goes:
+
+- **A GitHub issue**, when both `FEEDBACK_GITHUB_TOKEN` and `FEEDBACK_REPO` (`owner/name`, e.g.
+  `olivbonne/Grocery-app`) are set. Use a fine-grained token limited to that one repository with
+  **Issues: Read and write** and nothing else. Issues are labelled `from-app` and the kind.
+- **Otherwise the Vercel runtime log**, as one line starting `[feedback]`. Search the logs for that word.
+  If GitHub was configured but failed, the log path still catches it, and an error line names the status.
+
+Unlike the receipt endpoint, this one DOES write what was typed to the log. That is the point of it: the
+text is a note written for the person who builds the app. The token is never logged, returned or put in a URL.
+Each phone sends at most 10 reports a day.
+
 ## Searching for a recipe
 
 `/api/recipe-search` takes `{ q, scope }` and answers `{ source, provider, results }`. It has two

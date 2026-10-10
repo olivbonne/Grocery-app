@@ -263,8 +263,9 @@ const fmtDate = d => d.toLocaleDateString(undefined,{day:"numeric",month:"short"
     ok('Shop → Plan works', (await page.locator('.planweek').count())===1);
     await tap('#setNavP');
     ok('Plan → Settings works', (await page.locator('.optpage').count())===1);
-    await tap('#setBack');
-    ok('…and Settings\' back returns to Plan, where it was opened from', (await page.locator('.planweek').count())===1);
+    /* SUPERSEDED by v2.13: Settings has no back arrow (the household's request); Plan is one tap away on the bar. */
+    await tap('#planNavS');
+    ok('…and the bar takes Settings back to Plan', (await page.locator('.planweek').count())===1);
 
     /* ── 9. a stale pre-v1.82 remembered page cannot mislead ────────────── */
     await mk(`localStorage.setItem("ml_lastview","2");`);   // a key from two numberings ago

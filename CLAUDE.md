@@ -5,10 +5,10 @@ A single-file vanilla-JS PWA: `index.html` holds the inline CSS and one `<script
 (several thousand lines). No build step, no framework. Firebase Firestore for live household sync,
 Vercel serves `main` as static files. Used as an iPhone home-screen app, portrait-only, max-width 480px.
 
-Four serverless functions in `api/` (CommonJS, Vercel, `maxDuration` 60s in `vercel.json`):
+Five serverless functions in `api/` (CommonJS, Vercel, `maxDuration` 60s in `vercel.json`):
 `parse.js` (Smart add), `recipe.js` (recipe from text, a link, a TikTok or a photo),
-`recipe-search.js` and `receipt.js` (a receipt photo → items and prices, v2.09; it never logs the photo
-or what it read). Their keys and settings are env vars — see `docs/ai-setup.md`.
+`recipe-search.js`, `receipt.js` (a receipt photo → items and prices, v2.09; it never logs the photo
+or what it read) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, or a `[feedback]` log line). Their keys and settings are env vars — see `docs/ai-setup.md`.
 
 ## Conventions
 - **Versioning:** bump `APP_VERSION` in `index.html` by 0.01 per batch of app changes and add a
@@ -43,7 +43,7 @@ or what it read). Their keys and settings are env vars — see `docs/ai-setup.md
   On iOS a file `<input>` must be attached to the DOM, or `change` never fires and the wait never starts
   (`rcPick`, v2.11). The suite for any new wait checks the busy state AND the failure message.
 - **Security:** every provider key — `GEMINI_API_KEY`, `GROQ_API_KEY`, `TAVILY_API_KEY`,
-  `SERPER_API_KEY`, `SEARCH_API_KEY` — stays server-side in `api/*.js` via `process.env`. Never in
+  `SERPER_API_KEY`, `SEARCH_API_KEY`, `FEEDBACK_GITHUB_TOKEN` — stays server-side in `api/*.js` via `process.env`. Never in
   `index.html`, never logged, never in a response or a query string. The Firebase web config in
   `index.html` is intentionally public; leave it. Server-side fetches of user-supplied URLs go through
   `safeUrl`/`isBlockedHost` with every redirect hop re-checked — do not weaken them.
@@ -84,7 +84,7 @@ or what it read). Their keys and settings are env vars — see `docs/ai-setup.md
   matter what is in it — found 2026-09-26, after which every earlier SYNTAX_OK was known vacuous),
   and plants a canary error first so it cannot go vacuous silently again. It checks `api/*.js` too.
 - **Per-version suites live in `.claude/tests/`** — one browser suite per version, plus
-  `api-recipe.js`, `api-recipe-search.js` and `api-receipt.js`, which test the serverless functions directly with no
+  `api-recipe.js`, `api-recipe-search.js`, `api-receipt.js` and `api-feedback.js`, which test the serverless functions directly with no
   network. See `.claude/tests/README.md` for how to run them and what a check has to prove. Never
   leave a suite in the scratchpad: it is not durable, and every suite up to v1.76 was lost that way.
 - Behaviour: the `/verify-app` skill serves the repo, launches headless Chromium
