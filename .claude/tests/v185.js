@@ -106,8 +106,11 @@ const PARSE_STUB = JSON.stringify({ items:[
                ph:b.querySelectorAll('.addpill-ph').length, cls:b.className,
                w:Math.round(r.width), h:Math.round(r.height) };
     });
-    ok('the floating bar is a +', pill && pill.text==='+', JSON.stringify(pill));
-    ok('…with the magnifier and the words gone', pill && pill.svg===0 && pill.ph===0, JSON.stringify(pill));
+    /* SUPERSEDED by v2.16: the + now carries the words "Add items" beside it (the app review's R8: a bare + did not
+       say what it does). What this still protects: the bar is the + and not the v1.84 search field, and its only
+       words are that label — the magnifier and the search placeholder stay gone. */
+    ok('the floating bar is a +', pill && /^\+(Add items)?$/.test(pill.text), JSON.stringify(pill));
+    ok('…with the magnifier and the search placeholder gone', pill && pill.svg===0 && pill.ph===0, JSON.stringify(pill));
     ok('…still the same pill, so its size/position/colour settings still apply',
        pill && /\baddpill\b/.test(pill.cls) && pill.w>200 && pill.h>=40, JSON.stringify(pill));
     await tap('#shopAddFab');
