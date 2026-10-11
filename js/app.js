@@ -7,14 +7,14 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.22";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.22";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.22";
-import { compareStores, worthIt } from "./compare.js?v=2.22";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.23";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.23";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.23";
+import { compareStores, worthIt } from "./compare.js?v=2.23";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.22";
+const APP_VERSION = "v2.23";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -154,7 +154,7 @@ function mergeAmt(a, b){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -1630,7 +1630,7 @@ function switchList(code){ const wasPlan = (view==="plan"); listsOpen=false; if(
   reloadLearn();
   try{ collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}'); }catch(e){ collapse={cats:[],ba:false}; }
   collapse.checked = false;   // v2.10: the cart always opens folded; a tap unfolds it for the session
-  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{} };
+  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[] };
   try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state=c; dropTube(); aiAdopt(); } }catch(e){}
   if(!state.purch || typeof state.purch!=="object") state.purch={};
   state.purch = purchMerge(state.purch, purch);   // fold any legacy per-device history into the shared copy
@@ -1668,7 +1668,7 @@ function playPlan(add){ if(!soundOn) return;
   } catch(e){} }
 let lastPop=null;
 
-let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{} };
+let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[] };
 rememberList(listCode);
 try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state = c; dropTube(); aiAdopt(); } } catch(e){}
 if(!state.purch || typeof state.purch!=="object") state.purch={};
@@ -1688,6 +1688,57 @@ function noteLine(i){ const a=awayStoreId(), w=i.where||"", st=w ? storeById(w) 
 /* the same, for text that leaves the app (share, export) */
 function noteSuffix(i){ const st=i.where ? storeById(i.where) : null, n=String(i.note||"").trim();
   return (st && st.name ? " ("+st.name+")" : "") + (n ? " — "+n : ""); }
+/* v2.23 R19 who is shopping now. Opt-in, per phone (ml_sayshop): while you tick things off at a real shop, the list says
+   so — the shop's name and when, nothing else — and finishing the shop takes it away. The others see it for 90 minutes. */
+const SHOPPING_MS = 90*60*1000;
+function sayShopOn(){ try{ return localStorage.getItem("ml_sayshop")==="1"; }catch(e){ return false; } }
+function shoppingMark(){ const a=awayStoreId(); if(!sayShopOn() || !a || !me) return;
+  const st=storeById(a), now=Date.now(), s={};
+  for(const [k,v] of Object.entries(state.shopping||{})) if(v && now-(+v.at||0) < SHOPPING_MS) s[k]=v;   // old ones are dropped as we go
+  s[me]={ store:(st&&st.name)||"a shop", at:now }; state.shopping=s; }
+function shoppingClear(){ if(state.shopping && me && state.shopping[me]){ const s=Object.assign({}, state.shopping); delete s[me]; state.shopping=s; } }
+function shoppingHTML(){ const s=state.shopping||{}, now=Date.now();
+  const who=Object.keys(s).filter(m=>m!==me && s[m] && now-(+s[m].at||0) < SHOPPING_MS);
+  if(!who.length) return "";
+  return `<div class="shopnow" role="status">${who.map(m=>{ const mins=Math.max(1, Math.round((now-s[m].at)/60000));
+    return `<span>${esc(m)} is shopping at ${esc(String(s[m].store||"a shop"))} · ${mins<60?`${mins} min`:`${Math.floor(mins/60)} h ${mins%60} min`} ago</span>`; }).join("")}</div>`; }
+/* v2.23 R21 lists for occasions. What is still to buy, saved under a name, dropped into the list another time — an item
+   already on the list gets the larger quantity instead of a second tile. */
+var occSheet = null;   // null | { mode:"save", name:"" } | { mode:"add" }. var: render() reads it at boot
+function occSave(name){ const nm=String(name||"").trim().slice(0,40); if(!nm) return;
+  const items=state.items.filter(i=>!i.checked).slice(0,150).map(i=>({ name:i.name, cat:i.cat, qty:i.qty||1, weight:i.weight||"", note:i.note||"", where:i.where||"" }));
+  if(!items.length){ showToast("Nothing to save — the list is empty"); return; }
+  const t=(Array.isArray(state.templates)?state.templates:[]).filter(x=>String(x.name||"").toLowerCase()!==nm.toLowerCase());
+  t.unshift({ id:uid(), name:nm, at:Date.now(), items }); state.templates=t.slice(0,30);
+  occSheet=null; save(); render(); showToast(`Saved “${nm}” · ${items.length} item${items.length===1?"":"s"}`); }
+function occAdd(id){ const t=(state.templates||[]).find(x=>x.id===id); if(!t) return; let n=0; const prev=snapState();   // a whole occasion at once, so it can be undone
+  for(const x of t.items){ const ex=state.items.find(i=>!i.checked && String(i.name||"").toLowerCase()===String(x.name).toLowerCase());
+    if(ex){ ex.qty=Math.max(+ex.qty||1, +x.qty||1); markDirty(ex.id); }
+    else { state.items.push({ id:uid(), name:x.name, qty:x.qty||1, cat:x.cat, weight:x.weight||"", sub:"", note:x.note||"", where:x.where||"", checked:false, by:me }); n++; } }
+  occSheet=null; save(); render(); showUndo(prev, `Added ${n} from “${t.name}”${n<t.items.length?` · ${t.items.length-n} already on the list`:""}`); }
+function occDelete(id){ const prev=snapState(); const t=(state.templates||[]).find(x=>x.id===id); if(!t) return;
+  state.templates=(state.templates||[]).filter(x=>x.id!==id); save(); render(); showUndo(prev, `“${t.name}” deleted`); }   // the toast is escaped where it is drawn
+function occSheetHTML(){ const o=occSheet; if(!o) return ""; const ts=Array.isArray(state.templates)?state.templates:[];
+  const body = o.mode==="save"
+    ? `<div class="hint" style="text-align:left;margin:0 0 10px">What is still to buy (${state.items.filter(i=>!i.checked).length} item${state.items.filter(i=>!i.checked).length===1?"":"s"}), saved under a name — a BBQ, camping, Christmas — to drop into the list another time.</div>
+       <input id="occName" value="${esc(o.name||"")}" maxlength="40" placeholder="Name it — “BBQ”" aria-label="Occasion name" style="width:100%;box-sizing:border-box;height:46px;padding:0 12px;border-radius:12px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:16px" />
+       <div style="display:flex;gap:8px;margin-top:12px"><button class="newlist" id="occSaveGo">Save</button><button class="optaction" id="occClose" style="margin-top:0">Cancel</button></div>`
+    : (ts.length ? `<div class="occrows">${ts.map(t=>`<div class="occrow"><span class="occ-n">${esc(t.name)}<span class="occ-s">${t.items.length} item${t.items.length===1?"":"s"}</span></span>
+         <button class="storechip" data-occadd="${esc(t.id)}">Add</button><button class="storechip" data-occdel="${esc(t.id)}" aria-label="Delete ${esc(t.name)}">${BIN_SVG(14)}</button></div>`).join("")}</div>`
+       : `<div class="hint" style="text-align:left">No occasions saved yet — put the things for one on the list, then "Save what's to buy as an occasion".</div>`)
+      + `<div style="display:flex;gap:8px;margin-top:12px"><button class="optaction" id="occClose" style="margin-top:0">Close</button></div>`;
+  return `<div class="sheet-bg" id="occBg"><div class="sheet" id="occSheet" role="dialog" aria-labelledby="occTitle">
+    <div class="disp" id="occTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">${o.mode==="save"?"Save as an occasion":"Add an occasion"}</div>${body}</div></div>`; }
+function wireOcc(){
+  const sv=app.querySelector("#optOccSave"); if(sv) sv.onclick=()=>{ occSheet={mode:"save", name:""}; render(); };
+  const ad=app.querySelector("#optOccAdd"); if(ad) ad.onclick=()=>{ occSheet={mode:"add"}; render(); };
+  const nm=app.querySelector("#occName"); if(nm){ nm.oninput=e=>{ if(occSheet) occSheet.name=e.target.value; }; nm.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); occSave(nm.value); } }; }
+  const go=app.querySelector("#occSaveGo"); if(go) go.onclick=()=>occSave((app.querySelector("#occName")||{}).value);
+  app.querySelectorAll("[data-occadd]").forEach(b=>b.onclick=()=>occAdd(b.dataset.occadd));
+  app.querySelectorAll("[data-occdel]").forEach(b=>b.onclick=()=>occDelete(b.dataset.occdel));
+  const c=app.querySelector("#occClose"); if(c) c.onclick=()=>{ occSheet=null; render(); };
+  const bg=app.querySelector("#occBg"); if(bg) bg.onclick=e=>{ if(e.target===bg){ occSheet=null; render(); } };
+}
 let draftMain="", draftCatText="", pendingSubFocus=null, quickEdit=null;
 
 const ALL_PICS = ["milk.png","cross.png","ramen.png","hammer.png"];
@@ -1785,7 +1836,7 @@ function subscribe(){
       const mg = baMerge(d.buyAgain||[], d.baTomb||{}, state.buyAgain||[], state.baTomb||{});   // A24 conflict-free Buy-again
       const mgPurch = purchMerge(d.purch||{}, purch||{});                                        // B4 shared restock history (union merge)
       /* v2.09: prices rides along like plan does. This line rebuilds state from a fixed shape, so a field it does not name is wiped by the next snapshot (CLAUDE.md, the fixed-shape trap). */
-      state = { items:d.items||[], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]}, prices: d.prices||{}, aisle: d.aisle||{}, memb: d.memb||{} };
+      state = { items:d.items||[], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]}, prices: d.prices||{}, aisle: d.aisle||{}, memb: d.memb||{}, shopping: d.shopping||{}, templates: Array.isArray(d.templates)?d.templates:[] };
       purch = state.purch;                                                                        // keep the working ref pointed at the shared copy
       if(!state.name){ const ln=(getLists().find(l=>l.code===listCode)||{}).name; if(ln){ state.name=ln; save(); } }
       if(dropTube()) save(); aiAdopt();
@@ -1945,7 +1996,7 @@ function addEntries(text, override){
 function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){
   if(!it.checked){ lastPop=id; playTick(true); if(navigator.vibrate) navigator.vibrate(8); setTimeout(()=>{ if(lastPop===id) lastPop=null; },350); }
   else { playTick(false); if(navigator.vibrate) navigator.vibrate(5); }
-  it.checked=!it.checked; if(it.checked){ it.checkedBy=me; it.checkedAt=Date.now(); it.checkedStore = (()=>{ const s=activeStore(); return (s && isRealStore(s.id)) ? s.id : ""; })(); if(shopMode) aiRecordCheck(it.cat, it.name); } markDirty(id); save(); render(); } }
+  it.checked=!it.checked; if(it.checked){ it.checkedBy=me; it.checkedAt=Date.now(); it.checkedStore = (()=>{ const s=activeStore(); return (s && isRealStore(s.id)) ? s.id : ""; })(); if(shopMode) aiRecordCheck(it.cat, it.name); shoppingMark(); /* v2.23 R19 */ } markDirty(id); save(); render(); } }
 /* A24 shared Buy-again is conflict-free across devices. Each entry carries a `ts`
    (last-touched) and deletions are recorded as tombstones in `state.baTomb`
    ({key: ts}). On every server snapshot we LWW-merge remote+local instead of
@@ -2041,7 +2092,7 @@ function sweep(msg){ const checked=state.items.filter(i=>i.checked); if(!checked
   moveToBuyAgain(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||"",note:i.note||"",where:i.where||""})));
   for(const i of checked){ histLog("buy", i.name); histLog("regadd", i.name); }
   state.items = state.items.filter(i=>!i.checked);
-  aiPublish(); rcptNudgeSet(); save(); render(); showUndo(prev, msg || (checked.length+" saved to Regulars")); }   // v2.10: msg from autoFinishAt
+  aiPublish(); rcptNudgeSet(); shoppingClear(); save(); render(); showUndo(prev, msg || (checked.length+" saved to Regulars")); }   // v2.10: msg from autoFinishAt
 /* v1.10 add-sheet variant of restore(): copies the regular onto the list but KEEPS it in
    Buy-again, so the sheet row stays put and flips to ✓ (second tap bumps quantity). */
 function addFromRegular(name,cat){ playPlan(true);
@@ -2255,7 +2306,7 @@ async function exportListText(){
 const SNAP_KEEP = 7;
 function listDoc(s){ return { items:s.items||[], buyAgain:s.buyAgain||[], baTomb:s.baTomb||{}, stores:s.stores||[], storeMeta:s.storeMeta||{},
   members:s.members||[], categories:s.categories===undefined?null:s.categories, name:s.name||"", baMeta:s.baMeta||null, predictReset:s.predictReset||0,
-  purch:s.purch||{}, plan:s.plan||{days:{},recipes:[]}, prices:s.prices||{}, aisle:s.aisle||{}, memb:s.memb||{} }; }
+  purch:s.purch||{}, plan:s.plan||{days:{},recipes:[]}, prices:s.prices||{}, aisle:s.aisle||{}, memb:s.memb||{}, templates:Array.isArray(s.templates)?s.templates:[] }; }   // v2.23: occasions are kept; who is shopping is presence, not data — never backed up
 function snapKey(code){ return "ml_snap_"+code; }
 function snapList(code){ try{ const a=JSON.parse(localStorage.getItem(snapKey(code))||"[]"); return Array.isArray(a)?a.filter(x=>x && x.list && x.at):[]; }catch(e){ return []; } }
 function maybeSnapshot(){ try{
@@ -2297,7 +2348,7 @@ function restoreList(list, label){
   const P=(list.plan && typeof list.plan==="object") ? list.plan : null;
   state.items = Array.isArray(list.items) ? list.items : [];
   if(P) state.plan = { days:P.days||{}, recipes:P.recipes||[], saved:Array.isArray(P.saved)?P.saved:[] };
-  if(list.prices && typeof list.prices==="object") state.prices = list.prices; if(list.memb && typeof list.memb==="object") state.memb = list.memb;
+  if(list.prices && typeof list.prices==="object") state.prices = list.prices; if(list.memb && typeof list.memb==="object") state.memb = list.memb; if(Array.isArray(list.templates)) state.templates = list.templates;
   if(Array.isArray(list.stores)) state.stores = list.stores;
   if(list.storeMeta && typeof list.storeMeta==="object") state.storeMeta = list.storeMeta;
   if(list.categories!==undefined) state.categories = list.categories;
@@ -3714,7 +3765,7 @@ function renderMain(){
     ${checkedBar}
     <div class="wrap ${shopMode?'shop':''}" role="main">
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
-      ${installCardHTML()}${rcptNudgeHTML()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
+      ${shoppingHTML()}${installCardHTML()}${rcptNudgeHTML()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">Your list is empty</p>
           <p class="empty-sub">Tap <b>Add items</b> below — or start from these:</p>
@@ -3732,7 +3783,7 @@ function renderMain(){
   ${fabMoveOpen?fabMoveSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -4044,7 +4095,7 @@ function renderPlanTab(){
   ${planWeekOpen?planWeekSheet():""}
   ${planAdd?planAddSheet():""}
   ${planPick?planPickSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${listsOpen?listsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
@@ -4894,7 +4945,7 @@ function wirePlanTab(){
   const st=app.querySelector("#setNavP"); if(st) st.onclick=()=>{ settingsFrom=0; gotoPage(2); };
   wireListsSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireRptSheet(); wireRstSheet();
   wireUserTiles();
 }
 /* v1.90: a recipe page shared into the app. Android hands it over directly through the manifest's
@@ -5042,7 +5093,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>Add items…</span></button></div>`:""}
-  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -5105,7 +5156,7 @@ function wirePlanPage(){
   const qbc=app.querySelector("#qbannerClose"); if(qbc) qbc.onclick=()=>{ quickEdit=null; render(); };
   const qbr=app.querySelector("#qbannerRemove"); if(qbr) qbr.onclick=()=>{ const it=state.items.find(i=>i.id===quickEdit); const nm=it?cap(it.name):""; const id=quickEdit; quickEdit=null; planRemove(id); if(nm) showToast(nm+" moved to Regulars"); };
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireRptSheet(); wireRstSheet();
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>gotoPage(0);
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireUserTiles();
@@ -5127,7 +5178,7 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
     if(i){ i.value=""; i.parentElement.classList.remove("has"); i.focus(); } filterOptions(); };
   wireOptions();
   wireEditSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 /* v1.77 item 3: which sections are folded. Keyed by the section's own name rather than its index, so
@@ -5254,6 +5305,8 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-sound]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optSound==="1"; if(soundOn!==want) toggleSound(); });
   app.querySelectorAll("[data-opt-wake]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_wakelock", b.dataset.optWake); }catch(e){} render(); });   // v2.16
   app.querySelectorAll("[data-memb-on]").forEach(b=>b.onclick=()=>{ const [k,v]=b.dataset.membOn.split("|"); const m=memb(); m[k].on=(v==="1"); membSave(m); });   // v2.20 the 10% shop
+  app.querySelectorAll("[data-opt-sayshop]").forEach(b=>b.onclick=()=>{ const on=b.dataset.optSayshop==="1"; try{ localStorage.setItem("ml_sayshop", on?"1":"0"); }catch(e){}
+    if(!on){ shoppingClear(); save(); } render(); });   // v2.23 R19: turning it off takes your name away at once
   app.querySelectorAll("[data-memb-num]").forEach(b=>b.onclick=()=>{ const [k,f,d]=b.dataset.membNum.split("|"); const m=memb(); m[k][f]=(+m[k][f]||0)+(+d); state.memb=membNorm(m); save(); render(); });
   app.querySelectorAll("[data-memb-used]").forEach(b=>b.onclick=()=>{ const [k,v]=b.dataset.membUsed.split("|"); const m=memb(); membMark(m,k,v==="1"); membSave(m); });
   app.querySelectorAll("[data-memb-list]").forEach(b=>b.onclick=()=>tenOpen(b.dataset.membList));
@@ -5778,7 +5831,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -6191,7 +6244,9 @@ function optionsBody(){
     <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">Suggests restocking items on your schedule, from how often you buy them — on your device. Adds only when you tap.</div>` : ""}` : ""}
     ${state.members.length ? `${sectHR("Users")}<div class="optrow optnl" style="flex-direction:column;align-items:stretch;gap:7px">
       <div class="userlist">${state.members.map(m=>`<button class="userchip ${m===me?'on':''}" data-switch-user="${esc(m)}">${esc(m)}${m===me?`<span class="ucur">you</span>`:""}</button>`).join("")}</div>
-    </div>` : ""}
+    </div>
+    ${row("Say when I'm shopping", `<div class="seg"><button data-opt-sayshop="1" class="${sayShopOn()?'on':''}">On</button><button data-opt-sayshop="0" class="${!sayShopOn()?'on':''}">Off</button></div>`)}
+    <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">While you tick things off at a shop, the others see which shop — only its name, for an hour and a half, gone when you finish.</div>` : ""}
     ${sectHR("History")}
     ${(()=>{
       /* v1.51: the picker only appears with more than one list — a single-list user does not need to
@@ -6228,6 +6283,8 @@ function optionsBody(){
     ${sectHR("Other")}
     <button class="optaction" id="optShare" style="margin-top:2px">Share link</button>
     <button class="optaction" id="optSendList" style="margin-top:10px">${SHARE_SVG(16)} Send what's to buy to another app</button>
+    <button class="optaction" id="optOccSave" style="margin-top:10px">Save what's to buy as an occasion</button>
+    <button class="optaction" id="optOccAdd" style="margin-top:10px">Add an occasion to the list${(state.templates||[]).length?` (${(state.templates||[]).length})`:""}</button>
     <button class="optaction" id="optExport" style="margin-top:10px">Export list as text</button>
     <button class="optaction" id="optBackup" style="margin-top:10px">Back up this list to a file</button>
     <button class="optaction" id="optRestoreFile" style="margin-top:10px">Restore from a backup file</button>
@@ -6255,7 +6312,7 @@ function renderSettingsPage(){
     ${bottomNav({planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
     ${diagOpen?diagSheet():""}
     ${listsOpen?listsSheet():""}
-    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
     ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
     ${editing?editSheet():""}
@@ -6431,7 +6488,7 @@ function wire(){
   const et=app.querySelector("#elseToggle"); if(et) et.onclick=()=>{ elseOpen=!elseOpen; render(); };   // v2.22 R17
   wireAddSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireRptSheet(); wireRstSheet();
   const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>catShown(i.cat)===c.id)).map(c=>c.id);
     const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);

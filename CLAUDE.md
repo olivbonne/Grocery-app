@@ -90,8 +90,9 @@ or what it read) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, 
   there too. Items are copied field by field as well: a ticked item becomes a Regular in `moveToBuyAgain` (via `sweep`
   and `removeEditing`), and a Regular comes back in `addFromRegular` and `restore` — v2.22's `note` and `where` are
   named in each. The list document itself is one: `subscribe()` rebuilds `state` field by field, so a new
-  top-level field (v2.09 `prices`, v2.16 `aisle`, v2.20 `memb`) must be named there, in the two default `state`
-  literals, in `listDoc()` (the v2.15 backups) and in `restoreList()`.
+  top-level field (v2.09 `prices`, v2.16 `aisle`, v2.20 `memb`, v2.23 `templates`) must be named there, in the two default
+  `state` literals, in `listDoc()` (the v2.15 backups) and in `restoreList()`. Presence is the exception: v2.23 `shopping`
+  (who is at a shop now) is synced, so it is in the literals and `subscribe()`, but never backed up or restored.
 
 ## Workflow
 - Develop on the branch the session is given, push, and open a PR into `main`.
