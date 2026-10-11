@@ -96,7 +96,7 @@ const seed = (looks, extra) => `(() => {
     const src = fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8');
     const ex = (src.match(/const APP_EXCLUDE(?:_BOOT)? = \/\^\(([^)]*)\)\//g)||[]);
     ok('the offer record survives applying an appearance slot (in both exclude lists)', ex.length===2 && ex.every(x=>/ml_lookseen\$/.test(x)), '');
-    ok('the sync\'s rebuild, the two literals, the backup and the restore name the field', /looks: \(d\.looks/.test(src) && /looks:\(s\.looks/.test(src) && /state\.looks = list\.looks/.test(src) && (src.match(/spend:\[\], looks:\{\} \};/g)||[]).length===2, '');
+    ok('the sync\'s rebuild, the two literals, the backup and the restore name the field', /looks: \(d\.looks/.test(src) && /looks:\(s\.looks/.test(src) && /state\.looks = list\.looks/.test(src) && (src.match(/spend:\[\], looks:\{\}[,} ]/g)||[]).length===2   /* SUPERSEDED by v2.27: the literals go on past looks:{} (aislemap); still protects that both name it */, '');
   } catch(e){ ok('suite ran to the end', false, e.message.slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));
   await browser.close();
