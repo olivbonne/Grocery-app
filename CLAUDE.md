@@ -3,8 +3,9 @@
 ## What this is
 A vanilla-JS PWA, no build step, no framework. Since v2.19 (the module split, phase 1) `index.html` is the
 shell — markup, the Firebase config and three small boot scripts — the styles are `app.css`, and the app is
-one ES module, `js/app.js` (several thousand lines), importing the reference data (`js/data/catalog.js`)
-and the drawings (`js/data/drawings.js`). Until v2.18 all of it lived inline in `index.html`; it moved byte
+one ES module, `js/app.js` (several thousand lines), importing the reference data (`js/data/catalog.js`),
+the drawings (`js/data/drawings.js`) and, since v2.20, the 10% shop's logic (`js/tenpct.js` — the first
+feature built as its own module: pure functions, no imports, the app passes in what they need). Until v2.18 all of it lived inline in `index.html`; it moved byte
 for byte. Later phases move cohesive parts of `js/app.js` into modules of their own. Firebase Firestore for
 live household sync, Vercel serves `main` as static files. Used as an iPhone home-screen app, portrait-only,
 max-width 480px.
@@ -86,8 +87,8 @@ or what it read) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, 
 - **Normalisers that rebuild an object from a fixed shape drop unknown fields.** `writePlan` and
   `planIngNorm` both did, silently (v1.94 amounts, v1.97 saved plans). Adding a field means adding it
   there too. The list document itself is one: `subscribe()` rebuilds `state` field by field, so a new
-  top-level field (v2.09 `prices`, v2.16 `aisle`) must be named there, in the two default `state` literals and in
-  `listDoc()` (the v2.15 backups).
+  top-level field (v2.09 `prices`, v2.16 `aisle`, v2.20 `memb`) must be named there, in the two default `state`
+  literals, in `listDoc()` (the v2.15 backups) and in `restoreList()`.
 
 ## Workflow
 - Develop on the branch the session is given, push, and open a PR into `main`.

@@ -802,6 +802,16 @@
   .checkedbarhead .chk-n { white-space:nowrap; }
   .cartest { color:var(--muted); font-size:11.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
   .rcnudge .ic-t svg { vertical-align:-3px; margin-right:2px; }
+  /* v2.20 the 10% shop: the stock-up sheet's rows, its running total, the month's status under each membership */
+  .tenrows { display:flex; flex-direction:column; gap:2px; max-height:52vh; overflow-y:auto; margin:0 -2px; }
+  .tenrow { display:flex; align-items:center; gap:10px; padding:9px 4px; border-bottom:1px solid var(--line); color:var(--text); font-size:14px; font-weight:700; }
+  .tenrow.off { color:var(--muted); }
+  .tenrow input { width:20px; height:20px; flex:none; accent-color:var(--accent); }
+  .tenrow .tr-n { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+  .tenrow .tr-s { font-size:11.5px; font-weight:600; color:var(--muted2); }
+  .tenrow .tr-p { flex:none; font-variant-numeric:tabular-nums; }
+  .tensum { margin-top:10px; font-size:13px; font-weight:800; color:var(--text); }
+  .membstat { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:2px 2px 8px; font-size:12px; font-weight:700; color:var(--muted2); }
   .slotseg button { flex:1; min-width:0; padding:7px 4px; border-radius:10px; background:var(--card); border:1.5px solid var(--line); color:var(--text); font-size:13px; font-weight:600; }
   .slotseg button.on { border:2px solid var(--ink); font-weight:800; }
   /* v2.01: a planned recipe's method, read in the pick sheet. */

@@ -12,7 +12,9 @@
    - the photo goes to the VISION model, in the multimodal shape;
    - the reply is coerced: lines without a usable price are dropped, prices round to cents, qty is
      clamped, unknown categories become "others", a bad date becomes "", lines are capped;
-   - nothing but { store, date, total, items } leaves, and each line only its six fields;
+   - nothing but { store, date, total, items, discounts } leaves, and each line only its six fields;
+   - (v2.20) whole-receipt discounts come back as { raw, amount } only — positive, rounded, capped at ten,
+     with any long run of digits (a card or loyalty number) masked — and as [] when the reply has none;
    - upstream failures are named the same way the other endpoints name them (busy, quota, model,
      vision_model, unreadable);
    - no log line, on success or failure, contains the image or any of the reply's text. */
@@ -44,7 +46,10 @@ const GOOD = { store: 'Coles Dandenong', date: '2026-10-02', total: 23.4, card: 
     { raw: 'MYSTERY', name: 'mystery item', qty: 400, price: 'n/a', category: 'others' },
     { raw: 'NEG', name: 'refund', price: -2, category: 'others' },
     { raw: '', name: '', price: 1 },
-  ] };
+  ],
+  /* v2.20: whole-receipt discounts — one good (negative as printed), one carrying a loyalty number, junk */
+  discounts: [ { raw: 'PLUS SAVER DISCOUNT', amount: -4.72 }, { raw: 'FLYBUYS 6008 9412 3311', amount: 1 }, { raw: '', amount: 3 },
+    { raw: 'X'.repeat(200), amount: '2.5' }, 'junk', { raw: 'BIG', amount: 99999 } ] };
 
 (async () => {
   try {
@@ -69,8 +74,14 @@ const GOOD = { store: 'Coles Dandenong', date: '2026-10-02', total: 23.4, card: 
     ok('…and a prompt that asks for receipts, not recipes', /receipt/i.test(sent.messages[0].content[0].text) && !/recipe/i.test(sent.messages[0].content[0].text), '');
     const b = r.body;
     ok('store, date and total come back', b.store === 'Coles Dandenong' && b.date === '2026-10-02' && b.total === 23.4, JSON.stringify({ s: b.store, d: b.date, t: b.total }));
-    ok('only { store, date, total, items } leave — no card or loyalty number', JSON.stringify(Object.keys(b).sort()) === '["date","items","store","total"]'
+    /* SUPERSEDED by v2.20: the reply gained "discounts" (a member's 10% marks the month used). Still protects: nothing
+       else the model volunteers leaves, and no card or loyalty number — the one inside a discount line is masked. */
+    ok('only { store, date, total, items, discounts } leave — no card or loyalty number', JSON.stringify(Object.keys(b).sort()) === '["date","discounts","items","store","total"]'
       && !/4417|6008/.test(JSON.stringify(b)), JSON.stringify(Object.keys(b)));
+    ok('whole-receipt discounts come back as { raw, amount }: positive, rounded, the junk dropped',
+      Array.isArray(b.discounts) && b.discounts.length === 3 && b.discounts.every(x => JSON.stringify(Object.keys(x).sort()) === '["amount","raw"]')
+      && b.discounts[0].raw === 'PLUS SAVER DISCOUNT' && b.discounts[0].amount === 4.72 && b.discounts[2].amount === 2.5 && b.discounts[2].raw.length === 60, JSON.stringify(b.discounts));
+    ok('…a long run of digits in one (a loyalty number) is masked', b.discounts[1] && b.discounts[1].raw === 'FLYBUYS …', JSON.stringify(b.discounts[1]));
     ok('each line carries only its six fields (the barcode the model added is dropped)',
       b.items.every(x => JSON.stringify(Object.keys(x).sort()) === '["category","name","price","qty","raw","weight"]'), JSON.stringify(b.items[0]));
     ok('lines with no usable price are dropped (n/a, negative, nameless)', b.items.map(x => x.name).join() === 'free range eggs,bananas,milk', b.items.map(x => x.name).join());
@@ -86,6 +97,10 @@ const GOOD = { store: 'Coles Dandenong', date: '2026-10-02', total: 23.4, card: 
     ok('a store name is capped, a date that is not YYYY-MM-DD becomes "", a non-number total becomes 0',
       r.body.store.length <= 60 && r.body.date === '' && r.body.total === 0, JSON.stringify({ s: r.body.store.length, d: r.body.date, t: r.body.total }));
     ok('lines are capped', r.body.items.length <= 150, r.body.items.length);
+    ok('a reply with no discounts gives [] (v2.20), never undefined', Array.isArray(r.body.discounts) && r.body.discounts.length === 0, JSON.stringify(r.body.discounts));
+    reply = { store: '', date: '', total: 0, items: [{ name: 'a', price: 1 }], discounts: Array.from({ length: 30 }, (_, i) => ({ raw: 'D' + i, amount: 1 })) };
+    r = await call({ image: IMG });
+    ok('…and discounts are capped at ten', r.body.discounts.length === 10, r.body.discounts.length);
     reply = '```json\n' + JSON.stringify({ store: '', date: '', total: 0, items: [] }) + '\n```';
     r = await call({ image: IMG });
     ok('a fenced reply is still read; "not a receipt" is an empty list, not an error', r.code === 200 && r.body.items.length === 0, JSON.stringify(r.body));

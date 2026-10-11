@@ -77,14 +77,19 @@ async function swUnit(){
     ok('index.html is a shell: no inline style, no inline module', !/<style[\s>]/.test(html) && !/<script type="module">/.test(html), '');
     const link = (html.match(/<link rel="stylesheet" href="\/app\.css\?v=([\d.]+)">/)||[])[1], mod = (html.match(/<script type="module" src="\/js\/app\.js\?v=([\d.]+)"><\/script>/)||[])[1];
     ok('…it links /app.css and loads /js/app.js, both at the app\'s own version', V && link===V && mod===V, JSON.stringify({V,link,mod}));
-    const imps = [...app.matchAll(/from "(\.[^"]+)"/g)].map(m=>m[1]);
-    ok('every relative import in js/app.js carries that version', imps.length===2 && imps.every(s=>s.endsWith('?v='+V)), JSON.stringify(imps));
+    /* SUPERSEDED by v2.20: js/tenpct.js joined the modules, so the set is DERIVED from the imports instead of named —
+       a new module can no longer be left out of the worker's PRECACHE (v2.20's first build was, and would not have
+       opened offline). Still protects: every module at the app's version, and the worker keeping exactly those. */
+    const mods = new Set(), walk = (f)=>{ for(const m of read(f).matchAll(/from "(\.{1,2}\/[^"]+)"/g)){ const u=new URL(m[1], 'https://x/'+f).pathname+new URL(m[1], 'https://x/'+f).search; if(!mods.has(u)){ mods.add(u); walk(u.replace(/^\//,'').replace(/\?.*$/,'')); } } };
+    walk('js/app.js');
+    const imps = [...mods];
+    ok('every module js/app.js loads, directly or not, carries that version', imps.length>=3 && imps.every(s=>s.endsWith('?v='+V)), JSON.stringify(imps));
     const preSrc = (sw.match(/const PRECACHE = \[([\s\S]*?)\];/)||[])[1]||'';
     const pre = [...preSrc.matchAll(/"([^"]+\?v=[^"]+)"/g)].map(m=>m[1]).sort();
-    ok('the worker precaches exactly those four files, at that version',
-       JSON.stringify(pre)===JSON.stringify(['/app.css?v='+V,'/js/app.js?v='+V,'/js/data/catalog.js?v='+V,'/js/data/drawings.js?v='+V].sort()), JSON.stringify(pre));
-    const data = ['js/data/catalog.js','js/data/drawings.js'].map(read);
-    ok('the data modules import nothing (pure data)', data.every(t=>!/^\s*import\b/m.test(t)), '');
+    const want = ['/app.css?v='+V, '/js/app.js?v='+V, ...imps].sort();
+    ok('the worker precaches exactly the stylesheet, the app and every module it loads, at that version', JSON.stringify(pre)===JSON.stringify(want), JSON.stringify({pre,want}));
+    const data = ['js/data/catalog.js','js/data/drawings.js','js/tenpct.js'].map(read);
+    ok('the data modules and the logic modules import nothing (pure; the app passes in what they need)', data.every(t=>!/^\s*import\b/m.test(t)), '');
     const bad = spawnSync(process.execPath, [path.join(ROOT,'.claude/tools/bump.js'), '2.1'], { encoding:'utf8' });
     ok('the bump tool refuses a malformed version, and changes nothing', bad.status!==0 && read('js/app.js')===app && read('index.html')===html, (bad.stderr||bad.stdout||'').slice(0,120));
 
@@ -112,8 +117,8 @@ async function swUnit(){
         drawn:!!(t && t.querySelector('svg.ill')), mark:!!document.querySelector('#zoomer .cdraw svg') }; });
     await mk();
     const res = await page.evaluate(()=>performance.getEntriesByType('resource').map(e=>{ const u=new URL(e.name); return u.pathname+u.search; }));
-    ok('the page loads the stylesheet, the app and both data modules, versioned',
-       ['/app.css?v='+V,'/js/app.js?v='+V,'/js/data/catalog.js?v='+V,'/js/data/drawings.js?v='+V].every(x=>res.includes(x)), JSON.stringify(res.filter(x=>/\?v=/.test(x))));
+    ok('the page loads the stylesheet, the app and every module, versioned',
+       want.every(x=>res.includes(x)), JSON.stringify(res.filter(x=>/\?v=/.test(x))));
     const l1 = await look();
     ok('it boots: the list is there', /Croissant/.test(l1.txt) && /Chicken thigh/.test(l1.txt), l1.txt.replace(/\s+/g,' ').slice(0,80));
     ok('…its styles apply (Outfit, the bar fixed at the bottom)', /Outfit/.test(l1.font) && l1.nav==='fixed', JSON.stringify(l1));
@@ -127,7 +132,7 @@ async function swUnit(){
       await navigator.serviceWorker.ready; for(let i=0;i<60 && !navigator.serviceWorker.controller;i++) await new Promise(r=>setTimeout(r,100));
       return !!navigator.serviceWorker.controller; });
     const keys = await page.evaluate(async()=>{ const c=await caches.open('ml-shell-1'); return (await c.keys()).map(r=>{ const u=new URL(r.url); return u.pathname+u.search; }); });
-    ok('the worker takes charge and keeps all four files', ctl===true && ['/app.css?v='+V,'/js/app.js?v='+V,'/js/data/catalog.js?v='+V,'/js/data/drawings.js?v='+V].every(k=>keys.includes(k)), JSON.stringify(keys));
+    ok('the worker takes charge and keeps every file', ctl===true && want.every(k=>keys.includes(k)), JSON.stringify(keys));
     await page.evaluate(async(stub)=>{ const c=await caches.open('ml-shell-1');
       for(const f of ['firebase-app.js','firebase-firestore.js']) await c.put('/vendor/firebasejs/10.12.2/'+f, new Response(stub,{headers:{'content-type':'text/javascript'}})); }, STUB);
     await ctx.setOffline(true);
