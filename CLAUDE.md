@@ -5,7 +5,7 @@ A vanilla-JS PWA, no build step, no framework. Since v2.19 (the module split, ph
 shell — markup, the Firebase config and three small boot scripts — the styles are `app.css`, and the app is
 one ES module, `js/app.js` (several thousand lines), importing the reference data (`js/data/catalog.js`),
 the drawings (`js/data/drawings.js`) and the logic of the features built since as modules of their own — the 10%
-shop (`js/tenpct.js`, v2.20) and which store is cheaper (`js/compare.js`, v2.21): pure functions, no imports, the
+shop (`js/tenpct.js`, v2.20), which store is cheaper (`js/compare.js`, v2.21) and what we spend (`js/spend.js`, v2.24): pure functions, no imports, the
 app passes in what they need, so each is unit-tested in Node by its version's suite. Until v2.18 all of it lived inline in `index.html`; it moved byte
 for byte. Later phases move cohesive parts of `js/app.js` into modules of their own. Firebase Firestore for
 live household sync, Vercel serves `main` as static files. Used as an iPhone home-screen app, portrait-only,
@@ -90,7 +90,7 @@ or what it read) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, 
   there too. Items are copied field by field as well: a ticked item becomes a Regular in `moveToBuyAgain` (via `sweep`
   and `removeEditing`), and a Regular comes back in `addFromRegular` and `restore` — v2.22's `note` and `where` are
   named in each. The list document itself is one: `subscribe()` rebuilds `state` field by field, so a new
-  top-level field (v2.09 `prices`, v2.16 `aisle`, v2.20 `memb`, v2.23 `templates`) must be named there, in the two default
+  top-level field (v2.09 `prices`, v2.16 `aisle`, v2.20 `memb`, v2.23 `templates`, v2.24 `spend`) must be named there, in the two default
   `state` literals, in `listDoc()` (the v2.15 backups) and in `restoreList()`. Presence is the exception: v2.23 `shopping`
   (who is at a shop now) is synced, so it is in the literals and `subscribe()`, but never backed up or restored.
 
