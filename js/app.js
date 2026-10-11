@@ -7,16 +7,16 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.27";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.27";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.27";
-import { compareStores, worthIt } from "./compare.js?v=2.27";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.27";
-import { parseAisleLine, mapAisles, mapRank } from "./aisles.js?v=2.27";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.28";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.28";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.28";
+import { compareStores, worthIt } from "./compare.js?v=2.28";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.28";
+import { parseAisleLine, mapAisles, mapRank } from "./aisles.js?v=2.28";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.27";
+const APP_VERSION = "v2.28";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -156,7 +156,7 @@ function mergeAmt(a, b){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -4522,29 +4522,74 @@ function wireLook(){
 }
 /* v2.27 the aisle map editor: one line per aisle, in walking order, as the sign says it. Kept in the list for everyone. */
 var amOpen = "";   // the store whose map is open. var: render() reads it at boot
+var amDraft = null;   // v2.28: the box's text while the sheet is open (null = the saved map's); kept across re-renders
 function amLines(id){ const m = (state.aislemap || {})[id]; return (m && Array.isArray(m.aisles)) ? m.aisles.map(a => (a.n ? a.n + " " : "") + a.t).join("\n") : ""; }
 function amSheetHTML(){ const st = storeById(amOpen) || {}, has = !!((state.aislemap || {})[amOpen]);
   return `<div class="sheet-bg" id="amBg"><div class="sheet" id="amSheet" role="dialog" aria-labelledby="amTitle">
     <div class="disp" id="amTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">Aisle map · ${esc(st.name || "this shop")}</div>
     <div class="hint" style="text-align:left;margin:0 0 10px">One line per aisle, in the order you walk the shop — the number and what the sign says: “5 Pasta, rice &amp; sauces”. The list then follows the shop; Location and AI sort start from it.</div>
-    <textarea id="amText" class="amtext" rows="10" spellcheck="false" aria-label="Aisles, one per line" placeholder="1 Fruit &amp; veg&#10;2 Bread, spreads &amp; cereal&#10;3 Pasta, rice &amp; sauces">${esc(amLines(amOpen))}</textarea>
+    <textarea id="amText" class="amtext" rows="10" spellcheck="false" aria-label="Aisles, one per line" placeholder="1 Fruit &amp; veg&#10;2 Bread, spreads &amp; cereal&#10;3 Pasta, rice &amp; sauces">${esc(amDraft!==null ? amDraft : amLines(amOpen))}</textarea>
+    <div class="amread" role="status">${amRead ? (amRead.busy ? `<span class="spin" aria-hidden="true"></span> ${esc(amRead.step)}` : esc(amRead.err || amRead.ok || "")) : ""}</div>
+    <button class="optaction" id="amCam" style="margin-top:8px" ${amRead && amRead.busy ? "disabled" : ""}>${CAMERA_SVG(16)} Read a sign</button>
     <div style="display:flex;gap:8px;margin-top:12px"><button class="newlist" id="amSave" style="margin:0">Save</button>${has ? `<button class="optaction" id="amClear" style="margin-top:0">Clear</button>` : ""}<button class="optaction" id="amClose" style="margin-top:0">Cancel</button></div>
   </div></div>`; }
 function amSave(text){ const id = amOpen; if(!id) return;
   const aisles = String(text || "").split(/\n+/).map(parseAisleLine).filter(Boolean).slice(0, 60);
   const m = Object.assign({}, state.aislemap || {});
   if(aisles.length) m[id] = { at:Date.now(), by:me || "", aisles }; else delete m[id];
-  state.aislemap = m; amOpen = ""; save(); render();
+  state.aislemap = m; amOpen = ""; amDraft = null; amRead = null; save(); render();
   if(!aisles.length){ showToast("Aisle map cleared"); return; }
   const mapped = mapAisles(aisles), todo = state.items.filter(i => !i.checked), placed = todo.filter(i => mapRank(mapped, i.name, i.cat) >= 0).length;
   showToast(`Saved ${aisles.length} aisle${aisles.length === 1 ? "" : "s"}${todo.length ? ` · places ${placed} of ${todo.length} on the list` : ""}`); }
 function wireAisleMap(){
-  const o = app.querySelector("#optAisleMap"); if(o) o.onclick = () => { amOpen = storeSel; render(); const t = app.querySelector("#amText"); if(t) t.focus(); };
+  const o = app.querySelector("#optAisleMap"); if(o) o.onclick = () => { amOpen = storeSel; amDraft = null; amRead = null; render(); const t = app.querySelector("#amText"); if(t) t.focus(); };
   const s = app.querySelector("#amSave"); if(s) s.onclick = () => amSave((app.querySelector("#amText") || {}).value);
   const c = app.querySelector("#amClear"); if(c) c.onclick = () => { if(confirm("Clear this shop's aisle map?")) amSave(""); };
-  const x = app.querySelector("#amClose"); if(x) x.onclick = () => { amOpen = ""; render(); };
-  const bg = app.querySelector("#amBg"); if(bg) bg.onclick = e => { if(e.target === bg){ amOpen = ""; render(); } };
+  const x = app.querySelector("#amClose"); if(x) x.onclick = () => { amOpen = ""; amDraft = null; amRead = null; render(); };
+  const bg = app.querySelector("#amBg"); if(bg) bg.onclick = e => { if(e.target === bg){ amOpen = ""; amDraft = null; amRead = null; render(); } };
+  const cam = app.querySelector("#amCam"); if(cam) cam.onclick = () => { amKeepText(); amRead = null; amPick(); };
+  const tx = app.querySelector("#amText"); if(tx) tx.oninput = () => { amDraft = tx.value; };
 }
+/* v2.28 map a shop by photographing its signs: "Read a sign" takes a photo, /api/aisle reads the aisle's number and what
+   the sign lists, and the line joins the end of the box — walk the shop once, a photo per sign. The wait shows its step
+   and always ends (75 s at most), and at most 60 signs a day per phone (ml_aisleday). */
+const AISLE_DAY_CAP = 60;
+var amRead = null;   // null | { busy:true, step } | { err } | { ok }, under the box. var: render() reads it at boot
+function aisleToday(){ try{ const o=JSON.parse(localStorage.getItem("ml_aisleday")||"{}"); return o.d===dayKey(new Date()) ? (+o.n||0) : 0; }catch(e){ return 0; } }
+function aisleCount(){ try{ localStorage.setItem("ml_aisleday", JSON.stringify({ d:dayKey(new Date()), n:aisleToday()+1 })); }catch(e){} }
+function amPick(){ const f=document.createElement("input"); f.type="file"; f.accept="image/*"; f.setAttribute("capture","environment");
+  f.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
+  document.body.appendChild(f);   // iOS fires change only for an input in the page (rcPick, v2.11)
+  f.onchange=()=>{ const file=f.files && f.files[0]; f.remove(); if(file) amReadSign(file); };
+  f.click(); }
+function amKeepText(){ const t=app.querySelector("#amText"); if(t) amDraft=t.value; }
+function amReadSign(file){
+  if(aisleToday()>=AISLE_DAY_CAP){ amRead={ err:`That's ${AISLE_DAY_CAP} signs today, the free limit on this phone. Type the rest, or carry on tomorrow.` }; render(); return; }
+  amKeepText(); amRead={ busy:true, step:"Preparing the photo…" }; render();
+  const ctl=(typeof AbortController!=="undefined") ? new AbortController() : null;
+  const timer=setTimeout(()=>{ if(ctl) ctl.abort(); }, 75000);
+  planShrinkImage(file, 1400, 0.8)
+    .then(img=>{ if(amRead && amRead.busy){ amRead.step="Reading the sign…"; render(); }
+      return fetch("/api/aisle", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ image:img }), signal: ctl ? ctl.signal : undefined }); })
+    .then(r=>r.json().catch(()=>({})).then(j=>({ ok:r.ok, j })))
+    .then(({ok,j})=>{ if(ok) aisleCount();   // counted even if the sheet was closed while it read
+      if(!amOpen) return;
+      if(!ok){ const c=j && j.code;
+        amRead={ err: c==="not_configured" ? "Reading signs isn't set up on the server yet — type the aisle instead."
+          : c==="quota" ? "The free reading allowance is used up for today. Type the aisle, or try tomorrow."
+          : c==="busy" ? "The reader is busy. Try again in a minute."
+          : (c==="bad_image" || c==="too_large") ? "Couldn't use that photo. Try again, closer to the sign."
+          : c==="vision_model" ? "Photo reading isn't set up on this account."
+          : "Couldn't read that sign. Try again, or type it." }; render(); return; }
+      const items=Array.isArray(j.items) ? j.items.filter(x=>typeof x==="string" && x.trim()) : [];
+      if(!items.length){ amRead={ err:"No aisle sign in that photo. Try again, with the sign filling more of it." }; render(); return; }
+      const line=((j.aisle ? String(j.aisle)+" " : "") + items.map(x=>x.trim()).join(", ")).slice(0, 80);
+      amDraft = (amDraft && amDraft.trim() ? amDraft.replace(/\s+$/,"") + "\n" : "") + line;
+      amRead={ ok:`Added “${line}”. Next sign?` }; render(); })
+    .catch(e=>{ if(amOpen){ amRead={ err: navigator.onLine===false ? "No connection. Try again when you're online, or type the aisle."
+        : (e && e.name==="AbortError") ? "That took too long. Try again, closer to the sign."
+        : "Couldn't read that sign. Try again, or type it." }; render(); } })
+    .finally(()=>clearTimeout(timer)); }
 /* v2.17: the receipt is in your hand at the till, not at the bottom of Settings. After a shop is finished the Shop
    page asks for it for up to three hours ("Got the receipt?"). Off in Settings › Prices; never past the day's free
    receipts; gone once a receipt is read or "Not now" is tapped. The time is kept on the phone (ml_rcptnudge). */
@@ -5981,7 +6026,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }

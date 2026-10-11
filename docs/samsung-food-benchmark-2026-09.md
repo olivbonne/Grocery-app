@@ -2,7 +2,7 @@
 
 September 2026 · reviewed against Market List **v1.80**
 
-> **Status at v2.27 (11 October 2026).** From the §7 review, R1–R5 shipped in v2.15 (the safety net: opens with
+> **Status at v2.28 (11 October 2026).** From the §7 review, R1–R5 shipped in v2.15 (the safety net: opens with
 > no signal, crash reports, backups and restore, install card, tests on every pull request), R6–R8, R11 and
 > R13–R15 in v2.16 (the polish batch), and R9–R10 in v2.17 (the receipt card after a shop, a running total in
 > the cart). R12 shipped in v2.18: everyday Settings with a search across everything, and "Customise the look" on a
@@ -18,7 +18,9 @@ September 2026 · reviewed against Market List **v1.80**
 > R26: a privacy page and Settings › Your data (leave, empty for everyone, forget this phone). v2.26: plan item 7 —
 > your look on your other phones, sent explicitly and offered once, keyed by the name you chose (until item 4's sign-in).
 > v2.27: the future improvements' detailed aisle types and a shop's own aisle map (typed; js/aisles.js), and the last six
-> drawings.
+> drawings. v2.28: the aisle map read from photos of the signs (api/aisle.js). What is left needs the owner: item 4's sign-in
+> (Firebase console), shared prices (after it), notifications (push keys), Siri (a service account), item photos
+> (Firebase Storage), basket handoff (a deal), Market List+ (billing), R24 (a decision), and publishing the R25 rules.
 >
 > **Status at v2.14 (11 October 2026).** The live, more detailed version of this report is the published
 > page "Market List vs Samsung Food" (the plan of what is left, the supermarkets' memberships, pricing in
