@@ -13,8 +13,8 @@ have a list to work from.
 - **Size rule:** these read at tile size (about 56 px and up). List rows (18 px) keep the simple
   marks, because detail turns to noise at that size.
 - **Status (2026-09-28): the catalogue is finished, in v2.06.** 253 drawings (141 since v2.04, 112 new).
-  **Every name below is drawn except six**: Costume, Hole punch, Reflectors, Table bomb, Toner and Snow
-  chains. Those fall back to their category's mark. Items that look the same share one drawing: every
+  **Every name below is drawn** — the last six (Costume, Hole punch, Reflectors, Table bomb, Toner and Snow
+  chains) in v2.27, as simple line drawings made in the repo rather than on the canvas. Items that look the same share one drawing: every
   berry is the berries drawing, every cleaning spray the spray bottle, every tube of cream the cream
   tube. **Every Regular is drawn**, and v2.06 changed none of them. The name map is `DRAW_EXACT` (every
   name below, lower-cased) and then `DRAW_HINTS`, which catches variants such as "Hot dog buns" and
@@ -110,15 +110,15 @@ itself uses is a separate, open decision.
 ✅ Aluminium foil · ✅ Baby food · ✅ Balloons · ✅ Barbecue lighter · ✅ Barbecue tongs ·
 ✅ Bathroom cleaner · ✅ Batteries · ✅ Bowl · ✅ Candles · ✅ Cap · ✅ Christmas tree candles ·
 ✅ Christmas tree ornaments · ✅ Cinnamon stars · ✅ Cleaning rags · ✅ Cleaning supplies ·
-✅ Cocktail umbrellas · ✅ Cookie cutters · ⬜ Costume · ✅ Descaling agent · ✅ Dishwasher salt ·
+✅ Cocktail umbrellas · ✅ Cookie cutters · ✅ Costume · ✅ Descaling agent · ✅ Dishwasher salt ·
 ✅ Dishwasher tabs · ✅ Dishwashing liquid · ✅ Drain cleaner · ✅ Envelopes · ✅ Eraser ·
 ✅ Fabric softener · ✅ Feather duster · ✅ Flashlight · ✅ Flowers · ✅ Furniture polish ·
 ✅ Garbage bags · ✅ Gift · ✅ Gift ribbon · ✅ Glass cleaner · ✅ Gloves · ✅ Juicer ·
 ✅ Laundry detergent · ✅ Light bulb · ✅ Lighter · ✅ Marker · ✅ Multi-purpose cleaner · ✅ Napkins ·
 ✅ Notepad · ✅ Paper · ✅ Paper towels · ✅ Paperclips · ✅ Parchment paper · ✅ Pastry brush · ✅ Pen ·
-✅ Pencil · ✅ Plastic wrap · ✅ Post-its · ⬜ Hole punch · ⬜ Reflectors · ✅ Rubber gloves · ✅ Scarf ·
-✅ Sharpener · ✅ Skewers · ✅ Spatula · ✅ Sponge · ⬜ Table bomb · ✅ Tinsel · ✅ Toilet brush ·
-✅ Toilet cleaner · ⬜ Toner · ✅ Vacuum cleaner bags · ✅ Whisk · ✅ Wool socks · ✅ Wrapping paper
+✅ Pencil · ✅ Plastic wrap · ✅ Post-its · ✅ Hole punch · ✅ Reflectors · ✅ Rubber gloves · ✅ Scarf ·
+✅ Sharpener · ✅ Skewers · ✅ Spatula · ✅ Sponge · ✅ Table bomb · ✅ Tinsel · ✅ Toilet brush ·
+✅ Toilet cleaner · ✅ Toner · ✅ Vacuum cleaner bags · ✅ Whisk · ✅ Wool socks · ✅ Wrapping paper
 
 ## Care & health
 ✅ Soap ·
@@ -138,7 +138,7 @@ itself uses is a separate, open decision.
 ✅ Bolts · ✅ Briquettes · ✅ Brush · ✅ Charcoal · ✅ Dibble · ✅ Fertiliser · ✅ Fir green ·
 ✅ Flower trowel · ✅ Garden tool · ✅ Gardening gloves · ✅ Grill · ✅ Hedge shears · ✅ Hoe ·
 ✅ Lawnmower · ✅ Nails · ✅ Parasol · ✅ Pesticides · ✅ Planter box · ✅ Plants · ✅ Pots ·
-✅ Potting soil · ✅ Propane · ✅ Road salt · ✅ Seed · ✅ Seedlings · ✅ Seeds · ⬜ Snow chains ·
+✅ Potting soil · ✅ Propane · ✅ Road salt · ✅ Seed · ✅ Seedlings · ✅ Seeds · ✅ Snow chains ·
 ✅ Snow shovel · ✅ Watering can
 
 ## Pet supplies

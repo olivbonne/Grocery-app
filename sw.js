@@ -42,7 +42,7 @@ const SHELL = "ml-shell-1";        // bump only if the meaning of the precache c
 const PRECACHE = ["/", "/index.html", "/manifest.webmanifest", "/outfit-latin.woff2", "/outfit-latin-ext.woff2",
   "/img/icon-180.png", "/img/icon-192.png", "/img/icon-512.png",
   "/vendor/firebasejs/10.12.2/firebase-app.js", "/vendor/firebasejs/10.12.2/firebase-firestore.js",
-  "/app.css?v=2.26", "/js/app.js?v=2.26", "/js/data/catalog.js?v=2.26", "/js/data/drawings.js?v=2.26", "/js/tenpct.js?v=2.26", "/js/compare.js?v=2.26", "/js/spend.js?v=2.26"];
+  "/app.css?v=2.27", "/js/app.js?v=2.27", "/js/data/catalog.js?v=2.27", "/js/data/drawings.js?v=2.27", "/js/tenpct.js?v=2.27", "/js/compare.js?v=2.27", "/js/spend.js?v=2.27", "/js/aisles.js?v=2.27"];
 const NAV_TIMEOUT_MS = 4000;       // every wait ends: a slow network never holds the app back longer than this when a copy is on the phone
 
 const ALWAYS = new Set(["/", "/index.html", "/manifest.webmanifest"]);   // re-fetched on every install; the rest only when missing

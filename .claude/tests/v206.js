@@ -64,9 +64,11 @@ const SEED = `(() => {
   const cat = fs.readFileSync(path.join(ROOT,'docs','icon-catalogue.md'),'utf8');
   const group = cat.slice(cat.indexOf('## Fruit & vegetables'), cat.indexOf('## Also drawn'));
   const names = [...group.matchAll(/[✅⬜] ([^·\n]+?)(?= ·|\s*$)/gm)].map(m=>m[1].replace(/\s*\(.*\)$/,'').trim());
-  const NOT_DRAWN = ["Costume","Hole punch","Reflectors","Table bomb","Toner","Snow chains"];
+  /* SUPERSEDED by v2.27: the last six (Costume, Hole punch, Reflectors, Table bomb, Toner, Snow chains) are drawn now, so
+     no catalogue name is left without a drawing. Still protects: every catalogue name resolves to one. */
+  const NOT_DRAWN = [];
   const undrawn = names.filter(n=>!drawKey(n));
-  ok(`every catalogue name resolves to a drawing (${names.length} names), except the six listed as not drawn`,
+  ok(`every catalogue name resolves to a drawing (${names.length} names)`,
      names.length>500 && JSON.stringify(undrawn.sort())===JSON.stringify(NOT_DRAWN.slice().sort()), JSON.stringify(undrawn));
   const keys = new Set([...Object.values(EXACT), ...HINTS.map(h=>h[1])]);
   ok('every key the map names exists as a drawing', [...keys].every(k=>ILL[k]), JSON.stringify([...keys].filter(k=>!ILL[k])));

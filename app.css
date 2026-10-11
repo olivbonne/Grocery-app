@@ -862,6 +862,9 @@
   .sprow .sp-bar { flex:1; min-width:0; height:8px; border-radius:4px; background:var(--chip); overflow:hidden; }
   .sprow .sp-bar > span { display:block; height:100%; border-radius:4px; background:var(--text); opacity:.8; }
   .sprow .sp-p { flex:none; min-width:66px; text-align:right; font-variant-numeric:tabular-nums; }
+  /* v2.27 the aisle map editor */
+  .amtext { width:100%; box-sizing:border-box; min-height:220px; padding:10px 12px; border-radius:12px; border:none; outline:none; resize:vertical;
+    background:var(--chip); color:var(--text); font:inherit; font-size:16px; line-height:1.5; }
   .slotseg button { flex:1; min-width:0; padding:7px 4px; border-radius:10px; background:var(--card); border:1.5px solid var(--line); color:var(--text); font-size:13px; font-weight:600; }
   .slotseg button.on { border:2px solid var(--ink); font-weight:800; }
   /* v2.01: a planned recipe's method, read in the pick sheet. */
