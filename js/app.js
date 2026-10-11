@@ -7,14 +7,15 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.23";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.23";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.23";
-import { compareStores, worthIt } from "./compare.js?v=2.23";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.24";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.24";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.24";
+import { compareStores, worthIt } from "./compare.js?v=2.24";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.24";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.23";
+const APP_VERSION = "v2.24";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -1630,7 +1631,7 @@ function switchList(code){ const wasPlan = (view==="plan"); listsOpen=false; if(
   reloadLearn();
   try{ collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}'); }catch(e){ collapse={cats:[],ba:false}; }
   collapse.checked = false;   // v2.10: the cart always opens folded; a tap unfolds it for the session
-  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[] };
+  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[] };
   try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state=c; dropTube(); aiAdopt(); } }catch(e){}
   if(!state.purch || typeof state.purch!=="object") state.purch={};
   state.purch = purchMerge(state.purch, purch);   // fold any legacy per-device history into the shared copy
@@ -1668,7 +1669,7 @@ function playPlan(add){ if(!soundOn) return;
   } catch(e){} }
 let lastPop=null;
 
-let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[] };
+let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[] };
 rememberList(listCode);
 try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state = c; dropTube(); aiAdopt(); } } catch(e){}
 if(!state.purch || typeof state.purch!=="object") state.purch={};
@@ -1836,7 +1837,7 @@ function subscribe(){
       const mg = baMerge(d.buyAgain||[], d.baTomb||{}, state.buyAgain||[], state.baTomb||{});   // A24 conflict-free Buy-again
       const mgPurch = purchMerge(d.purch||{}, purch||{});                                        // B4 shared restock history (union merge)
       /* v2.09: prices rides along like plan does. This line rebuilds state from a fixed shape, so a field it does not name is wiped by the next snapshot (CLAUDE.md, the fixed-shape trap). */
-      state = { items:d.items||[], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]}, prices: d.prices||{}, aisle: d.aisle||{}, memb: d.memb||{}, shopping: d.shopping||{}, templates: Array.isArray(d.templates)?d.templates:[] };
+      state = { items:d.items||[], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]}, prices: d.prices||{}, aisle: d.aisle||{}, memb: d.memb||{}, shopping: d.shopping||{}, templates: Array.isArray(d.templates)?d.templates:[], spend: Array.isArray(d.spend)?d.spend:[] };
       purch = state.purch;                                                                        // keep the working ref pointed at the shared copy
       if(!state.name){ const ln=(getLists().find(l=>l.code===listCode)||{}).name; if(ln){ state.name=ln; save(); } }
       if(dropTube()) save(); aiAdopt();
@@ -2306,7 +2307,7 @@ async function exportListText(){
 const SNAP_KEEP = 7;
 function listDoc(s){ return { items:s.items||[], buyAgain:s.buyAgain||[], baTomb:s.baTomb||{}, stores:s.stores||[], storeMeta:s.storeMeta||{},
   members:s.members||[], categories:s.categories===undefined?null:s.categories, name:s.name||"", baMeta:s.baMeta||null, predictReset:s.predictReset||0,
-  purch:s.purch||{}, plan:s.plan||{days:{},recipes:[]}, prices:s.prices||{}, aisle:s.aisle||{}, memb:s.memb||{}, templates:Array.isArray(s.templates)?s.templates:[] }; }   // v2.23: occasions are kept; who is shopping is presence, not data — never backed up
+  purch:s.purch||{}, plan:s.plan||{days:{},recipes:[]}, prices:s.prices||{}, aisle:s.aisle||{}, memb:s.memb||{}, templates:Array.isArray(s.templates)?s.templates:[], spend:Array.isArray(s.spend)?s.spend:[] }; }   // v2.23: occasions are kept; who is shopping is presence, not data — never backed up
 function snapKey(code){ return "ml_snap_"+code; }
 function snapList(code){ try{ const a=JSON.parse(localStorage.getItem(snapKey(code))||"[]"); return Array.isArray(a)?a.filter(x=>x && x.list && x.at):[]; }catch(e){ return []; } }
 function maybeSnapshot(){ try{
@@ -2348,7 +2349,7 @@ function restoreList(list, label){
   const P=(list.plan && typeof list.plan==="object") ? list.plan : null;
   state.items = Array.isArray(list.items) ? list.items : [];
   if(P) state.plan = { days:P.days||{}, recipes:P.recipes||[], saved:Array.isArray(P.saved)?P.saved:[] };
-  if(list.prices && typeof list.prices==="object") state.prices = list.prices; if(list.memb && typeof list.memb==="object") state.memb = list.memb; if(Array.isArray(list.templates)) state.templates = list.templates;
+  if(list.prices && typeof list.prices==="object") state.prices = list.prices; if(list.memb && typeof list.memb==="object") state.memb = list.memb; if(Array.isArray(list.templates)) state.templates = list.templates; if(Array.isArray(list.spend)) state.spend = list.spend;
   if(Array.isArray(list.stores)) state.stores = list.stores;
   if(list.storeMeta && typeof list.storeMeta==="object") state.storeMeta = list.storeMeta;
   if(list.categories!==undefined) state.categories = list.categories;
@@ -3783,7 +3784,7 @@ function renderMain(){
   ${fabMoveOpen?fabMoveSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -4095,7 +4096,7 @@ function renderPlanTab(){
   ${planWeekOpen?planWeekSheet():""}
   ${planAdd?planAddSheet():""}
   ${planPick?planPickSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${listsOpen?listsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
@@ -4303,6 +4304,11 @@ function rcSave(){ if(!rcpt || !rcpt.lines) return;
   /* v2.20: a receipt from a member chain that shows the member discount uses up that period's 10% */
   let tenMsg = ""; { const k = chainOfStore((rcpt.store && rcpt.store.name) || rcpt.detected), m = memb();
     if(k && m[k].on && discountSeen(rcpt.discounts, k)){ const p = membMark(m, k, true, new Date(rcpt.date + "T12:00:00")); state.memb = m; tenMsg = ` · ${CHAINS[k].short} ${m[k].pct}% used for ${monthName(p)}`; } }
+  /* v2.24 R20: the receipt, for "What we spend" — under the same time its prices were saved with, so the rebuild from the
+     price memory never counts it twice */
+  { const se = spendEntry({ t, d:rcpt.date, s:(rcpt.store && rcpt.store.id) || "", sn:(rcpt.store && rcpt.store.name) || "", total:rcpt.total,
+      lines:rcpt.lines.filter(L => L.keep && String(L.name || "").trim() && isFinite(L.price)).map(L => ({ price:+L.price, cat:L.cat })), discounts:rcpt.discounts });
+    if(se.tot > 0) state.spend = spendLog(state.spend, se, SPEND_MAX); }
   rcptNudgeClear(); save(); rcpt=null; render(); showToast(`Saved ${n} price${n===1?"":"s"}${m?` · ticked off ${m}`:""}${tenMsg}`); }
 /* v2.20 the 10% shop (plan item 3). The logic is js/tenpct.js; this is the app's side: the household's memberships and
    "used" marks live in the list (state.memb, shared by every phone), the Shop card, the stock-up sheet, the receipt hook. */
@@ -4397,6 +4403,41 @@ function wireCmp(){
   const o = app.querySelector("#optCompare"); if(o) o.onclick = () => { cmpOpen = true; render(); };
   const c = app.querySelector("#cmpClose"); if(c) c.onclick = () => { cmpOpen = false; render(); };
   const bg = app.querySelector("#cmpBg"); if(bg) bg.onclick = e => { if(e.target === bg){ cmpOpen = false; render(); } };
+}
+/* v2.24 What we spend (R20) — the logic is js/spend.js. The log lives in the list (state.spend), shared only with the
+   people on it, like the prices it comes from. */
+var spendOpen = false, spendM = "";   // the sheet, and the month it shows ("" = the latest). var: render() reads them at boot
+function spendAll(){ const log = Array.isArray(state.spend) ? state.spend : [];
+  return log.concat(spendFromPrices(state.prices, log, k => (knownEntry(k) || {}).cat || guessCat(k) || "others")); }
+function spendMonthName(m, year){ const [y, mo] = String(m).split("-").map(Number);
+  return new Date(y, mo - 1, 1).toLocaleDateString(undefined, year ? { month:"long", year:"numeric" } : { month:"long" }); }
+function spendSheetHTML(){ const all = spendAll(), months = spendMonths(all).slice(0, 12);
+  const m = (spendM && months.includes(spendM)) ? spendM : (months[0] || monthKey(dayKey(new Date())));
+  const s = spendMonth(all, m), p = spendMonth(all, prevMonth(m)), about = s.est ? "about " : "";
+  const bar = (v, max, col) => `<span class="sp-bar" aria-hidden="true"><span style="width:${max > 0 ? Math.max(3, Math.round(v / max * 100)) : 0}%${col ? `;background:${col}` : ""}"></span></span>`;
+  const vs = (s.n && p.n) ? ` · ${priceMoney(Math.abs(s.tot - p.tot))} ${s.tot >= p.tot ? "more" : "less"} than ${spendMonthName(p.month)}` : "";
+  /* categories as shown: one whose category is gone counts under Others (catShown), merged */
+  const cm = {}; for(const x of s.cats){ const id = catShown(x.cat); cm[id] = (cm[id] || 0) + x.tot; }
+  const cats = Object.entries(cm).map(([id, tot]) => ({ id, tot:Math.round(tot * 100) / 100 })).sort((a, b) => b.tot - a.tot);
+  const body = s.n ? `
+    <div class="sptot" role="status"><b>${about}${priceMoney(s.tot)}</b> in ${esc(spendMonthName(m, true))} · ${s.n} receipt${s.n === 1 ? "" : "s"}${vs}</div>
+    <div class="elsehd">By store</div>
+    <div class="sprows">${s.stores.map(x => `<div class="sprow"><span class="sp-n">${esc(x.sn)}<span class="sp-s">${x.n} receipt${x.n === 1 ? "" : "s"}</span></span>${bar(x.tot, s.stores[0].tot)}<span class="sp-p">${priceMoney(x.tot)}</span></div>`).join("")}</div>
+    ${cats.length ? `<div class="elsehd">By category</div>
+    <div class="sprows">${cats.map(x => { const c = CAT(x.id); return `<div class="sprow" data-spcat="${esc(x.id)}"><span class="sp-n"><span class="sp-c">${catIcon(c, 16)}<span>${esc(c.label)}</span></span></span>${bar(x.tot, cats[0].tot, autoShade("cat", c.color))}<span class="sp-p">${priceMoney(x.tot)}</span></div>`; }).join("")}</div>` : ""}
+    <div class="hint" style="text-align:left;margin:10px 0 0">What was paid is each receipt's total; the categories add up its lines.${s.est ? " Receipts read before v2.24 are estimated from the price memory." : ""}</div>`
+    : `<div class="hint" style="text-align:left">${months.length ? "No receipts this month." : "Nothing yet. Read a receipt after a shop and what you spend adds up here — by month, by store and by category."}</div>`;
+  return `<div class="sheet-bg" id="spendBg"><div class="sheet" id="spendSheet" role="dialog" aria-labelledby="spendTitle">
+    <div class="disp" id="spendTitle" style="font-weight:800;font-size:17px;margin-bottom:8px">What we spend</div>
+    ${months.length > 1 ? `<div class="spmonths">${months.map(x => `<button class="storechip ${x === m ? "on" : ""}" data-spend-m="${x}" aria-pressed="${x === m}">${esc(spendMonthName(x))}</button>`).join("")}</div>` : ""}
+    ${body}
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="optaction" id="spendClose" style="margin-top:0">Close</button></div>
+  </div></div>`; }
+function wireSpend(){
+  const o = app.querySelector("#optSpend"); if(o) o.onclick = () => { spendOpen = true; spendM = ""; render(); };
+  app.querySelectorAll("[data-spend-m]").forEach(b => b.onclick = () => { spendM = b.dataset.spendM; render(); });
+  const c = app.querySelector("#spendClose"); if(c) c.onclick = () => { spendOpen = false; render(); };
+  const bg = app.querySelector("#spendBg"); if(bg) bg.onclick = e => { if(e.target === bg){ spendOpen = false; render(); } };
 }
 /* v2.17: the receipt is in your hand at the till, not at the bottom of Settings. After a shop is finished the Shop
    page asks for it for up to three hours ("Got the receipt?"). Off in Settings › Prices; never past the day's free
@@ -4945,7 +4986,7 @@ function wirePlanTab(){
   const st=app.querySelector("#setNavP"); if(st) st.onclick=()=>{ settingsFrom=0; gotoPage(2); };
   wireListsSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireRptSheet(); wireRstSheet();
   wireUserTiles();
 }
 /* v1.90: a recipe page shared into the app. Android hands it over directly through the manifest's
@@ -5093,7 +5134,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>Add items…</span></button></div>`:""}
-  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -5156,7 +5197,7 @@ function wirePlanPage(){
   const qbc=app.querySelector("#qbannerClose"); if(qbc) qbc.onclick=()=>{ quickEdit=null; render(); };
   const qbr=app.querySelector("#qbannerRemove"); if(qbr) qbr.onclick=()=>{ const it=state.items.find(i=>i.id===quickEdit); const nm=it?cap(it.name):""; const id=quickEdit; quickEdit=null; planRemove(id); if(nm) showToast(nm+" moved to Regulars"); };
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireRptSheet(); wireRstSheet();
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>gotoPage(0);
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireUserTiles();
@@ -5178,7 +5219,7 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
     if(i){ i.value=""; i.parentElement.classList.remove("has"); i.focus(); } filterOptions(); };
   wireOptions();
   wireEditSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 /* v1.77 item 3: which sections are folded. Keyed by the section's own name rather than its index, so
@@ -5298,7 +5339,7 @@ function wireOptions(){
   const hc=app.querySelector("#optHistClear"); if(hc) hc.onclick=()=>{ histClear(histView||listCode); render(); };
   const orc=app.querySelector("#optRcpt"); if(orc) orc.onclick=()=>rcPick();   // v2.09
   app.querySelectorAll("[data-opt-rcptask]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_rcptask", b.dataset.optRcptask); }catch(e){} render(); });   // v2.17
-  const opc=app.querySelector("#optPriceClear"); if(opc) opc.onclick=()=>{ if(confirm("Forget every remembered price in this list?")){ state.prices={}; save(); render(); } };
+  const opc=app.querySelector("#optPriceClear"); if(opc) opc.onclick=()=>{ if(confirm("Forget every remembered price, and what you spent, in this list?")){ state.prices={}; state.spend=[]; save(); render(); } };
   app.querySelectorAll("[data-opt-fill]").forEach(b=>b.onclick=()=>{ if(fillMode()!==b.dataset.optFill) setFill(b.dataset.optFill); });
   const ozm=app.querySelector("#optZoomMinus"); if(ozm) ozm.onclick=()=>setDensity(dens()-0.1);
   const ozp=app.querySelector("#optZoomPlus"); if(ozp) ozp.onclick=()=>setDensity(dens()+0.1);
@@ -6223,8 +6264,9 @@ function optionsBody(){
       <button class="optaction" id="optRcpt" style="margin-top:2px">${CAMERA_SVG(16)} Read a receipt</button>
       ${row("Ask after a shop", `<div class="seg"><button data-opt-rcptask="1" class="${rcptAskOn()?'on':''}">On</button><button data-opt-rcptask="0" class="${!rcptAskOn()?'on':''}">Off</button></div>`)}
       <button class="optaction" id="optCompare">${/* v2.21 */""}Which store is cheaper for this list</button>
+      <button class="optaction" id="optSpend">${/* v2.24 */""}What we spend</button>
       <div style="margin:6px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${(()=>{ const pc=Object.keys(state.prices||{}).length; return pc ? `${pc} item${pc===1?"":"s"} with a remembered price. Kept in this list, shared only with the people on it.` : "Read a receipt after a shop and the app remembers what you paid at each store. Free."; })()}</div>
-      ${Object.keys(state.prices||{}).length ? `<button class="optaction" id="optPriceClear">${BIN_SVG(16)} Clear price memory</button>` : ""}` : ""}
+      ${(Object.keys(state.prices||{}).length || (state.spend||[]).length) ? `<button class="optaction" id="optPriceClear">${BIN_SVG(16)} Clear prices and spending</button>` : ""}` : ""}
     ${(view!=="lists") ? `${sect("Memberships")}${/* v2.20 the 10% shop: which memberships the household has, the rules (they change), this month */""}
       ${Object.keys(CHAINS).map(k=>{ const c=memb()[k], p=periodOf(new Date(), c.day), u=c.used[p.key];
         return `${row(esc(CHAINS[k].name), `<div class="seg"><button data-memb-on="${k}|1" class="${c.on?'on':''}">On</button><button data-memb-on="${k}|0" class="${!c.on?'on':''}">Off</button></div>`)}
@@ -6312,7 +6354,7 @@ function renderSettingsPage(){
     ${bottomNav({planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
     ${diagOpen?diagSheet():""}
     ${listsOpen?listsSheet():""}
-    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
     ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
     ${editing?editSheet():""}
@@ -6488,7 +6530,7 @@ function wire(){
   const et=app.querySelector("#elseToggle"); if(et) et.onclick=()=>{ elseOpen=!elseOpen; render(); };   // v2.22 R17
   wireAddSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireRptSheet(); wireRstSheet();
   const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>catShown(i.cat)===c.id)).map(c=>c.id);
     const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);
