@@ -61,6 +61,10 @@ or what it read) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, 
   `index.html`, never logged, never in a response or a query string. The Firebase web config in
   `index.html` is intentionally public; leave it. Server-side fetches of user-supplied URLs go through
   `safeUrl`/`isBlockedHost` with every redirect hop re-checked — do not weaken them.
+  Since v2.25 the Firestore rules live in `firebase/firestore.rules` (published by the owner from the console, steps in
+  `docs/firestore-rules.md` — a change there does nothing until then), and new list codes come from `newListCode()`
+  (128 bits, `crypto.getRandomValues`). `privacy.html` says what the app keeps and what each feature sends where: a
+  feature that changes what it sends, or where, changes that page in the same PR.
 - **New `localStorage` keys that are preferences or data (not a LOOK) must be added to BOTH
   `APP_EXCLUDE_BOOT` and `APP_EXCLUDE`** — they are duplicated deliberately. Otherwise applying an
   appearance slot wipes them. This has bitten twice (`ml_lastview`, then `ml_optcoll` in v2.00).

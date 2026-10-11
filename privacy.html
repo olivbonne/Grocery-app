@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Market List · Privacy</title>
+<!-- v2.25 (the app review's R26): what the app keeps, where, who sees it, what leaves it and how to delete it. Plain words,
+     checked against the code at v2.25 — keep it true when a feature changes what it sends. Self-contained: no outside
+     files, so it opens offline once visited, like the app. -->
+<style>
+  @font-face{ font-family:'Outfit'; font-style:normal; font-weight:400 800; font-display:swap; src:url('/outfit-latin.woff2') format('woff2'); }
+  :root{ --ink:#232019; --paper:#F6F2E7; --card:#FFFDF7; --line:#DAD3C0; --muted:#6F695A; --accent:#D2542B; }
+  @media (prefers-color-scheme: dark){ :root{ --ink:#ECE7DA; --paper:#16201A; --card:#1E2A23; --line:#33433A; --muted:#A9B3A9; --accent:#E8673F; } }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--paper); color:var(--ink); font:16px/1.55 'Outfit', system-ui, -apple-system, sans-serif; -webkit-text-size-adjust:100%; }
+  main{ max-width:480px; margin:0 auto; padding:max(18px, env(safe-area-inset-top)) 16px 48px; }
+  a{ color:var(--accent); font-weight:700; }
+  .back{ display:inline-block; margin:2px 0 14px; text-decoration:none; font-weight:800; }
+  h1{ font-size:26px; line-height:1.15; margin:0 0 6px; font-weight:800; }
+  .lede{ color:var(--muted); font-weight:600; margin:0 0 18px; }
+  h2{ font-size:17px; margin:26px 0 8px; font-weight:800; }
+  p, li{ margin:0 0 8px; }
+  ul{ padding-left:20px; margin:0 0 8px; }
+  .card{ background:var(--card); border:1.5px solid var(--line); border-radius:14px; padding:12px 14px; margin:10px 0; }
+  .muted{ color:var(--muted); font-size:14px; }
+  b{ font-weight:800; }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="/">← Back to the list</a>
+  <h1>What Market List keeps, and where</h1>
+  <p class="lede">No accounts, no ads, no tracking. The short version: a list lives in one place online and anyone with its link can open it; a few features send what you give them to an AI service to be read; nothing is sold.</p>
+
+  <h2>Your list</h2>
+  <p>Each list is one record in Google's <b>Firebase</b> database (Cloud Firestore), filed under the list's code — the
+     long string of letters and digits in its link. <b>Anyone who has the link can open and change the list</b>; there is
+     no sign-in, so keep the link to the people you shop with (up to four).</p>
+  <div class="card">
+    <p><b>In the list, shared with everyone on it:</b></p>
+    <ul>
+      <li>the items, their amounts, notes and which shop they are for; Regulars; the meal plan and recipes;</li>
+      <li>the names people chose when they joined (whatever they typed — it need not be a real name);</li>
+      <li>when things were bought, so the app can suggest restocks; the shop order it has learned;</li>
+      <li>prices and spending read from receipts — the shop, the day, each item's price and the total; never the photo;</li>
+      <li>saved occasions; your memberships' settings (which ones you have, and when this month's 10% was used);</li>
+      <li>"who is shopping now", only if that person turned it on: their name, the shop's name and the time, for 90 minutes.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <p><b>Only on this phone:</b> which lists it knows, the name you chose, your settings and look, the list's history,
+       a daily backup for a week, what it has learned for its predictions, and small counters (receipts read today).</p>
+  </div>
+
+  <h2>What leaves the app, and only when you use it</h2>
+  <p>These features go through the app's own small server (on Vercel), which holds the keys to the services below.
+     Your list is never sent with them.</p>
+  <ul>
+    <li><b>Smart add</b> — the words you type go to an AI model (Google Gemini, or Groq) to be split into items.</li>
+    <li><b>A recipe</b> from text, a photo, a web page or a TikTok — the text or photo goes to Gemini or Groq; for a link,
+        the server fetches that page (for TikTok, the video's public caption) and sends its text.</li>
+    <li><b>Recipe search</b> — what you search for goes to a web-search service (Tavily, Serper or Brave, whichever is set
+        up) and the results to Gemini or Groq.</li>
+    <li><b>Reading a receipt</b> — the photo goes to Gemini or Groq to be read. The app's server never keeps or logs the
+        photo or what it read; the prices you confirm are saved in your list.</li>
+    <li><b>Report a problem</b> — what you write, and, if you leave "Include app details" ticked, the app's version, the
+        page, your layout, icon and theme settings, screen size and browser. It becomes an issue in the developer's
+        GitHub repository (or a line in the server's log).</li>
+    <li><b>Crash reports</b> — when the app breaks, it sends the error's first lines, the version, the page, the screen
+        size and the browser: at most three a day, never the list, never its code.</li>
+  </ul>
+  <p class="muted">Each of these services handles what it receives under its own terms — Google, Groq, the search
+     services, GitHub, and Vercel, which also sees the usual web requests (an IP address and the time) as it serves the
+     app. What they keep, and for how long, is set by them and could not be checked from here.</p>
+
+  <h2>What the app never does</h2>
+  <ul>
+    <li>No advertising, analytics, tracking pixels or third-party cookies.</li>
+    <li>Nothing is sold or shared for marketing.</li>
+    <li>No location leaves the phone: the shops' distances are worked out on it.</li>
+  </ul>
+
+  <h2>Deleting</h2>
+  <p>In <b>Settings › Your data</b>:</p>
+  <ul>
+    <li><b>Leave this list</b> — your name comes off it and this phone forgets it. The others keep the list.</li>
+    <li><b>Empty this list for everyone</b> — items, Regulars, the plan, prices, spending, occasions and what the app has
+        learned are cleared for everyone on it. Its name, people, categories and stores stay.</li>
+    <li><b>Forget everything on this phone</b> — every list, name, setting and backup kept here. The shared lists stay
+        for their people.</li>
+  </ul>
+  <p class="muted">"Clear prices and spending" in Settings › Prices clears just those. A problem report already sent
+     can be removed by the developer — ask through Report a problem.</p>
+
+  <h2>Questions</h2>
+  <p>Use <b>Settings › Report a problem</b>. It reaches the person who builds the app.</p>
+  <p class="muted">Written for Market List v2.25, October 2026.</p>
+  <a class="back" href="/">← Back to the list</a>
+</main>
+</body>
+</html>

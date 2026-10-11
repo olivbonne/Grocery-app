@@ -1,0 +1,27 @@
+rules_version = '2';
+// v2.25 (the app review's R25). Market List has no sign-in yet, so these rules cannot say WHO may open a list: its
+// code, in the share link, is the key. What they can do, and do:
+//  - a list is read only by its exact code; nobody can ask for the list of lists (so codes cannot be harvested);
+//  - a list has at most four people (one that somehow has more is never locked out — it just cannot grow);
+//  - lists are never deleted through the app (Settings › Your data empties one instead);
+//  - nothing outside lists/ can be read or written.
+// The app only ever does: get/listen to lists/{code}, and set it whole (create or update). Publish from the Firebase
+// console (Firestore Database › Rules) and try it in the Rules Playground first — see docs/firestore-rules.md.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function people(d) { return d.get('members', []).size(); }
+
+    match /lists/{code} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if code.size() <= 64 && people(request.resource.data) <= 4;
+      allow update: if people(request.resource.data) <= 4
+                    || people(request.resource.data) <= people(resource.data);
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
