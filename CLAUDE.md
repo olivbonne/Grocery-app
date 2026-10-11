@@ -4,8 +4,9 @@
 A vanilla-JS PWA, no build step, no framework. Since v2.19 (the module split, phase 1) `index.html` is the
 shell — markup, the Firebase config and three small boot scripts — the styles are `app.css`, and the app is
 one ES module, `js/app.js` (several thousand lines), importing the reference data (`js/data/catalog.js`),
-the drawings (`js/data/drawings.js`) and, since v2.20, the 10% shop's logic (`js/tenpct.js` — the first
-feature built as its own module: pure functions, no imports, the app passes in what they need). Until v2.18 all of it lived inline in `index.html`; it moved byte
+the drawings (`js/data/drawings.js`) and the logic of the features built since as modules of their own — the 10%
+shop (`js/tenpct.js`, v2.20) and which store is cheaper (`js/compare.js`, v2.21): pure functions, no imports, the
+app passes in what they need, so each is unit-tested in Node by its version's suite. Until v2.18 all of it lived inline in `index.html`; it moved byte
 for byte. Later phases move cohesive parts of `js/app.js` into modules of their own. Firebase Firestore for
 live household sync, Vercel serves `main` as static files. Used as an iPhone home-screen app, portrait-only,
 max-width 480px.

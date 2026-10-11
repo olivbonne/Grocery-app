@@ -7,13 +7,14 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.20";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.20";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.20";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.21";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.21";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.21";
+import { compareStores, worthIt } from "./compare.js?v=2.21";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.20";
+const APP_VERSION = "v2.21";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -153,7 +154,7 @@ function mergeAmt(a, b){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -3696,7 +3697,7 @@ function renderMain(){
     ${checkedBar}
     <div class="wrap ${shopMode?'shop':''}" role="main">
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
-      ${installCardHTML()}${rcptNudgeHTML()}${tenCardHTML()}${(state.items.length===0)?`<div class="empty">
+      ${installCardHTML()}${rcptNudgeHTML()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">Your list is empty</p>
           <p class="empty-sub">Tap <b>Add items</b> below — or start from these:</p>
@@ -3714,7 +3715,7 @@ function renderMain(){
   ${fabMoveOpen?fabMoveSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -4026,7 +4027,7 @@ function renderPlanTab(){
   ${planWeekOpen?planWeekSheet():""}
   ${planAdd?planAddSheet():""}
   ${planPick?planPickSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${listsOpen?listsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
@@ -4293,6 +4294,41 @@ function wireTenSheet(){
   const cl = app.querySelector("#tenCardList"); if(cl) cl.onclick = () => tenOpen(app.querySelector("#tenCard").dataset.chain);
   const cu = app.querySelector("#tenCardUsed"); if(cu) cu.onclick = () => { const m = memb(), k = app.querySelector("#tenCard").dataset.chain; const p = membMark(m, k, true); membSave(m); showToast(`${CHAINS[k].short} ${m[k].pct}% marked as used for ${monthName(p)}`); };
   const ch = app.querySelector("#tenCardHide"); if(ch) ch.onclick = () => { const c = app.querySelector("#tenCard"); tenHide(c.dataset.chain, c.dataset.period); };
+}
+/* v2.21 which store is cheaper for this list (plan item 6) — the logic is js/compare.js. The list is what is still to buy;
+   prices are the household's own, from receipts, at most 60 days old. A store's chain with an unused 10% this month
+   says what that would take off. */
+var cmpOpen = false;   // the comparison sheet. var: render() reads it at boot
+function cmpModel(){ return compareStores({ items:state.items.filter(i => !i.checked), lookup:name => priceLookup(name) || [], maxAgeDays:60, minItems:3 }); }
+function cmpStoreLine(s, of){ const k = chainOfStore(s.name), m = k ? memb()[k] : null, p = m && m.on ? periodOf(new Date(), m.day) : null;
+  const ten = (p && !m.used[p.key]) ? ` · ${m.pct}% off with your ${esc(CHAINS[k].short)} shop: about ${priceMoney(Math.max(0, s.total - Math.min(m.cap, s.total * m.pct / 100)))}` : "";
+  const st = s.id ? storeById(s.id) : null, here = storeCoord(st), home = storeLocs.home;
+  const km = (here && home) ? ` · ${(distM(home, here) / 1000).toFixed(distM(home, here) < 10000 ? 1 : 0)} km from home` : "";
+  return `<div class="cmprow"><span class="cmp-n">${esc(s.name)}<span class="cmp-s">${s.n} of ${of} priced${km}${ten}</span></span><span class="cmp-p">${priceMoney(s.total)}</span></div>`; }
+function cmpSheetHTML(){ const c = cmpModel(), b = c.best;
+  return `<div class="sheet-bg" id="cmpBg"><div class="sheet" id="cmpSheet" role="dialog" aria-labelledby="cmpTitle">
+    <div class="disp" id="cmpTitle" style="font-weight:800;font-size:17px;margin-bottom:4px">Which store is cheaper</div>
+    <div class="hint" style="text-align:left;margin:0 0 10px">${c.of ? `For the ${c.of} thing${c.of === 1 ? "" : "s"} still to buy, from what you paid in the last 60 days. Stores are compared only on what both have prices for.` : "Nothing is on the list to buy yet — add things, and this compares the stores you have receipts from."}</div>
+    ${b ? `<div class="cmpbest">${esc(b.cheaper)} is about ${priceMoney(b.diff)} cheaper than ${esc(b.dearer)} on the ${b.n} things both have prices for (${priceMoney(b.lo)} against ${priceMoney(b.hi)}).</div>` : `<div class="cmpbest">Not enough prices yet to compare two stores on the same things — reading a receipt from each store fills this in.</div>`}
+    ${c.stores.length ? `<div class="cmprows">${c.stores.map(s => cmpStoreLine(s, c.of)).join("")}</div>` : ""}
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="optaction" id="cmpClose" style="margin-top:0">Close</button></div>
+  </div></div>`; }
+function cmpHidden(){ try{ return localStorage.getItem("ml_cmphide") === dayKey(new Date()); }catch(e){ return false; } }
+/* The Shop card: before a shop (nothing in the cart yet), when one store is worth it on enough of the list, and not put
+   away today. */
+function cmpCardHTML(){ if(cmpHidden() || state.items.some(i => i.checked)) return "";
+  const c = cmpModel(), b = c.best; if(!worthIt(b)) return "";
+  return `<div class="installcard cmpcard" id="cmpCard" role="note">
+    <div class="ic-t">Cheaper at ${esc(b.cheaper)}</div>
+    <div class="ic-b">About ${priceMoney(b.diff)} less than ${esc(b.dearer)} for ${b.n} of the ${c.of} things on your list, from your receipts.</div>
+    <div class="ic-btns"><button class="newlist" id="cmpCardGo">Compare</button><button class="optaction" id="cmpCardHide">Not today</button></div>
+  </div>`; }
+function wireCmp(){
+  const g = app.querySelector("#cmpCardGo"); if(g) g.onclick = () => { cmpOpen = true; render(); };
+  const h = app.querySelector("#cmpCardHide"); if(h) h.onclick = () => { try{ localStorage.setItem("ml_cmphide", dayKey(new Date())); }catch(e){} render(); };
+  const o = app.querySelector("#optCompare"); if(o) o.onclick = () => { cmpOpen = true; render(); };
+  const c = app.querySelector("#cmpClose"); if(c) c.onclick = () => { cmpOpen = false; render(); };
+  const bg = app.querySelector("#cmpBg"); if(bg) bg.onclick = e => { if(e.target === bg){ cmpOpen = false; render(); } };
 }
 /* v2.17: the receipt is in your hand at the till, not at the bottom of Settings. After a shop is finished the Shop
    page asks for it for up to three hours ("Got the receipt?"). Off in Settings › Prices; never past the day's free
@@ -4841,7 +4877,7 @@ function wirePlanTab(){
   const st=app.querySelector("#setNavP"); if(st) st.onclick=()=>{ settingsFrom=0; gotoPage(2); };
   wireListsSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireRptSheet(); wireRstSheet();
   wireUserTiles();
 }
 /* v1.90: a recipe page shared into the app. Android hands it over directly through the manifest's
@@ -4989,7 +5025,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>Add items…</span></button></div>`:""}
-  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -5052,7 +5088,7 @@ function wirePlanPage(){
   const qbc=app.querySelector("#qbannerClose"); if(qbc) qbc.onclick=()=>{ quickEdit=null; render(); };
   const qbr=app.querySelector("#qbannerRemove"); if(qbr) qbr.onclick=()=>{ const it=state.items.find(i=>i.id===quickEdit); const nm=it?cap(it.name):""; const id=quickEdit; quickEdit=null; planRemove(id); if(nm) showToast(nm+" moved to Regulars"); };
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireRptSheet(); wireRstSheet();
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>gotoPage(0);
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireUserTiles();
@@ -5074,7 +5110,7 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
     if(i){ i.value=""; i.parentElement.classList.remove("has"); i.focus(); } filterOptions(); };
   wireOptions();
   wireEditSheet();
-  wireRcptSheet(); wireTenSheet(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 /* v1.77 item 3: which sections are folded. Keyed by the section's own name rather than its index, so
@@ -5725,7 +5761,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -6116,6 +6152,7 @@ function optionsBody(){
     ${(view!=="lists") ? `${sect("Prices")}
       <button class="optaction" id="optRcpt" style="margin-top:2px">${CAMERA_SVG(16)} Read a receipt</button>
       ${row("Ask after a shop", `<div class="seg"><button data-opt-rcptask="1" class="${rcptAskOn()?'on':''}">On</button><button data-opt-rcptask="0" class="${!rcptAskOn()?'on':''}">Off</button></div>`)}
+      <button class="optaction" id="optCompare">${/* v2.21 */""}Which store is cheaper for this list</button>
       <div style="margin:6px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${(()=>{ const pc=Object.keys(state.prices||{}).length; return pc ? `${pc} item${pc===1?"":"s"} with a remembered price. Kept in this list, shared only with the people on it.` : "Read a receipt after a shop and the app remembers what you paid at each store. Free."; })()}</div>
       ${Object.keys(state.prices||{}).length ? `<button class="optaction" id="optPriceClear">${BIN_SVG(16)} Clear price memory</button>` : ""}` : ""}
     ${(view!=="lists") ? `${sect("Memberships")}${/* v2.20 the 10% shop: which memberships the household has, the rules (they change), this month */""}
@@ -6201,7 +6238,7 @@ function renderSettingsPage(){
     ${bottomNav({planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
     ${diagOpen?diagSheet():""}
     ${listsOpen?listsSheet():""}
-    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
     ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
     ${editing?editSheet():""}
@@ -6372,7 +6409,7 @@ function wireAddBar(){
 function wire(){
   wireAddSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireRptSheet(); wireRstSheet();
   const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>catShown(i.cat)===c.id)).map(c=>c.id);
     const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);
