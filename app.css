@@ -819,6 +819,29 @@
   .cmprow .cmp-n { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
   .cmprow .cmp-s { font-size:11.5px; font-weight:600; color:var(--muted2); }
   .cmprow .cmp-p { flex:none; font-variant-numeric:tabular-nums; }
+  /* v2.22 a note, and which shop it is for, as a tile's last line — its own line in the row layouts; in the tile's own
+     ink, a little quieter, so it reads on every fill */
+  .pill .pnote { display:block; order:20; min-width:0; max-width:100%; font-size:11.5px; font-weight:600; color:inherit; opacity:.78;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3; text-align:left; }
+  .shop .pill.done .pnote { text-decoration:none; }
+  /* row layouts: wrap, so the note takes a line of its own under the icon and name */
+  .pill.hasnote { flex-wrap:wrap; max-width:100%; }   /* the cap: a tile sized to its words would otherwise grow to a long note */
+  .pill.hasnote .pnote { flex:0 0 100%; }
+  /* small tiles in one or two columns keep their amount beside the name with nowrap — with a note that left the
+     name no width at all, so these wrap too (the L/XL icon-on-top rule outweighs this and stays a column) */
+  .shop .zoomer.smalltile.grid1 .pill.hasnote, .shop .zoomer.smalltile.grid2 .pill.hasnote { flex-wrap:wrap; }
+  /* the icon-on-top layouts are a COLUMN: wrapping one would start a second column beside the icon, so there the
+     note is simply the last line, centred like the rest */
+  .shop .zoomer.gridmode:not(.smalltile) .pill.hasnote, .shop .zoomer.largevar .pill.hasnote,
+  html[data-icosize="l"] .shop .zoomer .pill.hasnote, html[data-icosize="xl"] .shop .zoomer .pill.hasnote { flex-wrap:nowrap; }
+  .shop .zoomer.gridmode:not(.smalltile) .pill.hasnote .pnote, .shop .zoomer.largevar .pill.hasnote .pnote,
+  html[data-icosize="l"] .shop .zoomer .pill.hasnote .pnote, html[data-icosize="xl"] .shop .zoomer .pill.hasnote .pnote { flex:none; width:100%; text-align:center; }
+  /* v2.22 at a shop, what is for another one */
+  .elsewhere { margin-top:6px; }
+  .elsebtn { display:flex; align-items:center; justify-content:space-between; width:100%; min-height:44px; border:none; border-radius:12px; padding:10px 14px;
+    background:var(--chip); color:var(--text); font-weight:800; font-size:14px; }
+  .elsebtn .cnum { color:var(--muted2); font-weight:800; }
+  .elsehd { margin:10px 2px 6px; font-size:11.5px; font-weight:800; color:var(--muted2); text-transform:uppercase; letter-spacing:.04em; }
   .slotseg button { flex:1; min-width:0; padding:7px 4px; border-radius:10px; background:var(--card); border:1.5px solid var(--line); color:var(--text); font-size:13px; font-weight:600; }
   .slotseg button.on { border:2px solid var(--ink); font-weight:800; }
   /* v2.01: a planned recipe's method, read in the pick sheet. */
