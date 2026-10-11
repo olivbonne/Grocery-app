@@ -7,15 +7,15 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.25";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.25";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.25";
-import { compareStores, worthIt } from "./compare.js?v=2.25";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.25";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.26";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.26";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.26";
+import { compareStores, worthIt } from "./compare.js?v=2.26";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.26";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.25";
+const APP_VERSION = "v2.26";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -155,7 +155,7 @@ function mergeAmt(a, b){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -1636,7 +1636,7 @@ function switchList(code){ const wasPlan = (view==="plan"); listsOpen=false; if(
   reloadLearn();
   try{ collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}'); }catch(e){ collapse={cats:[],ba:false}; }
   collapse.checked = false;   // v2.10: the cart always opens folded; a tap unfolds it for the session
-  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[] };
+  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[], looks:{} };
   try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state=c; dropTube(); aiAdopt(); } }catch(e){}
   if(!state.purch || typeof state.purch!=="object") state.purch={};
   state.purch = purchMerge(state.purch, purch);   // fold any legacy per-device history into the shared copy
@@ -1674,7 +1674,7 @@ function playPlan(add){ if(!soundOn) return;
   } catch(e){} }
 let lastPop=null;
 
-let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[] };
+let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[], looks:{} };
 rememberList(listCode);
 try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state = c; dropTube(); aiAdopt(); } } catch(e){}
 if(!state.purch || typeof state.purch!=="object") state.purch={};
@@ -1842,7 +1842,7 @@ function subscribe(){
       const mg = baMerge(d.buyAgain||[], d.baTomb||{}, state.buyAgain||[], state.baTomb||{});   // A24 conflict-free Buy-again
       const mgPurch = purchMerge(d.purch||{}, purch||{});                                        // B4 shared restock history (union merge)
       /* v2.09: prices rides along like plan does. This line rebuilds state from a fixed shape, so a field it does not name is wiped by the next snapshot (CLAUDE.md, the fixed-shape trap). */
-      state = { items:d.items||[], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]}, prices: d.prices||{}, aisle: d.aisle||{}, memb: d.memb||{}, shopping: d.shopping||{}, templates: Array.isArray(d.templates)?d.templates:[], spend: Array.isArray(d.spend)?d.spend:[] };
+      state = { items:d.items||[], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]}, prices: d.prices||{}, aisle: d.aisle||{}, memb: d.memb||{}, shopping: d.shopping||{}, templates: Array.isArray(d.templates)?d.templates:[], spend: Array.isArray(d.spend)?d.spend:[], looks: (d.looks && typeof d.looks==="object") ? d.looks : {} };
       purch = state.purch;                                                                        // keep the working ref pointed at the shared copy
       if(!state.name){ const ln=(getLists().find(l=>l.code===listCode)||{}).name; if(ln){ state.name=ln; save(); } }
       if(dropTube()) save(); aiAdopt();
@@ -2345,7 +2345,7 @@ async function exportListText(){
 const SNAP_KEEP = 7;
 function listDoc(s){ return { items:s.items||[], buyAgain:s.buyAgain||[], baTomb:s.baTomb||{}, stores:s.stores||[], storeMeta:s.storeMeta||{},
   members:s.members||[], categories:s.categories===undefined?null:s.categories, name:s.name||"", baMeta:s.baMeta||null, predictReset:s.predictReset||0,
-  purch:s.purch||{}, plan:s.plan||{days:{},recipes:[]}, prices:s.prices||{}, aisle:s.aisle||{}, memb:s.memb||{}, templates:Array.isArray(s.templates)?s.templates:[], spend:Array.isArray(s.spend)?s.spend:[] }; }   // v2.23: occasions are kept; who is shopping is presence, not data — never backed up
+  purch:s.purch||{}, plan:s.plan||{days:{},recipes:[]}, prices:s.prices||{}, aisle:s.aisle||{}, memb:s.memb||{}, templates:Array.isArray(s.templates)?s.templates:[], spend:Array.isArray(s.spend)?s.spend:[], looks:(s.looks && typeof s.looks==="object") ? s.looks : {} }; }   // v2.23: occasions are kept; who is shopping is presence, not data — never backed up
 function snapKey(code){ return "ml_snap_"+code; }
 function snapList(code){ try{ const a=JSON.parse(localStorage.getItem(snapKey(code))||"[]"); return Array.isArray(a)?a.filter(x=>x && x.list && x.at):[]; }catch(e){ return []; } }
 var _forgetting = false;   // v2.25: set by Leave and Forget — the page going hidden as it navigates away must not write a backup of what was just forgotten. var: boot-order rule
@@ -2388,7 +2388,7 @@ function restoreList(list, label){
   const P=(list.plan && typeof list.plan==="object") ? list.plan : null;
   state.items = Array.isArray(list.items) ? list.items : [];
   if(P) state.plan = { days:P.days||{}, recipes:P.recipes||[], saved:Array.isArray(P.saved)?P.saved:[] };
-  if(list.prices && typeof list.prices==="object") state.prices = list.prices; if(list.memb && typeof list.memb==="object") state.memb = list.memb; if(Array.isArray(list.templates)) state.templates = list.templates; if(Array.isArray(list.spend)) state.spend = list.spend;
+  if(list.prices && typeof list.prices==="object") state.prices = list.prices; if(list.memb && typeof list.memb==="object") state.memb = list.memb; if(Array.isArray(list.templates)) state.templates = list.templates; if(Array.isArray(list.spend)) state.spend = list.spend; if(list.looks && typeof list.looks==="object") state.looks = list.looks;
   if(Array.isArray(list.stores)) state.stores = list.stores;
   if(list.storeMeta && typeof list.storeMeta==="object") state.storeMeta = list.storeMeta;
   if(list.categories!==undefined) state.categories = list.categories;
@@ -3805,7 +3805,7 @@ function renderMain(){
     ${checkedBar}
     <div class="wrap ${shopMode?'shop':''}" role="main">
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
-      ${shoppingHTML()}${installCardHTML()}${rcptNudgeHTML()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
+      ${shoppingHTML()}${lookCardHTML()}${installCardHTML()}${rcptNudgeHTML()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">Your list is empty</p>
           <p class="empty-sub">Tap <b>Add items</b> below — or start from these:</p>
@@ -4478,6 +4478,36 @@ function wireSpend(){
   const c = app.querySelector("#spendClose"); if(c) c.onclick = () => { spendOpen = false; render(); };
   const bg = app.querySelector("#spendBg"); if(bg) bg.onclick = e => { if(e.target === bg){ spendOpen = false; render(); } };
 }
+/* v2.26 your look on your other phones (plan item 7). Explicit, not automatic, so two phones never fight over it: "Send
+   this look to my other phones" keeps it in the list under your name (state.looks), and a phone where you are that name
+   offers it once on the Shop page. Only the look travels — what an appearance slot holds, never data — and no value over
+   2,000 characters, at most 30,000 in all, so the list stays small. ml_lookseen: the newest look this phone has sent,
+   used or declined. */
+function lookKeys(){ const o = appearanceSnapshot(), out = {}; let n = 0;
+  for(const k of Object.keys(o).sort()){ const v = String(o[k]); if(v.length > 2000 || n + v.length > 30000) continue; out[k] = v; n += v.length; }
+  return out; }
+function lookSeen(){ try{ return +localStorage.getItem("ml_lookseen") || 0; }catch(e){ return 0; } }
+function lookSeenSet(at){ try{ localStorage.setItem("ml_lookseen", String(at)); }catch(e){} }
+function lookSend(){ if(!me) return; const at = Date.now();
+  state.looks = Object.assign({}, state.looks, { [me]:{ at, keys:lookKeys() } }); lookSeenSet(at);
+  save(); render(); showToast("Sent — your other phones will offer it"); }
+function lookOffer(){ const L = me && state.looks && state.looks[me]; if(!L || !L.keys || typeof L.keys !== "object") return null;
+  if((+L.at || 0) <= lookSeen()) return null;
+  const cur = lookKeys(), a = Object.keys(L.keys), b = Object.keys(cur);
+  if(a.length === b.length && a.every(k => cur[k] === L.keys[k])) return null;   // this phone already looks like that
+  return L; }
+function lookCardHTML(){ const L = lookOffer(); if(!L) return "";
+  const when = new Date(+L.at).toLocaleDateString(undefined, { day:"numeric", month:"short" });
+  return `<div class="installcard lookcard" id="lookCard" role="note">
+    <div class="ic-t">Your look from another phone</div>
+    <div class="ic-b">You sent it on ${esc(when)}: colours, tiles, icons and bars. Use it here too?</div>
+    <div class="ic-btns"><button class="newlist" id="lookUse">Use it</button><button class="optaction" id="lookNo">Not now</button></div>
+  </div>`; }
+function wireLook(){
+  const s = app.querySelector("#optLookSend"); if(s) s.onclick = lookSend;
+  const u = app.querySelector("#lookUse"); if(u) u.onclick = () => { const L = lookOffer(); if(!L) return; lookSeenSet(L.at); applyStoredAppearance(L.keys); };   // reloads
+  const n = app.querySelector("#lookNo"); if(n) n.onclick = () => { const L = me && state.looks && state.looks[me]; lookSeenSet((L && +L.at) || Date.now()); render(); };
+}
 /* v2.17: the receipt is in your hand at the till, not at the bottom of Settings. After a shop is finished the Shop
    page asks for it for up to three hours ("Got the receipt?"). Off in Settings › Prices; never past the day's free
    receipts; gone once a receipt is read or "Not now" is tapped. The time is kept on the phone (ml_rcptnudge). */
@@ -5025,7 +5055,7 @@ function wirePlanTab(){
   const st=app.querySelector("#setNavP"); if(st) st.onclick=()=>{ settingsFrom=0; gotoPage(2); };
   wireListsSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireRptSheet(); wireRstSheet();
   wireUserTiles();
 }
 /* v1.90: a recipe page shared into the app. Android hands it over directly through the manifest's
@@ -5236,7 +5266,7 @@ function wirePlanPage(){
   const qbc=app.querySelector("#qbannerClose"); if(qbc) qbc.onclick=()=>{ quickEdit=null; render(); };
   const qbr=app.querySelector("#qbannerRemove"); if(qbr) qbr.onclick=()=>{ const it=state.items.find(i=>i.id===quickEdit); const nm=it?cap(it.name):""; const id=quickEdit; quickEdit=null; planRemove(id); if(nm) showToast(nm+" moved to Regulars"); };
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireRptSheet(); wireRstSheet();
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>gotoPage(0);
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireUserTiles();
@@ -5258,7 +5288,7 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
     if(i){ i.value=""; i.parentElement.classList.remove("has"); i.focus(); } filterOptions(); };
   wireOptions();
   wireEditSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 /* v1.77 item 3: which sections are folded. Keyed by the section's own name rather than its index, so
@@ -5914,7 +5944,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -6112,6 +6142,8 @@ function optionsBody(){
           in front of Sort and Smart add. Their own section, folded by default. */""}
     <button class="optaction optlookbtn" id="optLook"><span class="olb-t"><span>Customise the look</span><span class="olb-s">Layout, colours, bars, headings and tiles</span></span><span class="olb-c" aria-hidden="true">›</span></button>
     ${sectHR("Layout & motion")}
+    ${me ? `<button class="optaction" id="optLookSend" style="margin:2px 0 6px">${/* v2.26 */""}Send this look to my other phones</button>
+    <div style="margin:0 2px 12px;font-size:11px;color:var(--muted2);font-weight:600">Open the list on your other phone as ${esc(me)} and it offers this look, once. Only the look travels — not your list or settings.</div>` : ""}
     ${/* v1.57 item 2: four slots. One saved look was not enough to compare two ideas — which is what
           anyone actually does with this. Applying is one tap; saving is a deliberate second row, so a
           mis-tap costs you a preview rather than the look you had. */""}
@@ -6578,7 +6610,7 @@ function wire(){
   const et=app.querySelector("#elseToggle"); if(et) et.onclick=()=>{ elseOpen=!elseOpen; render(); };   // v2.22 R17
   wireAddSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireRptSheet(); wireRstSheet();
   const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>catShown(i.cat)===c.id)).map(c=>c.id);
     const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);
