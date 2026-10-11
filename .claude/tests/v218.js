@@ -34,7 +34,9 @@ const seed = (coll, extra) => `(() => {
 })()`;
 /* SUPERSEDED by v2.20: everyday Settings gained "Memberships" (the 10% shop), between Prices and Predictions. Still
    protects: the everyday sections, in order, and none of the look page's. */
-const EVERYDAY = ["Appearance","Tiles","Sort","Sound","Smart add","Measurements","Plan","Prices","Memberships","Predictions","Users","History","Other"];
+/* SUPERSEDED by v2.25: "Your data" (privacy page, leave, empty, forget — the review's R26) is a new everyday section, last.
+   This still protects the order of the everyday sections and that no look section appears among them. */
+const EVERYDAY = ["Appearance","Tiles","Sort","Sound","Smart add","Measurements","Plan","Prices","Memberships","Predictions","Users","History","Other","Your data"];
 const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings","Tile colours and shape"];
 
 (async () => {

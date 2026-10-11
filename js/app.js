@@ -7,15 +7,15 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.24";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.24";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.24";
-import { compareStores, worthIt } from "./compare.js?v=2.24";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.24";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.25";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.25";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.25";
+import { compareStores, worthIt } from "./compare.js?v=2.25";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.25";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.24";
+const APP_VERSION = "v2.25";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -205,11 +205,16 @@ function parseEntry(raw){ let s=raw.trim(); let qty=1, weight="";
   return {qty, weight, name:s}; }
 
 const uid = () => Math.random().toString(36).slice(2,9)+Date.now().toString(36);
+/* v2.25 R25: a list's code is its only key — anyone with it can open the list — so a new one is 128 random bits from the
+   cryptographic generator (25 characters of base 36), not 8 characters of Math.random(). Older codes keep working. */
+function newListCode(){
+  try{ const b = new Uint8Array(16); crypto.getRandomValues(b); let n = 0n; for(const x of b) n = (n << 8n) | BigInt(x); return n.toString(36).padStart(25, "0"); }
+  catch(e){ return (uid() + uid()).replace(/[^a-z0-9]/g, "").slice(0, 25); } }
 
 /* ---- list code: from URL, else remembered on this device, else new ---- */
 const params = new URLSearchParams(location.search);
 const LS_LASTLIST = "ml_lastlist";
-let listCode = params.get("list") || localStorage.getItem(LS_LASTLIST) || uid().slice(0,8);
+let listCode = params.get("list") || localStorage.getItem(LS_LASTLIST) || newListCode();
 localStorage.setItem(LS_LASTLIST, listCode);
 if(params.get("list") !== listCode){ params.set("list", listCode);
   history.replaceState(null,"",location.pathname+"?"+params.toString()); }
@@ -1555,7 +1560,7 @@ function duplicateListCode(code){
   listActOpen=false;
   if(!src || !src.items){ showToast("Open this list once before duplicating"); render(); return; }
   const base=(getLists().find(x=>x.code===code)||{}).name || src.name || "List";
-  const newCode=uid().slice(0,8), newName=base+" copy";
+  const newCode=newListCode(), newName=base+" copy";
   const dup={
     items:(src.items||[]).map(i=>({...i, id:uid(), checked:false, checkedBy:null})),
     buyAgain:(src.buyAgain||[]).map(b=>({...b})),
@@ -1611,7 +1616,7 @@ function newListSheet(){ return `<div class="sheet-bg" id="newListBg"><div class
       <input id="newListName" placeholder="List name" value="${esc(newListDraft)}" autocomplete="off" style="flex:1;min-width:0;height:48px;padding:0 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:16px" />
       <button id="newListCreate" style="flex:none;padding:0 18px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">Create</button>
     </div></div></div>`; }
-function createNewListFromSheet(){ const nm=(newListDraft||"").trim()||"Untitled list"; const code=uid().slice(0,8);
+function createNewListFromSheet(){ const nm=(newListDraft||"").trim()||"Untitled list"; const code=newListCode();
   rememberList(code, nm); newListOpen=false; newListDraft=""; switchList(code); view="detail"; shopMode=false; save(); render(); }
 // Re-load the per-list learning stores after listCode changes, so the AI shop order and
 // restock cadence (and the diagnostics that show them) reflect the now-active list.
@@ -2268,6 +2273,39 @@ function copyLink(){ const url=location.href;
   if(navigator.share){ navigator.share({title:"Market List", text:"Join our shared grocery list", url}).catch(()=>{}); }
   else if(navigator.clipboard){ navigator.clipboard.writeText(url); showToast("Link copied"); }
   else { showToast("Copy this URL from the address bar"); } }
+/* v2.25 R26 your data. Leave: your name off this list's people, then this phone forgets the list (its cache, learning,
+   history and backups); the others keep it. Empty: what is in the list goes for everyone — Regulars by tombstone and the
+   purchase history by the household-wide reset, so another phone's copy cannot merge them back; its name, people,
+   categories and stores stay. This phone's daily backups can still bring it back. Forget: everything this phone keeps —
+   every ml_ key, the database's offline copy, the app's stored files — then a fresh start. Shared lists are not touched. */
+function forgetListHere(code){ const sfx = "_" + code;
+  try{ for(const k of Object.keys(localStorage)) if(k.startsWith("ml_") && k.endsWith(sfx)) localStorage.removeItem(k); }catch(e){}
+  saveLists(getLists().filter(x => x.code !== code)); }
+function saveSoon(ms){ return Promise.race([Promise.resolve().then(() => save()).catch(() => {}), new Promise(r => setTimeout(r, ms || 2500))]); }   // a save that offline never confirms must not hold up leaving
+async function leaveList(){ if(!me) return;
+  if(!confirm(`Leave “${state.name || "this list"}”? Your name comes off it and this phone forgets it. The others keep the list.`)) return;
+  state.members = (state.members || []).filter(m => m !== me); shoppingClear();
+  await saveSoon(2500);
+  _forgetting = true; const gone = listCode; forgetListHere(gone);
+  try{ localStorage.removeItem(LS_LASTLIST); }catch(e){}
+  const next = getLists()[0];
+  location.href = next ? "/?list=" + encodeURIComponent(next.code) : "/"; }
+function emptyList(){
+  if(!confirm(`Empty “${state.name || "this list"}” for everyone? Items, Regulars, the plan, prices, spending, occasions and what the app has learned all go. The name, people, categories and stores stay.`)) return;
+  if(!confirm("Sure? Everyone on the list loses it. Only this phone's daily backups could bring it back.")) return;
+  const now = Date.now();
+  state.baTomb = state.baTomb || {}; (state.buyAgain || []).forEach(e => { state.baTomb[baKey(e)] = now; }); state.buyAgain = [];
+  state.items = []; state.plan = { days:{}, recipes:[] }; state.prices = {}; state.spend = []; state.templates = []; state.memb = {}; state.shopping = {}; state.aisle = {};
+  applyPredictReset(now); state.predictReset = now;
+  save(); render(); showToast("The list is empty"); }
+async function forgetPhone(){
+  if(!confirm("Forget everything on this phone? Every list, your name, your settings and the backups kept here go. The shared lists stay for the people on them — open a share link to come back.")) return;
+  _forgetting = true;
+  try{ for(const k of Object.keys(localStorage)) if(k.startsWith("ml_")) localStorage.removeItem(k); }catch(e){}
+  try{ sessionStorage.clear(); }catch(e){}
+  try{ if(window.caches) for(const k of await caches.keys()) await caches.delete(k); }catch(e){}
+  try{ if(window.indexedDB && indexedDB.databases) for(const d of await indexedDB.databases()) if(d && d.name) indexedDB.deleteDatabase(d.name); }catch(e){}
+  setTimeout(() => { location.href = "/"; }, 400); }
 /* v2.02: export what is saved in the current list as plain text, grouped by category. Weights are the
    stored text because the file is a record, not a display. */
 function buildExportText(){
@@ -2310,7 +2348,8 @@ function listDoc(s){ return { items:s.items||[], buyAgain:s.buyAgain||[], baTomb
   purch:s.purch||{}, plan:s.plan||{days:{},recipes:[]}, prices:s.prices||{}, aisle:s.aisle||{}, memb:s.memb||{}, templates:Array.isArray(s.templates)?s.templates:[], spend:Array.isArray(s.spend)?s.spend:[] }; }   // v2.23: occasions are kept; who is shopping is presence, not data — never backed up
 function snapKey(code){ return "ml_snap_"+code; }
 function snapList(code){ try{ const a=JSON.parse(localStorage.getItem(snapKey(code))||"[]"); return Array.isArray(a)?a.filter(x=>x && x.list && x.at):[]; }catch(e){ return []; } }
-function maybeSnapshot(){ try{
+var _forgetting = false;   // v2.25: set by Leave and Forget — the page going hidden as it navigates away must not write a backup of what was just forgotten. var: boot-order rule
+function maybeSnapshot(){ if(_forgetting) return; try{
   if(!state || !listCode) return;
   const has=(state.items||[]).length || (state.buyAgain||[]).length || ((state.plan&&state.plan.recipes)||[]).length;
   if(!has) return;
@@ -5348,6 +5387,9 @@ function wireOptions(){
   app.querySelectorAll("[data-memb-on]").forEach(b=>b.onclick=()=>{ const [k,v]=b.dataset.membOn.split("|"); const m=memb(); m[k].on=(v==="1"); membSave(m); });   // v2.20 the 10% shop
   app.querySelectorAll("[data-opt-sayshop]").forEach(b=>b.onclick=()=>{ const on=b.dataset.optSayshop==="1"; try{ localStorage.setItem("ml_sayshop", on?"1":"0"); }catch(e){}
     if(!on){ shoppingClear(); save(); } render(); });   // v2.23 R19: turning it off takes your name away at once
+  const olv=app.querySelector("#optLeave"); if(olv) olv.onclick=()=>{ leaveList(); };   // v2.25 R26
+  const oem=app.querySelector("#optEmpty"); if(oem) oem.onclick=()=>{ emptyList(); };
+  const ofg=app.querySelector("#optForget"); if(ofg) ofg.onclick=()=>{ forgetPhone(); };
   app.querySelectorAll("[data-memb-num]").forEach(b=>b.onclick=()=>{ const [k,f,d]=b.dataset.membNum.split("|"); const m=memb(); m[k][f]=(+m[k][f]||0)+(+d); state.memb=membNorm(m); save(); render(); });
   app.querySelectorAll("[data-memb-used]").forEach(b=>b.onclick=()=>{ const [k,v]=b.dataset.membUsed.split("|"); const m=memb(); membMark(m,k,v==="1"); membSave(m); });
   app.querySelectorAll("[data-memb-list]").forEach(b=>b.onclick=()=>tenOpen(b.dataset.membList));
@@ -6333,6 +6375,12 @@ function optionsBody(){
     ${snapsHTML()}
     <button class="optaction" id="optReport" style="margin-top:10px">${REPORT_SVG(16)} Report a problem</button>
     <button class="optaction" id="optDiag" style="margin-top:10px">${FLASK_SVG(16)} AI diagnostics</button>
+    ${sectHR("Your data")}
+    <a class="optaction" id="optPrivacy" href="/privacy.html" style="margin-top:2px">Privacy — what the app keeps, and where</a>
+    ${(me && (state.members||[]).includes(me)) ? `<button class="optaction" id="optLeave" style="margin-top:10px">Leave this list</button>` : ""}
+    <button class="optaction" id="optEmpty" style="margin-top:10px">Empty this list for everyone</button>
+    <button class="optaction" id="optForget" style="margin-top:10px">Forget everything on this phone</button>
+    <div style="margin:6px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">Leaving takes your name off this list and this phone forgets it; the others keep it. Emptying clears what is in the list for everyone — items, Regulars, the plan, prices, spending, occasions and what the app has learned. Forgetting clears every list, name, setting and backup on this phone; the shared lists stay for their people.</div>
     <div id="verFoot" style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted2);font-weight:600" title="Build: ${APP_BUILD_DATE} · hold for diagnostics">${APP_VERSION}</div>`;
 }
 function renderSettingsPage(){

@@ -2,7 +2,7 @@
 
 September 2026 · reviewed against Market List **v1.80**
 
-> **Status at v2.24 (11 October 2026).** From the §7 review, R1–R5 shipped in v2.15 (the safety net: opens with
+> **Status at v2.25 (11 October 2026).** From the §7 review, R1–R5 shipped in v2.15 (the safety net: opens with
 > no signal, crash reports, backups and restore, install card, tests on every pull request), R6–R8, R11 and
 > R13–R15 in v2.16 (the polish batch), and R9–R10 in v2.17 (the receipt card after a shop, a running total in
 > the cart). R12 shipped in v2.18: everyday Settings with a search across everything, and "Customise the look" on a
@@ -13,7 +13,9 @@ September 2026 · reviewed against Market List **v1.80**
 > (item 5) need the identity layer first. v2.22: a note on an item and where to buy it, with the things for other
 > shops folded away at a shop (R16 without photos, which need Firebase Storage; R17). v2.23: who is shopping now
 > (R19, opt-in, the shop's name only) and lists for occasions (R21). v2.24: what we spend (R20), by month, store and
-> category, from the receipts (its logic is js/spend.js). Next: R25 and R26.
+> category, from the receipts (its logic is js/spend.js). v2.25: R25's code side — 128-bit codes for new lists, and the
+> Firestore rules in the repo (firebase/firestore.rules; publishing them is the owner's step, docs/firestore-rules.md) — and
+> R26: a privacy page and Settings › Your data (leave, empty for everyone, forget this phone).
 >
 > **Status at v2.14 (11 October 2026).** The live, more detailed version of this report is the published
 > page "Market List vs Samsung Food" (the plan of what is left, the supermarkets' memberships, pricing in
