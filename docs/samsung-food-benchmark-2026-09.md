@@ -2,7 +2,7 @@
 
 September 2026 · reviewed against Market List **v1.80**
 
-> **Status at v2.21 (11 October 2026).** From the §7 review, R1–R5 shipped in v2.15 (the safety net: opens with
+> **Status at v2.22 (11 October 2026).** From the §7 review, R1–R5 shipped in v2.15 (the safety net: opens with
 > no signal, crash reports, backups and restore, install card, tests on every pull request), R6–R8, R11 and
 > R13–R15 in v2.16 (the polish batch), and R9–R10 in v2.17 (the receipt card after a shop, a running total in
 > the cart). R12 shipped in v2.18: everyday Settings with a search across everything, and "Customise the look" on a
@@ -10,7 +10,8 @@ September 2026 · reviewed against Market List **v1.80**
 > separate files now, each loaded under the release's version. v2.20 built the 10% shop (plan item 3): memberships
 > with their rules as settings, the month's stock-up list, the month-end reminder, and the receipt that marks the
 > month used. v2.21: which store is cheaper (plan item 6), from the household's own receipts — shared prices
-> (item 5) need the identity layer first. Next: the review's bigger features (R16 on).
+> (item 5) need the identity layer first. v2.22: a note on an item and where to buy it, with the things for other
+> shops folded away at a shop (R16 without photos, which need Firebase Storage; R17). Next: R19 and R21.
 >
 > **Status at v2.14 (11 October 2026).** The live, more detailed version of this report is the published
 > page "Market List vs Samsung Food" (the plan of what is left, the supermarkets' memberships, pricing in

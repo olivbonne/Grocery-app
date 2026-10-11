@@ -7,14 +7,14 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.21";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.21";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.21";
-import { compareStores, worthIt } from "./compare.js?v=2.21";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.22";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.22";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.22";
+import { compareStores, worthIt } from "./compare.js?v=2.22";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.21";
+const APP_VERSION = "v2.22";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -1677,6 +1677,17 @@ purch = state.purch;
 if(shopMode && !(state.items||[]).length){ shopMode=false; }   // nothing to shop — open on Plan
 let toast=null, toastAction=null, undoSnap=null, _toastT=null, catEntry=null, editing=null, configured=false;
 let editCatOpen=false, editSubOpen=false;   // v1.26 collapsible Category / Subcategory sections in the edit sheet
+var editWhereOpen=false, elseOpen=false;   // v2.22 the edit sheet's "Where to buy" section; the Shop page's "For other shops". var: renders read them at boot
+/* v2.22 R17 where to buy it. "Away" is the shop you are at — a real saved store, not Home or an unknown place — and an
+   item for ANOTHER shop is not "here". At home nothing is away, so everything is here. */
+function awayStoreId(){ const s=activeStore(); return (s && s.id && isRealStore(s.id)) ? s.id : ""; }
+function listHere(i){ const a=awayStoreId(); return !a || !i.where || i.where===a; }
+/* v2.22 R16/R17 the tile's second line: which shop it is for (unless you are there) and its note */
+function noteLine(i){ const a=awayStoreId(), w=i.where||"", st=w ? storeById(w) : null;
+  return [(st && st.name && w!==a) ? st.name : "", String(i.note||"").trim()].filter(Boolean).join(" · "); }
+/* the same, for text that leaves the app (share, export) */
+function noteSuffix(i){ const st=i.where ? storeById(i.where) : null, n=String(i.note||"").trim();
+  return (st && st.name ? " ("+st.name+")" : "") + (n ? " — "+n : ""); }
 let draftMain="", draftCatText="", pendingSubFocus=null, quickEdit=null;
 
 const ALL_PICS = ["milk.png","cross.png","ramen.png","hammer.png"];
@@ -2021,13 +2032,13 @@ function moveToBuyAgain(entries){
   for(const e of entries){ const k=baKey(e);
     state.buyAgain = state.buyAgain.filter(x=>baKey(x)!==k);
     delete state.baTomb[k];
-    state.buyAgain.unshift({name:e.name,cat:e.cat,qty:e.qty||1,weight:e.weight||"",sub:e.sub||"",ts:Date.now()}); }
+    state.buyAgain.unshift({name:e.name,cat:e.cat,qty:e.qty||1,weight:e.weight||"",sub:e.sub||"",note:e.note||"",where:e.where||"",ts:Date.now()}); }
   state.buyAgain = state.buyAgain.slice(0,BA_CAP);
 }
 function sweep(msg){ const checked=state.items.filter(i=>i.checked); if(!checked.length) return;
   const prev=snapState();
   recordPurchase(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||""})));   // B4 log purchase cadence
-  moveToBuyAgain(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||""})));
+  moveToBuyAgain(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||"",note:i.note||"",where:i.where||""})));
   for(const i of checked){ histLog("buy", i.name); histLog("regadd", i.name); }
   state.items = state.items.filter(i=>!i.checked);
   aiPublish(); rcptNudgeSet(); save(); render(); showUndo(prev, msg || (checked.length+" saved to Regulars")); }   // v2.10: msg from autoFinishAt
@@ -2036,13 +2047,13 @@ function sweep(msg){ const checked=state.items.filter(i=>i.checked); if(!checked
 function addFromRegular(name,cat){ playPlan(true);
   const entry = state.buyAgain.find(x=>x.name===name && x.cat===cat) || {name,cat,qty:1};
   const ex = state.items.find(i=>!i.checked && i.name.toLowerCase()===name.toLowerCase() && i.cat===cat);
-  if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",checked:false,by:me}); histLog("add", entry.name); }
+  if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",note:entry.note||"",where:entry.where||"",checked:false,by:me}); histLog("add", entry.name); }
   save(); renderKeepingAdd();
 }
 function restore(name,cat){ playPlan(true);
   const entry = state.buyAgain.find(x=>x.name===name && x.cat===cat) || {name,cat,qty:1};
   const ex = state.items.find(i=>!i.checked && i.name.toLowerCase()===name.toLowerCase() && i.cat===cat);
-  if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",checked:false,by:me}); histLog("add", entry.name); }
+  if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",note:entry.note||"",where:entry.where||"",checked:false,by:me}); histLog("add", entry.name); }
   histLog("regrm", entry.name);
   state.buyAgain = state.buyAgain.filter(x=>!(x.name.toLowerCase()===name.toLowerCase() && x.cat===cat));
   save(); render();
@@ -2051,9 +2062,9 @@ function restore(name,cat){ playPlan(true);
 /* item edit */
 function saveEdit(){ if(!editing||!editing.name.trim()) return;
   const it=state.items.find(i=>i.id===editing.id);
-  if(it){ it.name=editing.name.trim(); it.qty=Math.max(1,editing.qty||1); it.cat=editing.cat; it.sub=editing.sub||null; it.starred=!!editing.starred; it.weight=editing.weight||""; it.tags=Array.isArray(editing.tags)?editing.tags:[]; }
+  if(it){ it.name=editing.name.trim(); it.qty=Math.max(1,editing.qty||1); it.cat=editing.cat; it.sub=editing.sub||null; it.starred=!!editing.starred; it.weight=editing.weight||""; it.tags=Array.isArray(editing.tags)?editing.tags:[]; it.note=String(editing.note||"").trim().slice(0,140); it.where=editing.where||""; }
   editing=null; save(); render(); }
-function removeEditing(){ moveToBuyAgain([{name:editing.name,cat:editing.cat,qty:editing.qty||1,weight:editing.weight||"",sub:editing.sub||""}]);
+function removeEditing(){ moveToBuyAgain([{name:editing.name,cat:editing.cat,qty:editing.qty||1,weight:editing.weight||"",sub:editing.sub||"",note:editing.note||"",where:editing.where||""}]);
   histLog("rm", editing.name); histLog("regadd", editing.name);
   state.items = state.items.filter(i=>i.id!==editing.id); editing=null; save(); render(); }
 function deleteItemEditing(){ const prev=snapState(); const nm=editing.name; const ct=editing.cat;
@@ -2212,7 +2223,7 @@ function buildExportText(){
   const cats=catList(); const known=new Set(cats.map(c=>c.id));
   const items=(state.items||[]).filter(i=>i&&String(i.name||"").trim());
   const ba=(state.buyAgain||[]).filter(i=>i&&String(i.name||"").trim());
-  const line=i=>"  - "+((i.qty>1)?`${i.qty}× `:"")+(i.weight?i.weight+" ":"")+cap(i.name);
+  const line=i=>"  - "+((i.qty>1)?`${i.qty}× `:"")+(i.weight?i.weight+" ":"")+cap(i.name)+noteSuffix(i);
   const byName=(a,b)=>String(a.name).localeCompare(String(b.name),undefined,{sensitivity:"base"});
   const section=(title,list)=>{
     if(!list.length) return null;
@@ -2336,7 +2347,7 @@ function installDismiss(){ try{ localStorage.setItem("ml_installhint","1"); }cat
    plain text the other app can show (Notes, WhatsApp, Messages). The full export stays in Settings. */
 function buildShareText(){ const cats=catList(), known=new Set(cats.map(c=>c.id));
   const items=(state.items||[]).filter(i=>i && !i.checked && String(i.name||"").trim());
-  const line=i=>"• "+((i.qty>1)?`${i.qty}× `:"")+(i.weight?i.weight+" ":"")+cap(i.name);
+  const line=i=>"• "+((i.qty>1)?`${i.qty}× `:"")+(i.weight?i.weight+" ":"")+cap(i.name)+noteSuffix(i);
   const groups=[]; cats.forEach(c=>{ const g=items.filter(i=>i.cat===c.id); if(g.length) groups.push(c.label+"\n"+g.map(line).join("\n")); });
   const other=items.filter(i=>!known.has(i.cat)); if(other.length) groups.push("Other\n"+other.map(line).join("\n"));
   return `${state.name||"Shopping list"} — ${items.length} to buy\n\n`+(groups.length?groups.join("\n\n"):"Nothing to buy.")+"\n"; }
@@ -3410,8 +3421,9 @@ function pillHTML(i, cat){
   // No check circle — tapping the whole row checks it. Selected/on-list uses the Full/Empty tile look.
   const em = itemIcon(i.name, i.cat);
   const emS = em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
-  return `<button class="pill ${checked?'done':''} ${urgent?'urgent-dup':''} ${i.id===lastPop?'justpop':''}" data-pill="${i.id}" style="${style}">`
-    +`${emS}${marks}<span class="pname">${esc(cap(tileName(i.name)))}</span>${meta?`<span class="pill-meta">${meta}</span>`:""}`
+  const nl = noteLine(i);   // v2.22 which shop, and the note
+  return `<button class="pill ${checked?'done':''} ${urgent?'urgent-dup':''} ${i.id===lastPop?'justpop':''}${nl?' hasnote':''}" data-pill="${i.id}" style="${style}">`
+    +`${emS}${marks}<span class="pname">${esc(cap(tileName(i.name)))}</span>${meta?`<span class="pill-meta">${meta}</span>`:""}${nl?`<span class="pnote">${esc(nl)}</span>`:""}`
     +`</button>`;
 }
 function pillRow(items, cat){ return `<div class="pills">${items.map(i=>pillHTML(i,cat)).join("")}</div>`; }
@@ -3542,7 +3554,7 @@ function renderMain(){
   const firstCatId = (catList().find(c=>state.items.some(i=>catShown(i.cat)===c.id))||{}).id;
 
   const buildCatBlocks = (flatWithin)=> catList().map(cat=>{
-    const all = sortList(state.items.filter(i=>catShown(i.cat)===cat.id));
+    const all = sortList(state.items.filter(i=>catShown(i.cat)===cat.id && listHere(i)));
     const list = all.filter(i=>!i.checked);   // checked items live in the Checked section now
     const collapsed = collapse.cats.includes(cat.id);
     const has = list.length>0;
@@ -3626,20 +3638,20 @@ function renderMain(){
   const urgentFirst = list => list.filter(isUrgent).concat(list.filter(i=>!isUrgent(i)));
   let bodyBlocks;
   if(disp==="cat"){ bodyBlocks = buildCatBlocks(!subOn); }                              // v1.23 Subcategory toggle controls sub-grouping
-  else if(sm==="ai"){ ensureLocCheck(); const unchecked=state.items.filter(i=>!i.checked).slice().sort(byAI);   // AI = accepted per-store check order
+  else if(sm==="ai"){ ensureLocCheck(); const unchecked=state.items.filter(i=>!i.checked && listHere(i)).slice().sort(byAI);   // AI = accepted per-store check order
     // A25 item-level order, frozen at trip start (aiResetTrip) — learns per item, applies next trip, never reshuffles mid-shop
     const seenItems = Object.keys(aiItemsApplied[aiStoreKey()]||{}).length;
     const note = `<div class="aihint">✨ AI order · ${seenItems?`following your learned item route · frozen for this trip`:`sorted by category — learns each item as you check it`}</div>`;
     bodyBlocks = [ `<section class="cat">${note}${ unchecked.length ? pillsMixed(urgentFirst(unchecked)) : "" }</section>` ]; }
   else if(sm==="location"){ ensureLocCheck(); const useStore=locActive(); const cmp=useStore?byAisle:bySortKey;
-    let unchecked=state.items.filter(i=>!i.checked); const n0=unchecked.length;
+    let unchecked=state.items.filter(i=>!i.checked && listHere(i)); const n0=unchecked.length;
     if(useStore) unchecked=unchecked.filter(storeShows);
     unchecked=unchecked.slice().sort(cmp);
     const hid=n0-unchecked.length;
     const note=(useStore && hid>0) ? `<div class="hint" style="margin:0 0 8px;text-align:left">${esc((activeStore()||{}).name||"Market")} · fresh, meat &amp; produce only · ${hid} other ${hid===1?"item":"items"} hidden</div>` : "";
     bodyBlocks = [ `<section class="cat">${note}${ unchecked.length ? pillsMixed(urgentFirst(unchecked)) : "" }</section>` ]; }
-  else if(sm==="alpha"){ const unchecked=state.items.filter(i=>!i.checked); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(urgentFirst(sortList(unchecked))) : "" }</section>` ]; }
-  else { const unchecked=state.items.filter(i=>!i.checked).slice().sort(bySortKey); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(urgentFirst(unchecked)) : "" }</section>` ]; }
+  else if(sm==="alpha"){ const unchecked=state.items.filter(i=>!i.checked && listHere(i)); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(urgentFirst(sortList(unchecked))) : "" }</section>` ]; }
+  else { const unchecked=state.items.filter(i=>!i.checked && listHere(i)).slice().sort(bySortKey); bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(urgentFirst(unchecked)) : "" }</section>` ]; }
   /* v1.62 item 2: Urgent is a lens over the list, not a category — it has to be at the top whether or
      not "Group by category" is on, and whichever sort is running. So it is rendered from the item
      list directly and the normal blocks are asked to leave those items out, rather than trying to
@@ -3647,7 +3659,7 @@ function renderMain(){
   /* v1.63 item 2: Urgent is only shown when the list is GROUPED BY CATEGORY. Ungrouped, the list is
      one flat run in a chosen order and a second lens over the top of it reads as a duplicate rather
      than as a section — the flag still shows on the tile either way. */
-  const urgentAll = state.items.filter(isUrgent);
+  const urgentAll = state.items.filter(i=>isUrgent(i) && listHere(i));
   const urgentItems = urgentAll.filter(i=>!i.checked);
   if(disp==="cat" && urgentItems.length){
     /* v1.63 item 2: the same header every other section draws (see calmHead) — same chip, same
@@ -3662,6 +3674,11 @@ function renderMain(){
       + `<div class="cprog" aria-hidden="true"><i style="width:${uPct}%;background:${uCol}"></i></div>`;
     bodyBlocks = [`<section class="cat urgentsec${uCollapsed?' ucoll':''}">${uHead}${uCollapsed?"":pillsMixed(urgentItems.slice().sort(bySortKey))}</section>`].concat(bodyBlocks);
   }
+  /* v2.22 R17: at a shop, what is for another shop folds into one section at the bottom, grouped by that shop */
+  const elsewhere = awayStoreId() ? state.items.filter(i=>!i.checked && !listHere(i)) : [];
+  if(elsewhere.length){ const groups={}; for(const i of elsewhere) (groups[i.where]=groups[i.where]||[]).push(i);
+    const inner = elseOpen ? Object.keys(groups).map(w=>`<div class="elsehd">${esc((storeById(w)||{}).name||"Another shop")}</div>${pillsMixed(sortList(groups[w]))}`).join("") : "";
+    bodyBlocks.push(`<section class="cat elsewhere"><button class="elsebtn" id="elseToggle" aria-expanded="${elseOpen?'true':'false'}"><span>For other shops</span> <span class="cnum">${elsewhere.length}${elseOpen?' ▾':' ▸'}</span></button>${inner}</section>`); }
   const listBody = bodyBlocks.join("");
   const cartDrop = done>0 && !_cartWasShown; _cartWasShown = done>0;   // v2.12 slides down only when the first item goes in
   const checkedBar = done>0 ? `<div class="checkedbar shop${cartDrop?' drop':''}" id="checkedbar">
@@ -6368,9 +6385,13 @@ function editSheet(){
     ${weightChips("edit", editing.weight)}
     ${priceLine(editing.name)}
     ${isItem ? `<div style="display:flex;flex-wrap:nowrap;gap:6px;margin-top:12px">${[{k:"urgent",label:"Urgent"},{k:"discount",label:"If discounted"},{k:"convenient",label:"If convenient"}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}
+    ${isItem ? `<input id="editNote" value="${esc(editing.note||"")}" maxlength="140" placeholder="A note for whoever shops — “the green bottle”" aria-label="Note" style="width:100%;box-sizing:border-box;margin-top:10px;height:42px;padding:0 12px;border-radius:12px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:15px" />` : ""}
     <button class="editsec" id="ecHead"><span class="editsec-l">Category</span><span class="editsec-v">${selCat?`${catIcon(selCat,14)} ${esc(selCat.label)}`:'—'}<span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></button>
     ${editCatOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${chipsHTML(editing.cat)}<button class="catchip" id="ecAddCat" style="border-style:dashed;font-weight:800">＋ New</button></div>` : ""}
     ${subChips}
+    ${isItem ? (()=>{ const ws=rcSavedStores(), w=editing.where||"", cur=w ? ((storeById(w)||{}).name||"") : "";
+      return `<button class="editsec" id="ewHead"><span class="editsec-l">Where to buy</span><span class="editsec-v">${esc(cur||"Anywhere")}<span class="editsec-ch">${editWhereOpen?'▾':'▸'}</span></span></button>
+      ${editWhereOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"><button class="catchip" data-ew="" style="${!w?'background:var(--btn);border-color:var(--btn);color:#fff':''}">Anywhere</button>${ws.map(s=>`<button class="catchip" data-ew="${esc(s.id)}" style="${w===s.id?'background:var(--btn);border-color:var(--btn);color:#fff':''}">${esc(s.name)}</button>`).join("")}</div>` : ""}`; })() : ""}
     <div style="display:flex;gap:8px;margin-top:16px">
       <button id="secBtn" style="${btnSecStyle}">${secLabel}</button>
       <button id="delBtn" style="${btnDelStyle}">Delete</button>
@@ -6407,6 +6428,7 @@ function wireAddBar(){
   const sb=document.querySelector("#smartBtn"); if(sb){ sb.onpointerdown=e=>e.preventDefault(); sb.onclick=smartAdd; }
 }
 function wire(){
+  const et=app.querySelector("#elseToggle"); if(et) et.onclick=()=>{ elseOpen=!elseOpen; render(); };   // v2.22 R17
   wireAddSheet();
   wireSmartSheet();
   wireRcptSheet(); wireTenSheet(); wireCmp(); wireRptSheet(); wireRstSheet();
@@ -6595,6 +6617,9 @@ function wireEditSheet(){
       render(); });
       const ech=app.querySelector("#ecHead"); if(ech) ech.onclick=()=>{ editCatOpen=!editCatOpen; render(); };
       const esh=app.querySelector("#esHead"); if(esh) esh.onclick=()=>{ editSubOpen=!editSubOpen; render(); };
+      const ewh=app.querySelector("#ewHead"); if(ewh) ewh.onclick=()=>{ editWhereOpen=!editWhereOpen; render(); };   // v2.22 R17
+      app.querySelectorAll("[data-ew]").forEach(b=>b.onclick=()=>{ editing.where=b.dataset.ew; render(); });
+      const enote=app.querySelector("#editNote"); if(enote) enote.oninput=e=>{ editing.note=e.target.value; };   // v2.22 R16
       const eac=app.querySelector("#ecAddCat"); if(eac) eac.onclick=()=>{ const nm=prompt("New category name:",""); if(nm&&nm.trim()){ const id=makeCategory(nm); if(id){ editing.cat=id; editing.sub=null; render(); } } };
       const eas=app.querySelector("#esAddSub"); if(eas) eas.onclick=()=>{ if(!editing.cat){ showToast("Pick a category first"); return; } const nm=prompt("New subcategory name:",""); if(nm&&nm.trim()){ const id=makeSub(editing.cat,nm); if(id){ editing.sub=id; render(); } } };
       const sec=app.querySelector("#secBtn"); if(sec) sec.onclick=()=> editing.kind==="item" ? removeEditing() : restoreEditingToList();
