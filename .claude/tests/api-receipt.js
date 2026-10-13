@@ -76,7 +76,9 @@ const GOOD = { store: 'Coles Dandenong', date: '2026-10-02', total: 23.4, card: 
     ok('store, date and total come back', b.store === 'Coles Dandenong' && b.date === '2026-10-02' && b.total === 23.4, JSON.stringify({ s: b.store, d: b.date, t: b.total }));
     /* SUPERSEDED by v2.20: the reply gained "discounts" (a member's 10% marks the month used). Still protects: nothing
        else the model volunteers leaves, and no card or loyalty number — the one inside a discount line is masked. */
-    ok('only { store, date, total, items, discounts } leave — no card or loyalty number', JSON.stringify(Object.keys(b).sort()) === '["date","discounts","items","store","total"]'
+    /* SUPERSEDED by v2.32: the reply gained "place" (the shop's suburb, for Price diagnostics; never a number). Still protects:
+       nothing else leaves, and no card or loyalty number. */
+    ok('only { store, place, date, total, items, discounts } leave — no card or loyalty number', JSON.stringify(Object.keys(b).sort()) === '["date","discounts","items","place","store","total"]'
       && !/4417|6008/.test(JSON.stringify(b)), JSON.stringify(Object.keys(b)));
     ok('whole-receipt discounts come back as { raw, amount }: positive, rounded, the junk dropped',
       Array.isArray(b.discounts) && b.discounts.length === 3 && b.discounts.every(x => JSON.stringify(Object.keys(x).sort()) === '["amount","raw"]')

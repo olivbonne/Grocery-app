@@ -106,7 +106,8 @@ const SMALL = n => SMALL0(n);
     const hb = await page.evaluate(()=>({ report:!!document.querySelector('#shopMenu'), share:!!document.querySelector('#shopShare') }));
     ok('the top-right button reports a problem; the share button has gone from the banner', hb.report && !hb.share, JSON.stringify(hb));
     await tap('#shopMenu'); await tap('#smReport');
-    ok('…it opens "Report a problem" with four kinds to pick from', await page.evaluate(()=>!!document.querySelector('#rptSheet') && document.querySelectorAll('[data-rptkind]').length===4), '');
+    /* SUPERSEDED by v2.32: "A complaint" was removed at the household's request — three kinds. Still protects: the sheet opens with its kinds. */
+    ok('…it opens "Report a problem" with four kinds to pick from', await page.evaluate(()=>!!document.querySelector('#rptSheet') && document.querySelectorAll('[data-rptkind]').length===3), '');
     await shot('report');
     await tap('#rptSend');
     ok('…sending nothing asks for a few words', /few words/.test(await page.evaluate(()=>document.querySelector('#rptSheet').textContent)), '');

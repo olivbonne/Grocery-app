@@ -4,7 +4,7 @@
 // Gemini or Groq key as /api/recipe, kept SERVER-SIDE.
 //
 // Contract:  POST /api/receipt  { image }   a data: URL of a photo of a receipt
-//            ->  { store, date, total, items: [{ raw, name, qty, weight, price, category }], discounts: [{ raw, amount }] }
+//            ->  { store, place, date, total, items: [{ raw, name, qty, weight, price, category }], discounts: [{ raw, amount }] }
 //            errors are { error, code }: bad_image, too_large, missing, not_configured, model, busy,
 //            quota, vision_model, upstream, unreadable, unexpected.
 //
@@ -66,8 +66,9 @@ function aiProvider() {
 const SYSTEM = [
   'You read a photo of a supermarket receipt.',
   'Respond with a JSON object of exactly this shape:',
-  '{"store": string, "date": string, "items": [ ... ], "total": number, "discounts": [ ... ]}.',
+  '{"store": string, "place": string, "date": string, "items": [ ... ], "total": number, "discounts": [ ... ]}.',
   '"store": the shop\'s name as printed, with its branch or suburb if shown (e.g. "Coles Dandenong"); "" if unreadable.',
+  '"place": the suburb or town of the shop\'s address as printed (e.g. "Dandenong VIC"); "" if there is no address. Never a phone number, ABN or card number.',
   '"date": the purchase date as YYYY-MM-DD; "" if not printed.',
   '"total": the total paid, in dollars; 0 if unreadable.',
   '"discounts": every discount that applies to the whole receipt rather than to one product — for example a member\'s 10% discount — as {"raw": the line as printed, "amount": the dollars taken off as a positive number}; [] if there are none.',
@@ -79,7 +80,7 @@ const SYSTEM = [
   '  "price": number — what was paid for that line in dollars, after any discount printed directly under it',
   '  "category": one of ' + CATEGORIES.map((c) => '"' + c + '"').join(', '),
   'Leave out subtotals, totals, GST or tax lines, payment, change, card and loyalty lines, and anything that is not a product.',
-  'If the photo is not a receipt, return {"store":"","date":"","total":0,"items":[],"discounts":[]}.',
+  'If the photo is not a receipt, return {"store":"","place":"","date":"","total":0,"items":[],"discounts":[]}.',
   'Return only the JSON object — no prose, no markdown fences.',
 ].join('\n');
 
@@ -260,13 +261,14 @@ module.exports = async (req, res) => {
 
     const items = parsed.items.map(clampLine).filter(Boolean).slice(0, 150);
     const store = String(parsed.store || '').trim().slice(0, 60);
+    const place = /\d{3,}/.test(String(parsed.place || '')) ? '' : String(parsed.place || '').replace(/[^A-Za-z .'-]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);   // a suburb, never a number
     let date = String(parsed.date || '').trim();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(Date.parse(date))) date = '';
     let total = Number(parsed.total);
     total = (Number.isFinite(total) && total >= 0 && total <= 100000) ? Math.round(total * 100) / 100 : 0;
     const discounts = Array.isArray(parsed.discounts) ? parsed.discounts.map(clampDiscount).filter(Boolean).slice(0, 10) : [];
 
-    res.status(200).json({ store, date, total, items, discounts });
+    res.status(200).json({ store, place, date, total, items, discounts });
   } catch (e) {
     console.error('receipt unexpected ' + String(e && e.message).slice(0, 200));
     return fail(res, 502, 'unexpected', 'Parse failed');
