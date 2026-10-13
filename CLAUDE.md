@@ -83,6 +83,9 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   measures each tile ONCE, as an unstretched copy in a hidden probe, remembered by what it shows until the layout
   signature changes (v2.16). v2.10–v2.11's per-tile measuring was over half of every redraw. A single stand-in
   probe tile was tried first and was wrong whenever most names wrap (three small columns) — CI caught it.
+- **A tick is not a purchase (v2.29).** Ticking only moves an item to the cart. What a shop teaches — the AI walking
+  order, purchase history, the "bought" history line — is recorded at the finish (`sweep`, which auto-finish also
+  calls), from what is still ticked, in tick order. Never learn from a tick itself: a wrong tap, untapped, must leave no trace.
 - **Settings has two layers (v2.18).** Sections named in `LOOK_SECTS` show only on the "Customise the look" page
   (`#optLook` opens it, `#lookBack` or the Settings tab returns); everything else is everyday Settings. A new section
   is everyday unless it is added there. The search (`filterOptions`) only toggles classes — never `render()` from it,

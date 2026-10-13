@@ -114,11 +114,13 @@ const SEED = `(() => {
 
     /* ── D. the cap, and a server that says no ────────────────────────── */
     await tap('#setNav, #setNavP, #setNavS');
-    await page.evaluate(()=>{ const d=new Date(); const k=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); localStorage.setItem('ml_rcptday', k+'|10'); });
+    await page.evaluate(()=>{ const d=new Date(); const k=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); localStorage.setItem('ml_rcptday', k+'|30'); });   // SUPERSEDED by v2.29: the day's limit is 30, not 10
     const before = sent.length;
     await readReceipt('#optRcpt');
     const capMsg = await page.evaluate(()=>{ const s=document.querySelector('#rcSheet'); return s ? s.textContent.replace(/\s+/g,' ') : ''; });
-    ok('the 11th receipt of the day is stopped before any request', sent.length===before && /10 receipts today/.test(capMsg), capMsg.slice(0,120));
+    /* SUPERSEDED by v2.29: the limit is 30 a day (it was 10) and the message says to keep the receipt. Still protects: the
+       receipt past the limit is stopped before any request, with a message. */
+    ok('the 31st receipt of the day is stopped before any request', sent.length===before && /30 receipts read on this phone today/.test(capMsg), capMsg.slice(0,120));
     await tap('#rcOk');
     await page.evaluate(()=>localStorage.removeItem('ml_rcptday'));
     replyStatus=500; replyBody={ error:'Server not configured', code:'not_configured' };

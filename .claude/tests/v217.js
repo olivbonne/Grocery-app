@@ -97,9 +97,12 @@ const today = ()=>{ const d=new Date(); return d.getFullYear()+"-"+String(d.getM
     ok('Settings › Prices › Ask after a shop, Off: no card', (await card())===null, '');
     await tap('#setNav');
     ok('…and the setting is there', await page.evaluate(()=>!!document.querySelector('[data-opt-rcptask="0"].on')), '');
-    await mk(checked, `localStorage.setItem("ml_rcptday", "${today()}|10");`);
+    /* SUPERSEDED by v2.29: at the day's limit the card still shows and SAYS so (the household found it silently missing),
+       and the limit is 30. Still protects: no "Read receipt" button is offered past the limit. */
+    await mk(checked, `localStorage.setItem("ml_rcptday", "${today()}|30");`);
     await tap('#sweepBtn');
-    ok('no card when today\'s free receipts are used up', (await card())===null, '');
+    const capTxt = await page.evaluate(()=>(document.querySelector('#rcNudge')||{}).textContent||'');
+    ok('at today\'s receipt limit the card says so, with no Read button', /30 receipts read on this phone today/.test(capTxt) && !(await page.evaluate(()=>!!document.querySelector('#rcNudgeGo'))), capTxt.replace(/\s+/g,' ').slice(0,160));
     await mk(L17, `localStorage.setItem("ml_rcptnudge", String(Date.now()-4*3600*1000));`);
     ok('no card more than three hours after the shop', (await card())===null, '');
 

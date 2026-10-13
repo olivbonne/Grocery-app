@@ -75,7 +75,10 @@ const SMALL = n => SMALL0(n);
     await tap('#sweepBtn');
     const t = await page.evaluate(()=>{ const t=document.querySelector('#toast'), tf=document.querySelector('#topfix'); return t ? { txt:t.textContent.trim(), h:Math.round(t.getBoundingClientRect().height), top:Math.round(t.getBoundingClientRect().top), under:Math.round(tf.getBoundingClientRect().bottom) } : null; });
     ok('saving the cart to Regulars says what happened, not "[object PointerEvent]"', t && !/object|Event/.test(t.txt) && t.txt.length>4, JSON.stringify(t));
-    ok('…and the message shows near the top, just under the top banner, one line tall', t && t.top >= t.under && t.top <= t.under + 24 && t.h < 60, JSON.stringify(t));
+    /* SUPERSEDED by v2.29: a card under the banner ("Got the receipt?" appears right after Save to Regulars) is no longer
+       covered — the message drops to just below it. Still protects: near the top, never on a card, one line tall. */
+    const cardBot = await page.evaluate(()=>{ const c=document.querySelector('.installcard'); return c ? Math.round(c.getBoundingClientRect().bottom) : null; });
+    ok('…and the message shows near the top — under the banner, or just under a card there — one line tall', t && t.top >= t.under && t.top <= (cardBot!==null ? cardBot + 24 : t.under + 24) && (cardBot===null || t.top >= cardBot) && t.h < 60, JSON.stringify({ t, cardBot }));
     await shot('toast');
 
     /* ── 3. no test tube on the Sandbox ────────────────────────────────── */

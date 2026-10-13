@@ -1379,7 +1379,8 @@
   .cartpop { animation:cartpop 1s cubic-bezier(.33,0,.2,1); transform-origin:center; }
   @keyframes cartnumpop { 0%{transform:scale(1)} 45%{transform:scale(1.4)} 100%{transform:scale(1)} }
   /* v2.11: SVG text in the cart's own units (see cartBadgeHTML) — 35 units is the household's size */
-  .cartnum { font-size:35px; font-weight:800; fill:var(--accent); pointer-events:none; font-variant-numeric:proportional-nums; transform-box:fill-box; transform-origin:center; }
+  /* v2.29: iOS Safari ignores transform-box:fill-box on SVG text, so the pop scaled from the drawing's corner and the number grew to the right. The origin is now the number's own centre in the cart's units (x 57.24, baseline 42 less half the 35-unit glyph). */
+  .cartnum { font-size:35px; font-weight:800; fill:var(--accent); pointer-events:none; font-variant-numeric:proportional-nums; transform-box:view-box; transform-origin:57.24px 30px; }
   .cartnum.pop { animation:cartnumpop 1s cubic-bezier(.33,0,.2,1); }
   .cartplus { font-size:26px; }
   .cartwrap svg { overflow:visible; }
@@ -1487,7 +1488,8 @@
     flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:3px; padding-top:8px; padding-bottom:8px; }
   html[data-icosize="l"] .shop .zoomer .pill .pill-meta, html[data-icosize="xl"] .shop .zoomer .pill .pill-meta,
   html[data-icosize="l"] .shop .zoomer.smalltile.gridmode .pill .pill-meta, html[data-icosize="xl"] .shop .zoomer.smalltile.gridmode .pill .pill-meta {
-    margin-left:0; padding-left:0; justify-content:center; }
+    margin-left:0; padding-left:0; justify-content:center; flex:none; }   /* v2.29: in a COLUMN tile the small grids' 100% basis was the tile's
+    HEIGHT — the amount line claimed it all and pushed the icon and name out of the top (the household's screenshot) */
   /* v2.13: stacked, the name keeps its own height. Small fixed-column tiles give the name flex:1 1 0 so it
      shares a ROW with the icon; once L/XL turns the tile into a column that same rule made the name's
      HEIGHT come from leftover space — nothing, with icons off — and the clamp's overflow:hidden cut the

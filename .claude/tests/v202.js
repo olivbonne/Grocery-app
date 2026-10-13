@@ -82,7 +82,9 @@ const SHARE = (mode) => `(() => {
     await mk('files');
     const btn = await page.evaluate(()=>{ const b=document.querySelector('#optExport');
       return b ? { txt:b.textContent.trim(), emoji:/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(b.textContent) } : null; });
-    ok('Settings has an "Export list as text" button', btn && btn.txt==='Export list as text', JSON.stringify(btn));
+    /* SUPERSEDED by v2.29: the button says what it exports — the full list, to buy and Regulars (the household's item 16).
+       Still protects: the export button is in Settings, with no emoji. */
+    ok('Settings has the export button, saying it is the full list', btn && btn.txt==='Export the full list — to buy and Regulars', JSON.stringify(btn));
     ok('…drawn as chrome, with no emoji', btn && btn.emoji===false, JSON.stringify(btn));
     await page.locator('#optExport').click(); await page.waitForTimeout(700);
     const s = await page.evaluate(()=>window.__shared);
