@@ -1,4 +1,7 @@
-# Categories — a proposal (October 2026, for after v2.31)
+# Categories — a proposal (October 2026) — DECIDED, shipped in v2.33
+
+> The household chose: thirteen (fruit and veg apart), baby and pet inside Household, new lists only. Built in v2.33
+> (`CATS13` in js/data/catalog.js; `newCat` in js/app.js). Existing lists keep their nine; nothing is re-categorised.
 
 The household asked (item 18): "land on the best set of categories so that the number is manageable, each keeps its
 own colour, and they match the shopping experience — the order things are organised in the shop — for a wide range

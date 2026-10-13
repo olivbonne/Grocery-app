@@ -7,17 +7,17 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.32";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.32";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.32";
-import { compareStores, worthIt } from "./compare.js?v=2.32";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.32";
-import { parseAisleLine, mapAisles, mapRank } from "./aisles.js?v=2.32";
-import { code128SVG, reconcile } from "./till.js?v=2.32";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.33";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.33";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.33";
+import { compareStores, worthIt } from "./compare.js?v=2.33";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.33";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.33";
+import { code128SVG, reconcile } from "./till.js?v=2.33";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.32";
+const APP_VERSION = "v2.33";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -183,6 +183,21 @@ function meatSub(name){ const n=name.toLowerCase(); for(const s of MEAT_SUBS){ i
 
 /* A16 remember the full entry (category AND subcategory), not just the category,
    so re-typing a cleared item puts it back exactly where it lived before */
+/* v2.33: the category a new item gets on a list that uses the thirteen. What the app knows (the dictionary, the AI readers,
+   receipts, restock history) speaks the nine; this puts it in the thirteen — by the item's aisle type first, so bread lands
+   in Bakery and ham in Deli rather than all in "Fresh". On a list with the nine, or for a category the list has, it changes
+   nothing. Only ever used as an item is ADDED — a stored category is never rewritten (the v2.17 rule). */
+function newCat(cat, name){ const cs=catList(); if(!cs.some(c=>c.id==="pantry")) return cat;
+  const have=new Set(cs.map(c=>c.id)), t=aisleTypeOf(name||""), m=TYPE_CAT13[t];
+  /* where the shop shelves it beats what it is: ham is at the deli, frozen chicken in Frozen — so an aisle type that
+     names one of the thirteen's own (not shared with the nine) wins over a shared category like Meat */
+  if(m && have.has(m) && !DEFAULT_CATS.some(c=>c.id===m)) return m;
+  if(cat && cat!=="others" && cat!=="fruit" && cat!=="vegetable" && have.has(cat)) return cat;
+  if(t==="produce") return (cat==="fruit" || cat==="vegetable") ? cat : "vegetable";
+  if(cat==="fruit" || cat==="vegetable") return cat;
+  if(m && have.has(m)) return m;
+  const o=OLD_CAT13[cat]; if(o && have.has(o)) return o;
+  return (cat && have.has(cat)) ? cat : (have.has("others") ? "others" : cat); }
 function knownEntry(name){ const n=(name||"").toLowerCase().trim(); if(!n) return null;
   return state.items.find(i=>i.name.toLowerCase()===n) || state.buyAgain.find(e=>e.name.toLowerCase()===n) || null; }
 function guessCat(name){ const n=(name||"").toLowerCase(); let best=null, bestLen=0;
@@ -217,6 +232,9 @@ function newListCode(){
 const params = new URLSearchParams(location.search);
 const LS_LASTLIST = "ml_lastlist";
 let listCode = params.get("list") || localStorage.getItem(LS_LASTLIST) || newListCode();
+/* v2.33: the list being made on this phone right now, the one place the thirteen categories start (an existing list keeps
+   its own — the household's choice). The very first list, made at first launch, is one. var: boot-order rule */
+var _freshList = (!params.get("list") && !localStorage.getItem(LS_LASTLIST)) ? listCode : "";
 localStorage.setItem(LS_LASTLIST, listCode);
 if(params.get("list") !== listCode){ params.set("list", listCode);
   history.replaceState(null,"",location.pathname+"?"+params.toString()); }
@@ -923,7 +941,7 @@ function storeLabel(){
   return s ? (s.name+(s.aisles?"":" · sorted by category")) : "Others · not at a saved store";
 }
 // Known stores. Coords are best-estimate centres; refine on-site with “Set … location here”.
-const MARKET_CATS = ["meat","vegetable","fruit","fresh"];   // Dandenong market only stocks these
+const MARKET_CATS = ["meat","vegetable","fruit","fresh","dairy","deli","bakery"];   // v2.33: + the thirteen's fresh counters   // Dandenong market only stocks these
 // At a market store, only meat & seafood, vegetable, fruit and fresh are shown.
 function storeShows(it){ const st=activeStore(); return (st&&st.market) ? MARKET_CATS.includes(it.cat) : true; }
 /* v2.27 a shop with its own aisle map (state.aislemap) is walked in the map's order: an item goes to the first aisle whose
@@ -943,12 +961,12 @@ function aisleRankBase(it){ const c=it.cat;
   if(c==="meat") return 1;        // meat & seafood pinned to the very top
   if(c==="vegetable") return 2;
   if(c==="fruit") return 3;
-  if(c==="alcohol") return 99;    // last
+  if(c==="alcohol" || c==="liquor") return 99;    // last (v2.33: liquor in the thirteen)
   if(c==="asian") return 98;      // 2nd from last
   if(c==="health") return 97;     // 3rd from last
   const n=(it.name||"").toLowerCase();
   for(const a of activeAisles()){ if(a.words.some(w=>n.includes(w))) return a.r; }
-  const cf={fresh:23,bulk:17,others:90}[c];
+  const cf={fresh:23,bulk:17,others:90, bakery:5,deli:21,dairy:23,pantry:17,snacks:40,frozen:60,household:80}[c];   // v2.33 the thirteen's
   return cf!=null?cf:75;
 }
 function byAisle(a,b){ const ra=aisleRank(a),rb=aisleRank(b); if(ra!==rb) return ra-rb; return bySortKey(a,b); }
@@ -1142,7 +1160,7 @@ function predictActive(){
 }
 function predictAdd(key){ const rec=purch[key]; if(!rec) return;
   if(!state.items.some(i=>!i.checked && (i.name||"").toLowerCase()===rec.name.toLowerCase() && i.cat===rec.cat)){
-    state.items.push({id:uid(),name:rec.name,qty:rec.qty||1,cat:rec.cat,weight:rec.weight||"",sub:rec.sub||"",checked:false,by:me}); playPlan(true); }
+    state.items.push({id:uid(),name:rec.name,qty:rec.qty||1,cat:newCat(rec.cat, rec.name),weight:rec.weight||"",sub:rec.sub||"",checked:false,by:me}); playPlan(true); }
   save(); predictDismiss(key);
 }
 function predictDismiss(key){ const period=predictPeriod();
@@ -1671,7 +1689,7 @@ function newListSheet(){ return `<div class="sheet-bg kbpin" id="newListBg"><div
       <button id="newListCreate" style="flex:none;padding:0 18px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">Create</button>
     </div></div></div>`; }
 function createNewListFromSheet(){ const nm=(newListDraft||"").trim()||"Untitled list"; const code=newListCode();
-  rememberList(code, nm); newListOpen=false; newListDraft=""; switchList(code); view="detail"; shopMode=false; save(); render(); }
+  rememberList(code, nm); newListOpen=false; newListDraft=""; _freshList=code; switchList(code); view="detail"; shopMode=false; save(); render(); }
 // Re-load the per-list learning stores after listCode changes, so the AI shop order and
 // restock cadence (and the diagnostics that show them) reflect the now-active list.
 function reloadLearn(){
@@ -1774,7 +1792,7 @@ function occSave(name){ const nm=String(name||"").trim().slice(0,40); if(!nm) re
 function occAdd(id){ const t=(state.templates||[]).find(x=>x.id===id); if(!t) return; let n=0; const prev=snapState();   // a whole occasion at once, so it can be undone
   for(const x of t.items){ const ex=state.items.find(i=>!i.checked && String(i.name||"").toLowerCase()===String(x.name).toLowerCase());
     if(ex){ ex.qty=Math.max(+ex.qty||1, +x.qty||1); markDirty(ex.id); }
-    else { state.items.push({ id:uid(), name:x.name, qty:x.qty||1, cat:x.cat, weight:x.weight||"", sub:"", note:x.note||"", where:x.where||"", checked:false, by:me }); n++; } }
+    else { state.items.push({ id:uid(), name:x.name, qty:x.qty||1, cat:newCat(x.cat, x.name), weight:x.weight||"", sub:"", note:x.note||"", where:x.where||"", checked:false, by:me }); n++; } }
   occSheet=null; save(); render(); showUndo(prev, `Added ${n} from “${t.name}”${n<t.items.length?` · ${t.items.length-n} already on the list`:""}`); }
 function occDelete(id){ const prev=snapState(); const t=(state.templates||[]).find(x=>x.id===id); if(!t) return;
   state.templates=(state.templates||[]).filter(x=>x.id!==id); save(); render(); showUndo(prev, `“${t.name}” deleted`); }   // the toast is escaped where it is drawn
@@ -1808,7 +1826,7 @@ function pictureChoices(catId){ const def = DEFAULT_CAT_IMG[catId] || ALL_PICS[0
   return [def, ...ALL_PICS.filter(p=>p!==def)]; }
 function ensureCats(){
   if(!Array.isArray(state.categories) || !state.categories.length){
-    state.categories = DEFAULT_CATS.map(c=>({id:c.id,label:c.label,color:c.color,emoji:c.emoji,
+    state.categories = (_freshList && _freshList===listCode ? CATS13 : DEFAULT_CATS).map(c=>({id:c.id,label:c.label,color:c.color,emoji:c.emoji,   // v2.33: a new list starts with the thirteen
       subs: c.id==="meat" ? MEAT_DEFAULT_SUBS.map(s=>({...s})) : [] }));
   }
   const DEF_IMG = DEFAULT_CAT_IMG;
@@ -1818,7 +1836,7 @@ function ensureCats(){
   });
 }
 function catList(){ ensureCats(); return state.categories; }
-function CAT(id){ return catList().find(c=>c.id===id) || DEFAULT_CATS.find(c=>c.id===id) || DEFAULT_CATS[DEFAULT_CATS.length-1]; }
+function CAT(id){ return catList().find(c=>c.id===id) || DEFAULT_CATS.find(c=>c.id===id) || CATS13.find(c=>c.id===id) || DEFAULT_CATS[DEFAULT_CATS.length-1]; }
 /* v2.17: the category an item is SHOWN under. An item whose category is gone (another phone removed it while this
    one added to it, or older data) shows under Others — or the last category, if Others itself was removed —
    instead of vanishing from the list while still counted in "N to buy". Display only: the stored category is left
@@ -1866,7 +1884,7 @@ function effectiveSub(item, cat){
 }
 
 /* dynamic label→id map so renamed categories still parse on paste */
-function labelMap(){ const m={}; DEFAULT_CATS.forEach(c=>m[c.label.toLowerCase()]=c.id);
+function labelMap(){ const m={}; DEFAULT_CATS.forEach(c=>m[c.label.toLowerCase()]=c.id); CATS13.forEach(c=>m[c.label.toLowerCase()]=c.id);
   catList().forEach(c=>m[c.label.toLowerCase()]=c.id);
   Object.assign(m,{veg:"vegetable",vegetables:"vegetable",veggies:"vegetable",fruits:"fruit"}); return m; }
 function parseInput(text){ const map=labelMap();
@@ -2049,8 +2067,8 @@ function addEntries(text, override){
     const nid=uid();
     const known = knownEntry(e.name);
     const wt = e.weight || (known&&known.weight) || "";
-    if(cat){ state.items.push({id:nid,name:e.name,qty:e.qty,cat,sub:(known&&known.cat===cat&&known.sub)||"",weight:wt,checked:false,by:me}); histLog("add", e.name); }
-    else { const g=(known&&known.cat)||guessCat(e.name); state.items.push({id:nid,name:e.name,qty:e.qty,cat:g||"others",sub:(known&&known.sub)||"",weight:wt,checked:false,by:me}); histLog("add", e.name); }
+    if(cat){ state.items.push({id:nid,name:e.name,qty:e.qty,cat:override ? cat : newCat(cat, e.name),sub:(known&&known.cat===cat&&known.sub)||"",weight:wt,checked:false,by:me}); histLog("add", e.name); }
+    else { const g=(known&&known.cat)||guessCat(e.name); state.items.push({id:nid,name:e.name,qty:e.qty,cat:newCat(g||"others", e.name),sub:(known&&known.sub)||"",weight:wt,checked:false,by:me}); histLog("add", e.name); }
     markDirty(nid);
   }
   save(); renderKeepingAdd();
@@ -2599,7 +2617,7 @@ const EMOJI_HINTS = [
    like ml_emoji_cat / ml_emoji_item, so it is deliberately NOT in APP_EXCLUDE — an appearance slot carries it. */
 function iconStyle(){ try{ return localStorage.getItem("ml_icons")==="emoji" ? "emoji" : "drawn"; }catch(e){ return "drawn"; } }
 function setIconStyle(v){ try{ localStorage.setItem("ml_icons", v==="emoji"?"emoji":"drawn"); }catch(e){} render(); }
-const CAT_IDS = new Set(["meat","fruit","vegetable","fresh","bulk","health","asian","alcohol","others"]);
+const CAT_IDS = new Set(["meat","fruit","vegetable","fresh","bulk","health","asian","alcohol","others","bakery","deli","dairy","pantry","snacks","frozen","household","liquor"]);   // v2.33 + the thirteen's
 function drawKey(name){ const n=String(name||"").trim().toLowerCase(); if(!n) return null;
   if(DRAW_EXACT[n]) return DRAW_EXACT[n];
   for(const [k,v] of DRAW_HINTS){ if(n.includes(k)) return v; }
@@ -4404,7 +4422,7 @@ function rcRead(file){
       rcptCount();
       const allowed=catList().map(c=>c.id), used=new Set();
       const lines=(Array.isArray(j.items)?j.items:[]).map(x=>{ const known=knownEntry(x.name);
-        const cat=allowed.includes(x.category) ? x.category : ((known && known.cat) || "others");
+        const cat=newCat(allowed.includes(x.category) ? x.category : ((known && known.cat) || "others"), x.name);
         const m=rcMatchItem(x.name, used); if(m) used.add(m.id);
         return { raw:String(x.raw||""), name:String(x.name||""), qty:+x.qty||1, weight:String(x.weight||""), price:+x.price||0, cat, keep:true, match:m?m.id:null }; });
       if(!lines.length){ rcpt={ err:"Couldn't find any items on that. Is it a receipt?" }; render(); return; }
@@ -4478,7 +4496,7 @@ function tenAddToList(){ const t = tenSheet; if(!t) return; let n = 0;
   for(const r of t.rows){ if(!r.sel) continue; n++;
     const it = state.items.find(i => !i.checked && String(i.name || "").toLowerCase() === String(r.name).toLowerCase());
     if(it){ it.qty = Math.max(+it.qty || 1, r.qty); markDirty(it.id); }
-    else state.items.push({ id:uid(), name:r.name, qty:r.qty, cat:r.cat, weight:r.weight || "", sub:"", checked:false, by:me }); }
+    else state.items.push({ id:uid(), name:r.name, qty:r.qty, cat:newCat(r.cat, r.name), weight:r.weight || "", sub:"", checked:false, by:me }); }
   tenSheet = null; save(); render(); showToast(`Added ${n} for the ${CHAINS[t.chain].short} ${t.pct}% shop`); }
 function wireTenSheet(){
   app.querySelectorAll("[data-ten-row]").forEach(b => b.onchange = () => { const r = tenSheet && tenSheet.rows[+b.dataset.tenRow]; if(r){ r.sel = b.checked; render(); } });
@@ -6161,7 +6179,7 @@ function commitSmartItems(){
     const nid=uid();
     const known=knownEntry(it.name);
     const sub=it.sub || ((known&&known.cat===it.category&&known.sub)||"");
-    state.items.push({id:nid,name:it.name,qty:it.qty,cat:it.category,sub,weight:it.weight||"",checked:false,by:me});
+    state.items.push({id:nid,name:it.name,qty:it.qty,cat:newCat(it.category, it.name),sub,weight:it.weight||"",checked:false,by:me});
     markDirty(nid);
   }
   const mi=document.getElementById("mainInput"); if(mi) mi.value="";

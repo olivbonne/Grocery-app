@@ -520,6 +520,11 @@ var ICONS = {
   beer: "M5 8h10v12H5zM15 10.5h2a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2M5 8a2.5 2.5 0 0 1 2.5-3 3 3 0 0 1 5 0A2.5 2.5 0 0 1 15 8"
 };
 
+/* v2.33 the thirteen categories' marks: five reuse a drawing already here, three are new */
+ICONS.bakery = ICONS.bread; ICONS.dairy = ICONS.fresh; ICONS.deli = ICONS.cheese; ICONS.household = ICONS.toilet; ICONS.liquor = ICONS.alcohol;
+ICONS.pantry = "M6 6.5c0-1.4 2.7-2.5 6-2.5s6 1.1 6 2.5v11c0 1.4-2.7 2.5-6 2.5s-6-1.1-6-2.5zM6 6.5c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5M6 11h12M6 15h12";
+ICONS.snacks = "M5.5 10h13l-1.8 10H7.3zM9.5 10l.7 10M14.5 10l-.7 10" + arcCircle(8.5, 8, 2) + arcCircle(12, 6.6, 2.3) + arcCircle(15.5, 8, 2);
+ICONS.frozen = "M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.6 4.6L12 6.6l2.4-2M9.6 19.4L12 17.4l2.4 2M4.9 10.3l2.9-.6-.9-2.9M19.1 13.7l-2.9.6.9 2.9M4.9 13.7l2.9.6-.9 2.9M19.1 10.3l-2.9-.6.9-2.9";
   return ICONS;
 })();
 
