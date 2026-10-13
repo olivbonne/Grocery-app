@@ -7,17 +7,17 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.31";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.31";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.31";
-import { compareStores, worthIt } from "./compare.js?v=2.31";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.31";
-import { parseAisleLine, mapAisles, mapRank } from "./aisles.js?v=2.31";
-import { code128SVG, reconcile } from "./till.js?v=2.31";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.32";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.32";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.32";
+import { compareStores, worthIt } from "./compare.js?v=2.32";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.32";
+import { parseAisleLine, mapAisles, mapRank } from "./aisles.js?v=2.32";
+import { code128SVG, reconcile } from "./till.js?v=2.32";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.31";
+const APP_VERSION = "v2.32";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -157,7 +157,7 @@ function mergeAmt(a, b){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -1483,8 +1483,36 @@ function healStuck(){ let moved = false;
   if(_locked && !addOpen && !_addClosing){ const y = unlockPageScroll(); window.scrollTo(0, y); moved = true; }
   const ae = document.activeElement, typing = !!(ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA"));
   if(kbOffset > 0 && !typing && !addOpen){ kbActive = false; kbOffset = 0; applyKb(); moved = true; }
-  if(moved) syncZoomHeight(); }
+  if(moved){ uiTrail("heal"); syncZoomHeight(); } fabCheck("check"); }
 if(typeof document !== "undefined") document.addEventListener("touchstart", () => { try{ healStuck(); }catch(e){} }, { passive:true, capture:true });
+/* v2.32 (the household's item 12): the "+" still sat halfway up the page now and then. Its height above the bottom bar is
+   set when the page is measured (syncZoomHeight); measured while the keyboard or a sheet had moved things, and not measured
+   again after, it stays up there until another page is opened — which is what fixed it. So: the page is measured again
+   when the keyboard closes and when the visible area changes size, a check puts the "+" back if it is out of place, and
+   each time that happens it is written down with what led up to it (ml_stucklog, on this phone: Settings › Help › Screen
+   log, and Report a problem can send it). */
+var _uiTrail = [];   // the last few things that happened to the screen. var: boot-order rule
+function uiTrail(e){ try{ _uiTrail.push((Math.round(performance.now()/100)/10) + "s " + e); if(_uiTrail.length > 12) _uiTrail.shift(); }catch(x){} }
+function stuckLog(){ try{ const a=JSON.parse(localStorage.getItem("ml_stucklog")||"[]"); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function fabCheck(src){ const fw=document.getElementById("shopAddFabWrap"), bb=document.getElementById("bottomnav");
+  if(!fw || !bb || addOpen || fw.style.display==="none") return;
+  const ae=document.activeElement; if(ae && (ae.tagName==="INPUT" || ae.tagName==="TEXTAREA")) return;   // the keyboard may be up
+  const f=fw.getBoundingClientRect(), b=bb.getBoundingClientRect();
+  if(!f.height || !b.height || b.top >= window.innerHeight) return;
+  const gap=Math.round(b.top - f.bottom);
+  if(gap <= 40) return;   // where it belongs: about 12px above the bar
+  const vv=window.visualViewport;
+  const entry={ t:Date.now(), v:APP_VERSION, src, gap, fab:Math.round(f.bottom), bar:Math.round(b.top), ih:window.innerHeight,
+    vvh:vv?Math.round(vv.height):0, vvt:vv?Math.round(vv.offsetTop):0, sy:Math.round(window.scrollY), kb:Math.round(kbOffset||0),
+    lock:!!_locked, page:["plan","shop","settings"][curPageIdx()]||"", trail:_uiTrail.slice(-8) };
+  try{ const a=stuckLog(); a.unshift(entry); localStorage.setItem("ml_stucklog", JSON.stringify(a.slice(0,10))); }catch(e){}
+  uiTrail("fab put back ("+gap+"px)"); syncZoomHeight(); }
+if(typeof document !== "undefined"){
+  document.addEventListener("focusin", e=>{ const t=e.target; uiTrail("focus "+((t&&t.tagName)||"")+((t&&t.id)?"#"+t.id:"")); });
+  document.addEventListener("focusout", e=>{ const t=e.target; uiTrail("blur "+((t&&t.tagName)||"")+((t&&t.id)?"#"+t.id:""));
+    setTimeout(()=>{ try{ syncZoomHeight(); fabCheck("blur"); }catch(x){} }, 400); });   // the keyboard has closed: measure again
+  if(window.visualViewport){ let _vvT=0; window.visualViewport.addEventListener("resize", ()=>{ clearTimeout(_vvT);
+    _vvT=setTimeout(()=>{ try{ uiTrail("view "+Math.round(window.visualViewport.height)); fabCheck("resize"); }catch(x){} }, 300); }); } }
 /* v1.44 item 5: everything added while the sheet is open is provisional. The return key keeps it;
    Cancel (button, scrim tap, swipe-down) takes it all back off the list. Only ids CREATED during this
    session are tracked, so an item that was already on the list before you opened the sheet is never
@@ -1600,7 +1628,11 @@ function duplicateListCode(code){
 }
 function delListUndo(code){ const a=getLists(); const i=a.findIndex(x=>x.code===code); if(i<0){ listActOpen=false; render(); return; }
   const removed=a[i]; a.splice(i,1); saveLists(a); listActOpen=false;
-  toast="“"+(removed.name||"List")+"” removed"; toastAction={ label:"Undo", fn:()=>{ const b=getLists(); b.splice(Math.min(i,b.length),0,removed); saveLists(b); toast=null; toastAction=null; clearTimeout(_toastT); render(); } };
+  /* v2.32 (item 4): removing the list that was open left its name at the top with nothing behind it. The first list left
+     opens instead (Undo brings the removed one back and opens it again); with none left, the app starts afresh. */
+  const wasOpen = code===listCode;
+  if(wasOpen){ if(a.length) switchList(a[0].code); else { localStorage.removeItem(LS_LASTLIST); location.href=location.pathname; return; } }
+  toast="“"+(removed.name||"List")+"” removed"; toastAction={ label:"Undo", fn:()=>{ const b=getLists(); b.splice(Math.min(i,b.length),0,removed); saveLists(b); toast=null; toastAction=null; clearTimeout(_toastT); if(wasOpen) switchList(removed.code); else render(); } };
   render(); clearTimeout(_toastT); _toastT=setTimeout(()=>{ toast=null; toastAction=null; render(); }, 5000); }
 /* v1.51 — per-list history. Deliberately NOT part of `state`: the synced document's schema is fixed,
    and an append-only log shared between phones would need its own merge rules in save()/subscribe()
@@ -1632,7 +1664,7 @@ function rememberList(code,name){ const a=getLists(); const i=a.findIndex(x=>x.c
   if(i>=0){ if(name && a[i].name!==name){ a[i].name=name; saveLists(a); } }
   else { a.push({code, name:name||"Groceries"}); saveLists(a); } }
 function newListPrompt(){ listsOpen=false; newListOpen=true; newListDraft=""; render(); }
-function newListSheet(){ return `<div class="sheet-bg" id="newListBg"><div class="sheet" id="newListSheet">
+function newListSheet(){ return `<div class="sheet-bg kbpin" id="newListBg"><div class="sheet" id="newListSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">New list</div>
     <div style="display:flex;gap:8px;align-items:stretch">
       <input id="newListName" placeholder="List name" value="${esc(newListDraft)}" autocomplete="off" style="flex:1;min-width:0;height:48px;padding:0 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:16px" />
@@ -1750,12 +1782,13 @@ function occSheetHTML(){ const o=occSheet; if(!o) return ""; const ts=Array.isAr
   const body = o.mode==="save"
     ? `<div class="hint" style="text-align:left;margin:0 0 10px">What is still to buy (${state.items.filter(i=>!i.checked).length} item${state.items.filter(i=>!i.checked).length===1?"":"s"}), saved under a name — a BBQ, camping, Christmas — to drop into the list another time.</div>
        <input id="occName" value="${esc(o.name||"")}" maxlength="40" placeholder="Name it — “BBQ”" aria-label="Occasion name" style="width:100%;box-sizing:border-box;height:46px;padding:0 12px;border-radius:12px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:16px" />
-       <div style="display:flex;gap:8px;margin-top:12px"><button class="newlist" id="occSaveGo">Save</button><button class="optaction" id="occClose" style="margin-top:0">Cancel</button></div>`
-    : (ts.length ? `<div class="occrows">${ts.map(t=>`<div class="occrow"><span class="occ-n">${esc(t.name)}<span class="occ-s">${t.items.length} item${t.items.length===1?"":"s"}</span></span>
+       <div class="ppedbtns"><button class="newlist" id="occSaveGo">Save</button><button class="optaction" id="occClose" style="margin-top:0">Cancel</button></div>`
+    : `<div class="hint" style="text-align:left;margin:0 0 10px">An occasion is a set of things you buy together — a BBQ, camping, Christmas. Save one from the list once; next time, Add puts all of it back on the list in one tap.</div>` + (ts.length ? `<div class="occrows">${ts.map(t=>`<div class="occrow"><span class="occ-n">${esc(t.name)}<span class="occ-s">${t.items.length} item${t.items.length===1?"":"s"}</span></span>
          <button class="storechip" data-occadd="${esc(t.id)}">Add</button><button class="storechip" data-occdel="${esc(t.id)}" aria-label="Delete ${esc(t.name)}">${BIN_SVG(14)}</button></div>`).join("")}</div>`
-       : `<div class="hint" style="text-align:left">No occasions saved yet — put the things for one on the list, then "Save what's to buy as an occasion".</div>`)
-      + `<div style="display:flex;gap:8px;margin-top:12px"><button class="optaction" id="occClose" style="margin-top:0">Close</button></div>`;
-  return `<div class="sheet-bg" id="occBg"><div class="sheet" id="occSheet" role="dialog" aria-labelledby="occTitle">
+       : `<div class="hint" style="text-align:left;margin:0">None saved yet.</div>`)
+      + `<button class="optaction" id="occToSave">${SAVE_SVG(16)} Save what's on the list now as an occasion</button>
+         <div style="display:flex;gap:8px;margin-top:12px"><button class="optaction" id="occClose" style="margin-top:0">Close</button></div>`;
+  return `<div class="sheet-bg kbpin" id="occBg"><div class="sheet" id="occSheet" role="dialog" aria-labelledby="occTitle">
     <div class="disp" id="occTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">${o.mode==="save"?"Save as an occasion":"Add an occasion"}</div>${body}</div></div>`; }
 function wireOcc(){
   const sv=app.querySelector("#optOccSave"); if(sv) sv.onclick=()=>{ occSheet={mode:"save", name:""}; render(); };
@@ -1764,6 +1797,7 @@ function wireOcc(){
   const go=app.querySelector("#occSaveGo"); if(go) go.onclick=()=>occSave((app.querySelector("#occName")||{}).value);
   app.querySelectorAll("[data-occadd]").forEach(b=>b.onclick=()=>occAdd(b.dataset.occadd));
   app.querySelectorAll("[data-occdel]").forEach(b=>b.onclick=()=>occDelete(b.dataset.occdel));
+  const ts2=app.querySelector("#occToSave"); if(ts2) ts2.onclick=()=>{ occSheet={mode:"save", name:""}; render(); };   // v2.32
   const c=app.querySelector("#occClose"); if(c) c.onclick=()=>{ occSheet=null; render(); };
   const bg=app.querySelector("#occBg"); if(bg) bg.onclick=e=>{ if(e.target===bg){ occSheet=null; render(); } };
 }
@@ -2124,9 +2158,7 @@ function sweep(msg){ const checked=state.items.filter(i=>i.checked); if(!checked
   moveToBuyAgain(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||"",note:i.note||"",where:i.where||""})));
   for(const i of checked){ histLog("buy", i.name); histLog("regadd", i.name); }
   state.items = state.items.filter(i=>!i.checked);
-  /* v2.31 (item 5): at a shop whose membership card is saved on this phone, the card comes up as the shop is finished —
-     before paying */
-  { const st=activeStore(), c=(st && isRealStore(st.id)) ? cardFor(st) : null; if(c) cardShow={ id:c.id }; }
+  cardNudgeSet();   // v2.32 (item 13): the card, or an offer to add one, at the top of the page — above "Got the receipt?"
   aiPublish(); rcptNudgeSet(); shoppingClear(); save(); render(); showUndo(prev, msg || (checked.length+" saved to Regulars")); }   // v2.10: msg from autoFinishAt
 /* v1.10 add-sheet variant of restore(): copies the regular onto the list but KEEPS it in
    Buy-again, so the sheet row stays put and flips to ✓ (second tap bumps quantity). */
@@ -2858,7 +2890,7 @@ function addEditPanel(){
       <button class="catchip" data-ae-addsub="${it.id}" style="border-style:dashed;font-weight:800">＋ New</button>
     </div>` : ""}` : ""}
     <div class="addedit-actions">
-      <button class="addedit-more" data-ae-again="${it.id}">Buy again</button>
+      <button class="addedit-more" data-ae-again="${it.id}">Add to Regulars</button>
       <button class="addedit-remove" data-ae-remove="${it.id}">Delete</button>
       <button class="addedit-done" id="addEditDone">Save</button>
     </div>
@@ -3853,7 +3885,7 @@ function renderMain(){
     ${checkedBar}
     <div class="wrap ${shopMode?'shop':''}" role="main">
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
-      ${shoppingHTML()}${lookCardHTML()}${installCardHTML()}${rcptNudgeHTML()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
+      ${shoppingHTML()}${lookCardHTML()}${installCardHTML()}${cardNudgeHTML()}${rcptNudgeHTML()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">Your list is empty</p>
           <p class="empty-sub">Tap <b>Add items</b> below — or start from these:</p>
@@ -3871,7 +3903,7 @@ function renderMain(){
   ${fabMoveOpen?fabMoveSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -4183,7 +4215,7 @@ function renderPlanTab(){
   ${planWeekOpen?planWeekSheet():""}
   ${planAdd?planAddSheet():""}
   ${planPick?planPickSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${listsOpen?listsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
@@ -4283,7 +4315,7 @@ let rcpt = null;
    sending, a 20s limit, and on failure a message plus a way to share the text instead. */
 let rpt = null;   // { kind, text, diag, busy, err, sent }
 let rst = null;   // v2.15 the restore confirmation sheet: { list, label }
-const RPT_KINDS = { broken:"Something's broken", looks:"Looks wrong", idea:"An idea", complaint:"A complaint" };
+const RPT_KINDS = { broken:"Something's broken", looks:"Looks wrong", idea:"An idea" };   // v2.32: "A complaint" removed (the household); the server still accepts it from older copies
 const RPT_DAY_CAP = 10;
 function rptToday(){ const d=dayKey(new Date()); try{ const v=String(localStorage.getItem("ml_rptday")||"").split("|"); return v[0]===d ? (+v[1]||0) : 0; }catch(e){ return 0; } }
 function rptCount(){ const d=dayKey(new Date()); try{ localStorage.setItem("ml_rptday", d+"|"+(rptToday()+1)); }catch(e){} }
@@ -4376,7 +4408,7 @@ function rcRead(file){
         const m=rcMatchItem(x.name, used); if(m) used.add(m.id);
         return { raw:String(x.raw||""), name:String(x.name||""), qty:+x.qty||1, weight:String(x.weight||""), price:+x.price||0, cat, keep:true, match:m?m.id:null }; });
       if(!lines.length){ rcpt={ err:"Couldn't find any items on that. Is it a receipt?" }; render(); return; }
-      rcpt={ store:rcStoreFor(j.store), detected:String(j.store||""), date:(/^\d{4}-\d{2}-\d{2}$/.test(j.date||"") ? j.date : dayKey(new Date())), total:+j.total||0, lines, discounts:Array.isArray(j.discounts)?j.discounts:[] };
+      rcpt={ store:rcStoreFor(j.store), detected:String(j.store||""), date:(/^\d{4}-\d{2}-\d{2}$/.test(j.date||"") ? j.date : dayKey(new Date())), total:+j.total||0, lines, discounts:Array.isArray(j.discounts)?j.discounts:[], place:String(j.place||"").slice(0,40) };
       rcPair();   // v2.31: pair the lines with the cart, in tick order
       render(); })
     .catch(e=>{ if(rcpt){ rcpt={ err: navigator.onLine===false ? "No connection. Try again when you're online."
@@ -4386,7 +4418,7 @@ function rcRead(file){
 function rcSave(){ if(!rcpt || !rcpt.lines) return;
   const used=new Set(); let n=0, m=0; const t=Date.now();
   for(const L of rcpt.lines){ const nm=String(L.name||"").trim(); if(!L.keep || !nm || !isFinite(L.price)) continue;
-    priceRecord(nm, { p:Math.round(L.price*100)/100, s:rcpt.store.id||"", sn:rcpt.store.name||"", d:rcpt.date, q:L.qty||1, w:L.weight||"", t }); n++;
+    priceRecord(nm, { p:Math.round(L.price*100)/100, s:rcpt.store.id||"", sn:rcpt.store.name||"", l:rcpt.place||"", d:rcpt.date, q:L.qty||1, w:L.weight||"", t });   // v2.32 l: the shop's suburb, from the receipt n++;
     /* the name may have been corrected in the sheet, so match again on what was saved */
     const it=rcMatchItem(nm, used); if(it){ used.add(it.id); it.checked=true; it.checkedBy=me; it.checkedAt=t; it.checkedStore=rcpt.store.id||""; markDirty(it.id); m++; } }
   /* v2.20: a receipt from a member chain that shows the member discount uses up that period's 10% */
@@ -4440,7 +4472,7 @@ function tenSheetHTML(){ const t = tenSheet; if(!t) return ""; const c = memb()[
     <div class="hint" style="text-align:left;margin:0 0 10px">What you rebuy, enough for a month, priced from your receipts. Ticked until the shop earns the whole discount (${priceMoney(t.base)}).</div>
     ${t.rows.length ? `<div class="tenrows">${t.rows.map(row).join("")}</div>` : `<div class="hint" style="text-align:left">Nothing to suggest yet: this needs things you have bought at least twice, and their prices from a receipt.</div>`}
     <div class="tensum" role="status">${n} ticked · ${priceMoney(sum.total)} · saves ${priceMoney(sum.saving)}${sum.saving >= t.cap ? " (the most it gives)" : ""}</div>
-    <div style="display:flex;gap:8px;margin-top:10px"><button class="newlist" id="tenAdd" ${n ? "" : "disabled"}>Add ${n} to the list</button><button class="optaction" id="tenClose" style="margin-top:0">Close</button></div>
+    <div class="ppedbtns" style="margin-top:10px"><button class="newlist" id="tenAdd" ${n ? "" : "disabled"}>Add ${n} to the list</button><button class="optaction" id="tenClose" style="margin-top:0">Close</button></div>
   </div></div>`; }
 function tenAddToList(){ const t = tenSheet; if(!t) return; let n = 0;
   for(const r of t.rows){ if(!r.sel) continue; n++;
@@ -4599,7 +4631,7 @@ function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRe
     ${item("smSpend", FLAG_TAG_SVG, "What we spend")}
     ${real ? item("smAisle", PIN_SVG(18), "Aisle map for " + esc(st.name)) : ""}
     ${item("smSend", SHARE_SVG(18), "Send what's to buy")}
-    ${item("smOcc", SAVE_SVG(18), "Add an occasion")}
+    ${item("smOcc", SAVE_SVG(18), "Occasions — BBQ, camping…")}
     <div class="smsep"></div>
     ${item("smReport", REPORT_SVG(18), "Report a problem")}
   </div></div>`; }
@@ -4610,8 +4642,8 @@ function priceDiagHTML(){ const P = state.prices || {}, q = priceDiagQ.trim().to
   const keys = Object.keys(P).filter(k => !q || k.includes(q)).sort((a, b) => priceLastT(P[b]) - priceLastT(P[a]));
   const total = Object.keys(P).length, recs = Object.values(P).reduce((n, a) => n + (Array.isArray(a) ? a.length : 0), 0);
   const rows = keys.slice(0, 300).map(k => { const a = (P[k] || []).slice().sort((x, y) => (y.t || 0) - (x.t || 0));
-    return `<details class="pdrow"><summary><span class="pd-n">${esc(cap(k))}</span><span class="pd-s">${a.length} · ${a[0] ? priceMoney(a[0].p) : ""}</span></summary>
-      ${a.map(r => `<div class="pdrec"><span>${esc(r.d || "")}</span><span>${esc(r.sn || "—")}</span><span>${r.q > 1 ? r.q + "× " : ""}${esc(r.w || "")}</span><b>${priceMoney(r.p)}</b></div>`).join("")}</details>`; }).join("");
+    return `<details class="pdrow"><summary><span class="pd-n">${esc(cap(k))}</span><span class="pd-s">${a[0] ? `${priceMoney(a[0].p)} · ${esc(a[0].sn || "—")}` : ""} · ${a.length}</span></summary>
+      ${a.map(r => `<div class="pdrec"><span>${esc(r.d || "")}</span><span>${esc(r.sn || "—")}${r.l ? `<small class="pd-l">${esc(r.l)}</small>` : ""}</span><span>${r.q > 1 ? r.q + "× " : ""}${esc(r.w || "")}</span><b>${priceMoney(r.p)}</b></div>`).join("")}</details>`; }).join("");
   return `<div class="sheet-bg kbpin" id="pdBg"><div class="sheet" id="pdSheet" role="dialog" aria-labelledby="pdTitle">
     <div class="disp" id="pdTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">Price diagnostics</div>
     <div class="hint" style="text-align:left;margin:0 0 10px">${total} item${total === 1 ? "" : "s"}, ${recs} price${recs === 1 ? "" : "s"} from receipts, newest first. The memory keeps the last 8 prices of each item, and ${PRICE_ITEMS} items.</div>
@@ -4755,7 +4787,57 @@ function cardPick(){ const f=document.createElement("input"); f.type="file"; f.a
       .then(img=>{ if(!cardEdit) return; cardEdit.busy=false; cardEdit.photo=img; render(); })
       .catch(()=>{ if(!cardEdit) return; cardEdit.busy=false; cardEdit.err="Couldn't use that photo. Try another."; render(); }); };
   f.click(); }
+var stuckOpen = false;   // v2.32 the screen log sheet. var: render() reads it at boot
+function stuckText(){ return "The + got stuck halfway up the page (" + APP_VERSION + ").\n" + stuckLog().slice(0,4).map(e=>JSON.stringify(e)).join("\n").slice(0,1700); }
+function stuckHTML(){ const a=stuckLog();
+  return `<div class="sheet-bg" id="stBg"><div class="sheet" id="stSheet" role="dialog" aria-labelledby="stTitle">
+    <div class="disp" id="stTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">Screen log</div>
+    <div class="hint" style="text-align:left;margin:0 0 10px">Each time the “+” was found out of place and put back, with what happened just before. Kept on this phone; send it with a report so it can be fixed for good.</div>
+    <div class="stlist">${a.length ? a.map(e=>`<div class="strow"><b>${esc(new Date(e.t).toLocaleString(undefined,{day:"numeric",month:"short",hour:"numeric",minute:"2-digit"}))}</b> · ${esc(e.page||"")} · ${e.gap}px too high · via ${esc(e.src||"")}<div class="sttrail">${esc((e.trail||[]).join(" → "))}</div></div>`).join("") : `<div class="hint" style="text-align:left">Nothing logged.</div>`}</div>
+    <div class="ppedbtns"><button class="optaction" id="stClear">Clear</button><button class="newlist" id="stSend">Report it</button></div>
+    <button class="optaction" id="stClose">Close</button>
+  </div></div>`; }
+function wireStuck(){
+  const o=app.querySelector("#optStuck"); if(o) o.onclick=()=>{ stuckOpen=true; render(); };
+  if(!stuckOpen) return;
+  const close=()=>{ stuckOpen=false; render(); };
+  const c=app.querySelector("#stClose"); if(c) c.onclick=close;
+  const bg=app.querySelector("#stBg"); if(bg) bg.onclick=e=>{ if(e.target===bg) close(); };
+  const cl=app.querySelector("#stClear"); if(cl) cl.onclick=()=>{ try{ localStorage.removeItem("ml_stucklog"); }catch(e){} close(); };
+  const sd=app.querySelector("#stSend"); if(sd) sd.onclick=()=>{ stuckOpen=false; rpt={ kind:"broken", text:stuckText(), diag:true }; render(); }; }
+/* v2.32 (the household's item 13): the card is scanned before paying, so after Save to Regulars it sits at the top of the
+   Shop page, above "Got the receipt?", for half an hour or until Done. At a shop with no card saved, the same place
+   offers to add one (photo and number), or can be told not to ask again. Times and the "don't ask" are on this phone. */
+var CARD_NUDGE_MS = 30*60*1000;   // var: the Shop page reads it, and the first render can come before this line runs
+function cardNudgeSet(){ try{ localStorage.setItem("ml_cardnudge", String(Date.now())); }catch(e){} }
+function cardNudgeClear(){ try{ localStorage.removeItem("ml_cardnudge"); }catch(e){} }
+function cardAskOn(){ try{ return localStorage.getItem("ml_cardask")!=="0"; }catch(e){ return true; } }
+function cardHere(){ const st=activeStore(), real=!!(st && isRealStore(st.id));
+  return { st, real, c:(real && cardFor(st)) || cardsGet().find(x=>!x.chain) || null }; }
+function cardNudgeHTML(){ let at=0; try{ at=+localStorage.getItem("ml_cardnudge")||0; }catch(e){}
+  if(!(at>0 && Date.now()-at < CARD_NUDGE_MS)) return "";
+  const { st, real, c } = cardHere();
+  if(c){ const bc=c.num ? code128SVG(c.num, 70) : "";
+    return `<div class="installcard cardnudge" id="cardNudge" role="region" aria-label="${esc(c.name)} card">
+      <div class="ic-t">${CARD_SVG(18)} ${esc(c.name)} — scan before you pay</div>
+      <button class="cardface cardface-sm" id="cardNudgeBig" aria-label="Show the card bigger">${(!bc && c.photo) ? `<img src="${esc(c.photo)}" alt="Photo of the ${esc(c.name)} card" />` : `${bc}<div class="cardnum">${esc(cardNumFmt(c.num))}</div>`}</button>
+      <div class="ic-btns"><button class="optaction" id="cardNudgeDone">Done</button></div></div>`; }
+  if(!real || !cardAskOn()) return "";
+  const k=chainOfStore(st.name), nm=k==="coles" ? "Flybuys card" : k==="woolworths" ? "Everyday Rewards card" : "membership card";
+  return `<div class="installcard cardnudge" id="cardNudge" role="region" aria-label="Membership card">
+    <div class="ic-t">${CARD_SVG(18)} Got a ${esc(nm)}?</div>
+    <div class="ic-b">Add it once — a photo and its number — and it shows here after every shop at ${esc(st.name)}, ready to scan before you pay. It stays on this phone.</div>
+    <div class="ic-btns"><button class="newlist" id="cardNudgeAdd">Add the card</button><button class="optaction" id="cardNudgeNo">Not now</button></div>
+    <button class="cardnever" id="cardNudgeNever">No card — don't ask again</button></div>`; }
 function wireCards(){
+  { const nd=app.querySelector("#cardNudgeDone"), nn=app.querySelector("#cardNudgeNo"), nv=app.querySelector("#cardNudgeNever"), na=app.querySelector("#cardNudgeAdd"), nb=app.querySelector("#cardNudgeBig");
+    if(nd) nd.onclick=()=>{ cardNudgeClear(); render(); };
+    if(nn) nn.onclick=()=>{ cardNudgeClear(); render(); };
+    if(nv) nv.onclick=()=>{ try{ localStorage.setItem("ml_cardask","0"); }catch(e){} cardNudgeClear(); render(); };
+    if(nb) nb.onclick=()=>{ const c=cardHere().c; if(c){ cardShow={ id:c.id }; render(); } };
+    if(na) na.onclick=()=>{ const st=activeStore(), k=chainOfStore(st && st.name);
+      cardEdit={ id:"", name:k==="coles" ? "Flybuys" : k==="woolworths" ? "Everyday Rewards" : "", chain:k||"", num:"", photo:"" }; render(); };
+    app.querySelectorAll("[data-opt-cardask]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_cardask", b.dataset.optCardask); }catch(e){} render(); }); }
   const keep=()=>{ const n=app.querySelector("#ceName"), u=app.querySelector("#ceNum"); if(cardEdit){ if(n) cardEdit.name=n.value; if(u) cardEdit.num=u.value; } };
   app.querySelectorAll("[data-card-add]").forEach(b=>b.onclick=()=>{ if(cardsGet().length>=CARD_MAX){ showToast(`Up to ${CARD_MAX} cards`); return; } cardEdit={ id:"", name:"", chain:"", num:"", photo:"" }; render(); });
   app.querySelectorAll("[data-card-edit]").forEach(b=>b.onclick=()=>{ const c=cardsGet().find(x=>x.id===b.dataset.cardEdit); if(c){ cardEdit=Object.assign({ photo:"" }, c); render(); } });
@@ -5334,7 +5416,7 @@ function wirePlanTab(){
   const st=app.querySelector("#setNavP"); if(st) st.onclick=()=>{ settingsFrom=0; gotoPage(2); };
   wireListsSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireRptSheet(); wireRstSheet();
   wireUserTiles();
 }
 /* v1.90: a recipe page shared into the app. Android hands it over directly through the manifest's
@@ -5482,7 +5564,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>Add items…</span></button></div>`:""}
-  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -5545,7 +5627,7 @@ function wirePlanPage(){
   const qbc=app.querySelector("#qbannerClose"); if(qbc) qbc.onclick=()=>{ quickEdit=null; render(); };
   const qbr=app.querySelector("#qbannerRemove"); if(qbr) qbr.onclick=()=>{ const it=state.items.find(i=>i.id===quickEdit); const nm=it?cap(it.name):""; const id=quickEdit; quickEdit=null; planRemove(id); if(nm) showToast(nm+" moved to Regulars"); };
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireRptSheet(); wireRstSheet();
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>gotoPage(0);
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireUserTiles();
@@ -5567,7 +5649,7 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
     if(i){ i.value=""; i.parentElement.classList.remove("has"); i.focus(); } filterOptions(); };
   wireOptions();
   wireEditSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 /* v1.77 item 3: which sections are folded. Keyed by the section's own name rather than its index, so
@@ -5601,6 +5683,22 @@ function toggleOptColl(name){ const s=optColl(); if(s.has(name)) s.delete(name);
    read from that rather than written into the template, which would have meant cutting several nested
    conditionals apart. Idempotent: it runs on every render and re-groups whatever it finds, so a body it
    built last time is simply rebuilt. */
+/* v2.32 (the household's item 2): an explanation under a setting folds behind an (i) beside the setting's name — Settings reads
+   as a list of choices, and the why is one tap away. Done on the drawn page, like groupOptions, so every .opthint in the
+   template gets it without each being rewritten. Two hints under one setting share its (i). A hint that does not sit under a
+   setting stays open. Toggling only flips classes — never render() (the v2.18 rule: the page must not rebuild). */
+function infoBubbles(){ const page=document.querySelector(".optpage"); if(!page) return;
+  page.querySelectorAll(".opthint:not([data-ib])").forEach((h,i)=>{ h.dataset.ib="1";
+    let p=h.previousElementSibling; while(p && p.classList.contains("opthint")) p=p.previousElementSibling;
+    const lab=(p && p.classList.contains("optrow")) ? p.querySelector(":scope > .optlabel") : null;
+    if(!lab){ h.classList.add("opthint-open"); return; }
+    let b=lab.querySelector(":scope > .infobtn");
+    if(!b){ b=document.createElement("button"); b.type="button"; b.className="infobtn"; b.textContent="i";
+      b.setAttribute("aria-expanded","false"); b.setAttribute("aria-label","What is this?"); b._hints=[];
+      b.onclick=e=>{ e.stopPropagation(); const on=b.getAttribute("aria-expanded")!=="true";
+        b._hints.forEach(x=>x.classList.toggle("opthint-open", on)); b.setAttribute("aria-expanded", on?"true":"false"); };
+      lab.appendChild(b); }
+    b._hints.push(h); }); }
 function groupOptions(){
   const page=document.querySelector(".optpage"); if(!page) return;
   const coll=optColl();
@@ -5869,7 +5967,7 @@ function wireOptions(){
   const dpa=app.querySelector("#diagPredToggleAll"); if(dpa) dpa.onclick=()=>diagKeepScroll(()=>{ const keys=Object.keys(purch||{}); const allOpen=keys.length&&keys.every(k=>diagPredExpand.has(k)); if(allOpen) diagPredExpand.clear(); else keys.forEach(k=>diagPredExpand.add(k)); });
   app.querySelectorAll("[data-diag-sort]").forEach(el=>el.onclick=()=>diagKeepScroll(()=>{ diagPredSort=el.dataset.diagSort; }));
   app.querySelectorAll("[data-diag-pred]").forEach(el=>el.onclick=()=>diagKeepScroll(()=>{ const k=el.dataset.diagPred; if(diagPredExpand.has(k)) diagPredExpand.delete(k); else diagPredExpand.add(k); }));
-  groupOptions();   // v1.77 item 3: last, so it folds markup that is already wired
+  infoBubbles(); groupOptions();   // v1.77 item 3: last, so it folds markup that is already wired (v2.32: the (i)s first)
 }
 /* A18 ✨ Smart add — planning-mode AI parse → preview → confirm.
    Calls the server-side /api/parse (Groq); the API key never touches the client. */
@@ -6223,7 +6321,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -6566,7 +6664,7 @@ function optionsBody(){
     ${catOn ? rowNL("Group by subcategory", `<div class="seg"><button data-opt-subon="1" class="${subOn?'on':''}">On</button><button data-opt-subon="0" class="${!subOn?'on':''}">Off</button></div>`) : ""}` : ""}
     ${row("Item icons", `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">${iconStyle()==="drawn"?illSVG("bread"):"🍞"}</span>On</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
     ${itemEmojiOn() ? row("Icon size", `<div class="seg">${[["s","S"],["m","M"],["l","L"],["xl","XL"]].map(([k,l])=>`<button data-opt-icosize="${k}" class="${icoSize()===k?'on':''}" aria-label="Icon size ${l}">${l}</button>`).join("")}</div>`) : ""}
-    ${(itemEmojiOn() && /^(l|xl)$/.test(icoSize())) ? `<div style="margin:-2px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">At this size each tile shows its name under the icon.</div>` : ""}
+    ${(itemEmojiOn() && /^(l|xl)$/.test(icoSize())) ? `<div class="opthint">At this size each tile shows its name under the icon.</div>` : ""}
     ${rowNL("Category icons", `<div class="seg"><button data-opt-catemoji="1" class="${catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">${iconStyle()==="drawn"?catMarkSVG("vegetable"):"🥦"}</span>On</button><button data-opt-catemoji="0" class="${!catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
     ${rowNL("Icon style", `<div class="seg"><button data-opt-iconstyle="drawn" class="${iconStyle()==='drawn'?'on':''}"><span class="tdswatch tdswatch-ico">${catMarkSVG("vegetable")}</span>Drawn</button><button data-opt-iconstyle="emoji" class="${iconStyle()==='emoji'?'on':''}">Emoji</button></div>`)}
     <p class="hint" style="text-align:left;margin:0 0 12px">Drawn uses line drawings for items and the nine standard categories; categories you made keep their emoji.</p>
@@ -6601,19 +6699,20 @@ function optionsBody(){
     ${(()=>{ const hid=[...STORES,...(state.stores||[])].filter(s=>{ const o=storeOverride(s.id); return o.hidden && !o.removed; }); return hid.length ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:6px"><span class="optlabel" style="font-size:12.5px;color:var(--muted2)">Hidden stores</span>${hid.map(s=>`<div style="display:flex;gap:7px;align-items:center"><span style="flex:1;min-width:0;color:var(--muted);font-size:13px;font-weight:600">${esc((storeById(s.id)||s).name||s.id)}</span><button class="storechip" data-store-restore="${s.id}" style="flex:0 0 auto">Restore</button><button class="storechip" data-store-delete="${s.id}" aria-label="Delete" style="flex:0 0 auto;border-color:#C24A33;color:#C24A33">✕</button></div>`).join("")}</div>` : ""; })()}
     <div style="margin:-2px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">${(()=>{ const nid=storeSel==="auto"?(useLoc&&!locState.busy&&locState.checked&&!locState.err&&locState.nearId):storeSel; return nid==="home"?HOME_SVG(14)+" ":(storeSel==="auto"&&nid&&storeById(nid))?PIN_SVG(14)+" ":""; })()}${esc(storeLabel())}</div>
     ${view!=="lists" ? `<div class="optrow optrow-wide optnl"><span class="optlabel">Sort</span><div class="optwide">
-      <div class="seg segfull">${(displayFor()==="flat" && shopMode && aiSortOK())?`<button data-opt-sort="ai" class="${curSort==='ai'?'on':''}">✨ AI</button>`:""}${displayFor()==="flat"?`<button data-opt-sort="location" class="${curSort==='location'?'on':''}">Location</button>`:""}<button data-opt-sort="cat" class="${curSort==='cat'?'on':''}">Aisle</button><button data-opt-sort="alpha" class="${curSort==='alpha'?'on':''}">A–Z</button></div>
+      <div class="seg segfull">${(displayFor()==="flat" && shopMode && aiSortOK())?`<button data-opt-sort="ai" class="${curSort==='ai'?'on':''}">✨ AI</button>`:""}${displayFor()==="flat"?`<button data-opt-sort="location" class="${curSort==='location'?'on':''}">Location</button>`:""}<button data-opt-sort="cat" class="${curSort==='cat'?'on':''}">Category</button><button data-opt-sort="alpha" class="${curSort==='alpha'?'on':''}">A–Z</button></div>
     </div></div>
-    ${(displayFor()==="flat" && curSort==="ai") ? `<div style="margin:-2px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">✨ AI learns the order you check things off at ${esc((activeStore()||{}).name||"each store")} and reorders your next trip. Pick the store in Location so it learns per shop.</div>` : ""}
+    <div class="opthint"><b>Location</b> walks the shop you're at, aisle by aisle — its own aisle map if you have made one (Aisle map, below the shops), otherwise the built-in order — and at a market shows only what it sells. <b>✨ AI</b> learns the order you tick things at each shop and follows it next time. <b>Category</b>: your categories in the order they are listed, then A–Z. <b>A–Z</b>: by name. Location and AI show when the list is not grouped by category.</div>
+    ${(displayFor()==="flat" && curSort==="ai") ? `<div class="opthint">✨ AI learns the order you check things off at ${esc((activeStore()||{}).name||"each store")} and reorders your next trip. Pick the store in Location so it learns per shop.</div>` : ""}
     ${(displayFor()==="flat" && curSort==="ai" && aiSeenCount()>0) ? `<button class="optaction" id="optResetAI" style="margin:-2px 0 10px">♻︎ Reset AI — restart from category</button>` : ""}` : ""}
     ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
     ${row("Keep screen on", `<div class="seg"><button data-opt-wake="1" class="${wakePref()?'on':''}">On</button><button data-opt-wake="0" class="${!wakePref()?'on':''}">Off</button></div>`)}
-    <div style="margin:-2px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">While the cart has something in it, so the phone does not dim and lock mid-aisle.</div>
-    ${(view!=="lists") ? `${sect("Smart features")}${/* v2.30: Smart add, restock suggestions, receipts and prices, memberships — the AI-assisted things, in one place */""}${row("Smart add", `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">On</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">Off</button></div>`)}` : ""}
+    <div class="opthint">While the cart has something in it, so the phone does not dim and lock mid-aisle.</div>
+    ${(view!=="lists") ? `${sect("Smart features")}${/* v2.30: Smart add, restock suggestions, receipts and prices, memberships — the AI-assisted things, in one place */""}${row("Smart add", `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">On</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">Off</button></div>`)}<div class="opthint">The ✨ button in the add bar. Type or paste a whole list or a recipe — “2 kg chicken, milk and eggs for pancakes” — and it becomes separate items with amounts and categories. What you type is sent to the AI reader; nothing else. Recipes on the Plan page have their own reader and work either way.</div>` : ""}
     ${(view!=="lists") ? `<div class="optsub">Restock suggestions</div>${rowNL("Suggest restocks", `<div class="seg"><button data-pred-on="1" class="${predictCfg.on?'on':''}">On</button><button data-pred-on="0" class="${!predictCfg.on?'on':''}">Off</button></div>`)}
     ${predictCfg.on ? `${rowNL("Remind me", `<div class="seg"><button data-pred-freq="weekly" class="${predictCfg.freq==='weekly'?'on':''}">Weekly</button><button data-pred-freq="monthly" class="${predictCfg.freq==='monthly'?'on':''}">Monthly</button></div>`)}
     ${predictCfg.freq==='weekly' ? `<div class="optrow optrow-wide optnl"><span class="optlabel">Day</span><div class="optwide">
       <div class="daychips">${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d,i)=>{ const dv=(i+1)%7; return `<button class="daychip ${predictCfg.day===dv?'on':''}" data-pred-day="${dv}">${d}</button>`; }).join("")}</div></div></div>` : ""}
-    <div style="margin:-2px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">Suggests restocking items on your schedule, from how often you buy them — on your device. Adds only when you tap.</div>` : ""}` : ""}
+    <div class="opthint">Suggests restocking items on your schedule, from how often you buy them — on your device. Adds only when you tap.</div>` : ""}` : ""}
     ${(view!=="lists") ? `<div class="optsub">Receipts and prices</div>
       <button class="optaction" id="optRcpt" style="margin-top:2px">${CAMERA_SVG(16)} Read a receipt</button>
       ${row("Ask after a shop", `<div class="seg"><button data-opt-rcptask="1" class="${rcptAskOn()?'on':''}">On</button><button data-opt-rcptask="0" class="${!rcptAskOn()?'on':''}">Off</button></div>`)}
@@ -6636,16 +6735,17 @@ function optionsBody(){
       <div class="optsub">Cards at the till</div>${/* v2.31 item 5: kept on this phone only */""}
       ${cardsGet().map(c=>row(esc(c.name), `<div class="seg"><button data-card-open="${esc(c.id)}">Show</button><button data-card-edit="${esc(c.id)}">Edit</button></div>`)).join("")}
       <button class="optaction" data-card-add="1">${CARD_SVG(16)} Add a membership card</button>
+      ${row("Ask for a card after a shop", `<div class="seg"><button data-opt-cardask="1" class="${cardAskOn()?'on':''}">On</button><button data-opt-cardask="0" class="${!cardAskOn()?'on':''}">Off</button></div>`)}
       <div class="snapnote">On this phone only. A card comes up when you finish a shop at its store, and from the Shop page's menu.</div>` : ""}
     ${(view!=="lists") ? `${sect("Plan & recipes")}${row("Meal slots", `<div class="seg"><button data-opt-mealslots="1" class="${mealSlotsOn()?'on':''}">On</button><button data-opt-mealslots="0" class="${!mealSlotsOn()?'on':''}">Off</button></div>`)}
-    <div style="margin:-2px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">Breakfast, lunch, dinner or snack on each planned meal.</div>` : ""}
+    <div class="opthint">Breakfast, lunch, dinner or snack on each planned meal.</div>` : ""}
     ${(view!=="lists") ? `${row("Convert amounts", `<div class="seg"><button data-opt-units="off" class="${unitsMode()==='off'?'on':''}">Off</button><button data-opt-units="metric" class="${unitsMode()==='metric'?'on':''}">Metric</button><button data-opt-units="imperial" class="${unitsMode()==='imperial'?'on':''}">Imperial</button></div>`)}
-    <div style="margin:-2px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">Changes how amounts are shown, not what is stored — a recipe\'s own wording comes back if you turn this off. Amounts it can\'t read, like “a pinch”, are left alone.</div>` : ""}
+    <div class="opthint">Changes how amounts are shown, not what is stored — a recipe\'s own wording comes back if you turn this off. Amounts it can\'t read, like “a pinch”, are left alone.</div>` : ""}
     ${state.members.length ? `${sectHR("People")}<div class="optrow optnl" style="flex-direction:column;align-items:stretch;gap:7px">
       <div class="userlist">${state.members.map(m=>`<button class="userchip ${m===me?'on':''}" data-switch-user="${esc(m)}">${esc(m)}${m===me?`<span class="ucur">you</span>`:""}</button>`).join("")}</div>
     </div>
     ${row("Say when I'm shopping", `<div class="seg"><button data-opt-sayshop="1" class="${sayShopOn()?'on':''}">On</button><button data-opt-sayshop="0" class="${!sayShopOn()?'on':''}">Off</button></div>`)}
-    <div style="margin:-2px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">While you tick things off at a shop, the others see which shop — only its name, for an hour and a half, gone when you finish.</div>` : ""}
+    <div class="opthint">While you tick things off at a shop, the others see which shop — only its name, for an hour and a half, gone when you finish.</div>` : ""}
     ${sectHR("Lists & sharing")}
     <button class="optaction" id="optShare" style="margin-top:2px">Share link</button>
     <button class="optaction" id="optSendList" style="margin-top:10px">${SHARE_SVG(16)} Send what's to buy to another app</button>
@@ -6692,6 +6792,7 @@ function optionsBody(){
     <button class="optaction" id="optReport" style="margin-top:10px">${REPORT_SVG(16)} Report a problem</button>
     <button class="optaction" id="optDiag" style="margin-top:10px">${FLASK_SVG(16)} AI diagnostics</button>
     <button class="optaction" id="optPriceDiag" style="margin-top:10px">${FLAG_TAG_SVG} Price diagnostics</button>
+    ${stuckLog().length ? `<button class="optaction" id="optStuck" style="margin-top:10px">Screen log · ${stuckLog().length}</button>` : ""}
     ${sectHR("Your data")}
     <a class="optaction" id="optPrivacy" href="/privacy.html" style="margin-top:2px">Privacy — what the app keeps, and where</a>
     ${(me && (state.members||[]).includes(me)) ? `<button class="optaction" id="optLeave" style="margin-top:10px">Leave this list</button>` : ""}
@@ -6719,7 +6820,7 @@ function renderSettingsPage(){
     ${bottomNav({planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
     ${diagOpen?diagSheet():""}
     ${listsOpen?listsSheet():""}
-    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
     ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
     ${editing?editSheet():""}
@@ -6823,7 +6924,7 @@ function editSheet(){
   }
   const isItem = editing.kind==="item";
   const qtyBlock = `<div class="qstep"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>`;
-  const secLabel = isItem ? "Buy again" : "Add to list";
+  const secLabel = isItem ? "Add to Regulars" : "Add to list";
   const btnSecStyle = "padding:13px 12px;border-radius:14px;border:2px solid var(--ink);background:transparent;color:var(--text);font-weight:700;font-size:14px";
   const btnDelStyle = "padding:13px 12px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:14px";
   const btnSaveStyle = "flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px";
@@ -6839,7 +6940,7 @@ function editSheet(){
        </div>` : ""}` : "";
   return `<div class="sheet-bg kbpin" id="sheetBg"><div class="sheet" id="sheet">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div class="disp" style="font-weight:800;font-size:17px">${isItem?"Edit item":"Buy again"}</div>
+      <div class="disp" style="font-weight:800;font-size:17px">${isItem?"Edit item":"Edit Regular"}</div>
     </div>
     <div style="display:flex;gap:6px;align-items:stretch">
       <div class="qstep" style="height:46px;align-items:center;flex:none;border:none;background:var(--chip)"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>
@@ -6895,7 +6996,7 @@ function wire(){
   const et=app.querySelector("#elseToggle"); if(et) et.onclick=()=>{ elseOpen=!elseOpen; render(); };   // v2.22 R17
   wireAddSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireRptSheet(); wireRstSheet();
   const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>catShown(i.cat)===c.id)).map(c=>c.id);
     const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);

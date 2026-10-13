@@ -90,7 +90,8 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   (`#optLook` opens it, `#lookBack` or the Settings tab returns); everything else is everyday Settings. A new section
   is everyday unless it is added there. Since v2.30 everyday Settings is grouped by what it is for — Appearance, Tiles,
   Shopping, Smart features (AI and receipt features, with `.optsub` subheads), Plan & recipes, People, Lists & sharing, History,
-  Help, Your data; a new row joins one of these, not a new section. The search (`filterOptions`) only toggles classes — never `render()` from it,
+  Help, Your data; a new row joins one of these, not a new section. Since v2.32 an explanation under a setting is written as
+  `<div class="opthint">` right after its row: `infoBubbles()` folds it behind an (i) on the row's label — write new ones that way. The search (`filterOptions`) only toggles classes — never `render()` from it,
   or the field loses focus and the keyboard drops. A suite that drives a look control opens that page first.
 - **Views group items with `catShown(i.cat)`, never `i.cat === cat.id`** (v2.17). An item whose category is gone
   (removed on another phone mid-edit, or old data) otherwise vanishes from the list while still counted in "N to

@@ -112,11 +112,13 @@ const seed = (o) => { o=o||{}; return `(() => {
     await mk({ store:'dand', extra:`localStorage.setItem("ml_cards", ${JSON.stringify(JSON.stringify([CARD]))});` });
     for(const id of ['3','1','4','7']){ await pill(id).click(); await page.waitForTimeout(250); }
     await tap('#sweepBtn');
-    ok('finishing the shop at a Coles brings up the Flybuys card', await page.evaluate(()=>!!document.querySelector('#cardSheet .bc128') && /Flybuys/.test(document.querySelector('#cardTitle').textContent)), '');
+    /* SUPERSEDED by v2.32: the card is no longer a pop-up sheet — it sits at the top of the Shop page, above "Got the receipt?"
+       (the household's item 13). Still protects: finishing at a Coles puts the Flybuys barcode on screen, ready to scan. */
+    ok('finishing the shop at a Coles brings up the Flybuys card', await page.evaluate(()=>!!document.querySelector('#cardNudge .bc128') && /Flybuys/.test(document.querySelector('#cardNudge').textContent)), '');
     await shot('till');
     const lc = JSON.parse(await ls('ml_lastcart')||'null');
     ok('…and the cart is kept on this phone in the order it was ticked', lc && lc.code==='v101' && JSON.stringify(lc.items.map(i=>i.name))==='["Frozen raspberries","Salad rocket","Cream","Linguine"]', JSON.stringify(lc));
-    await tap('#cardClose');
+    await tap('#cardNudgeDone');   // v2.32: the card at the top is put away with Done
     await tap('#shopMenu');
     ok('the Shop menu has Show my card, first', await page.evaluate(()=>(document.querySelector('.smenu .smitem')||{}).id)==='smCard', '');
     await tap('#smCard');
@@ -126,7 +128,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     await mk({ store:'home', extra:`localStorage.setItem("ml_cards", ${JSON.stringify(JSON.stringify([CARD]))});` });
     await pill('1').click(); await page.waitForTimeout(250);
     await tap('#sweepBtn');
-    ok('away from a Coles, finishing does not bring the card up', await page.evaluate(()=>!document.querySelector('#cardSheet')), '');
+    ok('away from a Coles, finishing does not bring the card up', await page.evaluate(()=>!document.querySelector('#cardSheet') && !document.querySelector('#cardNudge')), '');   // v2.32: nor the card at the top
 
     /* ── the receipt, matched with the cart ──────────────────────────── */
     await mk({ store:'dand' });
