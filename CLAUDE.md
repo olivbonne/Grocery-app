@@ -93,6 +93,11 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   Help, Your data; a new row joins one of these, not a new section. Since v2.32 an explanation under a setting is written as
   `<div class="opthint">` right after its row: `infoBubbles()` folds it behind an (i) on the row's label — write new ones that way. The search (`filterOptions`) only toggles classes — never `render()` from it,
   or the field loses focus and the keyboard drops. A suite that drives a look control opens that page first.
+- **Two category sets (v2.33).** Lists made before v2.33 keep the nine (`DEFAULT_CATS`); a list made since (`_freshList`)
+  starts with the thirteen plus Others (`CATS13`, in the order a shop is walked). The dictionary, the AI readers and receipts
+  still speak the nine: every place an item is ADDED goes through `newCat(cat, name)`, which on a thirteen-list puts it where
+  the shop shelves it (its aisle type first). A category the person picked by hand is never changed, and nothing stored is
+  ever re-categorised.
 - **Views group items with `catShown(i.cat)`, never `i.cat === cat.id`** (v2.17). An item whose category is gone
   (removed on another phone mid-edit, or old data) otherwise vanishes from the list while still counted in "N to
   buy". It is display only: never rewrite a stored `cat` to tidy an orphan, the categories may still be arriving.

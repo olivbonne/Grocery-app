@@ -149,3 +149,31 @@ export const EMOJI_LIB = [
   // baby / pet / others
   {e:"👶",k:"baby kids infant"},{e:"🍼",k:"baby bottle milk infant"},{e:"🐶",k:"pet dog"},{e:"🐱",k:"pet cat"},{e:"🦴",k:"bone pet dog"},{e:"🐾",k:"paw pet"},{e:"🌸",k:"flower garden others"},{e:"🪴",k:"plant garden others"},{e:"🎁",k:"gift present party others"},{e:"🎉",k:"party celebrate others"},{e:"🍴",k:"food dining others"},{e:"🔧",k:"tool hardware spanner diy"},{e:"🔨",k:"hammer tool hardware diy"},{e:"🪛",k:"screwdriver tool hardware diy"},{e:"🔩",k:"screw bolt hardware diy"},
 ];
+
+/* v2.33 (the household's item 18, docs/categories-proposal.md): thirteen categories, in the order most Australian
+   supermarkets are walked, each with its own colour — and Others, the fallback for what nothing else knows. Only NEW lists
+   start with them; a list made before keeps its own. Ids shared with the nine (meat, fruit, vegetable, asian, health) mean
+   the same thing, so what the app already knows about them carries over. */
+export const CATS13 = [
+  { id:"fruit",     label:"Fruit",                 emoji:"🍌", color:"#C98A06" },
+  { id:"vegetable", label:"Vegetables",            emoji:"🥦", color:"#3E7C3A" },
+  { id:"bakery",    label:"Bakery",                emoji:"🍞", color:"#9C6B30" },
+  { id:"meat",      label:"Meat & seafood",        emoji:"🥩", color:"#B5402B" },
+  { id:"deli",      label:"Deli",                  emoji:"🫒", color:"#7C8A2E" },
+  { id:"dairy",     label:"Dairy, eggs & fridge",  emoji:"🥛", color:"#2E5FA3" },
+  { id:"pantry",    label:"Pantry",                emoji:"🥫", color:"#6B5CA5" },
+  { id:"snacks",    label:"Snacks & drinks",       emoji:"🍿", color:"#D2691E" },
+  { id:"frozen",    label:"Frozen",                emoji:"🧊", color:"#1F8FB3" },
+  { id:"asian",     label:"Asian & international", emoji:"🍜", color:"#C73B5B" },
+  { id:"health",    label:"Health & beauty",       emoji:"💊", color:"#2E8C7F" },
+  { id:"household", label:"Household",             emoji:"🧻", color:"#5B6770" },
+  { id:"liquor",    label:"Liquor",                emoji:"🍷", color:"#8E2C5E" },
+  { id:"others",    label:"Others",                emoji:"🛒", color:"#8A8178" },
+];
+/* an item's detailed aisle type (js/aisles.js) → its category in the thirteen ("produce" is decided by fruit or veg) */
+export const TYPE_CAT13 = { meat:"meat", deli:"deli", dairy:"dairy", bakery:"bakery", frozen:"frozen", breakfast:"pantry",
+  spreads:"pantry", pasta:"pantry", canned:"pantry", sauces:"pantry", oil:"pantry", spices:"pantry", baking:"pantry",
+  snacks:"snacks", drinks:"snacks", world:"asian", health:"health", personal:"health", baby:"household",
+  cleaning:"household", paper:"household", pet:"household", liquor:"liquor", household:"household" };
+/* the nine's ids that the thirteen do not have, for a name whose aisle type is unknown */
+export const OLD_CAT13 = { fresh:"dairy", bulk:"pantry", alcohol:"liquor" };
