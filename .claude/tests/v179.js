@@ -206,7 +206,7 @@ const SEED = (extra)=>`(() => {
      rules.length>0 && parseFloat(rules[0].top)===0, JSON.stringify(rules[0]));
   ok('…which holds with every section folded, where it actually shows',
      await (async()=>{
-       for(const n of ['Appearance','Smart add','Tiles','Sort','Sound']){   // SUPERSEDED by v2.18: Colour is on the look page; Smart add stands in
+       for(const n of ['Appearance','Smart features','Tiles','Shopping','People']){   // SUPERSEDED by v2.18: Colour is on the look page; Smart add stands in. SUPERSEDED by v2.30: Settings was regrouped (Sort+Sound → Shopping, Predictions/Prices/Memberships → Smart features, Plan → Plan & recipes, Users → People, Other → Lists & sharing + Help).
          const h=page.locator(`.optsect[data-sect="${n}"]`);
          await h.scrollIntoViewIfNeeded(); await h.click(); await page.waitForTimeout(250);
        }

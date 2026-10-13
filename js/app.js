@@ -7,16 +7,16 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.29";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.29";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.29";
-import { compareStores, worthIt } from "./compare.js?v=2.29";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.29";
-import { parseAisleLine, mapAisles, mapRank } from "./aisles.js?v=2.29";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.30";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.30";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.30";
+import { compareStores, worthIt } from "./compare.js?v=2.30";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.30";
+import { parseAisleLine, mapAisles, mapRank } from "./aisles.js?v=2.30";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.29";
+const APP_VERSION = "v2.30";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -2421,12 +2421,14 @@ function restoreList(list, label){
   (Array.isArray(list.buyAgain)?list.buyAgain:[]).forEach(b=>{ const k=String(b&&b.name||"").toLowerCase();
     if(k && !have.has(k)){ have.add(k); state.buyAgain.push(Object.assign({}, b, { ts:Date.now() })); } });
   save(); showUndo(prev, "Restored from "+label.charAt(0).toLowerCase()+label.slice(1)); }
+/* v2.30 (item 13): say when backups happen. maybeSnapshot runs when the app goes to the background (visibilitychange → hidden), at most once a day, and keeps the last SNAP_KEEP. */
+const SNAP_WHEN = "The app keeps one a day — taken the first time you leave the app each day — for the last seven days, on this phone only.";
 function snapsHTML(){ const a=snapList(listCode);
-  if(!a.length) return `<div class="snapnote">Backups on this phone: none yet. The app keeps one a day for a week.</div>`;
+  if(!a.length) return `<div class="snapnote">Backups on this phone: none yet. ${SNAP_WHEN}</div>`;
   return `<div class="snaphd">Backups on this phone</div>` + a.map((s,i)=>{ const L=s.list||{}, n=(L.items||[]).length, m=(L.buyAgain||[]).length;
     const d=new Date(s.at).toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"});
     return `<div class="snaprow"><span>${esc(d)} · ${n} item${n===1?"":"s"} · ${m} regular${m===1?"":"s"}</span><button class="storechip" data-snaprestore="${i}">Restore</button></div>`; }).join("")
-    + `<div class="snapnote">One a day, the last seven days. Kept on this phone only.</div>`; }
+    + `<div class="snapnote">${SNAP_WHEN} The newest was taken ${esc(new Date(a[0].at).toLocaleString(undefined,{weekday:"short",day:"numeric",month:"short",hour:"numeric",minute:"2-digit"}))}.</div>`; }
 function rstSheet(){ const L=rst.list||{}, n=(L.items||[]).length, m=(L.buyAgain||[]).length, r=((L.plan&&L.plan.recipes)||[]).length;
   return `<div class="sheet-bg kbpin" id="rstBg"><div class="sheet" id="rstSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:6px">Restore this list?</div>
@@ -2533,6 +2535,7 @@ const FLASK_SVG   = sz => ICO('<path d="M9.5 3.5h5"/><path d="M10.5 3.5v5.2L5.3 
 const BIN_SVG     = sz => ICO('<path d="M4.5 6.5h15"/><path d="M9.5 6.5V4.2h5v2.3"/><path d="M6.5 6.5l1 13.3h9l1-13.3"/><path d="M10.2 10v6.6M13.8 10v6.6"/>', sz);
 /* v2.13: Report a problem — a speech bubble with an exclamation mark, for the top banner's right-hand button */
 const REPORT_SVG  = sz => ICO('<path d="M5 4.5h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7l-4.5 3.5v-3.5H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z"/><path d="M12 8.2v3.8"/><path d="M12 15h.01"/>', sz);
+const MENU_SVG    = sz => ICO('<circle cx="5.5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="18.5" cy="12" r="1.6" fill="currentColor"/>', sz);   // v2.30 the Shop page's menu
 const SHARE_SVG   = sz => ICO('<path d="M12 3.5v11"/><path d="M8 7.2l4-3.7 4 3.7"/><path d="M8.5 10.5H6.5a1.5 1.5 0 0 0-1.5 1.5v7a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5h-2"/>', sz);
 const NOTE_SVG   = sz => ICO('<circle cx="8" cy="17.5" r="3"/><path d="M11 17.5V4.6l8-1.6v11"/><circle cx="16" cy="14" r="3"/>', sz);
 const SAVE_SVG   = sz => ICO('<path d="M12 3.6v10.2"/><path d="M8 10l4 4 4-4"/><path d="M4.5 16v3.4h15V16"/>', sz);
@@ -3835,7 +3838,7 @@ function renderMain(){
           </div>
           ${open>0?`<span class="hcount hcount-mid">${open} to buy</span>`:""}
           <div style="display:flex;align-items:center;gap:8px">
-            ${syncChip()}<button class="iconbtn hshare" id="shopReport" aria-label="Report a problem with the app" title="Report a problem">${REPORT_SVG(19)}</button>
+            ${syncChip()}<button class="iconbtn hshare" id="shopMenu" aria-label="More" aria-haspopup="true" aria-expanded="${shopMenuOpen?"true":"false"}" title="More">${MENU_SVG(19)}</button>
           </div>
         </div>
         ${locChip()?`<div class="hloc">${locChip()}</div>`:""}
@@ -3862,7 +3865,7 @@ function renderMain(){
   ${fabMoveOpen?fabMoveSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -4174,7 +4177,7 @@ function renderPlanTab(){
   ${planWeekOpen?planWeekSheet():""}
   ${planAdd?planAddSheet():""}
   ${planPick?planPickSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${listsOpen?listsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
@@ -4576,6 +4579,59 @@ function wireAisleMap(){
   const bg = app.querySelector("#amBg"); if(bg) bg.onclick = e => { if(e.target === bg){ amOpen = ""; amDraft = null; amRead = null; render(); } };
   const cam = app.querySelector("#amCam"); if(cam) cam.onclick = () => { amKeepText(); amRead = null; amPick(); };
   const tx = app.querySelector("#amText"); if(tx) tx.oninput = () => { amDraft = tx.value; };
+}
+/* v2.30 the Shop page's menu (item 17): what you reach for in the shop — read the receipt, which store is cheaper, what we
+   spend, this shop's aisle map, send the list, add an occasion — and Report a problem, which the button used to be. */
+var shopMenuOpen = false;   // var: render() reads it at boot
+function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRealStore(st.id));
+  const item = (id, icon, label) => `<button class="smitem" id="${id}" role="menuitem">${icon}<span>${label}</span></button>`;
+  return `<div class="smbg" id="smBg"><div class="smenu" id="shopMenuEl" role="menu" aria-label="More">
+    ${item("smRcpt", CAMERA_SVG(18), "Read a receipt")}
+    ${item("smCompare", CART_SVG, "Which store is cheaper")}
+    ${item("smSpend", FLAG_TAG_SVG, "What we spend")}
+    ${real ? item("smAisle", PIN_SVG(18), "Aisle map for " + esc(st.name)) : ""}
+    ${item("smSend", SHARE_SVG(18), "Send what's to buy")}
+    ${item("smOcc", SAVE_SVG(18), "Add an occasion")}
+    <div class="smsep"></div>
+    ${item("smReport", REPORT_SVG(18), "Report a problem")}
+  </div></div>`; }
+/* v2.30 price diagnostics (item 12): every price the receipts have left in the memory, item by item — store, date,
+   amount and quantity — newest first, so a wrong read can be found. Read-only. */
+var priceDiagOpen = false, priceDiagQ = "";   // var: render() reads them at boot
+function priceDiagHTML(){ const P = state.prices || {}, q = priceDiagQ.trim().toLowerCase();
+  const keys = Object.keys(P).filter(k => !q || k.includes(q)).sort((a, b) => priceLastT(P[b]) - priceLastT(P[a]));
+  const total = Object.keys(P).length, recs = Object.values(P).reduce((n, a) => n + (Array.isArray(a) ? a.length : 0), 0);
+  const rows = keys.slice(0, 300).map(k => { const a = (P[k] || []).slice().sort((x, y) => (y.t || 0) - (x.t || 0));
+    return `<details class="pdrow"><summary><span class="pd-n">${esc(cap(k))}</span><span class="pd-s">${a.length} · ${a[0] ? priceMoney(a[0].p) : ""}</span></summary>
+      ${a.map(r => `<div class="pdrec"><span>${esc(r.d || "")}</span><span>${esc(r.sn || "—")}</span><span>${r.q > 1 ? r.q + "× " : ""}${esc(r.w || "")}</span><b>${priceMoney(r.p)}</b></div>`).join("")}</details>`; }).join("");
+  return `<div class="sheet-bg kbpin" id="pdBg"><div class="sheet" id="pdSheet" role="dialog" aria-labelledby="pdTitle">
+    <div class="disp" id="pdTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">Price diagnostics</div>
+    <div class="hint" style="text-align:left;margin:0 0 10px">${total} item${total === 1 ? "" : "s"}, ${recs} price${recs === 1 ? "" : "s"} from receipts, newest first. The memory keeps the last 8 prices of each item, and ${PRICE_ITEMS} items.</div>
+    <input id="pdQ" value="${esc(priceDiagQ)}" placeholder="Find an item" aria-label="Find an item" autocomplete="off" style="width:100%;box-sizing:border-box;height:42px;padding:0 12px;border-radius:12px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:16px" />
+    <div class="pdlist">${rows || `<div class="hint" style="text-align:left;margin-top:10px">${total ? "Nothing matches." : "No prices yet. Read a receipt after a shop and they appear here."}</div>`}</div>
+    ${keys.length > 300 ? `<div class="hint" style="text-align:left">Showing 300 of ${keys.length}.</div>` : ""}
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="optaction" id="pdClose" style="margin-top:0">Close</button></div>
+  </div></div>`; }
+function wirePriceDiag(){
+  const o = app.querySelector("#optPriceDiag"); if(o) o.onclick = () => { priceDiagOpen = true; priceDiagQ = ""; render(); };
+  const q = app.querySelector("#pdQ"); if(q) q.oninput = () => { priceDiagQ = q.value;
+    /* filter in place — a render would drop the keyboard (the v2.18 rule for Settings' own search) */
+    const t = q.value.trim().toLowerCase(); app.querySelectorAll(".pdrow").forEach(r => { const n = (r.querySelector(".pd-n") || {}).textContent || ""; r.style.display = (!t || n.toLowerCase().includes(t)) ? "" : "none"; }); };
+  const c = app.querySelector("#pdClose"); if(c) c.onclick = () => { priceDiagOpen = false; render(); };
+  const bg = app.querySelector("#pdBg"); if(bg) bg.onclick = e => { if(e.target === bg){ priceDiagOpen = false; render(); } };
+}
+function wireShopMenu(){
+  const b = app.querySelector("#shopMenu"); if(b) b.onclick = () => { shopMenuOpen = !shopMenuOpen; render(); };
+  const close = () => { shopMenuOpen = false; };
+  const bg = app.querySelector("#smBg"); if(bg) bg.onclick = e => { if(e.target === bg){ close(); render(); } };
+  const on = (id, fn) => { const e = app.querySelector("#" + id); if(e) e.onclick = () => { close(); fn(); }; };
+  on("smRcpt", () => { render(); rcPick(); });
+  on("smCompare", () => { cmpOpen = true; render(); });
+  on("smSpend", () => { spendOpen = true; spendM = ""; render(); });
+  on("smAisle", () => { const st = activeStore(); amOpen = st ? st.id : ""; amDraft = null; amRead = null; render(); });
+  on("smSend", () => { render(); shareListText(); });
+  on("smOcc", () => { occSheet = { mode:"add" }; render(); });
+  on("smReport", () => { rpt = { kind:"broken", text:"", diag:true }; render(); });
 }
 /* v2.28 map a shop by photographing its signs: "Read a sign" takes a photo, /api/aisle reads the aisle's number and what
    the sign lists, and the line joins the end of the box — walk the shop once, a photo per sign. The wait shows its step
@@ -5167,7 +5223,7 @@ function wirePlanTab(){
   const st=app.querySelector("#setNavP"); if(st) st.onclick=()=>{ settingsFrom=0; gotoPage(2); };
   wireListsSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireRptSheet(); wireRstSheet();
   wireUserTiles();
 }
 /* v1.90: a recipe page shared into the app. Android hands it over directly through the manifest's
@@ -5315,7 +5371,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>Add items…</span></button></div>`:""}
-  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -5378,7 +5434,7 @@ function wirePlanPage(){
   const qbc=app.querySelector("#qbannerClose"); if(qbc) qbc.onclick=()=>{ quickEdit=null; render(); };
   const qbr=app.querySelector("#qbannerRemove"); if(qbr) qbr.onclick=()=>{ const it=state.items.find(i=>i.id===quickEdit); const nm=it?cap(it.name):""; const id=quickEdit; quickEdit=null; planRemove(id); if(nm) showToast(nm+" moved to Regulars"); };
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireRptSheet(); wireRstSheet();
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>gotoPage(0);
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireUserTiles();
@@ -5400,7 +5456,7 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
     if(i){ i.value=""; i.parentElement.classList.remove("has"); i.focus(); } filterOptions(); };
   wireOptions();
   wireEditSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 /* v1.77 item 3: which sections are folded. Keyed by the section's own name rather than its index, so
@@ -6255,7 +6311,7 @@ function optionsBody(){
     <button class="optaction optlookbtn" id="optLook"><span class="olb-t"><span>Customise the look</span><span class="olb-s">Layout, colours, bars, headings and tiles</span></span><span class="olb-c" aria-hidden="true">›</span></button>
     ${sectHR("Layout & motion")}
     ${me ? `<button class="optaction" id="optLookSend" style="margin:2px 0 6px">${/* v2.26 */""}Send this look to my other phones</button>
-    <div style="margin:0 2px 12px;font-size:11px;color:var(--muted2);font-weight:600">Open the list on your other phone as ${esc(me)} and it offers this look, once. Only the look travels — not your list or settings.</div>` : ""}
+    <div style="margin:0 2px 12px;font-size:12.5px;color:var(--muted2);font-weight:600">Open the list on your other phone as ${esc(me)} and it offers this look, once. Only the look travels — not your list or settings.</div>` : ""}
     ${/* v1.57 item 2: four slots. One saved look was not enough to compare two ideas — which is what
           anyone actually does with this. Applying is one tap; saving is a deliberate second row, so a
           mis-tap costs you a preview rather than the look you had. */""}
@@ -6399,7 +6455,7 @@ function optionsBody(){
     ${catOn ? rowNL("Group by subcategory", `<div class="seg"><button data-opt-subon="1" class="${subOn?'on':''}">On</button><button data-opt-subon="0" class="${!subOn?'on':''}">Off</button></div>`) : ""}` : ""}
     ${row("Item icons", `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">${iconStyle()==="drawn"?illSVG("bread"):"🍞"}</span>On</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
     ${itemEmojiOn() ? row("Icon size", `<div class="seg">${[["s","S"],["m","M"],["l","L"],["xl","XL"]].map(([k,l])=>`<button data-opt-icosize="${k}" class="${icoSize()===k?'on':''}" aria-label="Icon size ${l}">${l}</button>`).join("")}</div>`) : ""}
-    ${(itemEmojiOn() && /^(l|xl)$/.test(icoSize())) ? `<div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">At this size each tile shows its name under the icon.</div>` : ""}
+    ${(itemEmojiOn() && /^(l|xl)$/.test(icoSize())) ? `<div style="margin:-2px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">At this size each tile shows its name under the icon.</div>` : ""}
     ${rowNL("Category icons", `<div class="seg"><button data-opt-catemoji="1" class="${catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">${iconStyle()==="drawn"?catMarkSVG("vegetable"):"🥦"}</span>On</button><button data-opt-catemoji="0" class="${!catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>Off</button></div>`)}
     ${rowNL("Icon style", `<div class="seg"><button data-opt-iconstyle="drawn" class="${iconStyle()==='drawn'?'on':''}"><span class="tdswatch tdswatch-ico">${catMarkSVG("vegetable")}</span>Drawn</button><button data-opt-iconstyle="emoji" class="${iconStyle()==='emoji'?'on':''}">Emoji</button></div>`)}
     <p class="hint" style="text-align:left;margin:0 0 12px">Drawn uses line drawings for items and the nine standard categories; categories you made keep their emoji.</p>
@@ -6423,7 +6479,7 @@ function optionsBody(){
       <div class="numgrid">${numCell("rad")}</div></div></div>
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Tile gap</span><div class="optwide">
       <div class="numgrid">${numCell("gapx")}${numCell("gapy")}</div></div></div>
-    ${sect("Sort")}
+    ${sect("Shopping")}${/* v2.30: was "Sort" — the store, its order, its aisle map, and the sound and screen while you shop (Sound folded in) */""}
     ${rowNL("Location", `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">On</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">Off</button></div>`)}
     <div class="optrow optrow-wide optnl"><span class="optlabel">Store</span><div class="optwide">
       <div class="storegrid">${[{id:"auto",name:"Auto-detect"},{id:"home",name:"Home"},...STORES.filter(s=>!storeOverride(s.id).hidden).map(s=>storeById(s.id)),...(state.stores||[]).filter(s=>!storeOverride(s.id).hidden),{id:"other",name:"Other"}].map(s=>`<button data-opt-store="${s.id}" class="storechip ${storeSel===s.id?'on':''}">${s.id==="home"?HOME_SVG(14)+" ":""}${esc(s.name)}</button>`).join("")}<button data-store-add class="storechip" style="border-style:dashed">＋ Add store</button></div>
@@ -6431,30 +6487,30 @@ function optionsBody(){
     </div></div>
     ${(storeSel==="home" || isRealStore(storeSel)) ? `<button class="optaction" id="optSetStore" style="margin-top:2px">${PIN_SVG(14)} Set ${esc((storeById(storeSel)||{}).name||"store")} location here</button>` : ""}
     ${isRealStore(storeSel) ? `<button class="optaction" id="optAisleMap" style="margin-top:6px">${/* v2.27 */""}Aisle map for ${esc((storeById(storeSel)||{}).name||"this shop")}${(()=>{ const m=(state.aislemap||{})[storeSel]; return (m && m.aisles && m.aisles.length) ? ` · ${m.aisles.length} aisle${m.aisles.length===1?"":"s"}` : ""; })()}</button>` : ""}
-    ${(()=>{ const hid=[...STORES,...(state.stores||[])].filter(s=>{ const o=storeOverride(s.id); return o.hidden && !o.removed; }); return hid.length ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:6px"><span class="optlabel" style="font-size:12px;color:var(--muted2)">Hidden stores</span>${hid.map(s=>`<div style="display:flex;gap:7px;align-items:center"><span style="flex:1;min-width:0;color:var(--muted);font-size:13px;font-weight:600">${esc((storeById(s.id)||s).name||s.id)}</span><button class="storechip" data-store-restore="${s.id}" style="flex:0 0 auto">Restore</button><button class="storechip" data-store-delete="${s.id}" aria-label="Delete" style="flex:0 0 auto;border-color:#C24A33;color:#C24A33">✕</button></div>`).join("")}</div>` : ""; })()}
-    <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${(()=>{ const nid=storeSel==="auto"?(useLoc&&!locState.busy&&locState.checked&&!locState.err&&locState.nearId):storeSel; return nid==="home"?HOME_SVG(14)+" ":(storeSel==="auto"&&nid&&storeById(nid))?PIN_SVG(14)+" ":""; })()}${esc(storeLabel())}</div>
+    ${(()=>{ const hid=[...STORES,...(state.stores||[])].filter(s=>{ const o=storeOverride(s.id); return o.hidden && !o.removed; }); return hid.length ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:6px"><span class="optlabel" style="font-size:12.5px;color:var(--muted2)">Hidden stores</span>${hid.map(s=>`<div style="display:flex;gap:7px;align-items:center"><span style="flex:1;min-width:0;color:var(--muted);font-size:13px;font-weight:600">${esc((storeById(s.id)||s).name||s.id)}</span><button class="storechip" data-store-restore="${s.id}" style="flex:0 0 auto">Restore</button><button class="storechip" data-store-delete="${s.id}" aria-label="Delete" style="flex:0 0 auto;border-color:#C24A33;color:#C24A33">✕</button></div>`).join("")}</div>` : ""; })()}
+    <div style="margin:-2px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">${(()=>{ const nid=storeSel==="auto"?(useLoc&&!locState.busy&&locState.checked&&!locState.err&&locState.nearId):storeSel; return nid==="home"?HOME_SVG(14)+" ":(storeSel==="auto"&&nid&&storeById(nid))?PIN_SVG(14)+" ":""; })()}${esc(storeLabel())}</div>
     ${view!=="lists" ? `<div class="optrow optrow-wide optnl"><span class="optlabel">Sort</span><div class="optwide">
       <div class="seg segfull">${(displayFor()==="flat" && shopMode && aiSortOK())?`<button data-opt-sort="ai" class="${curSort==='ai'?'on':''}">✨ AI</button>`:""}${displayFor()==="flat"?`<button data-opt-sort="location" class="${curSort==='location'?'on':''}">Location</button>`:""}<button data-opt-sort="cat" class="${curSort==='cat'?'on':''}">Aisle</button><button data-opt-sort="alpha" class="${curSort==='alpha'?'on':''}">A–Z</button></div>
     </div></div>
-    ${(displayFor()==="flat" && curSort==="ai") ? `<div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">✨ AI learns the order you check things off at ${esc((activeStore()||{}).name||"each store")} and reorders your next trip. Pick the store in Location so it learns per shop.</div>` : ""}
+    ${(displayFor()==="flat" && curSort==="ai") ? `<div style="margin:-2px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">✨ AI learns the order you check things off at ${esc((activeStore()||{}).name||"each store")} and reorders your next trip. Pick the store in Location so it learns per shop.</div>` : ""}
     ${(displayFor()==="flat" && curSort==="ai" && aiSeenCount()>0) ? `<button class="optaction" id="optResetAI" style="margin:-2px 0 10px">♻︎ Reset AI — restart from category</button>` : ""}` : ""}
-    ${sectHR("Sound")}
     ${row("Sound", `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">On</button><button data-opt-sound="0" class="${!soundOn?'on':''}">Off</button></div>`)}
     ${row("Keep screen on", `<div class="seg"><button data-opt-wake="1" class="${wakePref()?'on':''}">On</button><button data-opt-wake="0" class="${!wakePref()?'on':''}">Off</button></div>`)}
-    <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">While the cart has something in it, so the phone does not dim and lock mid-aisle.</div>
-    ${(view!=="lists") ? `${sect("Smart add")}${row("Smart add", `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">On</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">Off</button></div>`)}` : ""}
-    ${(view!=="lists") ? `${sect("Measurements")}${row("Convert amounts", `<div class="seg"><button data-opt-units="off" class="${unitsMode()==='off'?'on':''}">Off</button><button data-opt-units="metric" class="${unitsMode()==='metric'?'on':''}">Metric</button><button data-opt-units="imperial" class="${unitsMode()==='imperial'?'on':''}">Imperial</button></div>`)}
-    <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">Changes how amounts are shown, not what is stored — a recipe\'s own wording comes back if you turn this off. Amounts it can\'t read, like “a pinch”, are left alone.</div>` : ""}
-    ${(view!=="lists") ? `${sect("Plan")}${row("Meal slots", `<div class="seg"><button data-opt-mealslots="1" class="${mealSlotsOn()?'on':''}">On</button><button data-opt-mealslots="0" class="${!mealSlotsOn()?'on':''}">Off</button></div>`)}
-    <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">Breakfast, lunch, dinner or snack on each planned meal.</div>` : ""}
-    ${(view!=="lists") ? `${sect("Prices")}
+    <div style="margin:-2px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">While the cart has something in it, so the phone does not dim and lock mid-aisle.</div>
+    ${(view!=="lists") ? `${sect("Smart features")}${/* v2.30: Smart add, restock suggestions, receipts and prices, memberships — the AI-assisted things, in one place */""}${row("Smart add", `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">On</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">Off</button></div>`)}` : ""}
+    ${(view!=="lists") ? `<div class="optsub">Restock suggestions</div>${rowNL("Suggest restocks", `<div class="seg"><button data-pred-on="1" class="${predictCfg.on?'on':''}">On</button><button data-pred-on="0" class="${!predictCfg.on?'on':''}">Off</button></div>`)}
+    ${predictCfg.on ? `${rowNL("Remind me", `<div class="seg"><button data-pred-freq="weekly" class="${predictCfg.freq==='weekly'?'on':''}">Weekly</button><button data-pred-freq="monthly" class="${predictCfg.freq==='monthly'?'on':''}">Monthly</button></div>`)}
+    ${predictCfg.freq==='weekly' ? `<div class="optrow optrow-wide optnl"><span class="optlabel">Day</span><div class="optwide">
+      <div class="daychips">${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d,i)=>{ const dv=(i+1)%7; return `<button class="daychip ${predictCfg.day===dv?'on':''}" data-pred-day="${dv}">${d}</button>`; }).join("")}</div></div></div>` : ""}
+    <div style="margin:-2px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">Suggests restocking items on your schedule, from how often you buy them — on your device. Adds only when you tap.</div>` : ""}` : ""}
+    ${(view!=="lists") ? `<div class="optsub">Receipts and prices</div>
       <button class="optaction" id="optRcpt" style="margin-top:2px">${CAMERA_SVG(16)} Read a receipt</button>
       ${row("Ask after a shop", `<div class="seg"><button data-opt-rcptask="1" class="${rcptAskOn()?'on':''}">On</button><button data-opt-rcptask="0" class="${!rcptAskOn()?'on':''}">Off</button></div>`)}
       <button class="optaction" id="optCompare">${/* v2.21 */""}Which store is cheaper for this list</button>
       <button class="optaction" id="optSpend">${/* v2.24 */""}What we spend</button>
-      <div style="margin:6px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">${(()=>{ const pc=Object.keys(state.prices||{}).length; return pc ? `${pc} item${pc===1?"":"s"} with a remembered price. Kept in this list, shared only with the people on it.` : "Read a receipt after a shop and the app remembers what you paid at each store. Free."; })()}</div>
+      <div style="margin:6px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">${(()=>{ const pc=Object.keys(state.prices||{}).length; return pc ? `${pc} item${pc===1?"":"s"} with a remembered price. Kept in this list, shared only with the people on it.` : "Read a receipt after a shop and the app remembers what you paid at each store. Free."; })()}</div>
       ${(Object.keys(state.prices||{}).length || (state.spend||[]).length) ? `<button class="optaction" id="optPriceClear">${BIN_SVG(16)} Clear prices and spending</button>` : ""}` : ""}
-    ${(view!=="lists") ? `${sect("Memberships")}${/* v2.20 the 10% shop: which memberships the household has, the rules (they change), this month */""}
+    ${(view!=="lists") ? `<div class="optsub">Memberships</div>${/* v2.20 the 10% shop: which memberships the household has, the rules (they change), this month */""}
       ${Object.keys(CHAINS).map(k=>{ const c=memb()[k], p=periodOf(new Date(), c.day), u=c.used[p.key];
         return `${row(esc(CHAINS[k].name), `<div class="seg"><button data-memb-on="${k}|1" class="${c.on?'on':''}">On</button><button data-memb-on="${k}|0" class="${!c.on?'on':''}">Off</button></div>`)}
         ${c.on ? `<div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Its rules</span><div class="optwide"><div class="numgrid">
@@ -6465,17 +6521,25 @@ function optionsBody(){
         <div class="membstat" data-memb-stat="${k}">${esc(monthName(p))}: ${u ? `used on ${esc(new Date(u).toLocaleDateString(undefined,{day:"numeric",month:"short"}))}` : `unused · ${p.daysLeft} day${p.daysLeft===1?"":"s"} left`}
           <button class="storechip" data-memb-used="${k}|${u?0:1}">${u?"Not used yet":"Used it"}</button></div>
         <button class="optaction" data-memb-list="${k}">${esc(CHAINS[k].short)} stock-up list for ${esc(monthName(p))}</button>` : ""}`; }).join("")}
-      <div style="margin:6px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">Each takes ${"10%"} off one shop a month, up to $50, as of October 2026 — set the rules to what your membership says. A receipt that shows the member discount marks the month as used.</div>` : ""}
-    ${(view!=="lists") ? `${sect("Predictions")}${rowNL("Suggest restocks", `<div class="seg"><button data-pred-on="1" class="${predictCfg.on?'on':''}">On</button><button data-pred-on="0" class="${!predictCfg.on?'on':''}">Off</button></div>`)}
-    ${predictCfg.on ? `${rowNL("Remind me", `<div class="seg"><button data-pred-freq="weekly" class="${predictCfg.freq==='weekly'?'on':''}">Weekly</button><button data-pred-freq="monthly" class="${predictCfg.freq==='monthly'?'on':''}">Monthly</button></div>`)}
-    ${predictCfg.freq==='weekly' ? `<div class="optrow optrow-wide optnl"><span class="optlabel">Day</span><div class="optwide">
-      <div class="daychips">${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d,i)=>{ const dv=(i+1)%7; return `<button class="daychip ${predictCfg.day===dv?'on':''}" data-pred-day="${dv}">${d}</button>`; }).join("")}</div></div></div>` : ""}
-    <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">Suggests restocking items on your schedule, from how often you buy them — on your device. Adds only when you tap.</div>` : ""}` : ""}
-    ${state.members.length ? `${sectHR("Users")}<div class="optrow optnl" style="flex-direction:column;align-items:stretch;gap:7px">
+      <div style="margin:6px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">Each takes ${"10%"} off one shop a month, up to $50, as of October 2026 — set the rules to what your membership says. A receipt that shows the member discount marks the month as used.</div>` : ""}
+    ${(view!=="lists") ? `${sect("Plan & recipes")}${row("Meal slots", `<div class="seg"><button data-opt-mealslots="1" class="${mealSlotsOn()?'on':''}">On</button><button data-opt-mealslots="0" class="${!mealSlotsOn()?'on':''}">Off</button></div>`)}
+    <div style="margin:-2px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">Breakfast, lunch, dinner or snack on each planned meal.</div>` : ""}
+    ${(view!=="lists") ? `${row("Convert amounts", `<div class="seg"><button data-opt-units="off" class="${unitsMode()==='off'?'on':''}">Off</button><button data-opt-units="metric" class="${unitsMode()==='metric'?'on':''}">Metric</button><button data-opt-units="imperial" class="${unitsMode()==='imperial'?'on':''}">Imperial</button></div>`)}
+    <div style="margin:-2px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">Changes how amounts are shown, not what is stored — a recipe\'s own wording comes back if you turn this off. Amounts it can\'t read, like “a pinch”, are left alone.</div>` : ""}
+    ${state.members.length ? `${sectHR("People")}<div class="optrow optnl" style="flex-direction:column;align-items:stretch;gap:7px">
       <div class="userlist">${state.members.map(m=>`<button class="userchip ${m===me?'on':''}" data-switch-user="${esc(m)}">${esc(m)}${m===me?`<span class="ucur">you</span>`:""}</button>`).join("")}</div>
     </div>
     ${row("Say when I'm shopping", `<div class="seg"><button data-opt-sayshop="1" class="${sayShopOn()?'on':''}">On</button><button data-opt-sayshop="0" class="${!sayShopOn()?'on':''}">Off</button></div>`)}
-    <div style="margin:-2px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">While you tick things off at a shop, the others see which shop — only its name, for an hour and a half, gone when you finish.</div>` : ""}
+    <div style="margin:-2px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">While you tick things off at a shop, the others see which shop — only its name, for an hour and a half, gone when you finish.</div>` : ""}
+    ${sectHR("Lists & sharing")}
+    <button class="optaction" id="optShare" style="margin-top:2px">Share link</button>
+    <button class="optaction" id="optSendList" style="margin-top:10px">${SHARE_SVG(16)} Send what's to buy to another app</button>
+    <button class="optaction" id="optOccSave" style="margin-top:10px">Save what's to buy as an occasion</button>
+    <button class="optaction" id="optOccAdd" style="margin-top:10px">Add an occasion to the list${(state.templates||[]).length?` (${(state.templates||[]).length})`:""}</button>
+    <button class="optaction" id="optExport" style="margin-top:10px">Export the full list — to buy and Regulars</button>
+    <button class="optaction" id="optBackup" style="margin-top:10px">Back up this list to a file</button>
+    <button class="optaction" id="optRestoreFile" style="margin-top:10px">Restore from a backup file</button>
+    ${snapsHTML()}
     ${sectHR("History")}
     ${(()=>{
       /* v1.51: the picker only appears with more than one list — a single-list user does not need to
@@ -6484,7 +6548,7 @@ function optionsBody(){
       const entries = histRead(code);
       const pick = lists.length>1 ? `<div class="optrow optnl" style="border-bottom:none;padding-bottom:2px"><div class="storegrid">${
         lists.map(l=>`<button data-hist-list="${esc(l.code)}" class="storechip ${code===l.code?'on':''}">${esc(l.name||l.code)}</button>`).join("")}</div></div>` : "";
-      if(!entries.length) return pick + `<div style="margin:6px 2px 10px;font-size:12px;color:var(--muted2);font-weight:600">Nothing recorded yet. Adding, removing and buying items will show up here.</div>`;
+      if(!entries.length) return pick + `<div style="margin:6px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">Nothing recorded yet. Adding, removing and buying items will show up here.</div>`;
       const grp = `${rowNL("Group by", `<div class="seg"><button data-hist-group="day" class="${histGroup==='day'?'on':''}">Day</button><button data-hist-group="week" class="${histGroup==='week'?'on':''}">Week</button><button data-hist-group="month" class="${histGroup==='month'?'on':''}">Month</button></div>`)}`;
       /* v1.52: bucket first, render second. Every bucket is folded unless the user has opened it this
          visit, so the section is a short index of periods rather than 150 rows of log. */
@@ -6505,28 +6569,21 @@ function optionsBody(){
         return head + `<div class="histrows">${rows}</div>`;
       }).join("");
       return pick + grp + `<div class="histlist">${body}</div>`
-        + (entries.length>400 ? `<div style="margin:4px 2px;font-size:11px;color:var(--muted2);font-weight:600">Showing the most recent 400 of ${entries.length}.</div>` : "")
-        + `<div style="margin:4px 2px 8px;font-size:11px;color:var(--muted2);font-weight:600">Kept on this device only — it is not shared with the rest of the household.</div>`
+        + (entries.length>400 ? `<div style="margin:4px 2px;font-size:12.5px;color:var(--muted2);font-weight:600">Showing the most recent 400 of ${entries.length}.</div>` : "")
+        + `<div style="margin:4px 2px 8px;font-size:12.5px;color:var(--muted2);font-weight:600">Kept on this device only — it is not shared with the rest of the household.</div>`
         + `<button class="optaction" id="optHistClear" style="margin-top:2px">${BIN_SVG(16)} Clear this list’s history</button>`;
     })()}
-    ${sectHR("Other")}
-    <button class="optaction" id="optShare" style="margin-top:2px">Share link</button>
-    <button class="optaction" id="optSendList" style="margin-top:10px">${SHARE_SVG(16)} Send what's to buy to another app</button>
-    <button class="optaction" id="optOccSave" style="margin-top:10px">Save what's to buy as an occasion</button>
-    <button class="optaction" id="optOccAdd" style="margin-top:10px">Add an occasion to the list${(state.templates||[]).length?` (${(state.templates||[]).length})`:""}</button>
-    <button class="optaction" id="optExport" style="margin-top:10px">Export the full list — to buy and Regulars</button>
-    <button class="optaction" id="optBackup" style="margin-top:10px">Back up this list to a file</button>
-    <button class="optaction" id="optRestoreFile" style="margin-top:10px">Restore from a backup file</button>
-    ${snapsHTML()}
+    ${sectHR("Help")}
     <button class="optaction" id="optReport" style="margin-top:10px">${REPORT_SVG(16)} Report a problem</button>
     <button class="optaction" id="optDiag" style="margin-top:10px">${FLASK_SVG(16)} AI diagnostics</button>
+    <button class="optaction" id="optPriceDiag" style="margin-top:10px">${FLAG_TAG_SVG} Price diagnostics</button>
     ${sectHR("Your data")}
     <a class="optaction" id="optPrivacy" href="/privacy.html" style="margin-top:2px">Privacy — what the app keeps, and where</a>
     ${(me && (state.members||[]).includes(me)) ? `<button class="optaction" id="optLeave" style="margin-top:10px">Leave this list</button>` : ""}
     <button class="optaction" id="optEmpty" style="margin-top:10px">Empty this list for everyone</button>
     <button class="optaction" id="optForget" style="margin-top:10px">Forget everything on this phone</button>
-    <div style="margin:6px 2px 10px;font-size:11px;color:var(--muted2);font-weight:600">Leaving takes your name off this list and this phone forgets it; the others keep it. Emptying clears what is in the list for everyone — items, Regulars, the plan, prices, spending, occasions and what the app has learned. Forgetting clears every list, name, setting and backup on this phone; the shared lists stay for their people.</div>
-    <div id="verFoot" style="text-align:center;margin-top:12px;font-size:11px;color:var(--muted2);font-weight:600" title="Build: ${APP_BUILD_DATE} · hold for diagnostics">${APP_VERSION}</div>`;
+    <div style="margin:6px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">Leaving takes your name off this list and this phone forgets it; the others keep it. Emptying clears what is in the list for everyone — items, Regulars, the plan, prices, spending, occasions and what the app has learned. Forgetting clears every list, name, setting and backup on this phone; the shared lists stay for their people.</div>
+    <div id="verFoot" style="text-align:center;margin-top:12px;font-size:12.5px;color:var(--muted2);font-weight:600" title="Build: ${APP_BUILD_DATE} · hold for diagnostics">${APP_VERSION}</div>`;
 }
 function renderSettingsPage(){
   app.innerHTML = `
@@ -6547,7 +6604,7 @@ function renderSettingsPage(){
     ${bottomNav({planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
     ${diagOpen?diagSheet():""}
     ${listsOpen?listsSheet():""}
-    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
     ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
     ${editing?editSheet():""}
@@ -6723,7 +6780,7 @@ function wire(){
   const et=app.querySelector("#elseToggle"); if(et) et.onclick=()=>{ elseOpen=!elseOpen; render(); };   // v2.22 R17
   wireAddSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireRptSheet(); wireRstSheet();
   const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>catShown(i.cat)===c.id)).map(c=>c.id);
     const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);
@@ -6804,7 +6861,6 @@ function wire(){
   const aiAp=app.querySelector("[data-ai-apply]"); if(aiAp) aiAp.onclick=aiApplyProposal;   // B7 accept the proposed aisle order
   const aiKp=app.querySelector("[data-ai-keep]"); if(aiKp) aiKp.onclick=aiDismissProposal;   // B7 revert / keep current
   const lsw=app.querySelector("#listSwitch"); if(lsw) lsw.onclick=()=>{ listsOpen=true; render(); };   // v1.81 title opens the switcher
-  const shr=app.querySelector("#shopReport"); if(shr) shr.onclick=()=>{ rpt={ kind:"broken", text:"", diag:true }; render(); };   // v2.13 replaces the share button
   const icd=app.querySelector("#installDone"); if(icd) icd.onclick=installDismiss;   // v2.15 install card
   const rng=app.querySelector("#rcNudgeGo"); if(rng) rng.onclick=()=>{ rcptNudgeClear(); rcPick(); };   // v2.17 the receipt at the till
   const rnn=app.querySelector("#rcNudgeNo"); if(rnn) rnn.onclick=()=>{ rcptNudgeClear(); render(); };

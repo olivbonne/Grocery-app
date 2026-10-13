@@ -197,7 +197,8 @@ const seed = (units) => `(() => {
 
     /* ── D. meal slots can be switched off ─────────────────────────────── */
     await tap('#setNav, #setNavP, #setNavS');
-    ok('Settings has a Plan section', await page.evaluate(()=>[...document.querySelectorAll('.optsect')].some(h=>h.dataset.sect==='Plan')), '');
+    /* SUPERSEDED by v2.30: Settings was regrouped (Sort+Sound → Shopping, Predictions/Prices/Memberships → Smart features, Plan → Plan & recipes, Users → People, Other → Lists & sharing + Help). */
+    ok('Settings has a Plan section', await page.evaluate(()=>[...document.querySelectorAll('.optsect')].some(h=>h.dataset.sect==='Plan & recipes')), '');
     await tap('[data-opt-mealslots="0"]');
     ok('…whose switch is remembered on this device', await page.evaluate(()=>localStorage.getItem('ml_mealslots'))==='0', '');
     await tap('#planNavS, #planNav, #planNavP');

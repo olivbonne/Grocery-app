@@ -242,7 +242,7 @@
   .sweepbanner { background:#2F9E44; color:#fff; margin-top:12px; }
   .optrow { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px solid var(--line); }
   .optrow.optnl { border-bottom:none; }
-  .optlabel { font-weight:700; font-size:14px; }
+  .optlabel { font-weight:700; font-size:15px; }   /* v2.30: was 14px — too small (the household) */
   /* v1.33 tiny preview swatches inline in seg buttons (Tile appearance, Category/Item icons) */
   .tdswatch { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:5px; margin-right:6px; vertical-align:-3px; box-sizing:border-box; font-size:11px; line-height:1; }
   /* v1.62 item 4: the Accent preview drew its bar in --accent inside a button whose selected state is
@@ -554,6 +554,7 @@
   .zoomer.normal .bapill { min-height:46px; font-size:15px; padding:10px 14px; border-radius:13px; gap:7px; }
   .zoomer.normal .bapill .qmore { font-size:13px; }
   .hint { margin-top:12px; font-size:11px; color:var(--muted); text-align:center; }
+  .optpage .hint { font-size:12.5px; }   /* v2.30: Settings reads at the app's own size — its hints were 11px (the household's item 19) */
   /* v1.84: a label for a field, not a caption for the page — .hint is centred, which reads as stray
      text sitting above a left-aligned input. */
   .palabel { margin:0 0 6px; font-size:12px; font-weight:700; color:var(--muted); text-align:left; }
@@ -790,11 +791,11 @@
   .installcard .ic-b svg { vertical-align:-3px; }
   .installcard .ic-btns { display:flex; gap:8px; margin-top:10px; }
   .installcard .ic-btns > * { flex:1; margin:0; }
-  .snaphd { margin:16px 2px 4px; font-size:12px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+  .snaphd { margin:16px 2px 4px; font-size:15px; font-weight:800; color:var(--text); }   /* v2.30: sentence case, like the section headings */
   .snaprow { display:flex; align-items:center; gap:10px; padding:8px 2px; border-bottom:1px solid var(--line); font-size:13.5px; font-weight:600; color:var(--text); }
   .snaprow span { flex:1; min-width:0; }
   .snaprow button { flex:none; }
-  .snapnote { margin:8px 2px 0; font-size:11.5px; color:var(--muted2); font-weight:600; line-height:1.45; }
+  .snapnote { margin:8px 2px 0; font-size:12.5px; color:var(--muted2); font-weight:600; line-height:1.45; }
   /* v2.17 the cart's running total, and the receipt card (it borrows the install card's shape) */
   /* the total sits on its own line under "N in cart", so the count never wraps ("4 in / cart" on one phone) */
   .checkedbarhead .chk-in { min-width:0; }
@@ -811,7 +812,7 @@
   .tenrow .tr-s { font-size:11.5px; font-weight:600; color:var(--muted2); }
   .tenrow .tr-p { flex:none; font-variant-numeric:tabular-nums; }
   .tensum { margin-top:10px; font-size:13px; font-weight:800; color:var(--text); }
-  .membstat { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:2px 2px 8px; font-size:12px; font-weight:700; color:var(--muted2); }
+  .membstat { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:2px 2px 8px; font-size:13px; font-weight:700; color:var(--muted2); }
   /* v2.21 which store is cheaper: the headline, then one row per store */
   .cmpbest { margin:0 0 10px; padding:10px 12px; border-radius:12px; background:var(--chip); color:var(--text); font-size:13.5px; font-weight:700; line-height:1.35; }
   .cmprows { display:flex; flex-direction:column; gap:2px; max-height:46vh; overflow-y:auto; }
@@ -867,6 +868,23 @@
     background:var(--chip); color:var(--text); font:inherit; font-size:16px; line-height:1.5; }
   /* v2.28 the sign reader's status under the box */
   .amread { min-height:18px; margin:8px 2px 0; font-size:12.5px; font-weight:600; color:var(--muted2); display:flex; align-items:center; gap:6px; }
+  /* v2.30 the Shop page's menu: a small sheet under the top-right button, over a clear backdrop that closes it */
+  .smbg { position:fixed; inset:0; z-index:80; background:transparent; }
+  .smenu { position:fixed; top:calc(env(safe-area-inset-top) + 58px); right:12px; min-width:236px; max-width:calc(100vw - 24px); padding:6px;
+    border-radius:16px; background:var(--card); border:1.5px solid var(--line); box-shadow:0 10px 30px rgba(0,0,0,.18); }
+  .smitem { display:flex; align-items:center; gap:12px; width:100%; min-height:46px; padding:8px 12px; border:none; border-radius:11px;
+    background:transparent; color:var(--text); font:inherit; font-size:15.5px; font-weight:700; text-align:left; }
+  .smitem:active { background:var(--chip); }
+  .smitem svg { width:18px; height:18px; flex:none; }
+  .smsep { height:1px; margin:4px 8px; background:var(--line); }
+  /* v2.30 price diagnostics */
+  .pdlist { max-height:52vh; overflow-y:auto; margin-top:10px; }
+  .pdrow { border-bottom:1px solid var(--line); padding:2px 0; }
+  .pdrow summary { display:flex; justify-content:space-between; gap:10px; padding:9px 2px; font-size:14.5px; font-weight:700; color:var(--text); cursor:pointer; list-style:none; }
+  .pdrow summary::-webkit-details-marker { display:none; }
+  .pdrow .pd-s { color:var(--muted2); font-weight:700; font-variant-numeric:tabular-nums; }
+  .pdrec { display:grid; grid-template-columns:86px 1fr auto auto; gap:8px; padding:4px 2px 4px 10px; font-size:13px; color:var(--muted2); font-weight:600; }
+  .pdrec b { color:var(--text); font-variant-numeric:tabular-nums; }
   .slotseg button { flex:1; min-width:0; padding:7px 4px; border-radius:10px; background:var(--card); border:1.5px solid var(--line); color:var(--text); font-size:13px; font-weight:600; }
   .slotseg button.on { border:2px solid var(--ink); font-weight:800; }
   /* v2.01: a planned recipe's method, read in the pick sheet. */
@@ -1172,15 +1190,16 @@
   .optrow-col > .optlabel { flex:0 0 92px; min-width:0; padding-top:4px; font-size:13.5px; line-height:1.2; }
   /* v1.57 item 2: a caption inside a group — quieter than a section heading, so "Selected tiles" reads
      as a label for the three rows under it rather than as a new part of Settings. */
-  .optsub { font-size:11px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;
-    color:var(--muted2); margin:14px 0 2px; }
+  /* v2.30: sentence case in the app's own type and colour — the small uppercase grey labels read as a different app */
+  .optsub { font-size:15px; font-weight:800; letter-spacing:0; text-transform:none;
+    color:var(--text); margin:16px 0 2px; }
   /* v1.77 item 3: the section header — the same small uppercase label it always was, now a full-width
      button with a caret. */
   .optsect { display:flex; align-items:center; justify-content:space-between; width:100%; border:none;
     border-top:1px solid var(--line); background:transparent; text-align:left; cursor:pointer;
     padding:14px 0 0;
-    margin:16px 0 2px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em;
-    color:var(--muted); font-family:inherit; }
+    margin:18px 0 2px; font-size:18px; font-weight:800; text-transform:none; letter-spacing:-.01em;
+    color:var(--text); font-family:inherit; }   /* v2.30: the household found the 11px uppercase grey headings too small and not the app's style */
   /* v1.79 item 4: every section carries the rule now. Folded, Settings is a list of headers and
      nothing else, so a rule above some of them and not others read as grouping that was not there.
      The first one has nothing to separate it from. */
