@@ -7,16 +7,17 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.30";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.30";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.30";
-import { compareStores, worthIt } from "./compare.js?v=2.30";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.30";
-import { parseAisleLine, mapAisles, mapRank } from "./aisles.js?v=2.30";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.31";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.31";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.31";
+import { compareStores, worthIt } from "./compare.js?v=2.31";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.31";
+import { parseAisleLine, mapAisles, mapRank } from "./aisles.js?v=2.31";
+import { code128SVG, reconcile } from "./till.js?v=2.31";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.30";
+const APP_VERSION = "v2.31";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -156,7 +157,7 @@ function mergeAmt(a, b){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -2118,10 +2119,14 @@ function sweep(msg){ const checked=state.items.filter(i=>i.checked); if(!checked
   /* v2.29: a tick is not a purchase until the shop is finished — a wrong tap, untapped or not, no longer teaches the
      shop order. The order is learned here, from what is still ticked, in the order it was ticked. */
   if(shopMode) checked.slice().sort((a,b)=>(a.checkedAt||0)-(b.checkedAt||0)).forEach(i=>aiRecordCheck(i.cat, i.name));
+  lastCartSet(checked);   // v2.31: what was ticked, in tick order, for the receipt read afterwards to be matched against
   recordPurchase(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||""})));   // B4 log purchase cadence
   moveToBuyAgain(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||"",note:i.note||"",where:i.where||""})));
   for(const i of checked){ histLog("buy", i.name); histLog("regadd", i.name); }
   state.items = state.items.filter(i=>!i.checked);
+  /* v2.31 (item 5): at a shop whose membership card is saved on this phone, the card comes up as the shop is finished —
+     before paying */
+  { const st=activeStore(), c=(st && isRealStore(st.id)) ? cardFor(st) : null; if(c) cardShow={ id:c.id }; }
   aiPublish(); rcptNudgeSet(); shoppingClear(); save(); render(); showUndo(prev, msg || (checked.length+" saved to Regulars")); }   // v2.10: msg from autoFinishAt
 /* v1.10 add-sheet variant of restore(): copies the regular onto the list but KEEPS it in
    Buy-again, so the sheet row stays put and flips to ✓ (second tap bumps quantity). */
@@ -2536,6 +2541,7 @@ const BIN_SVG     = sz => ICO('<path d="M4.5 6.5h15"/><path d="M9.5 6.5V4.2h5v2.
 /* v2.13: Report a problem — a speech bubble with an exclamation mark, for the top banner's right-hand button */
 const REPORT_SVG  = sz => ICO('<path d="M5 4.5h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7l-4.5 3.5v-3.5H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z"/><path d="M12 8.2v3.8"/><path d="M12 15h.01"/>', sz);
 const MENU_SVG    = sz => ICO('<circle cx="5.5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="18.5" cy="12" r="1.6" fill="currentColor"/>', sz);   // v2.30 the Shop page's menu
+const CARD_SVG    = sz => ICO('<rect x="3" y="5.5" width="18" height="13" rx="2.2"/><path d="M3 9.5h18"/><path d="M6.5 14.5h4"/>', sz);   // v2.31 a membership card
 const SHARE_SVG   = sz => ICO('<path d="M12 3.5v11"/><path d="M8 7.2l4-3.7 4 3.7"/><path d="M8.5 10.5H6.5a1.5 1.5 0 0 0-1.5 1.5v7a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5h-2"/>', sz);
 const NOTE_SVG   = sz => ICO('<circle cx="8" cy="17.5" r="3"/><path d="M11 17.5V4.6l8-1.6v11"/><circle cx="16" cy="14" r="3"/>', sz);
 const SAVE_SVG   = sz => ICO('<path d="M12 3.6v10.2"/><path d="M8 10l4 4 4-4"/><path d="M4.5 16v3.4h15V16"/>', sz);
@@ -3865,7 +3871,7 @@ function renderMain(){
   ${fabMoveOpen?fabMoveSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -4177,7 +4183,7 @@ function renderPlanTab(){
   ${planWeekOpen?planWeekSheet():""}
   ${planAdd?planAddSheet():""}
   ${planPick?planPickSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${listsOpen?listsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
@@ -4371,6 +4377,7 @@ function rcRead(file){
         return { raw:String(x.raw||""), name:String(x.name||""), qty:+x.qty||1, weight:String(x.weight||""), price:+x.price||0, cat, keep:true, match:m?m.id:null }; });
       if(!lines.length){ rcpt={ err:"Couldn't find any items on that. Is it a receipt?" }; render(); return; }
       rcpt={ store:rcStoreFor(j.store), detected:String(j.store||""), date:(/^\d{4}-\d{2}-\d{2}$/.test(j.date||"") ? j.date : dayKey(new Date())), total:+j.total||0, lines, discounts:Array.isArray(j.discounts)?j.discounts:[] };
+      rcPair();   // v2.31: pair the lines with the cart, in tick order
       render(); })
     .catch(e=>{ if(rcpt){ rcpt={ err: navigator.onLine===false ? "No connection. Try again when you're online."
         : (e && e.name==="AbortError") ? "That took too long. Try again, or with a closer photo."
@@ -4390,7 +4397,7 @@ function rcSave(){ if(!rcpt || !rcpt.lines) return;
   { const se = spendEntry({ t, d:rcpt.date, s:(rcpt.store && rcpt.store.id) || "", sn:(rcpt.store && rcpt.store.name) || "", total:rcpt.total,
       lines:rcpt.lines.filter(L => L.keep && String(L.name || "").trim() && isFinite(L.price)).map(L => ({ price:+L.price, cat:L.cat })), discounts:rcpt.discounts });
     if(se.tot > 0) state.spend = spendLog(state.spend, se, SPEND_MAX); }
-  rcptNudgeClear(); save(); rcpt=null; render(); showToast(`Saved ${n} price${n===1?"":"s"}${m?` · ticked off ${m}`:""}${tenMsg}`); }
+  rcptNudgeClear(); lastCartClear(); save(); rcpt=null; render(); showToast(`Saved ${n} price${n===1?"":"s"}${m?` · ticked off ${m}`:""}${tenMsg}`); }
 /* v2.20 the 10% shop (plan item 3). The logic is js/tenpct.js; this is the app's side: the household's memberships and
    "used" marks live in the list (state.memb, shared by every phone), the Shop card, the stock-up sheet, the receipt hook. */
 var tenSheet = null;   // { chain, rows, pct, cap, base } while the stock-up sheet is open. var: render() reads it at boot
@@ -4586,6 +4593,7 @@ var shopMenuOpen = false;   // var: render() reads it at boot
 function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRealStore(st.id));
   const item = (id, icon, label) => `<button class="smitem" id="${id}" role="menuitem">${icon}<span>${label}</span></button>`;
   return `<div class="smbg" id="smBg"><div class="smenu" id="shopMenuEl" role="menu" aria-label="More">
+    ${cardsGet().length ? item("smCard", CARD_SVG(18), "Show my card") : ""}
     ${item("smRcpt", CAMERA_SVG(18), "Read a receipt")}
     ${item("smCompare", CART_SVG, "Which store is cheaper")}
     ${item("smSpend", FLAG_TAG_SVG, "What we spend")}
@@ -4631,6 +4639,7 @@ function wireShopMenu(){
   on("smAisle", () => { const st = activeStore(); amOpen = st ? st.id : ""; amDraft = null; amRead = null; render(); });
   on("smSend", () => { render(); shareListText(); });
   on("smOcc", () => { occSheet = { mode:"add" }; render(); });
+  on("smCard", () => { const c = cardFor(activeStore()) || cardsGet()[0]; if(c){ cardShow = { id:c.id }; } render(); });
   on("smReport", () => { rpt = { kind:"broken", text:"", diag:true }; render(); });
 }
 /* v2.28 map a shop by photographing its signs: "Read a sign" takes a photo, /api/aisle reads the aisle's number and what
@@ -4680,6 +4689,103 @@ const RCPT_NUDGE_MS = 3*60*60*1000;
 function rcptAskOn(){ try{ return localStorage.getItem("ml_rcptask")!=="0"; }catch(e){ return true; } }
 function rcptNudgeSet(){ try{ localStorage.setItem("ml_rcptnudge", String(Date.now())); }catch(e){} }
 function rcptNudgeClear(){ try{ localStorage.removeItem("ml_rcptnudge"); }catch(e){} }
+/* v2.31 (the household's item 6): "match what was in the cart, in the order it was checked, which should be the order on
+   the bill". When a shop is finished, what was ticked is kept on this phone (ml_lastcart) in tick order for two days; a
+   receipt read afterwards is paired with it line by line (js/till.js) — by name, then by order between the named ones. */
+const LASTCART_MS = 2*24*60*60*1000;
+function lastCartSet(checked){ try{ localStorage.setItem("ml_lastcart", JSON.stringify({ code:listCode, t:Date.now(),
+  items:checked.slice().sort((a,b)=>(a.checkedAt||0)-(b.checkedAt||0)).map(i=>({ name:i.name, cat:i.cat, qty:i.qty||1 })) })); }catch(e){} }
+function lastCartClear(){ try{ localStorage.removeItem("ml_lastcart"); }catch(e){} }
+/* the cart a receipt is matched against: what is ticked now, if anything is (a receipt read before finishing), else this
+   list's last finished shop from the last two days */
+function rcCart(){ const now=state.items.filter(i=>i.checked);
+  if(now.length) return now.slice().sort((a,b)=>(a.checkedAt||0)-(b.checkedAt||0)).map(i=>({ name:i.name, cat:i.cat, qty:i.qty||1 }));
+  try{ const o=JSON.parse(localStorage.getItem("ml_lastcart")||"null");
+    if(o && o.code===listCode && Date.now()-(+o.t||0) < LASTCART_MS && Array.isArray(o.items)) return o.items.filter(x=>x && x.name); }catch(e){}
+  return []; }
+function rcSame(a, b){ const x=priceKey(a), y=priceKey(b); return !!(x && y && (x===y || (y.length>=3 && priceWordsIn(y,x)) || (x.length>=3 && priceWordsIn(x,y)))); }
+function rcPair(){ if(!rcpt || !rcpt.lines) return; const cart=rcCart(); rcpt.cart=cart; if(!cart.length) return;
+  const r=reconcile(rcpt.lines, cart, rcSame);
+  rcpt.lines.forEach((L,i)=>{ L.read=L.name; L.cart=r.pair[i]; L.how=r.how[i]; if(L.cart!==null) L.name=cart[L.cart].name; }); }
+function rcCartSummary(){ const cart=rcpt.cart, took=new Set(rcpt.lines.filter(L=>L.keep && L.cart!==null && L.cart!==undefined).map(L=>L.cart));
+  const miss=cart.filter((c,k)=>!took.has(k)), guess=rcpt.lines.filter(L=>L.keep && L.how==="order").length;
+  return `<div class="rccartsum" role="status"><b>${cart.length-miss.length} of ${cart.length} ticked item${cart.length===1?"":"s"} found on the receipt</b>${guess?` · ${guess} matched by the order you ticked them — check those`:""}
+    ${miss.length?`<div class="rcmiss">Ticked but not on the receipt: ${miss.map(c=>esc(c.name)).join(", ")}</div>`:""}</div>`; }
+/* v2.31 (the household's item 5): membership cards for the till — a name, the shop it is for, its number (drawn as a
+   Code 128 barcode, js/till.js) and, if added, a photo of the card. On this phone only (ml_cards): never synced, never sent. */
+const CARD_MAX = 6;
+var cardEdit = null, cardShow = null;   // the add/edit sheet / the card on screen { id, view }. var: render() reads them at boot
+function cardsGet(){ try{ const a=JSON.parse(localStorage.getItem("ml_cards")||"[]"); return Array.isArray(a) ? a.filter(c=>c && c.id && c.name) : []; }catch(e){ return []; } }
+function cardsPut(a){ try{ localStorage.setItem("ml_cards", JSON.stringify(a.slice(0, CARD_MAX))); return true; }catch(e){ return false; } }
+function cardFor(store){ const k=chainOfStore(store && store.name); return k ? (cardsGet().find(c=>c.chain===k) || null) : null; }
+function cardNumFmt(n){ return String(n||"").replace(/\s+/g,"").replace(/(.{4})(?=.)/g,"$1 "); }
+function cardShowHTML(){ const all=cardsGet(), c=all.find(x=>x.id===cardShow.id) || all[0]; if(!c) return "";
+  const bc=c.num ? code128SVG(c.num, 70) : "", view=(cardShow.view==="photo" && c.photo) || !bc ? "photo" : "code";
+  return `<div class="sheet-bg" id="cardBg"><div class="sheet" id="cardSheet" role="dialog" aria-labelledby="cardTitle">
+    <div class="disp" id="cardTitle" style="font-weight:800;font-size:17px;margin-bottom:8px">${CARD_SVG(18)} ${esc(c.name)}</div>
+    ${all.length>1 ? `<div class="slotseg" style="margin-bottom:10px">${all.map(x=>`<button data-card-pick="${esc(x.id)}" class="${x.id===c.id?'on':''}">${esc(x.name)}</button>`).join("")}</div>` : ""}
+    <div class="cardface">${view==="photo" && c.photo ? `<img src="${esc(c.photo)}" alt="Photo of the ${esc(c.name)} card" />` : `${bc}<div class="cardnum">${esc(cardNumFmt(c.num))}</div>`}</div>
+    ${(bc && c.photo) ? `<div class="seg" style="margin:10px auto 0;width:max-content"><button data-card-view="code" class="${view==="code"?'on':''}">Barcode</button><button data-card-view="photo" class="${view==="photo"?'on':''}">Photo</button></div>` : ""}
+    <div class="hint" style="margin-top:10px">Turn the brightness up if the scanner struggles.${bc && !c.photo ? " If it won't scan, add a photo of the card in Settings › Smart features." : ""}</div>
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="optaction" id="cardClose" style="margin-top:0">Done</button></div>
+  </div></div>`; }
+function cardEditHTML(){ const e=cardEdit;
+  return `<div class="sheet-bg kbpin" id="ceBg"><div class="sheet" id="ceSheet" role="dialog" aria-labelledby="ceTitle">
+    <div class="disp" id="ceTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">${e.id ? "Edit card" : "Add a card"}</div>
+    <p class="palabel">For</p>
+    <div class="slotseg">${Object.keys(CHAINS).map(k=>`<button data-ce-chain="${k}" class="${e.chain===k?'on':''}">${esc(CHAINS[k].short)}</button>`).join("")}<button data-ce-chain="" class="${!e.chain?'on':''}">Any shop</button></div>
+    <p class="palabel">Name</p>
+    <input id="ceName" class="cefield" value="${esc(e.name)}" placeholder="Flybuys" autocomplete="off" />
+    <p class="palabel">Card number</p>
+    <input id="ceNum" class="cefield" value="${esc(e.num)}" inputmode="numeric" placeholder="The number under the barcode" autocomplete="off" />
+    <p class="palabel">Photo of the card (if the barcode won't scan)</p>
+    <div style="display:flex;gap:8px;align-items:center">${e.photo ? `<img class="cethumb" src="${esc(e.photo)}" alt="" />` : ""}<button class="optaction" id="cePhoto" style="margin-top:0">${CAMERA_SVG(16)} ${e.photo ? "New photo" : "Add a photo"}</button>${e.photo ? `<button class="optaction" id="ceNoPhoto" style="margin-top:0">Remove</button>` : ""}</div>
+    ${e.busy ? `<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>Preparing the photo…</div>` : ""}
+    ${e.err ? `<div class="rpterr" role="alert">${esc(e.err)}</div>` : ""}
+    <div class="hint" style="text-align:left">Kept on this phone only — never shared with the list or sent anywhere.</div>
+    <div class="ppedbtns">${e.id ? `<button class="optaction" id="ceDel">Delete</button>` : `<button class="optaction" id="ceCancel">Cancel</button>`}<button class="newlist" id="ceSave">Save</button></div>
+  </div></div>`; }
+function cardPick(){ const f=document.createElement("input"); f.type="file"; f.accept="image/*";
+  f.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
+  document.body.appendChild(f);   // iOS fires change only for an input in the page (rcPick, v2.11)
+  f.onchange=()=>{ const file=f.files && f.files[0]; f.remove(); if(!file || !cardEdit) return;
+    cardEdit.busy=true; cardEdit.err=""; render();
+    const slow=new Promise((_,rej)=>setTimeout(()=>rej(new Error("slow")), 20000));   // every wait ends
+    Promise.race([planShrinkImage(file, 1000, 0.85), slow])
+      .then(img=>{ if(!cardEdit) return; cardEdit.busy=false; cardEdit.photo=img; render(); })
+      .catch(()=>{ if(!cardEdit) return; cardEdit.busy=false; cardEdit.err="Couldn't use that photo. Try another."; render(); }); };
+  f.click(); }
+function wireCards(){
+  const keep=()=>{ const n=app.querySelector("#ceName"), u=app.querySelector("#ceNum"); if(cardEdit){ if(n) cardEdit.name=n.value; if(u) cardEdit.num=u.value; } };
+  app.querySelectorAll("[data-card-add]").forEach(b=>b.onclick=()=>{ if(cardsGet().length>=CARD_MAX){ showToast(`Up to ${CARD_MAX} cards`); return; } cardEdit={ id:"", name:"", chain:"", num:"", photo:"" }; render(); });
+  app.querySelectorAll("[data-card-edit]").forEach(b=>b.onclick=()=>{ const c=cardsGet().find(x=>x.id===b.dataset.cardEdit); if(c){ cardEdit=Object.assign({ photo:"" }, c); render(); } });
+  app.querySelectorAll("[data-card-open]").forEach(b=>b.onclick=()=>{ cardShow={ id:b.dataset.cardOpen }; render(); });
+  if(cardEdit){
+    ["#ceName","#ceNum"].forEach(s=>{ const f=app.querySelector(s); if(f) f.oninput=keep; });   // no re-render while typing
+    app.querySelectorAll("[data-ce-chain]").forEach(b=>b.onclick=()=>{ keep(); cardEdit.chain=b.dataset.ceChain;
+      if(!cardEdit.name.trim()) cardEdit.name = cardEdit.chain==="coles" ? "Flybuys" : cardEdit.chain==="woolworths" ? "Everyday Rewards" : "";
+      render(); });
+    const ph=app.querySelector("#cePhoto"); if(ph) ph.onclick=()=>{ keep(); cardPick(); };
+    const np=app.querySelector("#ceNoPhoto"); if(np) np.onclick=()=>{ keep(); cardEdit.photo=""; render(); };
+    const close=()=>{ cardEdit=null; render(); };
+    const cc=app.querySelector("#ceCancel"); if(cc) cc.onclick=close;
+    const bg=app.querySelector("#ceBg"); if(bg) bg.onclick=e=>{ if(e.target===bg && !cardEdit.busy) close(); };
+    const dl=app.querySelector("#ceDel"); if(dl) dl.onclick=()=>{ cardsPut(cardsGet().filter(x=>x.id!==cardEdit.id)); close(); };
+    const sv=app.querySelector("#ceSave"); if(sv) sv.onclick=()=>{ keep(); const e=cardEdit, num=String(e.num||"").replace(/\s+/g,"");
+      if(!e.name.trim()){ e.err="Give the card a name."; render(); return; }
+      if(!num && !e.photo){ e.err="Add the card's number, or a photo of it."; render(); return; }
+      if(num && !code128SVG(num)){ e.err="That number has characters a barcode can't carry. Check it, or add a photo instead."; render(); return; }
+      const c={ id:e.id || ("c"+Date.now().toString(36)), name:e.name.trim().slice(0,40), chain:e.chain||"", num, photo:e.photo||"" };
+      const a=cardsGet(), i=a.findIndex(x=>x.id===c.id); if(i>=0) a[i]=c; else a.push(c);
+      if(!cardsPut(a)){ e.err="This phone's storage is full — try without the photo."; render(); return; }
+      close(); }; }
+  if(cardShow && !app.querySelector("#cardSheet")) cardShow=null;   // its card was deleted: nothing to show, nothing to come back later
+  if(cardShow){
+    const close=()=>{ cardShow=null; render(); };
+    const d=app.querySelector("#cardClose"); if(d) d.onclick=close;
+    const bg=app.querySelector("#cardBg"); if(bg) bg.onclick=e=>{ if(e.target===bg) close(); };
+    app.querySelectorAll("[data-card-pick]").forEach(b=>b.onclick=()=>{ cardShow={ id:b.dataset.cardPick }; render(); });
+    app.querySelectorAll("[data-card-view]").forEach(b=>b.onclick=()=>{ cardShow.view=b.dataset.cardView; render(); }); } }
 function rcptNudgeOn(){ if(!rcptAskOn() || rcpt) return false;
   let at=0; try{ at=+localStorage.getItem("ml_rcptnudge")||0; }catch(e){}
   return at>0 && Date.now()-at < RCPT_NUDGE_MS; }   // v2.29: at the day's limit it still shows, and says so
@@ -4711,10 +4817,10 @@ function rcptSheet(){
   <div class="slotseg rcstores">${chips}</div>
   <div class="rcmeta"><label for="rcDate">Date</label><input id="rcDate" type="date" value="${esc(rcpt.date)}" /></div>
   <div class="rcsum"><b>Total on the receipt: ${rcpt.total ? priceMoney(rcpt.total) : "not read"}</b><br>${kept} item${kept===1?"":"s"} kept · ${priceMoney(sumKept)}${(()=>{ const d=(rcpt.discounts||[]).reduce((a,x)=>a+((+x.amount>0)?+x.amount:0),0); return d>0 ? ` · discounts −${priceMoney(d)}` : ""; })()}${rcpt.total && Math.abs(rcpt.total-sumKept)>0.05 ? ` · ${priceMoney(Math.abs(rcpt.total-sumKept))} ${rcpt.total>sumKept?"not in the lines read":"more than the total"}` : ""}</div>
-  <div class="rclines">${rcpt.lines.map((L,i)=>`<div class="rcrow${L.keep?"":" off"}">
+  ${(rcpt.cart && rcpt.cart.length) ? rcCartSummary() : ""}<div class="rclines">${rcpt.lines.map((L,i)=>`<div class="rcrow${L.keep?"":" off"}">
      <button class="smartcheck ${L.keep?"on":""}" data-rckeep="${i}" role="checkbox" aria-checked="${L.keep?"true":"false"}" aria-label="${L.keep?"Leave out":"Keep"} ${esc(L.name)}">✓</button>
      <div class="rcmid"><input class="rcname" data-rcname="${i}" value="${esc(L.name)}" aria-label="Item ${i+1}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
-       <span class="rcraw">${esc(L.raw)}${L.qty>1?` · ${L.qty}×`:""}${L.weight?` · ${esc(L.weight)}`:""}${L.match?` · <b>on your list</b>`:""}</span></div>
+       <span class="rcraw">${esc(L.raw)}${L.qty>1?` · ${L.qty}×`:""}${L.weight?` · ${esc(L.weight)}`:""}${L.match?` · <b>on your list</b>`:""}</span>${(rcpt.cart && rcpt.cart.length && L.keep) ? `<select class="rccart${L.how==="order"?" guess":""}" data-rccart="${i}" aria-label="Which ticked item is line ${i+1}"><option value="">Not from the cart</option>${rcpt.cart.map((c,k)=>`<option value="${k}"${L.cart===k?" selected":""}>${k+1}. ${esc(c.name)}</option>`).join("")}</select>${L.how==="order"?`<span class="rcguess">Matched by the order you ticked — check</span>`:""}` : ""}</div>
      <span class="rcprice">${priceMoney(L.price)}</span></div>`).join("")}</div>
   <div class="ppedbtns"><button class="optaction" id="rcCancel">Cancel</button><button class="newlist" id="rcSaveBtn">Save ${kept} price${kept===1?"":"s"}</button></div>
 </div></div>`; }
@@ -4730,6 +4836,11 @@ function wireRcptSheet(){
   const dt=app.querySelector("#rcDate"); if(dt) dt.onchange=()=>{ if(/^\d{4}-\d{2}-\d{2}$/.test(dt.value)) rcpt.date=dt.value; };   // no re-render
   app.querySelectorAll("[data-rckeep]").forEach(b=>{ b.onclick=()=>{ const L=rcpt.lines[+b.dataset.rckeep]; if(L){ L.keep=!L.keep; render(); } }; });
   app.querySelectorAll("[data-rcname]").forEach(inp=>{ inp.oninput=()=>{ const L=rcpt.lines[+inp.dataset.rcname]; if(L) L.name=inp.value; }; });   // no re-render: keep focus while typing (v1.45)
+  /* v2.31: choosing which ticked item a line is — one item per line, so a line that had it gives it up */
+  app.querySelectorAll("[data-rccart]").forEach(s=>{ s.onchange=()=>{ const L=rcpt.lines[+s.dataset.rccart]; if(!L) return;
+    const k=s.value==="" ? null : +s.value;
+    if(k!==null) rcpt.lines.forEach(M=>{ if(M!==L && M.cart===k){ M.cart=null; M.how=""; M.name=M.read||M.name; } });
+    L.cart=k; L.how=k===null ? "" : "you"; L.name=k===null ? (L.read||L.name) : rcpt.cart[k].name; render(); }; });
   const sv=app.querySelector("#rcSaveBtn"); if(sv) sv.onclick=rcSave;
 }
 /* Every failure the server can name gets a sentence that says what to do about it. A generic
@@ -5223,7 +5334,7 @@ function wirePlanTab(){
   const st=app.querySelector("#setNavP"); if(st) st.onclick=()=>{ settingsFrom=0; gotoPage(2); };
   wireListsSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireRptSheet(); wireRstSheet();
   wireUserTiles();
 }
 /* v1.90: a recipe page shared into the app. Android hands it over directly through the manifest's
@@ -5371,7 +5482,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>Add items…</span></button></div>`:""}
-  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -5434,7 +5545,7 @@ function wirePlanPage(){
   const qbc=app.querySelector("#qbannerClose"); if(qbc) qbc.onclick=()=>{ quickEdit=null; render(); };
   const qbr=app.querySelector("#qbannerRemove"); if(qbr) qbr.onclick=()=>{ const it=state.items.find(i=>i.id===quickEdit); const nm=it?cap(it.name):""; const id=quickEdit; quickEdit=null; planRemove(id); if(nm) showToast(nm+" moved to Regulars"); };
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireRptSheet(); wireRstSheet();
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>gotoPage(0);
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireUserTiles();
@@ -5456,7 +5567,7 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
     if(i){ i.value=""; i.parentElement.classList.remove("has"); i.focus(); } filterOptions(); };
   wireOptions();
   wireEditSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 /* v1.77 item 3: which sections are folded. Keyed by the section's own name rather than its index, so
@@ -6112,7 +6223,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -6521,7 +6632,11 @@ function optionsBody(){
         <div class="membstat" data-memb-stat="${k}">${esc(monthName(p))}: ${u ? `used on ${esc(new Date(u).toLocaleDateString(undefined,{day:"numeric",month:"short"}))}` : `unused · ${p.daysLeft} day${p.daysLeft===1?"":"s"} left`}
           <button class="storechip" data-memb-used="${k}|${u?0:1}">${u?"Not used yet":"Used it"}</button></div>
         <button class="optaction" data-memb-list="${k}">${esc(CHAINS[k].short)} stock-up list for ${esc(monthName(p))}</button>` : ""}`; }).join("")}
-      <div style="margin:6px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">Each takes ${"10%"} off one shop a month, up to $50, as of October 2026 — set the rules to what your membership says. A receipt that shows the member discount marks the month as used.</div>` : ""}
+      <div style="margin:6px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">Each takes ${"10%"} off one shop a month, up to $50, as of October 2026 — set the rules to what your membership says. A receipt that shows the member discount marks the month as used.</div>
+      <div class="optsub">Cards at the till</div>${/* v2.31 item 5: kept on this phone only */""}
+      ${cardsGet().map(c=>row(esc(c.name), `<div class="seg"><button data-card-open="${esc(c.id)}">Show</button><button data-card-edit="${esc(c.id)}">Edit</button></div>`)).join("")}
+      <button class="optaction" data-card-add="1">${CARD_SVG(16)} Add a membership card</button>
+      <div class="snapnote">On this phone only. A card comes up when you finish a shop at its store, and from the Shop page's menu.</div>` : ""}
     ${(view!=="lists") ? `${sect("Plan & recipes")}${row("Meal slots", `<div class="seg"><button data-opt-mealslots="1" class="${mealSlotsOn()?'on':''}">On</button><button data-opt-mealslots="0" class="${!mealSlotsOn()?'on':''}">Off</button></div>`)}
     <div style="margin:-2px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">Breakfast, lunch, dinner or snack on each planned meal.</div>` : ""}
     ${(view!=="lists") ? `${row("Convert amounts", `<div class="seg"><button data-opt-units="off" class="${unitsMode()==='off'?'on':''}">Off</button><button data-opt-units="metric" class="${unitsMode()==='metric'?'on':''}">Metric</button><button data-opt-units="imperial" class="${unitsMode()==='imperial'?'on':''}">Imperial</button></div>`)}
@@ -6604,7 +6719,7 @@ function renderSettingsPage(){
     ${bottomNav({planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
     ${diagOpen?diagSheet():""}
     ${listsOpen?listsSheet():""}
-    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
     ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
     ${editing?editSheet():""}
@@ -6780,7 +6895,7 @@ function wire(){
   const et=app.querySelector("#elseToggle"); if(et) et.onclick=()=>{ elseOpen=!elseOpen; render(); };   // v2.22 R17
   wireAddSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireRptSheet(); wireRstSheet();
   const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>catShown(i.cat)===c.id)).map(c=>c.id);
     const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);

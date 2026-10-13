@@ -6,7 +6,7 @@ shell — markup, the Firebase config and three small boot scripts — the style
 one ES module, `js/app.js` (several thousand lines), importing the reference data (`js/data/catalog.js`),
 the drawings (`js/data/drawings.js`) and the logic of the features built since as modules of their own — the 10%
 shop (`js/tenpct.js`, v2.20), which store is cheaper (`js/compare.js`, v2.21), what we spend (`js/spend.js`, v2.24) and the aisle types and maps
-(`js/aisles.js`, v2.27 — a name's type is its LONGEST word that STARTS a word in it, so short stems cannot hide in long words): pure functions, no imports, the
+(`js/aisles.js`, v2.27 — a name's type is its LONGEST word that STARTS a word in it, so short stems cannot hide in long words) and the till (`js/till.js`, v2.31 — a membership card's Code 128 barcode, checked bar for bar against python-barcode in v231.js, and pairing a receipt with the cart: by name, then in tick order between the named lines): pure functions, no imports, the
 app passes in what they need, so each is unit-tested in Node by its version's suite. Until v2.18 all of it lived inline in `index.html`; it moved byte
 for byte. Later phases move cohesive parts of `js/app.js` into modules of their own. Firebase Firestore for
 live household sync, Vercel serves `main` as static files. Used as an iPhone home-screen app, portrait-only,
