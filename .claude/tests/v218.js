@@ -36,7 +36,8 @@ const seed = (coll, extra) => `(() => {
    protects: the everyday sections, in order, and none of the look page's. */
 /* SUPERSEDED by v2.25: "Your data" (privacy page, leave, empty, forget — the review's R26) is a new everyday section, last.
    This still protects the order of the everyday sections and that no look section appears among them. */
-const EVERYDAY = ["Appearance","Tiles","Sort","Sound","Smart add","Measurements","Plan","Prices","Memberships","Predictions","Users","History","Other","Your data"];
+/* SUPERSEDED by v2.30: Settings was regrouped (Sort+Sound → Shopping, Predictions/Prices/Memberships → Smart features, Plan → Plan & recipes, Users → People, Other → Lists & sharing + Help). */
+const EVERYDAY = ["Appearance","Tiles","Shopping","Smart features","Plan & recipes","People","Lists & sharing","History","Help","Your data"];
 const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings","Tile colours and shape"];
 
 (async () => {
@@ -113,8 +114,8 @@ const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings"
     v = await search('roundness');
     ok('the search reaches the look page: "roundness" finds Tile roundness, its section marked "Customise the look"',
        JSON.stringify(v.names)==='["Tile colours and shape"]' && v.secs[0].tag && JSON.stringify(v.secs[0].rows)==='["Shape","Tile roundness"]', JSON.stringify(v.secs));
-    v = await search('sort');
-    ok('a section\'s name shows the whole section ("sort")', v.names.includes('Sort') && ((v.secs.find(s=>s.name==='Sort')||{}).rows||[]).length>=3, JSON.stringify(v.secs.map(s=>s.name+':'+s.rows.length)));
+    v = await search('shopping');   // v2.30: Sort is Shopping
+    ok('a section\'s name shows the whole section ("shopping")', v.names.includes('Shopping') && ((v.secs.find(s=>s.name==='Shopping')||{}).rows||[]).length>=3, JSON.stringify(v.secs.map(s=>s.name+':'+s.rows.length)));
     v = await search('in regulars');
     ok('a subhead shows with all its rows, and no more ("in regulars": the Regulars heading and tile colours)',
        JSON.stringify(v.names)==='["Category headings","Tile colours and shape"]' && v.secs.every(s=>JSON.stringify(s.rows.slice(1))==='["Text","Background","Border"]'), JSON.stringify(v.secs));
@@ -136,17 +137,17 @@ const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings"
     v = await view();
     ok('a setting changed from the results takes effect and keeps the results (Theme › Dark)', dark && v.q==='theme' && JSON.stringify(v.names)==='["Appearance"]', JSON.stringify({dark,q:v.q,n:v.names}));
     await search('location');
-    await page.locator('.optsect[data-sect="Sort"]').click(); await page.waitForTimeout(300);
+    await page.locator('.optsect[data-sect="Shopping"]').click(); await page.waitForTimeout(300);
     const coll = await page.evaluate(()=>localStorage.getItem('ml_optcoll'));
     v = await view();
-    ok('a header tap while searching folds nothing', coll==='[]' && (v.secs.find(s=>s.name==='Sort')||{rows:[]}).rows.some(r=>/^Location/.test(r)), JSON.stringify({coll, sort:v.secs.find(s=>s.name==='Sort')}));
+    ok('a header tap while searching folds nothing', coll==='[]' && (v.secs.find(s=>s.name==='Shopping')||{rows:[]}).rows.some(r=>/^Location/.test(r)), JSON.stringify({coll, sort:v.secs.find(s=>s.name==='Shopping')}));
     await tap('#cartNav'); await tap('#setNav');
     v = await view();
     ok('leaving Settings clears the search', v.q==='' && JSON.stringify(v.names)===JSON.stringify(EVERYDAY), JSON.stringify({q:v.q,n:v.names}));
 
-    await mk(["Sort"]);
+    await mk(["Shopping"]);
     v = await search('location');
-    ok('a folded section opens for a match ("location" in a folded Sort)', (v.secs.find(s=>s.name==='Sort')||{rows:[]}).rows.some(r=>/^Location/.test(r)), JSON.stringify(v.secs));
+    ok('a folded section opens for a match ("location" in a folded Shopping)', (v.secs.find(s=>s.name==='Shopping')||{rows:[]}).rows.some(r=>/^Location/.test(r)), JSON.stringify(v.secs));
     await shot('search');
   } catch(e){ ok('suite ran to the end', false, e.message.slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));

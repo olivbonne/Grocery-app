@@ -151,8 +151,9 @@ const seed = (extra, checkedStore) => `(() => {
       const before=zw.getBoundingClientRect().height; const d=document.createElement('div'); d.style.height='900px'; z.appendChild(d);
       await new Promise(r=>setTimeout(r,250)); return { before:Math.round(before), after:Math.round(zw.getBoundingClientRect().height), zoomerBottom:Math.round(z.getBoundingClientRect().bottom), wrapBottom:Math.round(zw.getBoundingClientRect().bottom) }; });
     ok('content that grows after layout is never clipped (Settings could not scroll to the bottom)', grown.after>=grown.before+850 && grown.wrapBottom>=grown.zoomerBottom-1, JSON.stringify(grown));
-    const other = await page.evaluate(()=>{ const h=[...document.querySelectorAll('.optsect')].find(x=>/Other/.test(x.textContent)); if(!h) return null;
-      const body=h.nextElementSibling; return body ? ['#optShare','#optExport','#optDiag'].map(s=>!!body.querySelector(s)) : null; });
+    /* SUPERSEDED by v2.30: Settings was regrouped (Sort+Sound → Shopping, Predictions/Prices/Memberships → Smart features, Plan → Plan & recipes, Users → People, Other → Lists & sharing + Help). Share link and Export are under Lists & sharing, AI diagnostics under Help. Still protects: all three are in Settings, each where it is filed. */
+    const other = await page.evaluate(()=>{ const at=(n,s)=>{ const h=[...document.querySelectorAll('.optsect')].find(x=>x.dataset.sect===n); const b=h&&h.nextElementSibling; return !!(b && b.querySelector(s)); };
+      return [at('Lists & sharing','#optShare'), at('Lists & sharing','#optExport'), at('Help','#optDiag')]; });
     ok('Settings › Other holds Share link, Export and AI diagnostics', JSON.stringify(other)==='[true,true,true]', JSON.stringify(other));
   }catch(e){ ok('the suite ran to the end', false, e.message); }
 

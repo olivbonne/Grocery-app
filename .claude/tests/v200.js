@@ -92,9 +92,9 @@ const IDEAS = { source:"model", provider:"", results:[
     ok('…and Appearance is not among them, since Theme and Text size are why people come',
        s.some(x=>x.name==='Appearance' && !x.folded), JSON.stringify(s.map(x=>x.name+(x.folded?'*':''))));
 
-    /* The point of the whole change: reach Sort without opening anything. */
+    /* The point of the whole change: reach Sort without opening anything. SUPERSEDED by v2.30: Settings was regrouped (Sort+Sound → Shopping, Predictions/Prices/Memberships → Smart features, Plan → Plan & recipes, Users → People, Other → Lists & sharing + Help). Sort is Shopping now. */
     const sortY = await page.evaluate(()=>{
-      const h=[...document.querySelectorAll('.optsect')].find(x=>x.dataset.sect==='Sort');
+      const h=[...document.querySelectorAll('.optsect')].find(x=>x.dataset.sect==='Shopping');
       return h ? Math.round(h.getBoundingClientRect().top + window.scrollY) : null; });
     ok('Sort is reachable without opening a single folded section', sortY!==null && sortY < 1400,
        JSON.stringify({sortY}));

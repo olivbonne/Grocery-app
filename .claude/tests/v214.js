@@ -53,7 +53,9 @@ const SMALL = n => SMALL0(n);
     await page.waitForTimeout(1500); };
   const shot = async(tag)=>{ if(out) await page.screenshot({ path: out.replace(/\.png$/,'-'+tag+'.png') }); };
   const LIST=[["Eggs","fresh",12],["Milk","fresh",2],["Bananas","fruit"]].map((x,i)=>it(String(i),x[0],x[1],x[2]));
-  const tiles = ()=>page.evaluate(()=>{ const g=e=>e?getComputedStyle(e):null, b=document.querySelector('#shopReport'), n=document.querySelector('#listSwitch'), c=document.querySelector('.topfix .hcount');
+  /* SUPERSEDED by v2.30: the Report button became the Shop page's menu button (#shopMenu), same place, same tile. Still
+     protects: the top-right button wears the banner tiles' colour. */
+  const tiles = ()=>page.evaluate(()=>{ const g=e=>e?getComputedStyle(e):null, b=document.querySelector('#shopMenu'), n=document.querySelector('#listSwitch'), c=document.querySelector('.topfix .hcount');
     return { rep:b&&{bg:g(b).backgroundColor, col:g(b).color}, name:n&&{bg:g(n).backgroundColor, col:g(n).color}, count:c&&{bg:g(c).backgroundColor, col:g(c).color} }; });
 
   try{

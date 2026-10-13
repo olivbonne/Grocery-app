@@ -101,9 +101,11 @@ const SMALL = n => SMALL0(n);
     posted=[]; let fail=false;
     await mk(LIST, SMALL(3), async r=>{ posted.push(JSON.parse(r.request().postData()||'{}')); await new Promise(z=>setTimeout(z,400));
       fail ? r.fulfill({status:500, contentType:'application/json', body:'{"error":"x","code":"unexpected"}'}) : r.fulfill({status:200, contentType:'application/json', body:'{"ok":true,"via":"log"}'}); });
-    const hb = await page.evaluate(()=>({ report:!!document.querySelector('#shopReport'), share:!!document.querySelector('#shopShare') }));
+    /* SUPERSEDED by v2.30: the top-right button is the Shop page's menu; Report a problem is its last item. Still protects:
+       Report a problem is one tap from the top-right of the Shop page (plus the menu), and the share button stays out of the banner. */
+    const hb = await page.evaluate(()=>({ report:!!document.querySelector('#shopMenu'), share:!!document.querySelector('#shopShare') }));
     ok('the top-right button reports a problem; the share button has gone from the banner', hb.report && !hb.share, JSON.stringify(hb));
-    await tap('#shopReport');
+    await tap('#shopMenu'); await tap('#smReport');
     ok('…it opens "Report a problem" with four kinds to pick from', await page.evaluate(()=>!!document.querySelector('#rptSheet') && document.querySelectorAll('[data-rptkind]').length===4), '');
     await shot('report');
     await tap('#rptSend');
@@ -119,7 +121,7 @@ const SMALL = n => SMALL0(n);
     const pb = posted[0]||{};
     ok('…and the request carries the kind, the words and the app details (no list)', pb.kind==='looks' && pb.text==='The gear is cut off' && pb.diag && pb.diag.version && !JSON.stringify(pb).includes('Beef'), JSON.stringify(pb));
     await tap('#rptOk');
-    fail=true; await tap('#shopReport'); await page.fill('#rptText', 'Again'); await page.locator('#rptSend').click(); await page.waitForTimeout(900);
+    fail=true; await tap('#shopMenu'); await tap('#smReport'); await page.fill('#rptText', 'Again'); await page.locator('#rptSend').click(); await page.waitForTimeout(900);
     const fl = await page.evaluate(()=>({ txt:(document.querySelector('.rpterr')||{}).textContent||'', share:!!document.querySelector('#rptShare'), text:(document.querySelector('#rptText')||{}).value }));
     ok('a send that fails ends in a message, a way to share it instead, and the words kept', /Couldn't send/.test(fl.txt) && fl.share && fl.text==='Again', JSON.stringify(fl));
     await tap('#rptCancel');

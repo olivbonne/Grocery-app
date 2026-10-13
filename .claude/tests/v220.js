@@ -114,7 +114,9 @@ const COLES_ON = { coles:{ on:true, pct:10, cap:50, day:1, used:{} } };
     await mk({});
     await tap('#setNav');
     const order = await page.evaluate(()=>[...document.querySelectorAll('.optpage .optsect')].filter(h=>h.offsetParent!==null).map(h=>h.dataset.sect));
-    ok('Settings has Memberships, everyday, between Prices and Predictions', order.indexOf('Memberships')===order.indexOf('Prices')+1 && order.indexOf('Predictions')===order.indexOf('Memberships')+1, JSON.stringify(order));
+    /* SUPERSEDED by v2.30: Settings was regrouped (Sort+Sound → Shopping, Predictions/Prices/Memberships → Smart features, Plan → Plan & recipes, Users → People, Other → Lists & sharing + Help). Memberships is a subhead of Smart features, after Receipts and prices. Still protects: memberships are in everyday Settings, next to prices. */
+    const subs = await page.evaluate(()=>{ const h=[...document.querySelectorAll('.optsect')].find(x=>x.dataset.sect==='Smart features'), b=h&&h.nextElementSibling; return b ? [...b.querySelectorAll('.optsub')].map(e=>e.textContent.trim()) : []; });
+    ok('Settings has Memberships, everyday, between Prices and Predictions', order.includes('Smart features') && subs.indexOf('Memberships')===subs.indexOf('Receipts and prices')+1, JSON.stringify({order,subs}));
     ok('…both programmes, off until you say', await page.evaluate(()=>!!document.querySelector('[data-memb-on="coles|0"].on') && !!document.querySelector('[data-memb-on="woolworths|0"].on')), '');
     await tap('[data-memb-on="coles|1"]');
     const stat = await page.evaluate(()=>{ const s=document.querySelector('[data-memb-stat="coles"]'); return s ? s.textContent.replace(/\s+/g,' ').trim() : null; });
