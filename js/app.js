@@ -7,16 +7,16 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.28";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.28";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.28";
-import { compareStores, worthIt } from "./compare.js?v=2.28";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.28";
-import { parseAisleLine, mapAisles, mapRank } from "./aisles.js?v=2.28";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB } from "./data/catalog.js?v=2.29";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.29";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.29";
+import { compareStores, worthIt } from "./compare.js?v=2.29";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.29";
+import { parseAisleLine, mapAisles, mapRank } from "./aisles.js?v=2.29";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.28";
+const APP_VERSION = "v2.29";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -1475,6 +1475,15 @@ function lockPageScroll(y){ if(_locked) return; _locked=true;
 function unlockPageScroll(){ if(!_locked) return 0; _locked=false;
   const b=document.body.style; b.position=""; b.top=""; b.left=""; b.right=""; b.width="";
   return _lockY; }
+/* v2.29: a page lock or a keyboard offset that outlived its sheet left the floating "+" halfway up the screen and the page
+   unable to scroll until another page was opened (the household's screenshot). Undo both whenever nothing should hold
+   them: no add sheet open or closing, no field with the keyboard up. Runs on a touch and after every render. */
+function healStuck(){ let moved = false;
+  if(_locked && !addOpen && !_addClosing){ const y = unlockPageScroll(); window.scrollTo(0, y); moved = true; }
+  const ae = document.activeElement, typing = !!(ae && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA"));
+  if(kbOffset > 0 && !typing && !addOpen){ kbActive = false; kbOffset = 0; applyKb(); moved = true; }
+  if(moved) syncZoomHeight(); }
+if(typeof document !== "undefined") document.addEventListener("touchstart", () => { try{ healStuck(); }catch(e){} }, { passive:true, capture:true });
 /* v1.44 item 5: everything added while the sheet is open is provisional. The return key keeps it;
    Cancel (button, scrim tap, swipe-down) takes it all back off the list. Only ids CREATED during this
    session are tracked, so an item that was already on the list before you opened the sheet is never
@@ -2014,7 +2023,7 @@ function addEntries(text, override){
 function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){
   if(!it.checked){ lastPop=id; playTick(true); if(navigator.vibrate) navigator.vibrate(8); setTimeout(()=>{ if(lastPop===id) lastPop=null; },350); }
   else { playTick(false); if(navigator.vibrate) navigator.vibrate(5); }
-  it.checked=!it.checked; if(it.checked){ it.checkedBy=me; it.checkedAt=Date.now(); it.checkedStore = (()=>{ const s=activeStore(); return (s && isRealStore(s.id)) ? s.id : ""; })(); if(shopMode) aiRecordCheck(it.cat, it.name); shoppingMark(); /* v2.23 R19 */ } markDirty(id); save(); render(); } }
+  it.checked=!it.checked; if(it.checked){ it.checkedBy=me; it.checkedAt=Date.now(); it.checkedStore = (()=>{ const s=activeStore(); return (s && isRealStore(s.id)) ? s.id : ""; })(); shoppingMark(); /* v2.23 R19 — v2.29: the AI order learns at the finish (sweep), not here */ } markDirty(id); save(); render(); } }
 /* A24 shared Buy-again is conflict-free across devices. Each entry carries a `ts`
    (last-touched) and deletions are recorded as tombstones in `state.baTomb`
    ({key: ts}). On every server snapshot we LWW-merge remote+local instead of
@@ -2106,6 +2115,9 @@ function moveToBuyAgain(entries){
 }
 function sweep(msg){ const checked=state.items.filter(i=>i.checked); if(!checked.length) return;
   const prev=snapState();
+  /* v2.29: a tick is not a purchase until the shop is finished — a wrong tap, untapped or not, no longer teaches the
+     shop order. The order is learned here, from what is still ticked, in the order it was ticked. */
+  if(shopMode) checked.slice().sort((a,b)=>(a.checkedAt||0)-(b.checkedAt||0)).forEach(i=>aiRecordCheck(i.cat, i.name));
   recordPurchase(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||""})));   // B4 log purchase cadence
   moveToBuyAgain(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||"",note:i.note||"",where:i.where||""})));
   for(const i of checked){ histLog("buy", i.name); histLog("regadd", i.name); }
@@ -2741,7 +2753,10 @@ function wireAddRows(){
     };
   };
   document.querySelectorAll("[data-add-typed]").forEach(b=>press(b,
-    ()=>{ const t=(draftMain||"").trim(); if(t){ draftMain=""; playPlan(true); stageAdds(()=>addEntries(t,null)); } }, null, true));
+    ()=>{ const t=(draftMain||"").trim(); if(t){ draftMain=""; playPlan(true); const before=new Set(state.items.map(i=>i.id));
+      stageAdds(()=>addEntries(t,null));
+      /* v2.29: a new name opens its details, the way a Regular does — one new item; several typed at once stay as they are */
+      const fresh=state.items.filter(i=>!before.has(i.id)); if(fresh.length===1) openAddEdit(fresh[0].id); } }, null, true));
   document.querySelectorAll("[data-add-ba]").forEach(b=>{ const p=b.dataset.addBa.split("|"), cat=p.pop(), name=p.join("|");
     const go=()=>{ stageAdds(()=>addFromRegular(name,cat)); const it=findItem(name,cat); if(it) openAddEdit(it.id); };   // v1.32 select → inline details above the bar
     press(b, go, ()=>{ stageAdds(()=>addFromRegular(name,cat)); const it=findItem(name,cat); return it&&it.id; }); });
@@ -3230,7 +3245,11 @@ function syncZoomHeight(){ syncTileH(); const z=document.getElementById("zoomer"
   const cb=document.getElementById("checkedbar");
   if(zw && tf){ const tb=Math.max(0, tf.getBoundingClientRect().bottom); if(cb) cb.style.top = Math.floor(tb) + "px";
     zw.style.marginTop = Math.ceil(cb ? Math.floor(tb) + cb.offsetHeight : tb) + "px";
-    document.documentElement.style.setProperty("--toasttop", (Math.ceil(cb ? Math.floor(tb) + cb.offsetHeight : tb) + 10) + "px"); }
+    /* v2.29: a card at the top of the list ("Got the receipt?", the 10% shop…) was covered by the Undo message after Save to
+       Regulars. The message drops to just below any card that sits where it would. */
+    let tt = Math.ceil(cb ? Math.floor(tb) + cb.offsetHeight : tb) + 10;
+    document.querySelectorAll(".installcard, .shopnow").forEach(c=>{ const r=c.getBoundingClientRect(); if(r.height && r.top < tt + 70 && r.bottom > tt - 4) tt = Math.max(tt, Math.ceil(r.bottom) + 8); });
+    document.documentElement.style.setProperty("--toasttop", tt + "px"); }
   const navH = bb ? Math.max(0, Math.ceil(window.innerHeight - bb.getBoundingClientRect().top)) : 0;   // v1.12 floating nav: stack everything above its top edge
   const qb=document.getElementById("qbanner"); if(qb) qb.style.bottom = Math.ceil(navH) + "px";   // quantity banner sits on top of the nav
   const qbH = qb ? qb.getBoundingClientRect().height : 0;
@@ -3264,11 +3283,18 @@ function syncZoomHeight(){ syncTileH(); const z=document.getElementById("zoomer"
    straight over it. visualViewport reports what is actually still visible; sitting the sheet on top of
    that strip — and capping its height to it — is all these sheets need. `.sheet-bg.kbpin` opts in, so
    the add sheet's own far more elaborate pinning (pinAddSheet) is untouched. */
+var _kbSheetBot = 0;   // v2.29: the sheet's keyboard offset while one of its fields is focused. var: boot-order rule
 function pinKbSheet(){
   const vv = (typeof window!=="undefined") ? window.visualViewport : null;
   document.querySelectorAll(".sheet-bg.kbpin > .sheet").forEach(s=>{
     if(!vv){ s.style.transform=""; s.style.maxHeight=""; return; }
-    const bot = Math.max(0, Math.round(window.innerHeight - (vv.offsetTop + vv.height)));
+    const raw = Math.max(0, Math.round(window.innerHeight - (vv.offsetTop + vv.height)));
+    /* v2.29: while a field in the sheet has focus, iOS's suggestion bar comes and goes with each word — the keyboard
+       grows and shrinks by ~45px and the sheet bobbed up and down with it. Hold the higher position for small drops;
+       a real close (a big drop, or focus leaving) still lets it down. */
+    const inSheet = !!(document.activeElement && document.activeElement.closest && document.activeElement.closest(".sheet-bg.kbpin"));
+    const bot = (inSheet && _kbSheetBot > 0 && raw < _kbSheetBot && raw > _kbSheetBot - 90) ? _kbSheetBot : raw;
+    _kbSheetBot = inSheet ? bot : 0;
     s.style.transform = bot>1 ? "translateY(-"+bot+"px)" : "";
     s.style.maxHeight = bot>1 ? Math.max(200, Math.round(vv.height - 24))+"px" : "";
   });
@@ -3382,6 +3408,7 @@ function pinAddSheet(){
 }
 function render(){
   queueMicrotask(syncWakeLock);   // v2.16 keep-screen-on follows every change of page and cart
+  queueMicrotask(()=>{ try{ healStuck(); }catch(e){} });   // v2.29 (a microtask: after the module has finished loading)
   if(_colorPicking) return;
   ensureCats();
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
@@ -3744,7 +3771,7 @@ function renderMain(){
   else if(sm==="ai"){ ensureLocCheck(); const unchecked=state.items.filter(i=>!i.checked && listHere(i)).slice().sort(byAI);   // AI = accepted per-store check order
     // A25 item-level order, frozen at trip start (aiResetTrip) — learns per item, applies next trip, never reshuffles mid-shop
     const seenItems = Object.keys(aiItemsApplied[aiStoreKey()]||{}).length;
-    const note = `<div class="aihint">✨ AI order · ${seenItems?`following your learned item route · frozen for this trip`:`sorted by category — learns each item as you check it`}</div>`;
+    const note = `<div class="aihint">✨ AI order · ${seenItems?`following your learned item route · frozen for this trip`:`sorted by category — learns your route each time you finish a shop`}</div>`;
     bodyBlocks = [ `<section class="cat">${note}${ unchecked.length ? pillsMixed(urgentFirst(unchecked)) : "" }</section>` ]; }
   else if(sm==="location"){ ensureLocCheck(); const useStore=locActive(); const cmp=useStore?byAisle:bySortKey;
     let unchecked=state.items.filter(i=>!i.checked && listHere(i)); const n0=unchecked.length;
@@ -4295,7 +4322,7 @@ function wireRptSheet(){ if(!rpt) return;
   const sh=app.querySelector("#rptShare"); if(sh) sh.onclick=rptShare; }
 /* free, with a soft daily cap per device — the model call is the one real cost. A count, not a look,
    so ml_rcptday is in BOTH exclusion lists. */
-const RCPT_DAY_CAP = 10;
+const RCPT_DAY_CAP = 30;   // v2.29: was 10 — a household reading the week's receipts in one go hit it, and the prompt vanished without a word
 function rcptToday(){ const d=dayKey(new Date()); try{ const v=String(localStorage.getItem("ml_rcptday")||"").split("|"); return v[0]===d ? (+v[1]||0) : 0; }catch(e){ return 0; } }
 function rcptCount(){ const d=dayKey(new Date()); try{ localStorage.setItem("ml_rcptday", d+"|"+(rcptToday()+1)); }catch(e){} }
 /* v2.11: the picker is ATTACHED to the page before it opens. iOS Safari does not reliably fire "change" on a
@@ -4314,7 +4341,7 @@ function rcStoreFor(detected){ const n=String(detected||"").toLowerCase().trim()
   const act=activeStore(); if(!n && act && isRealStore(act.id)) return { id:act.id, name:act.name };
   return { id:"", name:String(detected||"").trim() }; }
 function rcRead(file){
-  if(rcptToday()>=RCPT_DAY_CAP){ rcpt={ err:`That's ${RCPT_DAY_CAP} receipts today, the free limit on this phone. It resets tomorrow.` }; render(); return; }
+  if(rcptToday()>=RCPT_DAY_CAP){ rcpt={ err:`That's ${RCPT_DAY_CAP} receipts read on this phone today, the most in a day. Keep the receipt — it can be read tomorrow.` }; render(); return; }
   /* v2.11: every wait is visible, and every wait ends — either in the review or in a message. The sheet
      opens the moment a photo is chosen and says which step it is on; the request is abandoned after 75s
      (the function itself stops at 60s), so a dead connection can never leave the sheet spinning. */
@@ -4599,12 +4626,15 @@ function rcptNudgeSet(){ try{ localStorage.setItem("ml_rcptnudge", String(Date.n
 function rcptNudgeClear(){ try{ localStorage.removeItem("ml_rcptnudge"); }catch(e){} }
 function rcptNudgeOn(){ if(!rcptAskOn() || rcpt) return false;
   let at=0; try{ at=+localStorage.getItem("ml_rcptnudge")||0; }catch(e){}
-  return at>0 && Date.now()-at < RCPT_NUDGE_MS && rcptToday() < RCPT_DAY_CAP; }
+  return at>0 && Date.now()-at < RCPT_NUDGE_MS; }   // v2.29: at the day's limit it still shows, and says so
 function rcptNudgeHTML(){ if(!rcptNudgeOn()) return "";
   return `<div class="installcard rcnudge" id="rcNudge" role="note">
     <div class="ic-t">${CAMERA_SVG(16)} Got the receipt?</div>
-    <div class="ic-b">Snap it and the app remembers what you paid at each store.</div>
-    <div class="ic-btns"><button class="newlist" id="rcNudgeGo">Read receipt</button><button class="optaction" id="rcNudgeNo">Not now</button></div>
+    ${rcptToday() >= RCPT_DAY_CAP
+      ? `<div class="ic-b">That's ${RCPT_DAY_CAP} receipts read on this phone today, the most in a day. Keep this one — it can be read tomorrow.</div>
+    <div class="ic-btns"><button class="optaction" id="rcNudgeNo">OK</button></div>`
+      : `<div class="ic-b">Snap it and the app remembers what you paid at each store.</div>
+    <div class="ic-btns"><button class="newlist" id="rcNudgeGo">Read receipt</button><button class="optaction" id="rcNudgeNo">Not now</button></div>`}
   </div>`; }
 function rcptSheet(){
   const head=`<div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">${CAMERA_SVG(18)} Receipt</div>`;
@@ -4624,7 +4654,7 @@ function rcptSheet(){
   <p class="palabel">Store</p>
   <div class="slotseg rcstores">${chips}</div>
   <div class="rcmeta"><label for="rcDate">Date</label><input id="rcDate" type="date" value="${esc(rcpt.date)}" /></div>
-  <div class="rcsum">${kept} item${kept===1?"":"s"} · ${priceMoney(sumKept)}${rcpt.total && Math.abs(rcpt.total-sumKept)>0.05 ? ` · receipt says ${priceMoney(rcpt.total)}` : ""}</div>
+  <div class="rcsum"><b>Total on the receipt: ${rcpt.total ? priceMoney(rcpt.total) : "not read"}</b><br>${kept} item${kept===1?"":"s"} kept · ${priceMoney(sumKept)}${(()=>{ const d=(rcpt.discounts||[]).reduce((a,x)=>a+((+x.amount>0)?+x.amount:0),0); return d>0 ? ` · discounts −${priceMoney(d)}` : ""; })()}${rcpt.total && Math.abs(rcpt.total-sumKept)>0.05 ? ` · ${priceMoney(Math.abs(rcpt.total-sumKept))} ${rcpt.total>sumKept?"not in the lines read":"more than the total"}` : ""}</div>
   <div class="rclines">${rcpt.lines.map((L,i)=>`<div class="rcrow${L.keep?"":" off"}">
      <button class="smartcheck ${L.keep?"on":""}" data-rckeep="${i}" role="checkbox" aria-checked="${L.keep?"true":"false"}" aria-label="${L.keep?"Leave out":"Keep"} ${esc(L.name)}">✓</button>
      <div class="rcmid"><input class="rcname" data-rcname="${i}" value="${esc(L.name)}" aria-label="Item ${i+1}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
@@ -6484,7 +6514,7 @@ function optionsBody(){
     <button class="optaction" id="optSendList" style="margin-top:10px">${SHARE_SVG(16)} Send what's to buy to another app</button>
     <button class="optaction" id="optOccSave" style="margin-top:10px">Save what's to buy as an occasion</button>
     <button class="optaction" id="optOccAdd" style="margin-top:10px">Add an occasion to the list${(state.templates||[]).length?` (${(state.templates||[]).length})`:""}</button>
-    <button class="optaction" id="optExport" style="margin-top:10px">Export list as text</button>
+    <button class="optaction" id="optExport" style="margin-top:10px">Export the full list — to buy and Regulars</button>
     <button class="optaction" id="optBackup" style="margin-top:10px">Back up this list to a file</button>
     <button class="optaction" id="optRestoreFile" style="margin-top:10px">Restore from a backup file</button>
     ${snapsHTML()}
@@ -6545,7 +6575,7 @@ function chipsHTML(activeCat){ return catList().map(c=>
 
 function editSheet(){
   if(editing.kind==="newcat"){
-    return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
+    return `<div class="sheet-bg kbpin" id="sheetBg"><div class="sheet" id="sheet">
       <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">New category</div>
       <div style="display:flex;gap:8px;align-items:center">
         ${iconEditorHTML()}
@@ -6570,7 +6600,7 @@ function editSheet(){
         <button class="iconmini" data-subdown="${s.id}" ${i===subs.length-1?'disabled style="opacity:.35"':''}>↓</button>
         <button class="iconmini subdel" data-sub="${s.id}" style="color:#C24A33">×</button>
       </div>`).join("") : '<div class="none" style="margin-top:6px">No subcategories yet</div>';
-    return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
+    return `<div class="sheet-bg kbpin" id="sheetBg"><div class="sheet" id="sheet">
       <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">Edit category</div>
       <div style="display:flex;gap:8px;align-items:center">
         ${iconEditorHTML()}
@@ -6597,7 +6627,7 @@ function editSheet(){
   if(editing.kind==="bacat"){
     const shown = catList().filter(c=> state.items.some(i=>catShown(i.cat)===c.id) || c.custom).length;
     const n = shown+1; const idx = Math.max(0, Math.min(editing.pos|0, shown));
-    return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
+    return `<div class="sheet-bg kbpin" id="sheetBg"><div class="sheet" id="sheet">
       <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">Edit “Buy again”</div>
       <div style="display:flex;gap:8px;align-items:center">
         ${iconEditorHTML()}
@@ -6635,7 +6665,7 @@ function editSheet(){
          ${selSubs.map(s=>`<button class="catchip" data-es="${s.id}" style="${editing.sub===s.id?`background:${selCat.color};border-color:${selCat.color};color:#fff`:''}">${esc(s.label)}</button>`).join("")}
          <button class="catchip" id="esAddSub" style="border-style:dashed;font-weight:800">＋ New</button>
        </div>` : ""}` : "";
-  return `<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet">
+  return `<div class="sheet-bg kbpin" id="sheetBg"><div class="sheet" id="sheet">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div class="disp" style="font-weight:800;font-size:17px">${isItem?"Edit item":"Buy again"}</div>
     </div>
