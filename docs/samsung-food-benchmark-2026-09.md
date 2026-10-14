@@ -2,6 +2,42 @@
 
 September 2026 · reviewed against Market List **v1.80**
 
+> **Status at v2.35 (14 October 2026).** Since v2.28, versions 2.29–2.35 worked through the household's own lists (fixes,
+> Settings in plain groups with (i)s, a Shop menu, price and location diagnostics, the membership card at the till — scanned
+> in, shown by location — receipts matched to the cart by name, several shops per item, aisle numbers on tiles, thirteen
+> categories for new lists). Everything still open is below, in one place.
+
+## Do later — everything still open (at v2.35)
+
+The published report carries the same list (section "Do later"). Grouped by who has to act.
+
+**Needs your answers**
+- L1 **First-time use** — proposal and five questions in `docs/onboarding-proposal.md`. Nothing built until answered.
+- L2 *Optional:* move existing lists to the thirteen categories with a one-time card (`docs/categories-proposal.md`).
+
+**Needs your accounts** (steps in `docs/owner-setup.md`; Claude cannot reach the consoles)
+- L3 **Publish the Firestore rules** — do first, ~5 minutes (`docs/firestore-rules.md`).
+- L4 Sign-in (Firebase Authentication) — plan item 4; unlocks private lists, cards and look on every phone, recovery, and L5, L8, L10.
+- L5 Shared prices (plan item 5) — after L4.
+- L6 Photos on items (R16) — Firebase Storage.
+- L7 Notifications (R18) — web push keys + a service account in Vercel.
+- L8 Siri (R22) — the service account, after L4.
+- L9 Basket handoff (plan item 8) — commercial.
+- L10 Market List+ (plan item 9) — billing, after L4.
+- L11 Web app or App Store (R24) — a decision.
+
+**Check on your phone**
+- L12 Scan a real membership card (v2.35); Everyday Rewards' number pattern is unverified (recognised by name).
+- L13 The "+" stuck halfway up — not confirmed fixed; Settings › Help › Screen log records each time, Report it sends it.
+
+**Parked by you** (`docs/parked.md`)
+- L14 Tiles rationalised (two lines, not four; big vs small with icons).
+- L15 One page margin across pages; page "information areas" (a page builder — perhaps another app).
+
+**Known limits and tidy-ups**
+- L16 Chain logos are trademarks and are not shipped; a card shows its photo or an initial badge.
+- L17 Module split phase 2 — more of `js/app.js` into modules; remove the unused Regulars block (`baBlock`) on the way.
+
 > **Status at v2.28 (11 October 2026).** From the §7 review, R1–R5 shipped in v2.15 (the safety net: opens with
 > no signal, crash reports, backups and restore, install card, tests on every pull request), R6–R8, R11 and
 > R13–R15 in v2.16 (the polish batch), and R9–R10 in v2.17 (the receipt card after a shop, a running total in
