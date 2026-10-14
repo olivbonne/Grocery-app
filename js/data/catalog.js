@@ -108,8 +108,8 @@ export const AISLES_RICH = [
 ];
 
 export const STORES = [
-  { id:"dand",  name:"Coles Dandenong",   lat:-37.9881, lng:145.2140, aisles:AISLES_DAND },
-  { id:"rich",  name:"Coles Vic Garden",  lat:-37.8158, lng:144.9996, aisles:AISLES_RICH },
+  { id:"dand",  name:"Coles Dandenong",   lat:-37.9881, lng:145.2140, aisles:AISLES_DAND, naisles:14 },
+  { id:"rich",  name:"Coles Vic Garden",  lat:-37.8158, lng:144.9996, aisles:AISLES_RICH, naisles:10 },
   { id:"trade", name:"Coles Traders",     lat:null,     lng:null,     aisles:[] },   // aisle map TBC
   { id:"asri",  name:"Asian Richmond",    lat:null,     lng:null,     aisles:[] },   // aisle map TBC
   { id:"asgl",  name:"Asian Glenferrie",  lat:null,     lng:null,     aisles:[] },   // aisle map TBC

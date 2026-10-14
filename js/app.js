@@ -7,17 +7,17 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.33";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.33";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.33";
-import { compareStores, worthIt } from "./compare.js?v=2.33";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.33";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.33";
-import { code128SVG, reconcile } from "./till.js?v=2.33";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.34";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.34";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.34";
+import { compareStores, worthIt } from "./compare.js?v=2.34";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.34";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.34";
+import { code128SVG, reconcile } from "./till.js?v=2.34";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.33";
+const APP_VERSION = "v2.34";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -2618,9 +2618,18 @@ const EMOJI_HINTS = [
 function iconStyle(){ try{ return localStorage.getItem("ml_icons")==="emoji" ? "emoji" : "drawn"; }catch(e){ return "drawn"; } }
 function setIconStyle(v){ try{ localStorage.setItem("ml_icons", v==="emoji"?"emoji":"drawn"); }catch(e){} render(); }
 const CAT_IDS = new Set(["meat","fruit","vegetable","fresh","bulk","health","asian","alcohol","others","bakery","deli","dairy","pantry","snacks","frozen","household","liquor"]);   // v2.33 + the thirteen's
+/* v2.34 (the household's item 4): "nail" and "nails" are one thing, so one drawing. A name is looked up as written, then
+   in its singular and plural forms — exact names first for every form, then the hints — so a plural never falls through to
+   a hint the singular does not meet ("nails" once matched the screw hint while "nail" matched nothing). */
+function drawForms(n){ const out=[n], w=n.split(" "), last=w.pop()||"", pre=w.length ? w.join(" ")+" " : "";
+  const sing = /ies$/.test(last) ? last.slice(0,-3)+"y" : /(ch|sh|ss|x|z)es$/.test(last) ? last.slice(0,-2) : /oes$/.test(last) ? last.slice(0,-2) : (/s$/.test(last) && !/ss$/.test(last)) ? last.slice(0,-1) : "";
+  if(sing && sing.length>2) out.push(pre+sing);
+  if(!/s$/.test(last)) out.push(pre+last+"s", pre+last+"es");
+  return out; }
 function drawKey(name){ const n=String(name||"").trim().toLowerCase(); if(!n) return null;
-  if(DRAW_EXACT[n]) return DRAW_EXACT[n];
-  for(const [k,v] of DRAW_HINTS){ if(n.includes(k)) return v; }
+  const fs=drawForms(n);
+  for(const f of fs) if(DRAW_EXACT[f]) return DRAW_EXACT[f];
+  for(const f of fs) for(const [k,v] of DRAW_HINTS){ if(f.includes(k)) return v; }
   return null; }
 function illSVG(key){ const d=DRAWN[key]; if(!d) return "";
   return `<svg class="ill" viewBox="0 0 48 48" aria-hidden="true"><path class="ib" d="${d.back}"/><path class="if" d="${d.front}"/><path class="id" d="${d.detail}"/></svg>`; }
@@ -3581,6 +3590,15 @@ function metaCol(catColor, sel, full){
   if(!sel) return "var(--muted)";
   return onAccent(tileBgHex()||catFill(catColor,true));
 }
+/* v2.34 (the household's item 8): sorting by Location at a shop, each tile shows its aisle number, top right — from the
+   shop's own aisle map (the sign's number) or its built-in layout (r = aisle + 10). Counters (meat, produce…) and shops
+   with neither show nothing; nor does any other sort. Set by the Shop page before it draws the tiles. */
+var _aisleTags = false;   // var: boot-order rule
+function aisleNo(it){ const st=activeStore(); if(!st || st.market || st.id==="home") return "";
+  const am=shopMap(st.id);
+  if(am){ const k=mapRank(am, it.name, it.cat); return (k>=0 && am[k].n) ? String(am[k].n) : ""; }
+  if(!st.aisles || !st.naisles) return "";
+  const r=aisleRankBase(it); return (r>=11 && r<=10+st.naisles) ? String(r-10) : ""; }
 function pillHTML(i, cat){
   // v1.37 item 5: a checked (in-cart) item renders EXACTLY like it does on the shop list — same
   // fill, same category edge, same meta colour. `.pill.done` then greys + strikes it, so it reads
@@ -3612,7 +3630,7 @@ function pillHTML(i, cat){
   const emS = em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
   const nl = noteLine(i);   // v2.22 which shop, and the note
   return `<button class="pill ${checked?'done':''} ${urgent?'urgent-dup':''} ${i.id===lastPop?'justpop':''}${nl?' hasnote':''}" data-pill="${i.id}" style="${style}">`
-    +`${emS}${marks}<span class="pname">${esc(cap(tileName(i.name)))}</span>${meta?`<span class="pill-meta">${meta}</span>`:""}${nl?`<span class="pnote">${esc(nl)}</span>`:""}`
+    +`${(_aisleTags && !checked) ? (()=>{ const a=aisleNo(i); return a ? `<span class="paisle" aria-label="Aisle ${esc(a)}">${esc(a)}</span>` : ""; })() : ""}${emS}${marks}<span class="pname">${esc(cap(tileName(i.name)))}</span>${meta?`<span class="pill-meta">${meta}</span>`:""}${nl?`<span class="pnote">${esc(nl)}</span>`:""}`
     +`</button>`;
 }
 function pillRow(items, cat){ return `<div class="pills">${items.map(i=>pillHTML(i,cat)).join("")}</div>`; }
@@ -3689,14 +3707,16 @@ function planningSection(){
   // v1.24 the "Regulars" section shows its categories by default; each category is collapsed by default.
   const groups = catList().map(cat=>{
     const regs = state.buyAgain.filter(e=>catShown(e.cat)===cat.id).slice().sort((a,b)=>a.name.localeCompare(b.name));   // A–Z
-    if(!regs.length) return "";
+    /* v2.34 (the household's item 5): every category is listed, even with no Regulars yet, and ends with a "+" tile that adds
+       a Regular straight into it */
+    const addT = `<button class="pill baadd" data-ba-new="${esc(cat.id)}" style="border:1.5px dashed ${cat.color};color:${cat.color}" aria-label="Add a Regular to ${esc(cat.label)}"><span class="baplus" aria-hidden="true">+</span></button>`;
     const ccol = !(collapse.regOpen||[]).includes(cat.id);   // v1.24 per-category collapse — collapsed unless the user opened it
     const pills = ccol ? "" : `<div class="pills" style="margin-top:6px">${regs.map(e=>{
       const it = state.items.find(i=>!i.checked && i.name.toLowerCase()===e.name.toLowerCase() && catShown(i.cat)===cat.id);   // show selected ones too
-      return regPill(e,cat,it); }).join("")}</div>`;
+      return regPill(e,cat,it); }).join("")}${addT}</div>`;
     return `<div class="regcat"><button class="regcatlbl" data-regc="${cat.id}"><span>${esc(cat.label)}</span><span class="regcnum">${regs.length}${ccol?' ▸':' ▾'}</span></button>${pills}</div>`;
   }).filter(Boolean).join("");
-  if(!groups) return "";
+  if(!groups) return "";   // v2.34: never empty now — every category has its row
   const open = collapse.regAll !== false;   // v1.24 shown by default (categories visible)
   return `<div class="plansec"><button class="plansec-h" data-reg-showall aria-expanded="${open}"><span>＋ Add from your regulars</span><span class="plansec-count">${state.buyAgain.length}${open?' ▾':' ▸'}</span></button>${open?groups:""}</div>`;
 }
@@ -3825,6 +3845,7 @@ function renderMain(){
      urgent ones brought forward. */
   const isUrgent = i => !!(i.starred || (Array.isArray(i.tags)&&i.tags.includes("urgent")));
   const urgentFirst = list => list.filter(isUrgent).concat(list.filter(i=>!isUrgent(i)));
+  _aisleTags = (disp!=="cat" && sm==="location" && locActive());   // v2.34 aisle numbers only while walking a shop by Location
   let bodyBlocks;
   if(disp==="cat"){ bodyBlocks = buildCatBlocks(!subOn); }                              // v1.23 Subcategory toggle controls sub-grouping
   else if(sm==="ai"){ ensureLocCheck(); const unchecked=state.items.filter(i=>!i.checked && listHere(i)).slice().sort(byAI);   // AI = accepted per-store check order
@@ -3921,7 +3942,7 @@ function renderMain(){
   ${fabMoveOpen?fabMoveSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${baNew?baNewHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -4233,7 +4254,7 @@ function renderPlanTab(){
   ${planWeekOpen?planWeekSheet():""}
   ${planAdd?planAddSheet():""}
   ${planPick?planPickSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${baNew?baNewHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${listsOpen?listsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
@@ -4689,7 +4710,7 @@ function wireShopMenu(){
   on("smAisle", () => { const st = activeStore(); amOpen = st ? st.id : ""; amDraft = null; amRead = null; render(); });
   on("smSend", () => { render(); shareListText(); });
   on("smOcc", () => { occSheet = { mode:"add" }; render(); });
-  on("smCard", () => { const c = cardFor(activeStore()) || cardsGet()[0]; if(c){ cardShow = { id:c.id }; } render(); });
+  on("smCard", () => { const c = cardHere().c || cardsGet()[0]; if(c){ cardShow = { id:c.id }; } render(); });   // v2.34: the shop you are at, else an any-shop card, else the first
   on("smReport", () => { rpt = { kind:"broken", text:"", diag:true }; render(); });
 }
 /* v2.28 map a shop by photographing its signs: "Read a sign" takes a photo, /api/aisle reads the aisle's number and what
@@ -4769,15 +4790,22 @@ function cardsGet(){ try{ const a=JSON.parse(localStorage.getItem("ml_cards")||"
 function cardsPut(a){ try{ localStorage.setItem("ml_cards", JSON.stringify(a.slice(0, CARD_MAX))); return true; }catch(e){ return false; } }
 function cardFor(store){ const k=chainOfStore(store && store.name); return k ? (cardsGet().find(c=>c.chain===k) || null) : null; }
 function cardNumFmt(n){ return String(n||"").replace(/\s+/g,"").replace(/(.{4})(?=.)/g,"$1 "); }
-function cardShowHTML(){ const all=cardsGet(), c=all.find(x=>x.id===cardShow.id) || all[0]; if(!c) return "";
+/* v2.34 (the household's items 1–3): the card comes down from the TOP of the screen — a phone is scanned by its top end —
+   with the barcode first. It opens on the card for the shop you are at (or the one asked for), and a swipe left or right
+   moves to the others, for when the location is missing or wrong. Its "logo" is the photo of the card when there is one,
+   else a badge with its initial: the chains' own logos are trademarks and are not shipped with the app. */
+const CARD_BADGE = { coles:"#E01A22", woolworths:"#178841" };   // the chains' own colours, on a badge with the card's initial
+function cardShowHTML(){ const all=cardsGet(); if(!all.length) return ""; let ix=all.findIndex(x=>x.id===cardShow.id); if(ix<0) ix=0; const c=all[ix];
   const bc=c.num ? code128SVG(c.num, 70) : "", view=(cardShow.view==="photo" && c.photo) || !bc ? "photo" : "code";
-  return `<div class="sheet-bg" id="cardBg"><div class="sheet" id="cardSheet" role="dialog" aria-labelledby="cardTitle">
-    <div class="disp" id="cardTitle" style="font-weight:800;font-size:17px;margin-bottom:8px">${CARD_SVG(18)} ${esc(c.name)}</div>
-    ${all.length>1 ? `<div class="slotseg" style="margin-bottom:10px">${all.map(x=>`<button data-card-pick="${esc(x.id)}" class="${x.id===c.id?'on':''}">${esc(x.name)}</button>`).join("")}</div>` : ""}
-    <div class="cardface">${view==="photo" && c.photo ? `<img src="${esc(c.photo)}" alt="Photo of the ${esc(c.name)} card" />` : `${bc}<div class="cardnum">${esc(cardNumFmt(c.num))}</div>`}</div>
-    ${(bc && c.photo) ? `<div class="seg" style="margin:10px auto 0;width:max-content"><button data-card-view="code" class="${view==="code"?'on':''}">Barcode</button><button data-card-view="photo" class="${view==="photo"?'on':''}">Photo</button></div>` : ""}
-    <div class="hint" style="margin-top:10px">Turn the brightness up if the scanner struggles.${bc && !c.photo ? " If it won't scan, add a photo of the card in Settings › Smart features." : ""}</div>
-    <div style="display:flex;gap:8px;margin-top:12px"><button class="optaction" id="cardClose" style="margin-top:0">Done</button></div>
+  const logo = c.photo ? `<img class="cardlogo" src="${esc(c.photo)}" alt="" />` : `<span class="cardlogo cardlogo-t" style="background:${CARD_BADGE[c.chain]||"var(--muted2)"}">${esc(String(c.name||"?").slice(0,1).toUpperCase())}</span>`;
+  return `<div class="sheet-bg sheettop" id="cardBg"><div class="sheet" id="cardSheet" role="dialog" aria-labelledby="cardTitle">
+    <div class="cardface" id="cardSwipe">${view==="photo" && c.photo ? `<img src="${esc(c.photo)}" alt="Photo of the ${esc(c.name)} card" />` : `${bc}<div class="cardnum">${esc(cardNumFmt(c.num))}</div>`}</div>
+    <div class="cardhead">${logo}<div class="disp" id="cardTitle">${esc(c.name)}</div>
+      ${(bc && c.photo) ? `<div class="seg"><button data-card-view="code" class="${view==="code"?'on':''}">Barcode</button><button data-card-view="photo" class="${view==="photo"?'on':''}">Photo</button></div>` : ""}</div>
+    ${all.length>1 ? `<div class="carddots" role="tablist" aria-label="Card ${ix+1} of ${all.length}">${all.map((x,k)=>`<button class="carddot${k===ix?" on":""}" role="tab" aria-selected="${k===ix}" data-card-pick="${esc(x.id)}" aria-label="${esc(x.name)}"></button>`).join("")}</div>
+      <div class="hint" style="margin-top:2px">Swipe the card for your other ${all.length===2?"one":"cards"}</div>` : ""}
+    <div class="hint" style="margin-top:8px">Turn the brightness up if the scanner struggles.${bc && !c.photo ? " If it won't scan, add a photo of the card in Settings › Smart features." : ""}</div>
+    <div style="display:flex;gap:8px;margin-top:10px"><button class="optaction" id="cardClose" style="margin-top:0">Done</button></div>
   </div></div>`; }
 function cardEditHTML(){ const e=cardEdit;
   return `<div class="sheet-bg kbpin" id="ceBg"><div class="sheet" id="ceSheet" role="dialog" aria-labelledby="ceTitle">
@@ -4847,6 +4875,53 @@ function cardNudgeHTML(){ let at=0; try{ at=+localStorage.getItem("ml_cardnudge"
     <div class="ic-b">Add it once — a photo and its number — and it shows here after every shop at ${esc(st.name)}, ready to scan before you pay. It stays on this phone.</div>
     <div class="ic-btns"><button class="newlist" id="cardNudgeAdd">Add the card</button><button class="optaction" id="cardNudgeNo">Not now</button></div>
     <button class="cardnever" id="cardNudgeNever">No card — don't ask again</button></div>`; }
+/* v2.34 (the household's item 5): the "+" tile at the end of each category in Regulars adds a Regular straight into it */
+var baNew = null;   // { cat, name } while its little sheet is open. var: render() reads it at boot
+function baNewHTML(){ const c=CAT(baNew.cat);
+  return `<div class="sheet-bg kbpin" id="bnBg"><div class="sheet" id="bnSheet" role="dialog" aria-labelledby="bnTitle">
+    <div class="disp" id="bnTitle" style="font-weight:800;font-size:17px;margin-bottom:8px">New Regular in ${esc(c.label)}</div>
+    <input id="bnName" class="cefield" value="${esc(baNew.name)}" placeholder="Name it" aria-label="Name of the Regular" autocomplete="off" />
+    <div class="ppedbtns"><button class="optaction" id="bnCancel">Cancel</button><button class="newlist" id="bnSave">Add to Regulars</button></div>
+  </div></div>`; }
+function baNewSave(){ const nm=cap(String((baNew && baNew.name)||"").trim()).slice(0,60); if(!nm) return;
+  const cat=baNew.cat; moveToBuyAgain([{ name:nm, cat, qty:1 }]); histLog("regadd", nm); baNew=null; save(); render(); showToast(`“${nm}” added to Regulars`); }
+function wireBaNew(){
+  app.querySelectorAll("[data-ba-new]").forEach(b=>b.onclick=()=>{ baNew={ cat:b.dataset.baNew, name:"" }; render(); });
+  if(!baNew) return;
+  const f=app.querySelector("#bnName"); if(f){ f.oninput=()=>{ baNew.name=f.value; }; f.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); baNewSave(); } };
+    if(!f.dataset.focused){ f.dataset.focused="1"; setTimeout(()=>{ try{ f.focus(); }catch(e){} }, 60); } }
+  const sv=app.querySelector("#bnSave"); if(sv) sv.onclick=baNewSave;
+  const close=()=>{ baNew=null; render(); };
+  const cc=app.querySelector("#bnCancel"); if(cc) cc.onclick=close;
+  const bg=app.querySelector("#bnBg"); if(bg) bg.onclick=e=>{ if(e.target===bg) close(); }; }
+/* v2.34 (the household's item 6): Help › Location diagnostics — where the phone thinks it is, and for each shop whether it
+   can be detected, which aisle order it walks (its own map, a built-in layout, or none yet) and how much of a route the
+   AI has learned there. Read-only. */
+var locDiagOpen = false;   // var: render() reads it at boot
+function locDiagHTML(){ const nm=id=>esc((storeById(id)||{}).name||id);
+  const here = !useLoc ? "Location is off (Settings › Shopping)" : !locState.checked ? "Not checked yet" : locState.err ? "Location unavailable — permission or signal"
+    : locState.nearId ? `At ${nm(locState.nearId)}${isFinite(locState.dist)?` · ${Math.round(locState.dist)} m from its pin`:""}` : `Not at a saved shop${isFinite(locState.dist)?` · nearest is ${Math.round(locState.dist)} m away`:""}`;
+  const mode = storeSel==="auto" ? "Auto-detect" : `Chosen by hand: ${nm(storeSel)}`;
+  const shops=[...STORES.filter(s=>!storeOverride(s.id).hidden).map(s=>storeById(s.id)), ...(state.stores||[]).filter(s=>!storeOverride(s.id).hidden)].filter(Boolean);
+  const rows=shops.map(s=>{ const co=storeCoord(s), m=(state.aislemap||{})[s.id], na=(m && Array.isArray(m.aisles)) ? m.aisles.length : 0, ai=Object.keys((aiItems||{})[s.id]||{}).length;
+    const src = na ? `Its own aisle map · ${na} aisle${na===1?"":"s"}` : s.market ? "A market — fresh counters only" : s.aisles ? `Built-in layout${s.naisles?` · ${s.naisles} aisles`:""}` : "No aisle order yet — sorted by category";
+    return `<details class="pdrow"><summary><span class="pd-n">${esc(s.name)}</span><span class="pd-s">${co?"can be detected":"no location pin"}</span></summary>
+      <div class="ldrec">${src}</div>
+      <div class="ldrec">${co ? `Pinned at ${(+co.lat).toFixed(4)}, ${(+co.lng).toFixed(4)} — detected within ${LOC_RADIUS_M} m` : "Pin it with “Set … location here” while you are at the shop."}</div>
+      <div class="ldrec">AI route learned: ${ai ? `${ai} item${ai===1?"":"s"} (AI diagnostics lists them)` : "nothing yet"}</div>
+      ${na ? `<ol class="ldlist">${m.aisles.map(a=>`<li>${a.n?`<b>${esc(a.n)}</b> `:""}${esc(a.t)}</li>`).join("")}</ol>` : ""}</details>`; }).join("");
+  return `<div class="sheet-bg" id="ldBg"><div class="sheet" id="ldSheet" role="dialog" aria-labelledby="ldTitle">
+    <div class="disp" id="ldTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">Location diagnostics</div>
+    <div class="ldrec"><b>Now:</b> ${here}</div><div class="ldrec"><b>Shop:</b> ${mode}</div>
+    <div class="pdlist" style="margin-top:8px">${rows || `<div class="hint" style="text-align:left">No shops saved.</div>`}</div>
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="optaction" id="ldClose" style="margin-top:0">Close</button></div>
+  </div></div>`; }
+function wireLocDiag(){
+  const o=app.querySelector("#optLocDiag"); if(o) o.onclick=()=>{ locDiagOpen=true; ensureLocCheck(); render(); };
+  if(!locDiagOpen) return;
+  const close=()=>{ locDiagOpen=false; render(); };
+  const c=app.querySelector("#ldClose"); if(c) c.onclick=close;
+  const bg=app.querySelector("#ldBg"); if(bg) bg.onclick=e=>{ if(e.target===bg) close(); }; }
 function wireCards(){
   { const nd=app.querySelector("#cardNudgeDone"), nn=app.querySelector("#cardNudgeNo"), nv=app.querySelector("#cardNudgeNever"), na=app.querySelector("#cardNudgeAdd"), nb=app.querySelector("#cardNudgeBig");
     if(nd) nd.onclick=()=>{ cardNudgeClear(); render(); };
@@ -4885,6 +4960,12 @@ function wireCards(){
     const d=app.querySelector("#cardClose"); if(d) d.onclick=close;
     const bg=app.querySelector("#cardBg"); if(bg) bg.onclick=e=>{ if(e.target===bg) close(); };
     app.querySelectorAll("[data-card-pick]").forEach(b=>b.onclick=()=>{ cardShow={ id:b.dataset.cardPick }; render(); });
+    /* v2.34 a swipe left or right moves between the cards */
+    const sw=app.querySelector("#cardSwipe"); if(sw){ let x0=null;
+      const go=d=>{ const all=cardsGet(); if(all.length<2) return; let ix=all.findIndex(x=>x.id===cardShow.id); if(ix<0) ix=0;
+        ix=(ix+d+all.length)%all.length; cardShow={ id:all[ix].id }; render(); };
+      sw.addEventListener("touchstart", e=>{ x0=e.touches[0].clientX; }, { passive:true });
+      sw.addEventListener("touchend", e=>{ if(x0===null) return; const dx=e.changedTouches[0].clientX-x0; x0=null; if(Math.abs(dx)>=50) go(dx<0 ? 1 : -1); }, { passive:true }); }
     app.querySelectorAll("[data-card-view]").forEach(b=>b.onclick=()=>{ cardShow.view=b.dataset.cardView; render(); }); } }
 function rcptNudgeOn(){ if(!rcptAskOn() || rcpt) return false;
   let at=0; try{ at=+localStorage.getItem("ml_rcptnudge")||0; }catch(e){}
@@ -5434,7 +5515,7 @@ function wirePlanTab(){
   const st=app.querySelector("#setNavP"); if(st) st.onclick=()=>{ settingsFrom=0; gotoPage(2); };
   wireListsSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();
   wireUserTiles();
 }
 /* v1.90: a recipe page shared into the app. Android hands it over directly through the manifest's
@@ -5582,7 +5663,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>Add items…</span></button></div>`:""}
-  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${baNew?baNewHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -5645,7 +5726,7 @@ function wirePlanPage(){
   const qbc=app.querySelector("#qbannerClose"); if(qbc) qbc.onclick=()=>{ quickEdit=null; render(); };
   const qbr=app.querySelector("#qbannerRemove"); if(qbr) qbr.onclick=()=>{ const it=state.items.find(i=>i.id===quickEdit); const nm=it?cap(it.name):""; const id=quickEdit; quickEdit=null; planRemove(id); if(nm) showToast(nm+" moved to Regulars"); };
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>gotoPage(0);
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireUserTiles();
@@ -5667,7 +5748,7 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
     if(i){ i.value=""; i.parentElement.classList.remove("has"); i.focus(); } filterOptions(); };
   wireOptions();
   wireEditSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 /* v1.77 item 3: which sections are folded. Keyed by the section's own name rather than its index, so
@@ -6810,6 +6891,7 @@ function optionsBody(){
     <button class="optaction" id="optReport" style="margin-top:10px">${REPORT_SVG(16)} Report a problem</button>
     <button class="optaction" id="optDiag" style="margin-top:10px">${FLASK_SVG(16)} AI diagnostics</button>
     <button class="optaction" id="optPriceDiag" style="margin-top:10px">${FLAG_TAG_SVG} Price diagnostics</button>
+    <button class="optaction" id="optLocDiag" style="margin-top:10px">${PIN_SVG(16)} Location diagnostics</button>
     ${stuckLog().length ? `<button class="optaction" id="optStuck" style="margin-top:10px">Screen log · ${stuckLog().length}</button>` : ""}
     ${sectHR("Your data")}
     <a class="optaction" id="optPrivacy" href="/privacy.html" style="margin-top:2px">Privacy — what the app keeps, and where</a>
@@ -6838,7 +6920,7 @@ function renderSettingsPage(){
     ${bottomNav({planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
     ${diagOpen?diagSheet():""}
     ${listsOpen?listsSheet():""}
-    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${baNew?baNewHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
     ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
     ${editing?editSheet():""}
@@ -7014,7 +7096,7 @@ function wire(){
   const et=app.querySelector("#elseToggle"); if(et) et.onclick=()=>{ elseOpen=!elseOpen; render(); };   // v2.22 R17
   wireAddSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();
   const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>catShown(i.cat)===c.id)).map(c=>c.id);
     const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);

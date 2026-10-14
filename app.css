@@ -950,6 +950,28 @@
   .cardface-sm .bc128 { height:64px; }
   .cardface-sm .cardnum { font-size:16px; margin-top:4px; }
   .cardface-sm img { max-height:30vh; }
+  /* v2.34 the card comes down from the top — a phone is scanned by its top end */
+  .sheet-bg.sheettop { align-items:flex-start; }
+  .sheet-bg.sheettop .sheet { border-radius:0 0 22px 22px; border-top:none; border-bottom:1px solid var(--glass-brd); padding:calc(14px + env(safe-area-inset-top)) 18px 18px; animation:sheetdown .24s cubic-bezier(.32,.72,.3,1); }
+  @keyframes sheetdown { 0%{opacity:0;transform:translateY(-28px)} 70%{opacity:1;transform:translateY(4px)} 100%{opacity:1;transform:translateY(0)} }
+  #cardSwipe { touch-action:pan-y; }
+  .cardhead { display:flex; align-items:center; gap:10px; margin-top:10px; }
+  .cardhead .disp { flex:1; min-width:0; font-weight:800; font-size:17px; }
+  .cardlogo { flex:none; width:40px; height:28px; border-radius:6px; object-fit:cover; }
+  .cardlogo-t { display:inline-flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:15px; }
+  .carddots { display:flex; justify-content:center; gap:8px; margin-top:10px; }
+  .carddot { width:9px; height:9px; padding:0; border-radius:50%; border:none; background:var(--muted2); opacity:.35; }
+  .carddot.on { background:var(--text); opacity:1; }
+  /* v2.34 the "+" that adds a Regular to a category */
+  .pill.baadd, .shop .pill.baadd { min-width:52px; justify-content:center; font-size:22px; font-weight:800; background:transparent; }
+  .pill.baadd .baplus { font-size:28px; font-weight:600; line-height:1; }
+  /* v2.34 location diagnostics */
+  .ldrec { padding:3px 2px 3px 10px; font-size:13px; color:var(--muted2); font-weight:600; }
+  .ldrec b { color:var(--text); }
+  .ldlist { margin:4px 0 6px 28px; padding:0; font-size:13px; color:var(--text); }
+  /* v2.34 a tile's aisle number, top right, while sorting by Location at a shop */
+  .pill:has(.paisle) { position:relative; }
+  .pill .paisle { position:absolute; top:3px; right:6px; font-size:10.5px; font-weight:800; line-height:1; color:var(--muted2); pointer-events:none; font-variant-numeric:tabular-nums; }
   .cardnever { display:block; margin:8px auto 0; padding:4px; border:none; background:none; color:var(--muted2); font:inherit; font-size:12.5px; font-weight:700; text-decoration:underline; cursor:pointer; }
   .rcprice{flex:none;font-weight:800;font-size:15px;font-variant-numeric:tabular-nums;color:var(--text)}
   .pricemem{margin:10px 2px 0;font-size:13px;color:var(--muted);font-weight:600;line-height:1.45}
@@ -1793,6 +1815,7 @@
     background:var(--chip); color:var(--text); font-size:14px; font-weight:600; display:inline-flex;
     align-items:center; justify-content:center; gap:5px; }
   .wbtn .wcar { font-size:11px; color:var(--muted); }
+  #sheet .wbtn { height:46px; }   /* v2.34: Edit item's amount, name and unit sit in one 46px row */
   /* v1.64 item 1: the choices as a wrapping chip grid in the panel's own flow — same shape and same
      `.catchip` as the Category and Subcategory chips two rows below, so the panel has one way of
      offering a list of options rather than two. */
