@@ -7,17 +7,17 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.35";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.35";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.35";
-import { compareStores, worthIt } from "./compare.js?v=2.35";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.35";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.35";
-import { code128SVG, reconcile, nameScore } from "./till.js?v=2.35";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.36";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.36";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.36";
+import { compareStores, worthIt } from "./compare.js?v=2.36";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.36";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.36";
+import { code128SVG, reconcile, nameScore } from "./till.js?v=2.36";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.35";
+const APP_VERSION = "v2.36";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -4815,11 +4815,10 @@ function cardShowHTML(){ const all=cardsGet(); let ix=cardShow.add ? all.length 
   const dots = `<div class="carddots" role="tablist" aria-label="${ix<all.length ? `Card ${ix+1} of ${all.length}` : "Add a card"}">${all.map((x,k)=>`<button class="carddot${k===ix?" on":""}" role="tab" aria-selected="${k===ix}" data-card-pick="${esc(x.id)}" aria-label="${esc(x.name)}"></button>`).join("")}<button class="carddot carddot-add${ix===all.length?" on":""}" role="tab" aria-selected="${ix===all.length}" data-card-addpanel="1" aria-label="Add a card">+</button></div>`;
   if(ix>=all.length){ const rd=cardRead;
     return `<div class="sheet-bg sheettop" id="cardBg"><div class="sheet" id="cardSheet" role="dialog" aria-labelledby="cardTitle">
-      <div class="cardface cardadd" id="cardSwipe"><span class="cardadd-plus" aria-hidden="true">+</span><div class="disp" id="cardTitle">Add a card</div></div>
+      <div class="cardface cardadd" id="cardSwipe" role="button" tabindex="0" aria-label="Take a photo of the card" ${rd&&rd.busy?'aria-disabled="true"':""}><span class="cardadd-plus" aria-hidden="true">+</span><div class="disp" id="cardTitle">Add a card</div><div class="cardadd-sub">Tap to take a photo of it</div></div>
       ${rd && rd.busy ? `<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>${esc(rd.step||"Reading the card…")}</div>` : ""}
       ${rd && rd.err ? `<div class="rpterr" role="alert">${esc(rd.err)}</div>` : ""}
-      <div class="cardaddbtns"><button class="newlist" id="cardScanGo" ${rd&&rd.busy?"disabled":""}>${CAMERA_SVG(16)} Scan the card</button>
-        <div class="ppedbtns" style="margin-top:8px"><button class="optaction" id="cardPhotoGo" ${rd&&rd.busy?"disabled":""}>Choose a photo</button><button class="optaction" id="cardTypeGo">Type it in</button></div></div>
+      <div class="cardaddbtns"><div class="ppedbtns" style="margin-top:0"><button class="optaction" id="cardPhotoGo" ${rd&&rd.busy?"disabled":""}>Choose a photo</button><button class="optaction" id="cardTypeGo">Type it in</button></div></div>
       <div class="hint" style="margin-top:8px">The photo is read to find the card's name and number, then the card is kept on this phone only.</div>
       ${all.length ? dots : ""}
       <div style="display:flex;gap:8px;margin-top:10px"><button class="optaction" id="cardClose" style="margin-top:0">Done</button></div>
@@ -5032,7 +5031,9 @@ function wireCards(){
       sw.addEventListener("touchend", e=>{ if(x0===null) return; const dx=e.changedTouches[0].clientX-x0; x0=null; if(Math.abs(dx)>=50) go(dx<0 ? 1 : -1); }, { passive:true }); }
     app.querySelectorAll("[data-card-view]").forEach(b=>b.onclick=()=>{ cardShow.view=b.dataset.cardView; try{ localStorage.setItem("ml_cardview", b.dataset.cardView); }catch(e){} render(); });
     app.querySelectorAll("[data-card-addpanel]").forEach(b=>b.onclick=()=>{ cardShow={ add:true, view:cardShow.view }; render(); });
-    const sg=app.querySelector("#cardScanGo"); if(sg) sg.onclick=()=>cardScan(true);
+    /* v2.36 (the household's item 2): the "+ Add a card" tile itself takes the photo (the camera); Choose a photo picks one */
+    const sg=app.querySelector("#cardSwipe.cardadd"); if(sg){ const go=()=>{ if(!(cardRead && cardRead.busy)) cardScan(true); };
+      sg.onclick=go; sg.onkeydown=e=>{ if(e.key==="Enter" || e.key===" "){ e.preventDefault(); go(); } }; }
     const pg=app.querySelector("#cardPhotoGo"); if(pg) pg.onclick=()=>cardScan(false);
     const tg=app.querySelector("#cardTypeGo"); if(tg) tg.onclick=()=>{ if(cardsGet().length>=CARD_MAX){ showToast(`Up to ${CARD_MAX} cards`); return; } cardRead=null; cardShow=null; cardEdit={ id:"", name:"", chain:"", num:"", photo:"" }; render(); }; } }
 function rcptNudgeOn(){ if(!rcptAskOn() || rcpt) return false;
@@ -7271,7 +7272,10 @@ function wire(){
     b.onpointerdown=e=>{ e.preventDefault(); pressStart(); }; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
     b.onpointerup=()=>{ pressCancel(); if(longFired){ const id=longIdFn&&longIdFn(); if(id) editItemById(id); return; } shortFn(); }; };
   app.querySelectorAll("[data-reg-add]").forEach(b=>{ const p=b.dataset.regAdd.split("|"), cat=p.pop(), name=p.join("|");
-    regPress(b, ()=>addFromRegular(name,cat), ()=>{ addFromRegular(name,cat); const it=findItem(name,cat); return it&&it.id; }); });
+    /* v2.36 (the household's item 1): a Regular tapped here opens the same add sheet and details panel as "+ Add items" —
+       it is staged like an add made there, so Cancel takes it back off the list */
+    regPress(b, ()=>{ const had=findItem(name,cat); addFromRegular(name,cat); const it=findItem(name,cat); if(!it) return;
+      openAdd(); if(!had) addStaged.push(it.id); openAddEdit(it.id); }, ()=>{ addFromRegular(name,cat); const it=findItem(name,cat); return it&&it.id; }); });
   app.querySelectorAll("[data-reg-rm]").forEach(b=>{ const id=b.dataset.regRm;
     regPress(b, ()=>removeFromList(id), ()=>id); });
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; listsOpen=false; render(); };

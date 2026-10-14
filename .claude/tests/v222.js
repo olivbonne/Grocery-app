@@ -108,6 +108,9 @@ const seed = (store, extra) => `(() => {
     await page.locator('[data-reg-add^="Tofu|"]').first().click(); await page.waitForTimeout(600);
     const back = ((await cache()).items||[]).find(i=>i.name==='Tofu' && !i.checked);
     ok('…and brings them back when it is added again', back && back.note==='firm' && back.where==='asri', JSON.stringify(back));
+    /* SUPERSEDED by v2.36: a Regular tapped opens the add sheet and its details panel (like "+ Add items"), so the sheet is
+       finished with the return key before going on. Still protects: the note and the shop come back with the Regular. */
+    if(await page.locator('#mainInput').count()){ await page.locator('#mainInput').press('Enter'); await page.waitForTimeout(1600); }
 
     /* ── text that leaves the app ───────────────────────────────────────── */
     await tap('#setNav');

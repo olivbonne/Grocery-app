@@ -967,6 +967,8 @@
   .carddot-add.on { color:var(--text); background:none; }
   .cardface.cardadd { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; min-height:150px; background:var(--chip); border:2px dashed var(--line); color:var(--text); }
   .cardadd-plus { font-size:44px; font-weight:600; line-height:1; color:var(--muted2); }
+  .cardface.cardadd { cursor:pointer; }
+  .cardadd-sub { font-size:12.5px; font-weight:700; color:var(--muted2); }   /* v2.36 the tile is the camera button */
   .cardaddbtns { margin-top:10px; }
   /* v2.34 the "+" that adds a Regular to a category */
   .pill.baadd, .shop .pill.baadd { min-width:52px; justify-content:center; font-size:22px; font-weight:800; background:transparent; }
