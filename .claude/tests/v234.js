@@ -72,13 +72,16 @@ const seed = (o) => { o=o||{}; return `(() => {
     const g = await page.evaluate(()=>{ const bg=document.querySelector('#cardBg'), sh=document.querySelector('#cardSheet'), f=sh.firstElementChild;
       return { top:bg.classList.contains('sheettop'), y:Math.round(sh.getBoundingClientRect().top), first:f && f.id, bar:!!f.querySelector('.bc128'), dots:document.querySelectorAll('.carddot').length }; });
     ok('(1) "Show my card" comes down from the top, barcode first', g.top && g.y<=2 && g.first==='cardSwipe' && g.bar, JSON.stringify(g));
-    ok('(2) at a Coles it opens on the Flybuys card (not the first saved), with a dot per card', /Flybuys/.test(await title()) && g.dots===2, await title());
+    /* SUPERSEDED by v2.35: one more dot — the "+" for adding a card. Still protects: it opens on the shop's card, a dot per card. */
+    ok('(2) at a Coles it opens on the Flybuys card (not the first saved), with a dot per card', /Flybuys/.test(await title()) && g.dots===3, await title());
     const lg = await page.evaluate(()=>{ const l=document.querySelector('#cardSheet .cardlogo'); return l ? { badge:l.classList.contains('cardlogo-t'), t:l.textContent, bg:getComputedStyle(l).backgroundColor } : null; });
     ok('(3) a card without a photo shows a badge with its initial, in the chain\'s colour', lg && lg.badge && lg.t==='F' && lg.bg==='rgb(224, 26, 34)', JSON.stringify(lg));
     await shot('card');
-    await swipe(-120); await page.waitForTimeout(300);
-    const t2 = await title();
+    /* SUPERSEDED by v2.35: past the last card is the add panel, so from Flybuys (the last) the other card is a swipe RIGHT. Still protects:
+       a swipe moves to the other card and back. */
     await swipe(120); await page.waitForTimeout(300);
+    const t2 = await title();
+    await swipe(-120); await page.waitForTimeout(300);
     ok('(2) a swipe left moves to the other card, a swipe right comes back', /Everyday Rewards/.test(t2) && /Flybuys/.test(await title()), t2);
     await swipe(-20); await page.waitForTimeout(300);
     ok('(2) …a small drag is not a swipe', /Flybuys/.test(await title()), '');
@@ -131,15 +134,16 @@ const seed = (o) => { o=o||{}; return `(() => {
 
     /* ── 8 aisle numbers on tiles ────────────────────────────────────── */
     const AI = [it('a1','Bread','fresh'), it('a2','Chocolate','others'), it('a3','Steak','meat'), it('a4','Cordial','others')];
-    const tags = ()=>page.evaluate(()=>Object.fromEntries([...document.querySelectorAll('#zoomer .pill[data-pill]')].filter(p=>p.offsetParent).map(p=>[p.querySelector('.pname').textContent, (p.querySelector('.paisle')||{}).textContent||''])));
+    /* SUPERSEDED by v2.35: the badge reads "A" before the number (A1, A9B). Still protects: the aisle number, where it comes from, and none elsewhere. */
+  const tags = ()=>page.evaluate(()=>Object.fromEntries([...document.querySelectorAll('#zoomer .pill[data-pill]')].filter(p=>p.offsetParent).map(p=>[p.querySelector('.pname').textContent, (p.querySelector('.paisle')||{}).textContent||''])));
     const LOC = 'localStorage.setItem("ml_caton","0"); localStorage.setItem("ml_sorts", JSON.stringify({shop:"location"}));';
     await mk({ store:'dand', items:AI, extra:LOC });
     let tg = await tags();
-    ok('(8) by Location at Coles Dandenong, tiles show their aisle from the built-in layout; meat (a counter) none', tg['Bread']==='1' && tg['Chocolate']==='2' && tg['Cordial']==='2' && tg['Steak']==='', JSON.stringify(tg));
+    ok('(8) by Location at Coles Dandenong, tiles show their aisle from the built-in layout; meat (a counter) none', tg['Bread']==='A1' && tg['Chocolate']==='A2' && tg['Cordial']==='A2' && tg['Steak']==='', JSON.stringify(tg));
     await shot('aisles');
     await mk({ store:'dand', items:AI, extra:LOC, doc:{ aislemap:{ dand:{ aisles:[{ n:'5', t:'Bread & bakery' }, { n:'9B', t:'Snacks & confectionery' }] } } } });
     tg = await tags();
-    ok('(8) …with the shop\'s own aisle map, the numbers come from its signs', tg['Bread']==='5' && tg['Chocolate']==='9B', JSON.stringify(tg));
+    ok('(8) …with the shop\'s own aisle map, the numbers come from its signs', tg['Bread']==='A5' && tg['Chocolate']==='A9B', JSON.stringify(tg));
     await mk({ store:'dand', items:AI, extra:'localStorage.setItem("ml_caton","0"); localStorage.setItem("ml_sorts", JSON.stringify({shop:"alpha"}));' });
     tg = await tags();
     ok('(8) …and another sort shows no aisle numbers', Object.values(tg).every(v=>v===''), JSON.stringify(tg));

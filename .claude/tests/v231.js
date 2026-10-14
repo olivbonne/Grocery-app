@@ -86,11 +86,15 @@ const seed = (o) => { o=o||{}; return `(() => {
     /* ── a card in Settings ──────────────────────────────────────────── */
     await mk({ store:'dand' });
     await tap('#setNav');
+    /* SUPERSEDED by v2.35: "Add a membership card" opens the add panel (scan, photo, or type it in), and the form no longer asks which
+       shop — it is worked out from the name or number. Still protects: the form asks for a name, refuses a card with
+       nothing to show, and saves a typed number without its spaces, as a Coles card. */
     await tap('[data-card-add]');
+    await tap('#cardTypeGo');
     await tap('#ceSave');
     ok('adding a card: saving with nothing asks for a name', /name/.test(await page.evaluate(()=>(document.querySelector('#ceSheet .rpterr')||{}).textContent||'')), '');
-    await tap('[data-ce-chain="coles"]');
-    ok('…picking Coles names it Flybuys', await page.evaluate(()=>document.querySelector('#ceName').value)==='Flybuys', '');
+    await page.locator('#ceName').fill('Flybuys');
+    ok('…picking Coles names it Flybuys', await page.evaluate(()=>!document.querySelector('[data-ce-chain]')), 'v2.35: no shop to pick');
     await tap('#ceSave');
     ok('…a card with no number and no photo is refused, saying why', /number, or a photo/.test(await page.evaluate(()=>(document.querySelector('#ceSheet .rpterr')||{}).textContent||'')), '');
     await page.locator('#ceNum').fill('6008 9432 1861 6910');
