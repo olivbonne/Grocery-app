@@ -7,17 +7,17 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.34";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.34";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.34";
-import { compareStores, worthIt } from "./compare.js?v=2.34";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.34";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.34";
-import { code128SVG, reconcile } from "./till.js?v=2.34";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.35";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.35";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.35";
+import { compareStores, worthIt } from "./compare.js?v=2.35";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.35";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.35";
+import { code128SVG, reconcile, nameScore } from "./till.js?v=2.35";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.34";
+const APP_VERSION = "v2.35";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -157,7 +157,7 @@ function mergeAmt(a, b){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -1759,13 +1759,17 @@ var editWhereOpen=false, elseOpen=false;   // v2.22 the edit sheet's "Where to b
 /* v2.22 R17 where to buy it. "Away" is the shop you are at — a real saved store, not Home or an unknown place — and an
    item for ANOTHER shop is not "here". At home nothing is away, so everything is here. */
 function awayStoreId(){ const s=activeStore(); return (s && s.id && isRealStore(s.id)) ? s.id : ""; }
-function listHere(i){ const a=awayStoreId(); return !a || !i.where || i.where===a; }
+/* v2.35 (the household's item 2): an item can be for several shops — `where` holds their ids joined by commas, so every
+   place that copies an item keeps them without a change of shape */
+function whereIds(i){ return String((i && i.where) || "").split(",").map(s=>s.trim()).filter(Boolean); }
+function whereNames(ids){ return ids.map(w=>(storeById(w)||{}).name).filter(Boolean); }
+function listHere(i){ const a=awayStoreId(), w=whereIds(i); return !a || !w.length || w.includes(a); }
 /* v2.22 R16/R17 the tile's second line: which shop it is for (unless you are there) and its note */
-function noteLine(i){ const a=awayStoreId(), w=i.where||"", st=w ? storeById(w) : null;
-  return [(st && st.name && w!==a) ? st.name : "", String(i.note||"").trim()].filter(Boolean).join(" · "); }
+function noteLine(i){ const a=awayStoreId(), w=whereIds(i), names=(a && w.includes(a)) ? [] : whereNames(w);
+  return [names.join(" or "), String(i.note||"").trim()].filter(Boolean).join(" · "); }
 /* the same, for text that leaves the app (share, export) */
-function noteSuffix(i){ const st=i.where ? storeById(i.where) : null, n=String(i.note||"").trim();
-  return (st && st.name ? " ("+st.name+")" : "") + (n ? " — "+n : ""); }
+function noteSuffix(i){ const names=whereNames(whereIds(i)), n=String(i.note||"").trim();
+  return (names.length ? " ("+names.join(" or ")+")" : "") + (n ? " — "+n : ""); }
 /* v2.23 R19 who is shopping now. Opt-in, per phone (ml_sayshop): while you tick things off at a real shop, the list says
    so — the shop's name and when, nothing else — and finishing the shop takes it away. The others see it for 90 minutes. */
 const SHOPPING_MS = 90*60*1000;
@@ -3630,7 +3634,7 @@ function pillHTML(i, cat){
   const emS = em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
   const nl = noteLine(i);   // v2.22 which shop, and the note
   return `<button class="pill ${checked?'done':''} ${urgent?'urgent-dup':''} ${i.id===lastPop?'justpop':''}${nl?' hasnote':''}" data-pill="${i.id}" style="${style}">`
-    +`${(_aisleTags && !checked) ? (()=>{ const a=aisleNo(i); return a ? `<span class="paisle" aria-label="Aisle ${esc(a)}">${esc(a)}</span>` : ""; })() : ""}${emS}${marks}<span class="pname">${esc(cap(tileName(i.name)))}</span>${meta?`<span class="pill-meta">${meta}</span>`:""}${nl?`<span class="pnote">${esc(nl)}</span>`:""}`
+    +`${(_aisleTags && !checked) ? (()=>{ const a=aisleNo(i); return a ? `<span class="paisle" aria-label="Aisle ${esc(a)}"><i aria-hidden="true">A</i>${esc(a)}</span>` : ""; })() : ""}${emS}${marks}<span class="pname">${esc(cap(tileName(i.name)))}</span>${meta?`<span class="pill-meta">${meta}</span>`:""}${nl?`<span class="pnote">${esc(nl)}</span>`:""}`
     +`</button>`;
 }
 function pillRow(items, cat){ return `<div class="pills">${items.map(i=>pillHTML(i,cat)).join("")}</div>`; }
@@ -3887,7 +3891,7 @@ function renderMain(){
   /* v2.22 R17: at a shop, what is for another shop folds into one section at the bottom, grouped by that shop */
   const elsewhere = awayStoreId() ? state.items.filter(i=>!i.checked && !listHere(i)) : [];
   if(elsewhere.length){ const groups={}; for(const i of elsewhere) (groups[i.where]=groups[i.where]||[]).push(i);
-    const inner = elseOpen ? Object.keys(groups).map(w=>`<div class="elsehd">${esc((storeById(w)||{}).name||"Another shop")}</div>${pillsMixed(sortList(groups[w]))}`).join("") : "";
+    const inner = elseOpen ? Object.keys(groups).map(w=>`<div class="elsehd">${esc(whereNames(whereIds({ where:w })).join(" or ")||"Another shop")}</div>${pillsMixed(sortList(groups[w]))}`).join("") : "";
     bodyBlocks.push(`<section class="cat elsewhere"><button class="elsebtn" id="elseToggle" aria-expanded="${elseOpen?'true':'false'}"><span>For other shops</span> <span class="cnum">${elsewhere.length}${elseOpen?' ▾':' ▸'}</span></button>${inner}</section>`); }
   const listBody = bodyBlocks.join("");
   const cartDrop = done>0 && !_cartWasShown; _cartWasShown = done>0;   // v2.12 slides down only when the first item goes in
@@ -4664,7 +4668,7 @@ var shopMenuOpen = false;   // var: render() reads it at boot
 function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRealStore(st.id));
   const item = (id, icon, label) => `<button class="smitem" id="${id}" role="menuitem">${icon}<span>${label}</span></button>`;
   return `<div class="smbg" id="smBg"><div class="smenu" id="shopMenuEl" role="menu" aria-label="More">
-    ${cardsGet().length ? item("smCard", CARD_SVG(18), "Show my card") : ""}
+    ${item("smCard", CARD_SVG(18), cardsGet().length ? "Show my card" : "Add a membership card")}
     ${item("smRcpt", CAMERA_SVG(18), "Read a receipt")}
     ${item("smCompare", CART_SVG, "Which store is cheaper")}
     ${item("smSpend", FLAG_TAG_SVG, "What we spend")}
@@ -4710,7 +4714,7 @@ function wireShopMenu(){
   on("smAisle", () => { const st = activeStore(); amOpen = st ? st.id : ""; amDraft = null; amRead = null; render(); });
   on("smSend", () => { render(); shareListText(); });
   on("smOcc", () => { occSheet = { mode:"add" }; render(); });
-  on("smCard", () => { const c = cardHere().c || cardsGet()[0]; if(c){ cardShow = { id:c.id }; } render(); });   // v2.34: the shop you are at, else an any-shop card, else the first
+  on("smCard", () => { const c = cardHere().c || cardsGet()[0]; cardShow = c ? { id:c.id } : { add:true }; render(); });   // v2.35: the shop you are at, else the first; none yet → straight to adding one
   on("smReport", () => { rpt = { kind:"broken", text:"", diag:true }; render(); });
 }
 /* v2.28 map a shop by photographing its signs: "Read a sign" takes a photo, /api/aisle reads the aisle's number and what
@@ -4774,9 +4778,8 @@ function rcCart(){ const now=state.items.filter(i=>i.checked);
   try{ const o=JSON.parse(localStorage.getItem("ml_lastcart")||"null");
     if(o && o.code===listCode && Date.now()-(+o.t||0) < LASTCART_MS && Array.isArray(o.items)) return o.items.filter(x=>x && x.name); }catch(e){}
   return []; }
-function rcSame(a, b){ const x=priceKey(a), y=priceKey(b); return !!(x && y && (x===y || (y.length>=3 && priceWordsIn(y,x)) || (x.length>=3 && priceWordsIn(x,y)))); }
 function rcPair(){ if(!rcpt || !rcpt.lines) return; const cart=rcCart(); rcpt.cart=cart; if(!cart.length) return;
-  const r=reconcile(rcpt.lines, cart, rcSame);
+  const r=reconcile(rcpt.lines, cart, (a, b, L)=>Math.max(nameScore(a, b), nameScore(L && L.raw, b)));   // v2.35: the read name or the printed line, word by word
   rcpt.lines.forEach((L,i)=>{ L.read=L.name; L.cart=r.pair[i]; L.how=r.how[i]; if(L.cart!==null) L.name=cart[L.cart].name; }); }
 function rcCartSummary(){ const cart=rcpt.cart, took=new Set(rcpt.lines.filter(L=>L.keep && L.cart!==null && L.cart!==undefined).map(L=>L.cart));
   const miss=cart.filter((c,k)=>!took.has(k)), guess=rcpt.lines.filter(L=>L.keep && L.how==="order").length;
@@ -4788,30 +4791,93 @@ const CARD_MAX = 6;
 var cardEdit = null, cardShow = null;   // the add/edit sheet / the card on screen { id, view }. var: render() reads them at boot
 function cardsGet(){ try{ const a=JSON.parse(localStorage.getItem("ml_cards")||"[]"); return Array.isArray(a) ? a.filter(c=>c && c.id && c.name) : []; }catch(e){ return []; } }
 function cardsPut(a){ try{ localStorage.setItem("ml_cards", JSON.stringify(a.slice(0, CARD_MAX))); return true; }catch(e){ return false; } }
-function cardFor(store){ const k=chainOfStore(store && store.name); return k ? (cardsGet().find(c=>c.chain===k) || null) : null; }
+/* v2.35 (the household's items 5, 6): the card's shop is worked out from its name or number, not asked — "Flybuys" or a
+   number starting 6008 is Coles, "Everyday Rewards" is Woolworths. (The 6008 prefix is from the household's own card; other
+   prefixes could not be checked from here.) A card whose shop cannot be told never comes up by itself. */
+function cardChainOf(name, num){ const n=String(name||"").toLowerCase(), d=String(num||"");
+  if(/flybuys|fly buys|coles/.test(n) || /^6008/.test(d)) return "coles";
+  if(/everyday|rewards|woolworths|woolies/.test(n)) return "woolworths";
+  return ""; }
+function cardChain(c){ return (c && (c.chain || cardChainOf(c.name, c.num))) || ""; }
+function cardFor(store){ const k=chainOfStore(store && store.name); return k ? (cardsGet().find(c=>cardChain(c)===k) || null) : null; }
 function cardNumFmt(n){ return String(n||"").replace(/\s+/g,"").replace(/(.{4})(?=.)/g,"$1 "); }
 /* v2.34 (the household's items 1–3): the card comes down from the TOP of the screen — a phone is scanned by its top end —
    with the barcode first. It opens on the card for the shop you are at (or the one asked for), and a swipe left or right
    moves to the others, for when the location is missing or wrong. Its "logo" is the photo of the card when there is one,
    else a badge with its initial: the chains' own logos are trademarks and are not shipped with the app. */
 const CARD_BADGE = { coles:"#E01A22", woolworths:"#178841" };   // the chains' own colours, on a badge with the card's initial
-function cardShowHTML(){ const all=cardsGet(); if(!all.length) return ""; let ix=all.findIndex(x=>x.id===cardShow.id); if(ix<0) ix=0; const c=all[ix];
-  const bc=c.num ? code128SVG(c.num, 70) : "", view=(cardShow.view==="photo" && c.photo) || !bc ? "photo" : "code";
-  const logo = c.photo ? `<img class="cardlogo" src="${esc(c.photo)}" alt="" />` : `<span class="cardlogo cardlogo-t" style="background:${CARD_BADGE[c.chain]||"var(--muted2)"}">${esc(String(c.name||"?").slice(0,1).toUpperCase())}</span>`;
+/* v2.35 (the household's items 1, 7): Barcode or Photo is remembered (ml_cardview) — a swipe to the next card keeps it.
+   Swiping on past the last card reaches "Add a card": scan it with the camera (or pick a photo) and the app reads the
+   name and number (on the phone when it can read the barcode itself, else the AI reader, api/card.js) for you to check;
+   or type it in. */
+function cardViewPref(){ try{ return localStorage.getItem("ml_cardview")==="photo" ? "photo" : "code"; }catch(e){ return "code"; } }
+function cardShowHTML(){ const all=cardsGet(); let ix=cardShow.add ? all.length : all.findIndex(x=>x.id===cardShow.id); if(ix<0) ix=0;
+  const dots = `<div class="carddots" role="tablist" aria-label="${ix<all.length ? `Card ${ix+1} of ${all.length}` : "Add a card"}">${all.map((x,k)=>`<button class="carddot${k===ix?" on":""}" role="tab" aria-selected="${k===ix}" data-card-pick="${esc(x.id)}" aria-label="${esc(x.name)}"></button>`).join("")}<button class="carddot carddot-add${ix===all.length?" on":""}" role="tab" aria-selected="${ix===all.length}" data-card-addpanel="1" aria-label="Add a card">+</button></div>`;
+  if(ix>=all.length){ const rd=cardRead;
+    return `<div class="sheet-bg sheettop" id="cardBg"><div class="sheet" id="cardSheet" role="dialog" aria-labelledby="cardTitle">
+      <div class="cardface cardadd" id="cardSwipe"><span class="cardadd-plus" aria-hidden="true">+</span><div class="disp" id="cardTitle">Add a card</div></div>
+      ${rd && rd.busy ? `<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>${esc(rd.step||"Reading the card…")}</div>` : ""}
+      ${rd && rd.err ? `<div class="rpterr" role="alert">${esc(rd.err)}</div>` : ""}
+      <div class="cardaddbtns"><button class="newlist" id="cardScanGo" ${rd&&rd.busy?"disabled":""}>${CAMERA_SVG(16)} Scan the card</button>
+        <div class="ppedbtns" style="margin-top:8px"><button class="optaction" id="cardPhotoGo" ${rd&&rd.busy?"disabled":""}>Choose a photo</button><button class="optaction" id="cardTypeGo">Type it in</button></div></div>
+      <div class="hint" style="margin-top:8px">The photo is read to find the card's name and number, then the card is kept on this phone only.</div>
+      ${all.length ? dots : ""}
+      <div style="display:flex;gap:8px;margin-top:10px"><button class="optaction" id="cardClose" style="margin-top:0">Done</button></div>
+    </div></div>`; }
+  const c=all[ix];
+  const bc=c.num ? code128SVG(c.num, 70) : "", want=cardShow.view || cardViewPref(), view=((want==="photo" && c.photo) || !bc) ? "photo" : "code";
+  const logo = c.photo ? `<img class="cardlogo" src="${esc(c.photo)}" alt="" />` : `<span class="cardlogo cardlogo-t" style="background:${CARD_BADGE[cardChain(c)]||"var(--muted2)"}">${esc(String(c.name||"?").slice(0,1).toUpperCase())}</span>`;
   return `<div class="sheet-bg sheettop" id="cardBg"><div class="sheet" id="cardSheet" role="dialog" aria-labelledby="cardTitle">
     <div class="cardface" id="cardSwipe">${view==="photo" && c.photo ? `<img src="${esc(c.photo)}" alt="Photo of the ${esc(c.name)} card" />` : `${bc}<div class="cardnum">${esc(cardNumFmt(c.num))}</div>`}</div>
     <div class="cardhead">${logo}<div class="disp" id="cardTitle">${esc(c.name)}</div>
       ${(bc && c.photo) ? `<div class="seg"><button data-card-view="code" class="${view==="code"?'on':''}">Barcode</button><button data-card-view="photo" class="${view==="photo"?'on':''}">Photo</button></div>` : ""}</div>
-    ${all.length>1 ? `<div class="carddots" role="tablist" aria-label="Card ${ix+1} of ${all.length}">${all.map((x,k)=>`<button class="carddot${k===ix?" on":""}" role="tab" aria-selected="${k===ix}" data-card-pick="${esc(x.id)}" aria-label="${esc(x.name)}"></button>`).join("")}</div>
-      <div class="hint" style="margin-top:2px">Swipe the card for your other ${all.length===2?"one":"cards"}</div>` : ""}
-    <div class="hint" style="margin-top:8px">Turn the brightness up if the scanner struggles.${bc && !c.photo ? " If it won't scan, add a photo of the card in Settings › Smart features." : ""}</div>
+    ${dots}
+    <div class="hint" style="margin-top:2px">Swipe the card for ${all.length>1 ? "your other cards, or " : ""}to add one</div>
+    <div class="hint" style="margin-top:8px">Turn the brightness up if the scanner struggles.${bc && !c.photo ? " If it won't scan, add a photo of the card." : ""}</div>
     <div style="display:flex;gap:8px;margin-top:10px"><button class="optaction" id="cardClose" style="margin-top:0">Done</button></div>
   </div></div>`; }
+var cardRead = null;   // v2.35 { busy, step } | { err } while a card's photo is read. var: render() reads it at boot
+function cardScan(capture){ const f=document.createElement("input"); f.type="file"; f.accept="image/*"; if(capture) f.setAttribute("capture","environment");
+  f.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
+  document.body.appendChild(f);   // iOS fires change only for an input in the page (rcPick, v2.11)
+  f.onchange=()=>{ const file=f.files && f.files[0]; f.remove(); if(file) cardReadPhoto(file); };
+  f.click(); }
+/* the barcode read on the phone itself, where the browser can (BarcodeDetector) — then the photo need not leave the phone */
+async function cardBarcodeHere(img){ try{ if(typeof BarcodeDetector==="undefined") return "";
+  const im=new Image(); im.src=img; await im.decode(); const r=await new BarcodeDetector().detect(im);
+  return ((r||[]).map(x=>String(x.rawValue||"").replace(/[\s-]+/g,"")).find(x=>/^[0-9]{6,24}$/.test(x))) || ""; }catch(e){ return ""; } }
+function cardReadPhoto(file){
+  cardRead={ busy:true, step:"Preparing the photo…" }; render();
+  const ctl=(typeof AbortController!=="undefined") ? new AbortController() : null;
+  const timer=setTimeout(()=>{ if(ctl) ctl.abort(); }, 45000);   // every wait ends
+  let photo="";
+  const done=(name, num)=>{ cardRead=null; cardShow=null;
+    cardEdit={ id:"", name:String(name||"") || (/^6008/.test(num) ? "Flybuys" : ""), chain:"", num:String(num||""), photo, fromScan:true }; render(); };
+  planShrinkImage(file, 1000, 0.85)
+    .then(img=>{ photo=img; return cardBarcodeHere(img); })
+    .then(here=>{ if(!cardRead) return null;
+      if(here){ done("", here); return null; }
+      cardRead.step="Reading the card…"; render();
+      return fetch("/api/card", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ image:photo }), signal: ctl ? ctl.signal : undefined })
+        .then(r=>r.json().catch(()=>({})).then(j=>({ ok:r.ok, j }))); })
+    .then(res=>{ if(!res || !cardRead) return; const { ok, j }=res;
+      if(!ok){ const c=j && j.code;
+        cardRead={ err: c==="not_configured" ? "Reading cards isn't set up on the server yet — type it in instead."
+          : c==="quota" ? "The free reading allowance is used up for today. Type it in, or try tomorrow."
+          : c==="busy" ? "The reader is busy. Try again in a minute, or type it in."
+          : (c==="bad_image" || c==="too_large") ? "Couldn't use that photo. Try again, closer to the card."
+          : c==="vision_model" ? "Photo reading isn't set up on this account — type it in."
+          : "Couldn't read that card. Try again, or type it in." }; render(); return; }
+      if(!j.number && !j.name){ cardRead={ err:"No card number in that photo. Try again with the barcode and its number filling more of it, or type it in." }; render(); return; }
+      done(j.name, j.number); })
+    .catch(e=>{ if(cardRead){ cardRead={ err: navigator.onLine===false ? "No connection. Type the number in, or try again when you're online."
+        : (e && e.name==="AbortError") ? "That took too long. Try again, or type it in."
+        : "Couldn't use that photo. Try another, or type it in." }; render(); } })
+    .finally(()=>clearTimeout(timer)); }
 function cardEditHTML(){ const e=cardEdit;
   return `<div class="sheet-bg kbpin" id="ceBg"><div class="sheet" id="ceSheet" role="dialog" aria-labelledby="ceTitle">
-    <div class="disp" id="ceTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">${e.id ? "Edit card" : "Add a card"}</div>
-    <p class="palabel">For</p>
-    <div class="slotseg">${Object.keys(CHAINS).map(k=>`<button data-ce-chain="${k}" class="${e.chain===k?'on':''}">${esc(CHAINS[k].short)}</button>`).join("")}<button data-ce-chain="" class="${!e.chain?'on':''}">Any shop</button></div>
+    <div class="disp" id="ceTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">${e.id ? "Edit card" : e.fromScan ? "Check the card" : "Add a card"}</div>
+    ${e.fromScan ? `<div class="hint" style="text-align:left;margin:0 0 6px">Read from the photo — check the name and number, then save.</div>` : ""}
     <p class="palabel">Name</p>
     <input id="ceName" class="cefield" value="${esc(e.name)}" placeholder="Flybuys" autocomplete="off" />
     <p class="palabel">Card number</p>
@@ -4859,7 +4925,7 @@ function cardNudgeSet(){ try{ localStorage.setItem("ml_cardnudge", String(Date.n
 function cardNudgeClear(){ try{ localStorage.removeItem("ml_cardnudge"); }catch(e){} }
 function cardAskOn(){ try{ return localStorage.getItem("ml_cardask")!=="0"; }catch(e){ return true; } }
 function cardHere(){ const st=activeStore(), real=!!(st && isRealStore(st.id));
-  return { st, real, c:(real && cardFor(st)) || cardsGet().find(x=>!x.chain) || null }; }
+  return { st, real, c:real ? cardFor(st) : null }; }   // v2.35 (item 6): only at a real shop, only that shop's card — never at home
 function cardNudgeHTML(){ let at=0; try{ at=+localStorage.getItem("ml_cardnudge")||0; }catch(e){}
   if(!(at>0 && Date.now()-at < CARD_NUDGE_MS)) return "";
   const { st, real, c } = cardHere();
@@ -4932,14 +4998,11 @@ function wireCards(){
       cardEdit={ id:"", name:k==="coles" ? "Flybuys" : k==="woolworths" ? "Everyday Rewards" : "", chain:k||"", num:"", photo:"" }; render(); };
     app.querySelectorAll("[data-opt-cardask]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_cardask", b.dataset.optCardask); }catch(e){} render(); }); }
   const keep=()=>{ const n=app.querySelector("#ceName"), u=app.querySelector("#ceNum"); if(cardEdit){ if(n) cardEdit.name=n.value; if(u) cardEdit.num=u.value; } };
-  app.querySelectorAll("[data-card-add]").forEach(b=>b.onclick=()=>{ if(cardsGet().length>=CARD_MAX){ showToast(`Up to ${CARD_MAX} cards`); return; } cardEdit={ id:"", name:"", chain:"", num:"", photo:"" }; render(); });
+  app.querySelectorAll("[data-card-add]").forEach(b=>b.onclick=()=>{ if(cardsGet().length>=CARD_MAX){ showToast(`Up to ${CARD_MAX} cards`); return; } cardShow={ add:true }; render(); });   // v2.35: the same add panel as the card sheet's
   app.querySelectorAll("[data-card-edit]").forEach(b=>b.onclick=()=>{ const c=cardsGet().find(x=>x.id===b.dataset.cardEdit); if(c){ cardEdit=Object.assign({ photo:"" }, c); render(); } });
   app.querySelectorAll("[data-card-open]").forEach(b=>b.onclick=()=>{ cardShow={ id:b.dataset.cardOpen }; render(); });
   if(cardEdit){
     ["#ceName","#ceNum"].forEach(s=>{ const f=app.querySelector(s); if(f) f.oninput=keep; });   // no re-render while typing
-    app.querySelectorAll("[data-ce-chain]").forEach(b=>b.onclick=()=>{ keep(); cardEdit.chain=b.dataset.ceChain;
-      if(!cardEdit.name.trim()) cardEdit.name = cardEdit.chain==="coles" ? "Flybuys" : cardEdit.chain==="woolworths" ? "Everyday Rewards" : "";
-      render(); });
     const ph=app.querySelector("#cePhoto"); if(ph) ph.onclick=()=>{ keep(); cardPick(); };
     const np=app.querySelector("#ceNoPhoto"); if(np) np.onclick=()=>{ keep(); cardEdit.photo=""; render(); };
     const close=()=>{ cardEdit=null; render(); };
@@ -4950,23 +5013,28 @@ function wireCards(){
       if(!e.name.trim()){ e.err="Give the card a name."; render(); return; }
       if(!num && !e.photo){ e.err="Add the card's number, or a photo of it."; render(); return; }
       if(num && !code128SVG(num)){ e.err="That number has characters a barcode can't carry. Check it, or add a photo instead."; render(); return; }
-      const c={ id:e.id || ("c"+Date.now().toString(36)), name:e.name.trim().slice(0,40), chain:e.chain||"", num, photo:e.photo||"" };
+      const c={ id:e.id || ("c"+Date.now().toString(36)), name:e.name.trim().slice(0,40), chain:cardChainOf(e.name, num) || e.chain || "", num, photo:e.photo||"" };   // v2.35: worked out, not asked
       const a=cardsGet(), i=a.findIndex(x=>x.id===c.id); if(i>=0) a[i]=c; else a.push(c);
       if(!cardsPut(a)){ e.err="This phone's storage is full — try without the photo."; render(); return; }
       close(); }; }
   if(cardShow && !app.querySelector("#cardSheet")) cardShow=null;   // its card was deleted: nothing to show, nothing to come back later
   if(cardShow){
-    const close=()=>{ cardShow=null; render(); };
+    const close=()=>{ cardShow=null; cardRead=null; render(); };
     const d=app.querySelector("#cardClose"); if(d) d.onclick=close;
     const bg=app.querySelector("#cardBg"); if(bg) bg.onclick=e=>{ if(e.target===bg) close(); };
     app.querySelectorAll("[data-card-pick]").forEach(b=>b.onclick=()=>{ cardShow={ id:b.dataset.cardPick }; render(); });
     /* v2.34 a swipe left or right moves between the cards */
     const sw=app.querySelector("#cardSwipe"); if(sw){ let x0=null;
-      const go=d=>{ const all=cardsGet(); if(all.length<2) return; let ix=all.findIndex(x=>x.id===cardShow.id); if(ix<0) ix=0;
-        ix=(ix+d+all.length)%all.length; cardShow={ id:all[ix].id }; render(); };
+      /* v2.35: the add panel is one more place along, after the last card; Barcode/Photo is kept from card to card */
+      const go=d=>{ const all=cardsGet(), n=all.length+1; let ix=cardShow.add ? all.length : all.findIndex(x=>x.id===cardShow.id); if(ix<0) ix=0;
+        ix=(ix+d+n)%n; cardShow = ix===all.length ? { add:true, view:cardShow.view } : { id:all[ix].id, view:cardShow.view }; cardRead=null; render(); };
       sw.addEventListener("touchstart", e=>{ x0=e.touches[0].clientX; }, { passive:true });
       sw.addEventListener("touchend", e=>{ if(x0===null) return; const dx=e.changedTouches[0].clientX-x0; x0=null; if(Math.abs(dx)>=50) go(dx<0 ? 1 : -1); }, { passive:true }); }
-    app.querySelectorAll("[data-card-view]").forEach(b=>b.onclick=()=>{ cardShow.view=b.dataset.cardView; render(); }); } }
+    app.querySelectorAll("[data-card-view]").forEach(b=>b.onclick=()=>{ cardShow.view=b.dataset.cardView; try{ localStorage.setItem("ml_cardview", b.dataset.cardView); }catch(e){} render(); });
+    app.querySelectorAll("[data-card-addpanel]").forEach(b=>b.onclick=()=>{ cardShow={ add:true, view:cardShow.view }; render(); });
+    const sg=app.querySelector("#cardScanGo"); if(sg) sg.onclick=()=>cardScan(true);
+    const pg=app.querySelector("#cardPhotoGo"); if(pg) pg.onclick=()=>cardScan(false);
+    const tg=app.querySelector("#cardTypeGo"); if(tg) tg.onclick=()=>{ if(cardsGet().length>=CARD_MAX){ showToast(`Up to ${CARD_MAX} cards`); return; } cardRead=null; cardShow=null; cardEdit={ id:"", name:"", chain:"", num:"", photo:"" }; render(); }; } }
 function rcptNudgeOn(){ if(!rcptAskOn() || rcpt) return false;
   let at=0; try{ at=+localStorage.getItem("ml_rcptnudge")||0; }catch(e){}
   return at>0 && Date.now()-at < RCPT_NUDGE_MS; }   // v2.29: at the day's limit it still shows, and says so
@@ -6420,7 +6488,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -7054,9 +7122,9 @@ function editSheet(){
     <button class="editsec" id="ecHead"><span class="editsec-l">Category</span><span class="editsec-v">${selCat?`${catIcon(selCat,14)} ${esc(selCat.label)}`:'—'}<span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></button>
     ${editCatOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${chipsHTML(editing.cat)}<button class="catchip" id="ecAddCat" style="border-style:dashed;font-weight:800">＋ New</button></div>` : ""}
     ${subChips}
-    ${isItem ? (()=>{ const ws=rcSavedStores(), w=editing.where||"", cur=w ? ((storeById(w)||{}).name||"") : "";
+    ${isItem ? (()=>{ const ws=rcSavedStores(), w=editing.where||"", wl=whereIds({ where:w }), cur=whereNames(wl).join(", ");
       return `<button class="editsec" id="ewHead"><span class="editsec-l">Where to buy</span><span class="editsec-v">${esc(cur||"Anywhere")}<span class="editsec-ch">${editWhereOpen?'▾':'▸'}</span></span></button>
-      ${editWhereOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"><button class="catchip" data-ew="" style="${!w?'background:var(--btn);border-color:var(--btn);color:#fff':''}">Anywhere</button>${ws.map(s=>`<button class="catchip" data-ew="${esc(s.id)}" style="${w===s.id?'background:var(--btn);border-color:var(--btn);color:#fff':''}">${esc(s.name)}</button>`).join("")}</div>` : ""}`; })() : ""}
+      ${editWhereOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"><button class="catchip" data-ew="" style="${!w?'background:var(--btn);border-color:var(--btn);color:#fff':''}">Anywhere</button>${ws.map(s=>`<button class="catchip" data-ew="${esc(s.id)}" style="${wl.includes(s.id)?'background:var(--btn);border-color:var(--btn);color:#fff':''}" aria-pressed="${wl.includes(s.id)}">${esc(s.name)}</button>`).join("")}</div>` : ""}`; })() : ""}
     <div style="display:flex;gap:8px;margin-top:16px">
       <button id="secBtn" style="${btnSecStyle}">${secLabel}</button>
       <button id="delBtn" style="${btnDelStyle}">Delete</button>
@@ -7282,7 +7350,9 @@ function wireEditSheet(){
       const ech=app.querySelector("#ecHead"); if(ech) ech.onclick=()=>{ editCatOpen=!editCatOpen; render(); };
       const esh=app.querySelector("#esHead"); if(esh) esh.onclick=()=>{ editSubOpen=!editSubOpen; render(); };
       const ewh=app.querySelector("#ewHead"); if(ewh) ewh.onclick=()=>{ editWhereOpen=!editWhereOpen; render(); };   // v2.22 R17
-      app.querySelectorAll("[data-ew]").forEach(b=>b.onclick=()=>{ editing.where=b.dataset.ew; render(); });
+      /* v2.35: shops toggle on and off — several can be ticked; Anywhere clears them */
+      app.querySelectorAll("[data-ew]").forEach(b=>b.onclick=()=>{ const id=b.dataset.ew; if(!id){ editing.where=""; render(); return; }
+        const s=new Set(whereIds(editing)); if(s.has(id)) s.delete(id); else s.add(id); editing.where=[...s].join(","); render(); });
       const enote=app.querySelector("#editNote"); if(enote) enote.oninput=e=>{ editing.note=e.target.value; };   // v2.22 R16
       const eac=app.querySelector("#ecAddCat"); if(eac) eac.onclick=()=>{ const nm=prompt("New category name:",""); if(nm&&nm.trim()){ const id=makeCategory(nm); if(id){ editing.cat=id; editing.sub=null; render(); } } };
       const eas=app.querySelector("#esAddSub"); if(eas) eas.onclick=()=>{ if(!editing.cat){ showToast("Pick a category first"); return; } const nm=prompt("New subcategory name:",""); if(nm&&nm.trim()){ const id=makeSub(editing.cat,nm); if(id){ editing.sub=id; render(); } } };

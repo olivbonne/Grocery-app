@@ -102,7 +102,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     await tap('#shopMenu');
     const m = await page.evaluate(()=>[...document.querySelectorAll('.smenu .smitem')].map(b=>b.id));
     ok('…it lists read a receipt, cheaper store, spending, this shop\'s aisle map, send, occasion and Report a problem (last)',
-       JSON.stringify(m)==='["smRcpt","smCompare","smSpend","smAisle","smSend","smOcc","smReport"]', JSON.stringify(m));
+       JSON.stringify(m)==='["smCard","smRcpt","smCompare","smSpend","smAisle","smSend","smOcc","smReport"]', JSON.stringify(m));   // SUPERSEDED by v2.35: the card item is always there ("Add a membership card" when none). Still protects: the menu's items and Report last
     await shot('menu');
     await page.mouse.click(20, 820); await page.waitForTimeout(400);
     ok('…a tap outside closes it', await page.evaluate(()=>!document.querySelector('.smenu')), '');

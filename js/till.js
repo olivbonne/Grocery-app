@@ -38,18 +38,37 @@ export function code128SVG(text, height){ const m = code128Modules(text); if(!m)
   while(i < m.length){ if(m[i] === "1"){ let j = i; while(j < m.length && m[j] === "1") j++; d += `M${i + q} 0h${j - i}v${h}h-${j - i}z`; i = j; } else i++; }
   return `<svg class="bc128" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Barcode ${String(text).replace(/[<>&"]/g, "")}" xmlns="http://www.w3.org/2000/svg"><rect width="${w}" height="${h}" fill="#fff"/><path d="${d}" fill="#000"/></svg>`; }
 
+/* v2.35 (the household's item 9): how well a receipt line names a ticked item, 0 to 1 — the share of the item's words that the
+   line has, word by word, forgiving a plural and a letter or two ("kombucha" on the receipt, "Kambucha" on the list;
+   "TOMATOES Heirloom" for "tomatoes big"). Receipts abbreviate and add brands and sizes, so one name rarely contains the
+   other whole — which is what the first version asked, and why lines fell through to the tick order and crossed. */
+const STOP = new Set(["the","and","with","for","pack","each","net","gram","grams","litre","litres","coles","woolworths","aldi","iga","brand","free","range","fresh","large","small","medium"]);
+const stem = w => /ies$/.test(w) && w.length > 4 ? w.slice(0, -3) + "y" : /(ch|sh|ss|x|o)es$/.test(w) ? w.slice(0, -2) : (/s$/.test(w) && !/ss$/.test(w) && w.length > 3) ? w.slice(0, -1) : w;
+const words = s => String(s || "").toLowerCase().replace(/[^a-z ]+/g, " ").split(/\s+/).filter(w => w.length >= 3 && !STOP.has(w)).map(stem);
+function edits(a, b){ const m = a.length, n = b.length; let prev = Array.from({ length:n + 1 }, (_, j) => j);
+  for(let i = 1; i <= m; i++){ const cur = [i]; for(let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = cur; }
+  return prev[n]; }
+const close = (a, b) => a === b || (Math.min(a.length, b.length) >= 5 && edits(a, b) <= (Math.max(a.length, b.length) >= 8 ? 2 : 1));
+export function nameScore(line, item){ const A = words(line), B = words(item); if(!A.length || !B.length) return 0;
+  let hit = 0; for(const w of B) if(A.some(x => close(x, w))) hit++;
+  return hit / B.length; }
+
 /* Pair a receipt's lines with the items ticked in the shop, in the order they were ticked (the household: "match what
    was in the cart, in the order it was checked, which should be the order on the bill").
-   lines: [{ name, keep }] in receipt order; cart: [{ name }] in tick order; same(a, b): the app's name match.
-   1. by name — each kept line takes the first unpaired cart item whose name matches;
+   lines: [{ name, keep }] in receipt order; cart: [{ name }] in tick order; score(lineName, itemName, line, item): how well
+   they match, 0 (not at all) to 1 — a true/false answer works too.
+   1. by name FIRST (v2.35, the household's item 9) — every kept line against every ticked item; the best matches are
+      paired first, so a strong match is never taken by a weak one that happened to come earlier;
    2. by order — between two name pairs (and before the first, after the last) the unpaired lines and the unpaired cart
       items in that stretch are paired in order, as far as both go. A name pair whose cart position runs backwards is not
       used as an edge, so the stretches never cross.
    Returns { pair: [cartIndex|null per line], how: ["name"|"order"|"" per line], missing: [cart indices not paired] }. */
-export function reconcile(lines, cart, same){ lines = Array.isArray(lines) ? lines : []; cart = Array.isArray(cart) ? cart : [];
-  const pair = lines.map(() => null), how = lines.map(() => ""), used = new Set();
+export function reconcile(lines, cart, score){ lines = Array.isArray(lines) ? lines : []; cart = Array.isArray(cart) ? cart : [];
+  const pair = lines.map(() => null), how = lines.map(() => ""), used = new Set(), cands = [];
   lines.forEach((L, i) => { if(!L || !L.keep) return;
-    const c = cart.findIndex((x, k) => !used.has(k) && x && same(L.name, x.name)); if(c >= 0){ pair[i] = c; how[i] = "name"; used.add(c); } });
+    cart.forEach((x, k) => { if(!x) return; const s = +score(L.name, x.name, L, x) || 0; if(s > 0) cands.push([s, i, k]); }); });
+  cands.sort((a, b) => b[0] - a[0] || a[1] - b[1] || a[2] - b[2]);
+  for(const [, i, k] of cands){ if(pair[i] !== null || used.has(k)) continue; pair[i] = k; how[i] = "name"; used.add(k); }
   /* the edges: name pairs in receipt order whose cart positions only go forward */
   const edges = []; let last = -1;
   pair.forEach((c, i) => { if(c !== null && c > last){ edges.push([i, c]); last = c; } });

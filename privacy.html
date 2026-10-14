@@ -62,6 +62,9 @@
         the server fetches that page (for TikTok, the video's public caption) and sends its text.</li>
     <li><b>Recipe search</b> — what you search for goes to a web-search service (Tavily, Serper or Brave, whichever is set
         up) and the results to Gemini or Groq.</li>
+    <li><b>Scanning a membership card</b> — if the phone can read the card's barcode itself, the photo stays on the phone.
+      Otherwise the photo goes to Gemini or Groq to read the card's name and number. The app's server never keeps or logs the
+      photo or the number; the card itself is then kept on this phone only.</li>
     <li><b>Reading an aisle sign</b> (mapping a shop's aisles) — the photo goes to Gemini or Groq to read the aisle's number and
         what the sign lists. The server never keeps or logs the photo or what it read.</li>
     <li><b>Reading a receipt</b> — the photo goes to Gemini or Groq to be read. The app's server never keeps or logs the
@@ -97,7 +100,7 @@
 
   <h2>Questions</h2>
   <p>Use <b>Settings › Report a problem</b>. It reaches the person who builds the app.</p>
-  <p class="muted">Written for Market List v2.25 and kept current; last changed for v2.28 (aisle signs), October 2026.</p>
+  <p class="muted">Written for Market List v2.25 and kept current; last changed for v2.35 (scanning a membership card), October 2026.</p>
   <a class="back" href="/">← Back to the list</a>
 </main>
 </body>

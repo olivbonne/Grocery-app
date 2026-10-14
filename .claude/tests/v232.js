@@ -174,7 +174,8 @@ const seed = (o) => { o=o||{}; return `(() => {
     ok('(13) at a Coles with no card saved, the top of the page offers to add one, above "Got the receipt?"', /Got a Flybuys card\?/.test(n1.c||'') && n1.above && !n1.sheet, JSON.stringify(n1));
     await shot('offer');
     await tap('#cardNudgeAdd');
-    ok('(13) …"Add the card" opens the card form, already for Coles, named Flybuys', await page.evaluate(()=>document.querySelector('#ceName').value==='Flybuys' && !!document.querySelector('[data-ce-chain="coles"].on')), '');
+    /* SUPERSEDED by v2.35: the form has no shop to pick — it is worked out from the name. Still protects: "Add the card" at a Coles opens the form named Flybuys. */
+    ok('(13) …"Add the card" opens the card form, already for Coles, named Flybuys', await page.evaluate(()=>document.querySelector('#ceName').value==='Flybuys'), '');
     await page.locator('#ceNum').fill('6008943218616910'); await tap('#ceSave');
     const n2 = await page.evaluate(()=>({ bc:!!document.querySelector('#cardNudge .bc128'), num:(document.querySelector('#cardNudge .cardnum')||{}).textContent }));
     ok('(13) …and once saved, the card itself is there to scan', n2.bc && n2.num==='6008 9432 1861 6910', JSON.stringify(n2));

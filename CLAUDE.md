@@ -12,10 +12,10 @@ for byte. Later phases move cohesive parts of `js/app.js` into modules of their 
 live household sync, Vercel serves `main` as static files. Used as an iPhone home-screen app, portrait-only,
 max-width 480px.
 
-Six serverless functions in `api/` (CommonJS, Vercel, `maxDuration` 60s in `vercel.json`):
+Seven serverless functions in `api/` (CommonJS, Vercel, `maxDuration` 60s in `vercel.json`):
 `parse.js` (Smart add), `recipe.js` (recipe from text, a link, a TikTok or a photo),
 `recipe-search.js`, `receipt.js` (a receipt photo → items and prices, v2.09; it never logs the photo
-or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and what it lists; built from receipt.js, the same no-logging rule) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, or a `[feedback]` log line). Their keys and settings are env vars — see `docs/ai-setup.md`.
+or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and what it lists; built from receipt.js, the same no-logging rule), `card.js` (v2.35, a photo of a membership card → its name and number, only when the phone cannot read the barcode itself; the same no-logging rule, and never the number) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, or a `[feedback]` log line). Their keys and settings are env vars — see `docs/ai-setup.md`.
 
 ## Conventions
 - **Versioning:** bump the version by 0.01 per batch of app changes with `node .claude/tools/bump.js N.NN`
@@ -98,6 +98,8 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   still speak the nine: every place an item is ADDED goes through `newCat(cat, name)`, which on a thirteen-list puts it where
   the shop shelves it (its aisle type first). A category the person picked by hand is never changed, and nothing stored is
   ever re-categorised.
+- **An item's `where` may name several shops (v2.35)** — their ids joined by commas, so it stays a string everywhere it is
+  copied. Read it with `whereIds(i)`, never `i.where === id`.
 - **Views group items with `catShown(i.cat)`, never `i.cat === cat.id`** (v2.17). An item whose category is gone
   (removed on another phone mid-edit, or old data) otherwise vanishes from the list while still counted in "N to
   buy". It is display only: never rewrite a stored `cat` to tidy an orphan, the categories may still be arriving.
@@ -140,7 +142,7 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   target, refuses an inline module or `<style>` back in `index.html`, and checks `api/*.js` too. (Until v2.18
   it extracted the inline module to the LAST `</script>` — the module holds one inside a template literal.)
 - **Per-version suites live in `.claude/tests/`** — one browser suite per version, plus
-  `api-recipe.js`, `api-recipe-search.js`, `api-receipt.js`, `api-aisle.js` and `api-feedback.js`, which test the serverless functions directly with no
+  `api-recipe.js`, `api-recipe-search.js`, `api-receipt.js`, `api-aisle.js`, `api-card.js` and `api-feedback.js`, which test the serverless functions directly with no
   network. See `.claude/tests/README.md` for how to run them and what a check has to prove. Never
   leave a suite in the scratchpad: it is not durable, and every suite up to v1.76 was lost that way.
 - Behaviour: the `/verify-app` skill serves the repo, launches headless Chromium
