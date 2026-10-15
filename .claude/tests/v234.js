@@ -74,8 +74,10 @@ const seed = (o) => { o=o||{}; return `(() => {
     ok('(1) "Show my card" comes down from the top, barcode first', g.top && g.y<=2 && g.first==='cardSwipe' && g.bar, JSON.stringify(g));
     /* SUPERSEDED by v2.35: one more dot — the "+" for adding a card. Still protects: it opens on the shop's card, a dot per card. */
     ok('(2) at a Coles it opens on the Flybuys card (not the first saved), with a dot per card', /Flybuys/.test(await title()) && g.dots===3, await title());
-    const lg = await page.evaluate(()=>{ const l=document.querySelector('#cardSheet .cardlogo'); return l ? { badge:l.classList.contains('cardlogo-t'), t:l.textContent, bg:getComputedStyle(l).backgroundColor } : null; });
-    ok('(3) a card without a photo shows a badge with its initial, in the chain\'s colour', lg && lg.badge && lg.t==='F' && lg.bg==='rgb(224, 26, 34)', JSON.stringify(lg));
+    /* SUPERSEDED by v2.37: option A — the badge with an initial became a band in the programme's own colour with its name, above
+       the barcode. Still protects: a card without a photo is marked in its programme's colour. */
+    const lg = await page.evaluate(()=>{ const l=document.querySelector('#cardSheet .cardband'); return l ? { t:l.textContent, bg:getComputedStyle(l).backgroundColor } : null; });
+    ok('(3) a card without a photo shows a badge with its initial, in the chain\'s colour', lg && /Flybuys/.test(lg.t) && lg.bg==='rgb(10, 45, 140)', JSON.stringify(lg));
     await shot('card');
     /* SUPERSEDED by v2.35: past the last card is the add panel, so from Flybuys (the last) the other card is a swipe RIGHT. Still protects:
        a swipe moves to the other card and back. */
@@ -88,7 +90,9 @@ const seed = (o) => { o=o||{}; return `(() => {
     await tap('#cardClose');
     await mk({ store:'dand', extra:`localStorage.setItem("ml_cards", ${JSON.stringify(JSON.stringify([Object.assign({}, CARDS[1], { photo:TINY })]))});` });
     await tap('#shopMenu'); await tap('#smCard');
-    ok('(3) a card with a photo shows the photo as its logo', await page.evaluate(()=>!!document.querySelector('#cardSheet img.cardlogo')), '');
+    /* SUPERSEDED by v2.37: the household chose option A — the band, not a logo cut from the photo. Still protects: a card with a
+       photo is marked too. */
+    ok('(3) a card with a photo shows the photo as its logo', await page.evaluate(()=>!!document.querySelector('#cardSheet .cardband') && !document.querySelector('#cardSheet img.cardlogo')), '');
     await tap('#cardClose');
 
     /* ── 4 singular and plural ───────────────────────────────────────── */
@@ -114,11 +118,13 @@ const seed = (o) => { o=o||{}; return `(() => {
     ok('(5) …an opened category ends with a "+" tile after its Regulars', await page.evaluate(()=>{ const r=[...document.querySelectorAll('.regcat')].find(x=>x.querySelector('[data-regc="fresh"]')); const t=r && [...r.querySelectorAll('.pills > *')]; return !!(t && t.length===2 && t[1].matches('[data-ba-new="fresh"]')); }), '');
     await tap('[data-regc="bulk"]');
     await shot('regulars');
-    await tap('[data-ba-new="bulk"]');
-    ok('(5) …tapping one asks for a name, for that category', /New Regular in Bulk/.test(await page.evaluate(()=>(document.querySelector('#bnTitle')||{}).textContent||'')), '');
-    await page.locator('#bnName').fill('basmati rice'); await page.locator('#bnName').press('Enter'); await page.waitForTimeout(500);
+    /* SUPERSEDED by v2.37: the tile opens the same add sheet as "+ Add items" (the household's item 4), not a sheet asking for a
+       name. Still protects: what is typed after tapping it becomes a Regular in that category. */
+    await tap('[data-ba-new="bulk"]'); await page.waitForTimeout(700);
+    ok('(5) …tapping one asks for a name, for that category', /Bulk/.test(await page.evaluate(()=>(document.querySelector('#mainInput')||{}).placeholder||'')), '');
+    await page.locator('#mainInput').fill('basmati rice'); await page.locator('#mainInput').press('Enter'); await page.waitForTimeout(1600);
     const reg = await page.evaluate(()=>(JSON.parse(localStorage.getItem('ml_cache_v101')).buyAgain||[]).map(e=>e.name+'|'+e.cat));
-    ok('(5) …and adds it to Regulars in that category', reg.includes('Basmati rice|bulk'), JSON.stringify(reg));
+    ok('(5) …and adds it to Regulars in that category', reg.some(r=>r.toLowerCase()==='basmati rice|bulk'), JSON.stringify(reg));   // v2.37: the add sheet keeps the name as typed
 
     /* ── 6 location diagnostics ──────────────────────────────────────── */
     await mk({ store:'dand', doc:{ aislemap:{ dand:{ aisles:[{ n:'5', t:'Bread & bakery' }, { n:'6', t:'Snacks' }] } } } });

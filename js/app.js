@@ -7,17 +7,17 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.36";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.36";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.36";
-import { compareStores, worthIt } from "./compare.js?v=2.36";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.36";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.36";
-import { code128SVG, reconcile, nameScore } from "./till.js?v=2.36";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.37";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.37";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.37";
+import { compareStores, worthIt } from "./compare.js?v=2.37";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.37";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.37";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.37";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.36";
+const APP_VERSION = "v2.37";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -1538,6 +1538,7 @@ if(typeof document !== "undefined"){
    Tradeoff: addEntries/addFromRegular call save(), so a staged item does sync to the household
    briefly and a cancel syncs the removal. Deferring save() would be a state-schema change. */
 let addStaged=[];
+var addFromCat = null;   // v2.37 the category of the Regulars "+" tile the add sheet was opened from. var: read at boot
 function stageAdds(fn){
   const before=new Set(state.items.map(i=>i.id));
   fn();
@@ -2063,6 +2064,7 @@ function showUndo(prev, msg){
 
 /* ---- actions ---- */
 function addEntries(text, override){
+  if(!override && addOpen && addFromCat) override = addFromCat;   // v2.37: typed in the sheet opened from a category's "+" tile — it goes in that category
   const parsed = parseInput(text); if(!parsed.length) return;
   for(const e of parsed){
     const cat = override || e.cat;
@@ -3016,8 +3018,13 @@ function wireAddSheetDrag(){
 // v1.36: one exit path for the add flow — always lands back on the shop page with nothing left over.
 /* v1.44 item 5: two ways out, and they mean opposite things. commitAddSheet() keeps what you added;
    closeAddSheet() is Cancel and takes it back off. Everything else about the teardown is shared. */
-function commitAddSheet(){ addStaged=[]; endAddSheet(); }
+function commitAddSheet(){
+  /* v2.37 (the household's item 4): opened from a Regulars "+" tile, what was added is kept as a Regular too */
+  if(addFromCat){ const kept=state.items.filter(i=>addStaged.includes(i.id));
+    if(kept.length){ moveToBuyAgain(kept.map(i=>({ name:i.name, cat:i.cat, qty:i.qty, weight:i.weight, sub:i.sub, note:i.note, where:i.where }))); kept.forEach(i=>histLog("regadd", i.name)); save(); } }
+  addStaged=[]; addFromCat=null; endAddSheet(); }
 function closeAddSheet(){
+  addFromCat=null;   // v2.37
   if(addStaged.length){
     const drop=new Set(addStaged);
     state.items = state.items.filter(i=>!drop.has(i.id));
@@ -3147,7 +3154,7 @@ function openAdd(){
      mountAddSheet() bails when #addBg still exists, so the reopen would otherwise adopt a node
      mid-retract. */
   if(_addClosing){ _addClosing=false; unmountAddSheet(); }
-  addTab="reg"; addOpen=true; addStaged=[]; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain=""; _pinLast="";
+  addTab="reg"; addOpen=true; addStaged=[]; addFromCat=null; addEditId=null; addEditPrefix=""; addLastQuery=""; draftMain=""; _pinLast="";
   const y0 = window.scrollY||window.pageYOffset||0;   // v1.48: read it here, before anything can scroll the page
   if(curPageIdx()!==1){ gotoPage(1); }   // the add sheet belongs to the shop page, from wherever it was opened
   /* v1.47: lock AFTER the render. position:fixed on <body> collapses the document height, and doing
@@ -3470,7 +3477,7 @@ function pinAddSheet(){
      hands the padding back to the CSS `calc(10px + env(safe-area-inset-bottom))`. This inline write is
      the authoritative one — `.addsheet.kbup` (driven by kbActive, which focusout clears) could go
      stale and is left in place only because applyKb still toggles it. */
-  as.style.paddingBottom = bot > 0 ? "0px" : "";   // v1.49: the keyboard strip is #addUnder's job now
+  as.style.paddingBottom = bot > 0 ? "12px" : "";   // v1.49: the keyboard strip is #addUnder's job now; v2.37 (item 5): 12px of the sheet above the keyboard's bar
   /* v1.50: the scrim is no longer positioned from vv.offsetTop at all. It is a plain fixed layer that
      OVERDRAWS the viewport by 500px in each direction (see `.sheet-bg#addBg` in the CSS), so however
      far iOS scrolls the visual viewport there is never an uncovered strip of bare paper on screen.
@@ -3712,7 +3719,8 @@ function planningSection(){
   const groups = catList().map(cat=>{
     const regs = state.buyAgain.filter(e=>catShown(e.cat)===cat.id).slice().sort((a,b)=>a.name.localeCompare(b.name));   // A–Z
     /* v2.34 (the household's item 5): every category is listed, even with no Regulars yet, and ends with a "+" tile that adds
-       a Regular straight into it */
+       a Regular straight into it. v2.37 (item 4): it opens the same add sheet as '+ Add items'; what is added there goes on
+       the list in this category and is kept as a Regular */
     const addT = `<button class="pill baadd" data-ba-new="${esc(cat.id)}" style="border:1.5px dashed ${cat.color};color:${cat.color}" aria-label="Add a Regular to ${esc(cat.label)}"><span class="baplus" aria-hidden="true">+</span></button>`;
     const ccol = !(collapse.regOpen||[]).includes(cat.id);   // v1.24 per-category collapse — collapsed unless the user opened it
     const pills = ccol ? "" : `<div class="pills" style="margin-top:6px">${regs.map(e=>{
@@ -3946,7 +3954,7 @@ function renderMain(){
   ${fabMoveOpen?fabMoveSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${baNew?baNewHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -4258,7 +4266,7 @@ function renderPlanTab(){
   ${planWeekOpen?planWeekSheet():""}
   ${planAdd?planAddSheet():""}
   ${planPick?planPickSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${baNew?baNewHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${listsOpen?listsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
@@ -4803,17 +4811,20 @@ function cardFor(store){ const k=chainOfStore(store && store.name); return k ? (
 function cardNumFmt(n){ return String(n||"").replace(/\s+/g,"").replace(/(.{4})(?=.)/g,"$1 "); }
 /* v2.34 (the household's items 1–3): the card comes down from the TOP of the screen — a phone is scanned by its top end —
    with the barcode first. It opens on the card for the shop you are at (or the one asked for), and a swipe left or right
-   moves to the others, for when the location is missing or wrong. Its "logo" is the photo of the card when there is one,
-   else a badge with its initial: the chains' own logos are trademarks and are not shipped with the app. */
-const CARD_BADGE = { coles:"#E01A22", woolworths:"#178841" };   // the chains' own colours, on a badge with the card's initial
+   moves to the others, for when the location is missing or wrong. Since v2.37 it is marked by a band in the
+   programme's colour with its name (cardBrand): the programmes' own logos are trademarks and are not shipped with the app. */
 /* v2.35 (the household's items 1, 7): Barcode or Photo is remembered (ml_cardview) — a swipe to the next card keeps it.
-   Swiping on past the last card reaches "Add a card": scan it with the camera (or pick a photo) and the app reads the
+   Swiping reaches "Add a card" (v2.37: it is before the first card, the + dot on the left): scan it with the camera (or pick a photo) and the app reads the
    name and number (on the phone when it can read the barcode itself, else the AI reader, api/card.js) for you to check;
    or type it in. */
 function cardViewPref(){ try{ return localStorage.getItem("ml_cardview")==="photo" ? "photo" : "code"; }catch(e){ return "code"; } }
 function cardShowHTML(){ const all=cardsGet(); let ix=cardShow.add ? all.length : all.findIndex(x=>x.id===cardShow.id); if(ix<0) ix=0;
-  const dots = `<div class="carddots" role="tablist" aria-label="${ix<all.length ? `Card ${ix+1} of ${all.length}` : "Add a card"}">${all.map((x,k)=>`<button class="carddot${k===ix?" on":""}" role="tab" aria-selected="${k===ix}" data-card-pick="${esc(x.id)}" aria-label="${esc(x.name)}"></button>`).join("")}<button class="carddot carddot-add${ix===all.length?" on":""}" role="tab" aria-selected="${ix===all.length}" data-card-addpanel="1" aria-label="Add a card">+</button></div>`;
+  const dots = `<div class="carddots" role="tablist" aria-label="${ix<all.length ? `Card ${ix+1} of ${all.length}` : "Add a card"}"><button class="carddot carddot-add${ix===all.length?" on":""}" role="tab" aria-selected="${ix===all.length}" data-card-addpanel="1" aria-label="Add a card">+</button>${all.map((x,k)=>`<button class="carddot${k===ix?" on":""}" role="tab" aria-selected="${k===ix}" data-card-pick="${esc(x.id)}" aria-label="${esc(x.name)}"></button>`).join("")}</div>`;   /* v2.37 (the household's item 2): the + dot on the left of the first */
   if(ix>=all.length){ const rd=cardRead;
+    /* v2.37 (the household's item 1): Type it in shows the name and number in the same drop-down */
+    if(cardEdit && cardEdit.inline) return `<div class="sheet-bg sheettop" id="cardBg"><div class="sheet" id="cardSheet" role="dialog" aria-labelledby="ceTitle">
+      <div id="ceSheet" class="cardtype" role="group" aria-labelledby="ceTitle">${cardEditBody()}</div>
+    </div></div>`;
     return `<div class="sheet-bg sheettop" id="cardBg"><div class="sheet" id="cardSheet" role="dialog" aria-labelledby="cardTitle">
       <div class="cardface cardadd" id="cardSwipe" role="button" tabindex="0" aria-label="Take a photo of the card" ${rd&&rd.busy?'aria-disabled="true"':""}><span class="cardadd-plus" aria-hidden="true">+</span><div class="disp" id="cardTitle">Add a card</div><div class="cardadd-sub">Tap to take a photo of it</div></div>
       ${rd && rd.busy ? `<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>${esc(rd.step||"Reading the card…")}</div>` : ""}
@@ -4825,11 +4836,10 @@ function cardShowHTML(){ const all=cardsGet(); let ix=cardShow.add ? all.length 
     </div></div>`; }
   const c=all[ix];
   const bc=c.num ? code128SVG(c.num, 70) : "", want=cardShow.view || cardViewPref(), view=((want==="photo" && c.photo) || !bc) ? "photo" : "code";
-  const logo = c.photo ? `<img class="cardlogo" src="${esc(c.photo)}" alt="" />` : `<span class="cardlogo cardlogo-t" style="background:${CARD_BADGE[cardChain(c)]||"var(--muted2)"}">${esc(String(c.name||"?").slice(0,1).toUpperCase())}</span>`;
+  const br=cardBrand(c.name, cardChain(c));   // v2.37 (the household's item 3): the programme's colour and name above the barcode
   return `<div class="sheet-bg sheettop" id="cardBg"><div class="sheet" id="cardSheet" role="dialog" aria-labelledby="cardTitle">
-    <div class="cardface" id="cardSwipe">${view==="photo" && c.photo ? `<img src="${esc(c.photo)}" alt="Photo of the ${esc(c.name)} card" />` : `${bc}<div class="cardnum">${esc(cardNumFmt(c.num))}</div>`}</div>
-    <div class="cardhead">${logo}<div class="disp" id="cardTitle">${esc(c.name)}</div>
-      ${(bc && c.photo) ? `<div class="seg"><button data-card-view="code" class="${view==="code"?'on':''}">Barcode</button><button data-card-view="photo" class="${view==="photo"?'on':''}">Photo</button></div>` : ""}</div>
+    <div class="cardface" id="cardSwipe"><div class="cardband" style="background:${br.bg};color:${br.fg}"><span class="cardband-n" id="cardTitle">${esc(c.name)}</span></div>${view==="photo" && c.photo ? `<img src="${esc(c.photo)}" alt="Photo of the ${esc(c.name)} card" />` : `${bc}<div class="cardnum">${esc(cardNumFmt(c.num))}</div>`}</div>
+    ${(bc && c.photo) ? `<div class="cardhead"><div class="seg"><button data-card-view="code" class="${view==="code"?'on':''}">Barcode</button><button data-card-view="photo" class="${view==="photo"?'on':''}">Photo</button></div></div>` : ""}
     ${dots}
     <div class="hint" style="margin-top:2px">Swipe the card for ${all.length>1 ? "your other cards, or " : ""}to add one</div>
     <div class="hint" style="margin-top:8px">Turn the brightness up if the scanner struggles.${bc && !c.photo ? " If it won't scan, add a photo of the card." : ""}</div>
@@ -4850,8 +4860,8 @@ function cardReadPhoto(file){
   const ctl=(typeof AbortController!=="undefined") ? new AbortController() : null;
   const timer=setTimeout(()=>{ if(ctl) ctl.abort(); }, 45000);   // every wait ends
   let photo="";
-  const done=(name, num)=>{ cardRead=null; cardShow=null;
-    cardEdit={ id:"", name:String(name||"") || (/^6008/.test(num) ? "Flybuys" : ""), chain:"", num:String(num||""), photo, fromScan:true }; render(); };
+  const done=(name, num)=>{ cardRead=null; cardShow={ add:true };   // v2.37 (item 1): checked in the same drop-down
+    cardEdit={ id:"", name:String(name||"") || (/^6008/.test(num) ? "Flybuys" : ""), chain:"", num:String(num||""), photo, fromScan:true, inline:true }; render(); };
   planShrinkImage(file, 1000, 0.85)
     .then(img=>{ photo=img; return cardBarcodeHere(img); })
     .then(here=>{ if(!cardRead) return null;
@@ -4873,9 +4883,12 @@ function cardReadPhoto(file){
         : (e && e.name==="AbortError") ? "That took too long. Try again, or type it in."
         : "Couldn't use that photo. Try another, or type it in." }; render(); } })
     .finally(()=>clearTimeout(timer)); }
-function cardEditHTML(){ const e=cardEdit;
-  return `<div class="sheet-bg kbpin" id="ceBg"><div class="sheet" id="ceSheet" role="dialog" aria-labelledby="ceTitle">
-    <div class="disp" id="ceTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">${e.id ? "Edit card" : e.fromScan ? "Check the card" : "Add a card"}</div>
+/* v2.37 (the household's item 1): the form's body, shown in the card drop-down itself (inline) or in its own sheet */
+function cardEditHTML(){ if(cardEdit.inline) return "";
+  return `<div class="sheet-bg kbpin" id="ceBg"><div class="sheet" id="ceSheet" role="dialog" aria-labelledby="ceTitle">${cardEditBody()}</div></div>`; }
+function cardEditBody(){ const e=cardEdit;
+  return `
+    <div class="disp" id="ceTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">${e.id ? "Edit card" : e.fromScan ? "Check the card" : e.inline ? "Type in the card" : "Add a card"}</div>
     ${e.fromScan ? `<div class="hint" style="text-align:left;margin:0 0 6px">Read from the photo — check the name and number, then save.</div>` : ""}
     <p class="palabel">Name</p>
     <input id="ceName" class="cefield" value="${esc(e.name)}" placeholder="Flybuys" autocomplete="off" />
@@ -4886,8 +4899,7 @@ function cardEditHTML(){ const e=cardEdit;
     ${e.busy ? `<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>Preparing the photo…</div>` : ""}
     ${e.err ? `<div class="rpterr" role="alert">${esc(e.err)}</div>` : ""}
     <div class="hint" style="text-align:left">Kept on this phone only — never shared with the list or sent anywhere.</div>
-    <div class="ppedbtns">${e.id ? `<button class="optaction" id="ceDel">Delete</button>` : `<button class="optaction" id="ceCancel">Cancel</button>`}<button class="newlist" id="ceSave">Save</button></div>
-  </div></div>`; }
+    <div class="ppedbtns">${(e.id && !e.inline) ? `<button class="optaction" id="ceDel">Delete</button>` : `<button class="optaction" id="ceCancel">Cancel</button>`}<button class="newlist" id="ceSave">Save</button></div>`; }
 function cardPick(){ const f=document.createElement("input"); f.type="file"; f.accept="image/*";
   f.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
   document.body.appendChild(f);   // iOS fires change only for an input in the page (rcPick, v2.11)
@@ -4928,10 +4940,10 @@ function cardHere(){ const st=activeStore(), real=!!(st && isRealStore(st.id));
 function cardNudgeHTML(){ let at=0; try{ at=+localStorage.getItem("ml_cardnudge")||0; }catch(e){}
   if(!(at>0 && Date.now()-at < CARD_NUDGE_MS)) return "";
   const { st, real, c } = cardHere();
-  if(c){ const bc=c.num ? code128SVG(c.num, 70) : "";
+  if(c){ const bc=c.num ? code128SVG(c.num, 70) : "", br=cardBrand(c.name, cardChain(c));   // v2.37 (item 3): the same band
     return `<div class="installcard cardnudge" id="cardNudge" role="region" aria-label="${esc(c.name)} card">
       <div class="ic-t">${CARD_SVG(18)} ${esc(c.name)} — scan before you pay</div>
-      <button class="cardface cardface-sm" id="cardNudgeBig" aria-label="Show the card bigger">${(!bc && c.photo) ? `<img src="${esc(c.photo)}" alt="Photo of the ${esc(c.name)} card" />` : `${bc}<div class="cardnum">${esc(cardNumFmt(c.num))}</div>`}</button>
+      <button class="cardface cardface-sm" id="cardNudgeBig" aria-label="Show the card bigger"><div class="cardband" style="background:${br.bg};color:${br.fg}"><span class="cardband-n">${esc(c.name)}</span></div>${(!bc && c.photo) ? `<img src="${esc(c.photo)}" alt="Photo of the ${esc(c.name)} card" />` : `${bc}<div class="cardnum">${esc(cardNumFmt(c.num))}</div>`}</button>
       <div class="ic-btns"><button class="optaction" id="cardNudgeDone">Done</button></div></div>`; }
   if(!real || !cardAskOn()) return "";
   const k=chainOfStore(st.name), nm=k==="coles" ? "Flybuys card" : k==="woolworths" ? "Everyday Rewards card" : "membership card";
@@ -4940,25 +4952,11 @@ function cardNudgeHTML(){ let at=0; try{ at=+localStorage.getItem("ml_cardnudge"
     <div class="ic-b">Add it once — a photo and its number — and it shows here after every shop at ${esc(st.name)}, ready to scan before you pay. It stays on this phone.</div>
     <div class="ic-btns"><button class="newlist" id="cardNudgeAdd">Add the card</button><button class="optaction" id="cardNudgeNo">Not now</button></div>
     <button class="cardnever" id="cardNudgeNever">No card — don't ask again</button></div>`; }
-/* v2.34 (the household's item 5): the "+" tile at the end of each category in Regulars adds a Regular straight into it */
-var baNew = null;   // { cat, name } while its little sheet is open. var: render() reads it at boot
-function baNewHTML(){ const c=CAT(baNew.cat);
-  return `<div class="sheet-bg kbpin" id="bnBg"><div class="sheet" id="bnSheet" role="dialog" aria-labelledby="bnTitle">
-    <div class="disp" id="bnTitle" style="font-weight:800;font-size:17px;margin-bottom:8px">New Regular in ${esc(c.label)}</div>
-    <input id="bnName" class="cefield" value="${esc(baNew.name)}" placeholder="Name it" aria-label="Name of the Regular" autocomplete="off" />
-    <div class="ppedbtns"><button class="optaction" id="bnCancel">Cancel</button><button class="newlist" id="bnSave">Add to Regulars</button></div>
-  </div></div>`; }
-function baNewSave(){ const nm=cap(String((baNew && baNew.name)||"").trim()).slice(0,60); if(!nm) return;
-  const cat=baNew.cat; moveToBuyAgain([{ name:nm, cat, qty:1 }]); histLog("regadd", nm); baNew=null; save(); render(); showToast(`“${nm}” added to Regulars`); }
+/* v2.34 (the household's item 5): the "+" tile at the end of each category in Regulars. v2.37 (item 4): it opens the same
+   add sheet as "+ Add items", and what is added there goes in this category and is kept as a Regular */
 function wireBaNew(){
-  app.querySelectorAll("[data-ba-new]").forEach(b=>b.onclick=()=>{ baNew={ cat:b.dataset.baNew, name:"" }; render(); });
-  if(!baNew) return;
-  const f=app.querySelector("#bnName"); if(f){ f.oninput=()=>{ baNew.name=f.value; }; f.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); baNewSave(); } };
-    if(!f.dataset.focused){ f.dataset.focused="1"; setTimeout(()=>{ try{ f.focus(); }catch(e){} }, 60); } }
-  const sv=app.querySelector("#bnSave"); if(sv) sv.onclick=baNewSave;
-  const close=()=>{ baNew=null; render(); };
-  const cc=app.querySelector("#bnCancel"); if(cc) cc.onclick=close;
-  const bg=app.querySelector("#bnBg"); if(bg) bg.onclick=e=>{ if(e.target===bg) close(); }; }
+  app.querySelectorAll("[data-ba-new]").forEach(b=>b.onclick=()=>{ openAdd(); addFromCat=b.dataset.baNew;
+    const m=document.getElementById("mainInput"); if(m){ m.placeholder=`Add to ${(CAT(addFromCat)||{}).label||"Regulars"}…`; } }); }
 /* v2.34 (the household's item 6): Help › Location diagnostics — where the phone thinks it is, and for each shop whether it
    can be detected, which aisle order it walks (its own map, a built-in layout, or none yet) and how much of a route the
    AI has learned there. Read-only. */
@@ -5004,7 +5002,7 @@ function wireCards(){
     ["#ceName","#ceNum"].forEach(s=>{ const f=app.querySelector(s); if(f) f.oninput=keep; });   // no re-render while typing
     const ph=app.querySelector("#cePhoto"); if(ph) ph.onclick=()=>{ keep(); cardPick(); };
     const np=app.querySelector("#ceNoPhoto"); if(np) np.onclick=()=>{ keep(); cardEdit.photo=""; render(); };
-    const close=()=>{ cardEdit=null; render(); };
+    const close=()=>{ cardEdit=null; render(); };   // v2.37: cardShow is untouched, so an inline Cancel stays on the add panel
     const cc=app.querySelector("#ceCancel"); if(cc) cc.onclick=close;
     const bg=app.querySelector("#ceBg"); if(bg) bg.onclick=e=>{ if(e.target===bg && !cardEdit.busy) close(); };
     const dl=app.querySelector("#ceDel"); if(dl) dl.onclick=()=>{ cardsPut(cardsGet().filter(x=>x.id!==cardEdit.id)); close(); };
@@ -5015,27 +5013,30 @@ function wireCards(){
       const c={ id:e.id || ("c"+Date.now().toString(36)), name:e.name.trim().slice(0,40), chain:cardChainOf(e.name, num) || e.chain || "", num, photo:e.photo||"" };   // v2.35: worked out, not asked
       const a=cardsGet(), i=a.findIndex(x=>x.id===c.id); if(i>=0) a[i]=c; else a.push(c);
       if(!cardsPut(a)){ e.err="This phone's storage is full — try without the photo."; render(); return; }
+      if(e.inline){ cardEdit=null; cardShow={ id:c.id }; render(); return; }   // v2.37 (item 1): show the new card with its band
       close(); }; }
   if(cardShow && !app.querySelector("#cardSheet")) cardShow=null;   // its card was deleted: nothing to show, nothing to come back later
   if(cardShow){
-    const close=()=>{ cardShow=null; cardRead=null; render(); };
+    const close=()=>{ cardShow=null; cardRead=null; if(cardEdit && cardEdit.inline) cardEdit=null; render(); };   // v2.37: an inline form goes with it
     const d=app.querySelector("#cardClose"); if(d) d.onclick=close;
     const bg=app.querySelector("#cardBg"); if(bg) bg.onclick=e=>{ if(e.target===bg) close(); };
-    app.querySelectorAll("[data-card-pick]").forEach(b=>b.onclick=()=>{ cardShow={ id:b.dataset.cardPick }; render(); });
+    app.querySelectorAll("[data-card-pick]").forEach(b=>b.onclick=()=>{ if(cardEdit && cardEdit.inline) cardEdit=null; cardShow={ id:b.dataset.cardPick }; render(); });
     /* v2.34 a swipe left or right moves between the cards */
     const sw=app.querySelector("#cardSwipe"); if(sw){ let x0=null;
-      /* v2.35: the add panel is one more place along, after the last card; Barcode/Photo is kept from card to card */
-      const go=d=>{ const all=cardsGet(), n=all.length+1; let ix=cardShow.add ? all.length : all.findIndex(x=>x.id===cardShow.id); if(ix<0) ix=0;
-        ix=(ix+d+n)%n; cardShow = ix===all.length ? { add:true, view:cardShow.view } : { id:all[ix].id, view:cardShow.view }; cardRead=null; render(); };
+      /* v2.35: the add panel is one more place along; v2.37 (item 2): the add panel is first, before the first card. Barcode/Photo is kept from card to card */
+      const go=d=>{ const all=cardsGet(), n=all.length+1; let p=cardShow.add ? 0 : all.findIndex(x=>x.id===cardShow.id)+1; if(p<=0 && !cardShow.add) p=1;
+        p=(p+d+n)%n; cardShow = p===0 ? { add:true, view:cardShow.view } : { id:all[p-1].id, view:cardShow.view }; cardRead=null; render(); };
       sw.addEventListener("touchstart", e=>{ x0=e.touches[0].clientX; }, { passive:true });
       sw.addEventListener("touchend", e=>{ if(x0===null) return; const dx=e.changedTouches[0].clientX-x0; x0=null; if(Math.abs(dx)>=50) go(dx<0 ? 1 : -1); }, { passive:true }); }
     app.querySelectorAll("[data-card-view]").forEach(b=>b.onclick=()=>{ cardShow.view=b.dataset.cardView; try{ localStorage.setItem("ml_cardview", b.dataset.cardView); }catch(e){} render(); });
-    app.querySelectorAll("[data-card-addpanel]").forEach(b=>b.onclick=()=>{ cardShow={ add:true, view:cardShow.view }; render(); });
+    app.querySelectorAll("[data-card-addpanel]").forEach(b=>b.onclick=()=>{ if(cardEdit && cardEdit.inline) cardEdit=null; cardShow={ add:true, view:cardShow.view }; render(); });
     /* v2.36 (the household's item 2): the "+ Add a card" tile itself takes the photo (the camera); Choose a photo picks one */
     const sg=app.querySelector("#cardSwipe.cardadd"); if(sg){ const go=()=>{ if(!(cardRead && cardRead.busy)) cardScan(true); };
       sg.onclick=go; sg.onkeydown=e=>{ if(e.key==="Enter" || e.key===" "){ e.preventDefault(); go(); } }; }
     const pg=app.querySelector("#cardPhotoGo"); if(pg) pg.onclick=()=>cardScan(false);
-    const tg=app.querySelector("#cardTypeGo"); if(tg) tg.onclick=()=>{ if(cardsGet().length>=CARD_MAX){ showToast(`Up to ${CARD_MAX} cards`); return; } cardRead=null; cardShow=null; cardEdit={ id:"", name:"", chain:"", num:"", photo:"" }; render(); }; } }
+    const tg=app.querySelector("#cardTypeGo"); if(tg) tg.onclick=()=>{ if(cardsGet().length>=CARD_MAX){ showToast(`Up to ${CARD_MAX} cards`); return; } cardRead=null;
+      cardShow={ add:true, view:cardShow.view }; cardEdit={ id:"", name:"", chain:"", num:"", photo:"", inline:true }; render();   // v2.37 (item 1): in the same drop-down
+      const f=app.querySelector("#ceName"); if(f) f.focus(); }; } }   // inside the tap, so iOS raises the keyboard
 function rcptNudgeOn(){ if(!rcptAskOn() || rcpt) return false;
   let at=0; try{ at=+localStorage.getItem("ml_rcptnudge")||0; }catch(e){}
   return at>0 && Date.now()-at < RCPT_NUDGE_MS; }   // v2.29: at the day's limit it still shows, and says so
@@ -5732,7 +5733,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>Add items…</span></button></div>`:""}
-  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${baNew?baNewHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${editing?editSheet():""}
   ${toast?`<div class="toast" id="toast"><span>${esc(toast)}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(toastAction.label)}</button>`:""}</div>`:""}`;
 }
@@ -6989,7 +6990,7 @@ function renderSettingsPage(){
     ${bottomNav({planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
     ${diagOpen?diagSheet():""}
     ${listsOpen?listsSheet():""}
-    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${baNew?baNewHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
     ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
     ${editing?editSheet():""}

@@ -79,3 +79,26 @@ export function reconcile(lines, cart, score){ lines = Array.isArray(lines) ? li
     for(let k = c0 + 1; k < c1; k++) if(!used.has(k)) cs.push(k);
     for(let n = 0; n < Math.min(ls.length, cs.length); n++){ pair[ls[n]] = cs[n]; how[ls[n]] = "order"; used.add(cs[n]); } }
   return { pair, how, missing: cart.map((_, k) => k).filter(k => !used.has(k)) }; }
+
+/* v2.37 (the household's item 3, option A): a band in the programme's own colour with its name, above the barcode.
+   Colours only, by eye — the programmes' logos are trademarks and are not shipped; colours could not be checked against
+   brand guides from where this was built. An unknown name gets a steady colour of its own from its letters. */
+const BRANDS = [   // [words to find in the name, background, text] — specific names before the chains that run them
+  ["everyday rewards", "#FF6A13", "#fff"], ["flybuys", "#0A2D8C", "#fff"], ["fly buys", "#0A2D8C", "#fff"],
+  ["woolworths", "#178841", "#fff"], ["coles", "#E01A22", "#fff"], ["aldi", "#00205B", "#fff"], ["iga", "#E2231A", "#fff"],
+  ["qantas", "#E40000", "#fff"], ["velocity", "#C8102E", "#fff"], ["priceline", "#E4007C", "#fff"], ["chemist warehouse", "#D7282F", "#fff"],
+  ["myer", "#111111", "#fff"], ["david jones", "#111111", "#fff"], ["bunnings", "#0D5257", "#fff"], ["kmart", "#E31837", "#fff"],
+  ["big w", "#0055A5", "#fff"], ["dan murphy", "#0E5B3A", "#fff"], ["costco", "#005DAA", "#fff"],
+  ["walmart", "#0071CE", "#fff"], ["target", "#CC0000", "#fff"], ["wawa", "#A6192E", "#FFD100"], ["wegmans", "#231F20", "#fff"],
+  ["subway", "#008C15", "#FFC20E"], ["sheetz", "#D7282F", "#fff"], ["stop & shop", "#E2001A", "#fff"], ["stop and shop", "#E2001A", "#fff"],
+  ["true value", "#E31837", "#fff"], ["kroger", "#134B97", "#fff"], ["safeway", "#E21836", "#fff"], ["cvs", "#CC0000", "#fff"],
+  ["walgreens", "#E31837", "#fff"], ["starbucks", "#00704A", "#fff"], ["7-eleven", "#008163", "#fff"], ["пятёрочка", "#E31E24", "#fff"], ["пятерочка", "#E31E24", "#fff"]];
+const CHAIN_BRAND = { coles:"flybuys", woolworths:"everyday rewards" };
+const SPARE = ["#3B6E8F", "#7A4E9C", "#2F7D6D", "#9C5B2E", "#5B6B2F", "#8F3B5A", "#2E5E9C", "#6B4F3A"];
+export function cardBrand(name, chain){ const n = " " + String(name || "").toLowerCase().replace(/\s+/g, " ").trim() + " ";
+  const hit = BRANDS.find(([w]) => n.includes(" " + w) );   // a word that STARTS a word in the name ("iga" is not found in "sigarette")
+  if(hit) return { bg:hit[1], fg:hit[2] };
+  const cb = CHAIN_BRAND[chain]; if(cb){ const b = BRANDS.find(([w]) => w === cb); return { bg:b[1], fg:b[2] }; }
+  const s = n.trim(); if(!s) return { bg:"#6B7280", fg:"#fff" };
+  let h = 0; for(const ch of s) h = (h * 31 + ch.codePointAt(0)) >>> 0;
+  return { bg:SPARE[h % SPARE.length], fg:"#fff" }; }
