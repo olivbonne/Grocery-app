@@ -99,6 +99,9 @@ const seed = (o) => { o=o||{}; return `(() => {
     ok('…a card with no number and no photo is refused, saying why', /number, or a photo/.test(await page.evaluate(()=>(document.querySelector('#ceSheet .rpterr')||{}).textContent||'')), '');
     await page.locator('#ceNum').fill('6008 9432 1861 6910');
     await tap('#ceSave');
+    /* SUPERSEDED by v2.37: a card typed in is saved in the card's own drop-down, which then shows it — put it away first.
+       Still protects everything below. */
+    await tap('#cardClose');
     const saved = JSON.parse(await ls('ml_cards')||'[]');
     ok('…with its number it is saved on this phone (spaces dropped)', saved.length===1 && saved[0].num==='6008943218616910' && saved[0].chain==='coles', JSON.stringify(saved));
     ok('…and listed under Smart features › Cards at the till', await page.evaluate(()=>{ const h=[...document.querySelectorAll('.optsect')].find(x=>x.dataset.sect==='Smart features'), b=h&&h.nextElementSibling;

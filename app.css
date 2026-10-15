@@ -939,6 +939,14 @@
   .rcguess{display:block;font-size:11.5px;font-weight:700;color:var(--accent);margin-top:2px}
   /* v2.31 a membership card at the till: black on white whatever the theme — a scanner needs it (the one place colours are not tokens) */
   .cardface{background:#fff;border-radius:14px;padding:14px 10px 10px;text-align:center}
+  /* v2.37 (item 3, option A): the programme's colour and name above the barcode */
+  .cardband{display:flex;align-items:center;margin:-14px -10px 12px;padding:11px 14px;border-radius:14px 14px 0 0;text-align:left}
+  .cardband-n{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800;font-size:19px;letter-spacing:.2px}
+  .cardface-sm .cardband{margin:-10px -8px 8px;padding:7px 12px}
+  .cardface-sm .cardband-n{font-size:15px}
+  /* v2.37 (item 1): Type it in, inside the card drop-down */
+  .cardtype{padding:4px 2px 0}
+  .cardtype .ppedbtns{margin-top:10px}
   .cardface .bc128{display:block;width:100%;height:96px}
   .cardface img{display:block;width:100%;max-height:52vh;object-fit:contain;border-radius:8px}
   .cardnum{margin-top:8px;font-size:20px;font-weight:800;letter-spacing:1.5px;color:#111;font-variant-numeric:tabular-nums}
@@ -955,10 +963,8 @@
   .sheet-bg.sheettop .sheet { border-radius:0 0 22px 22px; border-top:none; border-bottom:1px solid var(--glass-brd); padding:calc(14px + env(safe-area-inset-top)) 18px 18px; animation:sheetdown .24s cubic-bezier(.32,.72,.3,1); }
   @keyframes sheetdown { 0%{opacity:0;transform:translateY(-28px)} 70%{opacity:1;transform:translateY(4px)} 100%{opacity:1;transform:translateY(0)} }
   #cardSwipe { touch-action:pan-y; }
-  .cardhead { display:flex; align-items:center; gap:10px; margin-top:10px; }
+  .cardhead { display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-top:10px; }
   .cardhead .disp { flex:1; min-width:0; font-weight:800; font-size:17px; }
-  .cardlogo { flex:none; width:40px; height:28px; border-radius:6px; object-fit:cover; }
-  .cardlogo-t { display:inline-flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:15px; }
   .carddots { display:flex; justify-content:center; gap:8px; margin-top:10px; }
   .carddot { width:9px; height:9px; padding:0; border-radius:50%; border:none; background:var(--muted2); opacity:.35; }
   .carddot.on { background:var(--text); opacity:1; }
@@ -1690,7 +1696,7 @@
      height:auto the un-pinned fallback still sits on the bottom edge. */
   .addsheet { max-height:92dvh;
     display:flex; flex-direction:column; padding-bottom:calc(10px + env(safe-area-inset-bottom)); }
-  .addsheet.kbup { padding-bottom:0; }   /* v1.31 with the keyboard up, the search bar sits flush on it (no dark gap) */
+  .addsheet.kbup { padding-bottom:12px; }   /* v1.31 with the keyboard up, the search bar sat flush on it; v2.37 (item 5): a little gap above the keyboard's bar */
   /* when JS pins it, the sheet positions itself rather than being laid out by the flex scrim */
   .addsheet.vvpin { position:fixed; left:0; right:0; margin:0 auto; }
   /* v1.40 item 1: the add sheet now deploys slowly and smoothly (0.8s) instead of snapping up in
