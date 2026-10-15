@@ -26,6 +26,21 @@ Nothing in the app changes for the household. If anything misbehaves, paste the 
 ---
 
 ## 2. Turn on sign-in (Firebase Authentication) (≈10 min)
+**First, the quiet sign-in (v2.39).** Each phone signs itself in with an anonymous account — no name, no email, nothing
+for anyone to type — so the app's server can tell one phone from another (and refuse callers that are not the app).
+Until you switch it on, the app quietly carries on as before.
+
+1. Console → **Build › Authentication** → **Get started**.
+2. **Sign-in method** tab → enable **Anonymous**.
+3. **Settings › Authorized domains** → check the app's Vercel domain is listed (add it if not).
+
+**Check:** open the app — Settings › Your data says "signed in quietly". Authentication › Users shows anonymous users.
+
+Then watch the Vercel logs (Functions) for a few days for lines `[guard] … unsigned`. When only old phones still show
+them, set the environment variable `API_AUTH=require` in Vercel (Settings › Environment Variables, Production) and
+redeploy: from then on the AI features answer only the app. To undo, set it back to `log` and redeploy.
+
+### 2b. Sign-in with a name, later
 **Unlocks:** plan item 4 — lists only the people on them can open (a leaked link no longer opens it), your look and
 cards on every phone you sign in on, and then shared prices between households (item 5) and Siri (step 5).
 
@@ -82,7 +97,20 @@ Do this after step 2 (sign-in), so the endpoints can check who is asking.
 
 ---
 
-## 6. Decisions, not settings
+## 6. Daily limits and a firewall (≈15 min)
+**Unlocks:** nobody can run up the AI bill, even with the app's address.
+
+1. **Upstash** — create a free Redis database at upstash.com (whether the free tier still exists could not be checked
+   from here). Copy its REST URL and token into Vercel env `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` and
+   redeploy. The limits per phone per day are in `lib/guard.js`; change one with `QUOTA_RECEIPT`, `QUOTA_PARSE` etc.
+2. **Vercel Firewall** — add a rate-limit rule on `/api/` (for example 30 requests per minute per IP). The names of the
+   menus could not be checked from here.
+3. **Google Cloud console** → **APIs & Services › Credentials** → the browser key → **Application restrictions:
+   Websites** → add the app's domain (and `localhost` only if you test locally).
+
+---
+
+## 7. Decisions, not settings
 - **Basket handoff** (send the list to Coles/Woolworths online): needs a retailer or affiliate agreement.
 - **Market List+** (the paid tier): needs a billing provider (Stripe for the web; Apple if it goes on the App Store).
 - **R24 — stay a web app or go on the App Store**: recommendation is to stay a web app until sign-in and one paid

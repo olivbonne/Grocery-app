@@ -7,17 +7,17 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.38";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.38";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.38";
-import { compareStores, worthIt } from "./compare.js?v=2.38";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.38";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.38";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.38";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.39";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.39";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.39";
+import { compareStores, worthIt } from "./compare.js?v=2.39";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.39";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.39";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.39";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.38";
+const APP_VERSION = "v2.39";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -1935,6 +1935,30 @@ function subscribe(){
     applyingRemote = true; renderKeepingAdd(); applyingRemote = false;   // v1.45: never tear down a focused search bar mid-add
   }, err => { console.error(err); showToast("⚠︎ Can't read database — publish Firestore rules"); });
 }
+/* v2.39 (architecture review A1): a quiet sign-in. Each phone gets an anonymous Firebase account — no name, no email — so
+   the server can tell one phone from another and, later, the list can know its people by account. Loaded on its own, after
+   the list, so it never slows the start; until the owner turns on Anonymous sign-in in Firebase it fails quietly and
+   everything works as before (authNote() says why, in Settings › Your data). */
+var _auth = null, _authErr = "";   // var: Settings reads them at any time
+function authStart(fbApp){ import("/vendor/firebasejs/10.12.2/firebase-auth.js").then(m=>{
+    if(!m || typeof m.initializeAuth!=="function") return;   // the test stub has no auth
+    const a = m.initializeAuth(fbApp, { persistence:[m.indexedDBLocalPersistence, m.browserLocalPersistence] });   // no popup/redirect helpers: nothing loads from other sites
+    _auth = a;
+    m.onAuthStateChanged(a, u=>{ if(u){ _authErr=""; return; }
+      if(navigator.onLine===false) return;
+      m.signInAnonymously(a).catch(e=>{ _authErr = String((e && (e.code || e.message)) || "failed").slice(0,80); }); });
+    window.addEventListener("online", ()=>{ if(_auth && !_auth.currentUser) m.signInAnonymously(_auth).catch(()=>{}); });
+  }).catch(()=>{ _authErr="sdk"; }); }
+async function apiToken(){ try{ const u = _auth && _auth.currentUser; if(!u) return "";
+    return await Promise.race([u.getIdToken(), new Promise(r=>setTimeout(()=>r(""), 3000))]) || ""; }catch(e){ return ""; } }
+/* every call to the app's own server goes through here, so it carries the phone's sign-in when there is one */
+async function apiFetch(url, opts){ const o = Object.assign({}, opts || {}); const t = await apiToken();
+  if(t) o.headers = Object.assign({}, o.headers || {}, { authorization:"Bearer " + t });
+  return fetch(url, o); }
+function authNote(){ if(_auth && _auth.currentUser) return "This phone is signed in quietly (an anonymous account — no name, no email).";
+  if(/operation-not-allowed|admin-restricted/.test(_authErr)) return "This phone isn't signed in: Anonymous sign-in isn't turned on in Firebase yet.";
+  if(!configured) return "";
+  return _authErr ? `This phone isn't signed in yet (${_authErr}).` : "This phone isn't signed in yet."; }
 try {
   if(firebaseConfig.apiKey !== "REPLACE_ME"){
     const app = initializeApp(firebaseConfig);
@@ -1942,6 +1966,7 @@ try {
     catch(e){ db = getFirestore(app); }   // fallback if persistence unavailable
     configured = true;
     subscribe();
+    authStart(app);
   }
 } catch(e){ console.error(e); }
 /* v2.15: the service worker (sw.js) keeps the app, its fonts, its icons and the Firebase SDK on the phone, so it
@@ -4392,7 +4417,7 @@ function rptSend(){ const text=String(rpt.text||"").trim();
   rpt.busy=true; rpt.err=""; render();
   const ctl=(typeof AbortController!=="undefined") ? new AbortController() : null;
   const timer=setTimeout(()=>{ if(ctl) ctl.abort(); }, 20000);
-  fetch("/api/feedback", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify(body), signal: ctl ? ctl.signal : undefined })
+  apiFetch("/api/feedback", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify(body), signal: ctl ? ctl.signal : undefined })
     .then(r=>r.json().catch(()=>({})).then(j=>({ ok:r.ok, j })))
     .then(({ok,j})=>{ if(!rpt) return; if(!ok || !j || j.ok!==true) throw new Error("not sent");
       rptCount(); rpt={ sent:true }; render(); })
@@ -4442,7 +4467,7 @@ function rcRead(file){
   const timer=setTimeout(()=>{ if(ctl) ctl.abort(); }, 75000);
   planShrinkImage(file, 2000, 0.8)
     .then(img=>{ if(rcpt && rcpt.busy){ rcpt.step="Reading the receipt…"; render(); }
-      return fetch("/api/receipt", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ image:img }), signal: ctl ? ctl.signal : undefined }); })
+      return apiFetch("/api/receipt", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ image:img }), signal: ctl ? ctl.signal : undefined }); })
     .then(r=>r.json().catch(()=>({})).then(j=>({ ok:r.ok, j })))
     .then(({ok,j})=>{ if(!rcpt) return;
       if(!ok){ const c=j && j.code;
@@ -4745,7 +4770,7 @@ function amReadSign(file){
   const timer=setTimeout(()=>{ if(ctl) ctl.abort(); }, 75000);
   planShrinkImage(file, 1400, 0.8)
     .then(img=>{ if(amRead && amRead.busy){ amRead.step="Reading the sign…"; render(); }
-      return fetch("/api/aisle", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ image:img }), signal: ctl ? ctl.signal : undefined }); })
+      return apiFetch("/api/aisle", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ image:img }), signal: ctl ? ctl.signal : undefined }); })
     .then(r=>r.json().catch(()=>({})).then(j=>({ ok:r.ok, j })))
     .then(({ok,j})=>{ if(ok) aisleCount();   // counted even if the sheet was closed while it read
       if(!amOpen) return;
@@ -4867,7 +4892,7 @@ function cardReadPhoto(file){
     .then(here=>{ if(!cardRead) return null;
       if(here){ done("", here); return null; }
       cardRead.step="Reading the card…"; render();
-      return fetch("/api/card", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ image:photo }), signal: ctl ? ctl.signal : undefined })
+      return apiFetch("/api/card", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ image:photo }), signal: ctl ? ctl.signal : undefined })
         .then(r=>r.json().catch(()=>({})).then(j=>({ ok:r.ok, j }))); })
     .then(res=>{ if(!res || !cardRead) return; const { ok, j }=res;
       if(!ok){ const c=j && j.code;
@@ -5125,7 +5150,7 @@ async function planSearch(){
   if(!q){ planAdd.impErr="Type what you want to cook."; render(); return; }
   planAdd.sq=q; planAdd.impBusy=true; planAdd.impErr=""; planAdd.sres=null; render();
   let res=null, data=null;
-  try{ res=await fetch("/api/recipe-search",{ method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({q, scope:(planAdd.sscope||"web")}) }); }   // v2.05: the TikTok scope still exists server-side, unused by the app — every result links to TikTok anyway
+  try{ res=await apiFetch("/api/recipe-search",{ method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({q, scope:(planAdd.sscope||"web")}) }); }   // v2.05: the TikTok scope still exists server-side, unused by the app — every result links to TikTok anyway
   catch(e){ res=null; }
   if(!planAdd) return;
   planAdd.impBusy=false;
@@ -5164,7 +5189,7 @@ async function planImport(payload){
   planAdd.impBusy=true; planAdd.impErr=""; render();
   let res=null, data=null;
   try{
-    res=await fetch("/api/recipe", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(payload) });
+    res=await apiFetch("/api/recipe", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(payload) });
   }catch(e){ res=null; }
   if(!planAdd) return;
   if(!res){ planAdd.impBusy=false; planAdd.impErr="Couldn't reach the reader. Check your connection — you can still type ingredients."; render(); return; }
@@ -6156,7 +6181,7 @@ async function smartAdd(){
   smartOpen=true; smartLoading=true; smartError=""; smartItems=[]; smartEdit=null; smartServings=null; smartTitle=""; render();
   let res, data;
   try{
-    res=await fetch(recipe?"/api/recipe":"/api/parse",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({text})});
+    res=await apiFetch(recipe?"/api/recipe":"/api/parse",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({text})});
   }catch(e){ res=null; }
   if(!res){
     smartLoading=false; smartError="Couldn't reach Smart add. Check your connection — you can still type items normally."; render(); return;
@@ -6965,6 +6990,7 @@ function optionsBody(){
     ${stuckLog().length ? `<button class="optaction" id="optStuck" style="margin-top:10px">Screen log · ${stuckLog().length}</button>` : ""}
     ${sectHR("Your data")}
     <a class="optaction" id="optPrivacy" href="/privacy.html" style="margin-top:2px">Privacy — what the app keeps, and where</a>
+    ${authNote() ? `<div id="authNote" style="margin:8px 2px 2px;font-size:12.5px;color:var(--muted2);font-weight:600">${esc(authNote())}</div>` : ""}
     ${(me && (state.members||[]).includes(me)) ? `<button class="optaction" id="optLeave" style="margin-top:10px">Leave this list</button>` : ""}
     <button class="optaction" id="optEmpty" style="margin-top:10px">Empty this list for everyone</button>
     <button class="optaction" id="optForget" style="margin-top:10px">Forget everything on this phone</button>

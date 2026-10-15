@@ -90,4 +90,33 @@ for (const f of fs.readdirSync(path.join(root, 'api')).filter((x) => x.endsWith(
 }
 if (!apiOk) process.exit(1);
 
-console.log(`SYNTAX_OK — js/app.js (${app.split('\n').length} lines, canary caught) + ${files.length - 1} more modules, imports linked + api/*.js`);
+/* 5. the shared server helpers (lib/guard.js, v2.39) — CommonJS too */
+let libOk = true;
+if (fs.existsSync(path.join(root, 'lib'))) {
+  for (const f of fs.readdirSync(path.join(root, 'lib')).filter((x) => x.endsWith('.js'))) {
+    const q = check(path.join(root, 'lib', f));
+    if (q.status !== 0) { libOk = false; console.error((q.stderr || '').trim()); console.error('SYNTAX FAIL: lib/' + f); }
+  }
+}
+if (!libOk) process.exit(1);
+
+/* 6. the CSP hashes (v2.39). vercel.json pins each of index.html's inline scripts by its sha256 in the
+   Content-Security-Policy: an inline script edited without its hash is blocked by the browser on the live
+   site, and the app would not start. So the two must agree, exactly. */
+{
+  const cspFail = (d) => { console.error('CSP FAIL: index.html\'s inline scripts and the hashes in vercel.json disagree — ' + d + '; update vercel.json (see CLAUDE.md)'); process.exit(1); };
+  const vj = JSON.parse(fs.readFileSync(path.join(root, 'vercel.json'), 'utf8'));
+  const cspOf = (src) => { for (const e of vj.headers || []) if (e.source === src) for (const h of e.headers || []) if (h.key === 'Content-Security-Policy') return h.value; return null; };
+  const c1 = cspOf('/'), c2 = cspOf('/index.html');
+  if (!c1 || !c2) cspFail('no Content-Security-Policy for "/" and "/index.html"');
+  if (c1 !== c2) cspFail('the policies for "/" and "/index.html" differ');
+  const ss = (c1.split(';').map((x) => x.trim()).find((x) => x.startsWith('script-src')) || '');
+  const want = new Set((ss.match(/'sha256-[^']+'/g) || []).map((x) => x.slice(8, -1)));
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const have = new Set();
+  for (const m of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) have.add(require('crypto').createHash('sha256').update(m[1], 'utf8').digest('base64'));
+  const miss = [...have].filter((x) => !want.has(x)), extra = [...want].filter((x) => !have.has(x));
+  if (miss.length || extra.length) cspFail((miss.length ? 'not in vercel.json: ' + miss.join(' ') : '') + (miss.length && extra.length ? '; ' : '') + (extra.length ? 'no longer in index.html: ' + extra.join(' ') : ''));
+}
+
+console.log(`SYNTAX_OK — js/app.js (${app.split('\n').length} lines, canary caught) + ${files.length - 1} more modules, imports linked + api/*.js + lib/*.js + CSP hashes`);

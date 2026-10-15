@@ -264,6 +264,19 @@ URLs a search hands back are checked with the same host guard as `/api/recipe`, 
 because the app feeds them straight back to that endpoint to be fetched: a search engine is free to
 return a link pointing inside this network, and it is dropped here before the app ever sees it.
 
+## Who may call, and how often (v2.39)
+Every function calls `guard(req, name)` from `lib/guard.js` first. Its settings, all optional:
+
+| Variable | What it does |
+|---|---|
+| `API_AUTH` | `log` (default): check the phone's quiet sign-in when sent, log calls without one, block nothing. `require`: a call without one gets 401 `signin` (feedback excepted). `off`: no check. |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Turn on the daily counts (Upstash Redis). Without both, nothing is counted. |
+| `QUOTA_<NAME>` | A function's limit per phone per day, e.g. `QUOTA_RECEIPT`, `QUOTA_RECIPE_SEARCH`. |
+| `QUOTA_SALT` | Optional: what an address is scrambled with before it is counted. |
+| `FIREBASE_PROJECT_ID` | Optional: the Firebase project a sign-in must belong to (defaults to the app's). |
+
+None is a secret except the Upstash token, which stays in Vercel.
+
 ## Why the key stays server-side
 
 The serverless functions read `process.env.GEMINI_API_KEY` / `process.env.GROQ_API_KEY`

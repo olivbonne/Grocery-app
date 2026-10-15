@@ -12,6 +12,7 @@
 // Like a receipt, the photo is the household's: this endpoint never logs the image or the model's reply — only the
 // reason for a failure and the reply's length.
 
+const { guard } = require('../lib/guard.js');
 const MAX_IMAGE_CHARS = 3500000; // ~2.6MB of image; Vercel caps the request body around 4.5MB
 const MODEL_BUDGET_MS = 30000;  // room for a retry or two inside the 60s function cap
 
@@ -148,6 +149,8 @@ module.exports = async (req, res) => {
       res.status(405).json({ error: 'Method not allowed', code: 'method' });
       return;
     }
+    const gate = await guard(req, 'aisle');   // v2.39 (architecture review A1): who is calling, and how often — see lib/guard.js
+    if (gate.block) { res.status(gate.status).json({ error: gate.error, code: gate.code }); return; }
 
     const ai = aiProvider();
     if (!ai) return fail(res, 500, 'not_configured', 'Server not configured');
