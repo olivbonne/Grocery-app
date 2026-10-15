@@ -88,7 +88,8 @@ const seed = (o) => { o=o||{}; return `(() => {
     const d = await page.evaluate(()=>[...document.querySelectorAll('.carddots .carddot')].map(x=>x.classList.contains('carddot-add') ? '+' : x.classList.contains('on') ? 'on' : 'o'));
     ok('(2) the "+" is the first dot, left of the cards\'', d[0]==='+' && d.length===3, JSON.stringify(d));
     await swipe(120); await page.waitForTimeout(300);
-    ok('(2) a swipe right from the first card reaches "Add a card"', await title()==='Add a card' && await page.evaluate(()=>!!document.querySelector('.carddot-add.on')), await title());
+    /* SUPERSEDED by v2.38: the panel is titled "Add card". Still protects where the swipe lands. */
+    ok('(2) a swipe right from the first card reaches "Add a card"', /^Add (a )?card$/.test(await title()) && await page.evaluate(()=>!!document.querySelector('.carddot-add.on')), await title());
     await swipe(-120); await page.waitForTimeout(300);
     ok('(2) …and a swipe left comes back to the first card', /Flybuys/.test(await title()), await title());
     await tap('#cardClose');
@@ -113,7 +114,8 @@ const seed = (o) => { o=o||{}; return `(() => {
     ok('(1) …with the name field ready to type in', ty.focus==='ceName', ty.focus);
     await shot('type');
     await tap('#ceCancel');
-    ok('(1) Cancel goes back to "Add a card"', await title()==='Add a card' && await page.evaluate(()=>!document.querySelector('#ceName')), await title());
+    /* SUPERSEDED by v2.38: the panel is titled "Add card". Still protects what Cancel does. */
+    ok('(1) Cancel goes back to "Add a card"', /^Add (a )?card$/.test(await title()) && await page.evaluate(()=>!document.querySelector('#ceName')), await title());
     await tap('#cardTypeGo');
     await page.locator('#ceName').fill('Corner Deli club'); await page.locator('#ceNum').fill('12345678'); await tap('#ceSave');
     const sv = await page.evaluate(()=>({ cards:JSON.parse(localStorage.getItem('ml_cards')||'[]').map(c=>c.name), t:(document.querySelector('#cardTitle')||{}).textContent, band:!!document.querySelector('#cardSwipe .cardband'), bar:!!document.querySelector('#cardSwipe .bc128') }));
