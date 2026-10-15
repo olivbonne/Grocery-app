@@ -7,17 +7,17 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.37";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.37";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.37";
-import { compareStores, worthIt } from "./compare.js?v=2.37";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.37";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.37";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.37";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.38";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.38";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.38";
+import { compareStores, worthIt } from "./compare.js?v=2.38";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.38";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.38";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.38";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.37";
+const APP_VERSION = "v2.38";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -4821,18 +4821,18 @@ function cardViewPref(){ try{ return localStorage.getItem("ml_cardview")==="phot
 function cardShowHTML(){ const all=cardsGet(); let ix=cardShow.add ? all.length : all.findIndex(x=>x.id===cardShow.id); if(ix<0) ix=0;
   const dots = `<div class="carddots" role="tablist" aria-label="${ix<all.length ? `Card ${ix+1} of ${all.length}` : "Add a card"}"><button class="carddot carddot-add${ix===all.length?" on":""}" role="tab" aria-selected="${ix===all.length}" data-card-addpanel="1" aria-label="Add a card">+</button>${all.map((x,k)=>`<button class="carddot${k===ix?" on":""}" role="tab" aria-selected="${k===ix}" data-card-pick="${esc(x.id)}" aria-label="${esc(x.name)}"></button>`).join("")}</div>`;   /* v2.37 (the household's item 2): the + dot on the left of the first */
   if(ix>=all.length){ const rd=cardRead;
-    /* v2.37 (the household's item 1): Type it in shows the name and number in the same drop-down */
-    if(cardEdit && cardEdit.inline) return `<div class="sheet-bg sheettop" id="cardBg"><div class="sheet" id="cardSheet" role="dialog" aria-labelledby="ceTitle">
-      <div id="ceSheet" class="cardtype" role="group" aria-labelledby="ceTitle">${cardEditBody()}</div>
-    </div></div>`;
+    /* v2.37 (the household's item 1): Type it in shows the name and number in the same drop-down.
+       v2.38 (the household's items 2, 3): shorter words — Add card, Choose photo, Type it — no explanations under them, and
+       the form opens right below the buttons, without a photo row (the Add card tile above is the camera) */
+    const typing = !!(cardEdit && cardEdit.inline);
     return `<div class="sheet-bg sheettop" id="cardBg"><div class="sheet" id="cardSheet" role="dialog" aria-labelledby="cardTitle">
-      <div class="cardface cardadd" id="cardSwipe" role="button" tabindex="0" aria-label="Take a photo of the card" ${rd&&rd.busy?'aria-disabled="true"':""}><span class="cardadd-plus" aria-hidden="true">+</span><div class="disp" id="cardTitle">Add a card</div><div class="cardadd-sub">Tap to take a photo of it</div></div>
+      <div class="cardface cardadd" id="cardSwipe" role="button" tabindex="0" aria-label="Take a photo of the card" ${rd&&rd.busy?'aria-disabled="true"':""}><span class="cardadd-plus" aria-hidden="true">+</span><div class="disp" id="cardTitle">Add card</div></div>
       ${rd && rd.busy ? `<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>${esc(rd.step||"Reading the card…")}</div>` : ""}
       ${rd && rd.err ? `<div class="rpterr" role="alert">${esc(rd.err)}</div>` : ""}
-      <div class="cardaddbtns"><div class="ppedbtns" style="margin-top:0"><button class="optaction" id="cardPhotoGo" ${rd&&rd.busy?"disabled":""}>Choose a photo</button><button class="optaction" id="cardTypeGo">Type it in</button></div></div>
-      <div class="hint" style="margin-top:8px">The photo is read to find the card's name and number, then the card is kept on this phone only.</div>
+      <div class="cardaddbtns"><div class="ppedbtns" style="margin-top:0"><button class="optaction" id="cardPhotoGo" ${rd&&rd.busy?"disabled":""}>Choose photo</button><button class="optaction${typing?" on":""}" id="cardTypeGo" aria-expanded="${typing}">Type it</button></div></div>
+      ${typing ? `<div id="ceSheet" class="cardtype" role="group" aria-label="The card's name and number">${cardEditBody()}</div>` : ""}
       ${all.length ? dots : ""}
-      <div style="display:flex;gap:8px;margin-top:10px"><button class="optaction" id="cardClose" style="margin-top:0">Done</button></div>
+      ${typing ? "" : `<div style="display:flex;gap:8px;margin-top:10px"><button class="optaction" id="cardClose" style="margin-top:0">Done</button></div>`}
     </div></div>`; }
   const c=all[ix];
   const bc=c.num ? code128SVG(c.num, 70) : "", want=cardShow.view || cardViewPref(), view=((want==="photo" && c.photo) || !bc) ? "photo" : "code";
@@ -4888,17 +4888,17 @@ function cardEditHTML(){ if(cardEdit.inline) return "";
   return `<div class="sheet-bg kbpin" id="ceBg"><div class="sheet" id="ceSheet" role="dialog" aria-labelledby="ceTitle">${cardEditBody()}</div></div>`; }
 function cardEditBody(){ const e=cardEdit;
   return `
-    <div class="disp" id="ceTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">${e.id ? "Edit card" : e.fromScan ? "Check the card" : e.inline ? "Type in the card" : "Add a card"}</div>
+    ${(e.inline && !e.fromScan) ? "" : `<div class="disp" id="ceTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">${e.id ? "Edit card" : e.fromScan ? "Check the card" : "Add a card"}</div>`}
     ${e.fromScan ? `<div class="hint" style="text-align:left;margin:0 0 6px">Read from the photo — check the name and number, then save.</div>` : ""}
     <p class="palabel">Name</p>
     <input id="ceName" class="cefield" value="${esc(e.name)}" placeholder="Flybuys" autocomplete="off" />
     <p class="palabel">Card number</p>
     <input id="ceNum" class="cefield" value="${esc(e.num)}" inputmode="numeric" placeholder="The number under the barcode" autocomplete="off" />
-    <p class="palabel">Photo of the card (if the barcode won't scan)</p>
-    <div style="display:flex;gap:8px;align-items:center">${e.photo ? `<img class="cethumb" src="${esc(e.photo)}" alt="" />` : ""}<button class="optaction" id="cePhoto" style="margin-top:0">${CAMERA_SVG(16)} ${e.photo ? "New photo" : "Add a photo"}</button>${e.photo ? `<button class="optaction" id="ceNoPhoto" style="margin-top:0">Remove</button>` : ""}</div>
+    ${e.inline ? "" : `<p class="palabel">Photo of the card (if the barcode won't scan)</p>
+    <div style="display:flex;gap:8px;align-items:center">${e.photo ? `<img class="cethumb" src="${esc(e.photo)}" alt="" />` : ""}<button class="optaction" id="cePhoto" style="margin-top:0">${CAMERA_SVG(16)} ${e.photo ? "New photo" : "Add a photo"}</button>${e.photo ? `<button class="optaction" id="ceNoPhoto" style="margin-top:0">Remove</button>` : ""}</div>`}
     ${e.busy ? `<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>Preparing the photo…</div>` : ""}
     ${e.err ? `<div class="rpterr" role="alert">${esc(e.err)}</div>` : ""}
-    <div class="hint" style="text-align:left">Kept on this phone only — never shared with the list or sent anywhere.</div>
+    ${e.inline ? "" : `<div class="hint" style="text-align:left">Kept on this phone only — never shared with the list or sent anywhere.</div>`}
     <div class="ppedbtns">${(e.id && !e.inline) ? `<button class="optaction" id="ceDel">Delete</button>` : `<button class="optaction" id="ceCancel">Cancel</button>`}<button class="newlist" id="ceSave">Save</button></div>`; }
 function cardPick(){ const f=document.createElement("input"); f.type="file"; f.accept="image/*";
   f.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";

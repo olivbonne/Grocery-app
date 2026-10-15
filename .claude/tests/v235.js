@@ -98,7 +98,8 @@ const seed = (o) => { o=o||{}; return `(() => {
     const ap = await page.evaluate(()=>({ t:document.querySelector('#cardTitle').textContent, scan:!!document.querySelector('#cardSwipe.cardadd[role=button]'), photo:!!document.querySelector('#cardPhotoGo'), type:!!document.querySelector('#cardTypeGo'), plus:!!document.querySelector('.carddot-add.on') }));
     /* SUPERSEDED by v2.36: the + tile itself is the camera button (no separate "Scan the card"). Still protects: the add
        panel offers taking a photo, choosing one, or typing it in. */
-    ok('(7) one swipe past the last card is "Add a card": scan, choose a photo, or type it in', ap.t==='Add a card' && ap.scan && ap.photo && ap.type && ap.plus, JSON.stringify(ap));
+    /* SUPERSEDED by v2.38: the panel is titled "Add card" (the household's item 2). Still protects the same panel. */
+    ok('(7) one swipe past the last card is "Add a card": scan, choose a photo, or type it in', /^Add (a )?card$/.test(ap.t) && ap.scan && ap.photo && ap.type && ap.plus, JSON.stringify(ap));
     await shot('addpanel');
     const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#cardPhotoGo').click()]);
     await fc.setFiles({ name:'card.png', mimeType:'image/png', buffer:Buffer.from(TINY.split(',')[1],'base64') });
