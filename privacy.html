@@ -74,9 +74,11 @@
         GitHub repository (or a line in the server's log).</li>
     <li><b>Crash reports</b> — when the app breaks, it sends the error's first lines, the version, the page, the screen
         size and the browser: at most three a day, never the list, never its code.</li>
+    <li><b>A quiet account</b> (from v2.39, once it is switched on) — each phone signs in to Firebase (Google) with an anonymous account: a random id, no name, no email. The phone sends it with the features above so the server can tell one phone from another. It is not linked to you, and "Forget everything on this phone" leaves it behind unused.</li>
+    <li><b>Daily counts</b> — so nobody can run up the AI bill, the server counts how many times a day each phone uses these features (or, before a phone is signed in, each internet connection, kept only as a scrambled code). The count is kept by Upstash, a database service, and forgotten after a day. Nothing else about the request is kept.</li>
   </ul>
   <p class="muted">Each of these services handles what it receives under its own terms — Google, Groq, the search
-     services, GitHub, and Vercel, which also sees the usual web requests (an IP address and the time) as it serves the
+     services, GitHub, Upstash, and Vercel, which also sees the usual web requests (an IP address and the time) as it serves the
      app. What they keep, and for how long, is set by them and could not be checked from here.</p>
 
   <h2>What the app never does</h2>

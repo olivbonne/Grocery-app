@@ -80,3 +80,25 @@ can be judged against it.
     outside the repo does not survive.
 26. **Restart the working branch from main after every merge.** Skipping this once produced a conflict
     in the next pull request.
+
+## 8. Architecture, from the first day
+
+*Added 15 October 2026, after the owner pointed out that none of this was raised until they asked for an
+architecture review at v2.38 — over two hundred releases in.*
+
+27. **Raise the architecture questions on day one, without being asked.** Ask who can open the data
+    (sign-in), how it grows (one record or many), where the app must run (web only, or the app stores),
+    and what abuse would cost. Write the answers down before the first feature. *Market List shipped
+    for months on three shortcuts that each suited one household: the share link as the only key, the
+    whole list as one database record, and AI functions open to anyone. Each was reasonable on its own,
+    and each now needs a migration. The owner learned all three at once, at v2.38.*
+28. **Every shortcut is debt, so say it out loud when it is taken.** Say what is good enough for now,
+    what would make it not good enough (strangers, more people, a store listing, a bill), and what fixing
+    it costs. Put it on the open list the owner already reads (the report's "Do later"), not in a commit
+    message. A trade-off nobody was told about is not a decision anyone made.
+29. **Build for the strictest place the app might go.** If it might reach the App Store or Google
+    Play, keep the phone's features (camera, location, storage) behind one layer and the texts in a
+    translation table from the first version. Both are cheap at the start and expensive to retrofit.
+30. **A limit counted on the phone is not a limit.** Anything that protects a bill or other people's
+    data (daily caps, the number of people on a list) has to be enforced by the server or the database
+    rules. The phone can only make it polite.

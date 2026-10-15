@@ -16,6 +16,7 @@
 // never appears in a log line, a response or a URL. Request headers and the IP are never logged; the
 // note itself is meant for the developer, so the log path writes it — and nothing else from the request.
 
+const { guard } = require('../lib/guard.js');
 const KINDS = ['broken', 'looks', 'idea', 'complaint', 'crash'];
 const LABELS = { broken: 'Broken', looks: 'Looks wrong', idea: 'Idea', complaint: 'Complaint', crash: 'Crash' };
 const DIAG_KEYS = ['version', 'page', 'layout', 'icons', 'theme', 'screen', 'ua'];
@@ -77,6 +78,8 @@ async function toGithub(token, repo, kind, text, diag) {
 module.exports = async (req, res) => {
   try {
     if (req.method !== 'POST') return fail(res, 405, 'method', 'Method not allowed');
+    const gate = await guard(req, 'feedback');   // v2.39 (architecture review A1): who is calling, and how often — see lib/guard.js
+    if (gate.block) return fail(res, gate.status, gate.code, gate.error);
 
     let body = req.body;
     if (typeof body === 'string') {

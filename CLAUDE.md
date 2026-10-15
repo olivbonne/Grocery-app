@@ -15,7 +15,7 @@ max-width 480px.
 Seven serverless functions in `api/` (CommonJS, Vercel, `maxDuration` 60s in `vercel.json`):
 `parse.js` (Smart add), `recipe.js` (recipe from text, a link, a TikTok or a photo),
 `recipe-search.js`, `receipt.js` (a receipt photo → items and prices, v2.09; it never logs the photo
-or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and what it lists; built from receipt.js, the same no-logging rule), `card.js` (v2.35, a photo of a membership card → its name and number, only when the phone cannot read the barcode itself; the same no-logging rule, and never the number) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, or a `[feedback]` log line). Their keys and settings are env vars — see `docs/ai-setup.md`.
+or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and what it lists; built from receipt.js, the same no-logging rule), `card.js` (v2.35, a photo of a membership card → its name and number, only when the phone cannot read the barcode itself; the same no-logging rule, and never the number) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, or a `[feedback]` log line). Their shared helper is `lib/guard.js` (v2.39). Their keys and settings are env vars — see `docs/ai-setup.md`.
 
 ## Conventions
 - **Versioning:** bump the version by 0.01 per batch of app changes with `node .claude/tools/bump.js N.NN`
@@ -64,7 +64,7 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   `safeUrl`/`isBlockedHost` with every redirect hop re-checked — do not weaken them.
   Since v2.25 the Firestore rules live in `firebase/firestore.rules` (published by the owner from the console, steps in
   `docs/firestore-rules.md` — a change there does nothing until then), and new list codes come from `newListCode()`
-  (128 bits, `crypto.getRandomValues`). `privacy.html` says what the app keeps and what each feature sends where: a
+  (128 bits, `crypto.getRandomValues`). Since v2.39 every `/api/*` function calls `guard(req, name)` (`lib/guard.js`) first — it checks the phone's quiet Firebase sign-in (`API_AUTH`: log by default, require once the owner switches it) and counts a daily limit when Upstash is configured; the client sends the token through `apiFetch()`, never plain `fetch('/api/…')`. `privacy.html` says what the app keeps and what each feature sends where: a
   feature that changes what it sends, or where, changes that page in the same PR.
 - **New `localStorage` keys that are preferences or data (not a LOOK) must be added to BOTH
   `APP_EXCLUDE_BOOT` and `APP_EXCLUDE`** — they are duplicated deliberately. Otherwise applying an
@@ -73,7 +73,7 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   and `sw.js` PRECACHE lists the same URLs — so a phone never pairs a new page with an old file (the worker
   answers assets from its copy first). Never edit a `?v=` or `APP_VERSION` by hand: `bump.js` changes them all
   together, and `v219.js` fails if any disagree. A new module needs a versioned import, a PRECACHE entry and,
-  when it is pure data, no imports of its own. Imported bindings are read-only: move only what is never
+  when it is pure data, no imports of its own. **index.html's inline scripts are pinned by hash** in vercel.json's Content-Security-Policy (v2.39): editing one means recomputing its hash there — the syntax gate fails until they agree, and the live site would otherwise refuse to run it. Imported bindings are read-only: move only what is never
   reassigned (`syntax.js` links every relative import to an export of its target).
 - **Module top level runs in order, and `applyTheme()` runs at boot (`js/app.js` ≈ line 1200).** A module-level `let`/`const`
   that anything called at boot touches must be declared above that call, or be `var` — otherwise the app dies
@@ -130,6 +130,10 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
 - **Verification is the main thread's job.** Review the executor's diff, then run the suites and
   `/verify-app` yourself. Read the executor's "things I noticed" notes — they have caught real bugs in
   the main thread's own briefs more than once.
+- **Say every shortcut out loud (standing user instruction, 2026-10-15).** When a choice is good enough for one household but
+  not for strangers, growth or an app store (a key in a link, one big record, a limit counted on the phone…), tell the owner
+  in that reply what would make it not good enough and what fixing it costs, and add it to the report's "Do later" list.
+  Raise sign-in, data shape, target platforms and abuse cost before building, not when asked (`docs/lessons-learned.md` §8).
 - **Always end a task by reporting what each agent did** — which subagent made which changes, and
   what the main thread did.
 - Use `/release` for the bump → changelog → commit → PR → merge loop.

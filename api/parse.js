@@ -8,6 +8,7 @@
 // Project Settings -> Environment Variables). It is never logged, never returned to the
 // browser, and never embedded in any static asset. See docs/ai-setup.md.
 
+const { guard } = require('../lib/guard.js');
 const MAX_INPUT_CHARS = 2000;
 const MODEL_BUDGET_MS = 30000;   // the function itself is capped at 60s (vercel.json)
 
@@ -167,6 +168,8 @@ module.exports = async (req, res) => {
       res.status(405).json({ error: 'Method not allowed' });
       return;
     }
+    const gate = await guard(req, 'parse');   // v2.39 (architecture review A1): who is calling, and how often — see lib/guard.js
+    if (gate.block) { res.status(gate.status).json({ error: gate.error, code: gate.code }); return; }
 
     const ai = aiProvider();
     if (!ai) {

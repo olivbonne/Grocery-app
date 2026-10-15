@@ -19,6 +19,7 @@
 // Variables). They are never logged, never returned to the browser, and never
 // embedded in any static asset. See docs/ai-setup.md.
 
+const { guard } = require('../lib/guard.js');
 const MAX_Q = 120;
 const MAX_RESULTS = 8;
 const FETCH_TIMEOUT_MS = 7000;
@@ -345,6 +346,8 @@ module.exports = async (req, res) => {
       res.status(405).json({ error: 'Method not allowed', code: 'method' });
       return;
     }
+    const gate = await guard(req, 'recipe-search');   // v2.39 (architecture review A1): who is calling, and how often — see lib/guard.js
+    if (gate.block) { res.status(gate.status).json({ error: gate.error, code: gate.code }); return; }
 
     let body = req.body;
     if (typeof body === 'string') {
