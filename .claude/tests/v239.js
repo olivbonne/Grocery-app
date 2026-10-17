@@ -75,7 +75,8 @@ export async function signInAnonymously(){ if(window.__authMode==='off'){ const 
     if(!(await page.$('#cardPhotoGo'))) await tap('[data-card-addpanel]');   // a saved card opens first: the + dot is the add panel
     const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#cardPhotoGo').click()]);
     await fc.setFiles({ name:'card.png', mimeType:'image/png', buffer:PNG }); await page.waitForTimeout(1500); };
-  const yourData = async()=>{ await tap('#setNav'); return page.evaluate(()=>(document.querySelector('#authNote')||{}).textContent||''); };
+  /* SUPERSEDED by v2.40: the note is now the first line of "Your account" (#acctBox). Still protects what it says. */
+  const yourData = async()=>{ await tap('#setNav'); return page.evaluate(()=>{ const n=document.querySelector('#authNote') || document.querySelector('#acctBox .acctline'); return n ? n.textContent : ''; }); };
 
   try{
     /* ── the headers ─────────────────────────────────────────────────── */
