@@ -7,17 +7,17 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.39";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.39";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.39";
-import { compareStores, worthIt } from "./compare.js?v=2.39";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.39";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.39";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.39";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.40";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.40";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.40";
+import { compareStores, worthIt } from "./compare.js?v=2.40";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.40";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.40";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.40";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.39";
+const APP_VERSION = "v2.40";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -157,7 +157,7 @@ function mergeAmt(a, b){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -1680,8 +1680,8 @@ function saveLists(a){ localStorage.setItem("ml_lists", JSON.stringify(a)); }
 function dropTube(){ if(!/^🧪\s*Sandbox$/u.test(String(state && state.name || ""))) return false;
   state.name="Sandbox"; try{ rememberList(listCode, "Sandbox"); }catch(e){} return true; }
 function rememberList(code,name){ const a=getLists(); const i=a.findIndex(x=>x.code===code);
-  if(i>=0){ if(name && a[i].name!==name){ a[i].name=name; saveLists(a); } }
-  else { a.push({code, name:name||"Groceries"}); saveLists(a); } }
+  if(i>=0){ if(name && a[i].name!==name){ a[i].name=name; saveLists(a); if(!_acctQuiet) acctWrite({ lists:{ [code]:{ name, ts:Date.now() } } }); } }   // v2.40: the account keeps the name
+  else { a.push({code, name:name||"Groceries"}); saveLists(a); if(!_acctQuiet) acctWrite({ lists:{ [code]:{ name:name||"Groceries", ts:Date.now() } } }); } }   // v2.40: and the new list
 function newListPrompt(){ listsOpen=false; newListOpen=true; newListDraft=""; render(); }
 function newListSheet(){ return `<div class="sheet-bg kbpin" id="newListBg"><div class="sheet" id="newListSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">New list</div>
@@ -1940,11 +1940,18 @@ function subscribe(){
    the list, so it never slows the start; until the owner turns on Anonymous sign-in in Firebase it fails quietly and
    everything works as before (authNote() says why, in Settings › Your data). */
 var _auth = null, _authErr = "";   // var: Settings reads them at any time
+var _authM = null;   // v2.40 (sign-in by email): the auth module, kept for the email-link calls
 function authStart(fbApp){ import("/vendor/firebasejs/10.12.2/firebase-auth.js").then(m=>{
     if(!m || typeof m.initializeAuth!=="function") return;   // the test stub has no auth
     const a = m.initializeAuth(fbApp, { persistence:[m.indexedDBLocalPersistence, m.browserLocalPersistence] });   // no popup/redirect helpers: nothing loads from other sites
-    _auth = a;
-    m.onAuthStateChanged(a, u=>{ if(u){ _authErr=""; return; }
+    _auth = a; _authM = m;
+    /* v2.40: opened from the sign-in email's link — finish signing in, then take the link out of the address bar */
+    try{ if(typeof m.isSignInWithEmailLink==="function" && m.isSignInWithEmailLink(a, location.href)){ const url=location.href;
+      try{ const u=new URL(url); ["apiKey","oobCode","mode","lang","continueUrl","signin"].forEach(k=>u.searchParams.delete(k)); history.replaceState(null,"",u.pathname+(u.search||"")+u.hash); }catch(e){}
+      /* the phone's quiet account is read back from storage a moment after start: wait for it, so the link UPGRADES it
+         instead of making a second account (authStateReady; a stub without it finishes at once) */
+      Promise.resolve(typeof a.authStateReady==="function" ? a.authStateReady() : null).catch(()=>{}).then(()=>acctComplete(url)); } }catch(e){}
+    m.onAuthStateChanged(a, u=>{ if(u){ _authErr=""; if(!u.isAnonymous) acctSync(); return; }
       if(navigator.onLine===false) return;
       m.signInAnonymously(a).catch(e=>{ _authErr = String((e && (e.code || e.message)) || "failed").slice(0,80); }); });
     window.addEventListener("online", ()=>{ if(_auth && !_auth.currentUser) m.signInAnonymously(_auth).catch(()=>{}); });
@@ -1959,6 +1966,83 @@ function authNote(){ if(_auth && _auth.currentUser) return "This phone is signed
   if(/operation-not-allowed|admin-restricted/.test(_authErr)) return "This phone isn't signed in: Anonymous sign-in isn't turned on in Firebase yet.";
   if(!configured) return "";
   return _authErr ? `This phone isn't signed in yet (${_authErr}).` : "This phone isn't signed in yet."; }
+/* v2.40 (sign-in by email): "Add your email" upgrades the phone's quiet account to an email account — the same account, so
+   nothing on the phone changes — and the phone's lists are remembered in users/{uid} (codes and names only), so a new
+   phone signed in with the same email gets them back. Lists are still opened by their code: the account only remembers
+   which codes are yours. Every wait shows that it started and ends in a result or a plain message. */
+var acct = null;   // { busy, step } | { sent:email } | { err } | { ok } — the Settings block's state. var: render reads it at any time
+var _acctNote = "";   // why the account could not be saved (rules not yet published), shown under the block
+function acctEmail(){ const u=_auth && _auth.currentUser; return (u && !u.isAnonymous && u.email) || ""; }
+function acctErr(e){ const c=String((e && e.code) || "");
+  return c==="auth/invalid-email" ? "That email doesn't look right."
+    : c==="auth/too-many-requests" ? "Too many tries from this phone. Wait a few minutes and try again."
+    : /unauthorized-continue-uri|unauthorized-domain/.test(c) ? "This web address isn't on Firebase's list of allowed sign-in addresses (Authentication › Settings › Authorized domains)."
+    : /operation-not-allowed|admin-restricted/.test(c) ? "Sign-in by email isn't turned on in Firebase yet."
+    : /invalid-action-code|expired-action-code/.test(c) ? "That link has expired or was already used. Send a new one."
+    : (navigator.onLine===false || c==="auth/network-request-failed") ? "No connection. Try again when you're online."
+    : c==="timeout" ? "That took too long. Try again."
+    : "Couldn't do that. Try again."; }
+function acctWait(p){ return Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej({ code:"timeout" }), 20000))]); }   // every wait ends
+function acctSend(email){ email=String(email||"").trim(); if(!_authM || !_auth || typeof _authM.sendSignInLinkToEmail!=="function"){ acct={ err:"Sign-in isn't ready on this phone yet. Try again in a moment." }; render(); return; }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ acct={ err:"That email doesn't look right." }; render(); return; }
+  acct={ busy:true, step:"Sending the sign-in link…" }; render();
+  acctWait(_authM.sendSignInLinkToEmail(_auth, email, { url: location.origin + "/?signin=1", handleCodeInApp:true }))
+    .then(()=>{ try{ localStorage.setItem("ml_signinemail", email); }catch(e){} acct={ sent:email }; render(); })
+    .catch(e=>{ acct={ err:acctErr(e) }; render(); }); }
+async function acctComplete(url){ if(!_authM || !_auth) return;
+  const sent=(acct && acct.sent) || "";   // kept through the wait and any error, so the paste box stays
+  let email=""; try{ email=localStorage.getItem("ml_signinemail")||""; }catch(e){}
+  if(!email && sent) email=sent;
+  if(!email) email=(prompt("Which email did you send the link to?")||"").trim();   // the link was opened where the email was not typed (on iPhone: Safari, not the Home Screen app)
+  if(!email){ acct={ sent, err:"Type the email the link was sent to, then paste the link again." }; render(); return; }
+  acct={ busy:true, step:"Signing in…" }; render();
+  try{ const u=_auth.currentUser;
+    if(u && u.isAnonymous && typeof _authM.linkWithCredential==="function"){
+      try{ await acctWait(_authM.linkWithCredential(u, _authM.EmailAuthProvider.credentialWithLink(email, url))); }
+      catch(e){ if(!/credential-already-in-use|email-already-in-use|provider-already-linked/.test(String(e && e.code))) throw e;
+        await acctWait(_authM.signInWithEmailLink(_auth, email, url)); } }   // this email already has an account (another phone): sign in to it; this phone's lists are added to it below
+    else await acctWait(_authM.signInWithEmailLink(_auth, email, url));
+    try{ localStorage.removeItem("ml_signinemail"); }catch(e){}
+    acct={ ok:true }; _acctSyncedUid=""; acctSync(); render(); }
+  catch(e){ acct={ sent, err:acctErr(e) }; render(); } }
+function acctSignOut(){ if(!_authM || !_auth) return; if(!confirm("Sign out on this phone? Its lists stay on it; your account keeps them too.")) return;
+  _authM.signOut(_auth).catch(()=>{}).then(()=>{ acct=null; _acctSyncedUid=""; render(); }); }   // onAuthStateChanged then signs the phone in quietly again
+var _acctSyncedUid = "";
+function acctRef(){ const u=_auth && _auth.currentUser; return (u && !u.isAnonymous && db) ? doc(db, "users", u.uid) : null; }
+/* merge both ways: lists the account has and this phone does not are added here; lists this phone has are added to the
+   account. A list left on purpose (Leave this list) is marked gone with its time, so it does not come back. */
+function acctSync(){ const ref=acctRef(); if(!ref) return; const uid=_auth.currentUser.uid; if(_acctSyncedUid===uid) return; _acctSyncedUid=uid;
+  let off=null, done=false;
+  const finish=(data)=>{ if(done) return; done=true; try{ if(off) off(); }catch(e){}
+    const have=(data && data.lists) || {}, gone=(data && data.gone) || {}; let added=0;
+    for(const [code, v] of Object.entries(have)){ if(!/^[A-Za-z0-9_-]{1,64}$/.test(code)) continue;
+      if(gone[code] && gone[code] >= ((v && v.ts) || 0)) continue;
+      if(!getLists().some(x=>x.code===code)){ _acctQuiet=true; try{ rememberList(code, String((v && v.name) || "Groceries").slice(0,60)); }finally{ _acctQuiet=false; } added++; } }
+    const push={}; for(const l of getLists()) if(!have[l.code]) push[l.code]={ name:String(l.name||"").slice(0,60), ts:Date.now() };
+    if(Object.keys(push).length) acctWrite({ lists:push });
+    if(added){ showToast(added===1 ? "1 list came back from your account" : `${added} lists came back from your account`); render(); } };
+  try{ off=onSnapshot(ref, s=>finish(s && s.exists && s.exists() ? s.data() : null), err=>{ done=true; acctDenied(err); }); }catch(e){ acctDenied(e); }
+  setTimeout(()=>{ if(!done){ done=true; try{ if(off) off(); }catch(e){} } }, 15000); }
+var _acctQuiet = false;   // true while lists come back FROM the account, so they are not written straight back
+function acctWrite(part){ const ref=acctRef(); if(!ref) return; part.updated=Date.now();
+  Promise.resolve().then(()=>setDoc(ref, part, { merge:true })).then(()=>{ _acctNote=""; }).catch(acctDenied); }
+function acctDenied(e){ if(/permission/i.test(String((e && (e.code||e.message)) || ""))) { _acctNote="Your lists can't be saved to your account yet: the app's owner still has to publish the new database rules."; render(); } }
+function acctHTML(){ if(!configured) return "";
+  const em=acctEmail(), a=acct||{};
+  const status = a.busy ? `<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>${esc(a.step||"Working…")}</div>`
+    : a.err ? `<div class="rpterr" role="alert">${esc(a.err)}</div>` : "";
+  if(em) return `<div class="acctbox" id="acctBox"><div class="accthd">Your account</div>
+    <div class="acctline">Signed in as <b>${esc(em)}</b>. Your lists are saved to your account: sign in with this email on another phone to get them back.</div>
+    ${a.ok ? `<div class="acctline" role="status">Signed in. This phone's lists are now saved to your account.</div>` : ""}
+    ${_acctNote ? `<div class="acctline acctwarn">${esc(_acctNote)}</div>` : ""}
+    <button class="optaction" id="acctOut" style="margin-top:8px">Sign out on this phone</button></div>`;
+  return `<div class="acctbox" id="acctBox"><div class="accthd">Your account</div>
+    <div class="acctline">${esc(authNote())}</div>
+    <div class="acctline">Add your email so a new phone gets your lists back. No password: we email you a link.</div>
+    <div class="acctrow"><input id="acctEmail" class="cefield" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" value="${esc(a.sent||"")}" /><button class="newlist" id="acctSend" ${a.busy?"disabled":""}>Send link</button></div>
+    ${a.sent ? `<div class="acctline" role="status">Link sent to <b>${esc(a.sent)}</b>. Open it on this phone. On iPhone, if it opens in Safari instead of the app, copy the link and paste it here:</div>
+    <div class="acctrow"><input id="acctPaste" class="cefield" inputmode="url" autocomplete="off" placeholder="Paste the link from the email" /><button class="optaction" id="acctUse" style="margin-top:0">Sign in</button></div>` : ""}
+    ${status}</div>`; }
 try {
   if(firebaseConfig.apiKey !== "REPLACE_ME"){
     const app = initializeApp(firebaseConfig);
@@ -2397,6 +2481,7 @@ async function leaveList(){ if(!me) return;
   state.members = (state.members || []).filter(m => m !== me); shoppingClear();
   await saveSoon(2500);
   _forgetting = true; const gone = listCode; forgetListHere(gone);
+  acctWrite({ gone:{ [gone]:Date.now() } });   // v2.40: left on purpose, so the account does not bring it back
   try{ localStorage.removeItem(LS_LASTLIST); }catch(e){}
   const next = getLists()[0];
   location.href = next ? "/?list=" + encodeURIComponent(next.code) : "/"; }
@@ -2411,6 +2496,7 @@ function emptyList(){
 async function forgetPhone(){
   if(!confirm("Forget everything on this phone? Every list, your name, your settings and the backups kept here go. The shared lists stay for the people on them — open a share link to come back.")) return;
   _forgetting = true;
+  try{ if(_authM && _auth && _auth.currentUser && !_auth.currentUser.isAnonymous) _authM.signOut(_auth); }catch(e){}   // v2.40: signed out, but the account keeps its lists (none marked gone)
   try{ for(const k of Object.keys(localStorage)) if(k.startsWith("ml_")) localStorage.removeItem(k); }catch(e){}
   try{ sessionStorage.clear(); }catch(e){}
   try{ if(window.caches) for(const k of await caches.keys()) await caches.delete(k); }catch(e){}
@@ -5990,6 +6076,12 @@ function wireOptions(){
     if(!on){ shoppingClear(); save(); } render(); });   // v2.23 R19: turning it off takes your name away at once
   const olv=app.querySelector("#optLeave"); if(olv) olv.onclick=()=>{ leaveList(); };   // v2.25 R26
   const oem=app.querySelector("#optEmpty"); if(oem) oem.onclick=()=>{ emptyList(); };
+  /* v2.40 (sign-in by email): Your account */
+  const acs=app.querySelector("#acctSend"); if(acs) acs.onclick=()=>acctSend((app.querySelector("#acctEmail")||{}).value);
+  const acu=app.querySelector("#acctUse"); if(acu) acu.onclick=()=>{ const v=String((app.querySelector("#acctPaste")||{}).value||"").trim();
+    if(!_authM || !_auth || !_authM.isSignInWithEmailLink(_auth, v)){ acct={ sent:(acct&&acct.sent)||"", err:"That isn't the sign-in link. Copy the whole link from the email." }; render(); return; }
+    acctComplete(v); };
+  const aco=app.querySelector("#acctOut"); if(aco) aco.onclick=acctSignOut;
   const ofg=app.querySelector("#optForget"); if(ofg) ofg.onclick=()=>{ forgetPhone(); };
   app.querySelectorAll("[data-memb-num]").forEach(b=>b.onclick=()=>{ const [k,f,d]=b.dataset.membNum.split("|"); const m=memb(); m[k][f]=(+m[k][f]||0)+(+d); state.memb=membNorm(m); save(); render(); });
   app.querySelectorAll("[data-memb-used]").forEach(b=>b.onclick=()=>{ const [k,v]=b.dataset.membUsed.split("|"); const m=memb(); membMark(m,k,v==="1"); membSave(m); });
@@ -6515,7 +6607,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -6990,7 +7082,7 @@ function optionsBody(){
     ${stuckLog().length ? `<button class="optaction" id="optStuck" style="margin-top:10px">Screen log · ${stuckLog().length}</button>` : ""}
     ${sectHR("Your data")}
     <a class="optaction" id="optPrivacy" href="/privacy.html" style="margin-top:2px">Privacy — what the app keeps, and where</a>
-    ${authNote() ? `<div id="authNote" style="margin:8px 2px 2px;font-size:12.5px;color:var(--muted2);font-weight:600">${esc(authNote())}</div>` : ""}
+    ${acctHTML()}
     ${(me && (state.members||[]).includes(me)) ? `<button class="optaction" id="optLeave" style="margin-top:10px">Leave this list</button>` : ""}
     <button class="optaction" id="optEmpty" style="margin-top:10px">Empty this list for everyone</button>
     <button class="optaction" id="optForget" style="margin-top:10px">Forget everything on this phone</button>

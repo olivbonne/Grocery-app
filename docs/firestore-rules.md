@@ -13,7 +13,8 @@ What they do:
 | A list is read by its exact code only (`get`), never listed (`list: false`) | Without this, anyone could ask Firestore for every list and read every household's. This is the most important line. |
 | At most four people on a list | The four-person limit was only checked in the app's own code. A list that somehow already has more is not locked out; it just cannot grow. |
 | No deletes | The app never deletes a list document; "Empty this list for everyone" overwrites it instead. |
-| Nothing outside `lists/` | The app uses no other collection. |
+| An account's record `users/{uid}` is read and written only by that signed-in person (v2.40), and holds only `lists`, `gone` and `updated` (at most 200 lists, 500 left ones) | "Your account" remembers which list codes are yours, so a new phone signed in with the same email gets them back. Nobody else can read which lists you have. |
+| Nothing outside `lists/` and `users/` | The app uses no other collection. |
 
 The app only ever reads or listens to `lists/{code}` and writes it whole with `setDoc` (a create, or an update).
 Those are all allowed, so publishing should change nothing the household notices.
@@ -34,7 +35,9 @@ list to a strong code, make a new list and use Settings › Restore from a backu
    - `update` on `/lists/<your code>` with data `{"members":["A","B","C","D","E"]}` → **denied** (if the list has four or fewer people now)
    - `delete` on `/lists/<your code>` → **denied**
    - `get` on `/anything/else` → **denied**
-5. If all six come out as above, **Publish**. Then open the app on a phone, tick something, and check that it
+   - `get` on `/users/abc123` with **Authenticated** on and the uid set to `abc123` → **allowed** (v2.40)
+   - `get` on `/users/abc123` with **Authenticated** on and a different uid (say `xyz789`) → **denied**
+5. If all eight come out as above, **Publish**. Then open the app on a phone, tick something, and check that it
    appears on another phone. If anything misbehaves, paste back the rules you copied in step 2 and publish.
 
 With the Firebase CLI instead: `cd firebase && firebase deploy --only firestore:rules` (needs `firebase login` and the

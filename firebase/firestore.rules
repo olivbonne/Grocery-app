@@ -4,7 +4,8 @@ rules_version = '2';
 //  - a list is read only by its exact code; nobody can ask for the list of lists (so codes cannot be harvested);
 //  - a list has at most four people (one that somehow has more is never locked out — it just cannot grow);
 //  - lists are never deleted through the app (Settings › Your data empties one instead);
-//  - nothing outside lists/ can be read or written.
+//  - an account's own record (users/{uid}) is read and written only by that signed-in person (v2.40);
+//  - nothing outside lists/ and users/ can be read or written.
 // The app only ever does: get/listen to lists/{code}, and set it whole (create or update). Publish from the Firebase
 // console (Firestore Database › Rules) and try it in the Rules Playground first — see docs/firestore-rules.md.
 service cloud.firestore {
@@ -18,6 +19,16 @@ service cloud.firestore {
       allow update: if people(request.resource.data) <= 4
                     || people(request.resource.data) <= people(resource.data);
       allow delete: if false;
+    }
+
+    // v2.40: an account remembers which lists are its person's (codes and names only), so a new phone gets them back.
+    // Only that person can read or write it.
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid
+                   && request.resource.data.keys().hasOnly(['lists', 'gone', 'updated'])
+                   && request.resource.data.get('lists', {}).size() <= 200
+                   && request.resource.data.get('gone', {}).size() <= 500;
     }
 
     match /{document=**} {

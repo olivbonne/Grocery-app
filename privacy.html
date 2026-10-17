@@ -52,6 +52,9 @@
     <p><b>Only on this phone:</b> which lists it knows, the name you chose, your settings and look, the list's history,
        a daily backup for a week, what it has learned for its predictions, the membership cards you add (their numbers and photos), the last shop's ticked items (kept two days, to match its receipt against), a log of the times the screen got stuck (sent only if you report it), and small counters (receipts read today).</p>
   </div>
+  <div class="card">
+    <p><b>With your account, if you add your email:</b> Firebase (Google) keeps your email to send the sign-in link and to sign you in. Your account keeps which lists are yours — their codes and names, and the time you left one — so a new phone can get them back. Never the lists' contents. Signing out leaves it; to delete the account, report it from Settings › Help and it is removed.</p>
+  </div>
 
   <h2>What leaves the app, and only when you use it</h2>
   <p>These features go through the app's own small server (on Vercel), which holds the keys to the services below.
@@ -74,7 +77,7 @@
         GitHub repository (or a line in the server's log).</li>
     <li><b>Crash reports</b> — when the app breaks, it sends the error's first lines, the version, the page, the screen
         size and the browser: at most three a day, never the list, never its code.</li>
-    <li><b>A quiet account</b> (from v2.39, once it is switched on) — each phone signs in to Firebase (Google) with an anonymous account: a random id, no name, no email. The phone sends it with the features above so the server can tell one phone from another. It is not linked to you, and "Forget everything on this phone" leaves it behind unused.</li>
+    <li><b>A quiet account</b> (from v2.39, once it is switched on) — each phone signs in to Firebase (Google) with an anonymous account: a random id, no name, no email. The phone sends it with the features above so the server can tell one phone from another. It is not linked to you unless you add your email (below). "Forget everything on this phone" leaves a quiet account behind unused, and signs an email account out of this phone (the account keeps which lists are yours).</li>
     <li><b>Daily counts</b> — so nobody can run up the AI bill, the server counts how many times a day each phone uses these features (or, before a phone is signed in, each internet connection, kept only as a scrambled code). The count is kept by Upstash, a database service, and forgotten after a day. Nothing else about the request is kept.</li>
   </ul>
   <p class="muted">Each of these services handles what it receives under its own terms — Google, Groq, the search

@@ -31,7 +31,7 @@ for anyone to type — so the app's server can tell one phone from another (and 
 Until you switch it on, the app quietly carries on as before.
 
 1. Console → **Build › Authentication** → **Get started**.
-2. **Sign-in method** tab → enable **Anonymous**.
+2. **Sign-in method** tab → enable **Anonymous**. — **DONE by the owner (15–17 October 2026).**
 3. **Settings › Authorized domains** → check the app's Vercel domain is listed (add it if not).
 
 **Check:** open the app — Settings › Your data says "signed in quietly". Authentication › Users shows anonymous users.
@@ -45,7 +45,7 @@ redeploy: from then on the AI features answer only the app. To undo, set it back
 cards on every phone you sign in on, and then shared prices between households (item 5) and Siri (step 5).
 
 1. Console → **Build › Authentication** → **Get started**.
-2. **Sign-in method** tab → enable **Email link (passwordless sign-in)** — no passwords to remember. Optionally also
+2. **Sign-in method** tab → enable **Email link (passwordless sign-in)** — **DONE by the owner (15–17 October 2026).** No passwords to remember. Optionally also
    **Apple** (needs an Apple Developer account, $99 a year — only worth it if the app goes on the App Store) and
    **Google**.
 3. **Settings › Authorized domains** → check the app's Vercel domain is listed (add it if not; `localhost` is there
@@ -53,6 +53,11 @@ cards on every phone you sign in on, and then shared prices between households (
 4. Tell Claude it is on. Claude then builds the sign-in screen and new rules that check *who* is asking; you publish
    those rules the same way as step 1. Existing lists keep working during the move: each person signs in once and
    their list is linked to them.
+
+Then publish the rules again (section 1) — v2.40 adds the users/{uid} rule; until then 'Your account' says the lists can't be saved to the account yet.
+
+The sign-in email comes from noreply@<project>.firebaseapp.com and may land in spam; its text can be edited in
+Authentication › Templates (menu names not checked from here).
 
 **Check:** Authentication › Users shows your email after you sign in on the new version.
 
