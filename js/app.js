@@ -7,17 +7,17 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.40";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.40";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.40";
-import { compareStores, worthIt } from "./compare.js?v=2.40";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.40";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.40";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.40";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.41";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.41";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.41";
+import { compareStores, worthIt } from "./compare.js?v=2.41";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.41";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.41";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.41";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.40";
+const APP_VERSION = "v2.41";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -1980,9 +1980,37 @@ function acctErr(e){ const c=String((e && e.code) || "");
     : /operation-not-allowed|admin-restricted/.test(c) ? "Sign-in by email isn't turned on in Firebase yet."
     : /invalid-action-code|expired-action-code/.test(c) ? "That link has expired or was already used. Send a new one."
     : (navigator.onLine===false || c==="auth/network-request-failed") ? "No connection. Try again when you're online."
+    : c==="auth/weak-password" ? "Use at least 6 characters (6 digits is fine)."
+    : /invalid-credential|wrong-password|user-not-found|invalid-login/.test(c) ? "That password doesn't match this email. Try again, or reset it below."
+    : c==="auth/user-disabled" ? "This account has been switched off."
     : c==="timeout" ? "That took too long. Try again."
     : "Couldn't do that. Try again."; }
 function acctWait(p){ return Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej({ code:"timeout" }), 20000))]); }   // every wait ends
+/* v2.41 (the household: "it is not common to have to copy the link"): an email and a password, all inside the app. A web app
+   on iPhone cannot be opened by a link, so the email link landed in Safari and had to be copied back; a password needs no
+   link at all. Firebase asks for at least 6 characters — a 4-digit code (10,000 guesses) would guard every list too weakly.
+   A new email UPGRADES the phone's quiet account (the same account); an email that already has one signs in to it. The
+   email link stays as the other way in, and is what an App Store app would open directly (Do later). */
+function acctPassword(email, pw){ email=String(email||"").trim(); pw=String(pw||"");
+  if(!_authM || !_auth || typeof _authM.signInWithEmailAndPassword!=="function"){ acct={ err:"Sign-in isn't ready on this phone yet. Try again in a moment.", email }; render(); return; }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ acct={ err:"That email doesn't look right.", email }; render(); return; }
+  if(pw.length < 6){ acct={ err:"Use at least 6 characters (6 digits is fine).", email }; render(); return; }
+  acct={ busy:true, step:"Signing in…", email }; render();
+  (async()=>{ try{ const u=_auth.currentUser;
+      if(u && u.isAnonymous && typeof _authM.linkWithCredential==="function"){
+        try{ await acctWait(_authM.linkWithCredential(u, _authM.EmailAuthProvider.credential(email, pw))); }
+        catch(e){ if(!/email-already-in-use|credential-already-in-use/.test(String(e && e.code))) throw e;
+          await acctWait(_authM.signInWithEmailAndPassword(_auth, email, pw)); } }   // this email already has an account (another phone): sign in to it
+      else await acctWait(_authM.signInWithEmailAndPassword(_auth, email, pw));
+      acct={ ok:true }; _acctSyncedUid=""; acctSync(); render(); }
+    catch(e){ acct={ err:acctErr(e), email, forgot:/invalid-credential|wrong-password|user-not-found|invalid-login/.test(String(e && e.code)) }; render(); } })(); }
+function acctForgot(email){ email=String(email||"").trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ acct={ err:"Type your email above first.", email }; render(); return; }
+  if(!_authM || !_auth || typeof _authM.sendPasswordResetEmail!=="function") return;
+  acct={ busy:true, step:"Sending a reset email…", email }; render();
+  acctWait(_authM.sendPasswordResetEmail(_auth, email))
+    .then(()=>{ acct={ email, reset:true }; render(); })
+    .catch(e=>{ acct={ err:acctErr(e), email }; render(); }); }
 function acctSend(email){ email=String(email||"").trim(); if(!_authM || !_auth || typeof _authM.sendSignInLinkToEmail!=="function"){ acct={ err:"Sign-in isn't ready on this phone yet. Try again in a moment." }; render(); return; }
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ acct={ err:"That email doesn't look right." }; render(); return; }
   acct={ busy:true, step:"Sending the sign-in link…" }; render();
@@ -2038,11 +2066,17 @@ function acctHTML(){ if(!configured) return "";
     <button class="optaction" id="acctOut" style="margin-top:8px">Sign out on this phone</button></div>`;
   return `<div class="acctbox" id="acctBox"><div class="accthd">Your account</div>
     <div class="acctline">${esc(authNote())}</div>
-    <div class="acctline">Add your email so a new phone gets your lists back. No password: we email you a link.</div>
-    <div class="acctrow"><input id="acctEmail" class="cefield" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" value="${esc(a.sent||"")}" /><button class="newlist" id="acctSend" ${a.busy?"disabled":""}>Send link</button></div>
+    <div class="acctline">Add your email and a password so a new phone gets your lists back: sign in there with the same two.</div>
+    <input id="acctEmail" class="cefield acctfield" type="email" inputmode="email" autocomplete="email" placeholder="you@example.com" value="${esc(a.email||a.sent||"")}" />
+    <input id="acctPw" class="cefield acctfield" type="password" autocomplete="current-password" placeholder="Password — at least 6 characters" />
+    <button class="newlist" id="acctGo" style="margin-top:8px" ${a.busy?"disabled":""}>Continue</button>
+    ${a.sent ? "" : status}
+    ${a.reset ? `<div class="acctline" role="status">If <b>${esc(a.email)}</b> has an account, an email to set a new password is on its way. It opens in your browser; set the password there, then sign in here.</div>` : ""}
+    ${a.forgot ? `<button class="acctlink" id="acctForgot">Forgot your password?</button>` : ""}
+    <button class="acctlink" id="acctSend" ${a.busy?"disabled":""}>Or email me a sign-in link instead</button>
     ${a.sent ? `<div class="acctline" role="status">Link sent to <b>${esc(a.sent)}</b>. Open it on this phone. On iPhone, if it opens in Safari instead of the app, copy the link and paste it here:</div>
     <div class="acctrow"><input id="acctPaste" class="cefield" inputmode="url" autocomplete="off" placeholder="Paste the link from the email" /><button class="optaction" id="acctUse" style="margin-top:0">Sign in</button></div>` : ""}
-    ${status}</div>`; }
+    ${a.sent ? status : ""}</div>`; }
 try {
   if(firebaseConfig.apiKey !== "REPLACE_ME"){
     const app = initializeApp(firebaseConfig);
@@ -6078,6 +6112,12 @@ function wireOptions(){
   const oem=app.querySelector("#optEmpty"); if(oem) oem.onclick=()=>{ emptyList(); };
   /* v2.40 (sign-in by email): Your account */
   const acs=app.querySelector("#acctSend"); if(acs) acs.onclick=()=>acctSend((app.querySelector("#acctEmail")||{}).value);
+  /* v2.41 an email and a password */
+  const acg=app.querySelector("#acctGo"), acp=app.querySelector("#acctPw");
+  const goPw=()=>acctPassword((app.querySelector("#acctEmail")||{}).value, (acp||{}).value);
+  if(acg) acg.onclick=goPw;
+  if(acp) acp.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); goPw(); } };
+  const acf=app.querySelector("#acctForgot"); if(acf) acf.onclick=()=>acctForgot((app.querySelector("#acctEmail")||{}).value);
   const acu=app.querySelector("#acctUse"); if(acu) acu.onclick=()=>{ const v=String((app.querySelector("#acctPaste")||{}).value||"").trim();
     if(!_authM || !_auth || !_authM.isSignInWithEmailLink(_auth, v)){ acct={ sent:(acct&&acct.sent)||"", err:"That isn't the sign-in link. Copy the whole link from the email." }; render(); return; }
     acctComplete(v); };

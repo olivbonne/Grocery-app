@@ -959,7 +959,9 @@
   .acctrow .cefield{flex:1;min-width:0;margin:0}
   .acctrow .newlist{flex:none;width:auto;margin:0;padding:11px 16px}
   .acctrow .cefield{background:var(--card);border:1.5px solid var(--line)}
-  .acctrow .optaction{flex:none;width:auto;margin:0;padding:11px 16px}   /* the box is --chip: a field on it needs its own ground */
+  .acctrow .optaction{flex:none;width:auto;margin:0;padding:11px 16px}
+  .acctbox .acctfield{display:block;width:100%;margin:6px 0 0;background:var(--card);border:1.5px solid var(--line)}   /* v2.41 email and password */
+  .acctlink{display:block;margin:8px 0 0;padding:4px 2px;border:none;background:none;color:var(--muted2);font:inherit;font-size:13px;font-weight:700;text-decoration:underline;cursor:pointer;text-align:left}   /* the box is --chip: a field on it needs its own ground */
   .cefield{width:100%;box-sizing:border-box;height:44px;padding:0 12px;border-radius:12px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:16px}
   .cethumb{width:64px;height:40px;object-fit:cover;border-radius:6px}
   /* v2.32 the card at the top of the page after a shop */
