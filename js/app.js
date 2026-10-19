@@ -7,21 +7,22 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.46";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.46";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.46";
-import { compareStores, worthIt } from "./compare.js?v=2.46";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.46";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.46";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.46";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor } from "./platform.js?v=2.46";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.46";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines } from "./parse.js?v=2.46";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { tr, trf } from "./i18n.js?v=2.46";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.47";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.47";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.47";
+import { compareStores, worthIt } from "./compare.js?v=2.47";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.47";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.47";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.47";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.47";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor } from "./platform.js?v=2.47";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.47";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines } from "./parse.js?v=2.47";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { tr, trf } from "./i18n.js?v=2.47";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.46";
+const APP_VERSION = "v2.47";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -77,7 +78,7 @@ function showAmt(w){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_jk_)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_jk_)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -4609,6 +4610,7 @@ function rcSave(){ if(!rcpt || !rcpt.lines) return;
   { const se = spendEntry({ t, d:rcpt.date, s:(rcpt.store && rcpt.store.id) || "", sn:(rcpt.store && rcpt.store.name) || "", total:rcpt.total,
       lines:rcpt.lines.filter(L => L.keep && String(L.name || "").trim() && isFinite(L.price)).map(L => ({ price:+L.price, cat:L.cat })), discounts:rcpt.discounts });
     if(se.tot > 0) state.spend = spendLog(state.spend, se, SPEND_MAX); }
+  sharedContribute(rcpt);   // v2.47: after the prices are saved
   rcptNudgeClear(); lastCartClear(); save(); rcpt=null; render(); showToast((n===1 ? tf("Saved 1 price", {}) : tf("Saved {n} prices", { n })) + (m ? " · " + tf("ticked off {n}", { n:m }) : "") + tenMsg); }
 /* v2.20 the 10% shop (plan item 3). The logic is js/tenpct.js; this is the app's side: the household's memberships and
    "used" marks live in the list (state.memb, shared by every phone), the Shop card, the stock-up sheet, the receipt hook. */
@@ -4673,12 +4675,40 @@ function wireTenSheet(){
    prices are the household's own, from receipts, at most 60 days old. A store's chain with an unused 10% this month
    says what that would take off. */
 var cmpOpen = false;   // the comparison sheet. var: render() reads it at boot
-function cmpModel(){ return compareStores({ items:state.items.filter(i => !i.checked), lookup:name => priceLookup(name) || [], maxAgeDays:60, minItems:3 }); }
+/* v2.47 shared shelf prices (opt-in, plan item 5) — the logic is js/shared.js. Households who turn it on pool their unit
+   prices at the national chains; "Which store is cheaper" fills its gaps with the median of at least two households. */
+function sharePxOn(){ try{ return localStorage.getItem("ml_sharepx")==="1"; }catch(e){ return false; } }
+function shareEmailAcct(){ const u=_auth && _auth.currentUser; return !!(u && !u.isAnonymous); }
+function sharedContribute(r){ if(!r || !r.lines || !sharePxOn() || !shareEmailAcct() || !db) return;
+  const chain=shareChain((r.store && r.store.name) || ""); if(!chain) return;
+  const uidN=_auth.currentUser.uid; let n=0;
+  for(const L of r.lines){ if(n>=40) break; const nm=String(L.name||"").trim(); if(!L.keep || !nm || !isFinite(L.price)) continue;
+    const key=sharedKey(chain, priceKey(nm)); if(!key) continue;
+    const p=Math.round((Math.round(L.price*100)/100) / Math.max(1, +L.qty || 1) * 100) / 100; if(!(p>0)) continue; n++;
+    try{ setDoc(doc(db, "shared", key), { by:{ [uidN]:{ p, d:Date.now() } } }, { merge:true }).catch(()=>{}); }catch(e){} } }
+var sharedCache = {};   // key → { med, t }. var: cmpModel can run at boot
+var _sharedPending = 0, _sharedRenderT = null;
+function sharedFetch(keys){ if(!db) return; const now=Date.now(); let started=0;
+  for(const k of keys){ if(started>=60) break; const c=sharedCache[k]; if(c && now-c.t < 3600000) continue;
+    sharedCache[k]={ med:(c && c.med) || null, t:now }; started++; _sharedPending++;
+    let off=null, done=false;
+    const finish=(med)=>{ if(done) return; done=true; try{ if(off) off(); }catch(e){} sharedCache[k]={ med, t:Date.now() };
+      if(--_sharedPending<=0){ _sharedPending=0; clearTimeout(_sharedRenderT); _sharedRenderT=setTimeout(()=>render(), 50); } };
+    try{ off=onSnapshot(doc(db, "shared", k), s=>finish(s && s.exists && s.exists() ? sharedMedian((s.data()||{}).by, Date.now()) : null), ()=>finish(null)); }catch(e){ finish(null); }
+    setTimeout(()=>finish(null), 15000); } }
+function cmpModel(){ const items = state.items.filter(i => !i.checked);
+  if(!sharePxOn()) return compareStores({ items, lookup:name => priceLookup(name) || [], maxAgeDays:60, minItems:3 });
+  const stores = rcSavedStores(), chains = [...new Set(stores.map(s => shareChain(s.name)).filter(Boolean))], need = [];
+  for(const i of items){ const pk = priceKey(i.name); for(const ch of chains){ const k = sharedKey(ch, pk); if(k) need.push(k); } }
+  if(need.length) sharedFetch(need);
+  return compareStores({ items, maxAgeDays:60, minItems:3, lookup:name => { const own = priceLookup(name) || [], pk = priceKey(name), meds = {};
+    for(const ch of chains){ const c = sharedCache[sharedKey(ch, pk)]; if(c && c.med) meds[ch] = c.med; }
+    return own.concat(sharedRecords(own, stores, meds)); } }); }
 function cmpStoreLine(s, of){ const k = chainOfStore(s.name), m = k ? memb()[k] : null, p = m && m.on ? periodOf(new Date(), m.day) : null;
   const ten = (p && !m.used[p.key]) ? ` · ${tf("{pct}% off with your {chain} shop: about {x}", { pct:m.pct, chain:esc(CHAINS[k].short), x:priceMoney(Math.max(0, s.total - Math.min(m.cap, s.total * m.pct / 100))) })}` : "";
   const st = s.id ? storeById(s.id) : null, here = storeCoord(st), home = storeLocs.home;
   const km = (here && home) ? ` · ${tf("{x} km from home", { x:(distM(home, here) / 1000).toFixed(distM(home, here) < 10000 ? 1 : 0) })}` : "";
-  return `<div class="cmprow"><span class="cmp-n">${esc(s.name)}<span class="cmp-s">${tf("{n} of {of} priced", { n:s.n, of })}${km}${ten}</span></span><span class="cmp-p">${priceMoney(s.total)}</span></div>`; }
+  return `<div class="cmprow"><span class="cmp-n">${esc(s.name)}<span class="cmp-s">${tf("{n} of {of} priced", { n:s.n, of })}${s.shared ? tf(" · {n} from other households", { n:s.shared }) : ""}${km}${ten}</span></span><span class="cmp-p">${priceMoney(s.total)}</span></div>`; }
 function cmpSheetHTML(){ const c = cmpModel(), b = c.best;
   return `<div class="sheet-bg" id="cmpBg"><div class="sheet" id="cmpSheet" role="dialog" aria-labelledby="cmpTitle">
     <div class="disp" id="cmpTitle" style="font-weight:800;font-size:17px;margin-bottom:4px">${t("Which store is cheaper")}</div>
@@ -6072,6 +6102,7 @@ function wireOptions(){
     if(histOpen.has(k)) histOpen.delete(k); else histOpen.add(k); render(); });
   const hc=app.querySelector("#optHistClear"); if(hc) hc.onclick=()=>{ histClear(histView||listCode); render(); };
   const orc=app.querySelector("#optRcpt"); if(orc) orc.onclick=()=>rcPick();   // v2.09
+  app.querySelectorAll("[data-opt-sharepx]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_sharepx", b.dataset.optSharepx); }catch(e){} render(); });   // v2.47
   app.querySelectorAll("[data-opt-rcptask]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_rcptask", b.dataset.optRcptask); }catch(e){} render(); });   // v2.17
   const opc=app.querySelector("#optPriceClear"); if(opc) opc.onclick=()=>{ if(confirm("Forget every remembered price, and what you spent, in this list?")){ state.prices={}; state.spend=[]; save(); render(); } };
   app.querySelectorAll("[data-opt-fill]").forEach(b=>b.onclick=()=>{ if(fillMode()!==b.dataset.optFill) setFill(b.dataset.optFill); });
@@ -6632,7 +6663,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_jk_)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_jk_)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -7028,6 +7059,8 @@ function optionsBody(){
     ${(view!=="lists") ? `<div class="optsub">${t("Receipts and prices")}</div>
       <button class="optaction" id="optRcpt" style="margin-top:2px">${CAMERA_SVG(16)} ${t("Read a receipt")}</button>
       ${row(t("Ask after a shop"), `<div class="seg"><button data-opt-rcptask="1" class="${rcptAskOn()?'on':''}">${t("On")}</button><button data-opt-rcptask="0" class="${!rcptAskOn()?'on':''}">${t("Off")}</button></div>`)}
+      ${row(t("Share prices with other households"), `<div class="seg"><button data-opt-sharepx="1" class="${sharePxOn()?'on':''}">${t("On")}</button><button data-opt-sharepx="0" class="${!sharePxOn()?'on':''}">${t("Off")}</button></div>`)}<div class="opthint">${t("Off unless you turn it on. When on, the prices you confirm from receipts at Coles, Woolworths and ALDI are pooled with other households that also turned it on — the chain, the item, the price and the day, never your list, your shop or your card — and “Which store is cheaper” fills its gaps with the middle price from at least two households. Sharing yours needs your email in Your account; seeing others' does not.")}</div>
+      ${(sharePxOn() && !shareEmailAcct()) ? `<div style="margin:0 2px 8px;font-size:12.5px;color:var(--muted2);font-weight:600">${t("Add your email in Your account to share yours — you can already see others'.")}</div>` : ""}
       <button class="optaction" id="optCompare">${/* v2.21 */""}${t("Which store is cheaper for this list")}</button>
       <button class="optaction" id="optSpend">${/* v2.24 */""}${t("What we spend")}</button>
       <div style="margin:6px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">${(()=>{ const pc=Object.keys(state.prices||{}).length; return pc ? (pc===1 ? tf("{n} item with a remembered price. Kept in this list, shared only with the people on it.", { n:pc }) : tf("{n} items with a remembered price. Kept in this list, shared only with the people on it.", { n:pc })) : t("Read a receipt after a shop and the app remembers what you paid at each store. Free."); })()}</div>

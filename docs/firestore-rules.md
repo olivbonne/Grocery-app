@@ -16,7 +16,8 @@ What they do:
 | An account's record `users/{uid}` is read and written only by that signed-in person (v2.40), and holds only `lists`, `gone` and `updated` (at most 200 lists, 500 left ones) | "Your account" remembers which list codes are yours, so a new phone signed in with the same email gets them back. Nobody else can read which lists you have. |
 | Members by account (v2.44): once a list has a record `access/{code}`, only the accounts marked in it (`acl`) can read or write the list; a list with no record yet works as before | A list's code is no longer the only key: a removed person's phone is refused, and an old link alone does not let a stranger in. |
 | `access/{code}` is created by the first signed-in phone with itself as its only person, open for at least 20 days (the app uses 30); someone new adds only themselves — with the link's key (`joinProof` = `joinKey`), or with nothing while it is still open; a member may change anything | The household's phones move over by themselves in the open window; after that only links made from the app (they carry the key) let someone new in. |
-| Nothing outside `lists/`, `access/` and `users/` | The app uses no other collection. |
+| Shared shelf prices (v2.47): `shared/{key}` (one per chain and item) is read by any signed-in phone, never listed; an email account (not the quiet anonymous one) writes only its own entry `by.<uid>` = a unit price (`p`, 0.05–1000) and a recent time in ms (`d`); never deleted | Households who opt in pool their Coles, Woolworths and ALDI prices. Only email accounts write, so one person cannot pose as many households. |
+| Nothing outside `lists/`, `access/`, `users/` and `shared/` | The app uses no other collection. |
 
 The app only ever reads or listens to `lists/{code}` and writes it whole with `setDoc` (a create, or an update).
 Those are all allowed, so publishing should change nothing the household notices.
@@ -43,6 +44,9 @@ list to a strong code, make a new list and use Settings › Restore from a backu
    - (v2.44) for a list whose `access/<code>` lists uid `A`: `get` on `/lists/<code>` authenticated as `A` → **allowed**, as `B` → **denied**
    - (v2.44) `update` on `/access/<code>` as `B`, adding only `acl.B = true` and `joinProof.B` = the record's `joinKey` → **allowed**;
      the same with a wrong key once `openUntil` has passed → **denied**
+   - (v2.47) `create` on `/shared/coles__milk` authenticated as an email user (provider `password`, uid say `abc123`) with data
+     `{"by":{"abc123":{"p":2.5,"d":<now in ms>}}}` → **allowed**
+   - (v2.47) the same as an anonymous user (provider `anonymous`) → **denied**
 5. If all of them come out as above, **Publish**. Then open the app on a phone, tick something, and check that it
    appears on another phone. If anything misbehaves, paste back the rules you copied in step 2 and publish.
 
