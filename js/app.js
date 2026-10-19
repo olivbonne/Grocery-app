@@ -7,20 +7,21 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.45";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.45";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.45";
-import { compareStores, worthIt } from "./compare.js?v=2.45";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.45";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.45";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.45";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor } from "./platform.js?v=2.45";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.45";   /* v2.43 (architecture review L17) */
-import { tr, trf } from "./i18n.js?v=2.45";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.46";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.46";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.46";
+import { compareStores, worthIt } from "./compare.js?v=2.46";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.46";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.46";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.46";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor } from "./platform.js?v=2.46";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.46";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines } from "./parse.js?v=2.46";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { tr, trf } from "./i18n.js?v=2.46";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.45";
+const APP_VERSION = "v2.46";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -123,22 +124,7 @@ function guessCat(name){ const n=(name||"").toLowerCase(); let best=null, bestLe
   for(const[c,w] of Object.entries(DICT)) for(const x of w){ if(x.length>bestLen && n.includes(x)){ best=c; bestLen=x.length; } }
   return best; }
 
-/* Parse one entry token into qty · weight · name. Handles a leading count ("6 ", "6x",
-   "6 × "), a trailing count ("chicken x6"), and a leading weight ("500g", "2kg", "500 g").
-   Combined forms work too: "6x500g chicken thigh" → qty 6, weight 500g, name "chicken thigh". */
-const WEIGHT_RE = /^(\d+(?:[.,]\d+)?)\s*(kg|g|mg|ml|cl|l|lb|lbs|oz)\b\.?/i;
-function normWeight(num, unit){ unit=unit.toLowerCase(); if(unit==="lbs") unit="lb"; return num.replace(",",".")+unit; }
-function parseEntry(raw){ let s=raw.trim(); let qty=1, weight="";
-  let m=s.match(/^(\d+)\s*[x×]\s*(.+)$/i);                    // "6x …" / "6 × …"
-  if(m){ qty=parseInt(m[1],10)||1; s=m[2].trim(); }
-  else { m=s.match(/^(.+?)\s*[x×]\s*(\d+)$/i);                // "… x6"
-    if(m){ qty=parseInt(m[2],10)||1; s=m[1].trim(); }
-    else { m=s.match(/^(\d+)\s+(.+)$/);                       // "6 apples" — but not "500 g apples"
-      if(m && !WEIGHT_RE.test(s)){ qty=parseInt(m[1],10)||1; s=m[2].trim(); } } }
-  m=s.match(WEIGHT_RE);                                       // leading weight "500g …" / "2kg …"
-  if(m){ weight=normWeight(m[1],m[2]); s=s.slice(m[0].length).trim(); }
-  if(!s) return {qty:1, weight:"", name:raw.trim()};          // weight/qty only, no name → keep raw text
-  return {qty, weight, name:s}; }
+/* v2.46 (architecture review L17, phase 3): WEIGHT_RE, normWeight, parseEntry and parseLines live in js/parse.js */
 
 const uid = () => Math.random().toString(36).slice(2,9)+Date.now().toString(36);
 /* v2.25 R25: a list's code is its only key — anyone with it can open the list — so a new one is 128 random bits from the
@@ -791,6 +777,8 @@ function distM(a,b){ const R=6371000, toR=x=>x*Math.PI/180;
 /* A16 Home is a real, rememberable place: it can save a GPS location and be auto-detected,
    but it has no aisles — being at Home always sorts by category. */
 const HOME_STORE = { id:"home", name:"Home" };
+/* v2.46: a store's name as shown — the built-in home store says "Home" in the app's language; every other name is the household's own */
+function storeName(s){ return (s && s.id==="home" && s.name==="Home") ? t("Home") : ((s && s.name) || ""); }
 function storeOverride(id){ return (state.storeMeta||{})[id] || {}; }   // {name?, hidden?} for built-in stores
 function storeById(id){ if(id==="home") return HOME_STORE;
   const s = STORES.find(x=>x.id===id) || (state.stores||[]).find(x=>x.id===id); if(!s) return null;
@@ -845,19 +833,19 @@ function setStoreHere(){
       let cleared=0; for(const id in storeLocs){ if(id===storeSel) continue; const c=storeLocs[id]; if(c && distM(here,c)<=120){ delete storeLocs[id]; cleared++; } }
       storeLocs[storeSel]=here; localStorage.setItem("ml_storelocs", JSON.stringify(storeLocs));
       locState={ checked:false, busy:false, ts:0, err:0, nearId:null, dist:Infinity };   // force a fresh detection against the deduped set
-      showToast(cleared ? `Saved ${(storeById(storeSel)||{}).name||"store"} ✓ · cleared ${cleared} duplicate${cleared>1?"s":""}` : ("Saved "+((storeById(storeSel)||{}).name||"store")+" ✓"));
+      showToast(cleared ? tf("Saved {x} ✓", { x:storeName(storeById(storeSel))||t("store") }) + " · " + (cleared>1 ? tf("cleared {n} duplicates", { n:cleared }) : tf("cleared {n} duplicate", { n:cleared })) : tf("Saved {x} ✓", { x:storeName(storeById(storeSel))||t("store") }));
       render(); },
     err=>{ showToast("Couldn’t get location — check permissions"); });
 }
 function storeLabel(){
-  if(storeSel==="home") return "Home · sorted by category";
-  if(storeSel==="other") return "Other store · sorted by category";
-  if(storeSel!=="auto"){ const s=storeById(storeSel); return s ? (s.name+" · selected") : "Others"; }
-  if(!useLoc) return "Others · location off";
-  if(locState.busy || !locState.checked) return "Checking location…";
-  if(locState.err) return "Others · location unavailable";
+  if(storeSel==="home") return t("Home · sorted by category");
+  if(storeSel==="other") return t("Other store · sorted by category");
+  if(storeSel!=="auto"){ const s=storeById(storeSel); return s ? (storeName(s)+" · "+t("selected")) : t("Others"); }
+  if(!useLoc) return t("Others · location off");
+  if(locState.busy || !locState.checked) return t("Checking location…");
+  if(locState.err) return t("Others · location unavailable");
   const s=locState.nearId?storeById(locState.nearId):null;
-  return s ? (s.name+(s.aisles?"":" · sorted by category")) : "Others · not at a saved store";
+  return s ? (storeName(s)+(s.aisles?"":" · "+t("sorted by category"))) : t("Others · not at a saved store");
 }
 // Known stores. Coords are best-estimate centres; refine on-site with “Set … location here”.
 const MARKET_CATS = ["meat","vegetable","fruit","fresh","dairy","deli","bakery"];   // v2.33: + the thirteen's fresh counters   // Dandenong market only stocks these
@@ -1147,7 +1135,7 @@ function mergeCluster(sig){
   state.items = state.items.filter(i=>!ids.has(i.id));
   state.items.push({ id:keepId, name:cap(cl.canon), qty:Math.min(999,qty||1), cat:cl.cat, weight, sub, checked:false, by:me });
   markDirty(keepId); save(); render();
-  showUndo(prev, `Merged into ${cap(cl.canon)}`);
+  showUndo(prev, tf("Merged into {x}", { x:cap(cl.canon) }));
 }
 function mergeDismiss(sig){ mergeX[sig]=1; try{ localStorage.setItem("ml_merge_x", JSON.stringify(mergeX)); }catch(e){} render(); }
 function mergeHideAll(){ for(const c of mergeClusters()) mergeX[c.sig]=1; try{ localStorage.setItem("ml_merge_x", JSON.stringify(mergeX)); }catch(e){} render(); }
@@ -1574,7 +1562,7 @@ function duplicateListCode(code){
   rememberList(newCode, newName);
   switchList(newCode);
   state=dup; ensureCats(); save(); render();
-  showToast("Duplicated as “"+newName+"”");
+  showToast(tf("Duplicated as “{x}”", { x:newName }));
 }
 function delListUndo(code){ const a=getLists(); const i=a.findIndex(x=>x.code===code); if(i<0){ listActOpen=false; render(); return; }
   const removed=a[i]; a.splice(i,1); saveLists(a); listActOpen=false;
@@ -1724,14 +1712,14 @@ function occSave(name){ const nm=String(name||"").trim().slice(0,40); if(!nm) re
   if(!items.length){ showToast("Nothing to save — the list is empty"); return; }
   const t=(Array.isArray(state.templates)?state.templates:[]).filter(x=>String(x.name||"").toLowerCase()!==nm.toLowerCase());
   t.unshift({ id:uid(), name:nm, at:Date.now(), items }); state.templates=t.slice(0,30);
-  occSheet=null; save(); render(); showToast(`Saved “${nm}” · ${items.length} item${items.length===1?"":"s"}`); }
+  occSheet=null; save(); render(); showToast(tf("Saved “{x}”", { x:nm }) + " · " + (items.length===1 ? tf("{n} item", { n:1 }) : tf("{n} items", { n:items.length }))); }
 function occAdd(id){ const t=(state.templates||[]).find(x=>x.id===id); if(!t) return; let n=0; const prev=snapState();   // a whole occasion at once, so it can be undone
   for(const x of t.items){ const ex=state.items.find(i=>!i.checked && String(i.name||"").toLowerCase()===String(x.name).toLowerCase());
     if(ex){ ex.qty=Math.max(+ex.qty||1, +x.qty||1); markDirty(ex.id); }
     else { state.items.push({ id:uid(), name:x.name, qty:x.qty||1, cat:newCat(x.cat, x.name), weight:x.weight||"", sub:"", note:x.note||"", where:x.where||"", checked:false, by:me }); n++; } }
-  occSheet=null; save(); render(); showUndo(prev, `Added ${n} from “${t.name}”${n<t.items.length?` · ${t.items.length-n} already on the list`:""}`); }
+  occSheet=null; save(); render(); showUndo(prev, tf("Added {n} from “{x}”", { n, x:t.name }) + (n<t.items.length ? " · " + tf("{n} already on the list", { n:t.items.length-n }) : "")); }
 function occDelete(id){ const prev=snapState(); const t=(state.templates||[]).find(x=>x.id===id); if(!t) return;
-  state.templates=(state.templates||[]).filter(x=>x.id!==id); save(); render(); showUndo(prev, `“${t.name}” deleted`); }   // the toast is escaped where it is drawn
+  state.templates=(state.templates||[]).filter(x=>x.id!==id); save(); render(); showUndo(prev, tf("“{x}” deleted", { x:t.name })); }   // the toast is escaped where it is drawn
 function occSheetHTML(){ const o=occSheet; if(!o) return ""; const ts=Array.isArray(state.templates)?state.templates:[];
   const body = o.mode==="save"
     ? `<div class="hint" style="text-align:left;margin:0 0 10px">${(n=>n===1?tf("What is still to buy ({n} item), saved under a name — a BBQ, camping, Christmas — to drop into the list another time.",{ n }):tf("What is still to buy ({n} items), saved under a name — a BBQ, camping, Christmas — to drop into the list another time.",{ n }))(state.items.filter(i=>!i.checked).length)}</div>
@@ -1823,16 +1811,7 @@ function effectiveSub(item, cat){
 function labelMap(){ const m={}; DEFAULT_CATS.forEach(c=>m[c.label.toLowerCase()]=c.id); CATS13.forEach(c=>m[c.label.toLowerCase()]=c.id);
   catList().forEach(c=>m[c.label.toLowerCase()]=c.id);
   Object.assign(m,{veg:"vegetable",vegetables:"vegetable",veggies:"vegetable",fruits:"fruit"}); return m; }
-function parseInput(text){ const map=labelMap();
-  const labels=Object.keys(map).map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
-  const re=new RegExp('\\s*\\b('+labels+')\\s*:','gi');
-  const norm=text.replace(re,(m,l)=>'\n'+l+':');
-  const out=[];
-  for(const raw of norm.split(/\n/)){ const line=raw.trim(); if(!line) continue;
-    let forced=null,rest=line; const c=line.indexOf(":");
-    if(c!==-1){ const lab=line.slice(0,c).trim().toLowerCase(); if(map[lab]){ forced=map[lab]; rest=line.slice(c+1);} }
-    for(const tok of rest.split(",").map(s=>s.trim()).filter(Boolean)){ const{qty,name,weight}=parseEntry(tok); if(name) out.push({name,qty,weight,cat:forced}); }
-  } return out; }
+function parseInput(text){ return parseLines(text, labelMap()); }   // v2.46: the parser is js/parse.js
 
 /* ---- Firebase ---- */
 let db=null, listRef=null, applyingRemote=false, unsub=null;
@@ -2048,6 +2027,21 @@ async function acctComplete(url){ if(!_authM || !_auth) return;
   catch(e){ acct={ sent, err:acctErr(e) }; render(); } }
 function acctSignOut(){ if(!_authM || !_auth) return; if(!confirm("Sign out on this phone? Its lists stay on it; your account keeps them too.")) return;
   _authM.signOut(_auth).catch(()=>{}).then(()=>{ acct=null; _acctSyncedUid=""; render(); }); }   // onAuthStateChanged then signs the phone in quietly again
+/* v2.46 (the household's item A; an App Store rule, S16): the account can be deleted from inside the app. In order: this
+   account comes off every list this phone knows (its access entry set to false, its name cleared), its saved lists are
+   emptied, then Firebase deletes the account itself. The lists stay — on this phone and for everyone on them — and the
+   phone carries on quietly signed in, rejoining them with the keys it keeps. An empty users/{uid} record is left behind
+   (no codes, no names): deleting records needs an import the test stubs do not have — a shortcut, logged in Do later. */
+async function acctDelete(){ const u=_auth && _auth.currentUser;
+  if(!u || u.isAnonymous || !_authM || typeof _authM.deleteUser!=="function") return;
+  if(!confirm(t("Delete your account? Your email and password are removed, and your account forgets which lists are yours. The lists themselves stay, on this phone and for everyone on them."))) return;
+  acct={ busy:true, step:t("Deleting your account…") }; render();
+  try{
+    for(const l of getLists()){ try{ await acctWait(setDoc(doc(db,"access",l.code), { acl:{[u.uid]:false}, names:{[u.uid]:""} }, { merge:true })); }catch(e){} }
+    try{ await acctWait(setDoc(doc(db,"users",u.uid), { lists:{}, gone:{}, updated:Date.now() })); }catch(e){}
+    await acctWait(_authM.deleteUser(u));
+    acct={ deleted:true }; _acctSyncedUid=""; _accessFor=""; render(); }
+  catch(e){ acct={ err: /requires-recent-login/.test(String(e && e.code)) ? t("For safety, Firebase wants a fresh sign-in first: sign out, sign in again, then delete the account.") : acctErr(e) }; render(); } }
 var _acctSyncedUid = "";
 function acctRef(){ const u=_auth && _auth.currentUser; return (u && !u.isAnonymous && db) ? doc(db, "users", u.uid) : null; }
 /* merge both ways: lists the account has and this phone does not are added here; lists this phone has are added to the
@@ -2081,7 +2075,8 @@ function acctHTML(){ if(!configured) return "";
     <input id="acctNewPw" class="cefield acctfield" type="password" autocomplete="new-password" placeholder="${t("New password — at least 6 characters")}" />
     <button class="optaction" id="acctSetPw" style="margin-top:8px" ${a.busy?"disabled":""}>${t("Save password")}</button>
     ${status}
-    <button class="optaction" id="acctOut" style="margin-top:8px">${t("Sign out on this phone")}</button></div>`;
+    <button class="optaction" id="acctOut" style="margin-top:8px">${t("Sign out on this phone")}</button>
+    <button class="acctlink" id="acctDel">${t("Delete my account")}</button></div>`;
   return `<div class="acctbox" id="acctBox"><div class="accthd">${t("Your account")}</div>
     <div class="acctline">${esc(t(authNote()))}</div>
     <div class="acctline">${t("Add your email and a password so a new phone gets your lists back: sign in there with the same two.")}</div>
@@ -2089,6 +2084,7 @@ function acctHTML(){ if(!configured) return "";
     <input id="acctPw" class="cefield acctfield" type="password" autocomplete="current-password" placeholder="${t("Password — at least 6 characters")}" />
     <button class="newlist" id="acctGo" style="margin-top:8px" ${a.busy?"disabled":""}>${t("Continue")}</button>
     ${a.sent ? "" : status}
+    ${a.deleted ? `<div class="acctline" role="status">${t("Your account is deleted. This phone carries on quietly signed in, with its lists.")}</div>` : ""}
     ${a.reset ? `<div class="acctline" role="status">${tf("If <b>{e}</b> has an account, an email to set a new password is on its way. It opens in your browser; set the password there, then sign in here.", { e:esc(a.email) })}</div>` : ""}
     ${a.forgot ? `<button class="acctlink" id="acctForgot">${t("Forgot your password?")}</button>` : ""}
     <button class="acctlink" id="acctSend" ${a.busy?"disabled":""}>${t("Or email me a sign-in link instead")}</button>
@@ -2216,7 +2212,7 @@ function syncChip(){
 /* v1.43 item 3: the store you are standing in is the header's most useful fact — show it top-left
    next to the list name. `activeStore()` already resolves the manual pick or the geofence match. */
 function locChip(){ const s=activeStore(); if(!s || !s.name) return "";
-  return `<span class="locchip">${s.id==="home"?HOME_SVG(14):PIN_SVG(14)} ${esc(s.name)}</span>`; }
+  return `<span class="locchip">${s.id==="home"?HOME_SVG(14):PIN_SVG(14)} ${esc(storeName(s))}</span>`; }
 function showUndo(prev, msg){
   undoSnap = prev; toast = msg;
   toastAction = { label:"Undo", fn:()=>{ if(undoSnap){ state = undoSnap; undoSnap=null; } toast=null; toastAction=null; clearTimeout(_toastT); save(); render(); } };
@@ -2582,7 +2578,7 @@ async function exportListText(){
   catch(e){ if(e && e.name==="AbortError") return; }
   try{ const url=URL.createObjectURL(new Blob([txt],{type:"text/plain;charset=utf-8"}));
     const a=document.createElement("a"); a.href=url; a.download=fn; document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),4000); showToast("Saved "+fn); }
+    setTimeout(()=>URL.revokeObjectURL(url),4000); showToast(tf("Saved {x}", { x:fn })); }
   catch(e){ if(hasClipboard()){ try{ await copyText(txt); showToast("Copied the list as text"); }catch(_){ showToast("Could not export on this device"); } }
     else showToast("Could not export on this device"); } }
 /* v2.15: backups. A list is one shared document, and Undo covers one action, not a bad afternoon. "Back up" writes
@@ -2619,14 +2615,14 @@ async function backupToFile(){
   catch(e){ if(e && e.name==="AbortError") return; }
   try{ const url=URL.createObjectURL(new Blob([txt],{type:"application/json"}));
     const a=document.createElement("a"); a.href=url; a.download=fn; document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),4000); showToast("Saved "+fn); }
+    setTimeout(()=>URL.revokeObjectURL(url),4000); showToast(tf("Saved {x}", { x:fn })); }
   catch(e){ showToast("Could not save a backup on this device"); } }
 /* the picker is attached to the page before it opens: iOS skips "change" on a detached file input (v2.11) */
 function restorePick(){ pickFile({ accept:".json,application/json,text/plain" }).then(file=>{ if(!file) return;
-    file.text().then(t=>{ let d=null; try{ d=JSON.parse(t); }catch(e){}
+    file.text().then(txt=>{ let d=null; try{ d=JSON.parse(txt); }catch(e){}
       if(!d || d.kind!=="list-backup" || !d.list || typeof d.list!=="object"){ showToast("That file isn't a Market List backup"); return; }
       const when=d.savedAt ? new Date(d.savedAt) : null;
-      rst={ list:d.list, label:"The backup file"+(when && !isNaN(when.getTime()) ? " from "+when.toLocaleDateString(dateLoc(),{weekday:"long",day:"numeric",month:"long"}) : "") }; render(); })
+      rst={ list:d.list, label:(when && !isNaN(when.getTime())) ? tf("The backup file from {x}", { x:when.toLocaleDateString(dateLoc(),{weekday:"long",day:"numeric",month:"long"}) }) : t("The backup file") }; render(); })
     .catch(()=>showToast("Couldn't read that file")); }); }
 function restoreList(list, label){
   const prev=JSON.parse(JSON.stringify(state));
@@ -2641,7 +2637,7 @@ function restoreList(list, label){
   state.buyAgain = state.buyAgain || [];
   (Array.isArray(list.buyAgain)?list.buyAgain:[]).forEach(b=>{ const k=String(b&&b.name||"").toLowerCase();
     if(k && !have.has(k)){ have.add(k); state.buyAgain.push(Object.assign({}, b, { ts:Date.now() })); } });
-  save(); showUndo(prev, "Restored from "+label.charAt(0).toLowerCase()+label.slice(1)); }
+  save(); showUndo(prev, tf("Restored from {x}", { x:label.charAt(0).toLowerCase()+label.slice(1) })); }
 /* v2.30 (item 13): say when backups happen. maybeSnapshot runs when the app goes to the background (visibilitychange → hidden), at most once a day, and keeps the last SNAP_KEEP. */
 const SNAP_WHEN = "The app keeps one a day — taken the first time you leave the app each day — for the last seven days, on this phone only.";
 function snapsHTML(){ const a=snapList(listCode);
@@ -2653,7 +2649,7 @@ function snapsHTML(){ const a=snapList(listCode);
 function rstSheet(){ const L=rst.list||{}, n=(L.items||[]).length, m=(L.buyAgain||[]).length, r=((L.plan&&L.plan.recipes)||[]).length;
   return `<div class="sheet-bg kbpin" id="rstBg"><div class="sheet" id="rstSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:6px">${t("Restore this list?")}</div>
-    <div class="rcnote">${esc(rst.label)}: ${n} item${n===1?"":"s"}, ${m} regular${m===1?"":"s"}, ${r} recipe${r===1?"":"s"}.</div>
+    <div class="rcnote">${esc(rst.label)}: ${n===1?tf("{n} item",{ n }):tf("{n} items",{ n })}, ${m===1?tf("{n} regular",{ n:m }):tf("{n} regulars",{ n:m })}, ${r===1?tf("{n} recipe",{ n:r }):tf("{n} recipes",{ n:r })}.</div>
     <div class="rcnote">${t("This replaces the list's items, plan and prices for everyone on it. Regulars in the backup are added back; none are removed. You can undo straight after.")}</div>
     <div class="ppedbtns"><button class="optaction" id="rstCancel">${t("Cancel")}</button><button class="newlist" id="rstGo">${t("Restore")}</button></div>
   </div></div>`; }
@@ -4181,8 +4177,8 @@ function planQBannerHTML(){
     <div class="qbanner-top"><span class="qbanner-name">${(it.qty||1)>1?it.qty+'× ':''}${cur?esc(cur)+' ':''}${esc(cap(it.name))}</span><span style="display:flex;gap:8px;flex:none"><button class="qbanner-rm" id="qbannerRemove">${t("Remove")}</button><button class="qbanner-close" id="qbannerClose">${t("Done")}</button></span></div>
     <div class="qbanner-row">
       <div class="qstep2"><button data-qm-minus="${it.id}" aria-label="${t("Less")}">−</button><span>${it.qty||1}</span><button data-qm-plus="${it.id}" aria-label="${t("More")}">+</button></div>
-      <div class="wrowq">${W.map(w=>`<button class="wchipq ${cur===w?'on':''}" data-qm-weight="${it.id}|${w}">${w?(w==="500g"||w==="1kg"?'★'+w:w):'unit'}</button>`).join("")}</div>
-      <button class="qm-edit" data-qm-edit="${it.id}" aria-label="Full edit">⋯</button>
+      <div class="wrowq">${W.map(w=>`<button class="wchipq ${cur===w?'on':''}" data-qm-weight="${it.id}|${w}">${w?(w==="500g"||w==="1kg"?'★'+w:w):t('unit')}</button>`).join("")}</div>
+      <button class="qm-edit" data-qm-edit="${it.id}" aria-label="${t("Full edit")}">⋯</button>
     </div>
   </div>`;
 }
@@ -4224,7 +4220,7 @@ function weekStart(off){ const d=new Date(); d.setHours(0,0,0,0);
   d.setDate(d.getDate() - ((d.getDay()+6)%7) + off*7);   // weeks run Monday to Sunday
   return d; }
 function weekLabel(off){
-  if(off===0) return "This week"; if(off===1) return "Next week"; if(off===-1) return "Last week";
+  if(off===0) return t("This week"); if(off===1) return t("Next week"); if(off===-1) return t("Last week");
   const s=weekStart(off), e=new Date(s.getTime()+6*DAY_MS);
   const f=x=>x.toLocaleDateString(dateLoc(),{day:"numeric",month:"short"});
   return f(s)+" – "+f(e); }
@@ -4291,7 +4287,7 @@ const MEAL_SLOTS=[["breakfast","Breakfast"],["lunch","Lunch"],["dinner","Dinner"
 const SLOT_LABEL={breakfast:"Breakfast",lunch:"Lunch",dinner:"Dinner",snack:"Snack"};
 const SLOT_ORDER={breakfast:0,lunch:1,dinner:2,snack:3};
 function slotPicker(attr, cur){
-  return `<div class="slotseg" role="group" aria-label="Meal">${MEAL_SLOTS.map(([k,l])=>`<button data-${attr}="${k}" class="${cur===k?'on':''}" aria-pressed="${cur===k?'true':'false'}">${l}</button>`).join("")}</div>`;
+  return `<div class="slotseg" role="group" aria-label="${t("Meal")}">${MEAL_SLOTS.map(([k,l])=>`<button data-${attr}="${k}" class="${cur===k?'on':''}" aria-pressed="${cur===k?'true':'false'}">${t(l)}</button>`).join("")}</div>`;
 }
 /* v2.05: recipe courses. recipe.course is optional — readers go through recipeCourse(). */
 const COURSES=[["drinks","Drinks"],["entree","Entrée"],["main","Main"],["dessert","Dessert"]];
@@ -4305,7 +4301,7 @@ function guessCourse(name){ const n=String(name||"").toLowerCase();
   return "main"; }
 function recipeCourse(r){ return (r && COURSES.some(c=>c[0]===r.course)) ? r.course : guessCourse(r && r.name); }
 function coursePicker(attr, cur){
-  return `<div class="slotseg" role="group" aria-label="Course">${COURSES.map(([k,l])=>`<button data-${attr}="${k}" class="${cur===k?'on':''}" aria-pressed="${cur===k?'true':'false'}">${l}</button>`).join("")}</div>`;
+  return `<div class="slotseg" role="group" aria-label="${t("Course")}">${COURSES.map(([k,l])=>`<button data-${attr}="${k}" class="${cur===k?'on':''}" aria-pressed="${cur===k?'true':'false'}">${t(l)}</button>`).join("")}</div>`;
 }
 /* v2.07: the recipe sheet lists ingredients as written ("recipe") or grouped by category ("cat"). A
    preference, not a look, so ml_ingsort is in BOTH APP_EXCLUDE_BOOT and APP_EXCLUDE. */
@@ -4368,13 +4364,13 @@ function renderPlanTab(){
          category-mark fallback here — a recipe name ("Pad Thai") has no category, and CAT("") is Others. */
       const dk = (iconStyle()==="drawn" && itemEmojiOn()) ? drawKey(nm) : null;
       const em = dk ? illSVG(dk) : (e.emoji || (e.cat ? itemEmoji(nm, e.cat) : ""));
-      return `<button class="pchip${e.kind==='recipe'?' recipe':''}" data-pchip="${esc(k)}|${esc(e.id)}">${(slotsOn && SLOT_LABEL[e.slot])?`<span class="pcslot">${SLOT_LABEL[e.slot]}</span>`:""}${em?`<span class="pcem" aria-hidden="true">${em}</span>`:""}<span class="pcname">${esc(cap(nm))}</span></button>`;
+      return `<button class="pchip${e.kind==='recipe'?' recipe':''}" data-pchip="${esc(k)}|${esc(e.id)}">${(slotsOn && SLOT_LABEL[e.slot])?`<span class="pcslot">${t(SLOT_LABEL[e.slot])}</span>`:""}${em?`<span class="pcem" aria-hidden="true">${em}</span>`:""}<span class="pcname">${esc(cap(nm))}</span></button>`;
     }).join("");
     days.push(`<section class="planday${k===todayK?' today':''}">
       <div class="pdhead">
         <span class="pdwhen"><span class="pdname">${esc(d.toLocaleDateString(dateLoc(),{weekday:"short"}).replace(/\.$/,""))}</span><span class="pddate">${esc(d.toLocaleDateString(dateLoc(),{day:"numeric",month:"short"}))}</span></span>
-        ${chips ? `<div class="pdchips">${chips}</div>` : `<span class="pdempty">Nothing planned</span>`}
-        <button class="pdmore" data-pd="${esc(k)}" aria-haspopup="dialog" aria-label="Add to ${esc(d.toLocaleDateString(dateLoc(),{weekday:"long"}))}">+</button>
+        ${chips ? `<div class="pdchips">${chips}</div>` : `<span class="pdempty">${t("Nothing planned")}</span>`}
+        <button class="pdmore" data-pd="${esc(k)}" aria-haspopup="dialog" aria-label="${tf("Add to {x}", { x:esc(d.toLocaleDateString(dateLoc(),{weekday:"long"})) })}">+</button>
       </div>
     </section>`);
   }
@@ -4388,14 +4384,14 @@ function renderPlanTab(){
     <div class="wrap" role="main">
     <div class="zoomwrap"><div class="zoomer" id="zoomer">
       <div class="planweek">
-        <button class="pwarrow" id="pwPrev" aria-label="Previous week">‹</button>
+        <button class="pwarrow" id="pwPrev" aria-label="${t("Previous week")}">‹</button>
         <button class="pwlbl" id="pwNow">${esc(weekLabel(planWeek))}</button>
-        <button class="pwarrow" id="pwNext" aria-label="Next week">›</button>
-        <button class="pwarrow" id="pwMore" aria-haspopup="dialog" aria-label="Save or clear this week">⋯</button>
+        <button class="pwarrow" id="pwNext" aria-label="${t("Next week")}">›</button>
+        <button class="pwarrow" id="pwMore" aria-haspopup="dialog" aria-label="${t("Save or clear this week")}">⋯</button>
       </div>
-      ${planWeekCount(planWeek) ? "" : `<div class="planhint" role="note"><p>Plan your dinners here, then add every ingredient to the shopping list in one tap.</p><button class="newlist" id="pwHint" data-pd="${esc(hintK)}">Plan ${planWeek===0 ? "today" : "Monday"}</button></div>`}
+      ${planWeekCount(planWeek) ? "" : `<div class="planhint" role="note"><p>${t("Plan your dinners here, then add every ingredient to the shopping list in one tap.")}</p><button class="newlist" id="pwHint" data-pd="${esc(hintK)}">${planWeek===0 ? t("Plan today") : t("Plan Monday")}</button></div>`}
       ${days.join("")}
-      ${planWeekCount(planWeek) ? `<button class="newlist" id="pwToList" style="margin-top:14px">Add this week to the list</button>` : ""}
+      ${planWeekCount(planWeek) ? `<button class="newlist" id="pwToList" style="margin-top:14px">${t("Add this week to the list")}</button>` : ""}
     </div></div>
   </div>
   ${bottomNav({planId:"planNavP",planActive:true,cartId:"cartNavP",cartActive:false,setId:"setNavP"})}${userTilesHTML()}
@@ -4413,8 +4409,8 @@ function planMenuSheet(){
   const d = new Date(planMenu+"T00:00:00");
   return `<div class="sheet-bg" id="pmBg"><div class="sheet" id="pmSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${esc(d.toLocaleDateString(dateLoc(),{weekday:"long",day:"numeric",month:"long"}))}</div>
-    <button class="optaction" id="pmRecipe">Add recipe</button>
-    <button class="optaction" id="pmFood">Add food</button>
+    <button class="optaction" id="pmRecipe">${t("Add recipe")}</button>
+    <button class="optaction" id="pmFood">${t("Add food")}</button>
   </div></div>`;
 }
 /* v1.97: save this week as a reusable plan, clear it, or apply one already saved. The heading names
@@ -4425,11 +4421,11 @@ function planWeekSheet(){
   const saved=P.saved||[];
   return `<div class="sheet-bg" id="pwBg"><div class="sheet" id="pwSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">${esc(lbl)}</div>
-    <p class="hint" style="text-align:left;margin:0 0 12px">${n?`${n} meal${n===1?"":"s"} planned.`:"Nothing planned yet — nothing to save."}</p>
-    <button class="optaction" id="pwSave"${n?"":" disabled"}>${SAVE_SVG(16)} Save this week</button>
-    <button class="optaction" id="pwClear"${n?"":" disabled"} style="border-color:#C24A33;color:#C24A33">${BROOM_SVG(16)} Clear this week</button>
-    ${saved.length?`<p class="palabel" style="margin-top:14px">Saved plans</p>
-      <div class="pills">${saved.map(pl=>`<span class="precwrap"><button class="sugchip" data-pwapply="${esc(pl.id)}">${esc(pl.name||"Plan")}</button><button class="precdel" data-pwdel="${esc(pl.id)}" aria-label="Delete ${esc(pl.name||"Plan")}">×</button></span>`).join("")}</div>`:""}
+    <p class="hint" style="text-align:left;margin:0 0 12px">${n?(n===1?t("1 meal planned."):tf("{n} meals planned.", { n })):t("Nothing planned yet — nothing to save.")}</p>
+    <button class="optaction" id="pwSave"${n?"":" disabled"}>${SAVE_SVG(16)} ${t("Save this week")}</button>
+    <button class="optaction" id="pwClear"${n?"":" disabled"} style="border-color:#C24A33;color:#C24A33">${BROOM_SVG(16)} ${t("Clear this week")}</button>
+    ${saved.length?`<p class="palabel" style="margin-top:14px">${t("Saved plans")}</p>
+      <div class="pills">${saved.map(pl=>`<span class="precwrap"><button class="sugchip" data-pwapply="${esc(pl.id)}">${pl.name?esc(pl.name):t("Plan")}</button><button class="precdel" data-pwdel="${esc(pl.id)}" aria-label="${tf("Delete {x}", { x:pl.name?esc(pl.name):t("Plan") })}">×</button></span>`).join("")}</div>`:""}
   </div></div>`;
 }
 /* v1.84: what you type is matched against the app's own items — the same addMatches() the add sheet
@@ -4511,20 +4507,20 @@ function rptDiag(){ let th=""; try{ th=document.documentElement.getAttribute("da
   return { version:APP_VERSION, page:["plan","shop","settings"][curPageIdx()]||String(curPageIdx()), layout:dispBase()+" "+(dispBase()==="small"?smallCols():largeCols())+" cols",
     icons:itemEmojiOn()?(iconStyle()+" "+icoSize()):"off", theme:th, screen:innerWidth+"x"+innerHeight, ua:String(navigator.userAgent||"").slice(0,120) }; }
 function rptSheet(){
-  const head=`<div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">${REPORT_SVG(18)} Report a problem</div>`;
+  const head=`<div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">${REPORT_SVG(18)} ${t("Report a problem")}</div>`;
   const wrap=b=>`<div class="sheet-bg kbpin" id="rptBg"><div class="sheet" id="rptSheet">${head}${b}</div></div>`;
-  if(rpt.busy) return wrap(`<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>Sending…</div>`);
-  if(rpt.sent) return wrap(`<div role="status" style="padding:6px 2px 16px;color:var(--text);font-weight:600;line-height:1.5">Thanks — it's been sent.</div><button class="optaction" id="rptOk">OK</button>`);
-  return wrap(`<div class="rcnote">Tell us what went wrong, or what you'd change. It goes to the person who builds the app.</div>
-    <div class="slotseg rptkinds">${Object.keys(RPT_KINDS).map(k=>`<button data-rptkind="${k}" class="${rpt.kind===k?'on':''}">${RPT_KINDS[k]}</button>`).join("")}</div>
-    <textarea id="rptText" class="rpttext" maxlength="2000" rows="5" placeholder="What happened? What did you expect?">${esc(rpt.text||"")}</textarea>
-    <div class="rptdiag"><button class="smartcheck ${rpt.diag?"on":""}" id="rptDiag" role="checkbox" aria-checked="${rpt.diag?"true":"false"}" aria-label="Include app details">✓</button>
-      <span>Include app details — version, screen and layout. Never your list.</span></div>
-    ${rpt.err?`<div class="rpterr" role="alert">${esc(rpt.err)}${rpt.canShare?` <button class="linkbtn" id="rptShare">Share it instead</button>`:""}</div>`:""}
-    <div class="ppedbtns"><button class="optaction" id="rptCancel">Cancel</button><button class="newlist" id="rptSend">Send</button></div>`); }
+  if(rpt.busy) return wrap(`<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>${t("Sending…")}</div>`);
+  if(rpt.sent) return wrap(`<div role="status" style="padding:6px 2px 16px;color:var(--text);font-weight:600;line-height:1.5">${t("Thanks — it's been sent.")}</div><button class="optaction" id="rptOk">${t("OK")}</button>`);
+  return wrap(`<div class="rcnote">${t("Tell us what went wrong, or what you'd change. It goes to the person who builds the app.")}</div>
+    <div class="slotseg rptkinds">${Object.keys(RPT_KINDS).map(k=>`<button data-rptkind="${k}" class="${rpt.kind===k?'on':''}">${t(RPT_KINDS[k])}</button>`).join("")}</div>
+    <textarea id="rptText" class="rpttext" maxlength="2000" rows="5" placeholder="${t("What happened? What did you expect?")}">${esc(rpt.text||"")}</textarea>
+    <div class="rptdiag"><button class="smartcheck ${rpt.diag?"on":""}" id="rptDiag" role="checkbox" aria-checked="${rpt.diag?"true":"false"}" aria-label="${t("Include app details")}">✓</button>
+      <span>${t("Include app details — version, screen and layout. Never your list.")}</span></div>
+    ${rpt.err?`<div class="rpterr" role="alert">${esc(t(rpt.err))}${rpt.canShare?` <button class="linkbtn" id="rptShare">${t("Share it instead")}</button>`:""}</div>`:""}
+    <div class="ppedbtns"><button class="optaction" id="rptCancel">${t("Cancel")}</button><button class="newlist" id="rptSend">${t("Send")}</button></div>`); }
 function rptSend(){ const text=String(rpt.text||"").trim();
   if(!text){ rpt.err="Write a few words first."; rpt.canShare=false; render(); return; }
-  if(rptToday()>=RPT_DAY_CAP){ rpt.err=`That's ${RPT_DAY_CAP} reports today from this phone. Try again tomorrow.`; rpt.canShare=true; render(); return; }
+  if(rptToday()>=RPT_DAY_CAP){ rpt.err=tf("That's {n} reports today from this phone. Try again tomorrow.", { n:RPT_DAY_CAP }); rpt.canShare=true; render(); return; }
   const body={ kind:rpt.kind, text, diag: rpt.diag ? rptDiag() : {} };
   rpt.busy=true; rpt.err=""; render();
   const ctl=(typeof AbortController!=="undefined") ? new AbortController() : null;
@@ -4607,13 +4603,13 @@ function rcSave(){ if(!rcpt || !rcpt.lines) return;
     const it=rcMatchItem(nm, used); if(it){ used.add(it.id); it.checked=true; it.checkedBy=me; it.checkedAt=t; it.checkedStore=rcpt.store.id||""; markDirty(it.id); m++; } }
   /* v2.20: a receipt from a member chain that shows the member discount uses up that period's 10% */
   let tenMsg = ""; { const k = chainOfStore((rcpt.store && rcpt.store.name) || rcpt.detected), m = memb();
-    if(k && m[k].on && discountSeen(rcpt.discounts, k)){ const p = membMark(m, k, true, new Date(rcpt.date + "T12:00:00")); state.memb = m; tenMsg = ` · ${CHAINS[k].short} ${m[k].pct}% used for ${monthName(p)}`; } }
+    if(k && m[k].on && discountSeen(rcpt.discounts, k)){ const p = membMark(m, k, true, new Date(rcpt.date + "T12:00:00")); state.memb = m; tenMsg = " · " + tf("{chain} {pct}% used for {m}", { chain:CHAINS[k].short, pct:m[k].pct, m:monthName(p) }); } }
   /* v2.24 R20: the receipt, for "What we spend" — under the same time its prices were saved with, so the rebuild from the
      price memory never counts it twice */
   { const se = spendEntry({ t, d:rcpt.date, s:(rcpt.store && rcpt.store.id) || "", sn:(rcpt.store && rcpt.store.name) || "", total:rcpt.total,
       lines:rcpt.lines.filter(L => L.keep && String(L.name || "").trim() && isFinite(L.price)).map(L => ({ price:+L.price, cat:L.cat })), discounts:rcpt.discounts });
     if(se.tot > 0) state.spend = spendLog(state.spend, se, SPEND_MAX); }
-  rcptNudgeClear(); lastCartClear(); save(); rcpt=null; render(); showToast(`Saved ${n} price${n===1?"":"s"}${m?` · ticked off ${m}`:""}${tenMsg}`); }
+  rcptNudgeClear(); lastCartClear(); save(); rcpt=null; render(); showToast((n===1 ? tf("Saved 1 price", {}) : tf("Saved {n} prices", { n })) + (m ? " · " + tf("ticked off {n}", { n:m }) : "") + tenMsg); }
 /* v2.20 the 10% shop (plan item 3). The logic is js/tenpct.js; this is the app's side: the household's memberships and
    "used" marks live in the list (state.memb, shared by every phone), the Shop card, the stock-up sheet, the receipt hook. */
 var tenSheet = null;   // { chain, rows, pct, cap, base } while the stock-up sheet is open. var: render() reads it at boot
@@ -4647,30 +4643,30 @@ function tenCardHTML(){ const m = memb(), st = activeStore(), here = st ? chainO
       <div class="ic-btns">${s.rows.length ? `<button class="newlist" id="tenCardList">${t("See the list")}</button>` : ""}<button class="optaction" id="tenCardUsed">${t("Used it")}</button><button class="optaction" id="tenCardHide">${t("Not this month")}</button></div>
     </div>`; }
   return ""; }
-function tenSheetHTML(){ const t = tenSheet; if(!t) return ""; const c = memb()[t.chain], p = periodOf(new Date(), c.day), sum = stockTotal(t.rows, t.pct, t.cap), n = t.rows.filter(r => r.sel).length;
+function tenSheetHTML(){ const tn = tenSheet; if(!tn) return ""; const c = memb()[tn.chain], p = periodOf(new Date(), c.day), sum = stockTotal(tn.rows, tn.pct, tn.cap), n = tn.rows.filter(r => r.sel).length;
   const row = (r, i) => `<label class="tenrow${r.sel ? "" : " off"}"><input type="checkbox" data-ten-row="${i}" ${r.sel ? "checked" : ""} ${r.priced ? "" : "disabled"}>
-    <span class="tr-n">${esc(cap(r.name))}<span class="tr-s">${r.qty}×${r.weight ? " " + esc(r.weight) : ""} · every ${r.every} day${r.every === 1 ? "" : "s"}${r.ask ? " · keeps if frozen" : ""}</span></span>
-    <span class="tr-p">${r.priced ? priceMoney(r.total) : "no price yet"}</span></label>`;
+    <span class="tr-n">${esc(cap(r.name))}<span class="tr-s">${r.qty}×${r.weight ? " " + esc(r.weight) : ""} · ${r.every === 1 ? tf("every {n} day", { n:r.every }) : tf("every {n} days", { n:r.every })}${r.ask ? " · " + t("keeps if frozen") : ""}</span></span>
+    <span class="tr-p">${r.priced ? priceMoney(r.total) : t("no price yet")}</span></label>`;
   return `<div class="sheet-bg" id="tenBg"><div class="sheet" id="tenSheet" role="dialog" aria-labelledby="tenTitle">
-    <div class="disp" id="tenTitle" style="font-weight:800;font-size:17px;margin-bottom:4px">${esc(CHAINS[t.chain].short)} ${t.pct}% shop · ${esc(monthName(p))}</div>
-    <div class="hint" style="text-align:left;margin:0 0 10px">What you rebuy, enough for a month, priced from your receipts. Ticked until the shop earns the whole discount (${priceMoney(t.base)}).</div>
-    ${t.rows.length ? `<div class="tenrows">${t.rows.map(row).join("")}</div>` : `<div class="hint" style="text-align:left">Nothing to suggest yet: this needs things you have bought at least twice, and their prices from a receipt.</div>`}
-    <div class="tensum" role="status">${n} ticked · ${priceMoney(sum.total)} · saves ${priceMoney(sum.saving)}${sum.saving >= t.cap ? " (the most it gives)" : ""}</div>
-    <div class="ppedbtns" style="margin-top:10px"><button class="newlist" id="tenAdd" ${n ? "" : "disabled"}>Add ${n} to the list</button><button class="optaction" id="tenClose" style="margin-top:0">Close</button></div>
+    <div class="disp" id="tenTitle" style="font-weight:800;font-size:17px;margin-bottom:4px">${tf("{chain} {pct}% shop", { chain:esc(CHAINS[tn.chain].short), pct:tn.pct })} · ${esc(monthName(p))}</div>
+    <div class="hint" style="text-align:left;margin:0 0 10px">${tf("What you rebuy, enough for a month, priced from your receipts. Ticked until the shop earns the whole discount ({x}).", { x:priceMoney(tn.base) })}</div>
+    ${tn.rows.length ? `<div class="tenrows">${tn.rows.map(row).join("")}</div>` : `<div class="hint" style="text-align:left">${t("Nothing to suggest yet: this needs things you have bought at least twice, and their prices from a receipt.")}</div>`}
+    <div class="tensum" role="status">${tf("{n} ticked", { n })} · ${priceMoney(sum.total)} · ${tf("saves {x}", { x:priceMoney(sum.saving) })}${sum.saving >= tn.cap ? " " + t("(the most it gives)") : ""}</div>
+    <div class="ppedbtns" style="margin-top:10px"><button class="newlist" id="tenAdd" ${n ? "" : "disabled"}>${tf("Add {n} to the list", { n })}</button><button class="optaction" id="tenClose" style="margin-top:0">${t("Close")}</button></div>
   </div></div>`; }
-function tenAddToList(){ const t = tenSheet; if(!t) return; let n = 0;
-  for(const r of t.rows){ if(!r.sel) continue; n++;
+function tenAddToList(){ const tn = tenSheet; if(!tn) return; let n = 0;
+  for(const r of tn.rows){ if(!r.sel) continue; n++;
     const it = state.items.find(i => !i.checked && String(i.name || "").toLowerCase() === String(r.name).toLowerCase());
     if(it){ it.qty = Math.max(+it.qty || 1, r.qty); markDirty(it.id); }
     else state.items.push({ id:uid(), name:r.name, qty:r.qty, cat:newCat(r.cat, r.name), weight:r.weight || "", sub:"", checked:false, by:me }); }
-  tenSheet = null; save(); render(); showToast(`Added ${n} for the ${CHAINS[t.chain].short} ${t.pct}% shop`); }
+  tenSheet = null; save(); render(); showToast(tf("Added {n} for the {chain} {pct}% shop", { n, chain:CHAINS[tn.chain].short, pct:tn.pct })); }
 function wireTenSheet(){
   app.querySelectorAll("[data-ten-row]").forEach(b => b.onchange = () => { const r = tenSheet && tenSheet.rows[+b.dataset.tenRow]; if(r){ r.sel = b.checked; render(); } });
   const ta = app.querySelector("#tenAdd"); if(ta) ta.onclick = tenAddToList;
   const tc = app.querySelector("#tenClose"); if(tc) tc.onclick = () => { tenSheet = null; render(); };
   const tb = app.querySelector("#tenBg"); if(tb) tb.onclick = e => { if(e.target === tb){ tenSheet = null; render(); } };
   const cl = app.querySelector("#tenCardList"); if(cl) cl.onclick = () => tenOpen(app.querySelector("#tenCard").dataset.chain);
-  const cu = app.querySelector("#tenCardUsed"); if(cu) cu.onclick = () => { const m = memb(), k = app.querySelector("#tenCard").dataset.chain; const p = membMark(m, k, true); membSave(m); showToast(`${CHAINS[k].short} ${m[k].pct}% marked as used for ${monthName(p)}`); };
+  const cu = app.querySelector("#tenCardUsed"); if(cu) cu.onclick = () => { const m = memb(), k = app.querySelector("#tenCard").dataset.chain; const p = membMark(m, k, true); membSave(m); showToast(tf("{chain} {pct}% marked as used for {m}", { chain:CHAINS[k].short, pct:m[k].pct, m:monthName(p) })); };
   const ch = app.querySelector("#tenCardHide"); if(ch) ch.onclick = () => { const c = app.querySelector("#tenCard"); tenHide(c.dataset.chain, c.dataset.period); };
 }
 /* v2.21 which store is cheaper for this list (plan item 6) — the logic is js/compare.js. The list is what is still to buy;
@@ -4679,17 +4675,17 @@ function wireTenSheet(){
 var cmpOpen = false;   // the comparison sheet. var: render() reads it at boot
 function cmpModel(){ return compareStores({ items:state.items.filter(i => !i.checked), lookup:name => priceLookup(name) || [], maxAgeDays:60, minItems:3 }); }
 function cmpStoreLine(s, of){ const k = chainOfStore(s.name), m = k ? memb()[k] : null, p = m && m.on ? periodOf(new Date(), m.day) : null;
-  const ten = (p && !m.used[p.key]) ? ` · ${m.pct}% off with your ${esc(CHAINS[k].short)} shop: about ${priceMoney(Math.max(0, s.total - Math.min(m.cap, s.total * m.pct / 100)))}` : "";
+  const ten = (p && !m.used[p.key]) ? ` · ${tf("{pct}% off with your {chain} shop: about {x}", { pct:m.pct, chain:esc(CHAINS[k].short), x:priceMoney(Math.max(0, s.total - Math.min(m.cap, s.total * m.pct / 100))) })}` : "";
   const st = s.id ? storeById(s.id) : null, here = storeCoord(st), home = storeLocs.home;
-  const km = (here && home) ? ` · ${(distM(home, here) / 1000).toFixed(distM(home, here) < 10000 ? 1 : 0)} km from home` : "";
-  return `<div class="cmprow"><span class="cmp-n">${esc(s.name)}<span class="cmp-s">${s.n} of ${of} priced${km}${ten}</span></span><span class="cmp-p">${priceMoney(s.total)}</span></div>`; }
+  const km = (here && home) ? ` · ${tf("{x} km from home", { x:(distM(home, here) / 1000).toFixed(distM(home, here) < 10000 ? 1 : 0) })}` : "";
+  return `<div class="cmprow"><span class="cmp-n">${esc(s.name)}<span class="cmp-s">${tf("{n} of {of} priced", { n:s.n, of })}${km}${ten}</span></span><span class="cmp-p">${priceMoney(s.total)}</span></div>`; }
 function cmpSheetHTML(){ const c = cmpModel(), b = c.best;
   return `<div class="sheet-bg" id="cmpBg"><div class="sheet" id="cmpSheet" role="dialog" aria-labelledby="cmpTitle">
-    <div class="disp" id="cmpTitle" style="font-weight:800;font-size:17px;margin-bottom:4px">Which store is cheaper</div>
-    <div class="hint" style="text-align:left;margin:0 0 10px">${c.of ? `For the ${c.of} thing${c.of === 1 ? "" : "s"} still to buy, from what you paid in the last 60 days. Stores are compared only on what both have prices for.` : "Nothing is on the list to buy yet — add things, and this compares the stores you have receipts from."}</div>
-    ${b ? `<div class="cmpbest">${esc(b.cheaper)} is about ${priceMoney(b.diff)} cheaper than ${esc(b.dearer)} on the ${b.n} things both have prices for (${priceMoney(b.lo)} against ${priceMoney(b.hi)}).</div>` : `<div class="cmpbest">Not enough prices yet to compare two stores on the same things — reading a receipt from each store fills this in.</div>`}
+    <div class="disp" id="cmpTitle" style="font-weight:800;font-size:17px;margin-bottom:4px">${t("Which store is cheaper")}</div>
+    <div class="hint" style="text-align:left;margin:0 0 10px">${c.of ? (c.of === 1 ? t("For the 1 thing still to buy, from what you paid in the last 60 days. Stores are compared only on what both have prices for.") : tf("For the {n} things still to buy, from what you paid in the last 60 days. Stores are compared only on what both have prices for.", { n:c.of })) : t("Nothing is on the list to buy yet — add things, and this compares the stores you have receipts from.")}</div>
+    ${b ? `<div class="cmpbest">${tf("{a} is about {x} cheaper than {b} on the {n} things both have prices for ({lo} against {hi}).", { a:esc(b.cheaper), x:priceMoney(b.diff), b:esc(b.dearer), n:b.n, lo:priceMoney(b.lo), hi:priceMoney(b.hi) })}</div>` : `<div class="cmpbest">${t("Not enough prices yet to compare two stores on the same things — reading a receipt from each store fills this in.")}</div>`}
     ${c.stores.length ? `<div class="cmprows">${c.stores.map(s => cmpStoreLine(s, c.of)).join("")}</div>` : ""}
-    <div style="display:flex;gap:8px;margin-top:12px"><button class="optaction" id="cmpClose" style="margin-top:0">Close</button></div>
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="optaction" id="cmpClose" style="margin-top:0">${t("Close")}</button></div>
   </div></div>`; }
 function cmpHidden(){ try{ return localStorage.getItem("ml_cmphide") === dayKey(new Date()); }catch(e){ return false; } }
 /* The Shop card: before a shop (nothing in the cart yet), when one store is worth it on enough of the list, and not put
@@ -4697,9 +4693,9 @@ function cmpHidden(){ try{ return localStorage.getItem("ml_cmphide") === dayKey(
 function cmpCardHTML(){ if(cmpHidden() || state.items.some(i => i.checked)) return "";
   const c = cmpModel(), b = c.best; if(!worthIt(b)) return "";
   return `<div class="installcard cmpcard" id="cmpCard" role="note">
-    <div class="ic-t">Cheaper at ${esc(b.cheaper)}</div>
-    <div class="ic-b">About ${priceMoney(b.diff)} less than ${esc(b.dearer)} for ${b.n} of the ${c.of} things on your list, from your receipts.</div>
-    <div class="ic-btns"><button class="newlist" id="cmpCardGo">Compare</button><button class="optaction" id="cmpCardHide">Not today</button></div>
+    <div class="ic-t">${tf("Cheaper at {x}", { x:esc(b.cheaper) })}</div>
+    <div class="ic-b">${tf("About {x} less than {b} for {n} of the {of} things on your list, from your receipts.", { x:priceMoney(b.diff), b:esc(b.dearer), n:b.n, of:c.of })}</div>
+    <div class="ic-btns"><button class="newlist" id="cmpCardGo">${t("Compare")}</button><button class="optaction" id="cmpCardHide">${t("Not today")}</button></div>
   </div>`; }
 function wireCmp(){
   const g = app.querySelector("#cmpCardGo"); if(g) g.onclick = () => { cmpOpen = true; render(); };
@@ -4717,25 +4713,25 @@ function spendMonthName(m, year){ const [y, mo] = String(m).split("-").map(Numbe
   return new Date(y, mo - 1, 1).toLocaleDateString(dateLoc(), year ? { month:"long", year:"numeric" } : { month:"long" }); }
 function spendSheetHTML(){ const all = spendAll(), months = spendMonths(all).slice(0, 12);
   const m = (spendM && months.includes(spendM)) ? spendM : (months[0] || monthKey(dayKey(new Date())));
-  const s = spendMonth(all, m), p = spendMonth(all, prevMonth(m)), about = s.est ? "about " : "";
+  const s = spendMonth(all, m), p = spendMonth(all, prevMonth(m)), about = s.est ? t("about") + " " : "";
   const bar = (v, max, col) => `<span class="sp-bar" aria-hidden="true"><span style="width:${max > 0 ? Math.max(3, Math.round(v / max * 100)) : 0}%${col ? `;background:${col}` : ""}"></span></span>`;
-  const vs = (s.n && p.n) ? ` · ${priceMoney(Math.abs(s.tot - p.tot))} ${s.tot >= p.tot ? "more" : "less"} than ${spendMonthName(p.month)}` : "";
+  const vs = (s.n && p.n) ? ` · ${tf(s.tot >= p.tot ? "{x} more than {m}" : "{x} less than {m}", { x:priceMoney(Math.abs(s.tot - p.tot)), m:spendMonthName(p.month) })}` : "";
   /* categories as shown: one whose category is gone counts under Others (catShown), merged */
   const cm = {}; for(const x of s.cats){ const id = catShown(x.cat); cm[id] = (cm[id] || 0) + x.tot; }
   const cats = Object.entries(cm).map(([id, tot]) => ({ id, tot:Math.round(tot * 100) / 100 })).sort((a, b) => b.tot - a.tot);
   const body = s.n ? `
-    <div class="sptot" role="status"><b>${about}${priceMoney(s.tot)}</b> in ${esc(spendMonthName(m, true))} · ${s.n} receipt${s.n === 1 ? "" : "s"}${vs}</div>
-    <div class="elsehd">By store</div>
-    <div class="sprows">${s.stores.map(x => `<div class="sprow"><span class="sp-n">${esc(x.sn)}<span class="sp-s">${x.n} receipt${x.n === 1 ? "" : "s"}</span></span>${bar(x.tot, s.stores[0].tot)}<span class="sp-p">${priceMoney(x.tot)}</span></div>`).join("")}</div>
-    ${cats.length ? `<div class="elsehd">By category</div>
+    <div class="sptot" role="status"><b>${about}${priceMoney(s.tot)}</b> ${tf("in {m}", { m:esc(spendMonthName(m, true)) })} · ${s.n === 1 ? t("1 receipt") : tf("{n} receipts", { n:s.n })}${vs}</div>
+    <div class="elsehd">${t("By store")}</div>
+    <div class="sprows">${s.stores.map(x => `<div class="sprow"><span class="sp-n">${esc(x.sn)}<span class="sp-s">${x.n === 1 ? t("1 receipt") : tf("{n} receipts", { n:x.n })}</span></span>${bar(x.tot, s.stores[0].tot)}<span class="sp-p">${priceMoney(x.tot)}</span></div>`).join("")}</div>
+    ${cats.length ? `<div class="elsehd">${t("By category")}</div>
     <div class="sprows">${cats.map(x => { const c = CAT(x.id); return `<div class="sprow" data-spcat="${esc(x.id)}"><span class="sp-n"><span class="sp-c">${catIcon(c, 16)}<span>${esc(catLabel(c))}</span></span></span>${bar(x.tot, cats[0].tot, autoShade("cat", c.color))}<span class="sp-p">${priceMoney(x.tot)}</span></div>`; }).join("")}</div>` : ""}
-    <div class="hint" style="text-align:left;margin:10px 0 0">What was paid is each receipt's total; the categories add up its lines.${s.est ? " Receipts read before v2.24 are estimated from the price memory." : ""}</div>`
-    : `<div class="hint" style="text-align:left">${months.length ? "No receipts this month." : "Nothing yet. Read a receipt after a shop and what you spend adds up here — by month, by store and by category."}</div>`;
+    <div class="hint" style="text-align:left;margin:10px 0 0">${t("What was paid is each receipt's total; the categories add up its lines.")}${s.est ? " " + t("Receipts read before v2.24 are estimated from the price memory.") : ""}</div>`
+    : `<div class="hint" style="text-align:left">${months.length ? t("No receipts this month.") : t("Nothing yet. Read a receipt after a shop and what you spend adds up here — by month, by store and by category.")}</div>`;
   return `<div class="sheet-bg" id="spendBg"><div class="sheet" id="spendSheet" role="dialog" aria-labelledby="spendTitle">
-    <div class="disp" id="spendTitle" style="font-weight:800;font-size:17px;margin-bottom:8px">What we spend</div>
+    <div class="disp" id="spendTitle" style="font-weight:800;font-size:17px;margin-bottom:8px">${t("What we spend")}</div>
     ${months.length > 1 ? `<div class="spmonths">${months.map(x => `<button class="storechip ${x === m ? "on" : ""}" data-spend-m="${x}" aria-pressed="${x === m}">${esc(spendMonthName(x))}</button>`).join("")}</div>` : ""}
     ${body}
-    <div style="display:flex;gap:8px;margin-top:12px"><button class="optaction" id="spendClose" style="margin-top:0">Close</button></div>
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="optaction" id="spendClose" style="margin-top:0">${t("Close")}</button></div>
   </div></div>`; }
 function wireSpend(){
   const o = app.querySelector("#optSpend"); if(o) o.onclick = () => { spendOpen = true; spendM = ""; render(); };
@@ -4755,7 +4751,7 @@ function lookSeen(){ try{ return +localStorage.getItem("ml_lookseen") || 0; }cat
 function lookSeenSet(at){ try{ localStorage.setItem("ml_lookseen", String(at)); }catch(e){} }
 function lookSend(){ if(!me) return; const at = Date.now();
   state.looks = Object.assign({}, state.looks, { [me]:{ at, keys:lookKeys() } }); lookSeenSet(at);
-  save(); render(); showToast("Sent — your other phones will offer it"); }
+  save(); render(); showToast(t("Sent — your other phones will offer it")); }
 function lookOffer(){ const L = me && state.looks && state.looks[me]; if(!L || !L.keys || typeof L.keys !== "object") return null;
   if((+L.at || 0) <= lookSeen()) return null;
   const cur = lookKeys(), a = Object.keys(L.keys), b = Object.keys(cur);
@@ -4764,9 +4760,9 @@ function lookOffer(){ const L = me && state.looks && state.looks[me]; if(!L || !
 function lookCardHTML(){ const L = lookOffer(); if(!L) return "";
   const when = new Date(+L.at).toLocaleDateString(dateLoc(), { day:"numeric", month:"short" });
   return `<div class="installcard lookcard" id="lookCard" role="note">
-    <div class="ic-t">Your look from another phone</div>
-    <div class="ic-b">You sent it on ${esc(when)}: colours, tiles, icons and bars. Use it here too?</div>
-    <div class="ic-btns"><button class="newlist" id="lookUse">Use it</button><button class="optaction" id="lookNo">Not now</button></div>
+    <div class="ic-t">${t("Your look from another phone")}</div>
+    <div class="ic-b">${tf("You sent it on {x}: colours, tiles, icons and bars. Use it here too?", { x:esc(when) })}</div>
+    <div class="ic-btns"><button class="newlist" id="lookUse">${t("Use it")}</button><button class="optaction" id="lookNo">${t("Not now")}</button></div>
   </div>`; }
 function wireLook(){
   const s = app.querySelector("#optLookSend"); if(s) s.onclick = lookSend;
@@ -4779,25 +4775,25 @@ var amDraft = null;   // v2.28: the box's text while the sheet is open (null = t
 function amLines(id){ const m = (state.aislemap || {})[id]; return (m && Array.isArray(m.aisles)) ? m.aisles.map(a => (a.n ? a.n + " " : "") + a.t).join("\n") : ""; }
 function amSheetHTML(){ const st = storeById(amOpen) || {}, has = !!((state.aislemap || {})[amOpen]);
   return `<div class="sheet-bg" id="amBg"><div class="sheet" id="amSheet" role="dialog" aria-labelledby="amTitle">
-    <div class="disp" id="amTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">Aisle map · ${esc(st.name || "this shop")}</div>
-    <div class="hint" style="text-align:left;margin:0 0 10px">One line per aisle, in the order you walk the shop — the number and what the sign says: “5 Pasta, rice &amp; sauces”. The list then follows the shop; Location and AI sort start from it.</div>
-    <textarea id="amText" class="amtext" rows="10" spellcheck="false" aria-label="Aisles, one per line" placeholder="1 Fruit &amp; veg&#10;2 Bread, spreads &amp; cereal&#10;3 Pasta, rice &amp; sauces">${esc(amDraft!==null ? amDraft : amLines(amOpen))}</textarea>
+    <div class="disp" id="amTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">${t("Aisle map")} · ${esc(st.name || t("this shop"))}</div>
+    <div class="hint" style="text-align:left;margin:0 0 10px">${t("One line per aisle, in the order you walk the shop — the number and what the sign says: “5 Pasta, rice &amp; sauces”. The list then follows the shop; Location and AI sort start from it.")}</div>
+    <textarea id="amText" class="amtext" rows="10" spellcheck="false" aria-label="${t("Aisles, one per line")}" placeholder="${t("1 Fruit &amp; veg&#10;2 Bread, spreads &amp; cereal&#10;3 Pasta, rice &amp; sauces")}">${esc(amDraft!==null ? amDraft : amLines(amOpen))}</textarea>
     <div class="amread" role="status">${amRead ? (amRead.busy ? `<span class="spin" aria-hidden="true"></span> ${esc(amRead.step)}` : esc(amRead.err || amRead.ok || "")) : ""}</div>
-    <button class="optaction" id="amCam" style="margin-top:8px" ${amRead && amRead.busy ? "disabled" : ""}>${CAMERA_SVG(16)} Read a sign</button>
-    <div style="display:flex;gap:8px;margin-top:12px"><button class="newlist" id="amSave" style="margin:0">Save</button>${has ? `<button class="optaction" id="amClear" style="margin-top:0">Clear</button>` : ""}<button class="optaction" id="amClose" style="margin-top:0">Cancel</button></div>
+    <button class="optaction" id="amCam" style="margin-top:8px" ${amRead && amRead.busy ? "disabled" : ""}>${CAMERA_SVG(16)} ${t("Read a sign")}</button>
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="newlist" id="amSave" style="margin:0">${t("Save")}</button>${has ? `<button class="optaction" id="amClear" style="margin-top:0">${t("Clear")}</button>` : ""}<button class="optaction" id="amClose" style="margin-top:0">${t("Cancel")}</button></div>
   </div></div>`; }
 function amSave(text){ const id = amOpen; if(!id) return;
   const aisles = String(text || "").split(/\n+/).map(parseAisleLine).filter(Boolean).slice(0, 60);
   const m = Object.assign({}, state.aislemap || {});
   if(aisles.length) m[id] = { at:Date.now(), by:me || "", aisles }; else delete m[id];
   state.aislemap = m; amOpen = ""; amDraft = null; amRead = null; save(); render();
-  if(!aisles.length){ showToast("Aisle map cleared"); return; }
+  if(!aisles.length){ showToast(t("Aisle map cleared")); return; }
   const mapped = mapAisles(aisles), todo = state.items.filter(i => !i.checked), placed = todo.filter(i => mapRank(mapped, i.name, i.cat) >= 0).length;
-  showToast(`Saved ${aisles.length} aisle${aisles.length === 1 ? "" : "s"}${todo.length ? ` · places ${placed} of ${todo.length} on the list` : ""}`); }
+  showToast((aisles.length === 1 ? t("Saved 1 aisle") : tf("Saved {n} aisles", { n:aisles.length })) + (todo.length ? " · " + tf("places {n} of {of} on the list", { n:placed, of:todo.length }) : "")); }
 function wireAisleMap(){
   const o = app.querySelector("#optAisleMap"); if(o) o.onclick = () => { amOpen = storeSel; amDraft = null; amRead = null; render(); const t = app.querySelector("#amText"); if(t) t.focus(); };
   const s = app.querySelector("#amSave"); if(s) s.onclick = () => amSave((app.querySelector("#amText") || {}).value);
-  const c = app.querySelector("#amClear"); if(c) c.onclick = () => { if(confirm("Clear this shop's aisle map?")) amSave(""); };
+  const c = app.querySelector("#amClear"); if(c) c.onclick = () => { if(confirm(t("Clear this shop's aisle map?"))) amSave(""); };
   const x = app.querySelector("#amClose"); if(x) x.onclick = () => { amOpen = ""; amDraft = null; amRead = null; render(); };
   const bg = app.querySelector("#amBg"); if(bg) bg.onclick = e => { if(e.target === bg){ amOpen = ""; amDraft = null; amRead = null; render(); } };
   const cam = app.querySelector("#amCam"); if(cam) cam.onclick = () => { amKeepText(); amRead = null; amPick(); };
@@ -4829,12 +4825,12 @@ function priceDiagHTML(){ const P = state.prices || {}, q = priceDiagQ.trim().to
     return `<details class="pdrow"><summary><span class="pd-n">${esc(cap(k))}</span><span class="pd-s">${a[0] ? `${priceMoney(a[0].p)} · ${esc(a[0].sn || "—")}` : ""} · ${a.length}</span></summary>
       ${a.map(r => `<div class="pdrec"><span>${esc(r.d || "")}</span><span>${esc(r.sn || "—")}${r.l ? `<small class="pd-l">${esc(r.l)}</small>` : ""}</span><span>${r.q > 1 ? r.q + "× " : ""}${esc(r.w || "")}</span><b>${priceMoney(r.p)}</b></div>`).join("")}</details>`; }).join("");
   return `<div class="sheet-bg kbpin" id="pdBg"><div class="sheet" id="pdSheet" role="dialog" aria-labelledby="pdTitle">
-    <div class="disp" id="pdTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">Price diagnostics</div>
-    <div class="hint" style="text-align:left;margin:0 0 10px">${total} item${total === 1 ? "" : "s"}, ${recs} price${recs === 1 ? "" : "s"} from receipts, newest first. The memory keeps the last 8 prices of each item, and ${PRICE_ITEMS} items.</div>
-    <input id="pdQ" value="${esc(priceDiagQ)}" placeholder="Find an item" aria-label="Find an item" autocomplete="off" style="width:100%;box-sizing:border-box;height:42px;padding:0 12px;border-radius:12px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:16px" />
-    <div class="pdlist">${rows || `<div class="hint" style="text-align:left;margin-top:10px">${total ? "Nothing matches." : "No prices yet. Read a receipt after a shop and they appear here."}</div>`}</div>
-    ${keys.length > 300 ? `<div class="hint" style="text-align:left">Showing 300 of ${keys.length}.</div>` : ""}
-    <div style="display:flex;gap:8px;margin-top:12px"><button class="optaction" id="pdClose" style="margin-top:0">Close</button></div>
+    <div class="disp" id="pdTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">${t("Price diagnostics")}</div>
+    <div class="hint" style="text-align:left;margin:0 0 10px">${tf("{n} items, {p} prices from receipts, newest first. The memory keeps the last 8 prices of each item, and {max} items.", { n:total, p:recs, max:PRICE_ITEMS })}</div>
+    <input id="pdQ" value="${esc(priceDiagQ)}" placeholder="${t("Find an item")}" aria-label="${t("Find an item")}" autocomplete="off" style="width:100%;box-sizing:border-box;height:42px;padding:0 12px;border-radius:12px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:16px" />
+    <div class="pdlist">${rows || `<div class="hint" style="text-align:left;margin-top:10px">${total ? t("Nothing matches.") : t("No prices yet. Read a receipt after a shop and they appear here.")}</div>`}</div>
+    ${keys.length > 300 ? `<div class="hint" style="text-align:left">${tf("Showing 300 of {n}.", { n:keys.length })}</div>` : ""}
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="optaction" id="pdClose" style="margin-top:0">${t("Close")}</button></div>
   </div></div>`; }
 function wirePriceDiag(){
   const o = app.querySelector("#optPriceDiag"); if(o) o.onclick = () => { priceDiagOpen = true; priceDiagQ = ""; render(); };
@@ -5035,11 +5031,11 @@ var stuckOpen = false;   // v2.32 the screen log sheet. var: render() reads it a
 function stuckText(){ return "The + got stuck halfway up the page (" + APP_VERSION + ").\n" + stuckLog().slice(0,4).map(e=>JSON.stringify(e)).join("\n").slice(0,1700); }
 function stuckHTML(){ const a=stuckLog();
   return `<div class="sheet-bg" id="stBg"><div class="sheet" id="stSheet" role="dialog" aria-labelledby="stTitle">
-    <div class="disp" id="stTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">Screen log</div>
-    <div class="hint" style="text-align:left;margin:0 0 10px">Each time the “+” was found out of place and put back, with what happened just before. Kept on this phone; send it with a report so it can be fixed for good.</div>
-    <div class="stlist">${a.length ? a.map(e=>`<div class="strow"><b>${esc(new Date(e.t).toLocaleString(undefined,{day:"numeric",month:"short",hour:"numeric",minute:"2-digit"}))}</b> · ${esc(e.page||"")} · ${e.gap}px too high · via ${esc(e.src||"")}<div class="sttrail">${esc((e.trail||[]).join(" → "))}</div></div>`).join("") : `<div class="hint" style="text-align:left">Nothing logged.</div>`}</div>
-    <div class="ppedbtns"><button class="optaction" id="stClear">Clear</button><button class="newlist" id="stSend">Report it</button></div>
-    <button class="optaction" id="stClose">Close</button>
+    <div class="disp" id="stTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">${t("Screen log")}</div>
+    <div class="hint" style="text-align:left;margin:0 0 10px">${t("Each time the “+” was found out of place and put back, with what happened just before. Kept on this phone; send it with a report so it can be fixed for good.")}</div>
+    <div class="stlist">${a.length ? a.map(e=>`<div class="strow"><b>${esc(new Date(e.t).toLocaleString(dateLoc(),{day:"numeric",month:"short",hour:"numeric",minute:"2-digit"}))}</b> · ${esc(e.page||"")} · ${tf("{n}px too high", { n:e.gap })} · ${tf("via {x}", { x:esc(e.src||"") })}<div class="sttrail">${esc((e.trail||[]).join(" → "))}</div></div>`).join("") : `<div class="hint" style="text-align:left">${t("Nothing logged.")}</div>`}</div>
+    <div class="ppedbtns"><button class="optaction" id="stClear">${t("Clear")}</button><button class="newlist" id="stSend">${t("Report it")}</button></div>
+    <button class="optaction" id="stClose">${t("Close")}</button>
   </div></div>`; }
 function wireStuck(){
   const o=app.querySelector("#optStuck"); if(o) o.onclick=()=>{ stuckOpen=true; render(); };
@@ -5062,13 +5058,13 @@ function cardNudgeHTML(){ let at=0; try{ at=+localStorage.getItem("ml_cardnudge"
   if(!(at>0 && Date.now()-at < CARD_NUDGE_MS)) return "";
   const { st, real, c } = cardHere();
   if(c){ const bc=c.num ? code128SVG(c.num, 70) : "", br=cardBrand(c.name, cardChain(c));   // v2.37 (item 3): the same band
-    return `<div class="installcard cardnudge" id="cardNudge" role="region" aria-label="${esc(c.name)} card">
+    return `<div class="installcard cardnudge" id="cardNudge" role="region" aria-label="${tf("{x} card", { x:esc(c.name) })}">
       <div class="ic-t">${CARD_SVG(18)} ${tf("{x} — scan before you pay", { x:esc(c.name) })}</div>
-      <button class="cardface cardface-sm" id="cardNudgeBig" aria-label="${t("Show the card bigger")}"><div class="cardband" style="background:${br.bg};color:${br.fg}"><span class="cardband-n">${esc(c.name)}</span></div>${(!bc && c.photo) ? `<img src="${esc(c.photo)}" alt="Photo of the ${esc(c.name)} card" />` : `${bc}<div class="cardnum">${esc(cardNumFmt(c.num))}</div>`}</button>
+      <button class="cardface cardface-sm" id="cardNudgeBig" aria-label="${t("Show the card bigger")}"><div class="cardband" style="background:${br.bg};color:${br.fg}"><span class="cardband-n">${esc(c.name)}</span></div>${(!bc && c.photo) ? `<img src="${esc(c.photo)}" alt="${tf("Photo of the {x} card", { x:esc(c.name) })}" />` : `${bc}<div class="cardnum">${esc(cardNumFmt(c.num))}</div>`}</button>
       <div class="ic-btns"><button class="optaction" id="cardNudgeDone">${t("Done")}</button></div></div>`; }
   if(!real || !cardAskOn()) return "";
   const k=chainOfStore(st.name), nm=k==="coles" ? t("Flybuys card") : k==="woolworths" ? t("Everyday Rewards card") : t("membership card");
-  return `<div class="installcard cardnudge" id="cardNudge" role="region" aria-label="Membership card">
+  return `<div class="installcard cardnudge" id="cardNudge" role="region" aria-label="${t("Membership card")}">
     <div class="ic-t">${CARD_SVG(18)} ${tf("Got a {x}?", { x:esc(nm) })}</div>
     <div class="ic-b">${tf("Add it once — a photo and its number — and it shows here after every shop at {x}, ready to scan before you pay. It stays on this phone.", { x:esc(st.name) })}</div>
     <div class="ic-btns"><button class="newlist" id="cardNudgeAdd">${t("Add the card")}</button><button class="optaction" id="cardNudgeNo">${t("Not now")}</button></div>
@@ -5083,22 +5079,22 @@ function wireBaNew(){
    AI has learned there. Read-only. */
 var locDiagOpen = false;   // var: render() reads it at boot
 function locDiagHTML(){ const nm=id=>esc((storeById(id)||{}).name||id);
-  const here = !useLoc ? "Location is off (Settings › Shopping)" : !locState.checked ? "Not checked yet" : locState.err ? "Location unavailable — permission or signal"
-    : locState.nearId ? `At ${nm(locState.nearId)}${isFinite(locState.dist)?` · ${Math.round(locState.dist)} m from its pin`:""}` : `Not at a saved shop${isFinite(locState.dist)?` · nearest is ${Math.round(locState.dist)} m away`:""}`;
-  const mode = storeSel==="auto" ? "Auto-detect" : `Chosen by hand: ${nm(storeSel)}`;
+  const here = !useLoc ? t("Location is off (Settings › Shopping)") : !locState.checked ? t("Not checked yet") : locState.err ? t("Location unavailable — permission or signal")
+    : locState.nearId ? `${tf("At {x}", { x:nm(locState.nearId) })}${isFinite(locState.dist)?` · ${tf("{n} m from its pin", { n:Math.round(locState.dist) })}`:""}` : `${t("Not at a saved shop")}${isFinite(locState.dist)?` · ${tf("nearest is {n} m away", { n:Math.round(locState.dist) })}`:""}`;
+  const mode = storeSel==="auto" ? t("Auto-detect") : tf("Chosen by hand: {x}", { x:nm(storeSel) });
   const shops=[...STORES.filter(s=>!storeOverride(s.id).hidden).map(s=>storeById(s.id)), ...(state.stores||[]).filter(s=>!storeOverride(s.id).hidden)].filter(Boolean);
   const rows=shops.map(s=>{ const co=storeCoord(s), m=(state.aislemap||{})[s.id], na=(m && Array.isArray(m.aisles)) ? m.aisles.length : 0, ai=Object.keys((aiItems||{})[s.id]||{}).length;
-    const src = na ? `Its own aisle map · ${na} aisle${na===1?"":"s"}` : s.market ? "A market — fresh counters only" : s.aisles ? `Built-in layout${s.naisles?` · ${s.naisles} aisles`:""}` : "No aisle order yet — sorted by category";
-    return `<details class="pdrow"><summary><span class="pd-n">${esc(s.name)}</span><span class="pd-s">${co?"can be detected":"no location pin"}</span></summary>
+    const src = na ? `${t("Its own aisle map")} · ${na===1 ? t("1 aisle") : tf("{n} aisles", { n:na })}` : s.market ? t("A market — fresh counters only") : s.aisles ? `${t("Built-in layout")}${s.naisles?` · ${tf("{n} aisles", { n:s.naisles })}`:""}` : t("No aisle order yet — sorted by category");
+    return `<details class="pdrow"><summary><span class="pd-n">${esc(s.name)}</span><span class="pd-s">${co?t("can be detected"):t("no location pin")}</span></summary>
       <div class="ldrec">${src}</div>
-      <div class="ldrec">${co ? `Pinned at ${(+co.lat).toFixed(4)}, ${(+co.lng).toFixed(4)} — detected within ${LOC_RADIUS_M} m` : "Pin it with “Set … location here” while you are at the shop."}</div>
-      <div class="ldrec">AI route learned: ${ai ? `${ai} item${ai===1?"":"s"} (AI diagnostics lists them)` : "nothing yet"}</div>
+      <div class="ldrec">${co ? tf("Pinned at {lat}, {lng} — detected within {r} m", { lat:(+co.lat).toFixed(4), lng:(+co.lng).toFixed(4), r:LOC_RADIUS_M }) : t("Pin it with “Set … location here” while you are at the shop.")}</div>
+      <div class="ldrec">${t("AI route learned:")} ${ai ? (ai===1 ? t("1 item (AI diagnostics lists them)") : tf("{n} items (AI diagnostics lists them)", { n:ai })) : t("nothing yet")}</div>
       ${na ? `<ol class="ldlist">${m.aisles.map(a=>`<li>${a.n?`<b>${esc(a.n)}</b> `:""}${esc(a.t)}</li>`).join("")}</ol>` : ""}</details>`; }).join("");
   return `<div class="sheet-bg" id="ldBg"><div class="sheet" id="ldSheet" role="dialog" aria-labelledby="ldTitle">
-    <div class="disp" id="ldTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">Location diagnostics</div>
-    <div class="ldrec"><b>Now:</b> ${here}</div><div class="ldrec"><b>Shop:</b> ${mode}</div>
-    <div class="pdlist" style="margin-top:8px">${rows || `<div class="hint" style="text-align:left">No shops saved.</div>`}</div>
-    <div style="display:flex;gap:8px;margin-top:12px"><button class="optaction" id="ldClose" style="margin-top:0">Close</button></div>
+    <div class="disp" id="ldTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">${t("Location diagnostics")}</div>
+    <div class="ldrec"><b>${t("Now:")}</b> ${here}</div><div class="ldrec"><b>${t("Shop:")}</b> ${mode}</div>
+    <div class="pdlist" style="margin-top:8px">${rows || `<div class="hint" style="text-align:left">${t("No shops saved.")}</div>`}</div>
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="optaction" id="ldClose" style="margin-top:0">${t("Close")}</button></div>
   </div></div>`; }
 function wireLocDiag(){
   const o=app.querySelector("#optLocDiag"); if(o) o.onclick=()=>{ locDiagOpen=true; ensureLocCheck(); render(); };
@@ -5116,7 +5112,7 @@ function wireCards(){
       cardEdit={ id:"", name:k==="coles" ? "Flybuys" : k==="woolworths" ? "Everyday Rewards" : "", chain:k||"", num:"", photo:"" }; render(); };
     app.querySelectorAll("[data-opt-cardask]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_cardask", b.dataset.optCardask); }catch(e){} render(); }); }
   const keep=()=>{ const n=app.querySelector("#ceName"), u=app.querySelector("#ceNum"); if(cardEdit){ if(n) cardEdit.name=n.value; if(u) cardEdit.num=u.value; } };
-  app.querySelectorAll("[data-card-add]").forEach(b=>b.onclick=()=>{ if(cardsGet().length>=CARD_MAX){ showToast(`Up to ${CARD_MAX} cards`); return; } cardShow={ add:true }; render(); });   // v2.35: the same add panel as the card sheet's
+  app.querySelectorAll("[data-card-add]").forEach(b=>b.onclick=()=>{ if(cardsGet().length>=CARD_MAX){ showToast(tf("Up to {n} cards", { n:CARD_MAX })); return; } cardShow={ add:true }; render(); });   // v2.35: the same add panel as the card sheet's
   app.querySelectorAll("[data-card-edit]").forEach(b=>b.onclick=()=>{ const c=cardsGet().find(x=>x.id===b.dataset.cardEdit); if(c){ cardEdit=Object.assign({ photo:"" }, c); render(); } });
   app.querySelectorAll("[data-card-open]").forEach(b=>b.onclick=()=>{ cardShow={ id:b.dataset.cardOpen }; render(); });
   if(cardEdit){
@@ -5155,7 +5151,7 @@ function wireCards(){
     const sg=app.querySelector("#cardSwipe.cardadd"); if(sg){ const go=()=>{ if(!(cardRead && cardRead.busy)) cardScan(true); };
       sg.onclick=go; sg.onkeydown=e=>{ if(e.key==="Enter" || e.key===" "){ e.preventDefault(); go(); } }; }
     const pg=app.querySelector("#cardPhotoGo"); if(pg) pg.onclick=()=>cardScan(false);
-    const tg=app.querySelector("#cardTypeGo"); if(tg) tg.onclick=()=>{ if(cardsGet().length>=CARD_MAX){ showToast(`Up to ${CARD_MAX} cards`); return; } cardRead=null;
+    const tg=app.querySelector("#cardTypeGo"); if(tg) tg.onclick=()=>{ if(cardsGet().length>=CARD_MAX){ showToast(tf("Up to {n} cards", { n:CARD_MAX })); return; } cardRead=null;
       cardShow={ add:true, view:cardShow.view }; cardEdit={ id:"", name:"", chain:"", num:"", photo:"", inline:true }; render();   // v2.37 (item 1): in the same drop-down
       const f=app.querySelector("#ceName"); if(f) f.focus(); }; } }   // inside the tap, so iOS raises the keyboard
 function rcptNudgeOn(){ if(!rcptAskOn() || rcpt) return false;
@@ -5220,20 +5216,20 @@ function wireRcptSheet(){
    returns a code alongside its message. */
 function planImpMessage(code){
   switch(code){
-    case "not_configured": return "Recipe reading isn't set up yet — add a GEMINI_API_KEY (or GROQ_API_KEY) in Vercel (see docs/ai-setup.md). You can still type ingredients.";
-    case "model":          return "The recipe model is no longer available — set GEMINI_MODEL (or GROQ_MODEL) in Vercel (see docs/ai-setup.md).";
+    case "not_configured": return t("Recipe reading isn't set up yet — add a GEMINI_API_KEY (or GROQ_API_KEY) in Vercel (see docs/ai-setup.md). You can still type ingredients.");
+    case "model":          return t("The recipe model is no longer available — set GEMINI_MODEL (or GROQ_MODEL) in Vercel (see docs/ai-setup.md).");
     /* v1.93: a queue and a spent allowance are not "couldn't read that" — one asks you to wait a
        moment, the other until tomorrow, and neither is the input's fault. */
-    case "busy":            return "The model is busy right now — give it a moment and try again.";
-    case "quota":           return "Today's free quota for this model is used up. It resets tomorrow, or set GEMINI_MODEL in Vercel to a model with more headroom (see docs/ai-setup.md).";
-    case "vision_model":   return "Reading photos needs a vision model set up (GROQ_VISION_MODEL — see docs/ai-setup.md). A link or pasted text works now.";
-    case "bad_url": case "blocked_url": return "That link can't be opened. Paste the recipe's web address.";
-    case "not_a_page":     return "That link isn't a web page.";
-    case "no_caption":     return "That TikTok's description doesn't list the ingredients — many put the recipe only in the video. Try pasting the ingredients as text.";
-    case "fetch_failed":   return "Couldn't read that page — some sites block it. Try pasting the recipe text instead.";
-    case "bad_image": case "too_large": return "That photo didn't work — try a closer, clearer shot.";
-    case "too_long":       return "That's a lot of text — paste just the recipe.";
-    default:               return "Couldn't read that — try pasting the recipe text instead.";
+    case "busy":            return t("The model is busy right now — give it a moment and try again.");
+    case "quota":           return t("Today's free quota for this model is used up. It resets tomorrow, or set GEMINI_MODEL in Vercel to a model with more headroom (see docs/ai-setup.md).");
+    case "vision_model":   return t("Reading photos needs a vision model set up (GROQ_VISION_MODEL — see docs/ai-setup.md). A link or pasted text works now.");
+    case "bad_url": case "blocked_url": return t("That link can't be opened. Paste the recipe's web address.");
+    case "not_a_page":     return t("That link isn't a web page.");
+    case "no_caption":     return t("That TikTok's description doesn't list the ingredients — many put the recipe only in the video. Try pasting the ingredients as text.");
+    case "fetch_failed":   return t("Couldn't read that page — some sites block it. Try pasting the recipe text instead.");
+    case "bad_image": case "too_large": return t("That photo didn't work — try a closer, clearer shot.");
+    case "too_long":       return t("That's a lot of text — paste just the recipe.");
+    default:               return t("Couldn't read that — try pasting the recipe text instead.");
   }
 }
 /* v1.89: finding a recipe without leaving the app. The server answers from a real web search when one
@@ -5263,18 +5259,18 @@ async function planSearch(){
 }
 function planSearchMessage(code){
   switch(code){
-    case "no_results":      return "Nothing found for that — try a different name.";
-    case "search_key":      return "Web search refused its key (TAVILY_API_KEY / SERPER_API_KEY / SEARCH_API_KEY — see docs/ai-setup.md).";
+    case "no_results":      return t("Nothing found for that — try a different name.");
+    case "search_key":      return t("Web search refused its key (TAVILY_API_KEY / SERPER_API_KEY / SEARCH_API_KEY — see docs/ai-setup.md).");
     /* v1.98: still reachable, but only when nothing at all is set up — no search key and no model,
        so there is nothing to list. (v1.96 used this to refuse TikTok outright; it no longer does.) */
-    case "no_video_search": return "Nothing is set up to search with yet — add a search key or a model key in Vercel (docs/ai-setup.md lists them). You can still paste a TikTok link.";
-    case "not_configured":  return "Recipe reading isn't set up yet — add a GEMINI_API_KEY (or GROQ_API_KEY) in Vercel (see docs/ai-setup.md).";
-    case "model":           return "The recipe model is no longer available — set GEMINI_MODEL (or GROQ_MODEL) in Vercel (see docs/ai-setup.md).";
+    case "no_video_search": return t("Nothing is set up to search with yet — add a search key or a model key in Vercel (docs/ai-setup.md lists them). You can still paste a TikTok link.");
+    case "not_configured":  return t("Recipe reading isn't set up yet — add a GEMINI_API_KEY (or GROQ_API_KEY) in Vercel (see docs/ai-setup.md).");
+    case "model":           return t("The recipe model is no longer available — set GEMINI_MODEL (or GROQ_MODEL) in Vercel (see docs/ai-setup.md).");
     /* v1.93: same two, said the same way, on the search path. */
-    case "busy":            return "The model is busy right now — give it a moment and try again.";
-    case "quota":           return "Today's free quota for this model is used up. It resets tomorrow, or set GEMINI_MODEL in Vercel to a model with more headroom (see docs/ai-setup.md).";
-    case "too_long":        return "That's a long one — try just the dish name.";
-    default:                return "Couldn't search just now — you can still paste a link or the text.";
+    case "busy":            return t("The model is busy right now — give it a moment and try again.");
+    case "quota":           return t("Today's free quota for this model is used up. It resets tomorrow, or set GEMINI_MODEL in Vercel to a model with more headroom (see docs/ai-setup.md).");
+    case "too_long":        return t("That's a long one — try just the dish name.");
+    default:                return t("Couldn't search just now — you can still paste a link or the text.");
   }
 }
 /* v1.86: link, photo and pasted text all come back as the same thing — a title and a list of
@@ -5320,7 +5316,7 @@ function planAddSheet(){
   const isR = planAdd.kind==="recipe";
   const saved = planData().recipes;
   const dayName = new Date(planAdd.day+"T00:00:00").toLocaleDateString(dateLoc(),{weekday:"long"});
-  const head = planAdd.edit ? "Edit recipe" : (isR ? "Add recipe" : "Add food");
+  const head = planAdd.edit ? t("Edit recipe") : (isR ? t("Add recipe") : t("Add food"));
   const fieldCSS = "width:100%;height:48px;padding:0 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:16px;box-sizing:border-box";
   const ingCSS   = "width:100%;height:46px;padding:0 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;background:var(--card);color:var(--text);font-size:16px;box-sizing:border-box";
   /* v2.03: two steps. The one-screen sheet had eleven things on it — four import buttons, a search panel,
@@ -5329,29 +5325,29 @@ function planAddSheet(){
      it and adds it. Food and edit mode go straight to the form, as before. Nothing is focused on open. */
   const step = (isR && !planAdd.edit) ? (planAdd.step || "choose") : "form";
   const CHEV = pts => `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="${pts}"/></svg>`;
-  const title = `<div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${step==="form" && isR && !planAdd.edit ? `<button class="paback" id="paBack" aria-label="Back">${CHEV("10,3 5,8 10,13")}</button>` : ""}${esc(head)}${planAdd.edit?"":` · ${esc(dayName)}`}</div>`;
+  const title = `<div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${step==="form" && isR && !planAdd.edit ? `<button class="paback" id="paBack" aria-label="${t("Back")}">${CHEV("10,3 5,8 10,13")}</button>` : ""}${esc(head)}${planAdd.edit?"":` · ${esc(dayName)}`}</div>`;
   /* The ways in — shared by the choose step and by edit mode (v1.89: editing offers them too, and an
      import while editing appends to the recipe being edited). */
   const imports = `
       <div class="pimprow">
-        <button class="pimp${planAdd.imp==='search'?' on':''}" data-pimp="search">${SEARCH_SVG}<span>Search</span></button>
-        <button class="pimp${planAdd.imp==='link'?' on':''}" data-pimp="link">${LINK_SVG(16)}<span>Link</span></button>
-        <button class="pimp" data-pimp="photo">${CAMERA_SVG(16)}<span>Photo</span></button>
-        <button class="pimp${planAdd.imp==='paste'?' on':''}" data-pimp="paste">${PASTE_SVG(16)}<span>Paste text</span></button>
+        <button class="pimp${planAdd.imp==='search'?' on':''}" data-pimp="search">${SEARCH_SVG}<span>${t("Search")}</span></button>
+        <button class="pimp${planAdd.imp==='link'?' on':''}" data-pimp="link">${LINK_SVG(16)}<span>${t("Link")}</span></button>
+        <button class="pimp" data-pimp="photo">${CAMERA_SVG(16)}<span>${t("Photo")}</span></button>
+        <button class="pimp${planAdd.imp==='paste'?' on':''}" data-pimp="paste">${PASTE_SVG(16)}<span>${t("Paste text")}</span></button>
       </div>
       <input id="paPhoto" type="file" accept="image/*" style="display:none" />
-      ${planAdd.impBusy ? `<p class="pimpnote">Reading the recipe…</p>` : ""}
-      ${planAdd.impErr ? `<p class="pimpnote err">${esc(planAdd.impErr)}</p>` : ""}
+      ${planAdd.impBusy ? `<p class="pimpnote">${t("Reading the recipe…")}</p>` : ""}
+      ${planAdd.impErr ? `<p class="pimpnote err">${esc(t(planAdd.impErr))}</p>` : ""}
       ${planAdd.imp==='link' ? `<div class="pimppanel">
-          <input id="paImpVal" placeholder="Paste a recipe link — a page or a TikTok" value="${esc(planAdd.impVal||"")}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="url" style="${ingCSS}" />
-          <button class="pimpgo" id="paImpGo"${planAdd.impBusy?" disabled":""}>Read it</button>
+          <input id="paImpVal" placeholder="${t("Paste a recipe link — a page or a TikTok")}" value="${esc(planAdd.impVal||"")}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" inputmode="url" style="${ingCSS}" />
+          <button class="pimpgo" id="paImpGo"${planAdd.impBusy?" disabled":""}>${t("Read it")}</button>
         </div>` : ""}
       ${planAdd.imp==='search' ? `${/* v1.96: the same search, pointed somewhere else; a tapped result is read through the caption path.
              v1.98: with no search key the TikTok scope offers dish ideas rather than refusing — each one
              carries a 🎵 to TikTok's own search, which is a link, not a lookup. */""}
         <div class="pimppanel">
-          <input id="paImpVal" placeholder="What do you want to cook?" value="${esc(planAdd.sq||"")}" autocomplete="off" autocapitalize="none" spellcheck="false" style="${ingCSS}" />
-          <button class="pimpgo" id="paImpGo"${planAdd.impBusy?" disabled":""}>Find</button>
+          <input id="paImpVal" placeholder="${t("What do you want to cook?")}" value="${esc(planAdd.sq||"")}" autocomplete="off" autocapitalize="none" spellcheck="false" style="${ingCSS}" />
+          <button class="pimpgo" id="paImpGo"${planAdd.impBusy?" disabled":""}>${t("Find")}</button>
         </div>
         ${Array.isArray(planAdd.sres) ? (planAdd.sres.length ? `
           ${/* v1.98: four honest cases — web results, TikTok results, and suggestions (no key), each
@@ -5360,7 +5356,7 @@ function planAddSheet(){
                 wrapped to two lines above the results they were introducing; the buttons carry their own
                 labels. The no-key line still has to say these are ideas rather than results — that is the
                 honesty, not the length. */""}
-          <p class="pimpnote">${planAdd.ssrc==='web' ? 'From the web — tap to read it in, or open it.' : 'No search key — these are ideas, not results. Tap to write one out, or go looking.'}</p>
+          <p class="pimpnote">${planAdd.ssrc==='web' ? t('From the web — tap to read it in, or open it.') : t('No search key — these are ideas, not results. Tap to write one out, or go looking.')}</p>
           ${/* v1.94: the page opens in a new context so the phone\'s in-app browser handles it and Done
                 comes back here. The URL is from a search engine, so it is untrusted: only http(s), and
                 escaped. An iframe was rejected — recipe sites refuse to be framed. */""}
@@ -5380,17 +5376,17 @@ function planAddSheet(){
                        : "https://duckduckgo.com/?q=" + encodeURIComponent(r.title + " recipe");
             const tok  = isTk ? raw
                        : "https://www.tiktok.com/search?q=" + encodeURIComponent(r.title + " recipe");
-            const webL = (/^https?:\/\//i.test(raw) && !isTk) ? ("Open " + r.title) : ("Search the web for " + r.title);
-            const tokL = isTk ? ("Watch " + r.title + " on TikTok") : ("Find " + r.title + " on TikTok");
+            const webL = (/^https?:\/\//i.test(raw) && !isTk) ? tf("Open {x}", { x:r.title }) : tf("Search the web for {x}", { x:r.title });
+            const tokL = isTk ? tf("Watch {x} on TikTok", { x:r.title }) : tf("Find {x} on TikTok", { x:r.title });
             return `<div class="preswrap"><button class="presult" data-pres="${i}">
             <span class="pres-t">${esc(r.title)}</span>
             ${r.site?`<span class="pres-s">${esc(r.site)}</span>`:""}
             ${r.note?`<span class="pres-n">${esc(r.note)}</span>`:""}
           </button><a class="presopen" href="${esc(web)}" target="_blank" rel="noopener noreferrer" data-icon="web" aria-label="${esc(webL)}" title="${esc(webL)}">${GLOBE_SVG(17)}</a><a class="presopen" href="${esc(tok)}" target="_blank" rel="noopener noreferrer"${isTk?"":` data-tkq="${esc(r.title + " recipe")}"`} data-icon="tiktok" aria-label="${esc(tokL)}" title="${esc(tokL)}">${NOTE_SVG(17)}</a></div>`;
-          }).join("")}</div>` : `<p class="pimpnote">Nothing found for that.</p>`) : ""}` : ""}
+          }).join("")}</div>` : `<p class="pimpnote">${t("Nothing found for that.")}</p>`) : ""}` : ""}
       ${planAdd.imp==='paste' ? `<div class="pimppanel col">
-          <textarea id="paImpVal" rows="5" placeholder="Paste the recipe here — ingredients and all" style="width:100%;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;background:var(--card);color:var(--text);font-size:15px;box-sizing:border-box;resize:none">${esc(planAdd.impVal||"")}</textarea>
-          <button class="pimpgo wide" id="paImpGo"${planAdd.impBusy?" disabled":""}>Read it</button>
+          <textarea id="paImpVal" rows="5" placeholder="${t("Paste the recipe here — ingredients and all")}" style="width:100%;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);outline:none;background:var(--card);color:var(--text);font-size:15px;box-sizing:border-box;resize:none">${esc(planAdd.impVal||"")}</textarea>
+          <button class="pimpgo wide" id="paImpGo"${planAdd.impBusy?" disabled":""}>${t("Read it")}</button>
         </div>` : ""}
   `;
   if(step==="choose"){
@@ -5399,19 +5395,19 @@ function planAddSheet(){
     const byName = (a,b)=>String(a.name||"").localeCompare(String(b.name||""),undefined,{sensitivity:"base"});
     const sorted = saved.slice().sort(byName);
     const shown = planAdd.allRecipes ? sorted : sorted.slice(0,6);
-    const recRow = r=>`<div class="precline"><button class="precrow" data-precipe="${esc(r.id)}"><span class="precname">${esc(r.name)}</span>${planAdd.manage?`<span class="precedit">Edit</span>`:CHEV("6,3 11,8 6,13")}</button>${planAdd.manage?`<button class="precdel" data-precdel="${esc(r.id)}" aria-label="Delete ${esc(r.name)}">×</button>`:""}</div>`;
+    const recRow = r=>`<div class="precline"><button class="precrow" data-precipe="${esc(r.id)}"><span class="precname">${esc(r.name)}</span>${planAdd.manage?`<span class="precedit">${t("Edit")}</span>`:CHEV("6,3 11,8 6,13")}</button>${planAdd.manage?`<button class="precdel" data-precdel="${esc(r.id)}" aria-label="${tf("Delete {x}", { x:esc(r.name) })}">×</button>`:""}</div>`;
     const recBody = rSort==="course"
-      ? COURSES.map(([k,l])=>{ const g=sorted.filter(r=>recipeCourse(r)===k); return g.length ? `<p class="palabel recgroup">${esc(l)} · ${g.length}</p><div class="preclist">${g.map(recRow).join("")}</div>` : ""; }).join("")
+      ? COURSES.map(([k,l])=>{ const g=sorted.filter(r=>recipeCourse(r)===k); return g.length ? `<p class="palabel recgroup">${esc(t(l))} · ${g.length}</p><div class="preclist">${g.map(recRow).join("")}</div>` : ""; }).join("")
       : `<div class="preclist">${shown.map(recRow).join("")}</div>
-      ${(saved.length>6 && !planAdd.allRecipes) ? `<button class="patext" id="paAllRec" style="margin:-10px 0 12px">Show all ${saved.length} recipes</button>` : ""}`;
+      ${(saved.length>6 && !planAdd.allRecipes) ? `<button class="patext" id="paAllRec" style="margin:-10px 0 12px">${tf("Show all {n} recipes", { n:saved.length })}</button>` : ""}`;
     /* v2.07: the ways in come first. With ten recipes grouped by course, the list pushed Search · Link · Photo · Paste text off the screen, and those are what a new recipe starts from. */
     return `<div class="sheet-bg kbpin" id="paBg"><div class="sheet" id="paSheet">
     ${title}
-    ${planAdd.imp ? `<button class="patext" id="paBackChoose">${CHEV("10 4 6 8 10 12")} ${saved.length?"Back to your recipes":"Back"}</button>` : `<p class="palabel">New recipe</p>`}
+    ${planAdd.imp ? `<button class="patext" id="paBackChoose">${CHEV("10 4 6 8 10 12")} ${saved.length?t("Back to your recipes"):t("Back")}</button>` : `<p class="palabel">${t("New recipe")}</p>`}
     ${imports}
-    ${planAdd.imp ? "" : `<button class="patext" id="paWrite" style="display:block;width:100%;text-align:center;margin-top:10px">Write it yourself</button>`}
-    ${(!planAdd.imp && saved.length) ? `<div class="palabelrow" style="margin-top:14px"><button id="paRecToggle" aria-expanded="${rOpen?'true':'false'}">${CHEV(rOpen?"4 6 8 10 12 6":"6 4 10 8 6 12")}<span>Your recipes</span><span class="reccount">·&nbsp;${saved.length}</span></button>${rOpen?`<button class="patext" id="paManage">${planAdd.manage?"Done":"Edit"}</button>`:""}</div>
-      ${rOpen ? `<div class="recsort" role="group" aria-label="Sort recipes"><button data-recsort="az" class="${rSort==='az'?'on':''}" aria-pressed="${rSort==='az'?'true':'false'}">A–Z</button><button data-recsort="course" class="${rSort==='course'?'on':''}" aria-pressed="${rSort==='course'?'true':'false'}">Course</button></div>
+    ${planAdd.imp ? "" : `<button class="patext" id="paWrite" style="display:block;width:100%;text-align:center;margin-top:10px">${t("Write it yourself")}</button>`}
+    ${(!planAdd.imp && saved.length) ? `<div class="palabelrow" style="margin-top:14px"><button id="paRecToggle" aria-expanded="${rOpen?'true':'false'}">${CHEV(rOpen?"4 6 8 10 12 6":"6 4 10 8 6 12")}<span>${t("Your recipes")}</span><span class="reccount">·&nbsp;${saved.length}</span></button>${rOpen?`<button class="patext" id="paManage">${planAdd.manage?t("Done"):t("Edit")}</button>`:""}</div>
+      ${rOpen ? `<div class="recsort" role="group" aria-label="${t("Sort recipes")}"><button data-recsort="az" class="${rSort==='az'?'on':''}" aria-pressed="${rSort==='az'?'true':'false'}">A–Z</button><button data-recsort="course" class="${rSort==='course'?'on':''}" aria-pressed="${rSort==='course'?'true':'false'}">${t("Course")}</button></div>
       ${recBody}` : ""}` : ""}
   </div></div>`;
   }
@@ -5420,25 +5416,25 @@ function planAddSheet(){
   return `<div class="sheet-bg kbpin" id="paBg"><div class="sheet" id="paSheet">
     ${title}
     ${planAdd.edit ? imports : ""}
-    ${(isR && srcHost) ? `<p class="pimpnote" style="margin:-6px 0 10px">From ${esc(srcHost)}</p>` : ""}
+    ${(isR && srcHost) ? `<p class="pimpnote" style="margin:-6px 0 10px">${tf("From {x}", { x:esc(srcHost) })}</p>` : ""}
     ${mealSlotsOn() ? slotPicker("paslot", planAdd.slot||"") : ""}
     ${isR ? coursePicker("pacourse", planAdd.course || guessCourse(planAdd.name)) : ""}
-    <input id="paName" placeholder="${isR?'Recipe name':'What are you eating?'}" value="${esc(planAdd.name||"")}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="${fieldCSS}" />
-    ${(isR && !planAdd.edit) ? `<div class="servrow" style="margin:12px 0 0"><span class="servlbl">Serves</span>
-      <div class="qstep2"><button data-paserv="-1" aria-label="Fewer servings">−</button><span>${planAdd.serves||planAdd.servings||4}</span><button data-paserv="1" aria-label="More servings">+</button></div></div>` : ""}
-    ${isR?`<p class="palabel" style="margin-top:14px">Ingredients</p>
-      <div class="pingrow"><input id="paIngIn" placeholder="Add an ingredient — “2 lb beef”" value="${esc(planAdd.q||"")}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="${ingCSS}" /><button class="pimpgo" id="paIngAdd" aria-label="Add this ingredient">Add</button></div>`:""}
+    <input id="paName" placeholder="${isR?t('Recipe name'):t('What are you eating?')}" value="${esc(planAdd.name||"")}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="${fieldCSS}" />
+    ${(isR && !planAdd.edit) ? `<div class="servrow" style="margin:12px 0 0"><span class="servlbl">${t("Serves")}</span>
+      <div class="qstep2"><button data-paserv="-1" aria-label="${t("Fewer servings")}">−</button><span>${planAdd.serves||planAdd.servings||4}</span><button data-paserv="1" aria-label="${t("More servings")}">+</button></div></div>` : ""}
+    ${isR?`<p class="palabel" style="margin-top:14px">${t("Ingredients")}</p>
+      <div class="pingrow"><input id="paIngIn" placeholder="${t("Add an ingredient — “2 lb beef”")}" value="${esc(planAdd.q||"")}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="${ingCSS}" /><button class="pimpgo" id="paIngAdd" aria-label="${t("Add this ingredient")}">${t("Add")}</button></div>`:""}
     <div id="paDyn">${planDynHTML()}</div>
-    <button class="newlist" id="paGo">${planAdd.edit ? "Save recipe" : "Add to "+esc(dayName)}</button>
+    <button class="newlist" id="paGo">${planAdd.edit ? t("Save recipe") : tf("Add to {x}", { x:esc(dayName) })}</button>
   </div></div>`;
 }
 /* v1.89: the same setting Settings has, offered where the button is. */
 function fabMoveSheet(){
   return `<div class="sheet-bg" id="fabMoveBg"><div class="sheet" id="fabMoveSheet">
-    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">Where should + sit?</div>
-    <p class="hint" style="text-align:left;margin:0 0 12px">Also in Settings › Bars and overlays, with size and colour.</p>
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">${t("Where should + sit?")}</div>
+    <p class="hint" style="text-align:left;margin:0 0 12px">${t("Also in Settings › Bars and overlays, with size and colour.")}</p>
     <div class="seg segfull">${Object.keys(SRCH_ALIGN).map(k=>
-      `<button data-fabalign="${k}" class="${srchAlign()===k?'on':''}">${SRCH_ALIGN[k]}</button>`).join("")}</div>
+      `<button data-fabalign="${k}" class="${srchAlign()===k?'on':''}">${t(SRCH_ALIGN[k])}</button>`).join("")}</div>
   </div></div>`;
 }
 function planPickSheet(){
@@ -5462,25 +5458,25 @@ function planPickSheet(){
     const ids = catList().map(c=>c.id);
     const body = ingSort()==="cat"
         ? catList().map(c=>{ const g=list.filter(x=>ingCatId(x)===c.id); return g.length ? `<p class="palabel recgroup">${esc(catLabel(c))} · ${g.length}</p><ul class="ppings">${g.map(li).join("")}</ul>` : ""; }).join("")
-          + (()=>{ const g=list.filter(x=>!ids.includes(ingCatId(x))); return g.length ? `<p class="palabel recgroup">Others · ${g.length}</p><ul class="ppings">${g.map(li).join("")}</ul>` : ""; })()
+          + (()=>{ const g=list.filter(x=>!ids.includes(ingCatId(x))); return g.length ? `<p class="palabel recgroup">${t("Others")} · ${g.length}</p><ul class="ppings">${g.map(li).join("")}</ul>` : ""; })()
         : `<ul class="ppings">${list.map(li).join("")}</ul>`;
-    ingHTML = `<button class="optaction" id="ppIng" aria-expanded="${planPick.ing?'true':'false'}">Ingredients · ${n}</button>
-      ${planPick.ing ? `<div class="ppingpanel">${n>1 ? `<div class="recsort" role="group" aria-label="Order ingredients"><button data-ppingsort="recipe" class="${ingSort()==='recipe'?'on':''}" aria-pressed="${ingSort()==='recipe'?'true':'false'}">Recipe order</button><button data-ppingsort="cat" class="${ingSort()==='cat'?'on':''}" aria-pressed="${ingSort()==='cat'?'true':'false'}">Category</button></div>` : ""}${body}</div>` : ""}`;
+    ingHTML = `<button class="optaction" id="ppIng" aria-expanded="${planPick.ing?'true':'false'}">${t("Ingredients")} · ${n}</button>
+      ${planPick.ing ? `<div class="ppingpanel">${n>1 ? `<div class="recsort" role="group" aria-label="${t("Order ingredients")}"><button data-ppingsort="recipe" class="${ingSort()==='recipe'?'on':''}" aria-pressed="${ingSort()==='recipe'?'true':'false'}">${t("Recipe order")}</button><button data-ppingsort="cat" class="${ingSort()==='cat'?'on':''}" aria-pressed="${ingSort()==='cat'?'true':'false'}">${t("Category")}</button></div>` : ""}${body}</div>` : ""}`;
   }
   return `<div class="sheet-bg" id="ppBg"><div class="sheet" id="ppSheet">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${e.emoji?esc(e.emoji)+" ":""}${esc(r ? (r.name||e.name) : e.name)}</div>
     ${mealSlotsOn() ? slotPicker("ppslot", e.slot||"") : ""}
     ${r ? coursePicker("ppcourse", recipeCourse(r)) : ""}
-    ${r ? `<div class="servrow"><span class="servlbl">Serves</span>
-      <div class="qstep2"><button data-ppserv="-1" aria-label="Fewer servings">−</button><span>${e.serves||r.servings||4}</span><button data-ppserv="1" aria-label="More servings">+</button></div></div>
-    <div class="ppserves-note">as written it serves ${esc(String(r.servings||4))}</div>` : ""}
-    ${src ? `<a class="optaction ppsrc" href="${esc(src)}" target="_blank" rel="noopener noreferrer">${GLOBE_SVG(16)}<span>Open link</span></a><div class="ppsrcname">${esc(host||src)}</div>` : ""}
-    ${ns ? `<button class="optaction" id="ppMethod" aria-expanded="${planPick.method?'true':'false'}">Method · ${ns} step${ns===1?"":"s"}</button>
+    ${r ? `<div class="servrow"><span class="servlbl">${t("Serves")}</span>
+      <div class="qstep2"><button data-ppserv="-1" aria-label="${t("Fewer servings")}">−</button><span>${e.serves||r.servings||4}</span><button data-ppserv="1" aria-label="${t("More servings")}">+</button></div></div>
+    <div class="ppserves-note">${tf("as written it serves {n}", { n:esc(String(r.servings||4)) })}</div>` : ""}
+    ${src ? `<a class="optaction ppsrc" href="${esc(src)}" target="_blank" rel="noopener noreferrer">${GLOBE_SVG(16)}<span>${t("Open link")}</span></a><div class="ppsrcname">${esc(host||src)}</div>` : ""}
+    ${ns ? `<button class="optaction" id="ppMethod" aria-expanded="${planPick.method?'true':'false'}">${t("Method")} · ${ns===1?t("1 step"):tf("{n} steps", { n:ns })}</button>
       ${planPick.method ? `<ol class="ppsteps">${steps.map(x=>`<li>${esc(String(x))}</li>`).join("")}</ol>` : ""}` : ""}
     ${ingHTML}
-    ${r && n ? `<button class="optaction" id="ppList">Add to shopping list</button>`
-             : `<button class="optaction" id="ppList">Add to the shopping list</button>`}
-    <button class="optaction" id="ppDel" style="border-color:#C24A33;color:#C24A33">Remove from this day</button>
+    ${r && n ? `<button class="optaction" id="ppList">${t("Add to shopping list")}</button>`
+             : `<button class="optaction" id="ppList">${t("Add to the shopping list")}</button>`}
+    <button class="optaction" id="ppDel" style="border-color:#C24A33;color:#C24A33">${t("Remove from this day")}</button>
   </div></div>`;
 }
 /* v2.01: the whole week's shopping in one review — every planned meal, scaled to its servings,
@@ -5516,7 +5512,7 @@ function planWeekToList(){
     const q = Math.min(999, x.qty);
     return markHave({ name:x.name, qty:q, baseQty:q, weight:x.weight, baseWeight:x.weight, sub:"", category:cat, sel:true });
   });
-  smartTitle = weekLabel(planWeek) + " — " + meals + " meal" + (meals===1?"":"s");
+  smartTitle = weekLabel(planWeek) + " — " + (meals===1 ? t("1 meal") : tf("{n} meals", { n:meals }));
   smartServings = null; smartOpen = true; smartLoading = false; smartError = ""; smartEdit = null;
   render();
 }
@@ -5614,7 +5610,7 @@ function wirePlanTab(){
      nothing to paste. */
   app.querySelectorAll("[data-tkq]").forEach(a=>a.addEventListener("click", ()=>{
     const q=a.dataset.tkq||""; if(!q) return;
-    const said=()=>showToast(`Copied “${q}” — paste it into TikTok's search`);
+    const said=()=>showToast(tf("Copied “{x}” — paste it into TikTok's search", { x:q }));
     try{
       if(hasClipboard()){ copyText(q).then(said, ()=>{}); return; }
       const t=document.createElement("textarea"); t.value=q;
@@ -5794,7 +5790,7 @@ function renderPlanPage(){
       if(!total && !cat.custom) return "";
       const collapsed = (collapse.planCats||[]).includes(cat.id);
       const catAdd = catEntry===cat.id ? `<div class="catadd">
-          <div class="inwrap"><textarea id="catInput" rows="1" placeholder="${esc(tf("Add to {x}", { x:catLabel(cat) }))}" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="Clear">×</button></div>
+          <div class="inwrap"><textarea id="catInput" rows="1" placeholder="${esc(tf("Add to {x}", { x:catLabel(cat) }))}" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="${t("Clear")}">×</button></div>
           <button id="catAddBtn" style="background:${cat.color}">+</button></div>${catSuggest(cat)}` : "";
       const merged = inList.map(i=>({it:i})).sort((A,B)=> alpha ? byName(A.it,B.it) : bySortKey(A.it,B.it));
       const pills = merged.map(({it})=> planFilledPill(it,cat)).join("");
@@ -5812,7 +5808,7 @@ function renderPlanPage(){
       if(!total && !cat.custom) return "";
       const collapsed = (collapse.planCats||[]).includes(cat.id);
       const catAdd = catEntry===cat.id ? `<div class="catadd">
-          <div class="inwrap"><textarea id="catInput" rows="1" placeholder="${esc(tf("Add to {x}", { x:catLabel(cat) }))}" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="Clear">×</button></div>
+          <div class="inwrap"><textarea id="catInput" rows="1" placeholder="${esc(tf("Add to {x}", { x:catLabel(cat) }))}" style="border:2px solid ${cat.color}"></textarea><button class="clearbtn" id="catClear" aria-label="${t("Clear")}">×</button></div>
           <button id="catAddBtn" style="background:${cat.color}">+</button></div>${catSuggest(cat)}` : "";
       const combined = inList.map(i=>({it:i})).sort((A,B)=>bySortKey(A.it,B.it));
       const html = combined.map(({it})=> planFilledPill(it,CAT(it.cat)) ).join("");
@@ -5838,7 +5834,7 @@ function renderPlanPage(){
     <div class="topfix" id="topfix">
       <header>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          <button class="backbtn" id="planBack" aria-label="Back to lists">‹</button>
+          <button class="backbtn" id="planBack" aria-label="${t("Back to lists")}">‹</button>
           <span class="title disp">${esc(state.name || (getLists().find(l=>l.code===listCode)||{}).name || "Choose")}<span class="dot">.</span></span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">${syncChip()}<button id="optBtnTop" class="iconbtn" aria-label="${t("Settings")}" title="${t("Settings")}"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
@@ -5849,7 +5845,7 @@ function renderPlanPage(){
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${mergeCardHTML()}
       ${hasAny ? planBody : `<div class="empty"><div class="empty-emoji">🛒</div><p class="empty-title">${t("Nothing planned yet")}</p><p class="empty-sub">${t("Tap <b>Add</b> below — pick from your Regulars in one tap or type anything new.")}</p></div>`}
-      <button id="addCatPlan" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ New category</button>
+      <button id="addCatPlan" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ ${t("New category")}</button>
     </div></div>
   </div>
   ${planQBannerHTML()}
@@ -6103,6 +6099,7 @@ function wireOptions(){
     if(!_authM || !_auth || !_authM.isSignInWithEmailLink(_auth, v)){ acct={ sent:(acct&&acct.sent)||"", err:"That isn't the sign-in link. Copy the whole link from the email." }; render(); return; }
     acctComplete(v); };
   const aco=app.querySelector("#acctOut"); if(aco) aco.onclick=acctSignOut;
+  const acd=app.querySelector("#acctDel"); if(acd) acd.onclick=()=>{ acctDelete(); };
   const ofg=app.querySelector("#optForget"); if(ofg) ofg.onclick=()=>{ forgetPhone(); };
   app.querySelectorAll("[data-memb-num]").forEach(b=>b.onclick=()=>{ const [k,f,d]=b.dataset.membNum.split("|"); const m=memb(); m[k][f]=(+m[k][f]||0)+(+d); state.memb=membNorm(m); save(); render(); });
   app.querySelectorAll("[data-memb-used]").forEach(b=>b.onclick=()=>{ const [k,v]=b.dataset.membUsed.split("|"); const m=memb(); membMark(m,k,v==="1"); membSave(m); });
@@ -6256,7 +6253,7 @@ function wireOptions(){
   /* v2.44 (members by account): Settings › People */
   app.querySelectorAll("[data-access-rm]").forEach(b=>b.onclick=()=>{ const id=b.dataset.accessRm, nm=b.dataset.accessNm||"Someone";
     if(!confirm(`Remove ${nm} from this list? Their phone loses it, and the list gets a new link.`)) return;
-    accessWrite({ acl:{[id]:false}, joinKey:newKey(), openUntil:0 }, `${nm} removed`); });
+    accessWrite({ acl:{[id]:false}, joinKey:newKey(), openUntil:0 }, tf("{x} removed", { x:nm })); });
   const acl=app.querySelector("#accessClose"); if(acl) acl.onclick=()=>accessWrite({ openUntil:0 }, "Closed — only the current link lets someone new in");
   const ank=app.querySelector("#accessNewKey"); if(ank) ank.onclick=()=>{ if(!confirm("Make a new link? The old one stops working for anyone not already on the list.")) return;
     accessWrite({ joinKey:newKey(), openUntil:0 }, "New link made — share it from Lists & sharing"); };
@@ -6264,7 +6261,7 @@ function wireOptions(){
   const obk=app.querySelector("#optBackup"); if(obk) obk.onclick=backupToFile;   // v2.15 backups
   const orf=app.querySelector("#optRestoreFile"); if(orf) orf.onclick=restorePick;
   app.querySelectorAll("[data-snaprestore]").forEach(b=>b.onclick=()=>{ const s=snapList(listCode)[+b.dataset.snaprestore]; if(!s) return;
-    rst={ list:s.list, label:"The backup from "+new Date(s.at).toLocaleDateString(dateLoc(),{weekday:"long",day:"numeric",month:"long"}) }; render(); });
+    rst={ list:s.list, label:tf("The backup from {x}", { x:new Date(s.at).toLocaleDateString(dateLoc(),{weekday:"long",day:"numeric",month:"long"}) }) }; render(); });
   const osl=app.querySelector("#optSendList"); if(osl) osl.onclick=shareListText;   // v2.13: was the Shop page's top-right button
   const orp=app.querySelector("#optReport"); if(orp) orp.onclick=()=>{ rpt={ kind:"broken", text:"", diag:true }; render(); };
   const vf=app.querySelector("#verFoot"); if(vf){ let _dt; const _cancel=()=>clearTimeout(_dt);
@@ -6388,10 +6385,10 @@ function wireSmartSheet(){
 function smartSheet(){
   let inner;
   if(smartLoading){
-    inner=`<div style="padding:22px 4px;text-align:center;color:var(--muted);font-weight:700">✨ Reading your list…</div>`;
+    inner=`<div style="padding:22px 4px;text-align:center;color:var(--muted);font-weight:700">✨ ${t("Reading your list…")}</div>`;
   } else if(smartError){
-    inner=`<div style="padding:6px 2px 16px;color:var(--text);font-weight:600;line-height:1.5">${esc(smartError)}</div>
-      <button class="optaction" id="smartOk">OK</button>`;
+    inner=`<div style="padding:6px 2px 16px;color:var(--text);font-weight:600;line-height:1.5">${esc(t(smartError))}</div>
+      <button class="optaction" id="smartOk">${t("OK")}</button>`;
   } else {
     const n=smartItems.length;
     const WOPTS=["","100g","200g","300g","500g","750g","1kg","2kg","5kg"];
@@ -6399,15 +6396,15 @@ function smartSheet(){
       const have=state.items.some(i=>!i.checked && (i.name||"").toLowerCase()===it.name.toLowerCase());
       const subs=(c.subs&&c.subs.length)?c.subs:[];
       const editor = open ? `<div class="smartedit">
-          <div class="smartedit-row"><span class="smartedit-lbl">Name</span>
+          <div class="smartedit-row"><span class="smartedit-lbl">${t("Name")}</span>
             <input class="smartname" data-smart-name="${idx}" value="${esc(cap(it.name))}" autocomplete="off" autocapitalize="words" style="flex:1;min-width:0;padding:8px 11px;border-radius:10px;border:2px solid var(--ink);background:var(--card);color:var(--text);font-size:14px;font-weight:600" /></div>
-          <div class="smartedit-row"><span class="smartedit-lbl">Quantity</span>
-            <div class="qstep2"><button data-smart-q="${idx}|-1" aria-label="Less">−</button><span>${it.qty||1}</span><button data-smart-q="${idx}|1" aria-label="More">+</button></div></div>
-          <div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">Weight</span>
-            <div class="swtrow">${WOPTS.map(w=>`<button class="swt ${((it.weight||"")===w)?'on':''}" data-smart-wt="${idx}|${w}">${w||'unit'}</button>`).join("")}</div></div>
-          <div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">Category</span>
-            <div class="scatrow">${catList().map(cc=>`<button class="scat" data-smart-cat="${idx}|${cc.id}" style="${cc.id===it.category?`background:${cc.color};border-color:${cc.color};color:#fff`:''}">${catIcon(cc,13)} ${esc(cc.label)}</button>`).join("")}<button class="scat" data-smart-addcat="${idx}" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div></div>
-          <div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">Subcategory</span>
+          <div class="smartedit-row"><span class="smartedit-lbl">${t("Quantity")}</span>
+            <div class="qstep2"><button data-smart-q="${idx}|-1" aria-label="${t("Less")}">−</button><span>${it.qty||1}</span><button data-smart-q="${idx}|1" aria-label="${t("More")}">+</button></div></div>
+          <div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">${t("Weight")}</span>
+            <div class="swtrow">${WOPTS.map(w=>`<button class="swt ${((it.weight||"")===w)?'on':''}" data-smart-wt="${idx}|${w}">${w||t('unit')}</button>`).join("")}</div></div>
+          <div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">${t("Category")}</span>
+            <div class="scatrow">${catList().map(cc=>`<button class="scat" data-smart-cat="${idx}|${cc.id}" style="${cc.id===it.category?`background:${cc.color};border-color:${cc.color};color:#fff`:''}">${catIcon(cc,13)} ${esc(catLabel(cc))}</button>`).join("")}<button class="scat" data-smart-addcat="${idx}" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div></div>
+          <div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">${t("Subcategory")}</span>
             <div class="scatrow"><button class="scat" data-smart-sub="${idx}|" style="${!it.sub?`background:${c.color};border-color:${c.color};color:#fff`:''}">${t("None")}</button>${subs.map(s=>`<button class="scat" data-smart-sub="${idx}|${s.id}" style="${it.sub===s.id?`background:${c.color};border-color:${c.color};color:#fff`:''}">${esc(s.label)}</button>`).join("")}<button class="scat" data-smart-addsub="${idx}" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div></div>
         </div>` : "";
       return `<div class="smartchip ${open?'open':''}${it.sel===false?' off':''}" style="border-left:4px solid ${c.color}">
@@ -6418,12 +6415,12 @@ function smartSheet(){
                    as a shop pill and its quick-edit. Leaving this one alone would have shown "8 oz"
                    here and "225 g" on the pill it creates, one tap apart. */""}
             <span class="smartchip-name">${(it.qty>1)?`<b>${it.qty}× </b>`:""}${it.weight?`<b>${esc(showAmt(it.weight))} </b>`:""}${esc(cap(it.name))}</span>
-            ${have?`<span class="smartchip-have" title="Already on your list">in list</span>`:""}
-            ${it.have?`<span class="smartchip-have" title="Bought ${it.haveDays} day${it.haveDays===1?"":"s"} ago — probably still in the cupboard">probably have</span>`:""}
+            ${have?`<span class="smartchip-have" title="${t("Already on your list")}">${t("in list")}</span>`:""}
+            ${it.have?`<span class="smartchip-have" title="${it.haveDays===1?t("Bought 1 day ago — probably still in the cupboard"):tf("Bought {n} days ago — probably still in the cupboard", { n:it.haveDays })}">${t("probably have")}</span>`:""}
             <span class="smartchip-cat">${catIcon(c,13)} ${esc(catLabel(c))}</span>
             <span class="smartchip-caret" aria-hidden="true">▾</span>
           </button>
-          <button class="smartcheck ${it.sel===false?'':'on'}" data-smart-sel="${idx}" role="checkbox" aria-checked="${it.sel===false?'false':'true'}" aria-label="${it.sel===false?'Add':'Do not add'} ${esc(cap(it.name))}">✓</button>
+          <button class="smartcheck ${it.sel===false?'':'on'}" data-smart-sel="${idx}" role="checkbox" aria-checked="${it.sel===false?'false':'true'}" aria-label="${it.sel===false?tf('Add {x}', { x:esc(cap(it.name)) }):tf('Do not add {x}', { x:esc(cap(it.name)) })}">✓</button>
         </div>${editor}
       </div>`; };
     /* v2.08: a review that came from a recipe (or the week) can be read in recipe order or grouped by
@@ -6435,32 +6432,32 @@ function smartSheet(){
     if(byCat){ const ids=catList().map(c=>c.id);
       const groups=ids.concat([...new Set(smartItems.map(it=>it.category))].filter(id=>!ids.includes(id)));
       chips=groups.map(id=>{ const g=smartItems.map((it,idx)=>[it,idx]).filter(([it])=>it.category===id); if(!g.length) return "";
-        const c=CAT(id)||{label:"Others"}; return `<p class="palabel recgroup">${esc(catLabel(c))} · ${g.length}</p>` + g.map(([it,idx])=>chipOf(it,idx)).join(""); }).join("");
+        const c=CAT(id); return `<p class="palabel recgroup">${esc(c ? catLabel(c) : t("Others"))} · ${g.length}</p>` + g.map(([it,idx])=>chipOf(it,idx)).join(""); }).join("");
     } else chips=smartItems.map(chipOf).join("");
-    const sortRow = (fromRecipe && n>1) ? `<div class="recsort" role="group" aria-label="Order ingredients"><button data-smartsort="recipe" class="${ingSort()==='recipe'?'on':''}" aria-pressed="${ingSort()==='recipe'?'true':'false'}">Recipe order</button><button data-smartsort="cat" class="${ingSort()==='cat'?'on':''}" aria-pressed="${ingSort()==='cat'?'true':'false'}">Category</button></div>` : "";
+    const sortRow = (fromRecipe && n>1) ? `<div class="recsort" role="group" aria-label="${t("Order ingredients")}"><button data-smartsort="recipe" class="${ingSort()==='recipe'?'on':''}" aria-pressed="${ingSort()==='recipe'?'true':'false'}">${t("Recipe order")}</button><button data-smartsort="cat" class="${ingSort()==='cat'?'on':''}" aria-pressed="${ingSort()==='cat'?'true':'false'}">${t("Category")}</button></div>` : "";
     const scaler = smartServings ? `<div class="servrow">
-        <span class="servlbl">Serves</span>
-        <div class="qstep2"><button data-recipe-serv="-1" aria-label="Fewer servings">−</button><span>${smartServings.target}</span><button data-recipe-serv="1" aria-label="More servings">+</button></div>
-        <span class="servnote">recipe makes ${smartServings.src} · quantities scale</span>
+        <span class="servlbl">${t("Serves")}</span>
+        <div class="qstep2"><button data-recipe-serv="-1" aria-label="${t("Fewer servings")}">−</button><span>${smartServings.target}</span><button data-recipe-serv="1" aria-label="${t("More servings")}">+</button></div>
+        <span class="servnote">${tf("recipe makes {n} · quantities scale", { n:smartServings.src })}</span>
       </div>` : "";
     const nSel=smartItems.filter(it=>it.sel!==false).length;
-    const head=`<div class="smarthd"><span class="lbl">Items to add</span>
-      <button id="smartToggleAll">${nSel?"Deselect all":"Select all"}</button></div>`;
+    const head=`<div class="smarthd"><span class="lbl">${t("Items to add")}</span>
+      <button id="smartToggleAll">${nSel?t("Deselect all"):t("Select all")}</button></div>`;
     inner=`${scaler}${head}${sortRow}<div class="smartchips">${chips}</div>
       <div style="display:flex;gap:8px;margin-top:14px">
-        <button class="optaction" id="smartCancel" style="flex:1">Cancel</button>
-        <button class="optaction" id="smartConfirm" style="flex:1;background:var(--accent);color:var(--on-accent);border-color:var(--accent)${nSel?'':';opacity:.4'}"${nSel?'':' disabled'}>Add ${nSel} item${nSel===1?'':'s'}</button>
+        <button class="optaction" id="smartCancel" style="flex:1">${t("Cancel")}</button>
+        <button class="optaction" id="smartConfirm" style="flex:1;background:var(--accent);color:var(--on-accent);border-color:var(--accent)${nSel?'':';opacity:.4'}"${nSel?'':' disabled'}>${nSel===1?t('Add 1 item'):tf('Add {n} items', { n:nSel })}</button>
       </div>`;
   }
   const rec=!!smartServings || !!smartTitle;
-  const ttl=rec ? (smartTitle ? `📖 ${esc(smartTitle)}` : "📖 From recipe") : "✨ Smart add";
+  const ttl=rec ? (smartTitle ? `📖 ${esc(smartTitle)}` : "📖 " + t("From recipe")) : "✨ " + t("Smart add");
   /* v1.85: only the Smart-add recipe path carries a servings scaler.
      v2.01: a planned recipe has servings now too, so it gets the scaler; the whole-week review does
      not (it mixes recipes), so the line must not promise a control that is not there. */
-  const sub=(smartError||smartLoading) ? "Review what AI understood, then add."
-    : smartServings ? "Review ingredients — set servings, edit any item, then add. Items already on your list are tagged."
-    : rec ? "Turn off anything you already have, then add. Items already on your list are tagged."
-    : "Tap an item to edit its category, quantity or weight.";
+  const sub=(smartError||smartLoading) ? t("Review what AI understood, then add.")
+    : smartServings ? t("Review ingredients — set servings, edit any item, then add. Items already on your list are tagged.")
+    : rec ? t("Turn off anything you already have, then add. Items already on your list are tagged.")
+    : t("Tap an item to edit its category, quantity or weight.");
   return `<div class="sheet-bg" id="smartBg"><div class="sheet" id="smartSheetEl">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">${ttl}</div>
     <div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:14px">${sub}</div>
@@ -6494,34 +6491,34 @@ function diagItemInfo(name, cat, known){
   const it={name,cat};
   const st=activeStore();
   return `<div style="line-height:1.75">
-    <div>Category: <b style="color:${c.color||'var(--ink)'}">${esc(c.emoji||'')} ${esc(c.label||cat)}</b> <span style="color:var(--muted2)">(${known?'remembered':'guessed'})</span></div>
-    ${cat==="meat"?`<div>Meat group: <b>${esc(sub||subId)}</b></div>`:(sub?`<div>Subcategory: <b>${esc(sub)}</b></div>`:"")}
-    <div>Aisle rank${st?` @ ${esc(st.name)}`:` <span style="color:var(--muted2)">(category order)</span>`}: <b>${aisleRank(it)}</b></div>
-    <div>AI rank: <b>${aiRank(it)}</b>${aiSortOK()?"":` <span style="color:var(--muted2)">— AI off at Home/Other</span>`}</div>
+    <div>${t("Category:")} <b style="color:${c.color||'var(--ink)'}">${esc(c.emoji||'')} ${esc(catLabel(c)||cat)}</b> <span style="color:var(--muted2)">(${known?t('remembered'):t('guessed')})</span></div>
+    ${cat==="meat"?`<div>${t("Meat group:")} <b>${esc(sub||subId)}</b></div>`:(sub?`<div>${t("Subcategory:")} <b>${esc(sub)}</b></div>`:"")}
+    <div>${t("Aisle rank")}${st?` @ ${esc(st.name)}`:` <span style="color:var(--muted2)">${t("(category order)")}</span>`}: <b>${aisleRank(it)}</b></div>
+    <div>${t("AI rank:")} <b>${aiRank(it)}</b>${aiSortOK()?"":` <span style="color:var(--muted2)">${t("— AI off at Home/Other")}</span>`}</div>
   </div>`;
 }
 function diagProbeHTML(raw){
   const name=(raw||"").trim();
-  if(!name) return `<span style="color:var(--muted2)">Type an item above to see how it's filed and where it sorts.</span>`;
+  if(!name) return `<span style="color:var(--muted2)">${t("Type an item above to see how it's filed and where it sorts.")}</span>`;
   const known=knownEntry(name);
   const cat=(known&&known.cat)||guessCat(name)||"others";
   return diagItemInfo(name, cat, known);
 }
 function diagAIHTML(){
   const keys=[...new Set([...Object.keys(aiItems||{}), ...Object.keys(aiOrder||{})])];
-  if(!keys.length) return `<span style="color:var(--muted2)">No AI order learned yet — check items off in shop mode at a store.</span>`;
+  if(!keys.length) return `<span style="color:var(--muted2)">${t("No AI order learned yet — check items off in shop mode at a store.")}</span>`;
   return keys.map(k=>{ const nm=(storeById(k)||{}).name||k;
     const im=aiItems[k]||{}; const items=Object.keys(im).sort((a,b)=>im[a]-im[b]).map(ik=>esc(cap(ik.split("|")[0])));
-    const catSeq=aiSeq(aiOrder,k).map(x=>esc((CAT(x)||{}).label||x)).join(" → ")||"—";
+    const catSeq=aiSeq(aiOrder,k).map(x=>esc(catLabel(CAT(x))||x)).join(" → ")||"—";
     return `<div style="margin:9px 0"><b>${esc(nm)}</b>
-      <div style="color:var(--muted2);font-size:11px;margin-top:2px">Item route (learned check order)</div>
+      <div style="color:var(--muted2);font-size:11px;margin-top:2px">${t("Item route (learned check order)")}</div>
       <div style="color:var(--muted)">${items.length?items.join(" → "):"—"}</div>
-      <div style="color:var(--muted2);font-size:11px;margin-top:4px">Categories</div>
+      <div style="color:var(--muted2);font-size:11px;margin-top:4px">${t("Categories")}</div>
       <div style="color:var(--muted)">${catSeq}</div></div>`; }).join("");
 }
 function diagPredictHTML(){
   const keys=Object.keys(purch||{});
-  if(!keys.length) return `<span style="color:var(--muted2)">No purchase history yet — clear checked items to log a shop.</span>`;
+  if(!keys.length) return `<span style="color:var(--muted2)">${t("No purchase history yet — clear checked items to log a shop.")}</span>`;
   const rows=keys.map(k=>{ const r=purch[k]; const cad=cadenceOf(r); const days=cad?Math.round(cad/DAY_MS):0;
     const last=(r.ts&&r.ts.length)?r.ts[r.ts.length-1]:0; const ago=last?Math.round((Date.now()-last)/DAY_MS):null;
     return {key:k,name:r.name,cat:r.cat,days,ago,buys:(r.ts||[]).length}; });
@@ -6533,48 +6530,48 @@ function diagPredictHTML(){
   const allOpen=rows.every(r=>diagPredExpand.has(r.key));
   const sortBtn=(m,lbl)=>`<button data-diag-sort="${m}" style="background:${diagPredSort===m?'var(--accent)':'transparent'};color:${diagPredSort===m?'#fff':'var(--muted)'};border:1px solid var(--line);border-radius:999px;font-size:11px;font-weight:700;padding:3px 9px;cursor:pointer">${lbl}</button>`;
   const controls=`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">
-    <span style="font-size:11px;color:var(--muted2)">Sort</span>${sortBtn("az","A–Z")}${sortBtn("short","Short")}${sortBtn("long","Long")}
-    <button id="diagPredToggleAll" style="margin-left:auto;background:none;border:none;color:var(--accent);font-weight:700;font-size:12px;cursor:pointer;padding:2px 2px">${allOpen?"Collapse all":"Expand all"}</button></div>`;
+    <span style="font-size:11px;color:var(--muted2)">${t("Sort")}</span>${sortBtn("az","A–Z")}${sortBtn("short",t("Short"))}${sortBtn("long",t("Long"))}
+    <button id="diagPredToggleAll" style="margin-left:auto;background:none;border:none;color:var(--accent);font-weight:700;font-size:12px;cursor:pointer;padding:2px 2px">${allOpen?t("Collapse all"):t("Expand all")}</button></div>`;
   return controls + rows.map(r=>{ const open=diagPredExpand.has(r.key);
     return `<div data-diag-pred="${esc(r.key)}" style="padding:5px 0;border-bottom:1px solid var(--line);cursor:pointer">
       <div style="display:flex;justify-content:space-between;gap:8px">
         <span>${open?"▾ ":"▸ "}${esc(cap(r.name))}</span>
-        <span style="color:var(--muted);white-space:nowrap">${r.days?`~${r.days}d`:`${r.buys} buy${r.buys===1?'':'s'}`}${r.ago!=null?` · ${r.ago}d ago`:""}</span></div>
+        <span style="color:var(--muted);white-space:nowrap">${r.days?tf("~{n}d", { n:r.days }):(r.buys===1?t("1 buy"):tf("{n} buys", { n:r.buys }))}${r.ago!=null?` · ${tf("{n}d ago", { n:r.ago })}`:""}</span></div>
       ${open?`<div style="margin-top:6px;padding:8px 10px;background:var(--card);border-radius:10px;font-size:13px">${diagItemInfo(r.name, r.cat, knownEntry(r.name))}</div>`:""}
     </div>`; }).join("");
 }
 function diagStoreHTML(){
   const n=(state.buyAgain||[]).length; const pct=BA_CAP?Math.round(n/BA_CAP*100):0;
-  return `<div>Saved items: <b>${n}</b> of ${BA_CAP} <span style="color:var(--muted2)">(${pct}% full)</span></div>
+  return `<div>${t("Saved items:")} <b>${n}</b> ${tf("of {n}", { n:BA_CAP })} <span style="color:var(--muted2)">${tf("({n}% full)", { n:pct })}</span></div>
     <div style="height:6px;border-radius:3px;background:var(--line);margin-top:6px;overflow:hidden"><div style="height:100%;width:${Math.min(100,pct)}%;background:var(--accent)"></div></div>
-    <div style="font-size:11px;color:var(--muted2);margin-top:6px;line-height:1.5">Shared Buy-again items across the household. ${n>=BA_CAP?"Cap reached — oldest items drop off first.":"Room for "+(BA_CAP-n)+" more."}</div>`;
+    <div style="font-size:11px;color:var(--muted2);margin-top:6px;line-height:1.5">${t("Shared Buy-again items across the household.")} ${n>=BA_CAP?t("Cap reached — oldest items drop off first."):tf("Room for {n} more.", { n:BA_CAP-n })}</div>`;
 }
 function openSandbox(){ const code="sbx-"+(((me||"me").toLowerCase().replace(/[^a-z0-9]/g,"")||"me").slice(0,6));
   rememberList(code,"Sandbox"); diagOpen=false; optOpen=false; switchList(code); }
-function diagSheet(){ const hd=t=>`<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px">${t}</div>`;
+function diagSheet(){ const hd=x=>`<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:16px 0 6px">${t(x)}</div>`;
   return `<div class="sheet-bg" id="diagBg"><div class="sheet" id="diagSheetEl" style="max-height:84vh;overflow:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-      <div class="disp" style="font-weight:800;font-size:17px">${FLASK_SVG(16)} AI diagnostics</div>
-      <button id="diagClose" class="iconbtn" aria-label="Close">✕</button></div>
-    <div style="font-size:11px;color:var(--muted2)">Read-only · ${esc(APP_VERSION)}</div>
-    ${(()=>{ const ls=getLists(); return ls.length>1 ? `${hd("List")}<div class="storegrid">${ls.map(l=>`<button data-diag-list="${esc(l.code)}" class="storechip ${l.code===listCode?'on':''}">${esc(l.name||l.code)}</button>`).join("")}</div><div style="font-size:11px;color:var(--muted2);margin-top:6px">Inspecting this list's items, categories &amp; buy-again. Learned shop order is per-device; restock history is shared with everyone on this list.</div>` : ""; })()}
+      <div class="disp" style="font-weight:800;font-size:17px">${FLASK_SVG(16)} ${t("AI diagnostics")}</div>
+      <button id="diagClose" class="iconbtn" aria-label="${t("Close")}">✕</button></div>
+    <div style="font-size:11px;color:var(--muted2)">${t("Read-only")} · ${esc(APP_VERSION)}</div>
+    ${(()=>{ const ls=getLists(); return ls.length>1 ? `${hd("List")}<div class="storegrid">${ls.map(l=>`<button data-diag-list="${esc(l.code)}" class="storechip ${l.code===listCode?'on':''}">${esc(l.name||l.code)}</button>`).join("")}</div><div style="font-size:11px;color:var(--muted2);margin-top:6px">${t("Inspecting this list's items, categories &amp; buy-again. Learned shop order is per-device; restock history is shared with everyone on this list.")}</div>` : ""; })()}
     ${hd("Entry tester")}
-    <input id="diagProbe" placeholder="Type an item…" autocomplete="off" autocapitalize="none" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:14px" />
+    <input id="diagProbe" placeholder="${t("Type an item…")}" autocomplete="off" autocapitalize="none" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:14px" />
     <div id="diagProbeOut" style="margin-top:8px;font-size:13px">${diagProbeHTML("")}</div>
     ${hd("Buy-again storage")}<div style="font-size:13px">${diagStoreHTML()}</div>
     ${hd("AI shop order — per store")}<div style="font-size:13px">${diagAIHTML()}</div>
     ${hd("Restock cadence")}
     <div style="font-size:11.5px;color:var(--muted2);margin:-2px 2px 9px;line-height:1.65">
-      Each row reads <b>cadence · last bought</b>.<br>
-      <b>~5d</b> — estimated restock interval: the typical gap between your buys (median of your last purchases). Needs 2+ buys to estimate.<br>
-      <b>3 buys</b> — shown <i>instead</i> of an interval when there's too little history yet (fewer than 2 buys to compare).<br>
-      <b>· 3d ago</b> — days since you last bought it.<br>
-      An item is suggested to restock once “days ago” reaches about its interval (≈85%), on your reminder day (Settings › Predictions).
+      ${t("Each row reads <b>cadence · last bought</b>.")}<br>
+      <b>${tf("~{n}d", { n:5 })}</b> — ${t("estimated restock interval: the typical gap between your buys (median of your last purchases). Needs 2+ buys to estimate.")}<br>
+      <b>${tf("{n} buys", { n:3 })}</b> — ${t("shown <i>instead</i> of an interval when there's too little history yet (fewer than 2 buys to compare).")}<br>
+      <b>· ${tf("{n}d ago", { n:3 })}</b> — ${t("days since you last bought it.")}<br>
+      ${t("An item is suggested to restock once “days ago” reaches about its interval (≈85%), on your reminder day (Settings › Predictions).")}
     </div>
     <div style="font-size:13px">${diagPredictHTML()}</div>
-    ${Object.keys(purch||{}).length ? `<button class="optaction" id="diagResetPredict" style="margin-top:10px">♻︎ Reset restock history${configured?' — everyone on this list':''}</button>` : ""}
-    <button class="optaction" id="diagSandbox" style="margin-top:16px">${FLASK_SVG(16)} Open a sandbox list</button>
-    <div style="font-size:11px;color:var(--muted2);margin-top:8px;line-height:1.5">A separate throwaway list to test entry, sorting &amp; predictions without touching your real list. Delete it anytime from Lists (press &amp; hold).</div>
+    ${Object.keys(purch||{}).length ? `<button class="optaction" id="diagResetPredict" style="margin-top:10px">♻︎ ${t("Reset restock history")}${configured?' — '+t('everyone on this list'):''}</button>` : ""}
+    <button class="optaction" id="diagSandbox" style="margin-top:16px">${FLASK_SVG(16)} ${t("Open a sandbox list")}</button>
+    <div style="font-size:11px;color:var(--muted2);margin-top:8px;line-height:1.5">${t("A separate throwaway list to test entry, sorting &amp; predictions without touching your real list. Delete it anytime from Lists (press &amp; hold).")}</div>
   </div></div>`;
 }
 let histView = null;   // v1.51: which list the History section is showing; null = the one you are in
@@ -6594,7 +6591,7 @@ function histPeriod(ts){
     const m=new Date(d.getFullYear(),d.getMonth(),d.getDate());
     m.setDate(m.getDate() - ((m.getDay()+6)%7));
     return { k:"w"+m.getFullYear()+"-"+m.getMonth()+"-"+m.getDate(),
-      label:"Week of "+m.toLocaleDateString(dateLoc(),{day:"numeric",month:"short"}) };
+      label:tf("Week of {x}", { x:m.toLocaleDateString(dateLoc(),{day:"numeric",month:"short"}) }) };
   }
   return { k:d.getFullYear()+"-"+d.getMonth()+"-"+d.getDate(),
     label:d.toLocaleDateString(dateLoc(),{weekday:"short",day:"numeric",month:"short"}) };
@@ -6681,7 +6678,7 @@ function migrateAppSlots163(){
 function saveAppSlot(i){ const a=materialiseAppSlots(); a[i]=appearanceSnapshot();
   try{ localStorage.setItem("ml_appslots", JSON.stringify(a)); localStorage.setItem("ml_appsel", String(i)); }catch(e){}
   try{ localStorage.removeItem("ml_appdef"); }catch(e){}
-  showToast("Saved to slot "+(i+1));
+  showToast(tf("Saved to slot {n}", { n:i+1 }));
   render(); }
 function useAppSlot(i){ const a=appSlots(); if(!a[i]) return;
   try{ localStorage.setItem("ml_appsel", String(i)); }catch(e){}
@@ -6708,8 +6705,8 @@ function optionsBody(){
   const rowNL=(label,control)=>`<div class="optrow optnl"><span class="optlabel">${label}</span><span class="optctrl">${control}</span></div>`;   // v1.29 no dividing line
   /* v1.54 item 1: one stepper, driven by the NUMOPT table so the label, bounds and units all come
      from a single place. */
-  const numCtl=k=>`<div class="seg"><button data-opt-num="${k}" data-opt-delta="-1" aria-label="Less">−</button><span class="numval">${numVal(k)}</span><button data-opt-num="${k}" data-opt-delta="1" aria-label="More">+</button></div>`;
-  const numCell=k=>`<div class="numcell"><span>${NUMOPT[k].label}</span>${numCtl(k)}</div>`;
+  const numCtl=k=>`<div class="seg"><button data-opt-num="${k}" data-opt-delta="-1" aria-label="${t("Less")}">−</button><span class="numval">${numVal(k)}</span><button data-opt-num="${k}" data-opt-delta="1" aria-label="${t("More")}">+</button></div>`;
+  const numCell=k=>`<div class="numcell"><span>${t(NUMOPT[k].label)}</span>${numCtl(k)}</div>`;
   /* v1.57 item 2: one layout for every colour picker, so Auto, the steps and the swatches land in the same
      places on every row. Ten swatches cannot fit beside a label at 390px — what makes the rows look
      aligned is that they all WRAP the same way, which a fixed grid guarantees and a flex row does not. */
@@ -6721,12 +6718,12 @@ function optionsBody(){
     const pal=o.pal||ACCENTS;
     const sw=k=>`<button data-${attr}="${k}" class="colsw ${cur===k?'on':''}" style="background:${pal[k]}" aria-label="${k}" title="${k}"></button>`;
     return `<div class="optrow optnl optrow-col"><span class="optlabel">${label}</span><div class="colgrid">
-      <button data-${attr}="auto" class="colbtn2 colspan3 ${cur==='auto'?'on':''}">Auto</button>`
-      + `${o.page?`<button data-${attr}="page" class="colsw colsw-page ${cur==='page'?'on':''}" aria-label="Page" title="Match the page background"></button>`:""}`
+      <button data-${attr}="auto" class="colbtn2 colspan3 ${cur==='auto'?'on':''}">${t("Auto")}</button>`
+      + `${o.page?`<button data-${attr}="page" class="colsw colsw-page ${cur==='page'?'on':''}" aria-label="${t("Page")}" title="${t("Match the page background")}"></button>`:""}`
       + `${(()=>{ const isHex = typeof cur==="string" && cur.charAt(0)==="#";
-            return `<label class="colsw colcustom ${isHex?'on':''}" title="Any colour"`
+            return `<label class="colsw colcustom ${isHex?'on':''}" title="${t("Any colour")}"`
               + ` style="${isHex?`background:${cur}`:''}">`
-              + `<input type="color" data-opt-custom="${attr}" value="${isHex?cur:'#888888'}" aria-label="Custom colour"></label>`; })()}`
+              + `<input type="color" data-opt-custom="${attr}" value="${isHex?cur:'#888888'}" aria-label="${t("Custom colour")}"></label>`; })()}`
       + `${(()=>{
             /* v1.75 item 1: the step is the row's only control on Auto, so it has to render there too.
                With a colour to step from it still COMMITS a hex, exactly as v1.72 shipped it — the
@@ -6739,7 +6736,7 @@ function optionsBody(){
               const step=(d,lbl)=>`<button data-opt-shade="${ck}|${d}" class="colbtn2 colspan3 colstep`
                 + `${(d<0?lv<0:lv>0)?' on':''}" aria-label="${lbl}" title="${lbl}"`
                 + `${(d<0?lv<=-SHADE_MAX:lv>=SHADE_MAX)?' disabled':''}>${lbl}${(d<0?lv<0:lv>0)?' '+Math.abs(lv):''}</button>`;
-              return step(-1,"Darker")+step(1,"Lighter");
+              return step(-1,t("Darker"))+step(1,t("Lighter"));
             }
             const base = pickHex(cur, pal);
             if(!base || base.charAt(0)!=='#') return "";
@@ -6751,7 +6748,7 @@ function optionsBody(){
             const chip=(v,lbl)=> (!v || v.toLowerCase()===base.toLowerCase()) ? ""
               : `<button data-${attr}="${v}" class="colbtn2 colspan3 colstep" aria-label="${lbl}" title="${lbl}"`
                 + ` style="background:${v};border-color:${v};color:${onAccent(v)}">${lbl}</button>`;
-            return chip(lo,"Darker") + chip(hi,"Lighter"); })()}`
+            return chip(lo,t("Darker")) + chip(hi,t("Lighter")); })()}`
       + `${Object.keys(pal).map(sw).join("")}</div></div>`;
   };
   /* v1.80: a colour row for a tile of your own. Deliberately NOT a parameter on colRow above: that one
@@ -6760,21 +6757,21 @@ function optionsBody(){
      id. Generalising colRow to take both shapes would put all sixteen at risk for the one row that is
      not like them, so this emits the SAME classes and looks identical while carrying its own
      attributes. */
-  const tileColRow=(t)=>{
-    const pal=ACCENTS, cur=t.col, lv=parseInt(t.shade,10)||0;
-    const sw=k=>`<button data-tile-col="${t.id}|${k}" class="colsw ${cur===k?'on':''}" style="background:${pal[k]}" aria-label="${k}" title="${k}"></button>`;
+  const tileColRow=(tl)=>{
+    const pal=ACCENTS, cur=tl.col, lv=parseInt(tl.shade,10)||0;
+    const sw=k=>`<button data-tile-col="${tl.id}|${k}" class="colsw ${cur===k?'on':''}" style="background:${pal[k]}" aria-label="${k}" title="${k}"></button>`;
     const isHex = typeof cur==="string" && cur.charAt(0)==="#";
-    const step=(d,lbl)=>`<button data-tile-shade="${t.id}|${d}" class="colbtn2 colspan3 colstep`
+    const step=(d,lbl)=>`<button data-tile-shade="${tl.id}|${d}" class="colbtn2 colspan3 colstep`
       + `${(d<0?lv<0:lv>0)?' on':''}" aria-label="${lbl}" title="${lbl}"`
       + `${(d<0?lv<=-SHADE_MAX:lv>=SHADE_MAX)?' disabled':''}>${lbl}${(d<0?lv<0:lv>0)?' '+Math.abs(lv):''}</button>`;
-    return `<div class="optrow optnl optrow-col"><span class="optlabel">Colour</span><div class="colgrid">
-      <button data-tile-col="${t.id}|auto" class="colbtn2 colspan3 ${cur==='auto'?'on':''}">Auto</button>`
-      + `<label class="colsw colcustom ${isHex?'on':''}" title="Any colour" style="${isHex?`background:${cur}`:''}">`
-      + `<input type="color" data-tile-custom="${t.id}" value="${isHex?cur:'#888888'}" aria-label="Custom colour"></label>`
-      + step(-1,"Darker") + step(1,"Lighter")
+    return `<div class="optrow optnl optrow-col"><span class="optlabel">${t("Colour")}</span><div class="colgrid">
+      <button data-tile-col="${tl.id}|auto" class="colbtn2 colspan3 ${cur==='auto'?'on':''}">${t("Auto")}</button>`
+      + `<label class="colsw colcustom ${isHex?'on':''}" title="${t("Any colour")}" style="${isHex?`background:${cur}`:''}">`
+      + `<input type="color" data-tile-custom="${tl.id}" value="${isHex?cur:'#888888'}" aria-label="${t("Custom colour")}"></label>`
+      + step(-1,t("Darker")) + step(1,t("Lighter"))
       + `${Object.keys(pal).map(sw).join("")}</div></div>`;
   };
-  const subhead=t=>`<div class="optsub">${t}</div>`;
+  const subhead=x=>`<div class="optsub">${t(x)}</div>`;
   /* v1.12 grouped settings; v1.29 the HR variant.
      v1.77 item 3: a section header is a button now, and the rows under it are folded into a body by
      groupOptions() after the render. Settings is sixteen colour rows long since v1.76 — an index you
@@ -6794,12 +6791,12 @@ function optionsBody(){
        {k:"dark", label:"Dark", bg:"#141C18",br:"#33433B",dot:"#E2502C"},
        {k:"ink",  label:"Ink",  bg:"#FFFFFF",br:"#D8D8D8",dot:"#000000"},
        {k:"noir", label:"Noir", bg:"#000000",br:"#333333",dot:"#FFFFFF"}]
-      .map(t=>`<button data-opt-theme="${t.k}" class="themebtn ${theme===t.k?'on':''}"><span class="themesw" style="background:${t.bg};border-color:${t.br}"><i style="background:${accentHex()||t.dot}"></i></span>${t.label}</button>`).join("")
+      .map(th=>`<button data-opt-theme="${th.k}" class="themebtn ${theme===th.k?'on':''}"><span class="themesw" style="background:${th.bg};border-color:${th.br}"><i style="background:${accentHex()||th.dot}"></i></span>${t(th.label)}</button>`).join("")
     }</div>`)}
     ${/* v1.57 item 2: no rule after Wallpaper in either case. Theme, Wallpaper and Text size are the
           three controls that change the whole page at once, so they read as one group and nothing
           separates them — including when there is no wallpaper and Text size follows directly. */""}
-    ${rowNL(t("Wallpaper"), `<div class="wallrow">${[{v:"",label:"None"},{v:"wall-1"},{v:"wall-2"},{v:"wall-3"},{v:"wall-4"},
+    ${rowNL(t("Wallpaper"), `<div class="wallrow">${[{v:"",label:t("None")},{v:"wall-1"},{v:"wall-2"},{v:"wall-3"},{v:"wall-4"},
       {v:"wall-blue"},{v:"wall-yellow"},{v:"wall-pink"},{v:"wall-grey"}]
       .map(w=>`<button data-opt-wall="${w.v}" class="wallbtn ${wall===w.v?'on':''}" aria-label="${esc(w.label||w.v)}" style="${
         !w.v ? "" : (WALL_TINTS[w.v]
@@ -6809,9 +6806,9 @@ function optionsBody(){
       /* v1.71: the swatch previews the truth — the flat colour the page will actually be, not a ramp
          with a photo band over it that the page no longer paints. */
       (()=>{ const isHex = typeof wall==="string" && wall.charAt(0)==="#";
-        return `<label class="wallbtn wallcustom ${isHex?'on':''}" title="Any colour" style="${isHex
+        return `<label class="wallbtn wallcustom ${isHex?'on':''}" title="${t("Any colour")}" style="${isHex
           ? `background-image:none;background-color:${wall}`
-          : ''}"><input type="color" data-opt-wallcustom value="${isHex?wall:'#7BA05B'}" aria-label="Custom wallpaper colour"></label>`; })()
+          : ''}"><input type="color" data-opt-wallcustom value="${isHex?wall:'#7BA05B'}" aria-label="${t("Custom wallpaper colour")}"></label>`; })()
       }${
       /* v1.72: step the wallpaper toward white or black, the same as any other colour. Only for a
          custom colour: a shipped tint is a photograph with a ramp, and there is no single value to
@@ -6822,7 +6819,7 @@ function optionsBody(){
         const chip=(v,lbl)=> (!v || v.toLowerCase()===wall.toLowerCase()) ? ""
           : `<button data-opt-wall="${v}" class="wallbtn wallstep" aria-label="${lbl}" title="${lbl}"`
             + ` style="background-image:none;background-color:${v};color:${onAccent(v)}">${lbl}</button>`;
-        return chip(lo,"Darker")+chip(hi,"Lighter"); })()
+        return chip(lo,t("Darker"))+chip(hi,t("Lighter")); })()
       }</div>`)}
     ${wall ? rowNL(t("Wallpaper items"), `<div class="seg"><button data-opt-wallpos="top" class="${wallPos==='top'?'on':''}">${t("Top")}</button><button data-opt-wallpos="bottom" class="${wallPos==='bottom'?'on':''}">${t("Bottom")}</button></div>`) : ""}
     ${/* v1.57 item 2: Text size sits with the wallpaper and the theme — the three things that change
@@ -6834,20 +6831,20 @@ function optionsBody(){
           in front of Sort and Smart add. Their own section, folded by default. */""}
     <button class="optaction optlookbtn" id="optLook"><span class="olb-t"><span>${t("Customise the look")}</span><span class="olb-s">${t("Layout, colours, bars, headings and tiles")}</span></span><span class="olb-c" aria-hidden="true">›</span></button>
     ${sectHR("Layout & motion")}
-    ${me ? `<button class="optaction" id="optLookSend" style="margin:2px 0 6px">${/* v2.26 */""}Send this look to my other phones</button>
-    <div style="margin:0 2px 12px;font-size:12.5px;color:var(--muted2);font-weight:600">Open the list on your other phone as ${esc(me)} and it offers this look, once. Only the look travels — not your list or settings.</div>` : ""}
+    ${me ? `<button class="optaction" id="optLookSend" style="margin:2px 0 6px">${/* v2.26 */""}${t("Send this look to my other phones")}</button>
+    <div style="margin:0 2px 12px;font-size:12.5px;color:var(--muted2);font-weight:600">${tf("Open the list on your other phone as {me} and it offers this look, once. Only the look travels — not your list or settings.", { me:esc(me) })}</div>` : ""}
     ${/* v1.57 item 2: four slots. One saved look was not enough to compare two ideas — which is what
           anyone actually does with this. Applying is one tap; saving is a deliberate second row, so a
           mis-tap costs you a preview rather than the look you had. */""}
-    <div class="optrow optrow-wide optnl optrow-slots"><span class="optlabel">My appearance</span><div class="optwide">
-      <div class="slotrow"><span class="slotcap">Use</span><div class="slotgrid">${
-        appSlots().map((s,i)=>`<button data-app-use="${i}" class="colbtn2 slotbtn ${s?'':'empty'} ${String(appSel())===String(i)?'on':''} ${String(appStart())===String(i)?'start':''}" ${s?'':'disabled'} title="${s&&s.__preset?esc(s.__preset):'Slot '+(i+1)}">${s&&s.__preset?esc(s.__preset):(i+1)}</button>`).join("")}</div></div>
-      <div class="slotrow"><span class="slotcap">Save to</span><div class="slotgrid">${
+    <div class="optrow optrow-wide optnl optrow-slots"><span class="optlabel">${t("My appearance")}</span><div class="optwide">
+      <div class="slotrow"><span class="slotcap">${t("Use")}</span><div class="slotgrid">${
+        appSlots().map((s,i)=>`<button data-app-use="${i}" class="colbtn2 slotbtn ${s?'':'empty'} ${String(appSel())===String(i)?'on':''} ${String(appStart())===String(i)?'start':''}" ${s?'':'disabled'} title="${s&&s.__preset?esc(s.__preset):tf('Slot {n}', { n:i+1 })}">${s&&s.__preset?esc(s.__preset):(i+1)}</button>`).join("")}</div></div>
+      <div class="slotrow"><span class="slotcap">${t("Save to")}</span><div class="slotgrid">${
         [...Array(APP_SLOTS)].map((_,i)=>`<button data-app-save="${i}" class="colbtn2 slotbtn ${appSaveAsk===i?'on':''}">${i+1}</button>`).join("")}</div></div>
       ${appSaveAsk===null ? "" : `<div class="slotrow"><span class="slotcap"></span><div class="slotgrid slotask">
-        <span class="slotasktxt">Replace slot ${appSaveAsk+1}?</span>
-        <button data-app-saveyes="${appSaveAsk}" class="colbtn2 slotbtn on">Save</button>
-        <button data-app-saveno="1" class="colbtn2 slotbtn">Cancel</button></div></div>`}
+        <span class="slotasktxt">${tf("Replace slot {n}?", { n:appSaveAsk+1 })}</span>
+        <button data-app-saveyes="${appSaveAsk}" class="colbtn2 slotbtn on">${t("Save")}</button>
+        <button data-app-saveno="1" class="colbtn2 slotbtn">${t("Cancel")}</button></div></div>`}
       ${/* v1.63 item 3: which slot the app opens in. A third row of nine buttons would have made this
             one block half the Appearance section, and it never needed nine: the slot you want to start
             in is the one you are using, so this marks THAT one. Off (the default) is how the app has
@@ -6855,32 +6852,32 @@ function optionsBody(){
             you change afterwards is a try-out that lasts until the next launch, which is the point.
             Which slot it is stays visible as a ring on the Use row above. */""}
       <div class="numbtns"><button data-app-starthere="1" class="colbtn2 ${appStart()!==null&&appStart()===String(appSel())?'on':''}">${
-        appStart()===null ? "Start in this slot"
-        : appStart()===String(appSel()) ? "Starts in this slot"
-        : "Start in this slot (now "+(+appStart()+1)+")"}</button><button id="optAppFactory" class="colbtn2">Factory default</button></div></div></div>
+        appStart()===null ? t("Start in this slot")
+        : appStart()===String(appSel()) ? t("Starts in this slot")
+        : tf("Start in this slot (now {n})", { n:+appStart()+1 })}</button><button id="optAppFactory" class="colbtn2">${t("Factory default")}</button></div></div></div>
     ${/* v1.79 item 3: Page margins moved out of Tiles and in with the other settings that resize
           everything at once — it measures the whole page, not a tile.
           v2.00: no longer beside Text size; the appearance machinery moved one section down, under
           the folded "Layout & motion", and Page margins moved with it. */""}
-    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Page margins</span><div class="optwide">
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Page margins")}</span><div class="optwide">
       <div class="numgrid">${numCell("padl")}${numCell("padr")}${numCell("padt")}${numCell("padb")}</div>
-      <div class="numbtns"><button id="optNumSave" class="colbtn2">Set as my default</button>${
-        hasNumDefs()?`<button id="optNumReset" class="colbtn2">Reset to mine</button>`:""
-      }<button id="optNumFactory" class="colbtn2">Factory default</button></div></div></div>
+      <div class="numbtns"><button id="optNumSave" class="colbtn2">${t("Set as my default")}</button>${
+        hasNumDefs()?`<button id="optNumReset" class="colbtn2">${t("Reset to mine")}</button>`:""
+      }<button id="optNumFactory" class="colbtn2">${t("Factory default")}</button></div></div></div>
     ${/* v1.75 item 3: the two page-change controls sit with Text size and the wallpaper — the settings
           that change how the whole app looks and moves rather than one part of it. */""}
-    <div class="optrow optrow-wide optnl"><span class="optlabel">Page slides in from</span><div class="optwide">
+    <div class="optrow optrow-wide optnl"><span class="optlabel">${t("Page slides in from")}</span><div class="optwide">
       <div class="seg segfull seg5">${Object.keys(TRANS_DIRS).map(k=>
-        `<button data-opt-transdir="${k}" class="${transDir===k?'on':''}">${TRANS_DIRS[k]}</button>`).join("")}</div></div></div>
-    <div class="optrow optrow-wide optnl"><span class="optlabel">Page change speed</span><div class="optwide">
+        `<button data-opt-transdir="${k}" class="${transDir===k?'on':''}">${t(TRANS_DIRS[k])}</button>`).join("")}</div></div></div>
+    <div class="optrow optrow-wide optnl"><span class="optlabel">${t("Page change speed")}</span><div class="optwide">
       <div class="seg segfull seg5">${["instant","fast","normal","slow","slower"].map(k=>
-        `<button data-opt-transspd="${k}" class="${transSpd===k?'on':''}">${k.charAt(0).toUpperCase()+k.slice(1)}</button>`).join("")}</div></div></div>
+        `<button data-opt-transspd="${k}" class="${transSpd===k?'on':''}">${t(k.charAt(0).toUpperCase()+k.slice(1))}</button>`).join("")}</div></div></div>
 
     ${sectHR("Colour")}
     ${/* v1.57 item 2: "Colour accent" renamed. It has not been only an accent for several versions —
           it drives the nav highlight, the user chips and the selected states. */""}
-    ${colRow("Colour details", "opt-accent", accent, "accent", {page:true})}
-    ${colRow("Text colour", "opt-textcol", textCol, "text", {pal:TEXTCOLS, page:true})}
+    ${colRow(t("Colour details"), "opt-accent", accent, "accent", {page:true})}
+    ${colRow(t("Text colour"), "opt-textcol", textCol, "text", {pal:TEXTCOLS, page:true})}
 
     ${sectHR("Bars and overlays")}
     ${/* v1.76 items 1 & 3: these two are the app's frame — they belong together and not inside Colour,
@@ -6893,60 +6890,60 @@ function optionsBody(){
           to. Dragging these tiles on the page, and adding tiles of your own, are the next two
           versions — this one is only the numbers. */""}
     ${subhead("Top bar")}
-    ${colRow("Colour", "opt-topbar", topBar, "topbar", {page:true})}
-    ${colRow("Name, count and store", "opt-toptile", topTile, "toptile", {page:true})}
-    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Size and place</span><div class="optwide">
+    ${colRow(t("Colour"), "opt-topbar", topBar, "topbar", {page:true})}
+    ${colRow(t("Name, count and store"), "opt-toptile", topTile, "toptile", {page:true})}
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Size and place")}</span><div class="optwide">
       <div class="numgrid">${numCell("topx")}${numCell("topy")}${numCell("topw")}${numCell("barT")}${numCell("topr")}</div></div></div>
-    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Transparency</span><div class="optwide">
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Transparency")}</span><div class="optwide">
       <div class="numgrid">
-        <div class="numcell"><span>Top</span><div class="seg"><button data-opt-bara="top|-1" aria-label="Less">−</button><span class="numval">${barAlpha("top")}%</span><button data-opt-bara="top|1" aria-label="More">+</button></div></div>
+        <div class="numcell"><span>${t("Top")}</span><div class="seg"><button data-opt-bara="top|-1" aria-label="${t("Less")}">−</button><span class="numval">${barAlpha("top")}%</span><button data-opt-bara="top|1" aria-label="${t("More")}">+</button></div></div>
       </div></div></div>
     ${subhead("Bottom bar")}
-    ${colRow("Colour", "opt-navbar", navBar, "navbar", {page:true})}
-    ${colRow("Selected tab", "opt-navsel", navSel, "navsel", {page:true})}
-    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Size and place</span><div class="optwide">
+    ${colRow(t("Colour"), "opt-navbar", navBar, "navbar", {page:true})}
+    ${colRow(t("Selected tab"), "opt-navsel", navSel, "navsel", {page:true})}
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Size and place")}</span><div class="optwide">
       <div class="numgrid">${numCell("navx")}${numCell("navy")}${numCell("navw")}${numCell("barB")}${numCell("navr")}</div></div></div>
-    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Transparency</span><div class="optwide">
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Transparency")}</span><div class="optwide">
       <div class="numgrid">
-        <div class="numcell"><span>Bottom</span><div class="seg"><button data-opt-bara="nav|-1" aria-label="Less">−</button><span class="numval">${barAlpha("nav")}%</span><button data-opt-bara="nav|1" aria-label="More">+</button></div></div>
+        <div class="numcell"><span>${t("Bottom")}</span><div class="seg"><button data-opt-bara="nav|-1" aria-label="${t("Less")}">−</button><span class="numval">${barAlpha("nav")}%</span><button data-opt-bara="nav|1" aria-label="${t("More")}">+</button></div></div>
       </div></div></div>
     ${subhead("Search bar")}
-    ${colRow("Colour", "opt-srchbar", srchBar, "srchbar", {page:true})}
-    ${rowNL("Align", `<div class="seg segfull">${Object.keys(SRCH_ALIGN).map(k=>
-      `<button data-opt-srchalign="${k}" class="${srchAlign()===k?'on':''}">${SRCH_ALIGN[k]}</button>`).join("")}</div>`)}
-    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Size and place</span><div class="optwide">
+    ${colRow(t("Colour"), "opt-srchbar", srchBar, "srchbar", {page:true})}
+    ${rowNL(t("Align"), `<div class="seg segfull">${Object.keys(SRCH_ALIGN).map(k=>
+      `<button data-opt-srchalign="${k}" class="${srchAlign()===k?'on':''}">${t(SRCH_ALIGN[k])}</button>`).join("")}</div>`)}
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Size and place")}</span><div class="optwide">
       <div class="numgrid">${numCell("srchx")}${numCell("srchy")}${numCell("srchw")}${numCell("srchh")}${numCell("srchr")}</div></div></div>
-    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Transparency</span><div class="optwide">
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Transparency")}</span><div class="optwide">
       <div class="numgrid">
-        <div class="numcell"><span>Search</span><div class="seg"><button data-opt-bara="srch|-1" aria-label="Less">−</button><span class="numval">${barAlpha("srch")}%</span><button data-opt-bara="srch|1" aria-label="More">+</button></div></div>
+        <div class="numcell"><span>${t("Search")}</span><div class="seg"><button data-opt-bara="srch|-1" aria-label="${t("Less")}">−</button><span class="numval">${barAlpha("srch")}%</span><button data-opt-bara="srch|1" aria-label="${t("More")}">+</button></div></div>
       </div></div></div>
     ${/* v1.80: tiles of your own, under the same subhead-per-tile rule the three built-ins got in
           v1.78 — one tile reads as ONE thing: what it says, what it does, then colour, transparency
           and where it sits. The controls are deliberately the same shape as the bars' controls, so
           there is nothing new to learn once you have moved the search bar once. */""}
     ${subhead("My tiles")}
-    ${userTiles().map(t=>`
-    ${subhead(esc(t.label||"Shortcut"))}
+    ${userTiles().map(ut=>`
+    <div class="optsub">${ut.label?esc(ut.label):t("Shortcut")}</div>
     <div class="optrow optnl" style="gap:7px">
-      <input data-tile-label="${esc(t.id)}" value="${esc(t.label||"")}" placeholder="Label" autocomplete="off" style="flex:1;min-width:0;padding:10px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:14px;font-weight:600" />
-      <input data-tile-emoji="${esc(t.id)}" value="${esc(t.emoji||"")}" placeholder="🙂" autocomplete="off" style="flex:0 0 62px;width:62px;text-align:center;padding:10px 6px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:16px" />
+      <input data-tile-label="${esc(ut.id)}" value="${esc(ut.label||"")}" placeholder="${t("Label")}" autocomplete="off" style="flex:1;min-width:0;padding:10px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:14px;font-weight:600" />
+      <input data-tile-emoji="${esc(ut.id)}" value="${esc(ut.emoji||"")}" placeholder="🙂" autocomplete="off" style="flex:0 0 62px;width:62px;text-align:center;padding:10px 6px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:16px" />
     </div>
-    <div class="optrow optrow-wide optnl"><span class="optlabel">Does</span><div class="optwide">
+    <div class="optrow optrow-wide optnl"><span class="optlabel">${t("Does")}</span><div class="optwide">
       <div class="seg segfull" style="flex-wrap:wrap">${Object.keys(TILE_ACTS).map(k=>
-        `<button data-tile-act="${esc(t.id)}|${k}" class="${t.act===k?'on':''}">${TILE_ACTS[k]}</button>`).join("")}</div></div></div>
-    ${t.act!=="cat" ? "" : `<div class="optrow optrow-wide optnl"><span class="optlabel">Category</span><div class="optwide">
+        `<button data-tile-act="${esc(ut.id)}|${k}" class="${ut.act===k?'on':''}">${t(TILE_ACTS[k])}</button>`).join("")}</div></div></div>
+    ${ut.act!=="cat" ? "" : `<div class="optrow optrow-wide optnl"><span class="optlabel">${t("Category")}</span><div class="optwide">
       <div style="display:flex;flex-wrap:wrap;gap:6px">${catList().map(c=>
-        `<button class="catchip" data-tile-cat="${esc(t.id)}|${esc(c.id)}" style="${t.cat===c.id?`background:${c.color};border-color:${c.color};color:#fff`:''}">${catIcon(c,15)} ${esc(catLabel(c))}</button>`).join("")}</div></div></div>`}
-    ${tileColRow(t)}
-    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Transparency</span><div class="optwide">
+        `<button class="catchip" data-tile-cat="${esc(ut.id)}|${esc(c.id)}" style="${ut.cat===c.id?`background:${c.color};border-color:${c.color};color:#fff`:''}">${catIcon(c,15)} ${esc(catLabel(c))}</button>`).join("")}</div></div></div>`}
+    ${tileColRow(ut)}
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Transparency")}</span><div class="optwide">
       <div class="numgrid">
-        <div class="numcell"><span>Tile</span><div class="seg"><button data-tile-alpha="${esc(t.id)}|-1" aria-label="Less">−</button><span class="numval">${(t.alpha===undefined?100:parseInt(t.alpha,10)||0)}%</span><button data-tile-alpha="${esc(t.id)}|1" aria-label="More">+</button></div></div>
+        <div class="numcell"><span>${t("Tile")}</span><div class="seg"><button data-tile-alpha="${esc(ut.id)}|-1" aria-label="${t("Less")}">−</button><span class="numval">${(ut.alpha===undefined?100:parseInt(ut.alpha,10)||0)}%</span><button data-tile-alpha="${esc(ut.id)}|1" aria-label="${t("More")}">+</button></div></div>
       </div></div></div>
-    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Size and place</span><div class="optwide">
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Size and place")}</span><div class="optwide">
       <div class="numgrid">${Object.keys(TILE_NUM).map(k=>
-        `<div class="numcell"><span>${TILE_NUM[k].label}</span><div class="seg"><button data-tile-num="${esc(t.id)}|${k}|-1" aria-label="Less">−</button><span class="numval">${parseInt(t[k],10)||0}</span><button data-tile-num="${esc(t.id)}|${k}|1" aria-label="More">+</button></div></div>`).join("")}</div></div></div>
-    <button class="optaction" data-tile-del="${esc(t.id)}" style="border-color:#C24A33;color:#C24A33">Delete this tile</button>`).join("")}
-    <button class="optaction" id="addUserTile">＋ Add a tile</button>
+        `<div class="numcell"><span>${t(TILE_NUM[k].label)}</span><div class="seg"><button data-tile-num="${esc(ut.id)}|${k}|-1" aria-label="${t("Less")}">−</button><span class="numval">${parseInt(ut[k],10)||0}</span><button data-tile-num="${esc(ut.id)}|${k}|1" aria-label="${t("More")}">+</button></div></div>`).join("")}</div></div></div>
+    <button class="optaction" data-tile-del="${esc(ut.id)}" style="border-color:#C24A33;color:#C24A33">${t("Delete this tile")}</button>`).join("")}
+    <button class="optaction" id="addUserTile">＋ ${t("Add a tile")}</button>
 
     ${sectHR("Category headings")}
     ${/* v1.76 items 2 & 3: the heading's three colours, twice — the list and Regulars head different
@@ -6955,13 +6952,13 @@ function optionsBody(){
           from the bottom of Tiles: it is a heading control, not a tile one. */""}
     ${/* v2.18: Category icons and Icon style moved again, into everyday Tiles — this section is colours only now, on the look page. */""}
     ${subhead("On the list")}
-    ${colRow("Text", "opt-cattext", catTxt, "cat", {pal:TEXTCOLS, page:true})}
-    ${colRow("Background", "opt-cathdbg", catHdBg, "cathdbg", {page:true})}
-    ${colRow("Border", "opt-cathdbrd", catHdBrd, "cathdbrd", {page:true})}
+    ${colRow(t("Text"), "opt-cattext", catTxt, "cat", {pal:TEXTCOLS, page:true})}
+    ${colRow(t("Background"), "opt-cathdbg", catHdBg, "cathdbg", {page:true})}
+    ${colRow(t("Border"), "opt-cathdbrd", catHdBrd, "cathdbrd", {page:true})}
     ${subhead("In Regulars")}
-    ${colRow("Text", "opt-reghdtext", regHdTxt, "reghdtext", {pal:TEXTCOLS, page:true})}
-    ${colRow("Background", "opt-reghdbg", regHdBg, "reghdbg", {page:true})}
-    ${colRow("Border", "opt-reghdbrd", regHdBrd, "reghdbrd", {page:true})}
+    ${colRow(t("Text"), "opt-reghdtext", regHdTxt, "reghdtext", {pal:TEXTCOLS, page:true})}
+    ${colRow(t("Background"), "opt-reghdbg", regHdBg, "reghdbg", {page:true})}
+    ${colRow(t("Border"), "opt-reghdbrd", regHdBrd, "reghdbrd", {page:true})}
 
     ${sectHR("Tiles")}
     ${view!=="lists" ? `<div class="optrow optrow-wide optnl"><span class="optlabel">${t("Tile display")}</span><div class="optwide">
@@ -6986,22 +6983,22 @@ function optionsBody(){
     ${iconStyle()==="drawn" ? row(t("Line weight"), `<div class="seg">${[["fine","Fine"],["thin","Thin"],["regular","Regular"],["bold","Bold"]].map(([k,l])=>`<button data-opt-linew="${k}" class="${lineW()===k?'on':''}">${t(l)}</button>`).join("")}</div>`) : ""}
     ${/* v2.18 (R12): the tiles' colours and shape are the look page's; what a tile shows stays in everyday Tiles. */""}
     ${sectHR("Tile colours and shape")}
-    ${rowNL("Tile appearance", `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}"><span class="tdswatch" data-sw="full" style="background:var(--accent)"></span>Full</button><button data-opt-fill="accent" class="${fillMode()==='accent'?'on':''}"><span class="tdswatch" data-sw="accent" style="border:1.5px solid var(--muted2);border-left:4px solid var(--accent)"></span>Accent</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}"><span class="tdswatch" data-sw="empty" style="border:1.5px solid var(--muted2)"></span>Empty</button></div>`)}
+    ${rowNL(t("Tile appearance"), `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}"><span class="tdswatch" data-sw="full" style="background:var(--accent)"></span>${t("Full")}</button><button data-opt-fill="accent" class="${fillMode()==='accent'?'on':''}"><span class="tdswatch" data-sw="accent" style="border:1.5px solid var(--muted2);border-left:4px solid var(--accent)"></span>${t("Accent")}</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}"><span class="tdswatch" data-sw="empty" style="border:1.5px solid var(--muted2)"></span>${t("Empty")}</button></div>`)}
     ${/* v1.57 item 2: the two tile states, each with the same three colours in the same order, so the
           two blocks can be read against each other. */""}
     ${subhead("Selected tiles · on the list")}
-    ${colRow("Text", "opt-tiletext", tileTxt, "tiletext", {pal:TEXTCOLS, page:true})}
-    ${colRow("Background", "opt-tilebg", tileBg, "tilebg", {page:true})}
-    ${colRow("Border", "opt-tilebrd", tileBrd, "tilebrd", {page:true})}
+    ${colRow(t("Text"), "opt-tiletext", tileTxt, "tiletext", {pal:TEXTCOLS, page:true})}
+    ${colRow(t("Background"), "opt-tilebg", tileBg, "tilebg", {page:true})}
+    ${colRow(t("Border"), "opt-tilebrd", tileBrd, "tilebrd", {page:true})}
     ${subhead("Unselected tiles · in Regulars")}
-    ${colRow("Text", "opt-utiletext", uTileTxt, "utiletext", {pal:TEXTCOLS, page:true})}
-    ${colRow("Background", "opt-utilebg", uTileBg, "utilebg", {page:true})}
-    ${colRow("Border", "opt-utilebrd", uTileBrd, "utilebrd", {page:true})}
+    ${colRow(t("Text"), "opt-utiletext", uTileTxt, "utiletext", {pal:TEXTCOLS, page:true})}
+    ${colRow(t("Background"), "opt-utilebg", uTileBg, "utilebg", {page:true})}
+    ${colRow(t("Border"), "opt-utilebrd", uTileBrd, "utilebrd", {page:true})}
     ${/* v2.18: roundness and gap are the tiles' shape, not part of "Unselected tiles" above them — their own subhead */""}
     ${subhead("Shape")}
-    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Tile roundness</span><div class="optwide">
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Tile roundness")}</span><div class="optwide">
       <div class="numgrid">${numCell("rad")}</div></div></div>
-    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">Tile gap</span><div class="optwide">
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Tile gap")}</span><div class="optwide">
       <div class="numgrid">${numCell("gapx")}${numCell("gapy")}</div></div></div>
     ${sect("Shopping")}${/* v2.30: was "Sort" — the store, its order, its aisle map, and the sound and screen while you shop (Sound folded in) */""}
     ${rowNL(t("Location"), `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">${t("On")}</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">${t("Off")}</button></div>`)}
@@ -7009,7 +7006,7 @@ function optionsBody(){
       <div class="storegrid">${[{id:"auto",name:t("Auto-detect")},{id:"home",name:t("Home")},...STORES.filter(s=>!storeOverride(s.id).hidden).map(s=>storeById(s.id)),...(state.stores||[]).filter(s=>!storeOverride(s.id).hidden),{id:"other",name:t("Other")}].map(s=>`<button data-opt-store="${s.id}" class="storechip ${storeSel===s.id?'on':''}">${s.id==="home"?HOME_SVG(14)+" ":""}${esc(s.name)}</button>`).join("")}<button data-store-add class="storechip" style="border-style:dashed">${t("＋ Add store")}</button></div>
       ${isRealStore(storeSel) ? `<div class="optrow" style="gap:7px"><input id="storeName" value="${esc((storeById(storeSel)||{}).name||"")}" placeholder="${t("Store name")}" style="flex:1;min-width:0;padding:10px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:14px;font-weight:600" /><button id="storeRemove" style="padding:10px 12px;border-radius:12px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:13px">${t("Remove")}</button></div>` : ""}
     </div></div>
-    ${(storeSel==="home" || isRealStore(storeSel)) ? `<button class="optaction" id="optSetStore" style="margin-top:2px">${PIN_SVG(14)} ${tf("Set {x} location here", { x:esc((storeById(storeSel)||{}).name||t("store")) })}</button>` : ""}
+    ${(storeSel==="home" || isRealStore(storeSel)) ? `<button class="optaction" id="optSetStore" style="margin-top:2px">${PIN_SVG(14)} ${tf("Set {x} location here", { x:esc(storeName(storeById(storeSel))||t("store")) })}</button>` : ""}
     ${isRealStore(storeSel) ? `<button class="optaction" id="optAisleMap" style="margin-top:6px">${/* v2.27 */""}${tf("Aisle map for {x}", { x:esc((storeById(storeSel)||{}).name||t("this shop")) })}${(()=>{ const m=(state.aislemap||{})[storeSel]; return (m && m.aisles && m.aisles.length) ? (m.aisles.length===1 ? tf(" · {n} aisle", { n:m.aisles.length }) : tf(" · {n} aisles", { n:m.aisles.length })) : ""; })()}</button>` : ""}
     ${(()=>{ const hid=[...STORES,...(state.stores||[])].filter(s=>{ const o=storeOverride(s.id); return o.hidden && !o.removed; }); return hid.length ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:6px"><span class="optlabel" style="font-size:12.5px;color:var(--muted2)">${t("Hidden stores")}</span>${hid.map(s=>`<div style="display:flex;gap:7px;align-items:center"><span style="flex:1;min-width:0;color:var(--muted);font-size:13px;font-weight:600">${esc((storeById(s.id)||s).name||s.id)}</span><button class="storechip" data-store-restore="${s.id}" style="flex:0 0 auto">${t("Restore")}</button><button class="storechip" data-store-delete="${s.id}" aria-label="Delete" style="flex:0 0 auto;border-color:#C24A33;color:#C24A33">✕</button></div>`).join("")}</div>` : ""; })()}
     <div style="margin:-2px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">${(()=>{ const nid=storeSel==="auto"?(useLoc&&!locState.busy&&locState.checked&&!locState.err&&locState.nearId):storeSel; return nid==="home"?HOME_SVG(14)+" ":(storeSel==="auto"&&nid&&storeById(nid))?PIN_SVG(14)+" ":""; })()}${esc(storeLabel())}</div>

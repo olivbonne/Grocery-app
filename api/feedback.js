@@ -38,14 +38,45 @@ function cleanDiag(d) {
   return out;
 }
 
+/* v2.46 (the household's item D, error monitoring): the same crash from many phones used to open a new issue every time.
+   Each crash now carries a short signature — its first line with numbers taken out, hashed — and a crash whose
+   signature already has an open issue is added to it as a comment ("happened again"), so the issues list reads as one
+   line per problem, with how often it happens. Nothing else changes: the list of open crash issues is read with the
+   same token, and if that read fails the crash simply opens a new issue as before. */
+const crypto = require('crypto');
+function crashSig(text) { const first = (text.split('\n').map(l => l.trim()).find(Boolean) || '').replace(/\d+/g, '#').slice(0, 200);
+  return crypto.createHash('sha256').update(first).digest('hex').slice(0, 10); }
+const ghHeaders = (token, json) => Object.assign({ Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'User-Agent': 'market-list-feedback' }, json ? { 'Content-Type': 'application/json' } : {});
+async function openCrashIssue(token, repo, sig, signal) {
+  try {
+    const r = await fetch('https://api.github.com/repos/' + repo + '/issues?labels=crash&state=open&per_page=100', { headers: ghHeaders(token), signal });
+    if (!r.ok) return 0;
+    const list = await r.json();
+    if (!Array.isArray(list)) return 0;
+    const hit = list.find(i => i && typeof i.title === 'string' && i.title.endsWith('· sig:' + sig) && Number.isInteger(i.number));
+    return hit ? hit.number : 0;
+  } catch (e) { return 0; }
+}
+
 async function toGithub(token, repo, kind, text, diag) {
   const first = (text.split('\n').map(l => l.trim()).find(Boolean) || '').slice(0, 70);   // the first line with words on it
-  const title = '[' + LABELS[kind] + '] ' + first;
+  const sig = kind === 'crash' ? crashSig(text) : '';
+  const title = '[' + LABELS[kind] + '] ' + first + (sig ? ' · sig:' + sig : '');
   const lines = Object.keys(diag).filter(k => diag[k]).map(k => k + ': ' + diag[k]);
   const body = text + '\n\n---\n' + lines.join('\n');
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), GITHUB_TIMEOUT_MS);
   try {
+    if (sig) {
+      const n = await openCrashIssue(token, repo, sig, ctl.signal);
+      if (n) {
+        const c = await fetch('https://api.github.com/repos/' + repo + '/issues/' + n + '/comments', {
+          method: 'POST', headers: ghHeaders(token, true), signal: ctl.signal,
+          body: JSON.stringify({ body: 'Happened again.\n\n---\n' + lines.join('\n') + '\nat: ' + new Date().toISOString() }) });
+        if (c.ok) return { ref: n, again: true };
+        console.error('feedback github comment ' + c.status);   // fall through: open a new issue instead
+      }
+    }
     const r = await fetch('https://api.github.com/repos/' + repo + '/issues', {
       method: 'POST',
       headers: {

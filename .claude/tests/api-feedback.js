@@ -91,8 +91,11 @@ const TOKEN = 'SECRET-TOKEN-123';
 
     reset(); status = 201; reply = { number: 43 };
     r = await call({ kind: 'crash', text: 'TypeError: x is undefined\nat render (index.html:5300:12)', diag: { version: 'v2.15', page: 'shop' } });
-    const sentCrash = calls[0] ? JSON.parse(calls[0].opts.body) : {};
-    ok('a crash goes to GitHub, title starts "[Crash] "', calls.length === 1 && r.body.via === 'github' && (sentCrash.title || '').startsWith('[Crash] '), sentCrash.title);
+    /* SUPERSEDED by v2.46: a crash first reads the open crash issues (to group it with the same one), then files. Still
+       protects: a new crash is filed as "[Crash] …" with the from-app + crash labels. */
+    const post = calls.find(c => c.opts && c.opts.method === 'POST');
+    const sentCrash = post ? JSON.parse(post.opts.body) : {};
+    ok('a crash goes to GitHub, title starts "[Crash] "', calls.length === 2 && /issues\?labels=crash&state=open/.test(calls[0].url) && r.body.via === 'github' && (sentCrash.title || '').startsWith('[Crash] ') && / · sig:[0-9a-f]{10}$/.test(sentCrash.title || ''), sentCrash.title);
     ok('…labels include from-app and crash', Array.isArray(sentCrash.labels) && sentCrash.labels.includes('from-app') && sentCrash.labels.includes('crash'), JSON.stringify(sentCrash.labels));
 
     reset(); status = 500; reply = { message: 'boom ' + TOKEN };
@@ -115,6 +118,28 @@ const TOKEN = 'SECRET-TOKEN-123';
     /* ── the token never leaks ──────────────────────────────────────── */
     ok('the token appears in no console output', !allOut.some(l => l.includes(TOKEN)), '');
     ok('the token appears in no response', !bodies.some(b => b.includes(TOKEN)), '');
+
+    /* v2.46: the same crash again is added to its open issue, not a new one */
+    {
+      process.env.FEEDBACK_GITHUB_TOKEN = TOKEN; process.env.FEEDBACK_REPO = 'owner/repo'; throwNet = false;
+      const crashText = 'TypeError: x is undefined\nat render (index.html:5300:12)';
+      reset(); status = 201; reply = { number: 50 };
+      r = await call({ kind: 'crash', text: crashText, diag: { version: 'v2.46', page: 'shop' } });
+      const firstTitle = JSON.parse(calls.find(c => c.opts && c.opts.method === 'POST').opts.body).title;
+      const sig = (firstTitle.match(/sig:([0-9a-f]{10})$/) || [])[1];
+      reset(); status = 200; reply = [{ number: 7, title: 'something else · sig:0000000000' }, { number: 50, title: firstTitle }];
+      r = await call({ kind: 'crash', text: crashText.replace('5300:12', '5311:9'), diag: { version: 'v2.46', page: 'plan' } });
+      const cmt = calls.find(c => /\/issues\/50\/comments$/.test(c.url));
+      ok('the same crash again (other line numbers) is added to its open issue as a comment, not a new issue', !!sig && cmt && !calls.some(c => /\/issues$/.test(c.url) && c.opts && c.opts.method === 'POST')
+        && r.body.via === 'github' && r.body.ref === 50 && /Happened again/.test(JSON.parse(cmt.opts.body).body) && /page: plan/.test(JSON.parse(cmt.opts.body).body), calls.map(c => c.url).join(' '));
+      reset(); status = 200; reply = [{ number: 7, title: 'something else · sig:0000000000' }];
+      r = await call({ kind: 'crash', text: 'RangeError: a different problem', diag: {} });
+      ok('a different crash still opens its own issue', calls.some(c => /\/issues$/.test(c.url) && c.opts && c.opts.method === 'POST'), calls.map(c => c.url).join(' '));
+      reset(); status = 201; reply = { number: 61 };
+      r = await call({ kind: 'idea', text: 'an idea' });
+      ok('other kinds are not grouped: one call, no signature', calls.length === 1 && !/sig:/.test(JSON.parse(calls[0].opts.body).title), calls.length);
+      ok('no log line holds the token', !allOut.some(l => l.includes(TOKEN)), '');
+    }
   } catch (e) { ok('the suite ran to the end', false, e.stack); }
 
   console.log = realLog; console.error = realErr;
