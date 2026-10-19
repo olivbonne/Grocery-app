@@ -7,17 +7,17 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.41";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.41";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.41";
-import { compareStores, worthIt } from "./compare.js?v=2.41";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.41";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.41";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.41";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.42";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.42";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.42";
+import { compareStores, worthIt } from "./compare.js?v=2.42";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.42";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.42";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.42";
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.41";
+const APP_VERSION = "v2.42";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -2848,7 +2848,7 @@ function addSheetRows(){
   /* v1.43 item 4: `largeCols()>1`, not `>0` — large·1 is now the list layout, and emitting
      `gridmode grid1` here turned the single horizontally-scrolling result strip into a one-column
      grid. The list look wants the base shop-pill sizing, exactly as the old "list" mode did. */
-  return `<div class="shop addwrap"><div class="zoomer ${styl()}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}${(dispBase()==='large'&&largeCols()>1)?(' gridmode grid'+largeCols()):''}" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})"><div class="addgrid">${cells}</div></div></div>`;
+  return `<div class="shop addwrap"><div class="zoomer ${styl()}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}${(dispBase()==='large'&&largeCols()>1)?(' gridmode grid'+largeCols()):''}" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})"><div class="pills addgrid">${cells}</div></div></div>`;   /* v2.42: .pills, so the results take the list's own grid and tile sizes */
 }
 function addBodyHTML(){
   /* v1.47: once an item is picked, its Edit panel is the whole point of the sheet — the leftover
@@ -2977,7 +2977,9 @@ function wireAddRows(){
       /* v2.29: a new name opens its details, the way a Regular does — one new item; several typed at once stay as they are */
       const fresh=state.items.filter(i=>!before.has(i.id)); if(fresh.length===1) openAddEdit(fresh[0].id); } }, null, true));
   document.querySelectorAll("[data-add-ba]").forEach(b=>{ const p=b.dataset.addBa.split("|"), cat=p.pop(), name=p.join("|");
-    const go=()=>{ stageAdds(()=>addFromRegular(name,cat)); const it=findItem(name,cat); if(it) openAddEdit(it.id); };   // v1.32 select → inline details above the bar
+    /* v2.42 (the household): a Regular already has its amount and details — picking one adds it, without the Edit item panel
+       (it shows as added; tap it again, or long-press, for its details) */
+    const go=()=>{ stageAdds(()=>addFromRegular(name,cat)); };
     press(b, go, ()=>{ stageAdds(()=>addFromRegular(name,cat)); const it=findItem(name,cat); return it&&it.id; }); });
   document.querySelectorAll("[data-add-dict]").forEach(b=>{ const p=b.dataset.addDict.split("|"), cat=p.pop(), name=p.join("|");
     const go=()=>{ playPlan(true); stageAdds(()=>addEntries(name,cat)); const it=findItem(name,cat); if(it) openAddEdit(it.id); };
@@ -7431,10 +7433,9 @@ function wire(){
     b.onpointerdown=e=>{ e.preventDefault(); pressStart(); }; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
     b.onpointerup=()=>{ pressCancel(); if(longFired){ const id=longIdFn&&longIdFn(); if(id) editItemById(id); return; } shortFn(); }; };
   app.querySelectorAll("[data-reg-add]").forEach(b=>{ const p=b.dataset.regAdd.split("|"), cat=p.pop(), name=p.join("|");
-    /* v2.36 (the household's item 1): a Regular tapped here opens the same add sheet and details panel as "+ Add items" —
-       it is staged like an add made there, so Cancel takes it back off the list */
-    regPress(b, ()=>{ const had=findItem(name,cat); addFromRegular(name,cat); const it=findItem(name,cat); if(!it) return;
-      openAdd(); if(!had) addStaged.push(it.id); openAddEdit(it.id); }, ()=>{ addFromRegular(name,cat); const it=findItem(name,cat); return it&&it.id; }); });
+    /* v2.36 opened the add sheet and its Edit item panel on a tap here. v2.42 (the household): no need — a Regular already has
+       its amount and details, so a tap adds it, as before v2.36; a long-press still opens its details */
+    regPress(b, ()=>{ addFromRegular(name,cat); }, ()=>{ addFromRegular(name,cat); const it=findItem(name,cat); return it&&it.id; }); });
   app.querySelectorAll("[data-reg-rm]").forEach(b=>{ const id=b.dataset.regRm;
     regPress(b, ()=>removeFromList(id), ()=>id); });
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; listsOpen=false; render(); };

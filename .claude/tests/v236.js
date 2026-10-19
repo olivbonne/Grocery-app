@@ -59,8 +59,10 @@ const seed = (o) => { o=o||{}; return `(() => {
     await tap('[data-regc="fresh"]');
     await tap('[data-reg-add^="Sourdough|"]'); await page.waitForTimeout(700);
     const s1 = await page.evaluate(()=>({ sheet:!!document.querySelector('#addSheet'), name:(document.querySelector('[data-ae-name]')||{}).value||'', on:JSON.parse(localStorage.getItem('ml_cache_v101')).items.filter(i=>i.name==='Sourdough').length }));
-    ok('(1) a Regular tapped opens the add sheet with its details panel, like "+ Add items"', s1.sheet && s1.name==='Sourdough' && s1.on===1, JSON.stringify(s1));
-    await page.locator('#addDone').click({ force:true }); await page.waitForTimeout(1600);
+    /* SUPERSEDED by v2.42: the household asked for no Edit item panel when a Regular is added — a tap adds it, with no sheet.
+       Still protects: one tap puts the Regular on the list, once, and a second tap takes it back off. */
+    ok('(1) a Regular tapped opens the add sheet with its details panel, like "+ Add items"', !s1.sheet && !s1.name && s1.on===1, JSON.stringify(s1));
+    await tap('[data-reg-rm]'); await page.waitForTimeout(400);
     const s2 = await page.evaluate(()=>JSON.parse(localStorage.getItem('ml_cache_v101')).items.filter(i=>i.name==='Sourdough').length);
     ok('(1) …and Cancel takes it back off the list', s2===0, String(s2));
 

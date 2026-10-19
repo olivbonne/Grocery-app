@@ -1824,8 +1824,13 @@
      between, which is the same shape the weight popover had to abandon in v1.64. Wrapping puts the
      results on the one scroll that demonstrably works: the panel's. */
   .addwrap { width:100%; }
-  .addgrid { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:2px; }
-  .addgrid .pill { flex:none; white-space:nowrap; -webkit-touch-callout:none; user-select:none; -webkit-user-select:none; }
+  /* v2.42 (the household): in a grid layout the results ARE the list's grid (.pills), the same columns and the same tile
+     floor (--tileh) as the list itself; only the list and plain layouts keep the wrapping row. */
+  .shop .zoomer:not(.gridmode) .addgrid { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:2px; }
+  .shop .zoomer:not(.gridmode) .addgrid .pill { flex:none; white-space:nowrap; }
+  .addgrid .pill { -webkit-touch-callout:none; user-select:none; -webkit-user-select:none; }
+  .shop .zoomer.gridmode .addgrid { padding:2px; }
+  .shop .zoomer .pills.addgrid > .pill { min-height:var(--tileh, 0px); }
   .addresults { width:100%; }   /* v1.31 typed matches rendered as literal shop pills */
   .addresults .pills { margin-top:2px; }
   /* v1.32/v1.35 inline "Edit item" panel above the search bar */
