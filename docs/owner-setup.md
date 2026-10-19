@@ -61,6 +61,13 @@ Authentication › Templates (menu names not checked from here).
 
 **Check:** Authentication › Users shows your email after you sign in on the new version.
 
+### 2c. Members by account (v2.44)
+
+1. Publish the rules again (Firestore Database › Rules, as in section 1) — nothing below works until then.
+2. For 30 days after a list's first phone opens it on v2.44, every household phone joins by itself when it opens the list.
+3. After that, only links made from the app (Share link — they carry a key) let someone new in.
+4. To remove someone: Settings › People › Remove. Their phone loses the list and the list gets a new link.
+
 ---
 
 ## 3. Turn on photo storage (Firebase Storage) (≈5 min)

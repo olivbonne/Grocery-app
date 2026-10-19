@@ -111,8 +111,11 @@ const seed = (o) => { o=o||{}; return `(() => {
 
     /* ── the database rules, kept in the repo ───────────────────────────── */
     const rules = fs.readFileSync(path.join(ROOT,'firebase','firestore.rules'),'utf8').replace(/\/\/[^\n]*/g,'');
+    /* SUPERSEDED by v2.44: once a list has an access record only its people may read it (members by account); a list without
+       one is still read by its code alone. Still protects: by its code, never the list of lists; no deletes; four people;
+       nothing outside the named collections. */
     ok('the rules: a list by its code only, never the list of lists; no deletes; four people; nothing outside lists/',
-       /match \/lists\/\{code\}/.test(rules) && /allow get: if true;/.test(rules) && /allow list: if false;/.test(rules) && /allow delete: if false;/.test(rules)
+       /match \/lists\/\{code\}/.test(rules) && /allow get: if !hasAccess\(code\) \|\| memberOf\(code\);/.test(rules) && /allow list: if false;/.test(rules) && /allow delete: if false;/.test(rules)
        && /people\(request\.resource\.data\) <= 4/.test(rules) && /match \/\{document=\*\*\}\s*\{\s*allow read, write: if false;/.test(rules), '');
     ok('…and the publishing steps are written down', fs.existsSync(path.join(ROOT,'docs','firestore-rules.md')) && /Rules Playground/.test(fs.readFileSync(path.join(ROOT,'docs','firestore-rules.md'),'utf8')), '');
   } catch(e){ ok('suite ran to the end', false, e.message.slice(0,300)); }
