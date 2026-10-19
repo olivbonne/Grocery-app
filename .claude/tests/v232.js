@@ -111,7 +111,8 @@ const seed = (o) => { o=o||{}; return `(() => {
     await page.locator('[data-add-typed]').first().click(); await page.waitForTimeout(600);
     ok('(10) the edit panel says "Add to Regulars"', (await page.evaluate(()=>(document.querySelector('[data-ae-again]')||{}).textContent||''))==='Add to Regulars', '');
     const src = fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8');
-    ok('(10) …and the Regular\'s own editor is "Edit Regular", its button "Add to Regulars"', /isItem\?"Edit item":"Edit Regular"/.test(src) && /secLabel = isItem \? "Add to Regulars"/.test(src), '');
+    /* SUPERSEDED by v2.45: the words go through t() for French. Still protects: the same English words, in the same places. */
+    ok('(10) …and the Regular\'s own editor is "Edit Regular", its button "Add to Regulars"', /isItem\?(?:t\()?"Edit item"\)?:(?:t\()?"Edit Regular"/.test(src) && /secLabel = isItem \? (?:t\()?"Add to Regulars"/.test(src), '');
 
     /* ── (4) removing the open list ──────────────────────────────────── */
     await mk({ extra:`localStorage.setItem("ml_lists", JSON.stringify([{code:"v101",name:"Groceries"},{code:"v202",name:"Party"}]));
