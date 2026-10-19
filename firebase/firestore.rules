@@ -5,19 +5,66 @@ rules_version = '2';
 //  - a list has at most four people (one that somehow has more is never locked out — it just cannot grow);
 //  - lists are never deleted through the app (Settings › Your data empties one instead);
 //  - an account's own record (users/{uid}) is read and written only by that signed-in person (v2.40);
-//  - nothing outside lists/ and users/ can be read or written.
+//  - who may open a list is kept in access/{code} (v2.44): once that exists, only its people can open the list;
+//  - nothing outside lists/, access/ and users/ can be read or written.
 // The app only ever does: get/listen to lists/{code}, and set it whole (create or update). Publish from the Firebase
 // console (Firestore Database › Rules) and try it in the Rules Playground first — see docs/firestore-rules.md.
 service cloud.firestore {
   match /databases/{database}/documents {
     function people(d) { return d.get('members', []).size(); }
 
+    // v2.44 (architecture review A2, members by account): who may open a list is kept beside it, in access/{code}:
+    //   { acl: {uid: true|false}, names: {uid: name}, joinKey, openUntil (ms), joinProof: {uid: key} }.
+    // A list with no access record yet (made before v2.44, until one of its phones opens it) stays as before: its code is
+    // the key. Once the record exists, only its people can open the list. A new person joins with the key from a share
+    // link — or, for the first 30 days (openUntil), with the code alone, so the household's own phones move over without
+    // a new link. A person removed is set to false; "New link" changes the key, so an old link stops working.
+    function accessPath(code) { return /databases/$(database)/documents/access/$(code); }
+    function hasAccess(code) { return exists(accessPath(code)); }
+    function memberOf(code) {
+      return request.auth != null && get(accessPath(code)).data.acl.get(request.auth.uid, false) == true;
+    }
+
     match /lists/{code} {
-      allow get: if true;
+      allow get: if !hasAccess(code) || memberOf(code);
       allow list: if false;
       allow create: if code.size() <= 64 && people(request.resource.data) <= 4;
-      allow update: if people(request.resource.data) <= 4
-                    || people(request.resource.data) <= people(resource.data);
+      allow update: if (!hasAccess(code) || memberOf(code))
+                    && (people(request.resource.data) <= 4
+                        || people(request.resource.data) <= people(resource.data));
+      allow delete: if false;
+    }
+
+    match /access/{code} {
+      function signedIn() { return request.auth != null; }
+      function me() { return request.auth.uid; }
+      function isMember() { return signedIn() && resource.data.acl.get(me(), false) == true; }
+      function stillOpen() { return resource.data.get('openUntil', 0) > request.time.toMillis(); }
+      function keyShown() { return request.resource.data.get('joinProof', {}).get(me(), '') == resource.data.joinKey; }
+      // a join only adds this person (acl, names, joinProof under their own uid) and touches nothing else
+      function onlyMe() {
+        let changed = request.resource.data.diff(resource.data).affectedKeys();
+        return changed.hasOnly(['acl', 'names', 'joinProof'])
+          && request.resource.data.acl.diff(resource.data.acl).affectedKeys().hasOnly([me()])
+          && request.resource.data.acl[me()] == true
+          && request.resource.data.get('names', {}).diff(resource.data.get('names', {})).affectedKeys().hasOnly([me()])
+          && request.resource.data.get('joinProof', {}).diff(resource.data.get('joinProof', {})).affectedKeys().hasOnly([me()]);
+      }
+      function sane(d) {
+        return d.keys().hasOnly(['acl', 'names', 'joinKey', 'openUntil', 'joinProof'])
+          && d.acl.size() <= 12 && d.get('names', {}).size() <= 12 && d.get('joinProof', {}).size() <= 12
+          && d.joinKey is string && d.joinKey.size() >= 16 && d.joinKey.size() <= 64;
+      }
+      allow get: if resource == null || isMember();   // reading a record that does not exist yet tells a phone to make it
+      allow list: if false;
+      // the first phone to open a list (or to make one) creates the record, with itself as its only person
+      // …and it must start OPEN for at least 20 days: whoever creates it, the list's other phones join by themselves in that
+      // time, so a stranger holding an old code cannot lock the household out (and would show up in People, to be removed)
+      allow create: if signedIn() && code.size() <= 64 && sane(request.resource.data)
+                    && request.resource.data.acl.keys().hasOnly([me()]) && request.resource.data.acl[me()] == true
+                    && request.resource.data.get('openUntil', 0) >= request.time.toMillis() + 20 * 24 * 3600 * 1000;
+      allow update: if sane(request.resource.data)
+                    && (isMember() || (signedIn() && onlyMe() && (stillOpen() || keyShown())));
       allow delete: if false;
     }
 

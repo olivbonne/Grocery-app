@@ -7,19 +7,19 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.43";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.43";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.43";
-import { compareStores, worthIt } from "./compare.js?v=2.43";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.43";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.43";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.43";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor } from "./platform.js?v=2.43";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.43";   /* v2.43 (architecture review L17) */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.44";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.44";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.44";
+import { compareStores, worthIt } from "./compare.js?v=2.44";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.44";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.44";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.44";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor } from "./platform.js?v=2.44";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.44";   /* v2.43 (architecture review L17) */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.43";
+const APP_VERSION = "v2.44";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -75,7 +75,7 @@ function showAmt(w){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_jk_)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -154,7 +154,9 @@ let listCode = params.get("list") || localStorage.getItem(LS_LASTLIST) || newLis
    its own — the household's choice). The very first list, made at first launch, is one. var: boot-order rule */
 var _freshList = (!params.get("list") && !localStorage.getItem(LS_LASTLIST)) ? listCode : "";
 localStorage.setItem(LS_LASTLIST, listCode);
-if(params.get("list") !== listCode){ params.set("list", listCode);
+/* v2.44 (members by account): a share link may carry the list's join key (k) — keep it on this phone, never in the address bar */
+if(params.get("k")){ try{ localStorage.setItem("ml_jk_"+listCode, params.get("k").slice(0,64)); }catch(e){} }
+if(params.get("list") !== listCode || params.has("k")){ params.set("list", listCode); params.delete("k");
   history.replaceState(null,"",location.pathname+"?"+params.toString()); }
 
 let LS = { me:"ml_me", collapse:"ml_collapse_"+listCode, cache:"ml_cache_"+listCode };
@@ -1530,7 +1532,8 @@ let view="detail", listActOpen=false, listActCode=null, newListOpen=false, newLi
   if(lv==="0") view="plan"; else if(lv==="2") optOpen=true; else view="detail"; }catch(e){} })();
 function listCount(code){ try{ const s = (code===listCode) ? state : JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); return (s&&s.items)? s.items.filter(i=>!i.checked).length : 0; }catch(e){ return 0; } }
 function listStats(code){ try{ const s=(code===listCode)?state:JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); const items=(s&&s.items)||[]; const total=items.length, done=items.filter(i=>i.checked).length; return {total, done, pct: total?Math.round(done/total*100):0}; }catch(e){ return {total:0,done:0,pct:0}; } }
-function listURL(code){ return location.origin + location.pathname + "?list=" + code; }
+function listURL(code){ let k=""; try{ k=localStorage.getItem("ml_jk_"+code)||""; }catch(e){}   // v2.44: the join key rides along when this phone knows it
+  return location.origin + location.pathname + "?list=" + code + (k ? "&k=" + encodeURIComponent(k) : ""); }
 function renameListCode(code){ const a=getLists(); const l=a.find(x=>x.code===code); const name=prompt("Rename this list:", (l&&l.name)||"Groceries"); if(name===null) return;
   const nm=(name||"").trim()||"Groceries"; rememberList(code, nm);
   if(code===listCode){ state.name=nm; save(); } listActOpen=false; render(); }
@@ -1849,8 +1852,79 @@ function subscribe(){
     ensureCats();
     try { localStorage.setItem(LS.cache, JSON.stringify(state)); } catch(e){}
     applyingRemote = true; renderKeepingAdd(); applyingRemote = false;   // v1.45: never tear down a focused search bar mid-add
-  }, err => { console.error(err); showToast("⚠︎ Can't read database — publish Firestore rules"); });
+  }, err => {
+    /* v2.44 (members by account): refused — maybe not on this list yet; accessCheck() tries to join (and re-subscribes).
+       Expected now, so not logged as an error (the crash reporter would send it) */
+    if(/permission/i.test(String((err && (err.code||err.message)) || ""))){ listDenied = true; lockedNow(); _accessFor = ""; accessCheck(); return; }
+    console.error(err);
+    showToast("⚠︎ Can't read database — publish Firestore rules"); });
+  listDenied = false;
 }
+/* v2.44 (architecture review A2, members by account): who may open a list is kept beside it in access/{code}
+   (firebase/firestore.rules). Until the owner publishes those rules every write here is refused — shrugged off quietly. */
+var _accessFor = "", accessInfo = null, accessDenied = "", listDenied = false, accessBusy = null;
+/* locked out = the list read AND the join were both refused; they finish in either order, so both call this */
+var _lockToast = "";
+function lockedNow(){ if(!(accessDenied===listCode && listDenied)) return;
+  if(_lockToast!==listCode){ _lockToast=listCode; showToast(ACCESS_LOCKED); } render(); }
+/* …and it stays on screen: a toast is gone in under two seconds, too soon for "this list is closed to you" */
+function lockedHTML(){ if(!(accessDenied===listCode && listDenied && _auth && _auth.currentUser)) return "";
+  return `<div class="installcard" id="lockNote" role="alert"><div class="ic-t">This list is closed to this phone</div><div class="ic-b">${esc(ACCESS_LOCKED)}</div></div>`; }
+const ACCESS_LOCKED = "You're not on this list any more, or its link has changed. Ask someone on it for a new link.";
+function newKey(){ try{ const b=new Uint8Array(16); crypto.getRandomValues(b);
+    return btoa(String.fromCharCode(...b)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }   // 22 chars, base64url
+  catch(e){ return (uid()+uid()+uid()).replace(/[^a-z0-9]/g,"").slice(0,32); } }
+function accessRef(){ return db ? doc(db, "access", listCode) : null; }
+function isPermErr(e){ return /permission/i.test(String((e && (e.code||e.message)) || "")); }
+function accessCheck(){ const u=_auth && _auth.currentUser, ref=accessRef(); if(!u || !ref) return;
+  const code=listCode, uid=u.uid, key=code+"|"+uid; if(_accessFor===key) return; _accessFor=key;
+  let off=null, done=false;
+  const stop=()=>{ done=true; try{ if(off) off(); }catch(e){} };
+  const join=()=>{ let k=""; try{ k=localStorage.getItem("ml_jk_"+code)||""; }catch(e){}
+    const part={ acl:{[uid]:true}, names:{[uid]:me||""} }; if(k) part.joinProof={[uid]:k};
+    Promise.resolve().then(()=>setDoc(ref, part, { merge:true })).then(()=>{ if(code!==listCode) return;
+        accessDenied=""; _accessFor=""; accessCheck(); subscribe(); })
+      .catch(e=>{ if(code!==listCode || !isPermErr(e)) return; accessDenied=code; lockedNow(); }); };
+  const got=(s)=>{ if(done) return; stop(); if(code!==listCode) return;
+    if(!s || !s.exists || !s.exists()){
+      const jk=newKey();
+      Promise.resolve().then(()=>setDoc(ref, { acl:{[uid]:true}, names:{[uid]:me||""}, joinKey:jk, openUntil:Date.now()+30*864e5 }))
+        .then(()=>{ try{ localStorage.setItem("ml_jk_"+code, jk); }catch(e){} _accessFor=""; accessCheck(); }).catch(()=>{});
+      return; }
+    const d=s.data()||{};
+    if(d.acl && d.acl[uid]===true){ accessDenied="";
+      if(d.joinKey){ try{ localStorage.setItem("ml_jk_"+code, d.joinKey); }catch(e){} }
+      accessInfo={ names:d.names||{}, acl:d.acl||{}, openUntil:d.openUntil||0, joinKey:d.joinKey||"" };
+      if(me && (d.names||{})[uid]!==me) setDoc(ref, { names:{[uid]:me} }, { merge:true }).catch(()=>{});
+      render(); return; }
+    accessInfo=null; join(); };
+  try{ off=onSnapshot(ref, got, err=>{ if(done) return; stop(); if(code!==listCode) return; if(isPermErr(err)) join(); }); }catch(e){ return; }
+  setTimeout(()=>{ if(!done) stop(); }, 15000); }
+/* every change from Settings › People: a busy line, then the result or a plain message */
+function accessWrite(part, okMsg){ const ref=accessRef(); if(!ref || accessBusy && accessBusy.busy) return;
+  accessBusy={ busy:true }; render();
+  const t=new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")), 15000));
+  Promise.race([Promise.resolve().then(()=>setDoc(ref, part, { merge:true })), t]).then(()=>{
+      if(part.joinKey){ try{ localStorage.setItem("ml_jk_"+listCode, part.joinKey); }catch(e){} }
+      accessBusy=null; if(okMsg) showToast(okMsg); _accessFor=""; accessCheck(); render(); })
+    .catch(e=>{ accessBusy={ err: isPermErr(e) ? "Couldn't change that — the new database rules may not be published yet."
+        : (e && e.message==="timeout") ? "No answer from the database — check the signal and try again." : "Couldn't change that — try again." }; render(); }); }
+function accessHTML(){
+  const locked = accessDenied===listCode && listDenied && _auth && _auth.currentUser;
+  if(locked) return `<div class="opthint" role="alert">${esc(ACCESS_LOCKED)}</div>`;
+  const u=_auth && _auth.currentUser; if(!accessInfo || !u) return "";
+  const a=accessInfo, my=u.uid, now=Date.now();
+  const ppl=Object.keys(a.names||{}).filter(id=>(a.acl||{})[id]===true);
+  const st = accessBusy && accessBusy.busy ? `<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>Saving…</div>`
+    : accessBusy && accessBusy.err ? `<div class="rpterr" role="alert">${esc(accessBusy.err)}</div>` : "";
+  return `<div id="accessBox" class="optrow optnl" style="flex-direction:column;align-items:stretch;gap:6px">
+    <div class="snapnote">Phones that can open this list:</div>
+    ${ppl.map(id=>{ const nm=(a.names||{})[id]||"Someone";
+      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span>${esc(nm)}${id===my?` <span class="ucur">you</span>`:""}</span>${id===my?"":`<button class="optaction" style="width:auto;margin:0;padding:4px 10px" data-access-rm="${esc(id)}" data-access-nm="${esc(nm)}">Remove</button>`}</div>`; }).join("")}
+    ${(a.openUntil||0)>now ? `<div class="snapnote">Until ${esc(new Date(a.openUntil).toLocaleDateString())}, anyone with the list's code can still join (so the household's phones move over).</div><button class="optaction" id="accessClose" style="margin-top:2px">Close now</button>`
+      : `<div class="snapnote">Only people with the current link can join.</div>`}
+    <button class="optaction" id="accessNewKey" style="margin-top:2px">New link</button>
+    ${st}</div>`; }
 /* v2.39 (architecture review A1): a quiet sign-in. Each phone gets an anonymous Firebase account — no name, no email — so
    the server can tell one phone from another and, later, the list can know its people by account. Loaded on its own, after
    the list, so it never slows the start; until the owner turns on Anonymous sign-in in Firebase it fails quietly and
@@ -1867,7 +1941,9 @@ function authStart(fbApp){ import("/vendor/firebasejs/10.12.2/firebase-auth.js")
       /* the phone's quiet account is read back from storage a moment after start: wait for it, so the link UPGRADES it
          instead of making a second account (authStateReady; a stub without it finishes at once) */
       Promise.resolve(typeof a.authStateReady==="function" ? a.authStateReady() : null).catch(()=>{}).then(()=>acctComplete(url)); } }catch(e){}
-    m.onAuthStateChanged(a, u=>{ if(u){ _authErr=""; if(!u.isAnonymous) acctSync(); return; }
+    m.onAuthStateChanged(a, u=>{ if(u){ _authErr=""; if(!u.isAnonymous) acctSync();
+        if(listDenied) subscribe();   // v2.44: the first read may have run before the quiet sign-in finished
+        accessCheck(); return; }
       if(navigator.onLine===false) return;
       m.signInAnonymously(a).catch(e=>{ _authErr = String((e && (e.code || e.message)) || "failed").slice(0,80); }); });
     window.addEventListener("online", ()=>{ if(_auth && !_auth.currentUser) m.signInAnonymously(_auth).catch(()=>{}); });
@@ -2427,7 +2503,7 @@ function join(name){ const c=name.trim(); if(!c) return;
 function toggleCat(id){ collapse.cats = collapse.cats.includes(id) ? collapse.cats.filter(x=>x!==id) : [...collapse.cats,id];
   localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }
 function toggleBA(){ collapse.ba=!collapse.ba; localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }
-function copyLink(){ const url=location.href;
+function copyLink(){ const url=listURL(listCode);   // v2.44: listURL, so the link carries the join key
   if(hasShare()){ share({title:"Market List", text:"Join our shared grocery list", url}).catch(()=>{}); }
   else if(hasClipboard()){ copyText(url); showToast("Link copied"); }
   else { showToast("Copy this URL from the address bar"); } }
@@ -3984,7 +4060,7 @@ function renderMain(){
     ${checkedBar}
     <div class="wrap ${shopMode?'shop':''}" role="main">
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
-      ${shoppingHTML()}${lookCardHTML()}${installCardHTML()}${cardNudgeHTML()}${rcptNudgeHTML()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
+      ${lockedHTML()}${shoppingHTML()}${lookCardHTML()}${installCardHTML()}${cardNudgeHTML()}${rcptNudgeHTML()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">Your list is empty</p>
           <p class="empty-sub">Tap <b>Add items</b> below — or start from these:</p>
@@ -6162,6 +6238,13 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-style]").forEach(b=>b.onclick=()=>{ if(styl()!==b.dataset.optStyle) setStyle(b.dataset.optStyle); });
   app.querySelectorAll("[data-switch-user]").forEach(b=>b.onclick=()=>{ const nm=b.dataset.switchUser; if(nm && nm!==me){ me=nm; localStorage.setItem(LS.me, nm); } optOpen=false; render(); });
   const osh=app.querySelector("#optShare"); if(osh) osh.onclick=copyLink;
+  /* v2.44 (members by account): Settings › People */
+  app.querySelectorAll("[data-access-rm]").forEach(b=>b.onclick=()=>{ const id=b.dataset.accessRm, nm=b.dataset.accessNm||"Someone";
+    if(!confirm(`Remove ${nm} from this list? Their phone loses it, and the list gets a new link.`)) return;
+    accessWrite({ acl:{[id]:false}, joinKey:newKey(), openUntil:0 }, `${nm} removed`); });
+  const acl=app.querySelector("#accessClose"); if(acl) acl.onclick=()=>accessWrite({ openUntil:0 }, "Closed — only the current link lets someone new in");
+  const ank=app.querySelector("#accessNewKey"); if(ank) ank.onclick=()=>{ if(!confirm("Make a new link? The old one stops working for anyone not already on the list.")) return;
+    accessWrite({ joinKey:newKey(), openUntil:0 }, "New link made — share it from Lists & sharing"); };
   const oex=app.querySelector("#optExport"); if(oex) oex.onclick=exportListText;
   const obk=app.querySelector("#optBackup"); if(obk) obk.onclick=backupToFile;   // v2.15 backups
   const orf=app.querySelector("#optRestoreFile"); if(orf) orf.onclick=restorePick;
@@ -6537,7 +6620,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_jk_)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -6960,6 +7043,7 @@ function optionsBody(){
     ${state.members.length ? `${sectHR("People")}<div class="optrow optnl" style="flex-direction:column;align-items:stretch;gap:7px">
       <div class="userlist">${state.members.map(m=>`<button class="userchip ${m===me?'on':''}" data-switch-user="${esc(m)}">${esc(m)}${m===me?`<span class="ucur">you</span>`:""}</button>`).join("")}</div>
     </div>
+    ${accessHTML()}
     ${row("Say when I'm shopping", `<div class="seg"><button data-opt-sayshop="1" class="${sayShopOn()?'on':''}">On</button><button data-opt-sayshop="0" class="${!sayShopOn()?'on':''}">Off</button></div>`)}
     <div class="opthint">While you tick things off at a shop, the others see which shop — only its name, for an hour and a half, gone when you finish.</div>` : ""}
     ${sectHR("Lists & sharing")}
