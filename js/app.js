@@ -7,17 +7,19 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.42";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.42";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.42";
-import { compareStores, worthIt } from "./compare.js?v=2.42";
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.42";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.42";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.42";
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.43";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.43";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.43";
+import { compareStores, worthIt } from "./compare.js?v=2.43";
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.43";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.43";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.43";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor } from "./platform.js?v=2.43";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.43";   /* v2.43 (architecture review L17) */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.42";
+const APP_VERSION = "v2.43";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -29,23 +31,7 @@ const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(i
    never what is stored — so turning the setting off puts every amount back exactly as the recipe
    gave it, and nothing is lost in a round trip. Anything it cannot parse ("a pinch", "2 cloves")
    passes straight through: a guess would be worse than leaving it alone. */
-const UNIT_TABLE = {
-  // imperial -> base (mass in g, volume in ml)
-  oz:{g:28.3495}, ounce:{g:28.3495}, ounces:{g:28.3495},
-  lb:{g:453.592}, lbs:{g:453.592}, pound:{g:453.592}, pounds:{g:453.592},
-  tsp:{ml:4.92892}, teaspoon:{ml:4.92892}, teaspoons:{ml:4.92892},
-  tbsp:{ml:14.7868}, tablespoon:{ml:14.7868}, tablespoons:{ml:14.7868},
-  cup:{ml:236.588}, cups:{ml:236.588},
-  pint:{ml:473.176}, pints:{ml:473.176}, pt:{ml:473.176},
-  quart:{ml:946.353}, quarts:{ml:946.353}, qt:{ml:946.353},
-  gallon:{ml:3785.41}, gallons:{ml:3785.41}, gal:{ml:3785.41},
-  // metric -> base
-  g:{g:1, metric:true}, gram:{g:1, metric:true}, grams:{g:1, metric:true},
-  kg:{g:1000, metric:true}, kilo:{g:1000, metric:true}, kilogram:{g:1000, metric:true}, kilograms:{g:1000, metric:true},
-  ml:{ml:1, metric:true}, millilitre:{ml:1, metric:true}, milliliter:{ml:1, metric:true},
-  cl:{ml:10, metric:true}, dl:{ml:100, metric:true},
-  l:{ml:1000, metric:true}, litre:{ml:1000, metric:true}, liter:{ml:1000, metric:true}, litres:{ml:1000, metric:true}, liters:{ml:1000, metric:true},
-};
+/* v2.43 (architecture review L17): UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt and mergeAmt live in js/amounts.js */
 function unitsMode(){ try{ const v=localStorage.getItem("ml_units"); return (v==="metric"||v==="imperial") ? v : "off"; }catch(e){ return "off"; } }
 /* v2.01: meal slots on a day — default ON. ml_mealslots is in APP_EXCLUDE_BOOT and APP_EXCLUDE. */
 function mealSlotsOn(){ try{ return localStorage.getItem("ml_mealslots")!=="0"; }catch(e){ return true; } }
@@ -57,26 +43,6 @@ function recSort(){ try{ return localStorage.getItem("ml_recsort")==="course" ? 
 function setRecSort(v){ try{ localStorage.setItem("ml_recsort", v==="course"?"course":"az"); }catch(e){} }
 function setMealSlots(on){ try{ localStorage.setItem("ml_mealslots", on?"1":"0"); }catch(e){} render(); }
 function setUnitsMode(m){ try{ localStorage.setItem("ml_units", m); }catch(e){} render(); }
-/* A number the way a recipe writes one: 2, 2.5, 1/2, 1 1/2. */
-function parseNum(s){
-  const t=String(s).trim().replace(",", ".");
-  let m=t.match(/^(\d+)\s+(\d+)\/(\d+)$/); if(m) return +m[1] + (+m[2])/(+m[3]);
-  m=t.match(/^(\d+)\/(\d+)$/);             if(m) return (+m[1])/(+m[2]);
-  const n=parseFloat(t); return isFinite(n) ? n : null;
-}
-function roundAmt(n){
-  if(n>=100) return String(Math.round(n/5)*5);
-  if(n>=10)  return String(Math.round(n));
-  const r=Math.round(n*10)/10; return String(r).replace(/\.0$/,"");
-}
-/* v1.97: a spoon is a spoon. "2 tbsp" is written identically in a British and an American recipe,
-   so turning it into "30 ml" is noise dressed up as help. These units are neutral: never converted
-   out of, and — just as important — never converted INTO, or Imperial would keep reintroducing them
-   from millilitres and the problem would simply face the other way.
-   v2.01: cups join them — the user asked for cups to stay cups. A cup is a measure people cook with,
-   not a quantity they want translated. Imperial therefore never produces cups either (pints above a
-   pint, fl oz below). */
-const NEUTRAL_UNITS = /^(tsp|teaspoons?|tbsp|tbs|tablespoons?|cups?)$/i;
 function showAmt(w){
   const s=String(w||"").trim(); if(!s) return s;
   const mode=unitsMode(); if(mode==="off") return s;
@@ -97,54 +63,6 @@ function showAmt(w){
   if(mode==="metric") return ml>=1000 ? roundAmt(ml/1000)+" l" : roundAmt(ml)+" ml";
   if(ml>=473.176){ const p=roundAmt(ml/473.176); return p+(p==="1"?" pint":" pints"); }
   return roundAmt(ml/29.5735)+" fl oz";
-}
-/* v2.01: scale an amount for a different number of servings — "500 g" × 1.5 → "750 g", "2 cups" × 0.5
-   → "1 cup". Scaling is not converting: the unit is kept exactly, spoons and cups included. Anything
-   without a readable leading number ("a pinch", "2 cloves" is fine — it has one) passes through. */
-function scaleAmt(w, f){
-  const s=String(w||"").trim(); if(!s || !isFinite(f) || f===1) return s;
-  const m=s.match(/^(\d+(?:[.,]\d+)?(?:\s+\d+\/\d+)?|\d+\/\d+)\s*(.*)$/); if(!m) return s;
-  const n=parseNum(m[1]); if(n===null) return s;
-  let unit=m[2].trim(); const v=roundAmt(n*f);
-  if(/^cups?$/i.test(unit)) unit = (v==="1") ? "cup" : "cups";
-  return unit ? (v+" "+unit) : v;
-}
-/* v2.01: two recipes asking for mince should be one line with the total, not two lines. Same unit →
-   add the numbers and keep the unit (spoons and cups included — adding is not converting). Same
-   family but different units (g and kg, ml and l, lb and g) → add in the base unit and say it in
-   metric. Anything else is shown side by side rather than guessed at. */
-function mergeAmt(a, b){
-  const A=String(a||"").trim(), B=String(b||"").trim();
-  if(!A) return B; if(!B) return A;
-  const re=/^(\d+(?:[.,]\d+)?(?:\s+\d+\/\d+)?|\d+\/\d+)\s*(.*)$/;
-  const ma=A.match(re), mb=B.match(re);
-  if(ma && mb){
-    const na=parseNum(ma[1]), nb=parseNum(mb[1]);
-    if(na!==null && nb!==null){
-      const ua=ma[2].trim(), ub=mb[2].trim();
-      const ka=ua.toLowerCase().replace(/s$/,""), kb=ub.toLowerCase().replace(/s$/,"");
-      const ta=UNIT_TABLE[ua.toLowerCase()], tb=UNIT_TABLE[ub.toLowerCase()];
-      /* Two metric amounts are summed exactly and written the way a shop label would: 500 g + 500 g
-         is "1 kg", 1 kg + 250 g is "1.25 kg" (not roundAmt's "1.3 kg", which loses 50 g on a
-         shopping line). */
-      if(ta && tb && ta.metric && tb.metric){
-        const trim=(n)=>String(Math.round(n*1000)/1000);
-        if(ta.g!==undefined && tb.g!==undefined){ const g=na*ta.g+nb*tb.g; return g>=1000 ? trim(g/1000)+" kg" : trim(g)+" g"; }
-        if(ta.ml!==undefined && tb.ml!==undefined){ const ml=na*ta.ml+nb*tb.ml; return ml>=1000 ? trim(ml/1000)+" l" : trim(ml)+" ml"; }
-      }
-      if(ka===kb){
-        const v=roundAmt(na+nb);
-        let unit = ub.length>ua.length ? ub : ua;          // the plural spelling, when one side has it
-        if(/^cups?$/i.test(unit)) unit = (v==="1") ? "cup" : "cups";
-        return unit ? (v+" "+unit) : v;
-      }
-      if(ta && tb && !NEUTRAL_UNITS.test(ua) && !NEUTRAL_UNITS.test(ub)){
-        if(ta.g!==undefined && tb.g!==undefined){ const g=na*ta.g+nb*tb.g; return g>=1000 ? roundAmt(g/1000)+" kg" : roundAmt(g)+" g"; }
-        if(ta.ml!==undefined && tb.ml!==undefined){ const ml=na*ta.ml+nb*tb.ml; return ml>=1000 ? roundAmt(ml/1000)+" l" : roundAmt(ml)+" ml"; }
-      }
-    }
-  }
-  return A+" + "+B;
 }
 
 /* v1.63 item 3: a slot can be marked as the look the app STARTS in. It is applied here, at the very
@@ -887,9 +805,9 @@ function ensureLocCheck(){
   const now=Date.now();
   if(locState.busy) return;
   if(locState.checked && now-locState.ts < 120000) return;   // cache 2 min
-  if(typeof navigator==="undefined" || !navigator.geolocation){ locState={checked:true,nearId:null,busy:false,ts:now,err:0}; return; }
+  if(!hasGeolocation()){ locState={checked:true,nearId:null,busy:false,ts:now,err:0}; return; }
   locState.busy=true;
-  navigator.geolocation.getCurrentPosition(
+  getPosition({ enableHighAccuracy:false, maximumAge:60000, timeout:8000 }).then(
     pos=>{ const here={lat:pos.coords.latitude,lng:pos.coords.longitude};
       let best=null,bd=Infinity; for(const s of [HOME_STORE,...STORES,...(state.stores||[])].filter(x=>!storeOverride(x.id).hidden)){ const c=storeCoord(s); if(!c) continue; const d=distM(here,c); if(d<bd){ bd=d; best=s; } }
       locState={checked:true, nearId:(best&&bd<=LOC_RADIUS_M)?best.id:null, busy:false, ts:Date.now(), err:0, dist:bd};
@@ -897,8 +815,7 @@ function ensureLocCheck(){
       if(!_booted){ _pendingFinish=locState.nearId; render(); return; }
       if(autoFinishAt(locState.nearId)) return;
       render(); },
-    err=>{ locState={checked:true, nearId:null, busy:false, ts:Date.now(), err:(err&&err.code)||1}; render(); },
-    { enableHighAccuracy:false, maximumAge:60000, timeout:8000 });
+    err=>{ locState={checked:true, nearId:null, busy:false, ts:Date.now(), err:(err&&err.code)||1}; render(); });
 }
 /* v2.10: the cart finishes itself. When location confirms you are at a saved store that is NOT the one
    the cart was filled at, that trip is over: the ticked items are saved to Regulars exactly as Finish
@@ -915,9 +832,9 @@ function autoFinishAt(nearId){
   sweep(`Finished your ${name} shop · ${ck.length} saved to Regulars`); return true; }
 function setStoreHere(){
   if(storeSel==="auto"){ showToast("Pick a store first, then Set store here"); return; }
-  if(typeof navigator==="undefined" || !navigator.geolocation){ showToast("Location not available here"); return; }
+  if(!hasGeolocation()){ showToast("Location not available here"); return; }
   showToast("Getting location…");
-  navigator.geolocation.getCurrentPosition(
+  getPosition({ enableHighAccuracy:true, maximumAge:0, timeout:10000 }).then(
     pos=>{ const here={lat:pos.coords.latitude,lng:pos.coords.longitude};
       // v1.28 a confirmed location takes over its spot: clear the saved GPS of any OTHER place within
       // ~120 m so auto-detect stops flip-flopping. Labels stay (only the stored coordinate is removed),
@@ -927,8 +844,7 @@ function setStoreHere(){
       locState={ checked:false, busy:false, ts:0, err:0, nearId:null, dist:Infinity };   // force a fresh detection against the deduped set
       showToast(cleared ? `Saved ${(storeById(storeSel)||{}).name||"store"} ✓ · cleared ${cleared} duplicate${cleared>1?"s":""}` : ("Saved "+((storeById(storeSel)||{}).name||"store")+" ✓"));
       render(); },
-    err=>{ showToast("Couldn’t get location — check permissions"); },
-    { enableHighAccuracy:true, maximumAge:0, timeout:10000 });
+    err=>{ showToast("Couldn’t get location — check permissions"); });
 }
 function storeLabel(){
   if(storeSel==="home") return "Home · sorted by category";
@@ -1260,8 +1176,8 @@ function wakePref(){ try{ return localStorage.getItem("ml_wakelock")!=="0"; }cat
 function wakeWanted(){ try{ return wakePref() && configured && !!me && !optOpen && view!=="plan" && cartCount()>0 && document.visibilityState==="visible"; }catch(e){ return false; } }
 function syncWakeLock(){ try{
   const want=wakeWanted();
-  if(want && !_wl && !_wlAsking && navigator.wakeLock && navigator.wakeLock.request){ _wlAsking=true;
-    navigator.wakeLock.request("screen").then(l=>{ _wlAsking=false; _wl=l; l.addEventListener("release", ()=>{ if(_wl===l) _wl=null; });
+  if(want && !_wl && !_wlAsking && wakeLockSupported()){ _wlAsking=true;
+    requestWakeLock().then(l=>{ _wlAsking=false; _wl=l; l.addEventListener("release", ()=>{ if(_wl===l) _wl=null; });
       if(!wakeWanted()){ _wl=null; l.release().catch(()=>{}); } }).catch(()=>{ _wlAsking=false; }); }
   else if(!want && _wl){ const l=_wl; _wl=null; l.release().catch(()=>{}); }
 }catch(e){} }
@@ -1619,11 +1535,11 @@ function renameListCode(code){ const a=getLists(); const l=a.find(x=>x.code===co
   const nm=(name||"").trim()||"Groceries"; rememberList(code, nm);
   if(code===listCode){ state.name=nm; save(); } listActOpen=false; render(); }
 function shareListCode(code){ const url=listURL(code); listActOpen=false;
-  if(navigator.share){ navigator.share({title:"Market List", text:"Join our shared grocery list", url}).catch(()=>{}); render(); }
-  else if(navigator.clipboard){ navigator.clipboard.writeText(url); showToast("Link copied"); }
+  if(hasShare()){ share({title:"Market List", text:"Join our shared grocery list", url}).catch(()=>{}); render(); }
+  else if(hasClipboard()){ copyText(url); showToast("Link copied"); }
   else { showToast("Copy from the address bar"); } }
 function copyListCode(code){ const url=listURL(code); listActOpen=false;
-  if(navigator.clipboard){ navigator.clipboard.writeText(url); showToast("Link copied"); } else { showToast("Copy from the address bar"); } }
+  if(hasClipboard()){ copyText(url); showToast("Link copied"); } else { showToast("Copy from the address bar"); } }
 function duplicateListCode(code){
   let src; try{ src = (code===listCode) ? state : JSON.parse(localStorage.getItem("ml_cache_"+code)||"null"); }catch(e){ src=null; }
   listActOpen=false;
@@ -2004,6 +1920,15 @@ function acctPassword(email, pw){ email=String(email||"").trim(); pw=String(pw||
       else await acctWait(_authM.signInWithEmailAndPassword(_auth, email, pw));
       acct={ ok:true }; _acctSyncedUid=""; acctSync(); render(); }
     catch(e){ acct={ err:acctErr(e), email, forgot:/invalid-credential|wrong-password|user-not-found|invalid-login/.test(String(e && e.code)) }; render(); } })(); }
+/* v2.43 (the household's item a): an account made from the email link has no password; set one (or change it) here */
+function acctSetPassword(pw){ pw=String(pw||""); const u=_auth && _auth.currentUser;
+  if(!u || u.isAnonymous || !_authM || typeof _authM.updatePassword!=="function"){ acct={ err:"Sign in first." }; render(); return; }
+  if(pw.length < 6){ acct={ err:"Use at least 6 characters (6 digits is fine)." }; render(); return; }
+  acct={ busy:true, step:"Saving the password…" }; render();
+  acctWait(_authM.updatePassword(u, pw))
+    .then(()=>{ acct={ pwSet:true }; render(); })
+    .catch(e=>{ acct={ err: /requires-recent-login/.test(String(e && e.code)) ? "For safety, Firebase wants a fresh sign-in first: sign out, sign in again (email link or password), then save the password."
+      : acctErr(e) }; render(); }); }
 function acctForgot(email){ email=String(email||"").trim();
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ acct={ err:"Type your email above first.", email }; render(); return; }
   if(!_authM || !_auth || typeof _authM.sendPasswordResetEmail!=="function") return;
@@ -2063,6 +1988,11 @@ function acctHTML(){ if(!configured) return "";
     <div class="acctline">Signed in as <b>${esc(em)}</b>. Your lists are saved to your account: sign in with this email on another phone to get them back.</div>
     ${a.ok ? `<div class="acctline" role="status">Signed in. This phone's lists are now saved to your account.</div>` : ""}
     ${_acctNote ? `<div class="acctline acctwarn">${esc(_acctNote)}</div>` : ""}
+    ${a.pwSet ? `<div class="acctline" role="status">Password saved. Sign in with it on any phone.</div>` : ""}
+    <div class="acctline" style="margin-top:8px">Set a password, or change it, so another phone can sign in without an email link:</div>
+    <input id="acctNewPw" class="cefield acctfield" type="password" autocomplete="new-password" placeholder="New password — at least 6 characters" />
+    <button class="optaction" id="acctSetPw" style="margin-top:8px" ${a.busy?"disabled":""}>Save password</button>
+    ${status}
     <button class="optaction" id="acctOut" style="margin-top:8px">Sign out on this phone</button></div>`;
   return `<div class="acctbox" id="acctBox"><div class="accthd">Your account</div>
     <div class="acctline">${esc(authNote())}</div>
@@ -2223,8 +2153,8 @@ function addEntries(text, override){
   save(); renderKeepingAdd();
 }
 function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){
-  if(!it.checked){ lastPop=id; playTick(true); if(navigator.vibrate) navigator.vibrate(8); setTimeout(()=>{ if(lastPop===id) lastPop=null; },350); }
-  else { playTick(false); if(navigator.vibrate) navigator.vibrate(5); }
+  if(!it.checked){ lastPop=id; playTick(true); vibrate(8); setTimeout(()=>{ if(lastPop===id) lastPop=null; },350); }
+  else { playTick(false); vibrate(5); }
   it.checked=!it.checked; if(it.checked){ it.checkedBy=me; it.checkedAt=Date.now(); it.checkedStore = (()=>{ const s=activeStore(); return (s && isRealStore(s.id)) ? s.id : ""; })(); shoppingMark(); /* v2.23 R19 — v2.29: the AI order learns at the finish (sweep), not here */ } markDirty(id); save(); render(); } }
 /* A24 shared Buy-again is conflict-free across devices. Each entry carries a `ts`
    (last-touched) and deletions are recorded as tombstones in `state.baTomb`
@@ -2498,8 +2428,8 @@ function toggleCat(id){ collapse.cats = collapse.cats.includes(id) ? collapse.ca
   localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }
 function toggleBA(){ collapse.ba=!collapse.ba; localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }
 function copyLink(){ const url=location.href;
-  if(navigator.share){ navigator.share({title:"Market List", text:"Join our shared grocery list", url}).catch(()=>{}); }
-  else if(navigator.clipboard){ navigator.clipboard.writeText(url); showToast("Link copied"); }
+  if(hasShare()){ share({title:"Market List", text:"Join our shared grocery list", url}).catch(()=>{}); }
+  else if(hasClipboard()){ copyText(url); showToast("Link copied"); }
   else { showToast("Copy this URL from the address bar"); } }
 /* v2.25 R26 your data. Leave: your name off this list's people, then this phone forgets the list (its cache, learning,
    history and backups); the others keep it. Empty: what is in the list goes for everyone — Regulars by tombstone and the
@@ -2559,12 +2489,12 @@ async function exportListText(){
   const base=String(state.name||"list").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"list";
   const fn=`${base}-${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())}.txt`;
   try{ const f=new File([txt], fn, {type:"text/plain"});
-    if(navigator.canShare && navigator.canShare({files:[f]})){ await navigator.share({files:[f], title:fn}); return; } }
+    if(canShare({files:[f]})){ await share({files:[f], title:fn}); return; } }
   catch(e){ if(e && e.name==="AbortError") return; }
   try{ const url=URL.createObjectURL(new Blob([txt],{type:"text/plain;charset=utf-8"}));
     const a=document.createElement("a"); a.href=url; a.download=fn; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),4000); showToast("Saved "+fn); }
-  catch(e){ if(navigator.clipboard){ try{ await navigator.clipboard.writeText(txt); showToast("Copied the list as text"); }catch(_){ showToast("Could not export on this device"); } }
+  catch(e){ if(hasClipboard()){ try{ await copyText(txt); showToast("Copied the list as text"); }catch(_){ showToast("Could not export on this device"); } }
     else showToast("Could not export on this device"); } }
 /* v2.15: backups. A list is one shared document, and Undo covers one action, not a bad afternoon. "Back up" writes
    the list to a file (JSON, so it can come back); the app also keeps one copy a day for a week on this phone.
@@ -2596,23 +2526,19 @@ async function backupToFile(){
   const txt=JSON.stringify({ app:"Market List", kind:"list-backup", format:1, appVersion:APP_VERSION, savedAt:new Date().toISOString(), list:listDoc(state) });
   const fn=backupFileName();
   try{ const f=new File([txt], fn, {type:"application/json"});
-    if(navigator.canShare && navigator.canShare({files:[f]})){ await navigator.share({files:[f], title:fn}); return; } }
+    if(canShare({files:[f]})){ await share({files:[f], title:fn}); return; } }
   catch(e){ if(e && e.name==="AbortError") return; }
   try{ const url=URL.createObjectURL(new Blob([txt],{type:"application/json"}));
     const a=document.createElement("a"); a.href=url; a.download=fn; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),4000); showToast("Saved "+fn); }
   catch(e){ showToast("Could not save a backup on this device"); } }
 /* the picker is attached to the page before it opens: iOS skips "change" on a detached file input (v2.11) */
-function restorePick(){ const f=document.createElement("input"); f.type="file"; f.accept=".json,application/json,text/plain";
-  f.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
-  document.body.appendChild(f);
-  f.onchange=()=>{ const file=f.files && f.files[0]; f.remove(); if(!file) return;
+function restorePick(){ pickFile({ accept:".json,application/json,text/plain" }).then(file=>{ if(!file) return;
     file.text().then(t=>{ let d=null; try{ d=JSON.parse(t); }catch(e){}
       if(!d || d.kind!=="list-backup" || !d.list || typeof d.list!=="object"){ showToast("That file isn't a Market List backup"); return; }
       const when=d.savedAt ? new Date(d.savedAt) : null;
       rst={ list:d.list, label:"The backup file"+(when && !isNaN(when.getTime()) ? " from "+when.toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"}) : "") }; render(); })
-    .catch(()=>showToast("Couldn't read that file")); };
-  f.click(); }
+    .catch(()=>showToast("Couldn't read that file")); }); }
 function restoreList(list, label){
   const prev=JSON.parse(JSON.stringify(state));
   const P=(list.plan && typeof list.plan==="object") ? list.plan : null;
@@ -2675,9 +2601,9 @@ function buildShareText(){ const cats=catList(), known=new Set(cats.map(c=>c.id)
   const other=items.filter(i=>!known.has(i.cat)); if(other.length) groups.push("Other\n"+other.map(line).join("\n"));
   return `${state.name||"Shopping list"} — ${items.length} to buy\n\n`+(groups.length?groups.join("\n\n"):"Nothing to buy.")+"\n"; }
 async function shareListText(){ const text=buildShareText();
-  try{ if(navigator.share){ await navigator.share({ title: state.name||"Shopping list", text }); return; } }
+  try{ if(hasShare()){ await share({ title: state.name||"Shopping list", text }); return; } }
   catch(e){ if(e && e.name==="AbortError") return; }
-  try{ if(navigator.clipboard){ await navigator.clipboard.writeText(text); showToast("Copied the list — paste it into any app"); return; } }catch(e){}
+  try{ if(hasClipboard()){ await copyText(text); showToast("Copied the list — paste it into any app"); return; } }catch(e){}
   showToast("Could not share on this device"); }
 
 /* ---- voice input (Web Speech API) ---- */
@@ -2977,9 +2903,9 @@ function wireAddRows(){
       /* v2.29: a new name opens its details, the way a Regular does — one new item; several typed at once stay as they are */
       const fresh=state.items.filter(i=>!before.has(i.id)); if(fresh.length===1) openAddEdit(fresh[0].id); } }, null, true));
   document.querySelectorAll("[data-add-ba]").forEach(b=>{ const p=b.dataset.addBa.split("|"), cat=p.pop(), name=p.join("|");
-    /* v2.42 (the household): a Regular already has its amount and details — picking one adds it, without the Edit item panel
-       (it shows as added; tap it again, or long-press, for its details) */
-    const go=()=>{ stageAdds(()=>addFromRegular(name,cat)); };
+    /* v2.42 added a Regular picked here without its panel; v2.43 (the household): picked from "+ Add items", its Edit item panel
+       opens straight away, as for any other pick. (A tap under "Add from your regulars" still just adds it.) */
+    const go=()=>{ stageAdds(()=>addFromRegular(name,cat)); const it=findItem(name,cat); if(it) openAddEdit(it.id); };
     press(b, go, ()=>{ stageAdds(()=>addFromRegular(name,cat)); const it=findItem(name,cat); return it&&it.id; }); });
   document.querySelectorAll("[data-add-dict]").forEach(b=>{ const p=b.dataset.addDict.split("|"), cat=p.pop(), name=p.join("|");
     const go=()=>{ playPlan(true); stageAdds(()=>addEntries(name,cat)); const it=findItem(name,cat); if(it) openAddEdit(it.id); };
@@ -3353,7 +3279,7 @@ function openAdd(){
   }, 300);
 }
 function startMic(){
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const SR = speechRecognitionCtor();
   if(!SR){ showToast("Voice input isn't supported here — tap the 🎤 on your keyboard instead"); return; }
   const mi = micField(); if(!mi) return;
   micFinal = mi.value ? mi.value.replace(/\s*,?\s*$/,"")+", " : "";
@@ -3382,7 +3308,7 @@ function toggleMic(){ if(listening) stopMic(); else startMic(); }
 
 /* ---- press handling (tap vs long-press) ---- */
 let pressTimer=null, longFired=false;
-function pressStart(){ longFired=false; pressTimer=setTimeout(()=>{ longFired=true; if(navigator.vibrate)navigator.vibrate(10); },450); }
+function pressStart(){ longFired=false; pressTimer=setTimeout(()=>{ longFired=true; vibrate(10); },450); }
 function pressCancel(){ clearTimeout(pressTimer); }
 
 /* ---- rendering ---- */
@@ -3958,31 +3884,6 @@ function renderMain(){
     return `<section class="cat">${chead}${catAdd}${pills}</section>`;
   }).filter(Boolean);
 
-  const baGroups = catList().map(cat=>{
-    const its = state.buyAgain.filter(e=>catShown(e.cat)===cat.id);
-    if(!its.length) return "";
-    return `<div class="pills" style="margin-top:2px">${its.map(e=>
-      `<button class="bapill ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="border:1.5px dashed ${cat.color}">`
-      +`<span style="color:${cat.color};font-weight:800">+</span>`
-      +`${(e.qty||1)>1?`<span style="color:${cat.color};font-weight:800">${e.qty}×</span>`:""}`
-      +`${e.weight?`<span style="color:${cat.color};font-weight:800">${esc(showAmt(e.weight))} </span>`:""}`
-      +`${esc(e.name)}</button>`).join("")}</div>`;
-  }).join("");
-  const baPills = state.buyAgain.length
-    ? `${baGroups}`
-    : `<p style="font-size:12px;color:var(--muted2);margin:0">Cleared items land here so you can re-add them with one tap.</p>`;
-  const baIcon = state.baMeta.img ? `<img class="cicon" src="${esc(dispImg(state.baMeta.img))}">` : (state.baMeta.emoji||"↩");
-  const baBlock = `<section class="cat">
-      <div class="chead">
-        <button class="lbl catheadchip baheadchip" id="baHead" data-bacat="1">
-          <span class="cemoji">${baIcon}</span>
-          <span class="cname">${esc(state.baMeta.label||"Buy again")}</span>
-          ${state.buyAgain.length?`<span class="cnum">${state.buyAgain.length}${collapse.ba?'':' ▸'}</span>`:""}
-        </button>
-      </div>
-      ${collapse.ba?`<div style="margin-top:6px">${baPills}</div>`:""}
-    </section>`;
-
   const checkedItems = state.items.filter(i=>i.checked);
   /* v2.00: closed until asked for. This drawer is a peek at what is already IN the cart, and it was
      opening itself on every visit — a translucent panel over the list you are still shopping, to show
@@ -4548,8 +4449,8 @@ function rptSend(){ const text=String(rpt.text||"").trim();
       render(); })
     .finally(()=>clearTimeout(timer)); }
 async function rptShare(){ const t=`Market List ${APP_VERSION} — ${RPT_KINDS[rpt.kind]||"Report"}\n\n${String(rpt.text||"").trim()}`;
-  try{ if(navigator.share){ await navigator.share({ text:t }); return; } }catch(e){ if(e && e.name==="AbortError") return; }
-  try{ await navigator.clipboard.writeText(t); showToast("Copied — paste it into a message"); }catch(e){ showToast("Couldn't share on this device"); } }
+  try{ if(hasShare()){ await share({ text:t }); return; } }catch(e){ if(e && e.name==="AbortError") return; }
+  try{ await copyText(t); showToast("Copied — paste it into a message"); }catch(e){ showToast("Couldn't share on this device"); } }
 function wireRptSheet(){ if(!rpt) return;
   const close=()=>{ rpt=null; render(); };
   const bg=app.querySelector("#rptBg"); if(bg) bg.onclick=e=>{ if(e.target===bg && !rpt.busy) close(); };
@@ -4567,11 +4468,7 @@ function rcptCount(){ const d=dayKey(new Date()); try{ localStorage.setItem("ml_
 /* v2.11: the picker is ATTACHED to the page before it opens. iOS Safari does not reliably fire "change" on a
    file input that is not in the document, so the photo was chosen and then nothing happened at all — no
    sheet, no error (the household: "no indication that something is happening or failed"). */
-function rcPick(){ const f=document.createElement("input"); f.type="file"; f.accept="image/*";
-  f.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
-  document.body.appendChild(f);
-  f.onchange=()=>{ const file=f.files && f.files[0]; f.remove(); if(file) rcRead(file); };
-  f.click(); }
+function rcPick(){ pickFile({ accept:"image/*" }).then(file=>{ if(file) rcRead(file); }); }   /* v2.43 (architecture review A3): js/platform.js builds the attached input */
 /* v2.09: the saved real stores, in one place — rcStoreFor, the sheet's chips and their wiring all agree. */
 function rcSavedStores(){ return [...STORES.filter(s=>!storeOverride(s.id).hidden).map(s=>storeById(s.id)), ...(state.stores||[]).filter(s=>!storeOverride(s.id).hidden)].filter(s=>s && s.name); }
 function rcStoreFor(detected){ const n=String(detected||"").toLowerCase().trim();
@@ -4879,11 +4776,7 @@ const AISLE_DAY_CAP = 60;
 var amRead = null;   // null | { busy:true, step } | { err } | { ok }, under the box. var: render() reads it at boot
 function aisleToday(){ try{ const o=JSON.parse(localStorage.getItem("ml_aisleday")||"{}"); return o.d===dayKey(new Date()) ? (+o.n||0) : 0; }catch(e){ return 0; } }
 function aisleCount(){ try{ localStorage.setItem("ml_aisleday", JSON.stringify({ d:dayKey(new Date()), n:aisleToday()+1 })); }catch(e){} }
-function amPick(){ const f=document.createElement("input"); f.type="file"; f.accept="image/*"; f.setAttribute("capture","environment");
-  f.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
-  document.body.appendChild(f);   // iOS fires change only for an input in the page (rcPick, v2.11)
-  f.onchange=()=>{ const file=f.files && f.files[0]; f.remove(); if(file) amReadSign(file); };
-  f.click(); }
+function amPick(){ pickFile({ accept:"image/*", capture:"environment" }).then(file=>{ if(file) amReadSign(file); }); }   // attached to the page, for iOS (js/platform.js)
 function amKeepText(){ const t=app.querySelector("#amText"); if(t) amDraft=t.value; }
 function amReadSign(file){
   if(aisleToday()>=AISLE_DAY_CAP){ amRead={ err:`That's ${AISLE_DAY_CAP} signs today, the free limit on this phone. Type the rest, or carry on tomorrow.` }; render(); return; }
@@ -4993,14 +4886,10 @@ function cardShowHTML(){ const all=cardsGet(); let ix=cardShow.add ? all.length 
     <div style="display:flex;gap:8px;margin-top:10px"><button class="optaction" id="cardClose" style="margin-top:0">Done</button></div>
   </div></div>`; }
 var cardRead = null;   // v2.35 { busy, step } | { err } while a card's photo is read. var: render() reads it at boot
-function cardScan(capture){ const f=document.createElement("input"); f.type="file"; f.accept="image/*"; if(capture) f.setAttribute("capture","environment");
-  f.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
-  document.body.appendChild(f);   // iOS fires change only for an input in the page (rcPick, v2.11)
-  f.onchange=()=>{ const file=f.files && f.files[0]; f.remove(); if(file) cardReadPhoto(file); };
-  f.click(); }
+function cardScan(capture){ pickFile({ accept:"image/*", capture:capture?"environment":"" }).then(file=>{ if(file) cardReadPhoto(file); }); }   // attached to the page, for iOS (js/platform.js)
 /* the barcode read on the phone itself, where the browser can (BarcodeDetector) — then the photo need not leave the phone */
-async function cardBarcodeHere(img){ try{ if(typeof BarcodeDetector==="undefined") return "";
-  const im=new Image(); im.src=img; await im.decode(); const r=await new BarcodeDetector().detect(im);
+async function cardBarcodeHere(img){ try{ if(!barcodeSupported()) return "";
+  const im=new Image(); im.src=img; await im.decode(); const r=await detectBarcodes(im);
   return ((r||[]).map(x=>String(x.rawValue||"").replace(/[\s-]+/g,"")).find(x=>/^[0-9]{6,24}$/.test(x))) || ""; }catch(e){ return ""; } }
 function cardReadPhoto(file){
   cardRead={ busy:true, step:"Preparing the photo…" }; render();
@@ -5047,16 +4936,12 @@ function cardEditBody(){ const e=cardEdit;
     ${e.err ? `<div class="rpterr" role="alert">${esc(e.err)}</div>` : ""}
     ${e.inline ? "" : `<div class="hint" style="text-align:left">Kept on this phone only — never shared with the list or sent anywhere.</div>`}
     <div class="ppedbtns">${(e.id && !e.inline) ? `<button class="optaction" id="ceDel">Delete</button>` : `<button class="optaction" id="ceCancel">Cancel</button>`}<button class="newlist" id="ceSave">Save</button></div>`; }
-function cardPick(){ const f=document.createElement("input"); f.type="file"; f.accept="image/*";
-  f.style.cssText="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0";
-  document.body.appendChild(f);   // iOS fires change only for an input in the page (rcPick, v2.11)
-  f.onchange=()=>{ const file=f.files && f.files[0]; f.remove(); if(!file || !cardEdit) return;
+function cardPick(){ pickFile({ accept:"image/*" }).then(file=>{ if(!file || !cardEdit) return;   // attached to the page, for iOS (js/platform.js)
     cardEdit.busy=true; cardEdit.err=""; render();
     const slow=new Promise((_,rej)=>setTimeout(()=>rej(new Error("slow")), 20000));   // every wait ends
     Promise.race([planShrinkImage(file, 1000, 0.85), slow])
       .then(img=>{ if(!cardEdit) return; cardEdit.busy=false; cardEdit.photo=img; render(); })
-      .catch(()=>{ if(!cardEdit) return; cardEdit.busy=false; cardEdit.err="Couldn't use that photo. Try another."; render(); }); };
-  f.click(); }
+      .catch(()=>{ if(!cardEdit) return; cardEdit.busy=false; cardEdit.err="Couldn't use that photo. Try another."; render(); }); }); }
 var stuckOpen = false;   // v2.32 the screen log sheet. var: render() reads it at boot
 function stuckText(){ return "The + got stuck halfway up the page (" + APP_VERSION + ").\n" + stuckLog().slice(0,4).map(e=>JSON.stringify(e)).join("\n").slice(0,1700); }
 function stuckHTML(){ const a=stuckLog();
@@ -5642,7 +5527,7 @@ function wirePlanTab(){
     const q=a.dataset.tkq||""; if(!q) return;
     const said=()=>showToast(`Copied “${q}” — paste it into TikTok's search`);
     try{
-      if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(q).then(said, ()=>{}); return; }
+      if(hasClipboard()){ copyText(q).then(said, ()=>{}); return; }
       const t=document.createElement("textarea"); t.value=q;
       t.setAttribute("readonly",""); t.style.position="fixed"; t.style.opacity="0";
       document.body.appendChild(t); t.select();
@@ -6119,6 +6004,9 @@ function wireOptions(){
   const goPw=()=>acctPassword((app.querySelector("#acctEmail")||{}).value, (acp||{}).value);
   if(acg) acg.onclick=goPw;
   if(acp) acp.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); goPw(); } };
+  const asp=app.querySelector("#acctSetPw"), anp=app.querySelector("#acctNewPw");
+  if(asp) asp.onclick=()=>acctSetPassword((anp||{}).value);
+  if(anp) anp.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); acctSetPassword(anp.value); } };
   const acf=app.querySelector("#acctForgot"); if(acf) acf.onclick=()=>acctForgot((app.querySelector("#acctEmail")||{}).value);
   const acu=app.querySelector("#acctUse"); if(acu) acu.onclick=()=>{ const v=String((app.querySelector("#acctPaste")||{}).value||"").trim();
     if(!_authM || !_auth || !_authM.isSignInWithEmailLink(_auth, v)){ acct={ sent:(acct&&acct.sent)||"", err:"That isn't the sign-in link. Copy the whole link from the email." }; render(); return; }
