@@ -6,7 +6,7 @@ shell — markup, the Firebase config and three small boot scripts — the style
 one ES module, `js/app.js` (several thousand lines), importing the reference data (`js/data/catalog.js`),
 the drawings (`js/data/drawings.js`) and the logic of the features built since as modules of their own — the 10%
 shop (`js/tenpct.js`, v2.20), which store is cheaper (`js/compare.js`, v2.21), what we spend (`js/spend.js`, v2.24) and the aisle types and maps
-(`js/aisles.js`, v2.27 — a name's type is its LONGEST word that STARTS a word in it, so short stems cannot hide in long words) and the till (`js/till.js`, v2.31 — a membership card's Code 128 barcode, checked bar for bar against python-barcode in v231.js, and pairing a receipt with the cart: by name, then in tick order between the named lines): pure functions, no imports, the
+(`js/aisles.js`, v2.27 — a name's type is its LONGEST word that STARTS a word in it, so short stems cannot hide in long words) and the till (`js/till.js`, v2.31 — a membership card's Code 128 barcode, checked bar for bar against python-barcode in v231.js, and pairing a receipt with the cart: by name, then in tick order between the named lines), the amounts (`js/amounts.js`, v2.43 — reading, rounding, scaling and adding recipe amounts; `showAmt`, which reads the units setting, stays in the app) and the phone's features (`js/platform.js`, v2.43 — the one door to file pickers, location, wake lock, share, clipboard, vibration, barcode and speech — the only module that touches the device): pure functions (platform.js aside), no imports, the
 app passes in what they need, so each is unit-tested in Node by its version's suite. Until v2.18 all of it lived inline in `index.html`; it moved byte
 for byte. Later phases move cohesive parts of `js/app.js` into modules of their own. Firebase Firestore for
 live household sync, Vercel serves `main` as static files. Used as an iPhone home-screen app, portrait-only,
@@ -93,6 +93,7 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   Help, Your data; a new row joins one of these, not a new section. Since v2.32 an explanation under a setting is written as
   `<div class="opthint">` right after its row: `infoBubbles()` folds it behind an (i) on the row's label — write new ones that way. The search (`filterOptions`) only toggles classes — never `render()` from it,
   or the field loses focus and the keyboard drops. A suite that drives a look control opens that page first.
+- **Device features go through `js/platform.js` (v2.43)** — file pickers, location, wake lock, share, barcode, speech. A future native app replaces that file's insides; never call `navigator.*` device APIs or build a file `<input>` directly in js/app.js.
 - **Two category sets (v2.33).** Lists made before v2.33 keep the nine (`DEFAULT_CATS`); a list made since (`_freshList`)
   starts with the thirteen plus Others (`CATS13`, in the order a shop is walked). The dictionary, the AI readers and receipts
   still speak the nine: every place an item is ADDED goes through `newCat(cat, name)`, which on a thirteen-list puts it where

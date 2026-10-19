@@ -68,7 +68,11 @@ const seed = (o) => { o=o||{}; return `(() => {
     await shot('results');
     await page.locator('#addSheet [data-add-ba^="Beer|"]').first().click(); await page.waitForTimeout(600);
     const a1 = await page.evaluate(()=>({ panel:!!document.querySelector('[data-ae-name]'), results:document.querySelectorAll('#addSheet .addgrid > .pill').length, on:JSON.parse(localStorage.getItem('ml_cache_v101')).items.filter(i=>i.name==='Beer' && !i.checked).length }));
-    ok('(1) a Regular picked in the add sheet goes on the list without the Edit item panel; the results stay', !a1.panel && a1.results>=5 && a1.on===1, JSON.stringify(a1));
+    /* SUPERSEDED by v2.43: the household wants the Edit item panel at once when a Regular is picked in "+ Add items".
+       Still protects: the pick puts it on the list, once. */
+    ok('(1) a Regular picked in the add sheet goes on the list without the Edit item panel; the results stay', a1.panel && a1.on===1, JSON.stringify(a1));
+    await page.locator('#addDone').click({ force:true }); await page.waitForTimeout(1600);
+    await tap('#shopAddFab'); await page.locator('#mainInput').fill('be'); await page.waitForTimeout(600);
     await page.locator('#addSheet [data-add-dict], #addSheet [data-add-typed]').first().click(); await page.waitForTimeout(600);
     ok('(1) …while a new item from the dictionary still opens its details', await page.evaluate(()=>!!document.querySelector('[data-ae-name]')), '');
     await page.locator('#addDone').click({ force:true }); await page.waitForTimeout(1600);

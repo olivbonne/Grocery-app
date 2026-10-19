@@ -95,7 +95,10 @@ const seed = (extra) => `(() => {
     const src = fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8');
     const ex = (src.match(/const APP_EXCLUDE(?:_BOOT)? = \/\^\(([^)]*)\)\//g)||[]);
     ok('the day\'s counter survives applying an appearance slot (in both exclude lists)', ex.length===2 && ex.every(x=>/ml_aisleday\$/.test(x)), '');
-    ok('the camera input is attached to the page before it is opened (iOS)', /document\.body\.appendChild\(f\);\s*\/\/ iOS fires change only/.test(src), '');
+    /* SUPERSEDED by v2.43: every file picker is built in js/platform.js (pickFile), and the aisle sign's goes through it.
+       Still protects: the input is attached to the page before it is opened (iOS), and the sign's picker uses it. */
+    const plat = fs.readFileSync(path.join(ROOT,'js','platform.js'),'utf8');
+    ok('the camera input is attached to the page before it is opened (iOS)', /document\.body\.appendChild\(f\);\s*\/\/ iOS fires change only/.test(plat) && /function amPick\(\)\{ pickFile\(/.test(src), '');
   } catch(e){ ok('suite ran to the end', false, e.message.slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));
   await browser.close();
