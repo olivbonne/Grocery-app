@@ -57,6 +57,7 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   plain message: a timeout (AbortController), an error code turned into words, never a silent nothing.
   On iOS a file `<input>` must be attached to the DOM, or `change` never fires and the wait never starts
   (`rcPick`, v2.11). The suite for any new wait checks the busy state AND the failure message.
+- **Text shown to the person goes through `t()` / `tf()` (v2.45)** with its French in `js/i18n.js` (keys are the English text; a missing key falls back to English, and the v2.45 suite fails on one). Never translate stored data, item or list names, or text sent to the server.
 - **Security:** every provider key — `GEMINI_API_KEY`, `GROQ_API_KEY`, `TAVILY_API_KEY`,
   `SERPER_API_KEY`, `SEARCH_API_KEY`, `FEEDBACK_GITHUB_TOKEN` — stays server-side in `api/*.js` via `process.env`. Never in
   `index.html`, never logged, never in a response or a query string. The Firebase web config in
