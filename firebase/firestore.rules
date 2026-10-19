@@ -6,7 +6,8 @@ rules_version = '2';
 //  - lists are never deleted through the app (Settings › Your data empties one instead);
 //  - an account's own record (users/{uid}) is read and written only by that signed-in person (v2.40);
 //  - who may open a list is kept in access/{code} (v2.44): once that exists, only its people can open the list;
-//  - nothing outside lists/, access/ and users/ can be read or written.
+//  - shared shelf prices (shared/{key}, v2.47): read by any signed-in phone; each email account writes only its own entry;
+//  - nothing outside lists/, access/, users/ and shared/ can be read or written.
 // The app only ever does: get/listen to lists/{code}, and set it whole (create or update). Publish from the Firebase
 // console (Firestore Database › Rules) and try it in the Rules Playground first — see docs/firestore-rules.md.
 service cloud.firestore {
@@ -76,6 +77,24 @@ service cloud.firestore {
                    && request.resource.data.keys().hasOnly(['lists', 'gone', 'updated'])
                    && request.resource.data.get('lists', {}).size() <= 200
                    && request.resource.data.get('gone', {}).size() <= 500;
+    }
+
+    // v2.47: shared shelf prices (opt-in). One record per chain and item; each email account writes only its own
+    // entry — a unit price and the time — and any signed-in phone reads them. Never names, lists, cards or suburbs.
+    match /shared/{key} {
+      function mine() { return request.resource.data.by[request.auth.uid]; }
+      function okEntry() {
+        return mine().keys().hasOnly(['p', 'd']) && mine().p is number && mine().p > 0.05 && mine().p < 1000
+          && mine().d is int && mine().d > request.time.toMillis() - 3 * 24 * 3600 * 1000 && mine().d < request.time.toMillis() + 600000;
+      }
+      function emailAccount() { return request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous'; }
+      allow get: if request.auth != null;
+      allow list: if false;
+      allow create: if emailAccount() && key.matches('^[a-z0-9_-]{3,120}$')
+                    && request.resource.data.keys().hasOnly(['by']) && request.resource.data.by.keys().hasOnly([request.auth.uid]) && okEntry();
+      allow update: if emailAccount() && request.resource.data.keys().hasOnly(['by']) && request.resource.data.by.size() <= 500
+                    && request.resource.data.by.diff(resource.data.by).affectedKeys().hasOnly([request.auth.uid]) && okEntry();
+      allow delete: if false;
     }
 
     match /{document=**} {

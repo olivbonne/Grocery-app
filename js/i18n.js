@@ -800,7 +800,11 @@ export const FR = {
   "Checking location…": "Vérification de la position…",
   "Others · location unavailable": "Autres · localisation indisponible",
   "sorted by category": "trié par catégorie",
-  "Others · not at a saved store": "Autres · pas dans un magasin enregistré"
+  "Others · not at a saved store": "Autres · pas dans un magasin enregistré",
+  "Share prices with other households": "Partager les prix avec d'autres foyers",
+  "Off unless you turn it on. When on, the prices you confirm from receipts at Coles, Woolworths and ALDI are pooled with other households that also turned it on — the chain, the item, the price and the day, never your list, your shop or your card — and “Which store is cheaper” fills its gaps with the middle price from at least two households. Sharing yours needs your email in Your account; seeing others' does not.": "Désactivé tant que vous ne l'activez pas. Activé, les prix que vous confirmez depuis les tickets chez Coles, Woolworths et ALDI sont mis en commun avec les autres foyers qui l'ont activé — l'enseigne, l'article, le prix et le jour, jamais votre liste, votre magasin ni votre carte — et « Quel magasin est moins cher » comble ses manques avec le prix médian d'au moins deux foyers. Partager les vôtres demande votre e-mail dans Votre compte ; voir ceux des autres, non.",
+  "Add your email in Your account to share yours — you can already see others'.": "Ajoutez votre e-mail dans Votre compte pour partager les vôtres — vous voyez déjà ceux des autres.",
+  " · {n} from other households": " · {n} d'autres foyers"
 };
 
 export function tr(lang, s){ return (lang==="fr" && Object.prototype.hasOwnProperty.call(FR, s)) ? FR[s] : s; }
