@@ -8,7 +8,7 @@
 // Project Settings -> Environment Variables). It is never logged, never returned to the
 // browser, and never embedded in any static asset. See docs/ai-setup.md.
 
-const { guard } = require('../lib/guard.js');
+const { guard, cors } = require('../lib/guard.js');
 const MAX_INPUT_CHARS = 2000;
 const MODEL_BUDGET_MS = 30000;   // the function itself is capped at 60s (vercel.json)
 
@@ -163,6 +163,7 @@ function clampItem(x) {
 }
 
 module.exports = async (req, res) => {
+  if (cors(req, res)) return;   // v2.49 S13: the app shells' preflight — see lib/guard.js
   try {
     if (req.method !== 'POST') {
       res.status(405).json({ error: 'Method not allowed' });

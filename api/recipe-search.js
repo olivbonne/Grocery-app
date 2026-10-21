@@ -19,7 +19,7 @@
 // Variables). They are never logged, never returned to the browser, and never
 // embedded in any static asset. See docs/ai-setup.md.
 
-const { guard } = require('../lib/guard.js');
+const { guard, cors } = require('../lib/guard.js');
 const MAX_Q = 120;
 const MAX_RESULTS = 8;
 const FETCH_TIMEOUT_MS = 7000;
@@ -341,6 +341,7 @@ async function modelIdeas(q, ai) {
 }
 
 module.exports = async (req, res) => {
+  if (cors(req, res)) return;   // v2.49 S13: the app shells' preflight — see lib/guard.js
   try {
     if (req.method !== 'POST') {
       res.status(405).json({ error: 'Method not allowed', code: 'method' });

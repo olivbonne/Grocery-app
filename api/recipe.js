@@ -19,7 +19,7 @@
 // Project Settings -> Environment Variables). It is never logged, never returned to the
 // browser, and never embedded in any static asset. See docs/ai-setup.md.
 
-const { guard } = require('../lib/guard.js');
+const { guard, cors } = require('../lib/guard.js');
 const MAX_INPUT_CHARS = 8000;   // recipes are longer than a grocery jot
 const MAX_IMAGE_CHARS = 3500000; // ~2.6MB of image; Vercel caps the request body around 4.5MB
 const MAX_PAGE_BYTES = 1500000; // stop reading a fetched page after this much
@@ -399,6 +399,7 @@ function fail(res, status, code, error) {
 }
 
 module.exports = async (req, res) => {
+  if (cors(req, res)) return;   // v2.49 S13: the app shells' preflight — see lib/guard.js
   try {
     if (req.method !== 'POST') {
       res.status(405).json({ error: 'Method not allowed', code: 'method' });

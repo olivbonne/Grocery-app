@@ -39,3 +39,6 @@ export function barcodeSupported(){ return typeof BarcodeDetector!=="undefined";
 export function detectBarcodes(source){ return new BarcodeDetector().detect(source); }
 
 export function speechRecognitionCtor(){ return window.SpeechRecognition || window.webkitSpeechRecognition || null; }
+
+// v2.49 S13: true inside a Capacitor shell (the future iPhone/Android app); the web app is never one
+export function isNativeApp(){ try{ return !!(window.Capacitor && typeof window.Capacitor.isNativePlatform==="function" && window.Capacitor.isNativePlatform()); }catch(e){ return false; } }

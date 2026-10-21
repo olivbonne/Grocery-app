@@ -27,10 +27,22 @@ service cloud.firestore {
     }
 
     match /lists/{code} {
+      // v2.49 (architecture review S2): only the fields the app writes, of the right kind. A phone on an app older than
+      // v2.49 may write a stray old field and be refused until it updates — the owner publishes this (docs/firestore-rules.md).
+      function listOk(d) {
+        return d.keys().hasOnly(['items','buyAgain','baTomb','stores','storeMeta','members','categories','name','baMeta','predictReset','purch','plan','prices','aisle','memb','shopping','templates','spend','looks','aislemap','v'])
+          && d.get('items', []) is list && d.get('items', []).size() <= 3000
+          && d.get('buyAgain', []) is list && d.get('buyAgain', []).size() <= 3000
+          && d.get('members', []) is list
+          && d.get('name', '') is string && d.get('name', '').size() <= 200
+          && d.get('stores', []) is list && d.get('stores', []).size() <= 200
+          && d.get('v', 0) is int;
+      }
       allow get: if !hasAccess(code) || memberOf(code);
       allow list: if false;
-      allow create: if code.size() <= 64 && people(request.resource.data) <= 4;
+      allow create: if code.size() <= 64 && people(request.resource.data) <= 4 && listOk(request.resource.data);
       allow update: if (!hasAccess(code) || memberOf(code))
+                    && listOk(request.resource.data)
                     && (people(request.resource.data) <= 4
                         || people(request.resource.data) <= people(resource.data));
       allow delete: if false;
