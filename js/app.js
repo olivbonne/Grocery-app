@@ -7,22 +7,22 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.47";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.47";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.47";
-import { compareStores, worthIt } from "./compare.js?v=2.47";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.47";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.47";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.47";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.47";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor } from "./platform.js?v=2.47";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.47";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines } from "./parse.js?v=2.47";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { tr, trf } from "./i18n.js?v=2.47";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.48";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.48";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.48";
+import { compareStores, worthIt } from "./compare.js?v=2.48";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.48";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.48";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.48";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.48";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor } from "./platform.js?v=2.48";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.48";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines } from "./parse.js?v=2.48";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { tr, trf } from "./i18n.js?v=2.48";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.47";
+const APP_VERSION = "v2.48";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -78,7 +78,7 @@ function showAmt(w){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_jk_)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_jk_)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -822,20 +822,107 @@ function autoFinishAt(nearId){
   const from=last.checkedStore||""; if(!from || from===nearId) return false;
   const name=(storeById(from)||{}).name||"your last shop";
   sweep(`Finished your ${name} shop · ${ck.length} saved to Regulars`); return true; }
+/* v2.48 first-time use (Do later L1; docs/onboarding-proposal.md). Four moments, each asked once per phone
+   (ml_onb) and never twice in one visit (_onbLater, "Not now"):
+   1. Your shops — the first time in Shop, before anyone set up shops on this list: untick, add, then location.
+   2. How it works — the tip, once there are items and no Regulars yet.
+   3. Pin this shop (a) when ticking at a picked shop with no location, or Which shop is this (b) when
+      auto-detect found nothing — the answer pins it and back-fills the last three hours of ticks.
+   6. Aisle map — the second day at a shop with no map, while there.
+   1 and 2 are for a NEW phone only (onb.fresh, set when it first gives its name, or by the Settings reset), so a
+   household already using the app is not lectured. ONE card at a time: onbCardHTML returns the first that applies, and the list shows it only when the
+   look / install / card / receipt cards are all quiet. visits only counts days for moment 6 — a tick is
+   not a purchase, nothing else is learned from it. */
+var _onbLater = {};        // session-only "Not now": "shops", "which", "pin:"+id, "map:"+id
+var _onbShopsOpen = false; // the shops card stays up once shown, though touching a chip fills storeMeta
+function onbGet(){ try{ const o=JSON.parse(localStorage.getItem("ml_onb")||"{}"); return (o && typeof o==="object") ? o : {}; }catch(e){ return {}; } }
+function onbSet(fn){ try{ const o=onbGet(); fn(o); localStorage.setItem("ml_onb", JSON.stringify(o)); }catch(e){} }
+function onbVisit(id){ const d=dayKey(new Date()); onbSet(o=>{ o.visits=o.visits||{}; const a=(o.visits[id]||[]).filter(x=>x!==d); a.push(d); o.visits[id]=a.slice(-3); }); }
+function onbCard(id, title, body, btns){ return `<div class="installcard" id="${id}" role="note"><div class="ic-t">${title}</div>${body}<div class="ic-btns">${btns}</div></div>`; }
+function onbCardHTML(){
+  const onb=onbGet(), items=state.items||[];
+  if(shopMode && onb.fresh && !onb.shops && !_onbLater.shops && (_onbShopsOpen || (!(state.stores||[]).length && !Object.keys(state.storeMeta||{}).length))){
+    _onbShopsOpen=true;
+    const chips=[...STORES.filter(s=>!storeOverride(s.id).removed).map(s=>s.id), ...(state.stores||[]).map(s=>s.id)]
+      .map(id=>`<button data-onb-store="${esc(id)}" class="storechip ${storeOverride(id).hidden?'':'on'}">${esc(storeName(storeById(id))||"")}</button>`).join("");
+    return onbCard("onbShops", t("Where do you usually shop?"),
+      `<div class="ic-b">${t("Untick the ones you never use, or add yours. The list then walks the shop you're in.")}</div><div class="storegrid">${chips}</div>`+
+      `<div class="onbadd"><input id="onbShopName" placeholder="${t("Add another shop")}" style="flex:1;min-width:0;padding:10px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:14px;font-weight:600" /><button class="optaction" id="onbShopAdd">${t("Add")}</button></div>`+
+      (useLoc ? `<div class="ic-b">${t("Location is asked next, so the list knows which shop you're in.")}</div>` : ""),
+      `<button class="newlist" id="onbShopsDone">${t("Done")}</button><button class="optaction" id="onbShopsSkip">${t("Skip")}</button>`);
+  }
+  if(shopMode && isRealStore(storeSel) && !storeCoord(storeById(storeSel)) && items.some(i=>i.checked && i.checkedStore===storeSel)
+     && (onb.pin||{})[storeSel]!=="never" && !_onbLater["pin:"+storeSel]){
+    return onbCard("onbPin", tf("Are you at {x}?", { x:esc(storeName(storeById(storeSel))||"") }),
+      `<div class="ic-b">${t("Pin it here and the list finds this shop by itself next time.")}</div>`,
+      `<button class="newlist" id="onbPinGo">${t("Pin it")}</button><button class="optaction" id="onbPinLater">${t("Not now")}</button><button class="optaction" id="onbPinNever">${t("Never for this shop")}</button>`);
+  }
+  const fresh3h=i=>i.checked && !i.checkedStore && (Date.now()-(i.checkedAt||0))<3*3600000;
+  if(shopMode && storeSel==="auto" && useLoc && onb.which!=="never" && !_onbLater.which && items.some(fresh3h)) ensureLocCheck();   // nothing else looks while no tick has a shop
+  if(shopMode && storeSel==="auto" && useLoc && locState.checked && !locState.busy && !locState.err && !locState.nearId
+     && items.some(fresh3h) && onb.which!=="never" && !_onbLater.which){
+    const vis=[...STORES.map(s=>s.id), ...(state.stores||[]).map(s=>s.id)].filter(id=>isRealStore(id) && !storeOverride(id).hidden && !storeOverride(id).removed && storeById(id));
+    if(vis.length) return onbCard("onbWhich", t("Which shop are you in?"),
+      `<div class="ic-b">${t("Tap it and the list will know this shop next time.")}</div><div class="storegrid">${vis.map(id=>`<button data-onb-here="${esc(id)}" class="storechip">${esc(storeName(storeById(id))||"")}</button>`).join("")}</div>`,
+      `<button class="optaction" id="onbWhichLater">${t("Not now")}</button><button class="optaction" id="onbWhichNever">${t("Don't ask again")}</button>`);
+  }
+  const st=shopMode ? activeStore() : null;
+  if(st && isRealStore(st.id) && !(state.aislemap&&state.aislemap[st.id]&&(state.aislemap[st.id].aisles||[]).length) && !amOpen
+     && (onb.map||{})[st.id]!=="never" && !_onbLater["map:"+st.id]){
+    const days=new Set((onb.visits||{})[st.id]||[]);
+    if(days.size>=2 && days.has(dayKey(new Date()))) return onbCard("onbMap", tf("Want the list in {x}'s aisle order?", { x:esc(storeName(st)||"") }),
+      `<div class="ic-b">${t("Walk it once and photograph the aisle signs — next time the list follows the shop.")}</div>`,
+      `<button class="newlist" id="onbMapGo" data-onb-map="${esc(st.id)}">${t("Start")}</button><button class="optaction" id="onbMapLater">${t("Later")}</button><button class="optaction" id="onbMapNever">${t("Never for this shop")}</button>`);
+  }
+  if(onb.fresh && !onb.tip && items.length>0 && !(state.buyAgain||[]).length){
+    return onbCard("onbTip", t("How it works"),
+      `<div class="ic-b">${t("Tick things off in the shop. When you're done, Save to Regulars — next time they're one tap away.")}</div>`,
+      `<button class="newlist" id="onbTipOk">${t("Got it")}</button>`);
+  }
+  return "";
+}
+function onbWire(){
+  const q=s=>app.querySelector(s), on=(s,f)=>{ const b=q(s); if(b) b.onclick=f; };
+  app.querySelectorAll("[data-onb-store]").forEach(b=>b.onclick=()=>{ const id=b.dataset.onbStore; state.storeMeta=state.storeMeta||{};
+    if(storeOverride(id).hidden){ if(state.storeMeta[id]) delete state.storeMeta[id].hidden; }
+    else state.storeMeta[id]=Object.assign({}, state.storeMeta[id], {hidden:true});
+    save(); render(); });
+  on("#onbShopAdd", ()=>{ const inp=q("#onbShopName"); const name=((inp&&inp.value)||"").trim(); if(!name) return;
+    state.stores=state.stores||[]; state.stores.push({ id:"c"+uid().slice(0,6), name, aisles:[] }); save(); render(); });
+  on("#onbShopsDone", ()=>{ onbSet(o=>{ o.shops="done"; }); _onbShopsOpen=false; if(useLoc) ensureLocCheck(); render(); });
+  on("#onbShopsSkip", ()=>{ onbSet(o=>{ o.shops="skip"; }); _onbShopsOpen=false; render(); });
+  on("#onbPinGo", ()=>pinStoreHere(storeSel));
+  on("#onbPinLater", ()=>{ _onbLater["pin:"+storeSel]=1; render(); });
+  on("#onbPinNever", ()=>{ const id=storeSel; onbSet(o=>{ o.pin=o.pin||{}; o.pin[id]="never"; }); render(); });
+  app.querySelectorAll("[data-onb-here]").forEach(b=>b.onclick=()=>{ const id=b.dataset.onbHere;
+    const backfill=()=>{ for(const it of (state.items||[])){ if(it.checked && !it.checkedStore && (Date.now()-(it.checkedAt||0))<3*3600000){ it.checkedStore=id; markDirty(it.id); } } save(); };
+    if(!hasGeolocation()){ backfill(); showToast(t("Location not available here")); render(); return; }
+    pinStoreHere(id, backfill); });
+  on("#onbWhichLater", ()=>{ _onbLater.which=1; render(); });
+  on("#onbWhichNever", ()=>{ onbSet(o=>{ o.which="never"; }); render(); });
+  const mg=q("#onbMapGo"); const mid=mg ? mg.dataset.onbMap : "";
+  on("#onbMapGo", ()=>{ amOpen=mid; amDraft=null; amRead=null; render(); });
+  on("#onbMapLater", ()=>{ _onbLater["map:"+mid]=1; render(); });
+  on("#onbMapNever", ()=>{ onbSet(o=>{ o.map=o.map||{}; o.map[mid]="never"; }); render(); });
+  on("#onbTipOk", ()=>{ onbSet(o=>{ o.tip=1; }); render(); });
+}
 function setStoreHere(){
   if(storeSel==="auto"){ showToast("Pick a store first, then Set store here"); return; }
   if(!hasGeolocation()){ showToast("Location not available here"); return; }
+  pinStoreHere(storeSel);
+}
+function pinStoreHere(id, onDone){   // v2.48 setStoreHere's body for any store (the onboarding pin cards use it too)
   showToast("Getting location…");
   getPosition({ enableHighAccuracy:true, maximumAge:0, timeout:10000 }).then(
     pos=>{ const here={lat:pos.coords.latitude,lng:pos.coords.longitude};
       // v1.28 a confirmed location takes over its spot: clear the saved GPS of any OTHER place within
       // ~120 m so auto-detect stops flip-flopping. Labels stay (only the stored coordinate is removed),
       // so those places can be re-pinned to their own real location later.
-      let cleared=0; for(const id in storeLocs){ if(id===storeSel) continue; const c=storeLocs[id]; if(c && distM(here,c)<=120){ delete storeLocs[id]; cleared++; } }
-      storeLocs[storeSel]=here; localStorage.setItem("ml_storelocs", JSON.stringify(storeLocs));
+      let cleared=0; for(const k in storeLocs){ if(k===id) continue; const c=storeLocs[k]; if(c && distM(here,c)<=120){ delete storeLocs[k]; cleared++; } }
+      storeLocs[id]=here; localStorage.setItem("ml_storelocs", JSON.stringify(storeLocs));
       locState={ checked:false, busy:false, ts:0, err:0, nearId:null, dist:Infinity };   // force a fresh detection against the deduped set
-      showToast(cleared ? tf("Saved {x} ✓", { x:storeName(storeById(storeSel))||t("store") }) + " · " + (cleared>1 ? tf("cleared {n} duplicates", { n:cleared }) : tf("cleared {n} duplicate", { n:cleared })) : tf("Saved {x} ✓", { x:storeName(storeById(storeSel))||t("store") }));
-      render(); },
+      showToast(cleared ? tf("Saved {x} ✓", { x:storeName(storeById(id))||t("store") }) + " · " + (cleared>1 ? tf("cleared {n} duplicates", { n:cleared }) : tf("cleared {n} duplicate", { n:cleared })) : tf("Saved {x} ✓", { x:storeName(storeById(id))||t("store") }));
+      onDone && onDone(); render(); },
     err=>{ showToast("Couldn’t get location — check permissions"); });
 }
 function storeLabel(){
@@ -2241,7 +2328,7 @@ function addEntries(text, override){
 function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){
   if(!it.checked){ lastPop=id; playTick(true); vibrate(8); setTimeout(()=>{ if(lastPop===id) lastPop=null; },350); }
   else { playTick(false); vibrate(5); }
-  it.checked=!it.checked; if(it.checked){ it.checkedBy=me; it.checkedAt=Date.now(); it.checkedStore = (()=>{ const s=activeStore(); return (s && isRealStore(s.id)) ? s.id : ""; })(); shoppingMark(); /* v2.23 R19 — v2.29: the AI order learns at the finish (sweep), not here */ } markDirty(id); save(); render(); } }
+  it.checked=!it.checked; if(it.checked){ it.checkedBy=me; it.checkedAt=Date.now(); it.checkedStore = (()=>{ const s=activeStore(); return (s && isRealStore(s.id)) ? s.id : ""; })(); if(it.checkedStore) onbVisit(it.checkedStore); shoppingMark(); /* v2.23 R19 — v2.29: the AI order learns at the finish (sweep), not here */ } markDirty(id); save(); render(); } }
 /* A24 shared Buy-again is conflict-free across devices. Each entry carries a `ts`
    (last-touched) and deletions are recorded as tombstones in `state.baTomb`
    ({key: ts}). On every server snapshot we LWW-merge remote+local instead of
@@ -2509,6 +2596,7 @@ function removeSub(catId, subId){ const c=catList().find(x=>x.id===catId); if(!c
 
 function join(name){ const c=name.trim(); if(!c) return;
   if(!state.members.includes(c)){ if(state.members.length>=4) return; state.members.push(c); }
+  if(!localStorage.getItem(LS.me)) onbSet(o=>{ o.fresh=1; });   // v2.48 a phone giving its name for the first time is new: moments 1 and 2 are for it
   me=c; localStorage.setItem(LS.me,c); view="detail"; shopMode=false; save(); render(); }   // first stop after joining: the list (planning) page
 function toggleCat(id){ collapse.cats = collapse.cats.includes(id) ? collapse.cats.filter(x=>x!==id) : [...collapse.cats,id];
   localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }
@@ -4070,7 +4158,7 @@ function renderMain(){
     ${checkedBar}
     <div class="wrap ${shopMode?'shop':''}" role="main">
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
-      ${lockedHTML()}${shoppingHTML()}${lookCardHTML()}${installCardHTML()}${cardNudgeHTML()}${rcptNudgeHTML()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
+      ${lockedHTML()}${shoppingHTML()}${(()=>{ const c=lookCardHTML()+installCardHTML()+cardNudgeHTML()+rcptNudgeHTML(); return c || onbCardHTML(); })()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">${t("Your list is empty")}</p>
           <p class="empty-sub">${t("Tap <b>Add items</b> below — or start from these:")}</p>
@@ -6079,6 +6167,9 @@ function filterOptions(){ const page=document.querySelector(".optpage"); if(!pag
   if(none){ none.hidden=any>0; none.textContent=any>0 ? "" : tf("No settings match “{q}”.", { q:optQuery.trim() }); }
 }
 function wireOptions(){
+  const obr=app.querySelector("#optOnbReset"); if(obr) obr.onclick=()=>{   // v2.48 keep only the visit days, ask the rest again
+    const v=onbGet().visits; try{ localStorage.setItem("ml_onb", JSON.stringify(v ? {fresh:1, visits:v} : {fresh:1})); }catch(e){}
+    _onbLater={}; _onbShopsOpen=false; showToast(t("They will ask again")); render(); };
   const optBg=app.querySelector("#optBg"); if(optBg) optBg.onclick=()=>{ optOpen=false; render(); };
   const optS=app.querySelector("#optSheet"); if(optS) optS.onclick=e=>e.stopPropagation();
   const oca=app.querySelector("#optCollapseAll"); if(oca) oca.onclick=()=>{
@@ -6663,7 +6754,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_jk_)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_jk_)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -7048,6 +7139,7 @@ function optionsBody(){
     ${(displayFor()==="flat" && curSort==="ai") ? `<div class="opthint">✨ AI learns the order you check things off at ${esc((activeStore()||{}).name||"each store")} and reorders your next trip. Pick the store in Location so it learns per shop.</div>` : ""}
     ${(displayFor()==="flat" && curSort==="ai" && aiSeenCount()>0) ? `<button class="optaction" id="optResetAI" style="margin:-2px 0 10px">${t("♻︎ Reset AI — restart from category")}</button>` : ""}` : ""}
     ${row(t("Sound"), `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">${t("On")}</button><button data-opt-sound="0" class="${!soundOn?'on':''}">${t("Off")}</button></div>`)}
+    ${row(t("First-time questions"), `<button class="storechip" id="optOnbReset">${t("Ask again")}</button>`)}<div class="opthint">${t("Your shops, pinning a shop, the aisle map and the how-it-works tip each ask once. This brings back any you answered with Skip or Never.")}</div>
     ${row(t("Keep screen on"), `<div class="seg"><button data-opt-wake="1" class="${wakePref()?'on':''}">${t("On")}</button><button data-opt-wake="0" class="${!wakePref()?'on':''}">${t("Off")}</button></div>`)}
     <div class="opthint">${t("While the cart has something in it, so the phone does not dim and lock mid-aisle.")}</div>
     ${(view!=="lists") ? `${sect("Smart features")}${/* v2.30: Smart add, restock suggestions, receipts and prices, memberships — the AI-assisted things, in one place */""}${row(t("Smart add"), `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">${t("On")}</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">${t("Off")}</button></div>`)}<div class="opthint">${t("The ✨ button in the add bar. Type or paste a whole list or a recipe — “2 kg chicken, milk and eggs for pancakes” — and it becomes separate items with amounts and categories. What you type is sent to the AI reader; nothing else. Recipes on the Plan page have their own reader and work either way.")}</div>` : ""}
@@ -7427,6 +7519,7 @@ function wire(){
   const lsw=app.querySelector("#listSwitch"); if(lsw) lsw.onclick=()=>{ listsOpen=true; render(); };   // v1.81 title opens the switcher
   const icd=app.querySelector("#installDone"); if(icd) icd.onclick=installDismiss;   // v2.15 install card
   const rng=app.querySelector("#rcNudgeGo"); if(rng) rng.onclick=()=>{ rcptNudgeClear(); rcPick(); };   // v2.17 the receipt at the till
+  onbWire();   // v2.48 first-time cards
   const rnn=app.querySelector("#rcNudgeNo"); if(rnn) rnn.onclick=()=>{ rcptNudgeClear(); render(); };
   const icg=app.querySelector("#installGo"); if(icg) icg.onclick=()=>{ const p=_bip; _bip=null; if(!p){ installDismiss(); return; }
     try{ p.prompt(); (p.userChoice||Promise.resolve()).finally(installDismiss); }catch(e){ installDismiss(); } };
