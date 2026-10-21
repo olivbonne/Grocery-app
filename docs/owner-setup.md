@@ -122,6 +122,21 @@ Do this after step 2 (sign-in), so the endpoints can check who is asking.
 
 ---
 
+## 6b. App Check (v2.50) (≈15 min, then a few days of watching)
+**Unlocks:** only the real app can use the database and the AI functions, not a script holding the public web config.
+The menu names below could not be checked from here.
+
+1. **Google Cloud console / reCAPTCHA admin** — create a **reCAPTCHA v3** key for the domain
+   `grocery-app-2-sage.vercel.app` (add `localhost` only for testing).
+2. **Firebase console › App Check › Apps** → the web app → register it with **reCAPTCHA v3** and paste the **secret** key there.
+3. Send the **site** key (it is public) to be put in `APPCHECK_SITE_KEY` in `js/app.js`.
+4. Watch **Firebase › App Check** metrics for a few days ("verified requests"), then **Enforce** for Cloud Firestore.
+5. In Vercel set `APP_CHECK=log`, and later `APP_CHECK=require`.
+
+Note: the future iPhone/Android app needs App Attest / Play Integrity for App Check instead (step A4).
+
+---
+
 ## 7. Decisions, not settings
 - **Basket handoff** (send the list to Coles/Woolworths online): needs a retailer or affiliate agreement.
 - **Market List+** (the paid tier): needs a billing provider (Stripe for the web; Apple if it goes on the App Store).

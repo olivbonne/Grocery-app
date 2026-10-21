@@ -874,7 +874,9 @@ export const FR = {
   "Delete history": "Supprimer l'historique",
   "This list was saved by a newer version of the app": "Cette liste a été enregistrée par une version plus récente de l'app",
   "Your changes stay on this phone until it updates. Close the app completely and open it again.": "Vos modifications restent sur ce téléphone jusqu'à sa mise à jour. Fermez complètement l'app et rouvrez-la.",
-  "Update now": "Mettre à jour"
+  "Update now": "Mettre à jour",
+  "This phone isn't signed in yet. Check your connection and try again.": "Ce téléphone n'est pas encore connecté. Vérifiez votre connexion et réessayez.",
+  "The app couldn't prove it's the real app. Close it completely and open it again.": "L'application n'a pas pu prouver qu'elle est la vraie. Fermez-la complètement et rouvrez-la.",
 };
 
 export function tr(lang, s){ return (lang==="fr" && Object.prototype.hasOwnProperty.call(FR, s)) ? FR[s] : s; }
