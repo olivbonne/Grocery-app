@@ -7,22 +7,23 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.50";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.50";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.50";
-import { compareStores, worthIt } from "./compare.js?v=2.50";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.50";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.50";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.50";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.50";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.50";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.50";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines } from "./parse.js?v=2.50";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { tr, trf } from "./i18n.js?v=2.50";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.51";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.51";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.51";
+import { compareStores, worthIt } from "./compare.js?v=2.51";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.51";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.51";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.51";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.51";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.51";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.51";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines } from "./parse.js?v=2.51";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.51";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf } from "./i18n.js?v=2.51";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.50";
+const APP_VERSION = "v2.51";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -1649,7 +1650,7 @@ function duplicateListCode(code){
   };
   rememberList(newCode, newName);
   switchList(newCode);
-  state=dup; ensureCats(); save(); render();
+  state=dup; resetItemSigs(); ensureCats(); save(); render();
   showToast(tf("Duplicated as “{x}”", { x:newName }));
 }
 function delListUndo(code){ const a=getLists(); const i=a.findIndex(x=>x.code===code); if(i<0){ listActOpen=false; render(); return; }
@@ -1716,8 +1717,9 @@ function switchList(code){ const wasPlan = (view==="plan"); listsOpen=false; if(
   reloadLearn();
   try{ collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}'); }catch(e){ collapse={cats:[],ba:false}; }
   collapse.checked = false;   // v2.10: the cart always opens folded; a tap unfolds it for the session
-  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[], looks:{}, aislemap:{} };
+  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[], looks:{}, aislemap:{}, itemTomb:{}, mv:0 };
   try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state=c; dropTube(); aiAdopt(); } }catch(e){}
+  resetItemSigs();
   if(!state.purch || typeof state.purch!=="object") state.purch={};
   state.purch = purchMerge(state.purch, purch);   // fold any legacy per-device history into the shared copy
   purch = state.purch;
@@ -1754,9 +1756,10 @@ function playPlan(add){ if(!soundOn) return;
   } catch(e){} }
 let lastPop=null;
 
-let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[], looks:{}, aislemap:{} };
+let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[], looks:{}, aislemap:{}, itemTomb:{}, mv:0 };
 rememberList(listCode);
 try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state = c; dropTube(); aiAdopt(); } } catch(e){}
+resetItemSigs();
 if(!state.purch || typeof state.purch!=="object") state.purch={};
 state.purch = purchMerge(state.purch, purch);   // fold any legacy per-device history into the shared copy
 purch = state.purch;
@@ -1904,8 +1907,14 @@ function parseInput(text){ return parseLines(text, labelMap()); }   // v2.46: th
 /* ---- Firebase ---- */
 /* v2.49 (architecture review S9): the list document carries the shape's version. A phone running an older app that sees a
    NEWER version stops writing (it would overwrite fields it does not know) and asks to be updated. The next data-shape
-   change (v2.51, items saved one by one) raises it. */
-const LIST_V = 1;
+   change (v2.51, items saved one by one) raises it.
+   v2.51: version 2 — items carry `ts` and removals `itemTomb`; a v2.49/v2.50 phone seeing v2 stops writing and asks to update. */
+const LIST_V = 2;
+/* v2.51 (S8): each item is merged on its own. _itemSigs holds what every item was at this phone's last merge; save() stamps
+   (ts) the items that changed since and tombstones the ones that went, and subscribe() merges the server's items with ours,
+   the newer copy winning. The rules live in js/merge.js. */
+var _itemSigs = _itemSigs || new Map(), _itemSigsFor = _itemSigsFor || "";   // var + keep: resetItemSigs() already ran at boot, above this line — re-initialising here would drop that
+function resetItemSigs(){ _itemSigs = new Map((state.items||[]).filter(i=>i && i.id!=null).map(i=>[String(i.id), itemSig(i)])); _itemSigsFor = listCode; }
 var _newerData = false;   // var: render reads it at boot
 let db=null, listRef=null, applyingRemote=false, unsub=null;
 let netOnline = (typeof navigator!=="undefined" && "onLine" in navigator) ? navigator.onLine : true;
@@ -1919,22 +1928,29 @@ function subscribe(){
   unsub = onSnapshot(listRef, { includeMetadataChanges:true }, snap => {
     syncing = snap.metadata.hasPendingWrites;
     fromCache = snap.metadata.fromCache;
-    if(!syncing && !fromCache) dirtyIds.clear();
     if(snap.exists() && !snap.metadata.hasPendingWrites){ const d = snap.data();
       _newerData = (+d.v||0) > LIST_V;
       if(_newerData){ render(); return; }   // v2.49 S9: a newer app's data — leave state alone, show the update card
       const mg = baMerge(d.buyAgain||[], d.baTomb||{}, state.buyAgain||[], state.baTomb||{});   // A24 conflict-free Buy-again
       const mgPurch = purchMerge(d.purch||{}, purch||{});                                        // B4 shared restock history (union merge)
       /* v2.09: prices rides along like plan does. This line rebuilds state from a fixed shape, so a field it does not name is wiped by the next snapshot (CLAUDE.md, the fixed-shape trap). */
-      state = { items:d.items||[], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]}, prices: d.prices||{}, aisle: d.aisle||{}, memb: d.memb||{}, shopping: d.shopping||{}, templates: Array.isArray(d.templates)?d.templates:[], spend: Array.isArray(d.spend)?d.spend:[], looks: (d.looks && typeof d.looks==="object") ? d.looks : {}, aislemap: (d.aislemap && typeof d.aislemap==="object") ? d.aislemap : {} };
+      const rv = +d.v || 0;
+      /* v2.51: item by item. A list written by merging phones (v2+), on a phone that has merged it before (mv 2+): an item only
+         this phone has was added before the other phone saw it — keep it. Otherwise only this phone's own unsent change is kept:
+         an older app may have removed it without a tombstone. */
+      const trust = rv >= 2 && (+state.mv || 0) >= 2;
+      const mi = mergeItems(d.items||[], d.itemTomb||{}, state.items||[], state.itemTomb||{}, id => trust || dirtyIds.has(id));
+      state = { items:mi.items, itemTomb:mi.tomb, mv:rv, buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]}, prices: d.prices||{}, aisle: d.aisle||{}, memb: d.memb||{}, shopping: d.shopping||{}, templates: Array.isArray(d.templates)?d.templates:[], spend: Array.isArray(d.spend)?d.spend:[], looks: (d.looks && typeof d.looks==="object") ? d.looks : {}, aislemap: (d.aislemap && typeof d.aislemap==="object") ? d.aislemap : {} };
+      resetItemSigs();
       purch = state.purch;                                                                        // keep the working ref pointed at the shared copy
       if(!state.name){ const ln=(getLists().find(l=>l.code===listCode)||{}).name; if(ln){ state.name=ln; save(); } }
       if(dropTube()) save(); aiAdopt();
       if(state.name) rememberList(listCode, state.name);
       if((state.predictReset||0) > _predReset) applyPredictReset(state.predictReset);   // household-wide predictions reset propagated via the synced epoch
       // converge: if our merged view holds Buy-again / restock history the server was missing, write it back once
-      if(baSig(mg.list, mg.tomb) !== baSig(d.buyAgain||[], d.baTomb||{}) || purchSig(state.purch||{}) !== purchSig(d.purch||{})) save(); }
+      if(baSig(mg.list, mg.tomb) !== baSig(d.buyAgain||[], d.baTomb||{}) || purchSig(state.purch||{}) !== purchSig(d.purch||{}) || itemsSig(mi.items, mi.tomb) !== itemsSig(d.items||[], d.itemTomb||{})) save(); }
     else if(snap.exists() && snap.metadata.hasPendingWrites){ /* keep local optimistic state */ }
+    if(!syncing && !fromCache) dirtyIds.clear();   // v2.51: after the merge, which reads it
     ensureCats();
     try { localStorage.setItem(LS.cache, JSON.stringify(state)); } catch(e){}
     applyingRemote = true; renderKeepingAdd(); applyingRemote = false;   // v1.45: never tear down a focused search bar mid-add
@@ -2284,11 +2300,15 @@ if(typeof window!=="undefined"){
 
 let __saveWarned = 0;
 async function save(){
+  if(_itemSigsFor !== listCode) resetItemSigs();   // v2.51 S8: stamp what changed since the last merge, tombstone what went
+  state.itemTomb = state.itemTomb || {};
+  stampItems(state.items || [], _itemSigs, state.itemTomb, Date.now());
+  state.itemTomb = pruneTomb(state.itemTomb, Date.now());
   try { localStorage.setItem(LS.cache, JSON.stringify(state)); } catch(e){}
   if(!configured) return;
   if(_newerData) return;   // never write over a newer app's data
   syncing = true;
-  try { await setDoc(listRef, Object.assign(listDoc(state), { shopping: state.shopping||{}, v: LIST_V })); }   // v2.49: only the fields the app knows (the rules refuse others)
+  try { await setDoc(listRef, Object.assign(listDoc(state), { shopping: state.shopping||{}, itemTomb: state.itemTomb||{}, v: LIST_V })); }   // v2.49: only the fields the app knows (the rules refuse others)
   catch(e){ console.error(e);
     if(Date.now()-__saveWarned > 5000){ __saveWarned = Date.now(); showToast("⚠︎ Not syncing — check Firestore rules"); } }
 }

@@ -84,14 +84,16 @@ const seed = (o) => `(() => {
     await mk(null);
     await tick('Milk');
     let w = await writes(); const last = w[w.length-1] || {};
-    ok('a change writes the list in its known shape, with v:1 — a stray old key in the cache is not written', w.length>0 && last.v===1 && !('oldJunk' in last) && Array.isArray(last.items), JSON.stringify(Object.keys(last)));
+    /* SUPERSEDED by v2.51: the shape's version is now 2 (items saved one by one). Still protects: a version is written, and a
+       stray old key is never written. */
+    ok('a change writes the list in its known shape, with its version (v:2 since v2.51) — a stray old key in the cache is not written', w.length>0 && last.v===2 && !('oldJunk' in last) && Array.isArray(last.items), JSON.stringify(Object.keys(last)));
     const rules = fs.readFileSync(path.join(ROOT,'firebase','firestore.rules'),'utf8');
     const allowed = ((rules.match(/function listOk\(d\)[\s\S]*?hasOnly\(\[([^\]]*)\]\)/)||[])[1]||'').match(/'([^']+)'/g)?.map(x=>x.slice(1,-1)) || [];
     const missing = Object.keys(last).filter(k=>!allowed.includes(k));
     ok('the rules accept every field the app writes (listOk), and require it on create and update', allowed.length && !missing.length && /allow create: if[\s\S]{0,200}listOk\(request\.resource\.data\)/.test(rules) && /allow update: if[\s\S]{0,300}listOk\(request\.resource\.data\)/.test(rules), 'missing: '+missing.join(','));
     ok('…and v must be a whole number, the items a list of at most 3000', /d\.get\('v', 0\) is int/.test(rules) && /d\.get\('items', \[\]\)\.size\(\) <= 3000/.test(rules), '');
 
-    await mk({ items:[it("9","Eggs","dairy")], buyAgain:[], members:["O"], name:"Groceries", v:2, newField:{ a:1 } });
+    await mk({ items:[it("9","Eggs","dairy")], buyAgain:[], members:["O"], name:"Groceries", v:3, newField:{ a:1 } });   // v2.51: newer than 2 is 3
     await page.waitForTimeout(500);
     ok('a list saved by a NEWER app: the phone says so, with Update now', await page.locator('#newerNote').count()===1 && await page.locator('#newerReload').count()===1, '');
     await shot(page, out, 'newer');
@@ -99,7 +101,7 @@ const seed = (o) => `(() => {
     await tick('Milk');
     const kept = await page.evaluate(()=>{ try{ return (JSON.parse(localStorage.getItem('ml_cache_v101')).items||[]).some(i=>i.name==='Milk' && i.checked); }catch(e){ return false; } });
     ok('…and does not write over it (its own change stays on the phone)', (await writes()).length===before && kept, (await writes()).length+' vs '+before+' kept '+kept);
-    await mk({ items:[it("9","Eggs","dairy")], buyAgain:[], members:["O"], name:"Groceries", v:1 });
+    await mk({ items:[it("9","Eggs","dairy")], buyAgain:[], members:["O"], name:"Groceries", v:2 });   // v2.51: this version is 2
     await page.waitForTimeout(500);
     ok('a list at this version opens as usual', await page.locator('#newerNote').count()===0 && /Eggs/.test(await page.locator('#zoomer').textContent()), '');
     await page.evaluate(()=>{ localStorage.setItem('ml_lang','fr'); }); await page.reload({ waitUntil:'domcontentloaded' }); await page.waitForTimeout(1300);
