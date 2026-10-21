@@ -7,22 +7,22 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.49";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.49";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.49";
-import { compareStores, worthIt } from "./compare.js?v=2.49";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.49";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.49";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.49";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.49";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.49";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.49";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines } from "./parse.js?v=2.49";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { tr, trf } from "./i18n.js?v=2.49";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.50";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.50";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.50";
+import { compareStores, worthIt } from "./compare.js?v=2.50";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.50";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.50";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.50";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.50";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.50";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.50";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines } from "./parse.js?v=2.50";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { tr, trf } from "./i18n.js?v=2.50";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.49";
+const APP_VERSION = "v2.50";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -2017,6 +2017,20 @@ function accessHTML(){
    the list, so it never slows the start; until the owner turns on Anonymous sign-in in Firebase it fails quietly and
    everything works as before (authNote() says why, in Settings › Your data). */
 var _auth = null, _authErr = "";   // var: Settings reads them at any time
+/* v2.50 App Check (architecture review S3): proves a request comes from this app, not a script holding the public web config.
+   DORMANT until APPCHECK_SITE_KEY is set (a reCAPTCHA v3 site key — public, like the web config; the owner creates it and
+   registers it in Firebase › App Check). Switched on, Firestore and Auth attach its token by themselves and apiFetch sends
+   it to the server (X-Firebase-AppCheck), which checks it when APP_CHECK is "log" or "require" (lib/guard.js). reCAPTCHA
+   is Google's script, loaded from google.com only then — privacy.html says so. */
+const APPCHECK_SITE_KEY = "";
+var _appCheck = null, _appCheckMod = null;
+function appCheckKey(){ try{ if(navigator.webdriver && window.__appCheckKey) return String(window.__appCheckKey); }catch(e){} return APPCHECK_SITE_KEY; }   // tests switch it on
+function startAppCheck(app){ const key = appCheckKey(); if(!key || _appCheck) return;
+  import("/vendor/firebasejs/10.12.2/firebase-app-check.js").then(m => { _appCheckMod = m;
+    _appCheck = m.initializeAppCheck(app, { provider: new m.ReCaptchaV3Provider(key), isTokenAutoRefreshEnabled: true }); })
+  .catch(() => {}); }   // offline or blocked: the app works on; the server decides what an unchecked call gets
+async function appCheckToken(){ if(!_appCheck || !_appCheckMod) return "";
+  try{ const r = await Promise.race([_appCheckMod.getToken(_appCheck, false), new Promise(res => setTimeout(() => res(null), 3000))]); return (r && r.token) || ""; }catch(e){ return ""; } }
 var _authM = null;   // v2.40 (sign-in by email): the auth module, kept for the email-link calls
 function authStart(fbApp){ import("/vendor/firebasejs/10.12.2/firebase-auth.js").then(m=>{
     if(!m || typeof m.initializeAuth!=="function") return;   // the test stub has no auth
@@ -2035,13 +2049,18 @@ function authStart(fbApp){ import("/vendor/firebasejs/10.12.2/firebase-auth.js")
       m.signInAnonymously(a).catch(e=>{ _authErr = String((e && (e.code || e.message)) || "failed").slice(0,80); }); });
     window.addEventListener("online", ()=>{ if(_auth && !_auth.currentUser) m.signInAnonymously(_auth).catch(()=>{}); });
   }).catch(()=>{ _authErr="sdk"; }); }
-async function apiToken(){ try{ const u = _auth && _auth.currentUser; if(!u) return "";
+/* v2.50: a call made in the first seconds after opening waits (up to 4 s) for the quiet sign-in, so it is not refused once the
+   server requires a sign-in (API_AUTH=require) — offline or with sign-in failing, it goes without and the server decides */
+async function apiToken(){ try{ let u = _auth && _auth.currentUser;
+    for(let i=0; !u && _auth && i<20 && !_authErr && navigator.onLine!==false; i++){ await new Promise(r=>setTimeout(r, 200)); u = _auth && _auth.currentUser; }
+    if(!u) return "";
     return await Promise.race([u.getIdToken(), new Promise(r=>setTimeout(()=>r(""), 3000))]) || ""; }catch(e){ return ""; } }
 const API_ORIGIN = "https://grocery-app-2-sage.vercel.app";   // v2.49 S13: inside the iPhone/Android app the page is not on the website, so /api/… needs the full address
 function apiUrl(u){ return (isNativeApp() && /^\/api\//.test(u)) ? API_ORIGIN + u : u; }
 /* every call to the app's own server goes through here, so it carries the phone's sign-in when there is one */
-async function apiFetch(url, opts){ const o = Object.assign({}, opts || {}); const t = await apiToken();
+async function apiFetch(url, opts){ const o = Object.assign({}, opts || {}); const [t, ac] = await Promise.all([apiToken(), appCheckToken()]);
   if(t) o.headers = Object.assign({}, o.headers || {}, { authorization:"Bearer " + t });
+  if(ac) o.headers = Object.assign({}, o.headers || {}, { "x-firebase-appcheck": ac });
   return fetch(apiUrl(url), o); }
 function authNote(){ if(_auth && _auth.currentUser) return "This phone is signed in quietly (an anonymous account — no name, no email).";
   if(/operation-not-allowed|admin-restricted/.test(_authErr)) return "This phone isn't signed in: Anonymous sign-in isn't turned on in Firebase yet.";
@@ -2192,6 +2211,7 @@ function acctHTML(){ if(!configured) return "";
 try {
   if(firebaseConfig.apiKey !== "REPLACE_ME"){
     const app = initializeApp(firebaseConfig);
+    startAppCheck(app);   // v2.50: before Firestore and Auth make their first requests (dormant without a site key)
     try { db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); }
     catch(e){ db = getFirestore(app); }   // fallback if persistence unavailable
     configured = true;
@@ -2202,7 +2222,7 @@ try {
 /* v2.15: the service worker (sw.js) keeps the app, its fonts, its icons and the Firebase SDK on the phone, so it
    opens with no signal once iOS has closed it. Not under test automation unless a suite asks for it (ml_swtest):
    Playwright 1.56 cannot stub a worker's own requests, so a worker there would load the real Firebase SDK. */
-try{ if("serviceWorker" in navigator && (!navigator.webdriver || localStorage.getItem("ml_swtest")==="1")){
+try{ if("serviceWorker" in navigator && !isNativeApp() && (!navigator.webdriver || localStorage.getItem("ml_swtest")==="1")){
   const regSW=()=>{ navigator.serviceWorker.register("/sw.js").catch(()=>{}); };
   if(document.readyState==="complete") regSW(); else window.addEventListener("load", regSW); } }catch(e){}
 /* v2.15: ask the browser to keep this app's data. Safari can clear a website's stored data after weeks without
@@ -4675,7 +4695,9 @@ function rcRead(file){
     .then(r=>r.json().catch(()=>({})).then(j=>({ ok:r.ok, j })))
     .then(({ok,j})=>{ if(!rcpt) return;
       if(!ok){ const c=j && j.code;
-        rcpt={ err: c==="not_configured" ? "Receipt reading isn't set up on the server yet."
+        rcpt={ err: c==="signin" ? "This phone isn't signed in yet. Check your connection and try again."
+          : c==="appcheck" ? "The app couldn't prove it's the real app. Close it completely and open it again."
+          : c==="not_configured" ? "Receipt reading isn't set up on the server yet."
           : c==="quota" ? "The free reading allowance is used up for today. Try again tomorrow."
           : c==="busy" ? "The reader is busy. Try again in a minute."
           : (c==="bad_image" || c==="too_large") ? "Couldn't use that photo. Try a closer, flatter one."
@@ -4907,7 +4929,7 @@ function amSheetHTML(){ const st = storeById(amOpen) || {}, has = !!((state.aisl
     <div class="disp" id="amTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">${t("Aisle map")} · ${esc(st.name || t("this shop"))}</div>
     <div class="hint" style="text-align:left;margin:0 0 10px">${t("One line per aisle, in the order you walk the shop — the number and what the sign says: “5 Pasta, rice &amp; sauces”. The list then follows the shop; Location and AI sort start from it.")}</div>
     <textarea id="amText" class="amtext" rows="10" spellcheck="false" aria-label="${t("Aisles, one per line")}" placeholder="${t("1 Fruit &amp; veg&#10;2 Bread, spreads &amp; cereal&#10;3 Pasta, rice &amp; sauces")}">${esc(amDraft!==null ? amDraft : amLines(amOpen))}</textarea>
-    <div class="amread" role="status">${amRead ? (amRead.busy ? `<span class="spin" aria-hidden="true"></span> ${esc(amRead.step)}` : esc(amRead.err || amRead.ok || "")) : ""}</div>
+    <div class="amread" role="status">${amRead ? (amRead.busy ? `<span class="spin" aria-hidden="true"></span> ${esc(amRead.step)}` : esc(t(amRead.err || amRead.ok || ""))) : ""}</div>
     <button class="optaction" id="amCam" style="margin-top:8px" ${amRead && amRead.busy ? "disabled" : ""}>${CAMERA_SVG(16)} ${t("Read a sign")}</button>
     <div style="display:flex;gap:8px;margin-top:12px"><button class="newlist" id="amSave" style="margin:0">${t("Save")}</button>${has ? `<button class="optaction" id="amClear" style="margin-top:0">${t("Clear")}</button>` : ""}<button class="optaction" id="amClose" style="margin-top:0">${t("Cancel")}</button></div>
   </div></div>`; }
@@ -5004,7 +5026,9 @@ function amReadSign(file){
     .then(({ok,j})=>{ if(ok) aisleCount();   // counted even if the sheet was closed while it read
       if(!amOpen) return;
       if(!ok){ const c=j && j.code;
-        amRead={ err: c==="not_configured" ? "Reading signs isn't set up on the server yet — type the aisle instead."
+        amRead={ err: c==="signin" ? "This phone isn't signed in yet. Check your connection and try again."
+          : c==="appcheck" ? "The app couldn't prove it's the real app. Close it completely and open it again."
+          : c==="not_configured" ? "Reading signs isn't set up on the server yet — type the aisle instead."
           : c==="quota" ? "The free reading allowance is used up for today. Type the aisle, or try tomorrow."
           : c==="busy" ? "The reader is busy. Try again in a minute."
           : (c==="bad_image" || c==="too_large") ? "Couldn't use that photo. Try again, closer to the sign."
@@ -5121,7 +5145,9 @@ function cardReadPhoto(file){
         .then(r=>r.json().catch(()=>({})).then(j=>({ ok:r.ok, j }))); })
     .then(res=>{ if(!res || !cardRead) return; const { ok, j }=res;
       if(!ok){ const c=j && j.code;
-        cardRead={ err: c==="not_configured" ? "Reading cards isn't set up on the server yet — type it in instead."
+        cardRead={ err: c==="signin" ? "This phone isn't signed in yet. Check your connection and try again."
+          : c==="appcheck" ? "The app couldn't prove it's the real app. Close it completely and open it again."
+          : c==="not_configured" ? "Reading cards isn't set up on the server yet — type it in instead."
           : c==="quota" ? "The free reading allowance is used up for today. Type it in, or try tomorrow."
           : c==="busy" ? "The reader is busy. Try again in a minute, or type it in."
           : (c==="bad_image" || c==="too_large") ? "Couldn't use that photo. Try again, closer to the card."
@@ -5345,6 +5371,8 @@ function wireRcptSheet(){
    returns a code alongside its message. */
 function planImpMessage(code){
   switch(code){
+    case "signin":         return t("This phone isn't signed in yet. Check your connection and try again.");
+    case "appcheck":       return t("The app couldn't prove it's the real app. Close it completely and open it again.");
     case "not_configured": return t("Recipe reading isn't set up yet — add a GEMINI_API_KEY (or GROQ_API_KEY) in Vercel (see docs/ai-setup.md). You can still type ingredients.");
     case "model":          return t("The recipe model is no longer available — set GEMINI_MODEL (or GROQ_MODEL) in Vercel (see docs/ai-setup.md).");
     /* v1.93: a queue and a spent allowance are not "couldn't read that" — one asks you to wait a
@@ -5393,6 +5421,8 @@ function planSearchMessage(code){
     /* v1.98: still reachable, but only when nothing at all is set up — no search key and no model,
        so there is nothing to list. (v1.96 used this to refuse TikTok outright; it no longer does.) */
     case "no_video_search": return t("Nothing is set up to search with yet — add a search key or a model key in Vercel (docs/ai-setup.md lists them). You can still paste a TikTok link.");
+    case "signin":          return t("This phone isn't signed in yet. Check your connection and try again.");
+    case "appcheck":        return t("The app couldn't prove it's the real app. Close it completely and open it again.");
     case "not_configured":  return t("Recipe reading isn't set up yet — add a GEMINI_API_KEY (or GROQ_API_KEY) in Vercel (see docs/ai-setup.md).");
     case "model":           return t("The recipe model is no longer available — set GEMINI_MODEL (or GROQ_MODEL) in Vercel (see docs/ai-setup.md).");
     /* v1.93: same two, said the same way, on the search path. */
@@ -6447,7 +6477,9 @@ async function smartAdd(){
     let ecode=""; try{ ecode=((await res.json())||{}).code||""; }catch(e){}
     /* v1.93: an overloaded model and a spent daily quota are not the input's fault either — telling
        someone to rephrase while a queue clears is the same mistake in a smaller hat. */
-    smartError = ecode==="model"
+    smartError = ecode==="signin" ? "This phone isn't signed in yet. Check your connection and try again."
+      : ecode==="appcheck" ? "The app couldn't prove it's the real app. Close it completely and open it again."
+      : ecode==="model"
       ? "Smart add's model is no longer available — set GEMINI_MODEL (or GROQ_MODEL) in Vercel (see docs/ai-setup.md). You can still type items normally."
       : ecode==="busy"
         ? "The model is busy right now — give it a moment and try again. You can still type items normally."

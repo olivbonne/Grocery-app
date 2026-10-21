@@ -49,13 +49,13 @@
     {
       "source": "/",
       "headers": [
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'sha256-4Bp3NZa/MXxjsNYezr/FF+IX3Vnlev5jVqsb08EVu7A=' 'sha256-NGX7HQ5wFVhVzxpnC8yJtmuSr1sW2IO8fvGvUKcsXSg=' 'sha256-pQtBEKBCl+IQiX4oTc+sLkOOVk/cY5LE6dZMKYIilgE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; worker-src 'self'; manifest-src 'self'; media-src 'self' blob: data:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" }
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'sha256-4Bp3NZa/MXxjsNYezr/FF+IX3Vnlev5jVqsb08EVu7A=' 'sha256-NGX7HQ5wFVhVzxpnC8yJtmuSr1sW2IO8fvGvUKcsXSg=' 'sha256-pQtBEKBCl+IQiX4oTc+sLkOOVk/cY5LE6dZMKYIilgE=' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://content-firebaseappcheck.googleapis.com https://www.google.com/recaptcha/; worker-src 'self'; manifest-src 'self'; media-src 'self' blob: data:; frame-src https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" }
       ]
     },
     {
       "source": "/index.html",
       "headers": [
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'sha256-4Bp3NZa/MXxjsNYezr/FF+IX3Vnlev5jVqsb08EVu7A=' 'sha256-NGX7HQ5wFVhVzxpnC8yJtmuSr1sW2IO8fvGvUKcsXSg=' 'sha256-pQtBEKBCl+IQiX4oTc+sLkOOVk/cY5LE6dZMKYIilgE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; worker-src 'self'; manifest-src 'self'; media-src 'self' blob: data:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" }
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'sha256-4Bp3NZa/MXxjsNYezr/FF+IX3Vnlev5jVqsb08EVu7A=' 'sha256-NGX7HQ5wFVhVzxpnC8yJtmuSr1sW2IO8fvGvUKcsXSg=' 'sha256-pQtBEKBCl+IQiX4oTc+sLkOOVk/cY5LE6dZMKYIilgE=' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://content-firebaseappcheck.googleapis.com https://www.google.com/recaptcha/; worker-src 'self'; manifest-src 'self'; media-src 'self' blob: data:; frame-src https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" }
       ]
     },
     {

@@ -17,6 +17,10 @@ kept at the top of each file). These are its CDN builds, `package/firebase-app.j
   `https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js` points at `./firebase-app.js`
   (package file sha256 `9b2ebba6ffced4657e12300f4187d53c8fc1762e98188e5e2005407a86e926b6`). The app loads it
   on its own (a dynamic import in `js/app.js`) after the list, for the quiet sign-in.
+- `firebase-app-check.js` (v2.50) — one change: its import of
+  `https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js` points at `./firebase-app.js`
+  (package file sha256 `8d63723fc3ad5b7342230bbea4a6a60af91a3672703fc0b4e4f9d60169182403`). The app loads it
+  with a dynamic import in `js/app.js` only when App Check is switched on (`APPCHECK_SITE_KEY` set).
 
 The `gstatic.com` strings left inside `firebase-app.js` are only names it gives itself for version
 logging; nothing is fetched from them.

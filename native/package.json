@@ -1,0 +1,19 @@
+{
+  "name": "market-list-native",
+  "private": true,
+  "description": "The iPhone and Android shell around the Market List web app (Capacitor). See docs/native-app.md.",
+  "scripts": {
+    "web": "node copy-web.mjs",
+    "sync": "node copy-web.mjs && npx cap sync",
+    "ios": "node copy-web.mjs && npx cap sync ios && npx cap open ios",
+    "android": "node copy-web.mjs && npx cap sync android && npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "6.1.2",
+    "@capacitor/core": "6.1.2",
+    "@capacitor/ios": "6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "6.1.2"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "appId": "com.example.marketlist",
+  "appName": "Market List",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "ios": { "contentInset": "never" }
+}
