@@ -17,10 +17,15 @@ What they do:
 | Members by account (v2.44): once a list has a record `access/{code}`, only the accounts marked in it (`acl`) can read or write the list; a list with no record yet works as before | A list's code is no longer the only key: a removed person's phone is refused, and an old link alone does not let a stranger in. |
 | `access/{code}` is created by the first signed-in phone with itself as its only person, open for at least 20 days (the app uses 30); someone new adds only themselves — with the link's key (`joinProof` = `joinKey`), or with nothing while it is still open; a member may change anything | The household's phones move over by themselves in the open window; after that only links made from the app (they carry the key) let someone new in. |
 | Shared shelf prices (v2.47): `shared/{key}` (one per chain and item) is read by any signed-in phone, never listed; an email account (not the quiet anonymous one) writes only its own entry `by.<uid>` = a unit price (`p`, 0.05–1000) and a recent time in ms (`d`); never deleted | Households who opt in pool their Coles, Woolworths and ALDI prices. Only email accounts write, so one person cannot pose as many households. |
+| What a list holds (v2.49): a list document has only the fields the app writes (items, Buy again, stores, categories, plan, prices and the rest, plus `v`, the data's version), with lists where lists belong, at most 3,000 items and 3,000 Buy-again entries, 200 stores and a name of 200 characters | A phone, or anyone with a list's code, cannot fill the list with fields the app does not know or with something of the wrong kind that would break it on every phone. |
 | Nothing outside `lists/`, `access/`, `users/` and `shared/` | The app uses no other collection. |
 
 The app only ever reads or listens to `lists/{code}` and writes it whole with `setDoc` (a create, or an update).
 Those are all allowed, so publishing should change nothing the household notices.
+
+**Before publishing the v2.49 rules,** make sure every phone is on v2.49 or later (open the app once on each phone; the
+version shows in Settings). An older app can write a field the new rules refuse, and its changes would stop syncing
+until it updates.
 
 New lists also get stronger codes from v2.25 on: 128 random bits (25 characters) from the browser's cryptographic
 generator, instead of 8 characters from `Math.random()`. Existing lists keep their codes. To move the household's

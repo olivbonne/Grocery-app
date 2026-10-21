@@ -7,22 +7,22 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.48";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.48";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.48";
-import { compareStores, worthIt } from "./compare.js?v=2.48";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.48";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.48";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.48";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.48";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor } from "./platform.js?v=2.48";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.48";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines } from "./parse.js?v=2.48";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { tr, trf } from "./i18n.js?v=2.48";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.49";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.49";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.49";
+import { compareStores, worthIt } from "./compare.js?v=2.49";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.49";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.49";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.49";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.49";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.49";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.49";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines } from "./parse.js?v=2.49";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { tr, trf } from "./i18n.js?v=2.49";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.48";
+const APP_VERSION = "v2.49";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -1691,10 +1691,10 @@ function rememberList(code,name){ const a=getLists(); const i=a.findIndex(x=>x.c
   else { a.push({code, name:name||"Groceries"}); saveLists(a); if(!_acctQuiet) acctWrite({ lists:{ [code]:{ name:name||"Groceries", ts:Date.now() } } }); } }   // v2.40: and the new list
 function newListPrompt(){ listsOpen=false; newListOpen=true; newListDraft=""; render(); }
 function newListSheet(){ return `<div class="sheet-bg kbpin" id="newListBg"><div class="sheet" id="newListSheet">
-    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">New list</div>
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${t("New list")}</div>
     <div style="display:flex;gap:8px;align-items:stretch">
-      <input id="newListName" placeholder="List name" value="${esc(newListDraft)}" autocomplete="off" style="flex:1;min-width:0;height:48px;padding:0 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:16px" />
-      <button id="newListCreate" style="flex:none;padding:0 18px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">Create</button>
+      <input id="newListName" placeholder="${t("List name")}" value="${esc(newListDraft)}" autocomplete="off" style="flex:1;min-width:0;height:48px;padding:0 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:16px" />
+      <button id="newListCreate" style="flex:none;padding:0 18px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">${t("Create")}</button>
     </div></div></div>`; }
 function createNewListFromSheet(){ const nm=(newListDraft||"").trim()||"Untitled list"; const code=newListCode();
   rememberList(code, nm); newListOpen=false; newListDraft=""; _freshList=code; switchList(code); view="detail"; shopMode=false; save(); render(); }
@@ -1902,6 +1902,11 @@ function labelMap(){ const m={}; DEFAULT_CATS.forEach(c=>m[c.label.toLowerCase()
 function parseInput(text){ return parseLines(text, labelMap()); }   // v2.46: the parser is js/parse.js
 
 /* ---- Firebase ---- */
+/* v2.49 (architecture review S9): the list document carries the shape's version. A phone running an older app that sees a
+   NEWER version stops writing (it would overwrite fields it does not know) and asks to be updated. The next data-shape
+   change (v2.51, items saved one by one) raises it. */
+const LIST_V = 1;
+var _newerData = false;   // var: render reads it at boot
 let db=null, listRef=null, applyingRemote=false, unsub=null;
 let netOnline = (typeof navigator!=="undefined" && "onLine" in navigator) ? navigator.onLine : true;
 let syncing=false, fromCache=false;
@@ -1916,6 +1921,8 @@ function subscribe(){
     fromCache = snap.metadata.fromCache;
     if(!syncing && !fromCache) dirtyIds.clear();
     if(snap.exists() && !snap.metadata.hasPendingWrites){ const d = snap.data();
+      _newerData = (+d.v||0) > LIST_V;
+      if(_newerData){ render(); return; }   // v2.49 S9: a newer app's data — leave state alone, show the update card
       const mg = baMerge(d.buyAgain||[], d.baTomb||{}, state.buyAgain||[], state.baTomb||{});   // A24 conflict-free Buy-again
       const mgPurch = purchMerge(d.purch||{}, purch||{});                                        // B4 shared restock history (union merge)
       /* v2.09: prices rides along like plan does. This line rebuilds state from a fixed shape, so a field it does not name is wiped by the next snapshot (CLAUDE.md, the fixed-shape trap). */
@@ -1947,8 +1954,9 @@ var _lockToast = "";
 function lockedNow(){ if(!(accessDenied===listCode && listDenied)) return;
   if(_lockToast!==listCode){ _lockToast=listCode; showToast(ACCESS_LOCKED); } render(); }
 /* …and it stays on screen: a toast is gone in under two seconds, too soon for "this list is closed to you" */
+function newerDataHTML(){ return _newerData ? `<div class="installcard" id="newerNote" role="alert"><div class="ic-t">${t("This list was saved by a newer version of the app")}</div><div class="ic-b">${t("Your changes stay on this phone until it updates. Close the app completely and open it again.")}</div><div class="ic-btns"><button class="newlist" id="newerReload">${t("Update now")}</button></div></div>` : ""; }   // v2.49 S9
 function lockedHTML(){ if(!(accessDenied===listCode && listDenied && _auth && _auth.currentUser)) return "";
-  return `<div class="installcard" id="lockNote" role="alert"><div class="ic-t">This list is closed to this phone</div><div class="ic-b">${esc(t(ACCESS_LOCKED))}</div></div>`; }
+  return `<div class="installcard" id="lockNote" role="alert"><div class="ic-t">${t("This list is closed to this phone")}</div><div class="ic-b">${esc(t(ACCESS_LOCKED))}</div></div>`; }
 const ACCESS_LOCKED = "You're not on this list any more, or its link has changed. Ask someone on it for a new link.";
 function newKey(){ try{ const b=new Uint8Array(16); crypto.getRandomValues(b);
     return btoa(String.fromCharCode(...b)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }   // 22 chars, base64url
@@ -2029,10 +2037,12 @@ function authStart(fbApp){ import("/vendor/firebasejs/10.12.2/firebase-auth.js")
   }).catch(()=>{ _authErr="sdk"; }); }
 async function apiToken(){ try{ const u = _auth && _auth.currentUser; if(!u) return "";
     return await Promise.race([u.getIdToken(), new Promise(r=>setTimeout(()=>r(""), 3000))]) || ""; }catch(e){ return ""; } }
+const API_ORIGIN = "https://grocery-app-2-sage.vercel.app";   // v2.49 S13: inside the iPhone/Android app the page is not on the website, so /api/… needs the full address
+function apiUrl(u){ return (isNativeApp() && /^\/api\//.test(u)) ? API_ORIGIN + u : u; }
 /* every call to the app's own server goes through here, so it carries the phone's sign-in when there is one */
 async function apiFetch(url, opts){ const o = Object.assign({}, opts || {}); const t = await apiToken();
   if(t) o.headers = Object.assign({}, o.headers || {}, { authorization:"Bearer " + t });
-  return fetch(url, o); }
+  return fetch(apiUrl(url), o); }
 function authNote(){ if(_auth && _auth.currentUser) return "This phone is signed in quietly (an anonymous account — no name, no email).";
   if(/operation-not-allowed|admin-restricted/.test(_authErr)) return "This phone isn't signed in: Anonymous sign-in isn't turned on in Firebase yet.";
   if(!configured) return "";
@@ -2256,8 +2266,9 @@ let __saveWarned = 0;
 async function save(){
   try { localStorage.setItem(LS.cache, JSON.stringify(state)); } catch(e){}
   if(!configured) return;
+  if(_newerData) return;   // never write over a newer app's data
   syncing = true;
-  try { await setDoc(listRef, state); }
+  try { await setDoc(listRef, Object.assign(listDoc(state), { shopping: state.shopping||{}, v: LIST_V })); }   // v2.49: only the fields the app knows (the rules refuse others)
   catch(e){ console.error(e);
     if(Date.now()-__saveWarned > 5000){ __saveWarned = Date.now(); showToast("⚠︎ Not syncing — check Firestore rules"); } }
 }
@@ -4158,7 +4169,7 @@ function renderMain(){
     ${checkedBar}
     <div class="wrap ${shopMode?'shop':''}" role="main">
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
-      ${lockedHTML()}${shoppingHTML()}${(()=>{ const c=lookCardHTML()+installCardHTML()+cardNudgeHTML()+rcptNudgeHTML(); return c || onbCardHTML(); })()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
+      ${lockedHTML()}${newerDataHTML()}${shoppingHTML()}${(()=>{ const c=lookCardHTML()+installCardHTML()+cardNudgeHTML()+rcptNudgeHTML(); return c || onbCardHTML(); })()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
           <div class="empty-emoji">🧺</div>
           <p class="empty-title">${t("Your list is empty")}</p>
           <p class="empty-sub">${t("Tap <b>Add items</b> below — or start from these:")}</p>
@@ -4183,15 +4194,15 @@ function renderMain(){
 
 function listActSheet(){ const a=getLists(); const idx=a.findIndex(x=>x.code===listActCode); const l=a[idx]||{};
   return `<div class="sheet-bg" id="listActBg"><div class="sheet" id="listActSheet">
-    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${esc(l.name||'List')}</div>
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${esc(l.name||t('List'))}</div>
     <div style="display:flex;gap:8px;margin-bottom:10px">
-      <button class="optaction" id="laUp" style="flex:1;margin:0" ${idx<=0?'disabled style="flex:1;margin:0;opacity:.35"':''}>↑ Move up</button>
-      <button class="optaction" id="laDown" style="flex:1;margin:0" ${idx>=a.length-1?'disabled style="flex:1;margin:0;opacity:.35"':''}>↓ Move down</button>
+      <button class="optaction" id="laUp" style="flex:1;margin:0" ${idx<=0?'disabled style="flex:1;margin:0;opacity:.35"':''}>↑ ${t("Move up")}</button>
+      <button class="optaction" id="laDown" style="flex:1;margin:0" ${idx>=a.length-1?'disabled style="flex:1;margin:0;opacity:.35"':''}>↓ ${t("Move down")}</button>
     </div>
-    <button class="optaction" id="laRename">Rename</button>
-    <button class="optaction" id="laShare">Share</button>
-    <button class="optaction" id="laDup">Duplicate list</button>
-    <button class="optaction" id="laDelete" style="border-color:#C24A33;color:#C24A33">Delete</button>
+    <button class="optaction" id="laRename">${t("Rename")}</button>
+    <button class="optaction" id="laShare">${t("Share")}</button>
+    <button class="optaction" id="laDup">${t("Duplicate list")}</button>
+    <button class="optaction" id="laDelete" style="border-color:#C24A33;color:#C24A33">${t("Delete")}</button>
   </div></div>`;
 }
 /* v1.81: the switcher's "Create new list" can be tapped from the Shop page now, so the sheet it opens
@@ -4651,7 +4662,7 @@ function rcStoreFor(detected){ const n=String(detected||"").toLowerCase().trim()
   const act=activeStore(); if(!n && act && isRealStore(act.id)) return { id:act.id, name:act.name };
   return { id:"", name:String(detected||"").trim() }; }
 function rcRead(file){
-  if(rcptToday()>=RCPT_DAY_CAP){ rcpt={ err:`That's ${RCPT_DAY_CAP} receipts read on this phone today, the most in a day. Keep the receipt — it can be read tomorrow.` }; render(); return; }
+  if(rcptToday()>=RCPT_DAY_CAP){ rcpt={ err:tf("That's {n} receipts read on this phone today, the most in a day. Keep the receipt — it can be read tomorrow.", { n:RCPT_DAY_CAP }) }; render(); return; }
   /* v2.11: every wait is visible, and every wait ends — either in the review or in a message. The sheet
      opens the moment a photo is chosen and says which step it is on; the request is abandoned after 75s
      (the function itself stops at 60s), so a dead connection can never leave the sheet spinning. */
@@ -4685,17 +4696,17 @@ function rcRead(file){
         : "Couldn't read that receipt." }; render(); } })
     .finally(()=>clearTimeout(timer)); }
 function rcSave(){ if(!rcpt || !rcpt.lines) return;
-  const used=new Set(); let n=0, m=0; const t=Date.now();
+  const used=new Set(); let n=0, m=0; const at=Date.now();   // v2.49 not "t": that name is the translation function
   for(const L of rcpt.lines){ const nm=String(L.name||"").trim(); if(!L.keep || !nm || !isFinite(L.price)) continue;
-    priceRecord(nm, { p:Math.round(L.price*100)/100, s:rcpt.store.id||"", sn:rcpt.store.name||"", l:rcpt.place||"", d:rcpt.date, q:L.qty||1, w:L.weight||"", t });   // v2.32 l: the shop's suburb, from the receipt n++;
+    priceRecord(nm, { p:Math.round(L.price*100)/100, s:rcpt.store.id||"", sn:rcpt.store.name||"", l:rcpt.place||"", d:rcpt.date, q:L.qty||1, w:L.weight||"", t:at });   // v2.32 l: the shop's suburb, from the receipt n++;
     /* the name may have been corrected in the sheet, so match again on what was saved */
-    const it=rcMatchItem(nm, used); if(it){ used.add(it.id); it.checked=true; it.checkedBy=me; it.checkedAt=t; it.checkedStore=rcpt.store.id||""; markDirty(it.id); m++; } }
+    const it=rcMatchItem(nm, used); if(it){ used.add(it.id); it.checked=true; it.checkedBy=me; it.checkedAt=at; it.checkedStore=rcpt.store.id||""; markDirty(it.id); m++; } }
   /* v2.20: a receipt from a member chain that shows the member discount uses up that period's 10% */
   let tenMsg = ""; { const k = chainOfStore((rcpt.store && rcpt.store.name) || rcpt.detected), m = memb();
     if(k && m[k].on && discountSeen(rcpt.discounts, k)){ const p = membMark(m, k, true, new Date(rcpt.date + "T12:00:00")); state.memb = m; tenMsg = " · " + tf("{chain} {pct}% used for {m}", { chain:CHAINS[k].short, pct:m[k].pct, m:monthName(p) }); } }
   /* v2.24 R20: the receipt, for "What we spend" — under the same time its prices were saved with, so the rebuild from the
      price memory never counts it twice */
-  { const se = spendEntry({ t, d:rcpt.date, s:(rcpt.store && rcpt.store.id) || "", sn:(rcpt.store && rcpt.store.name) || "", total:rcpt.total,
+  { const se = spendEntry({ t:at, d:rcpt.date, s:(rcpt.store && rcpt.store.id) || "", sn:(rcpt.store && rcpt.store.name) || "", total:rcpt.total,
       lines:rcpt.lines.filter(L => L.keep && String(L.name || "").trim() && isFinite(L.price)).map(L => ({ price:+L.price, cat:L.cat })), discounts:rcpt.discounts });
     if(se.tot > 0) state.spend = spendLog(state.spend, se, SPEND_MAX); }
   sharedContribute(rcpt);   // v2.47: after the prices are saved
@@ -5034,8 +5045,8 @@ function rcPair(){ if(!rcpt || !rcpt.lines) return; const cart=rcCart(); rcpt.ca
   rcpt.lines.forEach((L,i)=>{ L.read=L.name; L.cart=r.pair[i]; L.how=r.how[i]; if(L.cart!==null) L.name=cart[L.cart].name; }); }
 function rcCartSummary(){ const cart=rcpt.cart, took=new Set(rcpt.lines.filter(L=>L.keep && L.cart!==null && L.cart!==undefined).map(L=>L.cart));
   const miss=cart.filter((c,k)=>!took.has(k)), guess=rcpt.lines.filter(L=>L.keep && L.how==="order").length;
-  return `<div class="rccartsum" role="status"><b>${cart.length-miss.length} of ${cart.length} ticked item${cart.length===1?"":"s"} found on the receipt</b>${guess?` · ${guess} matched by the order you ticked them — check those`:""}
-    ${miss.length?`<div class="rcmiss">Ticked but not on the receipt: ${miss.map(c=>esc(c.name)).join(", ")}</div>`:""}</div>`; }
+  return `<div class="rccartsum" role="status"><b>${tf(cart.length===1?"{a} of {b} ticked item found on the receipt":"{a} of {b} ticked items found on the receipt", { a:cart.length-miss.length, b:cart.length })}</b>${guess?` · ${tf("{n} matched by the order you ticked them — check those", { n:guess })}`:""}
+    ${miss.length?`<div class="rcmiss">${t("Ticked but not on the receipt:")} ${miss.map(c=>esc(c.name)).join(", ")}</div>`:""}</div>`; }
 /* v2.31 (the household's item 5): membership cards for the till — a name, the shop it is for, its number (drawn as a
    Code 128 barcode, js/till.js) and, if added, a photo of the card. On this phone only (ml_cards): never synced, never sent. */
 const CARD_MAX = 6;
@@ -5081,7 +5092,7 @@ function cardShowHTML(){ const all=cardsGet(); let ix=cardShow.add ? all.length 
   const bc=c.num ? code128SVG(c.num, 70) : "", want=cardShow.view || cardViewPref(), view=((want==="photo" && c.photo) || !bc) ? "photo" : "code";
   const br=cardBrand(c.name, cardChain(c));   // v2.37 (the household's item 3): the programme's colour and name above the barcode
   return `<div class="sheet-bg sheettop" id="cardBg"><div class="sheet" id="cardSheet" role="dialog" aria-labelledby="cardTitle">
-    <div class="cardface" id="cardSwipe"><div class="cardband" style="background:${br.bg};color:${br.fg}"><span class="cardband-n" id="cardTitle">${esc(c.name)}</span></div>${view==="photo" && c.photo ? `<img src="${esc(c.photo)}" alt="Photo of the ${esc(c.name)} card" />` : `${bc}<div class="cardnum">${esc(cardNumFmt(c.num))}</div>`}</div>
+    <div class="cardface" id="cardSwipe"><div class="cardband" style="background:${br.bg};color:${br.fg}"><span class="cardband-n" id="cardTitle">${esc(c.name)}</span></div>${view==="photo" && c.photo ? `<img src="${esc(c.photo)}" alt="${esc(tf("Photo of the {name} card", { name:c.name }))}" />` : `${bc}<div class="cardnum">${esc(cardNumFmt(c.num))}</div>`}</div>
     ${(bc && c.photo) ? `<div class="cardhead"><div class="seg"><button data-card-view="code" class="${view==="code"?'on':''}">${t("Barcode")}</button><button data-card-view="photo" class="${view==="photo"?'on':''}">${t("Photo")}</button></div></div>` : ""}
     ${dots}
     <div class="hint" style="margin-top:2px">${all.length>1 ? t("Swipe the card for your other cards, or to add one") : t("Swipe the card to add one")}</div>
@@ -5302,11 +5313,11 @@ function rcptSheet(){
   <p class="palabel">${t("Store")}</p>
   <div class="slotseg rcstores">${chips}</div>
   <div class="rcmeta"><label for="rcDate">${t("Date")}</label><input id="rcDate" type="date" value="${esc(rcpt.date)}" /></div>
-  <div class="rcsum"><b>${tf("Total on the receipt: {x}", { x:rcpt.total ? priceMoney(rcpt.total) : t("not read") })}</b><br>${kept===1?tf("{n} item kept",{ n:kept }):tf("{n} items kept",{ n:kept })} · ${priceMoney(sumKept)}${(()=>{ const d=(rcpt.discounts||[]).reduce((a,x)=>a+((+x.amount>0)?+x.amount:0),0); return d>0 ? ` · discounts −${priceMoney(d)}` : ""; })()}${rcpt.total && Math.abs(rcpt.total-sumKept)>0.05 ? ` · ${priceMoney(Math.abs(rcpt.total-sumKept))} ${rcpt.total>sumKept?"not in the lines read":"more than the total"}` : ""}</div>
+  <div class="rcsum"><b>${tf("Total on the receipt: {x}", { x:rcpt.total ? priceMoney(rcpt.total) : t("not read") })}</b><br>${kept===1?tf("{n} item kept",{ n:kept }):tf("{n} items kept",{ n:kept })} · ${priceMoney(sumKept)}${(()=>{ const d=(rcpt.discounts||[]).reduce((a,x)=>a+((+x.amount>0)?+x.amount:0),0); return d>0 ? ` · ${t("discounts")} −${priceMoney(d)}` : ""; })()}${rcpt.total && Math.abs(rcpt.total-sumKept)>0.05 ? ` · ${priceMoney(Math.abs(rcpt.total-sumKept))} ${rcpt.total>sumKept?t("not in the lines read"):t("more than the total")}` : ""}</div>
   ${(rcpt.cart && rcpt.cart.length) ? rcCartSummary() : ""}<div class="rclines">${rcpt.lines.map((L,i)=>`<div class="rcrow${L.keep?"":" off"}">
-     <button class="smartcheck ${L.keep?"on":""}" data-rckeep="${i}" role="checkbox" aria-checked="${L.keep?"true":"false"}" aria-label="${L.keep?"Leave out":"Keep"} ${esc(L.name)}">✓</button>
-     <div class="rcmid"><input class="rcname" data-rcname="${i}" value="${esc(L.name)}" aria-label="Item ${i+1}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
-       <span class="rcraw">${esc(L.raw)}${L.qty>1?` · ${L.qty}×`:""}${L.weight?` · ${esc(L.weight)}`:""}${L.match?` · <b>${t("on your list")}</b>`:""}</span>${(rcpt.cart && rcpt.cart.length && L.keep) ? `<select class="rccart${L.how==="order"?" guess":""}" data-rccart="${i}" aria-label="Which ticked item is line ${i+1}"><option value="">${t("Not from the cart")}</option>${rcpt.cart.map((c,k)=>`<option value="${k}"${L.cart===k?" selected":""}>${k+1}. ${esc(c.name)}</option>`).join("")}</select>${L.how==="order"?`<span class="rcguess">Matched by the order you ticked — check</span>`:""}` : ""}</div>
+     <button class="smartcheck ${L.keep?"on":""}" data-rckeep="${i}" role="checkbox" aria-checked="${L.keep?"true":"false"}" aria-label="${esc(tf(L.keep?"Leave out {name}":"Keep {name}", { name:L.name }))}">✓</button>
+     <div class="rcmid"><input class="rcname" data-rcname="${i}" value="${esc(L.name)}" aria-label="${tf("Item {n}", { n:i+1 })}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
+       <span class="rcraw">${esc(L.raw)}${L.qty>1?` · ${L.qty}×`:""}${L.weight?` · ${esc(L.weight)}`:""}${L.match?` · <b>${t("on your list")}</b>`:""}</span>${(rcpt.cart && rcpt.cart.length && L.keep) ? `<select class="rccart${L.how==="order"?" guess":""}" data-rccart="${i}" aria-label="${tf("Which ticked item is line {n}", { n:i+1 })}"><option value="">${t("Not from the cart")}</option>${rcpt.cart.map((c,k)=>`<option value="${k}"${L.cart===k?" selected":""}>${k+1}. ${esc(c.name)}</option>`).join("")}</select>${L.how==="order"?`<span class="rcguess">${t("Matched by the order you ticked — check")}</span>`:""}` : ""}</div>
      <span class="rcprice">${priceMoney(L.price)}</span></div>`).join("")}</div>
   <div class="ppedbtns"><button class="optaction" id="rcCancel">${t("Cancel")}</button><button class="newlist" id="rcSaveBtn">${kept===1?tf("Save {n} price",{ n:kept }):tf("Save {n} prices",{ n:kept })}</button></div>
 </div></div>`; }
@@ -7319,7 +7330,7 @@ function editSheet(){
         ${iconEditorHTML()}
         <input id="catName" value="${esc(editing.label)}" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text)" />
         <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
-          <div style="font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap">${idx+1} of ${n}</div>
+          <div style="font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap">${tf("{a} of {b}", { a:idx+1, b:n })}</div>
           <div style="display:flex;gap:4px">
             <button class="iconbtn" id="moveUp" ${idx<=0?'disabled style="opacity:.35"':''} style="font-size:16px">↑</button>
             <button class="iconbtn" id="moveDown" ${idx>=n-1?'disabled style="opacity:.35"':''} style="font-size:16px">↓</button>
@@ -7329,11 +7340,11 @@ function editSheet(){
       <div id="stripWrap">${iconStripHTML()}</div>
       <input id="iconFile" type="file" accept="image/*" style="display:none" />
       <input id="emojiKbd" inputmode="text" autocomplete="off" style="position:absolute;opacity:0;height:1px;width:1px;pointer-events:none;left:-9999px" />
-      <div style="margin-top:16px"><button id="addSubBtn" style="border:none;background:var(--chip);color:var(--text);font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px">+ Add subcategory</button></div>
+      <div style="margin-top:16px"><button id="addSubBtn" style="border:none;background:var(--chip);color:var(--text);font-size:12px;font-weight:700;padding:7px 12px;border-radius:999px">${t("+ Add subcategory")}</button></div>
       <div style="margin-top:8px">${subRows}</div>
       <div style="display:flex;gap:8px;margin-top:16px">
-        <button id="catRemove" style="padding:13px 16px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:15px">Delete</button>
-        <button id="catSave" style="flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">Save</button>
+        <button id="catRemove" style="padding:13px 16px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:15px">${t("Delete")}</button>
+        <button id="catSave" style="flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">${t("Save")}</button>
       </div>
     </div></div>`;
   }
@@ -7341,12 +7352,12 @@ function editSheet(){
     const shown = catList().filter(c=> state.items.some(i=>catShown(i.cat)===c.id) || c.custom).length;
     const n = shown+1; const idx = Math.max(0, Math.min(editing.pos|0, shown));
     return `<div class="sheet-bg kbpin" id="sheetBg"><div class="sheet" id="sheet">
-      <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">Edit “Buy again”</div>
+      <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${t("Edit “Buy again”")}</div>
       <div style="display:flex;gap:8px;align-items:center">
         ${iconEditorHTML()}
         <input id="catName" value="${esc(editing.label)}" style="flex:1;min-width:0;padding:12px 14px;border-radius:14px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text)" />
         <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
-          <div style="font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap">${idx+1} of ${n}</div>
+          <div style="font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap">${tf("{a} of {b}", { a:idx+1, b:n })}</div>
           <div style="display:flex;gap:4px">
             <button class="iconbtn" id="baUp" ${idx<=0?'disabled style="opacity:.35"':''} style="font-size:16px">↑</button>
             <button class="iconbtn" id="baDown" ${idx>=n-1?'disabled style="opacity:.35"':''} style="font-size:16px">↓</button>
@@ -7357,8 +7368,8 @@ function editSheet(){
       <input id="iconFile" type="file" accept="image/*" style="display:none" />
       <input id="emojiKbd" inputmode="text" autocomplete="off" style="position:absolute;opacity:0;height:1px;width:1px;pointer-events:none;left:-9999px" />
       <div style="display:flex;gap:8px;margin-top:16px">
-        <button id="baDeleteHist" style="padding:13px 12px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:14px">Delete history</button>
-        <button id="baCatSave" style="flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">Save</button>
+        <button id="baDeleteHist" style="padding:13px 12px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:14px">${t("Delete history")}</button>
+        <button id="baCatSave" style="flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">${t("Save")}</button>
       </div>
     </div></div>`;
   }
@@ -7517,6 +7528,7 @@ function wire(){
   const aiAp=app.querySelector("[data-ai-apply]"); if(aiAp) aiAp.onclick=aiApplyProposal;   // B7 accept the proposed aisle order
   const aiKp=app.querySelector("[data-ai-keep]"); if(aiKp) aiKp.onclick=aiDismissProposal;   // B7 revert / keep current
   const lsw=app.querySelector("#listSwitch"); if(lsw) lsw.onclick=()=>{ listsOpen=true; render(); };   // v1.81 title opens the switcher
+  const nrl=app.querySelector("#newerReload"); if(nrl) nrl.onclick=()=>location.reload();   // v2.49 S9 newer-data card
   const icd=app.querySelector("#installDone"); if(icd) icd.onclick=installDismiss;   // v2.15 install card
   const rng=app.querySelector("#rcNudgeGo"); if(rng) rng.onclick=()=>{ rcptNudgeClear(); rcPick(); };   // v2.17 the receipt at the till
   onbWire();   // v2.48 first-time cards
