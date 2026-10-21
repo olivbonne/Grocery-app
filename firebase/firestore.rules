@@ -30,8 +30,9 @@ service cloud.firestore {
       // v2.49 (architecture review S2): only the fields the app writes, of the right kind. A phone on an app older than
       // v2.49 may write a stray old field and be refused until it updates — the owner publishes this (docs/firestore-rules.md).
       function listOk(d) {
-        return d.keys().hasOnly(['items','buyAgain','baTomb','stores','storeMeta','members','categories','name','baMeta','predictReset','purch','plan','prices','aisle','memb','shopping','templates','spend','looks','aislemap','v'])
+        return d.keys().hasOnly(['items','buyAgain','baTomb','stores','storeMeta','members','categories','name','baMeta','predictReset','purch','plan','prices','aisle','memb','shopping','templates','spend','looks','aislemap','itemTomb','v'])
           && d.get('items', []) is list && d.get('items', []).size() <= 3000
+          && d.get('itemTomb', {}) is map && d.get('itemTomb', {}).size() <= 5000
           && d.get('buyAgain', []) is list && d.get('buyAgain', []).size() <= 3000
           && d.get('members', []) is list
           && d.get('name', '') is string && d.get('name', '').size() <= 200
