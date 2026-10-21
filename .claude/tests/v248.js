@@ -147,7 +147,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     await mk({ onb:{ fresh:1, shops:'skip', tip:1, visits:{ c1:[DAY(0)] } } });
     await tap('#setNav'); await page.locator('#optOnbReset').scrollIntoViewIfNeeded(); await tap('#optOnbReset');
     const o2 = await onb();
-    ok('Settings › "Ask the first-time questions again" clears the answers and keeps the visit days', o2.fresh===1 && !o2.shops && !o2.tip && o2.visits && o2.visits.c1, JSON.stringify(o2));
+    ok('Settings › First-time questions › Ask again clears the answers and keeps the visit days', o2.fresh===1 && !o2.shops && !o2.tip && o2.visits && o2.visits.c1, JSON.stringify(o2));
   } catch(e){ ok('suite ran to the end', false, e.message.slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));
   await browser.close();
