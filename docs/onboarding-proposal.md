@@ -1,4 +1,11 @@
-# First-time use — a proposal (October 2026, the household's item 4) — FOR FEEDBACK, nothing built yet
+# First-time use — a proposal (October 2026, the household's item 4) — BUILT in v2.48
+
+**Decided (2026-10-21, the household took every suggestion):** 1. "Your shops" waits until the first time in Shop, not first
+launch. 2. Pinning is offered on the first tick at a shop with no pin — and when auto-detect knows no shop, the card asks
+which shop this is, pins it, and gives that trip's ticks (last 3 hours) the shop. 3. The aisle map is offered on the second
+day at a shop with no map. 4. "Never" is per shop. Moments 1 and 2 are for a NEW phone only (one that gave its name since
+v2.48), so the household's phones are not lectured. Phone-level answers live in `ml_onb`; Settings › Shopping › "Ask the
+first-time questions again" clears them. Suite: `.claude/tests/v248.js`.
 
 The household asked: "the workflow after adding to Regulars should consider the first time using the app — define where
 this applies, make sure it doesn't disturb the rest; add the membership card (scan, photo, file or later) if not already
