@@ -34,13 +34,13 @@ const req = (tok)=>({ method:'POST', headers: Object.assign({ 'x-forwarded-for':
 const FSTUB = `export const initializeApp=()=>({});export const getFirestore=()=>({});
 export const initializeFirestore=()=>({});export const persistentLocalCache=()=>({});
 export const persistentMultipleTabManager=()=>({});export const doc=()=>({});
-export const onSnapshot=()=>()=>{};export const setDoc=async()=>{};export default {};`;
+export const onSnapshot=()=>{ (window.__order=window.__order||[]).push('db'); return ()=>{}; };export const setDoc=async()=>{};export default {};`;
 const AUTHSTUB = `export const indexedDBLocalPersistence={}, browserLocalPersistence={};
 const A={ currentUser:null }; export function initializeAuth(){ return A; }
 export function onAuthStateChanged(a,f){ setTimeout(()=>f(null),0); return ()=>{}; }
 export async function signInAnonymously(){ throw Object.assign(new Error('x'),{code:'auth/offline'}); }`;
 const ACSTUB = `window.__acLoaded=true; export class ReCaptchaEnterpriseProvider{ constructor(k){ window.__acKey=k; } }
-export function initializeAppCheck(app,o){ window.__acInit=!!(o && o.provider); return { ok:true }; }
+export function initializeAppCheck(app,o){ window.__acInit=!!(o && o.provider); (window.__order=window.__order||[]).push('ac'); return { ok:true }; }
 export async function getToken(){ return { token:'ac-token' }; }`;
 const seed = `(() => { if(localStorage.getItem("t_seeded")) return; localStorage.setItem("t_seeded","1");
   localStorage.setItem("ml_cache_v101", JSON.stringify({ items:[{id:"1",name:"Milk",cat:"dairy",qty:1,weight:"",checked:false,tags:[]}], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:["O"], name:"Groceries",
@@ -96,6 +96,8 @@ const seed = `(() => { if(localStorage.getItem("t_seeded")) return; localStorage
     ok('with no site key: no App Check file, no reCAPTCHA, and the call carries no App Check header', !reqs.some(r=>/firebase-app-check|recaptcha/.test(r)) && api0 && !/x-firebase-appcheck/.test(api0), reqs.filter(r=>!/firebase-(app|firestore|auth)\.js/.test(r)).join(' ').slice(0,300));
     await mk('site-key-123');
     ok('switched on: the App Check file is loaded and set up with the site key', await page.evaluate(()=>window.__acLoaded===true && window.__acInit===true && window.__acKey==='site-key-123'), '');
+    const order = await page.evaluate(()=>window.__order||[]);
+    ok('v2.54: App Check is in place BEFORE the database makes its first request (else the first requests of every launch go unverified)', order[0]==='ac' && order.includes('db'), JSON.stringify(order));
     await report();
     const api1 = reqs.find(r=>r.startsWith('API ')) || '';
     ok('…and an /api call carries its token', /"x-firebase-appcheck":"ac-token"/.test(api1), api1.slice(0,200));

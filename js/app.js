@@ -2042,10 +2042,14 @@ var _auth = null, _authErr = "";   // var: Settings reads them at any time
 const APPCHECK_SITE_KEY = "6LcX4vwtAAAAACbmrxOgibD3Gv8wOrIrUc-icGU9";   // v2.52, Fraud Defense
 var _appCheck = null, _appCheckMod = null;
 function appCheckKey(){ try{ if(navigator.webdriver) return String(window.__appCheckKey || ""); }catch(e){} return APPCHECK_SITE_KEY; }   // under automation only a test's own key: no suite ever loads Google's real script
-function startAppCheck(app){ const key = appCheckKey(); if(!key || _appCheck) return;
-  import("/vendor/firebasejs/10.12.2/firebase-app-check.js").then(m => { _appCheckMod = m;
+/* v2.54: returns when App Check is in place (or at most 2.5 s, or at once without a key), so the database and sign-in are
+   started AFTER it — v2.52 started them alongside, and the first requests of every launch went out unverified (seen in
+   Firebase › App Check: 6 of 39 in an hour), which enforcement would have refused. */
+function startAppCheck(app){ const key = appCheckKey(); if(!key || _appCheck) return Promise.resolve();
+  const ready = import("/vendor/firebasejs/10.12.2/firebase-app-check.js").then(m => { _appCheckMod = m;
     _appCheck = m.initializeAppCheck(app, { provider: new m.ReCaptchaEnterpriseProvider(key), isTokenAutoRefreshEnabled: true }); })
-  .catch(() => {}); }   // offline or blocked: the app works on; the server decides what an unchecked call gets
+  .catch(() => {});   // offline or blocked: the app works on; the server decides what an unchecked call gets
+  return Promise.race([ready, new Promise(r => setTimeout(r, 2500))]); }   // offline or blocked: the app works on; the server decides what an unchecked call gets
 async function appCheckToken(){ if(!_appCheck || !_appCheckMod) return "";
   try{ const r = await Promise.race([_appCheckMod.getToken(_appCheck, false), new Promise(res => setTimeout(() => res(null), 3000))]); return (r && r.token) || ""; }catch(e){ return ""; } }
 var _authM = null;   // v2.40 (sign-in by email): the auth module, kept for the email-link calls
@@ -2228,12 +2232,15 @@ function acctHTML(){ if(!configured) return "";
 try {
   if(firebaseConfig.apiKey !== "REPLACE_ME"){
     const app = initializeApp(firebaseConfig);
-    startAppCheck(app);   // v2.50: before Firestore and Auth make their first requests (dormant without a site key)
-    try { db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); }
-    catch(e){ db = getFirestore(app); }   // fallback if persistence unavailable
-    configured = true;
-    subscribe();
-    authStart(app);
+    /* v2.54: App Check first, then the database and sign-in (see startAppCheck). Until then the app runs on its local copy:
+       a change made meanwhile is kept, stamped, and merged in by the first snapshot (v2.51). */
+    configured = true;   // the screens ask this at once; save() waits for listRef, which subscribe() sets
+    startAppCheck(app).then(() => { try {
+      try { db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); }
+      catch(e){ db = getFirestore(app); }   // fallback if persistence unavailable
+      subscribe();
+      authStart(app);
+    } catch(e){ console.error(e); } });
   }
 } catch(e){ console.error(e); }
 /* v2.15: the service worker (sw.js) keeps the app, its fonts, its icons and the Firebase SDK on the phone, so it
@@ -2306,7 +2313,7 @@ async function save(){
   stampItems(state.items || [], _itemSigs, state.itemTomb, Date.now());
   state.itemTomb = pruneTomb(state.itemTomb, Date.now());
   try { localStorage.setItem(LS.cache, JSON.stringify(state)); } catch(e){}
-  if(!configured) return;
+  if(!configured || !listRef) return;   // v2.54: !listRef — the database starts after App Check (a change made before is merged in by the first snapshot)
   if(_newerData) return;   // never write over a newer app's data
   syncing = true;
   try { await setDoc(listRef, Object.assign(listDoc(state), { shopping: state.shopping||{}, itemTomb: state.itemTomb||{}, v: LIST_V })); }   // v2.49: only the fields the app knows (the rules refuse others)
