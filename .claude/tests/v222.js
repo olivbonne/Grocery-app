@@ -86,6 +86,9 @@ const seed = (store, extra) => `(() => {
     await mk('home');
     const milk = page.locator('#zoomer .pill[data-pill="3"]');
     await milk.dispatchEvent('pointerdown'); await page.waitForTimeout(600); await milk.dispatchEvent('pointerup'); await page.waitForTimeout(500);
+    /* SUPERSEDED by v2.57: the note is a folded section like Category (the household's item 11) — open it first.
+       Still protects: the editor has a note box and "Where to buy: Anywhere". */
+    if(await page.locator('#enHead').count()){ await page.locator('#enHead').click(); await page.waitForTimeout(400); }
     ok('a long press opens the editor, with a note box and "Where to buy: Anywhere"', await page.locator('#editNote').count()===1
        && /Where to buy\s*Anywhere/.test(await page.evaluate(()=>(document.querySelector('#ewHead')||{}).textContent||'')), '');
     await page.locator('#editNote').fill('2L full cream');

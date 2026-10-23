@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has } from "./store.js?v=2.56";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.56";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.56";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.56";
-import { compareStores, worthIt } from "./compare.js?v=2.56";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.56";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.56";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.56";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.56";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, canReadClipboard, readClipboardText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.56";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.56";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines } from "./parse.js?v=2.56";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.56";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.56";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has } from "./store.js?v=2.57";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.57";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.57";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.57";
+import { compareStores, worthIt } from "./compare.js?v=2.57";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.57";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.57";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.57";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.57";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.57";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.57";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines } from "./parse.js?v=2.57";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.57";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.57";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.56";
+const APP_VERSION = "v2.57";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -1792,6 +1792,28 @@ purch = state.purch;
 if(shopMode && !(state.items||[]).length){ shopMode=false; }   // nothing to shop — open on Plan
 let toast=null, toastAction=null, undoSnap=null, _toastT=null, catEntry=null, editing=null, configured=false;
 let editCatOpen=false, editSubOpen=false;   // v1.26 collapsible Category / Subcategory sections in the edit sheet
+var editNoteOpen=false, _editFoldKey="", _aeFoldKey="";   // v2.57 item 9: the Note section; which edit was last shown folded. var: boot-order rule
+/* v2.57 item 9a: an edit always opens folded — when the edit shown is not the one shown last, every section closes */
+function editFold(key){ if(key!==_editFoldKey){ _editFoldKey=key; editCatOpen=editSubOpen=editWhereOpen=editNoteOpen=false; } }
+function aeFold(key){ if(key!==_aeFoldKey){ _aeFoldKey=key; editCatOpen=editSubOpen=editWhereOpen=editNoteOpen=false; } }
+/* v2.57 item 9d: note suggestions — notes used before for this name (items and Regulars), then NOTE_HINTS for its stem */
+function noteParts(n){ return String(n||"").split(/\s*,\s*/).map(x=>x.trim()).filter(Boolean); }
+function noteSuggest(name){ const nm=String(name||"").trim().toLowerCase(); if(!nm) return [];
+  const seen=new Set(), out=[];
+  const add=x=>{ const k=x.toLowerCase(); if(!seen.has(k)){ seen.add(k); out.push(x); } };
+  const used=[]; [...(state.items||[]), ...(state.buyAgain||[])].forEach(i=>{ if(i && String(i.name||"").trim().toLowerCase()===nm) noteParts(i.note).forEach(x=>used.push(x)); });
+  used.forEach(x=>{ if(out.length<6) add(x); });
+  const stem=Object.keys(NOTE_HINTS).sort((a,b)=>b.length-a.length).find(k=>new RegExp("(^|[^a-z])"+k+"(e?s)?($|[^a-z])").test(nm));
+  if(stem) NOTE_HINTS[stem].forEach(add);
+  return out; }
+function noteToggle(note, chip){ const ps=noteParts(note), i=ps.findIndex(x=>x.toLowerCase()===chip.toLowerCase());
+  if(i>=0) ps.splice(i,1); else ps.push(chip); return ps.join(", ").slice(0,140); }
+/* the Note section, shared by both editors: attr names the data attributes each one wires */
+function noteSecHTML(note, name, a){ const ps=noteParts(note).map(x=>x.toLowerCase());
+  return `<button class="editsec" ${a.head}><span class="editsec-l">${t("Note")}</span><span class="editsec-v">${esc(note||"—")}<span class="editsec-ch">${editNoteOpen?'▾':'▸'}</span></span></button>
+    ${editNoteOpen ? `<input ${a.input} value="${esc(note||"")}" maxlength="140" placeholder="${t("Note")}" aria-label="${t("Note")}" class="editnote" />
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${noteSuggest(name).map(x=>{ const on=ps.includes(x.toLowerCase());
+        return `<button class="catchip${on?' on':''}" ${a.chip}="${esc(x)}" aria-pressed="${on}" style="${on?'background:var(--btn);border-color:var(--btn);color:#fff':''}">${esc(x)}</button>`; }).join("")}</div>` : ""}`; }
 var editWhereOpen=false, elseOpen=false;   // v2.22 the edit sheet's "Where to buy" section; the Shop page's "For other shops". var: renders read them at boot
 /* v2.22 R17 where to buy it. "Away" is the shop you are at — a real saved store, not Home or an unknown place — and an
    item for ANOTHER shop is not "here". At home nothing is away, so everything is here. */
@@ -1945,6 +1967,7 @@ var _newerData = false;   // var: render reads it at boot
 let db=null, listRef=null, applyingRemote=false, unsub=null;
 let netOnline = (typeof navigator!=="undefined" && "onLine" in navigator) ? navigator.onLine : true;
 let syncing=false, fromCache=false;
+var saveDiag = { last:0, max:0 }, _pendSince = 0;   // v2.57: how long the last save waited (Settings › Help › Connection check)
 let dirtyIds = new Set();   // items changed locally, not yet confirmed by server
 function markDirty(id){ if(id) dirtyIds.add(id); }
 function subscribe(){
@@ -1952,7 +1975,10 @@ function subscribe(){
   if(!db) return;
   listRef = ref("lists", listCode);
   unsub = listen(listRef, snap => {
-    syncing = snap.metadata.hasPendingWrites;
+    { const pend = snap.metadata.hasPendingWrites;
+      if(pend && !syncing) _pendSince = Date.now();
+      else if(!pend && syncing && _pendSince){ saveDiag.last = Date.now() - _pendSince; saveDiag.max = Math.max(saveDiag.max, saveDiag.last); }
+      syncing = pend; }
     fromCache = snap.metadata.fromCache;
     if(snap.exists() && !snap.metadata.hasPendingWrites){ const d = snap.data();
       _newerData = (+d.v||0) > LIST_V;
@@ -2073,11 +2099,20 @@ function appCheckKey(){ try{ if(navigator.webdriver) return String(window.__appC
    Firebase › App Check: 6 of 39 in an hour), which enforcement would have refused. */
 function startAppCheck(app){ const key = appCheckKey(); if(!key || _appCheck) return Promise.resolve();
   const ready = import("/vendor/firebasejs/10.12.2/firebase-app-check.js").then(m => { _appCheckMod = m;
-    _appCheck = m.initializeAppCheck(app, { provider: new m.ReCaptchaEnterpriseProvider(key), isTokenAutoRefreshEnabled: true }); })
+    _appCheck = m.initializeAppCheck(app, { provider: new m.ReCaptchaEnterpriseProvider(key), isTokenAutoRefreshEnabled: true });
+    try{ if(typeof m.onTokenChanged==="function") m.onTokenChanged(_appCheck, ()=>{ acDiag.ok++; acDiag.code=""; }, e=>{ acDiag.fail++; acDiag.code=acCode(String((e&&e.code)||"error").slice(0,60)) || "error"; }); }catch(e){}   // v2.57: the database's own failures too
+  })
   .catch(() => {});   // offline or blocked: the app works on; the server decides what an unchecked call gets
   return Promise.race([ready, new Promise(r => setTimeout(r, 10000))]); }   // v2.56: 10 s (was 2.5) — on a slow line reCAPTCHA took longer and 4% went unverified; the list shows from the phone's copy meanwhile   // offline or blocked: the app works on; the server decides what an unchecked call gets
+/* v2.57: why the security check fails, shown in Settings › Help (Connection check) and sent as x-appcheck-err — a short code, never a token. var: boot-order rule */
+var acDiag = { ok:0, fail:0, code:"", ms:0, at:0 };
+function acCode(v){ return String(v||"").replace(/[^A-Za-z0-9\/_.: -]/g,"").slice(0,60); }
 async function appCheckToken(){ if(!_appCheck || !_appCheckMod) return "";
-  try{ const r = await Promise.race([_appCheckMod.getToken(_appCheck, false), new Promise(res => setTimeout(() => res(null), 8000))]); return (r && r.token) || ""; }catch(e){ return ""; } }   // v2.56: 8 s (was 3)
+  const t0 = Date.now(); let timedOut = false;
+  try{ const r = await Promise.race([_appCheckMod.getToken(_appCheck, false), new Promise(res => setTimeout(() => { timedOut = true; res(null); }, 8000))]);   // v2.56: 8 s (was 3)
+    if(r && r.token){ acDiag.ms = Date.now() - t0; acDiag.ok++; acDiag.at = Date.now(); acDiag.code = ""; return r.token; }
+    acDiag.fail++; acDiag.code = acCode(timedOut ? "timeout" : "error"); return ""; }
+  catch(e){ acDiag.fail++; acDiag.code = acCode((e && e.code) || (timedOut ? "timeout" : "error")) || "error"; return ""; } }
 var _authM = null;   // v2.40 (sign-in by email): the auth module, kept for the email-link calls
 function authStart(fbApp){ import("/vendor/firebasejs/10.12.2/firebase-auth.js").then(m=>{
     if(!m || typeof m.initializeAuth!=="function") return;   // the test stub has no auth
@@ -2108,7 +2143,15 @@ function apiUrl(u){ return (isNativeApp() && /^\/api\//.test(u)) ? API_ORIGIN + 
 async function apiFetch(url, opts){ const o = Object.assign({}, opts || {}); const [t, ac] = await Promise.all([apiToken(), appCheckToken()]);
   if(t) o.headers = Object.assign({}, o.headers || {}, { authorization:"Bearer " + t });
   if(ac) o.headers = Object.assign({}, o.headers || {}, { "x-firebase-appcheck": ac });
+  else if(acDiag.code) o.headers = Object.assign({}, o.headers || {}, { "x-appcheck-err": acDiag.code });   // v2.57: a code, never a token
   return fetch(apiUrl(url), o); }
+/* v2.57 item 2: Settings › Help › Connection check — the security check's state and how long saves wait */
+function connDiagHTML(){
+  const ac = acDiag.code ? tf("Security check: not working ({code})", { code:esc(acDiag.code) })
+    : acDiag.ok ? tf("Security check: working ({s} s)", { s:(acDiag.ms/1000).toFixed(1) })
+    : t("Security check: not started");
+  const sv = saveDiag.last ? "<br>" + tf("Last save took {a} s (longest {b} s)", { a:(saveDiag.last/1000).toFixed(1), b:(saveDiag.max/1000).toFixed(1) }) : "";
+  return ac + sv; }
 function authNote(){ if(_auth && _auth.currentUser) return "This phone is signed in quietly (an anonymous account — no name, no email).";
   if(/operation-not-allowed|admin-restricted/.test(_authErr)) return "This phone isn't signed in: Anonymous sign-in isn't turned on in Firebase yet.";
   if(!configured) return "";
@@ -2540,7 +2583,8 @@ function restore(name,cat){ playPlan(true);
 /* item edit */
 function saveEdit(){ if(!editing||!editing.name.trim()) return;
   const it=state.items.find(i=>i.id===editing.id);
-  if(it){ it.name=editing.name.trim(); it.qty=Math.max(1,editing.qty||1); it.cat=editing.cat; it.sub=editing.sub||null; it.starred=!!editing.starred; it.weight=editing.weight||""; it.tags=Array.isArray(editing.tags)?editing.tags:[]; it.note=String(editing.note||"").trim().slice(0,140); it.where=editing.where||""; }
+  if(it){ if(it.cat!==editing.cat) delete it.pos;   // v2.57 item 10a: a dragged place belongs to its category
+    it.name=editing.name.trim(); it.qty=Math.max(1,editing.qty||1); it.cat=editing.cat; it.sub=editing.sub||null; it.starred=!!editing.starred; it.weight=editing.weight||""; it.tags=Array.isArray(editing.tags)?editing.tags:[]; it.note=String(editing.note||"").trim().slice(0,140); it.where=editing.where||""; }
   editing=null; save(); render(); }
 function removeEditing(){ moveToBuyAgain([{name:editing.name,cat:editing.cat,qty:editing.qty||1,weight:editing.weight||"",sub:editing.sub||"",note:editing.note||"",where:editing.where||""}]);
   histLog("rm", editing.name); histLog("regadd", editing.name);
@@ -2560,7 +2604,8 @@ function saveBA(){ const nm=(editing.name||"").trim(); if(!nm) return; const cat
   if(((editing.origName||"").toLowerCase()+"|"+editing.origCat)!==newK) baForget(editing.origName, editing.origCat);   // renamed → forget the old key
   delete state.baTomb[newK];
   if(!state.buyAgain.some(x=>baKey(x)===newK)){ const ne={name:nm,cat,qty,weight:editing.weight||"",sub:editing.sub||"",ts:Date.now()};
-    if(_old && _old.note) ne.note=_old.note; if(_old && _old.where) ne.where=_old.where;   // v2.56: the fixed-shape trap — a re-saved Regular kept neither (v2.22 fields)
+    { const nt = String(editing.note!==undefined ? editing.note : ((_old && _old.note) || "")).trim().slice(0,140); if(nt) ne.note=nt; }   // v2.57 item 9d: the Note section edits a Regular's note too
+    if(_old && _old.where) ne.where=_old.where;   // v2.56: the fixed-shape trap — a re-saved Regular kept neither (v2.22 fields)
     if(_old && _old.cat===cat && typeof _old.pos==="number") ne.pos=_old.pos;
     state.buyAgain.unshift(ne); }
   editing=null; save(); render(); }
@@ -2787,6 +2832,28 @@ function maybeSnapshot(){ if(_forgetting) return; try{
   for(;;){ try{ localStorage.setItem(snapKey(listCode), JSON.stringify(next)); break; }
     catch(e){ if(next.length<=1) break; next=next.slice(0,-1); } }   // over the storage quota: drop the oldest until it fits
 }catch(e){} }
+/* v2.57 item 4: move this list to the thirteen categories, asked for by the household, per list, from Settings › Lists & sharing.
+   This is the ONE deliberate exception to "nothing stored is ever re-categorised" (v2.33): the person asks for it, for this list,
+   and a backup is written first (even if one was taken today). Categories the household made stay, before Others. */
+function switchToCats13(){
+  if(!state || !listCode) return;
+  try{ let next=[{ day:dayKey(new Date()), at:Date.now(), v:APP_VERSION, list:JSON.parse(JSON.stringify(listDoc(state))) }, ...snapList(listCode)].slice(0, SNAP_KEEP);
+    for(;;){ try{ localStorage.setItem(snapKey(listCode), JSON.stringify(next)); break; }
+      catch(e){ if(next.length<=1) break; next=next.slice(0,-1); } } }catch(e){}
+  const old = Array.isArray(state.categories) ? state.categories : [];
+  const custom = old.filter(c=>!DEFAULT_CATS.some(d=>d.id===c.id) && !CATS13.some(d=>d.id===c.id));
+  const oldMeat = old.find(c=>c.id==="meat");
+  const fresh = CATS13.map(c=>({id:c.id,label:c.label,color:c.color,emoji:c.emoji,
+    subs: c.id==="meat" ? ((oldMeat && Array.isArray(oldMeat.subs) && oldMeat.subs.length) ? oldMeat.subs.map(s=>({...s})) : MEAT_DEFAULT_SUBS.map(s=>({...s}))) : [] }));
+  const oi = fresh.findIndex(c=>c.id==="others");
+  if(oi>=0) fresh.splice(oi, 0, ...custom); else fresh.push(...custom);
+  state.categories = fresh;
+  const now = Date.now(), nine = new Set(DEFAULT_CATS.map(d=>d.id));
+  (state.items||[]).forEach(i=>{ if(i && nine.has(i.cat)){ const c=newCat(i.cat, i.name); if(c!==i.cat){ i.cat=c; i.ts=now; markDirty(i.id); } } });
+  (state.buyAgain||[]).forEach(b=>{ if(b && nine.has(b.cat)){ const c=newCat(b.cat, b.name); if(c!==b.cat){ b.cat=c; b.ts=now; } } });
+  ensureCats(); save(); render();
+  showToast(t("This list now uses the new categories"));
+}
 function backupFileName(){ const now=new Date(), p=n=>String(n).padStart(2,"0");
   const base=String(state.name||"list").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"list";
   return `${base}-backup-${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())}.json`; }
@@ -2938,7 +3005,9 @@ const REPORT_SVG  = sz => ICO('<path d="M5 4.5h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h
 /* v2.56: a microphone, a picture, and the empty basket (the Others category's drawn mark, shown large) */
 const MIC_SVG     = sz => ICO('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0013 0"/><path d="M12 17.5V21"/>', sz);
 const IMAGE_SVG   = sz => ICO('<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="9.5" r="1.7"/><path d="M20.5 15.5l-5-5-9 9"/>', sz);
-const BASKET_SVG  = `<svg class="cmark" viewBox="0 0 24 24" aria-hidden="true"><path d="${CATMARK.others}"/></svg>`;
+/* v2.57: the household picked option B for the empty list — the supermarket hand basket (two handles, slots), drawn in the
+   item drawings' style: back lines, a front shape filled with --illbg, detail lines. Only the empty list uses it. */
+const BASKET_SVG  = `<svg class="emptybasket" viewBox="0 0 48 48" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20Q12.5 9 19.5 9.5M37 20Q35.5 9 28.5 9.5M19 9.5h10"/><path d="M6.5 20h35l-3.8 18.6a2.5 2.5 0 0 1-2.5 2H12.8a2.5 2.5 0 0 1-2.5-2z"/><path d="M15 26v8.5M20 26v9M25 26v9M30 26v9M35 26v8.5M6.5 20h35"/></svg>`;
 const MENU_SVG    = sz => ICO('<circle cx="5.5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="18.5" cy="12" r="1.6" fill="currentColor"/>', sz);   // v2.30 the Shop page's menu
 const CARD_SVG    = sz => ICO('<rect x="3" y="5.5" width="18" height="13" rx="2.2"/><path d="M3 9.5h18"/><path d="M6.5 14.5h4"/>', sz);   // v2.31 a membership card
 const SHARE_SVG   = sz => ICO('<path d="M12 3.5v11"/><path d="M8 7.2l4-3.7 4 3.7"/><path d="M8.5 10.5H6.5a1.5 1.5 0 0 0-1.5 1.5v7a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5h-2"/>', sz);
@@ -3038,11 +3107,11 @@ function addSheetRows(){
   const f = frag.toLowerCase();
   const dashed = `class="pill addstart" style="border:1.5px dashed var(--accent);color:var(--accent);background:transparent"`;
   const smartT = smartOn() ? `<button ${dashed} data-add-smart aria-label="${t("Smart add")}">✨ ${t("Smart add")}</button>` : "";
-  /* v2.56 item 7: with nothing typed, the ways in — Smart add, a photo of a list (camera or the phone's photos), Paste */
+  /* v2.56 item 7: with nothing typed, the ways in — Smart add, a photo of a list (camera or the phone's photos).
+     v2.57 items 5 and 7: Paste is gone, and the three fit on one line (short labels, descriptive aria-labels) */
   if(!frag) return addEditId ? "" : `<div class="shop addwrap"><div class="pills addgrid addstartrow">${smartT}`
-    + `<button ${dashed} data-add-photo="camera" aria-label="${t("Take a photo")}">${CAMERA_SVG(18)} ${t("Take a photo")}</button>`
-    + `<button ${dashed} data-add-photo="gallery" aria-label="${t("From your photos")}">${IMAGE_SVG(18)} ${t("From your photos")}</button>`
-    + `<button ${dashed} data-add-paste aria-label="${t("Paste")}">${PASTE_SVG(18)} ${t("Paste")}</button></div></div>`;
+    + `<button ${dashed} data-add-photo="camera" aria-label="${t("Take a photo of your list")}">${CAMERA_SVG(18)} ${t("Camera")}</button>`
+    + `<button ${dashed} data-add-photo="gallery" aria-label="${t("Choose a photo of your list")}">${IMAGE_SVG(18)} ${t("Photos")}</button></div></div>`;
   const segs=(draftMain||"").split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
   const p=parseEntry(frag);
   const lbl= segs.length>1 ? tf("Add {n} items", { n:segs.length }) : tf("Add “{x}”", { x:(p.qty>1?p.qty+"× ":"")+(p.weight?esc(showAmt(p.weight))+" ":"")+esc(cap(p.name)) });
@@ -3066,6 +3135,7 @@ function addBodyHTML(){
      result pills under it were clutter (and pushed the panel up out of reach). Show one or the
      other, never both. */
   if(addEditId) return addEditPanel();
+  _aeFoldKey="";   // v2.57 item 9a: the panel is closed — the next one opens folded, even for the same item
   return addSheetRows();
 }
 function addSheet(){
@@ -3192,7 +3262,6 @@ function wireAddRows(){
       if(!m || !m.value.trim()){ if(m) m.focus(); showToast("Type or paste a list, then tap Smart add"); return; }
       smartAdd(); }; });
   document.querySelectorAll("[data-add-photo]").forEach(b=>{ b.onclick=()=>smartPhoto(b.dataset.addPhoto==="camera"); });
-  document.querySelectorAll("[data-add-paste]").forEach(b=>{ b.onmousedown=e=>e.preventDefault(); b.onclick=addPaste; });
   document.querySelectorAll("[data-add-ba]").forEach(b=>{ const p=b.dataset.addBa.split("|"), cat=p.pop(), name=p.join("|");
     /* v2.42 added a Regular picked here without its panel; v2.43 (the household): picked from "+ Add items", its Edit item panel
        opens straight away, as for any other pick. (A tap under "Add from your regulars" still just adds it.) */
@@ -3250,6 +3319,7 @@ function weightChips(id, cur){
 function addEditPanel(){
   const it=state.items.find(i=>i.id===addEditId);
   if(!it){ addEditId=null; return addSheetRows(); }
+  aeFold("ae|" + it.id);   // v2.57 item 9a
   const cat=CAT(it.cat)||null;
   const subs=(cat&&Array.isArray(cat.subs))?cat.subs:[];
   const flags=[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If discounted")},{k:"convenient",label:t("If convenient")}];
@@ -3261,6 +3331,8 @@ function addEditPanel(){
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
       <div class="disp" style="font-weight:800;font-size:15px">${t("Edit item")}</div>
     </div>
+    ${/* v2.57 item 9c: flags first, then quantity / weight / name, then Note, Category, Subcategory */""}
+    <div class="addedit-flags">${flags.map(f=>{ const on=(it.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-ae-flag="${it.id}|${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>
     <div style="display:flex;gap:6px;align-items:stretch">
       <div class="qstep" style="height:40px;align-items:center;flex:none;border:none;background:var(--chip)"><button data-ae-minus="${it.id}" aria-label="${t("Less")}" style="width:32px">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:15px">${it.qty||1}</span><button data-ae-plus="${it.id}" aria-label="${t("More")}" style="width:32px">+</button></div>
       ${/* v1.62 item 5: the native <select> is gone again, and this restores what v1.44 item 5 was
@@ -3277,7 +3349,7 @@ function addEditPanel(){
           between the quantity and the name. It was a scrolling chip strip on its own row here, which
           is a second way to do one thing and cost a row of a panel that already shares the screen
           with the keyboard. */""}
-    <div class="addedit-flags">${flags.map(f=>{ const on=(it.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-ae-flag="${it.id}|${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>
+    ${noteSecHTML(it.note||"", it.name, { head:'data-ae-notehead', input:`data-ae-note="${it.id}"`, chip:"data-ae-notechip" })}
     <button class="editsec" data-ae-sechead="cat"><span class="editsec-l">${t("Category")}</span><span class="editsec-v">${cat?`${catIcon(cat,14)} ${esc(catLabel(cat))}`:'—'}<span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></button>
     ${editCatOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${catChips}<button class="catchip" data-ae-addcat="${it.id}" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}
     ${cat ? `<button class="editsec" data-ae-sechead="sub"><span class="editsec-l">${t("Subcategory")}</span><span class="editsec-v">${esc(selSubLabel)}<span class="editsec-ch">${editSubOpen?'▾':'▸'}</span></span></button>
@@ -3334,6 +3406,12 @@ function wireAddEdit(){
      keyboard drops mid-edit — every sibling control already guards against this. */
   document.querySelectorAll("[data-ae-sechead]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
     b.onclick=()=>{ if(b.dataset.aeSechead==='cat') editCatOpen=!editCatOpen; else editSubOpen=!editSubOpen; refreshAddBody(); }; });
+  /* v2.57 item 9d: the Note section — its header, the field (saved as typed, like the name) and the suggestion chips */
+  document.querySelectorAll("[data-ae-notehead]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ editNoteOpen=!editNoteOpen; refreshAddBody(); }; });
+  document.querySelectorAll("[data-ae-note]").forEach(inp=>{
+    inp.oninput=()=>{ const it=state.items.find(i=>i.id===inp.dataset.aeNote); if(it){ it.note=String(inp.value||"").slice(0,140); touch(it); } };
+    inp.onblur=()=>{ if(inp.isConnected) refreshAddBody(); }; });
+  document.querySelectorAll("[data-ae-notechip]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=cur(); if(it){ it.note=noteToggle(it.note, b.dataset.aeNotechip); touch(it); refreshAddBody(); } }; });
   document.querySelectorAll("[data-ae-cat]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const [id,cid]=b.dataset.aeCat.split("|"); const it=state.items.find(i=>i.id===id); if(it){ it.cat=cid; it.sub=null; touch(it); refreshAddBody(); } }; });
   document.querySelectorAll("[data-ae-sub]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const p=b.dataset.aeSub.split("|"), id=p[0], sub=p[1]||null; const it=state.items.find(i=>i.id===id); if(it){ it.sub=sub; touch(it); refreshAddBody(); } }; });
   /* v1.47: prompt() blurs the page and focus never comes back on its own, so the keyboard stayed
@@ -3597,29 +3675,101 @@ function stopMic(){ listening=false; if(recog){ try{ recog.stop(); }catch(e){} }
   setMicUI(false); const m=micField(); if(m) m.value=m.value.replace(/,\s*$/,""); }
 function toggleMic(){ if(listening) stopMic(); else startMic(); }
 
+/* v2.57 item 6: the voice sheet, opened by the empty list's microphone. Recognition must start INSIDE the tap on iOS, so
+   openVoice() and the sheet's own mic call voiceListen() synchronously from their click. Results update only the
+   transcript (#voiceList, #voiceStatus) — no full render while speaking. The tick adds through Smart add when it is on. */
+var voiceOpen=false, voiceText="", voiceInterim="", voiceOn=false, voiceRec=null;
+function voicePhrases(){ return (voiceText + (voiceInterim ? (voiceText ? ", " : "") + voiceInterim : ""))
+  .split(/,|\s+(?:and|et)\s+/i).map(x=>x.trim()).filter(Boolean); }
+function voiceListHTML(){
+  const rows = voicePhrases().map(ph=>`<div class="voicerow"><span class="voiceico" aria-hidden="true">${itemIcon(ph, guessCat(ph)||"others")}</span><span>${esc(ph)}</span></div>`).join("");
+  return rows + (voiceOn ? `<div class="voicerow voiceskel" aria-hidden="true"><span class="voiceico"></span><span class="voicebar"></span></div>` : ""); }
+function voiceStatusText(){ return voiceOn ? t("Listening…") : t("Paused — tap the microphone to continue"); }
+function voiceUpdate(){ const l=document.getElementById("voiceList"); if(l) l.innerHTML=voiceListHTML();
+  const st=document.getElementById("voiceStatus"); if(st) st.textContent=voiceStatusText();
+  const sh=document.querySelector(".voicesheet"); if(sh) sh.classList.toggle("on", voiceOn); }
+function voiceListen(){ const SR = speechRecognitionCtor(); if(!SR) return false;
+  const r = new SR(); voiceRec = r;
+  r.lang = appLang==="fr" ? "fr-FR" : (navigator.language||"en-AU"); r.continuous = true; r.interimResults = true;
+  r.onresult = e => { let interim="";
+    for(let i=e.resultIndex; i<e.results.length; i++){ const res=e.results[i]; const tx=(res[0].transcript||"").trim();
+      if(res.isFinal){ if(tx) voiceText = voiceText ? voiceText + ", " + tx : tx; } else interim += res[0].transcript; }
+    voiceInterim = interim.trim(); voiceUpdate(); };
+  r.onerror = ev => { if(ev.error==="not-allowed" || ev.error==="service-not-allowed"){ showToast(t("Allow microphone access to use voice input")); voiceStop(); } };   // "no-speech": ignore
+  r.onend = () => { if(voiceRec!==r) return;
+    if(voiceOpen && voiceOn){ try{ r.start(); }catch(e){ voiceOn=false; voiceUpdate(); } } };
+  r.start(); return true; }
+function voiceStop(){ voiceOn=false; const r=voiceRec; voiceRec=null;
+  if(voiceInterim){ voiceText = voiceText ? voiceText + ", " + voiceInterim : voiceInterim; voiceInterim=""; }
+  if(r){ try{ r.stop(); }catch(e){} } voiceUpdate(); }
+function openVoice(){
+  const SR = speechRecognitionCtor();
+  if(!SR){ showToast(t("Voice input isn't available here — tap the microphone on your keyboard instead")); return; }
+  voiceText=""; voiceInterim="";
+  try{ voiceListen(); }catch(e){ showToast(t("Allow microphone access to use voice input")); return; }
+  voiceOpen=true; voiceOn=true; render(); }
+function voiceSheet(){
+  return `<div class="sheet-bg" id="voiceBg"><div class="sheet voicesheet${voiceOn?' on':''}" role="dialog" aria-label="${t("Speak now!")}">
+    <div class="voicehead">
+      <button class="voicemic" id="voiceMic" aria-label="${voiceOn?t("Stop listening"):t("Start listening")}">${MIC_SVG(30)}</button>
+      <div class="voicettl"><div class="voicetitle">${t("Speak now!")}</div><div class="voicestatus" id="voiceStatus" role="status">${voiceStatusText()}</div></div>
+      <button class="voiceclose" id="voiceClose" aria-label="${t("Close")}">×</button>
+    </div>
+    <div class="voicehint">${t("e.g. “two litres of milk, butter, six eggs…”")}</div>
+    <div class="voicelist" id="voiceList">${voiceListHTML()}</div>
+    <div class="voicebottom"><div class="voicewave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <button class="voicedone" id="voiceDone" aria-label="${t("Done")}"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
+  </div></div>`; }
+function wireVoice(){
+  const mic=app.querySelector("#voiceMic");
+  if(mic) mic.onclick=()=>{ if(voiceOn){ voiceStop(); mic.setAttribute("aria-label", t("Start listening")); return; }
+    try{ if(voiceListen()){ voiceOn=true; voiceUpdate(); mic.setAttribute("aria-label", t("Stop listening")); } }catch(e){ voiceOn=false; voiceUpdate(); } };
+  const cl=app.querySelector("#voiceClose"); if(cl) cl.onclick=()=>{ voiceStop(); voiceOpen=false; voiceText=""; voiceInterim=""; render(); };
+  const dn=app.querySelector("#voiceDone"); if(dn) dn.onclick=()=>{ voiceStop(); const text=voiceText.trim();   // voiceStop folds what was still interim into voiceText
+    voiceOpen=false; voiceText=""; voiceInterim=""; render();
+    if(!text) return;
+    if(smartOn()) smartAddText(text);
+    else stageAdds(()=>addEntries(text, null)); }; }   // addEntries saves and renders
+
 /* v2.56 item 5: dragging a Regular within its category (see regPress). The other tiles are hit-tested by their centres,
-   measured once when the drag starts; the tile the dragged one would land before is outlined. */
-function regDragStart(b, e){ const group=b.closest(".pills"); if(!group) return null;
-  const tiles=[...group.querySelectorAll("[data-regk]")]; if(tiles.length<2) return null;
+   measured once when the drag starts; the tile the dragged one would land before is outlined.
+   v2.57 item 10: the same drag for any group of tiles — the tile, the event, the group, the tiles' selector and what to do
+   with the new order (the elements, in order) on release. Regulars, items on the Shop page and lists in the lists sheet use it. */
+function tileDragStart(b, e, group, sel, onCommit){ if(!group) return null;
+  const tiles=[...group.querySelectorAll(sel)]; if(tiles.length<2 || !tiles.includes(b)) return null;
   const others=tiles.filter(x=>x!==b).map(x=>{ const r=x.getBoundingClientRect(); return { el:x, cx:r.left+r.width/2, cy:r.top+r.height/2, h:r.height }; });
   b.classList.add("regdrag"); b.style.touchAction="none";
   try{ b.setPointerCapture(e.pointerId); }catch(_){}
-  return { b, others, to:tiles.indexOf(b) }; }
-function regDragMove(d, e, dx, dy){
+  return { b, others, to:tiles.indexOf(b), onCommit }; }
+function tileDragMove(d, e, dx, dy){
   d.b.style.transform=`translate(${dx}px,${dy}px)`;
   const px=e.clientX, py=e.clientY;
   d.to = d.others.filter(r=>(r.cy < py - r.h/2) || (Math.abs(r.cy-py) <= r.h/2 && r.cx < px)).length;
   d.others.forEach((r,i)=>{ r.el.classList.toggle("regdropb", i===d.to); r.el.classList.toggle("regdropa", d.to===d.others.length && i===d.others.length-1); }); }
-function regDragEnd(d, commit){
+function tileDragEnd(d, commit){
   d.b.classList.remove("regdrag"); d.b.style.transform=""; d.b.style.touchAction="";
   d.others.forEach(r=>r.el.classList.remove("regdropb","regdropa"));
-  if(!commit) return;
-  const keys=d.others.map(r=>r.el.dataset.regk); keys.splice(d.to, 0, d.b.dataset.regk);
+  if(!commit || !d.onCommit) return;
+  const els=d.others.map(r=>r.el); els.splice(d.to, 0, d.b);
+  d.onCommit(els); }
+function regDragStart(b, e){ return tileDragStart(b, e, b.closest(".pills"), "[data-regk]", els=>{
   const now=Date.now();
-  keys.forEach((k,i)=>{ const p=k.split("|"), cat=p.pop(), name=p.join("|");
+  els.forEach((el,i)=>{ const p=el.dataset.regk.split("|"), cat=p.pop(), name=p.join("|");
     const en=state.buyAgain.find(x=>x.name===name && x.cat===cat);
     if(en && en.pos!==i){ en.pos=i; en.ts=now; } });
-  save(); render(); }
+  save(); render(); }); }
+const regDragMove = tileDragMove;
+function regDragEnd(d, commit){ tileDragEnd(d, commit); }
+/* v2.57 item 10a: an item drags only within a row whose tiles are all unticked items of one category (never in the flat
+   AI-order view, where categories mix); release numbers that row's `pos` 0..n-1 */
+function itemDragStart(b, e){ const group=b.closest(".pills"); if(!group) return null;
+  const ids=[...group.querySelectorAll("[data-pill]")].map(x=>x.dataset.pill);
+  const its=ids.map(id=>state.items.find(i=>i.id===id));
+  if(its.some(i=>!i || i.checked) || new Set(its.map(i=>catShown(i.cat))).size!==1) return null;
+  if(group.querySelector(".urgent-dup")) return null;
+  return tileDragStart(b, e, group, "[data-pill]", els=>{ const now=Date.now();
+    els.forEach((el,i)=>{ const it=state.items.find(x=>x.id===el.dataset.pill); if(it && it.pos!==i){ it.pos=i; it.ts=now; markDirty(it.id); } });
+    save(); render(); }); }
 
 /* ---- press handling (tap vs long-press) ---- */
 let pressTimer=null, longFired=false;
@@ -3921,7 +4071,10 @@ function renderOnboarding(){
 
 function sortList(list){ return list.slice().sort((a,b)=>{
   if(a.checked!==b.checked) return a.checked?1:-1;
-  if(!a.checked){ const sa=a.starred?0:1, sb=b.starred?0:1; if(sa!==sb) return sa-sb; }
+  if(!a.checked){ const pa=typeof a.pos==="number", pb=typeof b.pos==="number";
+    if(pa && pb && a.pos!==b.pos) return a.pos-b.pos;   // v2.57 item 10a: the order someone dragged them into
+    if(!(pa && pb)){ const sa=a.starred?0:1, sb=b.starred?0:1; if(sa!==sb) return sa-sb;
+      if(pa!==pb) return pa?-1:1; } }
   return a.name.localeCompare(b.name); }); }
 function catIndexOf(catId){ const i=catList().findIndex(c=>c.id===catId); return i<0?999:i; }
 function subIndexOf(it){ const c=CAT(it.cat); if(!c||!c.subs||!c.subs.length) return 0; const s=effectiveSub(it,c); const i=c.subs.findIndex(x=>x.id===s); return i<0?c.subs.length:i; }
@@ -4324,8 +4477,8 @@ function renderMain(){
   ${fabMoveOpen?fabMoveSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
-  ${editing?editSheet():""}
+  ${voiceOpen?voiceSheet():""}${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${editing?editSheet():(_editFoldKey="")}
   ${toast?`<div class="toast" id="toast"><span>${esc(t(toast))}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(t(toastAction.label))}</button>`:""}</div>`:""}`;
 }
 
@@ -4360,19 +4513,37 @@ function wireListsSheet(){
   app.querySelectorAll("[data-fabalign]").forEach(b=>b.onclick=()=>{ fabMoveOpen=false; setSrchAlign(b.dataset.fabalign); });
   const lsBg=app.querySelector("#listsBg"); if(lsBg) lsBg.onclick=()=>{ listsOpen=false; render(); };
   const lsS=app.querySelector("#listsSheetEl"); if(lsS) lsS.onclick=e=>e.stopPropagation();
-  /* v1.83: tap picks the list, press-and-hold opens everything you can do to it — the same gesture
-     and the same sheet the Lists page's bubbles use, so there is one way to manage a list, not two. */
+  /* v1.83: tap picks the list, press-and-hold opens everything you can do to it.
+     v2.57 item 10b: in this sheet a hold then a move drags the row among the lists (release reorders ml_lists); a hold
+     without movement does nothing; the ⋯ opens the row's actions inline. The Lists page keeps its own action sheet. */
   app.querySelectorAll("[data-list]").forEach(b=>{ const code=b.dataset.list;
+    let down=null, drag=null;
     b.oncontextmenu=e=>e.preventDefault();
-    b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
-    b.onpointerup=e=>{ pressCancel(); if(e.target.closest && e.target.closest(".lp-more")) return;   // v2.56 the ⋯ has its own tap
-      if(longFired){ listActCode=code; listActOpen=true; listsOpen=false; render(); }
-      else switchList(code); };
+    b.onpointerdown=e=>{ if(e.target.closest && e.target.closest(".lp-more")) return; pressStart(); down={ x:e.clientX, y:e.clientY }; };
+    b.onpointermove=e=>{ if(!down) return; const dx=e.clientX-down.x, dy=e.clientY-down.y;
+      if(!drag){ if(!longFired || Math.hypot(dx,dy)<=8) return;
+        drag=tileDragStart(b, e, b.closest(".listrows"), ".listpick", els=>{ const order=els.map(x=>x.dataset.list), a=getLists();
+          const next=order.map(c=>a.find(x=>x.code===c)).filter(Boolean); a.forEach(x=>{ if(!next.includes(x)) next.push(x); });
+          saveLists(next); render(); });
+        if(!drag){ down=null; return; } }
+      tileDragMove(drag, e, 0, dy); };
+    b.onpointerleave=()=>{ if(!drag) pressCancel(); };
+    b.onpointercancel=()=>{ pressCancel(); down=null; if(drag){ const d=drag; drag=null; tileDragEnd(d,false); } };
+    b.addEventListener("touchmove", e=>{ if(down && longFired) e.preventDefault(); }, { passive:false });
+    b.onpointerup=e=>{ pressCancel(); const wasDown=down; down=null;
+      if(drag){ const d=drag; drag=null; tileDragEnd(d,true); return; }
+      if(e.target.closest && e.target.closest(".lp-more")) return;   // v2.56 the ⋯ has its own tap
+      if(!wasDown || longFired) return;   // v2.57: a hold without movement does nothing here
+      switchList(code); };
     b.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); switchList(code); } };
   });
-  app.querySelectorAll("[data-list-more]").forEach(m=>{   // v2.56 item 3: the row's ⋯ opens the list-action sheet
+  app.querySelectorAll("[data-list-more]").forEach(m=>{   // v2.57 item 10b: the row's ⋯ toggles its inline actions
     m.onpointerdown=e=>e.stopPropagation();
-    m.onclick=e=>{ e.stopPropagation(); listActCode=m.dataset.listMore; listActOpen=true; listsOpen=false; render(); }; });
+    m.onclick=e=>{ e.stopPropagation(); const c=m.dataset.listMore; listOptsCode = (listOptsCode===c ? null : c); render(); }; });
+  app.querySelectorAll("[data-lo-rename]").forEach(x=>x.onclick=()=>listActRename(x.dataset.loRename));
+  app.querySelectorAll("[data-lo-share]").forEach(x=>x.onclick=()=>listActShare(x.dataset.loShare));
+  app.querySelectorAll("[data-lo-dup]").forEach(x=>x.onclick=()=>listActDup(x.dataset.loDup));
+  app.querySelectorAll("[data-lo-delete]").forEach(x=>x.onclick=()=>{ listOptsCode=null; listActDelete(x.dataset.loDelete); });
   wireListActSheet();
   app.querySelectorAll("[data-list-up]").forEach(b=>b.onclick=()=>moveList(b.dataset.listUp,-1));
   app.querySelectorAll("[data-list-down]").forEach(b=>b.onclick=()=>moveList(b.dataset.listDown,1));
@@ -4386,13 +4557,18 @@ function wireListsSheet(){
 function wireListActSheet(){
   const lbg=app.querySelector("#listActBg"); if(lbg) lbg.onclick=()=>{ listActOpen=false; render(); };
   const las=app.querySelector("#listActSheet"); if(las) las.onclick=e=>e.stopPropagation();
-  const lar=app.querySelector("#laRename"); if(lar) lar.onclick=()=>renameListCode(listActCode);
+  const lar=app.querySelector("#laRename"); if(lar) lar.onclick=()=>listActRename(listActCode);
   const laup=app.querySelector("#laUp"); if(laup) laup.onclick=()=>moveList(listActCode,-1);
   const ladn=app.querySelector("#laDown"); if(ladn) ladn.onclick=()=>moveList(listActCode,1);
-  const lash=app.querySelector("#laShare"); if(lash) lash.onclick=()=>shareListCode(listActCode);
-  const lac=app.querySelector("#laDup"); if(lac) lac.onclick=()=>duplicateListCode(listActCode);
-  const lad=app.querySelector("#laDelete"); if(lad) lad.onclick=()=>delListUndo(listActCode);
+  const lash=app.querySelector("#laShare"); if(lash) lash.onclick=()=>listActShare(listActCode);
+  const lac=app.querySelector("#laDup"); if(lac) lac.onclick=()=>listActDup(listActCode);
+  const lad=app.querySelector("#laDelete"); if(lad) lad.onclick=()=>listActDelete(listActCode);
 }
+/* v2.57 item 10b: the list actions, by code — the action sheet and the lists sheet's inline panel share them */
+function listActRename(code){ return renameListCode(code); }
+function listActShare(code){ return shareListCode(code); }
+function listActDup(code){ return duplicateListCode(code); }
+function listActDelete(code){ return delListUndo(code); }
 function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
 /* v2.10: a size word reads as a qualifier, so it goes after the thing it qualifies on a tile —
    "small can corn kernel" shows as "Can corn kernel small". Display only: the stored name, matching,
@@ -6154,7 +6330,7 @@ function renderPlanPage(){
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>${t("Add items…")}</span></button></div>`:""}
   ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
-  ${editing?editSheet():""}
+  ${editing?editSheet():(_editFoldKey="")}
   ${toast?`<div class="toast" id="toast"><span>${esc(t(toast))}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(t(toastAction.label))}</button>`:""}</div>`:""}`;
 }
 function planRemove(id){ const it=state.items.find(i=>i.id===id); if(!it) return; playPlan(false);
@@ -6170,7 +6346,7 @@ function wirePlanPage(){
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
     b.onpointerup=()=>{ pressCancel();
-      if(longFired){ const en=state.buyAgain.find(x=>x.name===name && x.cat===cat); editing={kind:"ba", name, cat, qty:(en?en.qty||1:1), weight:(en?en.weight||"":""), sub:(en?en.sub||"":""), origName:name, origCat:cat}; render(); }
+      if(longFired){ const en=state.buyAgain.find(x=>x.name===name && x.cat===cat); editing={kind:"ba", name, cat, qty:(en?en.qty||1:1), weight:(en?en.weight||"":""), sub:(en?en.sub||"":""), note:(en?en.note||"":""), origName:name, origCat:cat}; render(); }
       else { restore(name,cat); } }; });
   app.querySelectorAll(".plan-in").forEach(b=>{ const id=b.dataset.planRm;
     b.oncontextmenu=e=>e.preventDefault();
@@ -6572,6 +6748,7 @@ function wireOptions(){
   app.querySelectorAll("[data-snaprestore]").forEach(b=>b.onclick=()=>{ const s=snapList(listCode)[+b.dataset.snaprestore]; if(!s) return;
     rst={ list:s.list, label:tf("The backup from {x}", { x:new Date(s.at).toLocaleDateString(dateLoc(),{weekday:"long",day:"numeric",month:"long"}) }) }; render(); });
   const osl=app.querySelector("#optSendList"); if(osl) osl.onclick=shareListText;   // v2.13: was the Shop page's top-right button
+  const oc13=app.querySelector("#optCats13"); if(oc13) oc13.onclick=()=>{ if(confirm(t("Move this list to the new categories? A backup is kept in Settings › Backups."))) switchToCats13(); };   // v2.57 item 4
   const orp=app.querySelector("#optReport"); if(orp) orp.onclick=()=>{ rpt={ kind:"broken", text:"", diag:true }; render(); };
   const vf=app.querySelector("#verFoot"); if(vf){ let _dt; const _cancel=()=>clearTimeout(_dt);
     vf.onpointerdown=()=>{ _dt=setTimeout(()=>{ diagOpen=true; render(); }, 550); };
@@ -6601,33 +6778,28 @@ function looksLikeRecipe(t){
 }
 async function smartAdd(){
   const mi=document.getElementById("mainInput");
-  const text=(mi?mi.value:"").trim();
+  return smartAddText(mi?mi.value:""); }
+/* v2.57 item 6: the body of Smart add, for any text — the voice sheet's ✓ calls it too */
+async function smartAddText(text){
+  text=String(text||"").trim();
   if(!text) return;
   const recipe=looksLikeRecipe(text);
-  smartOpen=true; smartLoading=true; smartStep=""; smartError=""; smartItems=[]; smartEdit=null; smartServings=null; smartTitle=""; render();
+  smartOpen=true; smartLoading=true; smartStep=""; smartError=""; smartItems=[]; smartEdit=null; smartServings=null; smartTitle=""; smartFromPhoto=false; render();
   return smartRequest(recipe?"/api/recipe":"/api/parse", {text}, recipe);
 }
 /* v2.56 item 7: a photo of a list (or a recipe) read by the recipe reader — the same resize and the same call as the Plan
    page's Photo import (planShrinkImage → /api/recipe {image}), landing in the Smart add review like a recipe. */
 var smartStep = "";
+var smartFromPhoto = false;   // v2.57 item 3: the review came from a photo of a list — its header and its "nothing found" say so
 function smartPhoto(camera){
   pickFile(camera ? { accept:"image/*", capture:"environment" } : { accept:"image/*" }).then(file=>{ if(!file) return;
-    smartOpen=true; smartLoading=true; smartStep="Preparing the photo…"; smartError=""; smartItems=[]; smartEdit=null; smartServings=null; smartTitle=""; render();
+    smartOpen=true; smartLoading=true; smartStep="Preparing the photo…"; smartError=""; smartItems=[]; smartEdit=null; smartServings=null; smartTitle=""; smartFromPhoto=true; render();
     planShrinkImage(file, 1400, 0.72)
       .then(img=>{ smartStep="Reading the photo…"; render();
         /* v2.56: every wait ends — 75 s at most (the function's own limit is 60 s) */
-        return Promise.race([smartRequest("/api/recipe", { image:img }, true),
+        return Promise.race([smartRequest("/api/recipe", { image:img, kind:"list" }, true),
           new Promise(r=>setTimeout(()=>{ if(smartLoading && smartStep){ smartLoading=false; smartStep=""; smartError="Reading the photo took too long. Try again, or type the list."; render(); } r(); }, 75000))]); })
       .catch(()=>{ smartLoading=false; smartStep=""; smartError="Couldn't open that photo."; render(); }); }); }
-/* v2.56 item 7: Paste — read inside the tap (iOS asks), into the search box, then Smart add when it is on */
-function addPaste(){
-  const fail=()=>showToast("Paste isn't available here — long-press in the box and choose Paste");
-  if(!canReadClipboard()){ fail(); return; }
-  let p; try{ p=readClipboardText(); }catch(e){ fail(); return; }
-  Promise.resolve(p).then(txt=>{ txt=String(txt||"").trim(); if(!txt){ fail(); return; }
-    const m=document.getElementById("mainInput"); if(!m) return;
-    m.value=txt; m.dispatchEvent(new Event("input")); grow(m);
-    if(smartOn()) smartAdd(); else m.focus(); }).catch(fail); }
 async function smartRequest(path, payload, recipe){
   let res, data;
   try{
@@ -6675,7 +6847,8 @@ async function smartRequest(path, payload, recipe){
     smartServings={ src, target:src, title:(data&&data.title)?String(data.title).slice(0,80):"" }; }
   smartTitle = smartServings ? (smartServings.title||"") : "";
   smartLoading=false;
-  if(!smartItems.length){ smartError=recipe?"No ingredients found — try pasting the full recipe.":"Nothing to add from that — try adding more detail, or type your items."; }
+  if(!smartItems.length && smartFromPhoto){ smartError=t("Nothing to buy found in that photo — try a closer photo of the list or the products."); }
+  else if(!smartItems.length){ smartError=recipe?"No ingredients found — try pasting the full recipe.":"Nothing to add from that — try adding more detail, or type your items."; }
   render();
 }
 function recipeScale(delta){
@@ -6697,9 +6870,9 @@ function applyServingsScale(){
     else it.qty=Math.max(1,Math.round(b*f)); }
 }
 function wireSmartSheet(){
-  const sBg=app.querySelector("#smartBg"); if(sBg) sBg.onclick=e=>{ if(e.target===sBg){ smartOpen=false; smartTitle=""; render(); } };
+  const sBg=app.querySelector("#smartBg"); if(sBg) sBg.onclick=e=>{ if(e.target===sBg){ smartOpen=false; smartTitle=""; smartFromPhoto=false; render(); } };
   const sOk=app.querySelector("#smartOk"); if(sOk) sOk.onclick=()=>{ smartOpen=false; smartError=""; render(); };
-  const sCancel=app.querySelector("#smartCancel"); if(sCancel) sCancel.onclick=()=>{ smartOpen=false; smartItems=[]; smartEdit=null; smartServings=null; smartTitle=""; render(); };
+  const sCancel=app.querySelector("#smartCancel"); if(sCancel) sCancel.onclick=()=>{ smartOpen=false; smartItems=[]; smartEdit=null; smartServings=null; smartTitle=""; smartFromPhoto=false; render(); };
   const sConfirm=app.querySelector("#smartConfirm"); if(sConfirm) sConfirm.onclick=commitSmartItems;
   app.querySelectorAll("[data-recipe-serv]").forEach(b=>{ b.onclick=()=>recipeScale(+b.dataset.recipeServ); });
   /* v1.85: selection, not removal — unchecking a row is the same intent and can be changed back. */
@@ -6786,7 +6959,7 @@ function smartSheet(){
       </div>`;
   }
   const rec=!!smartServings || !!smartTitle;
-  const ttl=rec ? (smartTitle ? `📖 ${esc(smartTitle)}` : "📖 " + t("From recipe")) : "✨ " + t("Smart add");
+  const ttl=(smartFromPhoto && !smartTitle) ? "📖 " + t("From your photo") : rec ? (smartTitle ? `📖 ${esc(smartTitle)}` : "📖 " + t("From recipe")) : "✨ " + t("Smart add");
   /* v1.85: only the Smart-add recipe path carries a servings scaler.
      v2.01: a planned recipe has servings now too, so it gets the scaler; the whole-week review does
      not (it mixes recipes), so the line must not promise a control that is not there. */
@@ -6813,7 +6986,7 @@ function commitSmartItems(){
   }
   const mi=document.getElementById("mainInput"); if(mi) mi.value="";
   draftMain="";
-  smartOpen=false; smartItems=[]; smartError=""; smartEdit=null; smartServings=null; smartTitle="";
+  smartOpen=false; smartItems=[]; smartError=""; smartEdit=null; smartServings=null; smartTitle=""; smartFromPhoto=false;
   save(); render();
 }
 /* B8 hidden AI diagnostics — long-press the version number to inspect the
@@ -7409,6 +7582,7 @@ function optionsBody(){
     <button class="optaction" id="optExport" style="margin-top:10px">${t("Export the full list — to buy and Regulars")}</button>
     <button class="optaction" id="optBackup" style="margin-top:10px">${t("Back up this list to a file")}</button>
     <button class="optaction" id="optRestoreFile" style="margin-top:10px">${t("Restore from a backup file")}</button>
+    ${catList().some(c=>c.id==="pantry") ? "" : `${row(t("Use the new categories"), `<button class="storechip" id="optCats13">${t("Use the new categories")}</button>`)}<div class="opthint">${t("Moves this list to the thirteen categories, in the order a shop is walked (Bakery, Deli, Dairy, Pantry, Frozen…). Items and Regulars move to where shops shelve them; categories you made stay. A backup is taken first.")}</div>`}
     ${snapsHTML()}
     ${sectHR("History")}
     ${(()=>{
@@ -7448,6 +7622,7 @@ function optionsBody(){
     <button class="optaction" id="optDiag" style="margin-top:10px">${FLASK_SVG(16)} ${t("AI diagnostics")}</button>
     <button class="optaction" id="optPriceDiag" style="margin-top:10px">${FLAG_TAG_SVG} ${t("Price diagnostics")}</button>
     <button class="optaction" id="optLocDiag" style="margin-top:10px">${PIN_SVG(16)} ${t("Location diagnostics")}</button>
+    ${row(t("Connection check"), `<span class="optdiag" id="optConnDiag">${connDiagHTML()}</span>`)}<div class="opthint">${t("If saving is slow, a screenshot of this helps find why.")}</div>
     ${stuckLog().length ? `<button class="optaction" id="optStuck" style="margin-top:10px">${tf("Screen log · {n}", { n:stuckLog().length })}</button>` : ""}
     ${sectHR("Your data")}
     <a class="optaction" id="optPrivacy" href="/privacy.html" style="margin-top:2px">${t("Privacy — what the app keeps, and where")}</a>
@@ -7480,12 +7655,14 @@ function renderSettingsPage(){
     ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
     ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
-    ${editing?editSheet():""}
+    ${editing?editSheet():(_editFoldKey="")}
     ${toast?`<div class="toast" id="toast"><span>${esc(t(toast))}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(t(toastAction.label))}</button>`:""}</div>`:""}`;
 }
 /* v1.81: the sheet is a SWITCHER, not a manager — one tap per row picks a list, the way the
    reference app does it. Reordering, renaming and deleting still live on the Lists page, which
    this links to, so the two are not two half-copies of each other. */
+/* v2.57 item 10b: the lists sheet's ⋯ opens this row's actions inline, one row at a time (no Move up/down — rows drag) */
+var listOptsCode=null;
 function listsSheet(){
   const lists=getLists();
   const rows=lists.map(l=>{ const st=listStats(l.code); const cur=l.code===listCode;
@@ -7494,7 +7671,12 @@ function listsSheet(){
        the current list is shown by its border, tint and name colour. A div, so the ⋯ button can sit inside it. */
     return `<div role="button" tabindex="0" class="listpick${cur?' cur':''}" data-list="${esc(l.code)}"${cur?' aria-current="true"':''}>
       <span class="lp-main"><span class="lp-name">${esc(l.name||t('Untitled list'))}</span><span class="lp-sub">${sub}</span></span>
-      <button class="lp-more" data-list-more="${esc(l.code)}" aria-label="${t("List options")}">${MENU_SVG(20)}</button></div>`; }).join("");
+      <button class="lp-more" data-list-more="${esc(l.code)}" aria-label="${t("List options")}" aria-expanded="${listOptsCode===l.code}">${MENU_SVG(20)}</button></div>`
+      + (listOptsCode===l.code ? `<div class="lp-opts" data-lo="${esc(l.code)}">
+        <button class="optaction" data-lo-rename="${esc(l.code)}">${t("Rename")}</button>
+        <button class="optaction" data-lo-share="${esc(l.code)}">${t("Share")}</button>
+        <button class="optaction" data-lo-dup="${esc(l.code)}">${t("Duplicate list")}</button>
+        <button class="optaction" data-lo-delete="${esc(l.code)}" style="border-color:#C24A33;color:#C24A33">${t("Delete")}</button></div>` : ""); }).join("");
   return `<div class="sheet-bg" id="listsBg"><div class="sheet" id="listsSheetEl">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${t("Your lists")}</div>
     <div class="listrows">${rows||`<p class="empty-sub">${t("No lists yet.")}</p>`}</div>
@@ -7581,6 +7763,7 @@ function editSheet(){
     </div></div>`;
   }
   const isItem = editing.kind==="item";
+  editFold(editing.kind + "|" + (editing.id || editing.origName || ""));   // v2.57 item 9a
   const qtyBlock = `<div class="qstep"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>`;
   const secLabel = isItem ? t("Add to Regulars") : t("Add to list");
   const btnSecStyle = "padding:13px 12px;border-radius:14px;border:2px solid var(--ink);background:transparent;color:var(--text);font-weight:700;font-size:14px";
@@ -7600,6 +7783,8 @@ function editSheet(){
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div class="disp" style="font-weight:800;font-size:17px">${isItem?t("Edit item"):t("Edit Regular")}</div>
     </div>
+    ${/* v2.57 item 9c: flags first, then quantity / weight / name, then Note, then Category, Subcategory and Where to buy */""}
+    ${isItem ? `<div style="display:flex;flex-wrap:nowrap;gap:6px;margin-bottom:10px">${[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If discounted")},{k:"convenient",label:t("If convenient")}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}
     <div style="display:flex;gap:6px;align-items:stretch">
       <div class="qstep" style="height:46px;align-items:center;flex:none;border:none;background:var(--chip)"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>
       ${weightBtn("edit", editing.weight)}
@@ -7607,8 +7792,7 @@ function editSheet(){
     </div>
     ${weightChips("edit", editing.weight)}
     ${priceLine(editing.name)}
-    ${isItem ? `<div style="display:flex;flex-wrap:nowrap;gap:6px;margin-top:12px">${[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If discounted")},{k:"convenient",label:t("If convenient")}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}
-    ${isItem ? `<input id="editNote" value="${esc(editing.note||"")}" maxlength="140" placeholder="${t("A note for whoever shops — “the green bottle”")}" aria-label="${t("Note")}" style="width:100%;box-sizing:border-box;margin-top:10px;height:42px;padding:0 12px;border-radius:12px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:15px" />` : ""}
+    ${noteSecHTML(editing.note||"", editing.name, { head:'id="enHead"', input:'id="editNote"', chip:"data-en-chip" })}
     <button class="editsec" id="ecHead"><span class="editsec-l">${t("Category")}</span><span class="editsec-v">${selCat?`${catIcon(selCat,14)} ${esc(catLabel(selCat))}`:'—'}<span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></button>
     ${editCatOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${chipsHTML(editing.cat)}<button class="catchip" id="ecAddCat" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}
     ${subChips}
@@ -7652,7 +7836,7 @@ function wireAddBar(){
 function wire(){
   const et=app.querySelector("#elseToggle"); if(et) et.onclick=()=>{ elseOpen=!elseOpen; render(); };   // v2.22 R17
   wireAddSheet();
-  wireSmartSheet();
+  wireSmartSheet(); wireVoice();
   wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();
   const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>catShown(i.cat)===c.id)).map(c=>c.id);
@@ -7662,10 +7846,21 @@ function wire(){
     localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
 
   /* item pills: tap = check, hold = edit */
+  /* v2.57 item 10a: hold (450 ms) then move more than 8px drags the item within its row (itemDragStart); a hold without
+     movement still opens Edit item, a tap still ticks. touch-action and the touchmove block apply only once held. */
   app.querySelectorAll("[data-pill]").forEach(b=>{ const id=b.dataset.pill;
+    let down=null, drag=null;
     b.oncontextmenu=e=>e.preventDefault();
-    b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
-    b.onpointerup=(e)=>{ pressCancel(); const it=state.items.find(i=>i.id===id); if(!it) return;
+    b.onpointerdown=e=>{ pressStart(); down={ x:e.clientX, y:e.clientY }; };
+    b.onpointermove=e=>{ if(!down) return; const dx=e.clientX-down.x, dy=e.clientY-down.y;
+      if(!drag){ if(!longFired || Math.hypot(dx,dy)<=8) return; drag=itemDragStart(b,e); if(!drag){ down=null; return; } }
+      tileDragMove(drag, e, dx, dy); };
+    b.onpointerleave=()=>{ if(!drag) pressCancel(); };
+    b.onpointercancel=()=>{ pressCancel(); down=null; if(drag){ const d=drag; drag=null; tileDragEnd(d,false); } };
+    b.addEventListener("touchmove", e=>{ if(down && longFired) e.preventDefault(); }, { passive:false });
+    b.onpointerup=(e)=>{ pressCancel(); down=null;
+      if(drag){ const d=drag; drag=null; tileDragEnd(d,true); return; }
+      const it=state.items.find(i=>i.id===id); if(!it) return;
       if(longFired){ quickEdit=null; editing={kind:"item", ...it}; render(); return; }
       if(e.target.closest("[data-qmore]")){ quickEdit = (quickEdit===id ? null : id); render(); return; }
       quickEdit=null;
@@ -7721,7 +7916,7 @@ function wire(){
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
     b.onpointerup=()=>{ pressCancel();
-      if(longFired){ const en=state.buyAgain.find(x=>x.name===name && x.cat===cat); editing={kind:"ba", name, cat, qty:(en?en.qty||1:1), weight:(en?en.weight||"":""), sub:(en?en.sub||"":""), origName:name, origCat:cat}; render(); }
+      if(longFired){ const en=state.buyAgain.find(x=>x.name===name && x.cat===cat); editing={kind:"ba", name, cat, qty:(en?en.qty||1:1), weight:(en?en.weight||"":""), sub:(en?en.sub||"":""), note:(en?en.note||"":""), origName:name, origCat:cat}; render(); }
       else { restore(name,cat); } }; });
   const cba=app.querySelector("#clearBA"); if(cba) cba.onclick=()=>{ const prev=snapState(); const now=Date.now(); state.baTomb=state.baTomb||{}; state.buyAgain.forEach(e=>{ state.baTomb[baKey(e)]=now; }); state.buyAgain=[]; save(); render(); showUndo(prev,"Buy-again cleared"); };
 
@@ -7784,7 +7979,7 @@ function wire(){
   app.querySelectorAll("[data-example]").forEach(b=>b.onclick=()=>{ addEntries(b.dataset.example, null); });
   /* v2.56 item 4: the empty list's two tiles. openAdd mounts the sheet synchronously, so #mainInput exists for startMic,
      and both stay inside the tap (iOS keyboard and microphone permission need the gesture). */
-  { const em=app.querySelector("#emptyMic"); if(em) em.onclick=()=>{ openAdd(); startMic(); };
+  { const em=app.querySelector("#emptyMic"); if(em) em.onclick=()=>openVoice();   // v2.57 item 6: the voice sheet, started inside the tap
     const ea=app.querySelector("#emptyAdd"); if(ea) ea.onclick=()=>openAdd(); }
   wireQuickPanel();
   const ac=app.querySelector("#addCat"); if(ac) ac.onclick=addCategory;
@@ -7864,6 +8059,8 @@ function wireEditSheet(){
       app.querySelectorAll("[data-ew]").forEach(b=>b.onclick=()=>{ const id=b.dataset.ew; if(!id){ editing.where=""; render(); return; }
         const s=new Set(whereIds(editing)); if(s.has(id)) s.delete(id); else s.add(id); editing.where=[...s].join(","); render(); });
       const enote=app.querySelector("#editNote"); if(enote) enote.oninput=e=>{ editing.note=e.target.value; };   // v2.22 R16
+      const enh=app.querySelector("#enHead"); if(enh) enh.onclick=()=>{ editNoteOpen=!editNoteOpen; render(); };   // v2.57 item 9d
+      app.querySelectorAll("[data-en-chip]").forEach(b=>b.onclick=()=>{ editing.note=noteToggle(editing.note, b.dataset.enChip); render(); });
       const eac=app.querySelector("#ecAddCat"); if(eac) eac.onclick=()=>{ const nm=prompt(t("New category name:"),""); if(nm&&nm.trim()){ const id=makeCategory(nm); if(id){ editing.cat=id; editing.sub=null; render(); } } };
       const eas=app.querySelector("#esAddSub"); if(eas) eas.onclick=()=>{ if(!editing.cat){ showToast("Pick a category first"); return; } const nm=prompt(t("New subcategory name:"),""); if(nm&&nm.trim()){ const id=makeSub(editing.cat,nm); if(id){ editing.sub=id; render(); } } };
       const sec=app.querySelector("#secBtn"); if(sec) sec.onclick=()=> editing.kind==="item" ? removeEditing() : restoreEditingToList();

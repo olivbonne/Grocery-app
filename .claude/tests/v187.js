@@ -147,14 +147,16 @@ const SEED = (extra)=>`(() => {
                create:!!document.querySelector('#newList') }; });
     ok('every list is still listed, from the title', sh && sh.rows.length===2, JSON.stringify(sh&&sh.rows));
     ok('…and a new one can still be created', sh && sh.create===true, JSON.stringify({c:sh&&sh.create}));
-    await hold(page.locator('.listpick[data-list="v102"]'));
-    const act = await page.evaluate(()=>{ const s=document.querySelector('#listActSheet'); if(!s) return null;
-      return ['laUp','laDown','laRename','laShare','laDup','laDelete'].filter(i=>!!document.getElementById(i)); });
+    /* SUPERSEDED by v2.57: a list's options open inline from its ⋯ (the hold moves the list; Move up/down became the drag).
+       Still protects: from the title, every option is there, and Rename works all the way through. */
+    await page.locator('[data-list-more="v102"]').first().click(); await page.waitForTimeout(500);
+    const act = await page.evaluate(()=>{ const s=document.querySelector('.lp-opts'); if(!s) return null;
+      return ['rename','share','dup','delete'].filter(k=>!!s.querySelector('[data-lo-'+k+']')); });
     ok('…and holding one still gives every option the page gave',
-       act && act.join('|')==='laUp|laDown|laRename|laShare|laDup|laDelete', JSON.stringify(act));
-    await tap('#laRename');
+       act && act.join('|')==='rename|share|dup|delete', JSON.stringify(act));
+    await tap('[data-lo-rename="v102"]');
     ok('…and they still work', /rename/i.test(promptSeen||''), String(promptSeen));
-    await tap('#listSwitch');
+    if(!(await page.locator('#listsSheetEl').count())) await tap('#listSwitch');
     const renamed = await page.evaluate(()=>[...document.querySelectorAll('.lp-name')].map(x=>x.textContent));
     ok('…all the way through to the list', renamed.includes('Renamed here'), JSON.stringify(renamed));
     await page.evaluate(()=>{ const b=document.querySelector('#listsBg'); if(b) b.click(); });

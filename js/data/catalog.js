@@ -177,3 +177,16 @@ export const TYPE_CAT13 = { meat:"meat", deli:"deli", dairy:"dairy", bakery:"bak
   cleaning:"household", paper:"household", pet:"household", liquor:"liquor", household:"household" };
 /* the nine's ids that the thirteen do not have, for a name whose aisle type is unknown */
 export const OLD_CAT13 = { fresh:"dairy", bulk:"pantry", alcohol:"liquor" };
+/* v2.57 item 9: suggestions for an item's note, by a lowercase name stem (a whole word, plural allowed; the longest stem
+   that matches wins). The values are stored data typed into a note — they stay English. */
+export const NOTE_HINTS = {
+  yogurt:["Greek","low fat","plain","vanilla"], yoghurt:["Greek","low fat","plain","vanilla"],
+  milk:["full cream","light","skim","lactose free"], bread:["wholemeal","white","sourdough","multigrain"],
+  egg:["free range","cage free","large"], cheese:["tasty","mozzarella","parmesan","light"],
+  butter:["salted","unsalted"], chicken:["breast","thigh","skin on","free range"],
+  coffee:["beans","ground","decaf"], rice:["jasmine","basmati","brown"], pasta:["spaghetti","penne","gluten free"],
+  juice:["no added sugar","with pulp"], cream:["thickened","sour","light"], tomato:["cherry","roma","tinned"],
+  potato:["washed","brushed","baby"], bacon:["short cut","middle","streaky"], mince:["beef","lean","pork"],
+  flour:["plain","self raising","wholemeal"], sugar:["white","brown","caster","raw"],
+  oil:["olive","extra virgin","vegetable","canola"], tea:["bags","green","black"], apple:["red","green","pink lady"],
+  onion:["brown","red","spring"] };

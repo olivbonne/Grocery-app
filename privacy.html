@@ -63,7 +63,8 @@
   <ul>
     <li><b>Smart add</b> — the words you type go to an AI model (Google Gemini, or Groq) to be split into items.</li>
     <li><b>A recipe</b> from text, a photo, a web page or a TikTok — the text or photo goes to Gemini or Groq; for a link,
-        the server fetches that page (for TikTok, the video's public caption) and sends its text.</li>
+        the server fetches that page (for TikTok, the video's public caption) and sends its text. A photo of a shopping list or
+        of products, taken from the add sheet, goes the same way.</li>
     <li><b>Recipe search</b> — what you search for goes to a web-search service (Tavily, Serper or Brave, whichever is set
         up) and the results to Gemini or Groq.</li>
     <li><b>Scanning a membership card</b> — if the phone can read the card's barcode itself, the photo stays on the phone.
@@ -89,7 +90,8 @@
   <h2>App Check</h2>
   <p>To stop other programs from using the app's servers, the app asks Google's reCAPTCHA (Google Cloud Fraud Defense) to
      vouch that it is the real app. reCAPTCHA looks at the device and the browser — never your list — and sends that to
-     Google. It has been on since version 2.52.</p>
+     Google. It has been on since version 2.52. When the check fails, the app sends the short error code (for example
+     "appCheck/throttled") with the request, so the failure can be diagnosed. It contains nothing about you.</p>
 
   <h2>Daily limits</h2>
   <p>So that nobody can use the AI features without limit, the app's server counts how many times each signed-in phone used
