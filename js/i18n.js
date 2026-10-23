@@ -879,5 +879,14 @@ export const FR = {
   "The app couldn't prove it's the real app. Close it completely and open it again.": "L'application n'a pas pu prouver qu'elle est la vraie. Fermez-la complètement et rouvrez-la.",
 };
 
-export function tr(lang, s){ return (lang==="fr" && Object.prototype.hasOwnProperty.call(FR, s)) ? FR[s] : s; }
+/* v2.55: the languages the app speaks. To add one: write its table (same keys as FR — the English text — with that
+   language's text; keep every {placeholder}), add a line here, and nothing else in the app changes: the Settings
+   buttons, the stored choice and the date format all read this list. A key missing from a table falls back to English
+   (the suite lists the missing ones). Never translate stored data. */
+export const LANGS = [
+  { code:"en", name:"English", locale:undefined, table:null },   // undefined: the phone's own date format, as before v2.55
+  { code:"fr", name:"Français", locale:"fr-FR", table:FR },
+];
+export function langOf(code){ return LANGS.find(l => l.code === code) || LANGS[0]; }
+export function tr(lang, s){ const tb = langOf(lang).table; return (tb && Object.prototype.hasOwnProperty.call(tb, s)) ? tb[s] : s; }
 export function trf(lang, s, vars){ let out=tr(lang, s); for(const k in (vars||{})) out=out.split("{"+k+"}").join(String(vars[k])); return out; }
