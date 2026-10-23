@@ -5,25 +5,25 @@
 /* v2.15: the Firebase SDK lives in the repo (vendor/firebasejs/, see its README), so the service worker can keep
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
-  from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.54";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.54";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.54";
-import { compareStores, worthIt } from "./compare.js?v=2.54";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.54";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.54";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.54";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.54";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.54";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.54";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines } from "./parse.js?v=2.54";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.54";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf } from "./i18n.js?v=2.54";   /* v2.45 (architecture review S17): the app in French as well as English */
+import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
+import { storeInit, storeReady, ref, listen, put, has } from "./store.js?v=2.55";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.55";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.55";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.55";
+import { compareStores, worthIt } from "./compare.js?v=2.55";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.55";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.55";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.55";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.55";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.55";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.55";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines } from "./parse.js?v=2.55";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.55";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.55";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.54";
+const APP_VERSION = "v2.55";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -1240,7 +1240,7 @@ function mergeCardHTML(){
   </div>`;
 }
 /* v2.45 the language. English by default; French is chosen in Settings › Appearance. var: renders read it at boot */
-var appLang = (()=>{ try{ return localStorage.getItem("ml_lang")==="fr" ? "fr" : "en"; }catch(e){ return "en"; } })();
+var appLang = (()=>{ try{ const v=localStorage.getItem("ml_lang"); return LANGS.some(l=>l.code===v) ? v : "en"; }catch(e){ return "en"; } })();   // v2.55 any language in LANGS
 try{ document.documentElement.lang = appLang; }catch(e){}
 function t(s){ return tr(appLang, s); }
 function tf(s, v){ return trf(appLang, s, v); }
@@ -1249,7 +1249,7 @@ function tf(s, v){ return trf(appLang, s, v); }
 function catLabel(c){ if(!c) return ""; const l=c.label||"";
   if(DEFAULT_CATS.some(d=>d.id===c.id && d.label===l) || CATS13.some(d=>d.id===c.id && d.label===l) || (!c.id && l==="Buy again")) return t(l);
   return l; }
-function dateLoc(){ return appLang==="fr" ? "fr-FR" : undefined; }
+function dateLoc(){ return langOf(appLang).locale; }   // v2.55 from LANGS (English: undefined, the phone's own)
 applyTheme();
 let shopMode = localStorage.getItem("ml_shop")==="1";   // v1.09 restore the shopper's lens on relaunch
 function setShop(on){ if(shopMode===on) return; shopMode=on; if(shopMode) aiResetTrip(); localStorage.setItem("ml_shop", shopMode?"1":"0"); collapse.ba = !shopMode && collapse.ba; }
@@ -1924,8 +1924,8 @@ function markDirty(id){ if(id) dirtyIds.add(id); }
 function subscribe(){
   if(unsub){ try{ unsub(); }catch(e){} unsub=null; }
   if(!db) return;
-  listRef = doc(db, "lists", listCode);
-  unsub = onSnapshot(listRef, { includeMetadataChanges:true }, snap => {
+  listRef = ref("lists", listCode);
+  unsub = listen(listRef, snap => {
     syncing = snap.metadata.hasPendingWrites;
     fromCache = snap.metadata.fromCache;
     if(snap.exists() && !snap.metadata.hasPendingWrites){ const d = snap.data();
@@ -1959,7 +1959,7 @@ function subscribe(){
        Expected now, so not logged as an error (the crash reporter would send it) */
     if(/permission/i.test(String((err && (err.code||err.message)) || ""))){ listDenied = true; lockedNow(); _accessFor = ""; accessCheck(); return; }
     console.error(err);
-    showToast("⚠︎ Can't read database — publish Firestore rules"); });
+    showToast("⚠︎ Can't read database — publish Firestore rules"); }, { includeMetadataChanges:true });
   listDenied = false;
 }
 /* v2.44 (architecture review A2, members by account): who may open a list is kept beside it in access/{code}
@@ -1977,7 +1977,7 @@ const ACCESS_LOCKED = "You're not on this list any more, or its link has changed
 function newKey(){ try{ const b=new Uint8Array(16); crypto.getRandomValues(b);
     return btoa(String.fromCharCode(...b)).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""); }   // 22 chars, base64url
   catch(e){ return (uid()+uid()+uid()).replace(/[^a-z0-9]/g,"").slice(0,32); } }
-function accessRef(){ return db ? doc(db, "access", listCode) : null; }
+function accessRef(){ return db ? ref("access", listCode) : null; }
 function isPermErr(e){ return /permission/i.test(String((e && (e.code||e.message)) || "")); }
 function accessCheck(){ const u=_auth && _auth.currentUser, ref=accessRef(); if(!u || !ref) return;
   const code=listCode, uid=u.uid, key=code+"|"+uid; if(_accessFor===key) return; _accessFor=key;
@@ -1985,29 +1985,29 @@ function accessCheck(){ const u=_auth && _auth.currentUser, ref=accessRef(); if(
   const stop=()=>{ done=true; try{ if(off) off(); }catch(e){} };
   const join=()=>{ let k=""; try{ k=localStorage.getItem("ml_jk_"+code)||""; }catch(e){}
     const part={ acl:{[uid]:true}, names:{[uid]:me||""} }; if(k) part.joinProof={[uid]:k};
-    Promise.resolve().then(()=>setDoc(ref, part, { merge:true })).then(()=>{ if(code!==listCode) return;
+    Promise.resolve().then(()=>put(ref, part, true)).then(()=>{ if(code!==listCode) return;
         accessDenied=""; _accessFor=""; accessCheck(); subscribe(); })
       .catch(e=>{ if(code!==listCode || !isPermErr(e)) return; accessDenied=code; lockedNow(); }); };
   const got=(s)=>{ if(done) return; stop(); if(code!==listCode) return;
     if(!s || !s.exists || !s.exists()){
       const jk=newKey();
-      Promise.resolve().then(()=>setDoc(ref, { acl:{[uid]:true}, names:{[uid]:me||""}, joinKey:jk, openUntil:Date.now()+30*864e5 }))
+      Promise.resolve().then(()=>put(ref, { acl:{[uid]:true}, names:{[uid]:me||""}, joinKey:jk, openUntil:Date.now()+30*864e5 }))
         .then(()=>{ try{ localStorage.setItem("ml_jk_"+code, jk); }catch(e){} _accessFor=""; accessCheck(); }).catch(()=>{});
       return; }
     const d=s.data()||{};
     if(d.acl && d.acl[uid]===true){ accessDenied="";
       if(d.joinKey){ try{ localStorage.setItem("ml_jk_"+code, d.joinKey); }catch(e){} }
       accessInfo={ names:d.names||{}, acl:d.acl||{}, openUntil:d.openUntil||0, joinKey:d.joinKey||"" };
-      if(me && (d.names||{})[uid]!==me) setDoc(ref, { names:{[uid]:me} }, { merge:true }).catch(()=>{});
+      if(me && (d.names||{})[uid]!==me) put(ref, { names:{[uid]:me} }, true).catch(()=>{});
       render(); return; }
     accessInfo=null; join(); };
-  try{ off=onSnapshot(ref, got, err=>{ if(done) return; stop(); if(code!==listCode) return; if(isPermErr(err)) join(); }); }catch(e){ return; }
+  try{ off=listen(ref, got, err=>{ if(done) return; stop(); if(code!==listCode) return; if(isPermErr(err)) join(); }); }catch(e){ return; }
   setTimeout(()=>{ if(!done) stop(); }, 15000); }
 /* every change from Settings › People: a busy line, then the result or a plain message */
 function accessWrite(part, okMsg){ const ref=accessRef(); if(!ref || accessBusy && accessBusy.busy) return;
   accessBusy={ busy:true }; render();
   const t=new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")), 15000));
-  Promise.race([Promise.resolve().then(()=>setDoc(ref, part, { merge:true })), t]).then(()=>{
+  Promise.race([Promise.resolve().then(()=>put(ref, part, true)), t]).then(()=>{
       if(part.joinKey){ try{ localStorage.setItem("ml_jk_"+listCode, part.joinKey); }catch(e){} }
       accessBusy=null; if(okMsg) showToast(okMsg); _accessFor=""; accessCheck(); render(); })
     .catch(e=>{ accessBusy={ err: isPermErr(e) ? "Couldn't change that — the new database rules may not be published yet."
@@ -2175,13 +2175,13 @@ async function acctDelete(){ const u=_auth && _auth.currentUser;
   if(!confirm(t("Delete your account? Your email and password are removed, and your account forgets which lists are yours. The lists themselves stay, on this phone and for everyone on them."))) return;
   acct={ busy:true, step:t("Deleting your account…") }; render();
   try{
-    for(const l of getLists()){ try{ await acctWait(setDoc(doc(db,"access",l.code), { acl:{[u.uid]:false}, names:{[u.uid]:""} }, { merge:true })); }catch(e){} }
-    try{ await acctWait(setDoc(doc(db,"users",u.uid), { lists:{}, gone:{}, updated:Date.now() })); }catch(e){}
+    for(const l of getLists()){ try{ await acctWait(put(ref("access",l.code), { acl:{[u.uid]:false}, names:{[u.uid]:""} }, true)); }catch(e){} }
+    try{ await acctWait(put(ref("users",u.uid), { lists:{}, gone:{}, updated:Date.now() })); }catch(e){}
     await acctWait(_authM.deleteUser(u));
     acct={ deleted:true }; _acctSyncedUid=""; _accessFor=""; render(); }
   catch(e){ acct={ err: /requires-recent-login/.test(String(e && e.code)) ? t("For safety, Firebase wants a fresh sign-in first: sign out, sign in again, then delete the account.") : acctErr(e) }; render(); } }
 var _acctSyncedUid = "";
-function acctRef(){ const u=_auth && _auth.currentUser; return (u && !u.isAnonymous && db) ? doc(db, "users", u.uid) : null; }
+function acctRef(){ const u=_auth && _auth.currentUser; return (u && !u.isAnonymous && db) ? ref("users", u.uid) : null; }
 /* merge both ways: lists the account has and this phone does not are added here; lists this phone has are added to the
    account. A list left on purpose (Leave this list) is marked gone with its time, so it does not come back. */
 function acctSync(){ const ref=acctRef(); if(!ref) return; const uid=_auth.currentUser.uid; if(_acctSyncedUid===uid) return; _acctSyncedUid=uid;
@@ -2194,11 +2194,11 @@ function acctSync(){ const ref=acctRef(); if(!ref) return; const uid=_auth.curre
     const push={}; for(const l of getLists()) if(!have[l.code]) push[l.code]={ name:String(l.name||"").slice(0,60), ts:Date.now() };
     if(Object.keys(push).length) acctWrite({ lists:push });
     if(added){ showToast(added===1 ? "1 list came back from your account" : `${added} lists came back from your account`); render(); } };
-  try{ off=onSnapshot(ref, s=>finish(s && s.exists && s.exists() ? s.data() : null), err=>{ done=true; acctDenied(err); }); }catch(e){ acctDenied(e); }
+  try{ off=listen(ref, s=>finish(s && s.exists && s.exists() ? s.data() : null), err=>{ done=true; acctDenied(err); }); }catch(e){ acctDenied(e); }
   setTimeout(()=>{ if(!done){ done=true; try{ if(off) off(); }catch(e){} } }, 15000); }
 var _acctQuiet = false;   // true while lists come back FROM the account, so they are not written straight back
 function acctWrite(part){ const ref=acctRef(); if(!ref) return; part.updated=Date.now();
-  Promise.resolve().then(()=>setDoc(ref, part, { merge:true })).then(()=>{ _acctNote=""; }).catch(acctDenied); }
+  Promise.resolve().then(()=>put(ref, part, true)).then(()=>{ _acctNote=""; }).catch(acctDenied); }
 function acctDenied(e){ if(/permission/i.test(String((e && (e.code||e.message)) || ""))) { _acctNote="Your lists can't be saved to your account yet: the app's owner still has to publish the new database rules."; render(); } }
 function acctHTML(){ if(!configured) return "";
   const em=acctEmail(), a=acct||{};
@@ -2236,8 +2236,9 @@ try {
        a change made meanwhile is kept, stamped, and merged in by the first snapshot (v2.51). */
     configured = true;   // the screens ask this at once; save() waits for listRef, which subscribe() sets
     startAppCheck(app).then(() => { try {
-      try { db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); }
-      catch(e){ db = getFirestore(app); }   // fallback if persistence unavailable
+      try { db = FS.initializeFirestore(app, { localCache: FS.persistentLocalCache({ tabManager: FS.persistentMultipleTabManager() }) }); }
+      catch(e){ db = FS.getFirestore(app); }   // fallback if persistence unavailable
+      storeInit(FS, db);
       subscribe();
       authStart(app);
     } catch(e){ console.error(e); } });
@@ -2316,7 +2317,7 @@ async function save(){
   if(!configured || !listRef) return;   // v2.54: !listRef — the database starts after App Check (a change made before is merged in by the first snapshot)
   if(_newerData) return;   // never write over a newer app's data
   syncing = true;
-  try { await setDoc(listRef, Object.assign(listDoc(state), { shopping: state.shopping||{}, itemTomb: state.itemTomb||{}, v: LIST_V })); }   // v2.49: only the fields the app knows (the rules refuse others)
+  try { await put(listRef, Object.assign(listDoc(state), { shopping: state.shopping||{}, itemTomb: state.itemTomb||{}, v: LIST_V })); }   // v2.49: only the fields the app knows (the rules refuse others)
   catch(e){ console.error(e);
     if(Date.now()-__saveWarned > 5000){ __saveWarned = Date.now(); showToast("⚠︎ Not syncing — check Firestore rules"); } }
 }
@@ -4834,7 +4835,7 @@ function sharedContribute(r){ if(!r || !r.lines || !sharePxOn() || !shareEmailAc
   for(const L of r.lines){ if(n>=40) break; const nm=String(L.name||"").trim(); if(!L.keep || !nm || !isFinite(L.price)) continue;
     const key=sharedKey(chain, priceKey(nm)); if(!key) continue;
     const p=Math.round((Math.round(L.price*100)/100) / Math.max(1, +L.qty || 1) * 100) / 100; if(!(p>0)) continue; n++;
-    try{ setDoc(doc(db, "shared", key), { by:{ [uidN]:{ p, d:Date.now() } } }, { merge:true }).catch(()=>{}); }catch(e){} } }
+    try{ put(ref("shared", key), { by:{ [uidN]:{ p, d:Date.now() } } }, true).catch(()=>{}); }catch(e){} } }
 var sharedCache = {};   // key → { med, t }. var: cmpModel can run at boot
 var _sharedPending = 0, _sharedRenderT = null;
 function sharedFetch(keys){ if(!db) return; const now=Date.now(); let started=0;
@@ -4843,7 +4844,7 @@ function sharedFetch(keys){ if(!db) return; const now=Date.now(); let started=0;
     let off=null, done=false;
     const finish=(med)=>{ if(done) return; done=true; try{ if(off) off(); }catch(e){} sharedCache[k]={ med, t:Date.now() };
       if(--_sharedPending<=0){ _sharedPending=0; clearTimeout(_sharedRenderT); _sharedRenderT=setTimeout(()=>render(), 50); } };
-    try{ off=onSnapshot(doc(db, "shared", k), s=>finish(s && s.exists && s.exists() ? sharedMedian((s.data()||{}).by, Date.now()) : null), ()=>finish(null)); }catch(e){ finish(null); }
+    try{ off=listen(ref("shared", k), s=>finish(s && s.exists && s.exists() ? sharedMedian((s.data()||{}).by, Date.now()) : null), ()=>finish(null)); }catch(e){ finish(null); }
     setTimeout(()=>finish(null), 15000); } }
 function cmpModel(){ const items = state.items.filter(i => !i.checked);
   if(!sharePxOn()) return compareStores({ items, lookup:name => priceLookup(name) || [], maxAgeDays:60, minItems:3 });
@@ -6252,7 +6253,7 @@ function wireOptions(){
       collapse.cats = open ? ids.slice() : []; collapse.ba = open ? false : true;
     }
     localStorage.setItem(LS.collapse, JSON.stringify(collapse)); optOpen=false; render(); };
-  app.querySelectorAll("[data-opt-lang]").forEach(b=>b.onclick=()=>{ appLang = b.dataset.optLang==="fr" ? "fr" : "en";   // v2.45
+  app.querySelectorAll("[data-opt-lang]").forEach(b=>b.onclick=()=>{ appLang = LANGS.some(l=>l.code===b.dataset.optLang) ? b.dataset.optLang : "en";   // v2.45, v2.55 any language in LANGS
     try{ localStorage.setItem("ml_lang", appLang); }catch(e){} try{ document.documentElement.lang = appLang; }catch(e){} render(); });
   app.querySelectorAll("[data-opt-theme]").forEach(b=>b.onclick=()=>{ if(theme!==b.dataset.optTheme) setTheme(b.dataset.optTheme); });
   /* v1.51 history */
@@ -7018,7 +7019,7 @@ function optionsBody(){
     ${/* v1.57 item 2: Text size sits with the wallpaper and the theme — the three things that change
           the whole page at once — and with no rule between them, because they are one group. */""}
     ${rowNL(t("Text size"), `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
-    ${rowNL(t("Language"), `<div class="seg"><button data-opt-lang="en" lang="en" class="${appLang==='en'?'on':''}">English</button><button data-opt-lang="fr" lang="fr" class="${appLang==='fr'?'on':''}">Français</button></div>`)}
+    ${rowNL(t("Language"), `<div class="seg">${LANGS.map(l=>`<button data-opt-lang="${l.code}" lang="${l.code}" class="${appLang===l.code?'on':''}">${l.name}</button>`).join("")}</div>`)}
     ${/* v2.00 item 2: the appearance slots, the margin steppers and the page-transition controls
           are real preferences, but they are not what someone opens Settings to find — and they sat
           in front of Sort and Smart add. Their own section, folded by default. */""}
