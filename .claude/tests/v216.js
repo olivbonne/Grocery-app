@@ -131,7 +131,9 @@ function cr(a,b){ const x=lum(a), y=lum(b); return (Math.max(x,y)+0.05)/(Math.mi
     const narrow = await page.evaluate(()=>{ const l=document.querySelector('#shopAddFab .addpill-lbl'), w=document.querySelector('#shopAddFab').getBoundingClientRect().width; return { w:Math.round(w), shown:l && getComputedStyle(l).display!=='none' }; });
     ok('…and just "+" when the bar is set narrow in Settings', narrow.w<=150 && narrow.shown===false, JSON.stringify(narrow));
     await mk([]);
-    ok('the empty list\'s hint names the same words', /Tap Add items below/.test(await page.evaluate(()=>document.querySelector('.empty-sub').textContent)), '');
+    /* SUPERSEDED by v2.56: the empty list lost its sentence for a basket and two tiles. Still protects: the empty list's way
+       to start uses the same words as the bar ("Add items"). */
+    ok('the empty list\'s hint names the same words', await page.evaluate(()=>{ const b=document.querySelector('#emptyAdd'); return !!b && b.getAttribute('aria-label')==='Add items'; }), '');
 
     /* ── R11. keep the screen on while shopping ────────────────────────── */
     await mk(L16.map((x,i)=>Object.assign({},x,{checked:i<2})), '', wakeInit);

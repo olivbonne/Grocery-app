@@ -142,7 +142,7 @@ const MODEL_ERR = { status:502, body:{ error:'The recipe reader\'s model is no l
     await mk(MODEL_ERR);
     await tap('#shopAddFab');
     await page.fill('#mainInput', 'milk, eggs, bread');
-    await tap('#smartBtn');
+    await tap('[data-add-smart]');   /* SUPERSEDED by v2.56: the ✨ beside the search bar became a Smart add tile in the add sheet; still protects the Smart add flow itself */
     await page.waitForTimeout(600);
     let smart = await page.evaluate(()=>{ const s=document.querySelector('.sheet-bg#smartBg, #smartBg');
       return s ? s.textContent : ''; });
@@ -155,7 +155,7 @@ const MODEL_ERR = { status:502, body:{ error:'The recipe reader\'s model is no l
     await mk({ status:502, body:{ error:'Parse failed', code:'upstream' } });
     await tap('#shopAddFab');
     await page.fill('#mainInput', 'qqqq');
-    await tap('#smartBtn');
+    await tap('[data-add-smart]');   /* SUPERSEDED by v2.56: the ✨ beside the search bar became a Smart add tile in the add sheet; still protects the Smart add flow itself */
     await page.waitForTimeout(600);
     smart = await page.evaluate(()=>{ const s=document.querySelector('.sheet-bg#smartBg, #smartBg');
       return s ? s.textContent : ''; });

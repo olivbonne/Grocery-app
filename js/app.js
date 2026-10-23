@@ -2990,7 +2990,8 @@ function itemIcon(name, cat){
   if(iconStyle()==="drawn"){ const k=drawKey(name); if(k) return illSVG(k);
     /* v2.56 item 7: text the app cannot place at all (no drawing, no category from the dictionary) gets the drawn basket;
        a name with no drawing but a known category keeps that category's mark, so tofu still shows Asian */
-    const kc = (cat && cat!=="others") ? cat : guessCat(name);
+    const c=CAT(cat); if(c && c.id!=="others" && !CAT_IDS.has(c.id)) return itemEmoji(name, cat);   // a household-made category keeps its emoji (v2.04)
+    const kc = (c && c.id!=="others") ? c.id : guessCat(name);
     return (kc && kc!=="others" && CATMARK[kc]) ? catMarkSVG(kc) : catMarkSVG("others"); }
   return itemEmoji(name, cat); }
 function itemEmoji(name, cat){ if(!itemEmojiOn()) return "";

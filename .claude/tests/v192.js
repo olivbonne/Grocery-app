@@ -95,7 +95,7 @@ const NO_MODEL = { status:502, body:{ error:'The recipe reader\'s model is no lo
     await mk(NO_KEY);
     await tap('#shopAddFab');
     await page.fill('#mainInput', 'milk, eggs');
-    await tap('#smartBtn');
+    await tap('[data-add-smart]');   /* SUPERSEDED by v2.56: the ✨ beside the search bar became a Smart add tile in the add sheet; still protects the Smart add flow itself */
     await page.waitForTimeout(600);
     let s = await smartText();
     ok('…and so does Smart add', namesBoth(s, 'GEMINI_API_KEY', 'GROQ_API_KEY'), s.slice(0,140));
@@ -120,7 +120,7 @@ const NO_MODEL = { status:502, body:{ error:'The recipe reader\'s model is no lo
     await mk(NO_MODEL);
     await tap('#shopAddFab');
     await page.fill('#mainInput', 'milk, eggs');
-    await tap('#smartBtn');
+    await tap('[data-add-smart]');   /* SUPERSEDED by v2.56: the ✨ beside the search bar became a Smart add tile in the add sheet; still protects the Smart add flow itself */
     await page.waitForTimeout(600);
     s = await smartText();
     ok('…and in Smart add', namesBoth(s, 'GEMINI_MODEL', 'GROQ_MODEL'), s.slice(0,160));
@@ -129,7 +129,7 @@ const NO_MODEL = { status:502, body:{ error:'The recipe reader\'s model is no lo
     await mk({ status:502, body:{ error:'Parse failed', code:'upstream' } });
     await tap('#shopAddFab');
     await page.fill('#mainInput', 'qqqq');
-    await tap('#smartBtn');
+    await tap('[data-add-smart]');   /* SUPERSEDED by v2.56: the ✨ beside the search bar became a Smart add tile in the add sheet; still protects the Smart add flow itself */
     await page.waitForTimeout(600);
     s = await smartText();
     ok('a plain upstream failure still gets the ordinary message', /try rephrasing/i.test(s), s.slice(0,140));
