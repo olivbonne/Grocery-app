@@ -7,23 +7,23 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.51";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.51";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.51";
-import { compareStores, worthIt } from "./compare.js?v=2.51";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.51";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.51";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.51";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.51";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.51";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.51";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines } from "./parse.js?v=2.51";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.51";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf } from "./i18n.js?v=2.51";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.52";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.52";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.52";
+import { compareStores, worthIt } from "./compare.js?v=2.52";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.52";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.52";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.52";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.52";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.52";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.52";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines } from "./parse.js?v=2.52";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.52";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf } from "./i18n.js?v=2.52";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.51";
+const APP_VERSION = "v2.52";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -2034,16 +2034,17 @@ function accessHTML(){
    everything works as before (authNote() says why, in Settings › Your data). */
 var _auth = null, _authErr = "";   // var: Settings reads them at any time
 /* v2.50 App Check (architecture review S3): proves a request comes from this app, not a script holding the public web config.
-   DORMANT until APPCHECK_SITE_KEY is set (a reCAPTCHA v3 site key — public, like the web config; the owner creates it and
+   v2.52: ON, with Google's Fraud Defense (formerly reCAPTCHA Enterprise — the classic reCAPTCHA is no longer offered for new
+   keys). APPCHECK_SITE_KEY is its site key — public, like the web config; the owner created it and
    registers it in Firebase › App Check). Switched on, Firestore and Auth attach its token by themselves and apiFetch sends
    it to the server (X-Firebase-AppCheck), which checks it when APP_CHECK is "log" or "require" (lib/guard.js). reCAPTCHA
    is Google's script, loaded from google.com only then — privacy.html says so. */
-const APPCHECK_SITE_KEY = "";
+const APPCHECK_SITE_KEY = "6LcX4vwtAAAAACbmrxOgibD3Gv8wOrIrUc-icGU9";   // v2.52, Fraud Defense
 var _appCheck = null, _appCheckMod = null;
-function appCheckKey(){ try{ if(navigator.webdriver && window.__appCheckKey) return String(window.__appCheckKey); }catch(e){} return APPCHECK_SITE_KEY; }   // tests switch it on
+function appCheckKey(){ try{ if(navigator.webdriver) return String(window.__appCheckKey || ""); }catch(e){} return APPCHECK_SITE_KEY; }   // under automation only a test's own key: no suite ever loads Google's real script
 function startAppCheck(app){ const key = appCheckKey(); if(!key || _appCheck) return;
   import("/vendor/firebasejs/10.12.2/firebase-app-check.js").then(m => { _appCheckMod = m;
-    _appCheck = m.initializeAppCheck(app, { provider: new m.ReCaptchaV3Provider(key), isTokenAutoRefreshEnabled: true }); })
+    _appCheck = m.initializeAppCheck(app, { provider: new m.ReCaptchaEnterpriseProvider(key), isTokenAutoRefreshEnabled: true }); })
   .catch(() => {}); }   // offline or blocked: the app works on; the server decides what an unchecked call gets
 async function appCheckToken(){ if(!_appCheck || !_appCheckMod) return "";
   try{ const r = await Promise.race([_appCheckMod.getToken(_appCheck, false), new Promise(res => setTimeout(() => res(null), 3000))]); return (r && r.token) || ""; }catch(e){ return ""; } }

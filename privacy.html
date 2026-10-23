@@ -86,10 +86,10 @@
      services, GitHub, Upstash, and Vercel, which also sees the usual web requests (an IP address and the time) as it serves the
      app. What they keep, and for how long, is set by them and could not be checked from here.</p>
 
-  <h2>App Check (when switched on)</h2>
-  <p>To stop other programs from using the app's servers, the app may ask Google's reCAPTCHA to vouch that it is the real
-     app. reCAPTCHA looks at the device and the browser — never your list — and sends that to Google. It runs only once
-     the owner switches App Check on; at the time of writing it is off.</p>
+  <h2>App Check</h2>
+  <p>To stop other programs from using the app's servers, the app asks Google's reCAPTCHA (Google Cloud Fraud Defense) to
+     vouch that it is the real app. reCAPTCHA looks at the device and the browser — never your list — and sends that to
+     Google. It has been on since version 2.52.</p>
 
   <h2>What the app never does</h2>
   <ul>
