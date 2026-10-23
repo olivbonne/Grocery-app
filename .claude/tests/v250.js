@@ -5,7 +5,7 @@
      another project, an expired one, a bad signature, an unknown key and junk are each refused with their reason;
    - APP_CHECK "off" (the default) checks nothing; "log" never blocks and logs the reason (never the token); "require"
      answers 401 "appcheck", except for a crash report; a good token passes;
-   - in the app: with no site key nothing is loaded (no reCAPTCHA, no App Check file) and calls carry no App Check header;
+   - in the app (v2.52: under automation the shipped key is ignored): with no site key nothing is loaded (no reCAPTCHA, no App Check file) and calls carry no App Check header;
      switched on, the App Check file is loaded and every /api call carries its token;
    - the CSP lets reCAPTCHA and App Check through, the SDK file is vendored and precached, and the privacy page says so.
 
@@ -39,7 +39,7 @@ const AUTHSTUB = `export const indexedDBLocalPersistence={}, browserLocalPersist
 const A={ currentUser:null }; export function initializeAuth(){ return A; }
 export function onAuthStateChanged(a,f){ setTimeout(()=>f(null),0); return ()=>{}; }
 export async function signInAnonymously(){ throw Object.assign(new Error('x'),{code:'auth/offline'}); }`;
-const ACSTUB = `window.__acLoaded=true; export class ReCaptchaV3Provider{ constructor(k){ window.__acKey=k; } }
+const ACSTUB = `window.__acLoaded=true; export class ReCaptchaEnterpriseProvider{ constructor(k){ window.__acKey=k; } }
 export function initializeAppCheck(app,o){ window.__acInit=!!(o && o.provider); return { ok:true }; }
 export async function getToken(){ return { token:'ac-token' }; }`;
 const seed = `(() => { if(localStorage.getItem("t_seeded")) return; localStorage.setItem("t_seeded","1");
@@ -106,7 +106,10 @@ const seed = `(() => { if(localStorage.getItem("t_seeded")) return; localStorage
     const vf = fs.readFileSync(path.join(ROOT,'vendor','firebasejs','10.12.2','firebase-app-check.js'),'utf8');
     ok('the App Check SDK is vendored (importing the local firebase-app.js) and precached', /from"\.\/firebase-app\.js"/.test(vf) && !/gstatic\.com\/firebasejs\/10\.12\.2\/firebase-app\.js/.test(vf) && /firebase-app-check\.js/.test(fs.readFileSync(path.join(ROOT,'sw.js'),'utf8')), '');
     ok('the privacy page says what App Check sends, and that it is off', /App Check/.test(fs.readFileSync(path.join(ROOT,'privacy.html'),'utf8')), '');
-    ok('the shipped app has no site key yet (dormant)', /const APPCHECK_SITE_KEY = "";/.test(fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8')), '');
+    /* SUPERSEDED by v2.52: App Check is switched on with the owner's Fraud Defense key. Still protects: the key is set in one
+       place, the provider is Fraud Defense (the classic reCAPTCHA no longer takes new keys), and automation never loads it. */
+    const appSrc = fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8');
+    ok('the shipped app carries the Fraud Defense site key, uses that provider, and suites never load the real script', /const APPCHECK_SITE_KEY = "6L[\w-]{30,}";/.test(appSrc) && /new m\.ReCaptchaEnterpriseProvider\(key\)/.test(appSrc) && /if\(navigator\.webdriver\) return String\(window\.__appCheckKey \|\| ""\)/.test(appSrc), '');
   } catch(e){ ok('suite ran to the end', false, e.message.slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));
   if(browser) await browser.close();

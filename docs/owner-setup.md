@@ -126,10 +126,13 @@ Do this after step 2 (sign-in), so the endpoints can check who is asking.
 **Unlocks:** only the real app can use the database and the AI functions, not a script holding the public web config.
 The menu names below could not be checked from here.
 
-1. **Google Cloud console / reCAPTCHA admin** — create a **reCAPTCHA v3** key for the domain
-   `grocery-app-2-sage.vercel.app` (add `localhost` only for testing).
-2. **Firebase console › App Check › Apps** → the web app → register it with **reCAPTCHA v3** and paste the **secret** key there.
-3. Send the **site** key (it is public) to be put in `APPCHECK_SITE_KEY` in `js/app.js`.
+**Done 23 October 2026 (v2.52).** The classic reCAPTCHA no longer takes new keys, so it runs on **Fraud Defense** (formerly
+reCAPTCHA Enterprise) — registered without a billing account.
+1. **reCAPTCHA admin** — a score-based key for `grocery-app-2-sage.vercel.app` (it was created under "My First Project").
+2. **Firebase console › App Check › Apps** → the web app → **Fraud Defense** → its **site** key (no secret in this flow).
+3. The site key is in `APPCHECK_SITE_KEY` in `js/app.js`.
+If Google ever asks for billing to keep it running: before linking a billing account, turn off Places API (New) and Geocoding
+in grocery-list-88109 (they are enabled and would become chargeable), and set a budget alert.
 4. Watch **Firebase › App Check** metrics for a few days ("verified requests"), then **Enforce** for Cloud Firestore.
 5. In Vercel set `APP_CHECK=log`, and later `APP_CHECK=require`.
 
