@@ -69,12 +69,17 @@ const SEED = `(() => {
     await page.waitForTimeout(1300);
   };
   const tap = async(sel)=>{ const l=page.locator(sel).first(); await l.click(); await page.waitForTimeout(900); };
-  const hold = async(loc)=>{ await loc.scrollIntoViewIfNeeded();
+  /* SUPERSEDED by v2.57: the household asked for the hold to MOVE a list and the ⋯ to show its options, inline below the
+     row. hold() now opens the options the way a person does today (the row's ⋯) and act() reads the inline panel, so each
+     check below still protects what it did: every option is reachable, for the right list, and each one acts. Move up/down
+     became the drag (v257.js checks it). */
+  const hold = async(loc)=>{ await loc.locator('[data-list-more]').first().click(); await page.waitForTimeout(600); };
+  const holdOld = async(loc)=>{ await loc.scrollIntoViewIfNeeded();
     const b=await loc.boundingBox();
     await page.mouse.move(b.x+b.width/2, b.y+b.height/2);
     await page.mouse.down(); await page.waitForTimeout(750); await page.mouse.up();   // 450ms threshold + slack
     await page.waitForTimeout(800); };
-  const openSwitcher = ()=>tap('#listSwitch');
+  const openSwitcher = async()=>{ if(await page.locator('#listsSheetEl').count()) return; await tap('#listSwitch'); };   // v2.57: renaming inline leaves the sheet open
   const sheet = ()=>page.evaluate(()=>{
     const el=document.querySelector('#listsSheetEl');
     if(!el) return { open:false };
@@ -84,10 +89,12 @@ const SEED = `(() => {
              rows:[...document.querySelectorAll('.listpick')].map(r=>({ name:(r.querySelector('.lp-name')||{}).textContent, code:r.dataset.list })) };
   });
   const act = ()=>page.evaluate(()=>{
-    const s=document.querySelector('#listActSheet'); if(!s) return { open:false };
-    return { open:true, head:(s.querySelector('.disp')||{}).textContent,
-             ids:['laUp','laDown','laRename','laShare','laDup','laDelete'].filter(i=>!!document.getElementById(i)) };
+    const s=document.querySelector('.lp-opts'); if(!s) return { open:false };
+    const row=document.querySelector('.listpick[data-list="'+s.dataset.lo+'"]');
+    return { open:true, head:row ? (row.querySelector('.lp-name')||row).textContent : '',
+             ids:[['rename','laRename'],['share','laShare'],['dup','laDup'],['delete','laDelete']].filter(([k])=>!!s.querySelector('[data-lo-'+k+']')).map(x=>x[1]) };
   });
+  const closeAct = ()=>page.evaluate(()=>{ const s=document.querySelector('.lp-opts'); if(s){ const m=document.querySelector('[data-list-more="'+s.dataset.lo+'"]'); if(m) m.click(); } });
   const title = ()=>page.evaluate(()=>(document.querySelector('#listSwitch')||{}).textContent);
 
   try{
@@ -108,13 +115,13 @@ const SEED = `(() => {
     let a = await act();
     ok('holding a row opens the list-action sheet', a.open===true, JSON.stringify(a));
     ok('…with every option the Lists page has',
-       a.open && a.ids.join('|')==='laUp|laDown|laRename|laShare|laDup|laDelete', JSON.stringify(a.ids));
+       a.open && a.ids.join('|')==='laRename|laShare|laDup|laDelete', JSON.stringify(a.ids));
     ok('…for the list you HELD, not the one you are in', /Hardware/.test(a.head||''), a.head);
     ok('…and the switcher stepped aside rather than stacking scrims',
-       (await page.locator('#listsSheetEl').count())===0, String(await page.locator('#listsSheetEl').count()));
-    await page.evaluate(()=>{ const b=document.querySelector('#listActBg'); if(b) b.click(); });
-    await page.waitForTimeout(700);
-    ok('…and its scrim closes it', (await page.locator('#listActSheet').count())===0);
+       (await page.locator('#listsSheetEl').count())===1 && (await page.locator('#listActSheet').count())===0, String(await page.locator('#listActSheet').count()));
+    await closeAct(); await page.waitForTimeout(500);
+    ok('…and its scrim closes it', (await page.locator('.lp-opts').count())===0);
+    await page.evaluate(()=>{ const b=document.querySelector('#listsBg'); if(b) b.click(); }); await page.waitForTimeout(600);
 
     /* ── 3. a short tap still switches ──────────────────────────────────── */
     await openSwitcher();
@@ -125,7 +132,7 @@ const SEED = `(() => {
     /* ── 4. the actions actually act ────────────────────────────────────── */
     await openSwitcher();
     await hold(page.locator('.listpick[data-list="v103"]'));
-    await tap('#laRename');
+    await tap('[data-lo-rename]');
     ok('Rename asks, through the app\'s own prompt', /rename/i.test(promptSeen||''), String(promptSeen));
     ok('…and the new name reaches the header', /^Weekly shop/.test(await title()), await title());
     await openSwitcher();
@@ -133,13 +140,13 @@ const SEED = `(() => {
     ok('…and the switcher row', (s.rows||[]).some(r=>r.name==='Weekly shop'), JSON.stringify(s.rows&&s.rows.map(r=>r.name)));
 
     const orderBefore = (await sheet()).rows.map(r=>r.code).join(',');
-    await hold(page.locator('.listpick[data-list="v103"]'));
-    await tap('#laUp');
+    /* v2.57: Move up is the drag now — hold Pharmacy and drag it above the row before it */
+    { const rows=(await sheet()).rows.map(r=>r.code), i=rows.indexOf('v103'); const src=await page.locator('.listpick[data-list="v103"]').boundingBox(), dst=await page.locator('.listpick[data-list="'+rows[i-1]+'"]').boundingBox();
+      await page.mouse.move(src.x+src.width/2, src.y+src.height/2); await page.mouse.down(); await page.waitForTimeout(650);
+      for(let k=1;k<=10;k++){ await page.mouse.move(src.x+src.width/2, src.y+src.height/2+((dst.y+dst.height/2-8)-(src.y+src.height/2))*k/10); await page.waitForTimeout(30); }
+      await page.mouse.up(); await page.waitForTimeout(700); }
     ok('Move up leaves the sheet open, so a list can be moved several places in a row',
-       (await act()).open===true, JSON.stringify(await act()));
-    await page.evaluate(()=>{ const b=document.querySelector('#listActBg'); if(b) b.click(); });
-    await page.waitForTimeout(700);
-    await openSwitcher();
+       (await page.locator('#listsSheetEl').count())===1, '');
     const orderAfter = (await sheet()).rows.map(r=>r.code).join(',');
     ok('precondition: Pharmacy was not already first', orderBefore.indexOf('v103')>0, orderBefore);
     ok('Move up reorders the switcher itself', orderAfter!==orderBefore &&
@@ -158,9 +165,9 @@ const SEED = `(() => {
       ok(`precondition: the switcher opens from ${where}`, (await sheet()).open===true, where);
       await hold(page.locator('.listpick').first());
       const aa = await act();
-      ok(`…and the hold opens the action sheet from ${where}`, aa.open===true && aa.ids.length===6,
+      ok(`…and the hold opens the action sheet from ${where}`, aa.open===true && aa.ids.length===4,
          JSON.stringify({where, open:aa.open, ids:aa.ids.length}));
-      await page.evaluate(()=>{ const b=document.querySelector('#listActBg'); if(b) b.click(); });
+      await closeAct(); await page.evaluate(()=>{ const b=document.querySelector('#listsBg'); if(b) b.click(); });
       await page.waitForTimeout(700);
     }
     await tap('#setNav, #setNavL, #setNavP, #setNavS');
@@ -176,7 +183,7 @@ const SEED = `(() => {
     await openSwitcher();
     await hold(page.locator('.listpick[data-list="v102"]'));
     const la = await act();
-    ok('a hold on a switcher row is the only route to the options, and it works', la.open===true && la.ids.length===6, JSON.stringify(la.ids));
+    ok('a hold on a switcher row is the only route to the options, and it works', la.open===true && la.ids.length===4, JSON.stringify(la.ids));
     ok('…for the row held', /Hardware/.test(la.head||''), la.head);
     ok('…and no Lists page exists any more', (await page.locator('.listgrid').count())===0,
        String(await page.locator('.listgrid').count()));

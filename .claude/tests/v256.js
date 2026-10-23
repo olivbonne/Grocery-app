@@ -78,7 +78,9 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     ok('3 · each list has a ⋯, no radio dots, no "Tap to switch…" line, and the open list has a clear border', ls.more===2 && ls.radio===0 && !ls.hint && parseFloat(ls.curBorder)>=2, JSON.stringify(ls));
     await shot('lists');
     await page.locator('[data-list-more]').nth(1).click(); await page.waitForTimeout(500);
-    ok('3 · the ⋯ opens that list\'s options (rename, share, delete…)', await page.evaluate(()=>/Rename|Delete/.test(document.body.innerText) && !document.querySelector('#listsSheetEl')), '');
+    /* SUPERSEDED by v2.57: the options open inline below the list, inside the lists sheet (the household's item 12).
+       Still protects: the ⋯ is the way to a list's options. */
+    ok('3 · the ⋯ opens that list\'s options (rename, share, delete…)', await page.evaluate(()=>/Rename/.test(document.body.innerText) && /Delete/.test(document.body.innerText)), '');
 
     /* 4 ─ the empty list */
     await mk({ docs:{ v101:DOC({ items:[] }) } });
@@ -92,7 +94,9 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     /* 7 ─ the add sheet (same page) */
     const st = await page.evaluate(()=>({ smartBtn:!!document.querySelector('#smartBtn'), smart:!!document.querySelector('[data-add-smart]'), cam:!!document.querySelector('[data-add-photo="camera"]'),
       gal:!!document.querySelector('[data-add-photo="gallery"]'), paste:!!document.querySelector('[data-add-paste]') }));
-    ok('7 · no ✨ beside the search bar; with nothing typed: Smart add, Take a photo, From your photos, Paste', !st.smartBtn && st.smart && st.cam && st.gal && st.paste, JSON.stringify(st));
+    /* SUPERSEDED by v2.57: Paste is gone (it did nothing on the household's iPhone). Still protects: no ✨ by the search bar,
+       and the ways in with nothing typed. */
+    ok('7 · no ✨ beside the search bar; with nothing typed: Smart add, Take a photo, From your photos', !st.smartBtn && st.smart && st.cam && st.gal && !st.paste, JSON.stringify(st));
     await page.waitForTimeout(700); await shot('addstart');
     await page.locator('#mainInput').fill('milk ggg, and $:! 3 eggs'); await page.locator('#mainInput').dispatchEvent('input'); await page.waitForTimeout(500);
     const ty = await page.evaluate(()=>{ const tiles=[...document.querySelectorAll('#addSheetBody .pill')]; const i=tiles.findIndex(b=>b.hasAttribute('data-add-typed')); return { typed:i, smartNext: i>=0 && tiles[i+1] && tiles[i+1].hasAttribute('data-add-smart') }; });
@@ -146,7 +150,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
 
     const src = fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8');
     ok('ml_gonelists is in both appearance-slot exclusion lists', (src.match(/const APP_EXCLUDE(?:_BOOT)? = \/\^\(([^)]*)\)\//g)||[]).filter(x=>/ml_gonelists\$/.test(x)).length===2, '');
-    ok('App Check: the database waits up to 10 s for it, the AI calls 8 s (96% → aiming for 100% before enforcing)', /setTimeout\(r, 10000\)/.test(src) && /setTimeout\(\(\) => res\(null\), 8000\)/.test(src), '');
+    ok('App Check: the database waits up to 10 s for it, the AI calls 8 s (96% → aiming for 100% before enforcing)', /setTimeout\(r, 10000\)/.test(src) && /* SUPERSEDED by v2.57: the AI calls' wait also notes a timeout for the Connection check */ /res\(null\); \}, 8000\)/.test(src), '');
   } catch(e){ ok('suite ran to the end', false, (e.stack||e.message).slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));
   if(browser) await browser.close();

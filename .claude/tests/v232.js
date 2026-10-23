@@ -119,9 +119,10 @@ const seed = (o) => { o=o||{}; return `(() => {
       localStorage.setItem("ml_cache_v202", JSON.stringify({ items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:["O"], name:"Party", baMeta:{label:"Buy again",emoji:"b",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[],saved:[]} }));` });
     await tap('#listSwitch');
     ok('(3) the new-list sheet follows the keyboard', /kbpin" id="newListBg"/.test(src), '');
-    const li = page.locator('[data-list="v101"]').first();
-    await li.dispatchEvent('pointerdown'); await page.waitForTimeout(700); await li.dispatchEvent('pointerup'); await page.waitForTimeout(500);
-    await tap('#laDelete');
+    /* SUPERSEDED by v2.57: a list's options open from its ⋯, inline (the hold now moves the list). Still protects: removing
+       the open list from the switcher. */
+    await page.locator('[data-list-more="v101"]').first().click(); await page.waitForTimeout(500);
+    await tap('[data-lo-delete="v101"]');
     const after = await page.evaluate(()=>({ title:(document.querySelector('#listSwitch')||{}).textContent||'', last:localStorage.getItem('ml_lastlist'), lists:JSON.parse(localStorage.getItem('ml_lists')).map(l=>l.code) }));
     ok('(4) removing the list that is open opens the first one left — its name is at the top', /Party/.test(after.title) && after.last==='v202' && JSON.stringify(after.lists)==='["v202"]', JSON.stringify(after));
     await tap('#undoBtn');

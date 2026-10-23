@@ -104,6 +104,10 @@ const VISION_SYSTEM = SYSTEM
   + '\nThe recipe is in the attached image. Read the ingredient list from it.'
   + '\nIf the image is not a recipe, return {"title":"","servings":4,"items":[],"steps":[]}.';
 
+/* v2.57: a photo taken from the add sheet (kind "list") may be a shopping list, products, a shelf — or a recipe */
+const LIST_VISION_SYSTEM = SYSTEM
+  + '\nThe attached image shows things to buy: it may be a handwritten or printed shopping list, products or their packaging, a shelf, a fridge or a pantry, or a recipe. List every distinct item a shopper would buy from it (for a recipe, its ingredients), using the words written in the image where there are any. Use "" for title unless it is a recipe; steps is [] unless it is a recipe. Return {"title":"","servings":4,"items":[],"steps":[]} only when nothing in the image can be bought.';
+
 // ── the model output is untrusted: coerce every field into a safe shape ──────
 function clampItem(x) {
   if (!x || typeof x !== 'object') return null;
@@ -418,6 +422,7 @@ module.exports = async (req, res) => {
     body = body || {};
 
     const image = typeof body.image === 'string' ? body.image.trim() : '';
+    const kind = body.kind === 'list' ? 'list' : 'recipe';   // v2.57: the add sheet's photo of a list
     const url = typeof body.url === 'string' ? body.url.trim() : '';
     const dish = typeof body.dish === 'string' ? body.dish.trim().slice(0, 120) : '';
     let text = typeof body.text === 'string' ? body.text.trim() : '';
@@ -452,7 +457,7 @@ module.exports = async (req, res) => {
         messages: [{
           role: 'user',
           content: [
-            { type: 'text', text: VISION_SYSTEM },
+            { type: 'text', text: kind === 'list' ? LIST_VISION_SYSTEM : VISION_SYSTEM },
             { type: 'image_url', image_url: { url: image } },
           ],
         }],

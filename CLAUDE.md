@@ -99,7 +99,8 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   starts with the thirteen plus Others (`CATS13`, in the order a shop is walked). The dictionary, the AI readers and receipts
   still speak the nine: every place an item is ADDED goes through `newCat(cat, name)`, which on a thirteen-list puts it where
   the shop shelves it (its aisle type first). A category the person picked by hand is never changed, and nothing stored is
-  ever re-categorised.
+  ever re-categorised. The one exception (v2.57): Settings › Lists & sharing › "Use the new categories" (`switchToCats13`) moves
+  one list to the thirteen when the household asks, after writing a backup.
 - **An item's `where` may name several shops (v2.35)** — their ids joined by commas, so it stays a string everywhere it is
   copied. Read it with `whereIds(i)`, never `i.where === id`.
 - **Views group items with `catShown(i.cat)`, never `i.cat === cat.id`** (v2.17). An item whose category is gone

@@ -65,7 +65,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     const S = await page.evaluate(()=>{ const vis=e=>!!e && e.offsetParent!==null;
       const secs=[...document.querySelectorAll('.optpage .optsect')].filter(vis);
       const shop=secs.find(h=>h.dataset.sect==='Shopping'), b=shop && shop.nextElementSibling;
-      const cs=e=>e?getComputedStyle(e):{}, h=cs(secs[0]), l=cs(document.querySelector('.optpage .optlabel'));
+      const cs=e=>e?getComputedStyle(e):{}, h=cs(secs[0]), l=cs(document.querySelector('.optpage .optrow:not(.optlangtop) .optlabel'));   /* SUPERSEDED by v2.57: the Language row's label is set like a section heading (the household's item 1); every other row label is still 15px */
       return { names:secs.map(h=>h.dataset.sect), wake:!!(b && [...b.querySelectorAll('.optlabel')].some(x=>/Keep screen on/.test(x.textContent))),
         tt:h.textTransform, fs:h.fontSize, col:h.color, text:getComputedStyle(document.body).color, lab:l.fontSize,
         hints:[...document.querySelectorAll('.optpage .hint')].filter(vis).map(e=>parseFloat(getComputedStyle(e).fontSize)) }; });

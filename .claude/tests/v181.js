@@ -253,16 +253,13 @@ const SEED = (solo,nm)=>`(() => {
        gesture to the switcher's own rows and v1.87 deleted the page, so the row IS where it lives now.
        The thing being guarded is unchanged: the management this sheet gave up in v1.81 is still there. */
     await tap('#listSwitch');
-    const bub = page.locator('.listpick[data-list="v101"]').first();
-    await bub.scrollIntoViewIfNeeded();
-    const box = await bub.boundingBox();
-    await page.mouse.move(box.x+box.width/2, box.y+box.height/2);
-    await page.mouse.down(); await page.waitForTimeout(750); await page.mouse.up();   // 450ms long-press + slack
-    await page.waitForTimeout(700);
-    const act = await page.evaluate(()=>({ up:!!document.querySelector('#laUp'), rn:!!document.querySelector('#laRename'),
-                                           del:!!document.querySelector('#laDelete'), dup:!!document.querySelector('#laDup') }));
-    ok('press-and-hold on a switcher row still gives move/rename/delete', act.up&&act.rn&&act.del&&act.dup, JSON.stringify(act));
-    await page.evaluate(()=>{ const b=document.querySelector('#listActBg'); if(b) b.click(); });
+    /* SUPERSEDED by v2.57: the household asked for the hold to move a list (drag) and the ⋯ to show its options, inline below
+       the row. Moving is the drag now, so there is no Move up/down. Still protects: rename, duplicate and delete are in the
+       switcher, one tap away. */
+    await page.locator('[data-list-more="v101"]').first().click(); await page.waitForTimeout(500);
+    const act = await page.evaluate(()=>({ rn:!!document.querySelector('[data-lo-rename]'), del:!!document.querySelector('[data-lo-delete]'), dup:!!document.querySelector('[data-lo-dup]') }));
+    ok('press-and-hold on a switcher row still gives move/rename/delete', act.rn&&act.del&&act.dup, JSON.stringify(act));
+    await page.evaluate(()=>{ const b=document.querySelector('#listsBg'); if(b) b.click(); });
     await page.waitForTimeout(600);
 
     /* ── 6. the rest of the top bar is untouched ────────────────────────── */

@@ -296,6 +296,16 @@ const IMG = 'data:image/jpeg;base64,' + 'A'.repeat(200);
     && vb.messages[0].content.some(p => p.type === 'image_url' && p.image_url.url === IMG),
     JSON.stringify(vb.messages[0].content && vb.messages[0].content.map(p => p.type)));
 
+  /* v2.57: a photo from the add sheet (kind "list") is read as things to buy; a recipe photo keeps the recipe prompt */
+  reset();
+  r = await call({ image: IMG, kind: 'list' });
+  { const lb = JSON.parse(calls[0].opts.body); const txt = (lb.messages[0].content.find(p => p.type === 'text') || {}).text || '';
+    ok('a photo with kind "list" sends the list prompt', r.code === 200 && /handwritten or printed shopping list/.test(txt), txt.slice(-160)); }
+  reset();
+  r = await call({ image: IMG });
+  { const rb = JSON.parse(calls[0].opts.body); const txt = (rb.messages[0].content.find(p => p.type === 'text') || {}).text || '';
+    ok('…and a photo alone still sends the recipe prompt', /The recipe is in the attached image/.test(txt) && !/handwritten or printed shopping list/.test(txt), txt.slice(-160)); }
+
   reset(); groqStatus = 404;
   r = await call({ image: IMG });
   ok('a vision model the account cannot use is named as such, not as a parse failure',
