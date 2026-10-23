@@ -139,7 +139,7 @@ reCAPTCHA Enterprise) — registered without a billing account.
 If Google ever asks for billing to keep it running: before linking a billing account, turn off Places API (New) and Geocoding
 in grocery-list-88109 (they are enabled and would become chargeable), and set a budget alert.
 4. Watch **Firebase › App Check** metrics for a few days ("verified requests"), then **Enforce** for Cloud Firestore.
-5. In Vercel set `APP_CHECK=log`, and later `APP_CHECK=require`.
+5. In Vercel set `APP_CHECK=log` (**done 23 Oct 2026**), and later `APP_CHECK=require` once the logs show no "no app check" lines from the household.
 
 Note: the future iPhone/Android app needs App Attest / Play Integrity for App Check instead (step A4).
 
