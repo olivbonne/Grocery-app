@@ -98,7 +98,10 @@ const SEED = `(() => {
     ok('precondition: the switcher opens with all three lists', s.open===true && s.rows.length===3,
        JSON.stringify(s.rows && s.rows.map(r=>r.name)));
     ok('the Manage button is gone', s.manage===false, JSON.stringify({manage:s.manage}));
-    ok('…and the sheet says what replaces it', /press\s*&?\s*hold/i.test(s.hint||''), s.hint);
+    /* SUPERSEDED by v2.56: the household asked for the "press & hold" hint line to go; a ⋯ on each row now shows the options
+       are there. Still protects: the way into a list's options is visible on the sheet, not hidden. */
+    const more = await page.evaluate(()=>document.querySelectorAll('[data-list-more]').length);
+    ok('…and the sheet says what replaces it', more===3, String(more));
 
     /* ── 2. the press-and-hold offers everything the Lists page offers ──── */
     await hold(page.locator('.listpick[data-list="v102"]'));

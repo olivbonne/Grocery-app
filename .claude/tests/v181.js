@@ -88,7 +88,9 @@ const SEED = (solo,nm)=>`(() => {
       name:(r.querySelector('.lp-name')||{}).textContent,
       sub:(r.querySelector('.lp-sub')||{}).textContent,
       code:r.dataset.list,
-      on:!!r.querySelector('.lp-radio.on'),
+      /* SUPERSEDED by v2.56 (the household's item 3): the radio dot is gone; the current list is the highlighted row (.cur).
+         Still protects: exactly one row is marked as the open list, and the mark follows a switch. */
+      on:r.classList.contains('cur'),
       cur:r.getAttribute('aria-current')==='true' }));
     return { open:true, rows, newList:!!document.querySelector('#newList'),
              newLabel:(document.querySelector('#newList')||{}).textContent,

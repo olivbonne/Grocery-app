@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has } from "./store.js?v=2.55";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.55";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.55";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.55";
-import { compareStores, worthIt } from "./compare.js?v=2.55";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.55";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.55";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.55";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.55";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.55";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.55";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines } from "./parse.js?v=2.55";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.55";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.55";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has } from "./store.js?v=2.56";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.56";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.56";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.56";
+import { compareStores, worthIt } from "./compare.js?v=2.56";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.56";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.56";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.56";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.56";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, canReadClipboard, readClipboardText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.56";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.56";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines } from "./parse.js?v=2.56";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.56";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.56";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.55";
+const APP_VERSION = "v2.56";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -79,7 +79,7 @@ function showAmt(w){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_jk_)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_jk_)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -138,10 +138,27 @@ function newListCode(){
 /* ---- list code: from URL, else remembered on this device, else new ---- */
 const params = new URLSearchParams(location.search);
 const LS_LASTLIST = "ml_lastlist";
-let listCode = params.get("list") || localStorage.getItem(LS_LASTLIST) || newListCode();
+/* v2.56 item 2: an iPhone home-screen app always starts at the address it was installed from, which carries
+   ?list=<the list it was installed on> — so it always opened that list. The address only wins now when it is a
+   share link (it carries a join key), or when this phone does not know the list yet; otherwise the list used last
+   opens. A list removed on this phone (ml_gonelists, item 6) is never brought back by the start address. */
+const _bootUrlList = params.get("list"), _bootLast = localStorage.getItem(LS_LASTLIST);
+const _bootKnown = (()=>{ try{ const a=JSON.parse(localStorage.getItem("ml_lists")||"[]"); return Array.isArray(a) ? a.map(x=>x && x.code).filter(Boolean) : []; }catch(e){ return []; } })();
+const _bootGone = (()=>{ try{ const o=JSON.parse(localStorage.getItem("ml_gonelists")||"{}"); return (o && typeof o==="object") ? o : {}; }catch(e){ return {}; } })();
+let listCode = (()=>{
+  if(_bootUrlList && params.has("k")){   // a share link: always honoured, and it un-gones the list
+    if(_bootGone[_bootUrlList]){ try{ delete _bootGone[_bootUrlList]; localStorage.setItem("ml_gonelists", JSON.stringify(_bootGone)); }catch(e){} }
+    return _bootUrlList; }
+  const lastOK = _bootLast && _bootKnown.includes(_bootLast) && !_bootGone[_bootLast];
+  if(_bootUrlList && _bootGone[_bootUrlList])
+    return lastOK ? _bootLast : (_bootKnown.find(c=>!_bootGone[c]) || newListCode());
+  if(_bootUrlList && _bootKnown.includes(_bootUrlList) && lastOK && _bootLast!==_bootUrlList) return _bootLast;
+  return _bootUrlList || _bootLast || newListCode();
+})();
 /* v2.33: the list being made on this phone right now, the one place the thirteen categories start (an existing list keeps
-   its own — the household's choice). The very first list, made at first launch, is one. var: boot-order rule */
-var _freshList = (!params.get("list") && !localStorage.getItem(LS_LASTLIST)) ? listCode : "";
+   its own — the household's choice). The very first list, made at first launch, is one. var: boot-order rule.
+   v2.56: still "no list given and none remembered" (a brand-new phone). */
+var _freshList = (!_bootUrlList && !_bootLast) ? listCode : "";
 localStorage.setItem(LS_LASTLIST, listCode);
 /* v2.44 (members by account): a share link may carry the list's join key (k) — keep it on this phone, never in the address bar */
 if(params.get("k")){ try{ localStorage.setItem("ml_jk_"+listCode, params.get("k").slice(0,64)); }catch(e){} }
@@ -1655,11 +1672,14 @@ function duplicateListCode(code){
 }
 function delListUndo(code){ const a=getLists(); const i=a.findIndex(x=>x.code===code); if(i<0){ listActOpen=false; render(); return; }
   const removed=a[i]; a.splice(i,1); saveLists(a); listActOpen=false;
+  goneMark(code); acctWrite({ gone:{ [code]:Date.now() } });   // v2.56 item 6: stays removed
   /* v2.32 (item 4): removing the list that was open left its name at the top with nothing behind it. The first list left
      opens instead (Undo brings the removed one back and opens it again); with none left, the app starts afresh. */
   const wasOpen = code===listCode;
   if(wasOpen){ if(a.length) switchList(a[0].code); else { localStorage.removeItem(LS_LASTLIST); location.href=location.pathname; return; } }
-  toast="“"+(removed.name||"List")+"” removed"; toastAction={ label:"Undo", fn:()=>{ const b=getLists(); b.splice(Math.min(i,b.length),0,removed); saveLists(b); toast=null; toastAction=null; clearTimeout(_toastT); if(wasOpen) switchList(removed.code); else render(); } };
+  toast="“"+(removed.name||"List")+"” removed"; toastAction={ label:"Undo", fn:()=>{ const b=getLists(); b.splice(Math.min(i,b.length),0,removed); saveLists(b);
+    goneClear(code); acctWrite({ lists:{ [code]:{ name:removed.name||"Groceries", ts:Date.now() } } });   // v2.56 item 6: a later ts re-adds it
+    toast=null; toastAction=null; clearTimeout(_toastT); if(wasOpen) switchList(removed.code); else render(); } };
   render(); clearTimeout(_toastT); _toastT=setTimeout(()=>{ toast=null; toastAction=null; render(); }, 5000); }
 /* v1.51 — per-list history. Deliberately NOT part of `state`: the synced document's schema is fixed,
    and an append-only log shared between phones would need its own merge rules in save()/subscribe()
@@ -1687,7 +1707,12 @@ function saveLists(a){ localStorage.setItem("ml_lists", JSON.stringify(a)); }
    Renames a list still carrying that exact name, wherever the list is loaded from (cache or sync). */
 function dropTube(){ if(!/^🧪\s*Sandbox$/u.test(String(state && state.name || ""))) return false;
   state.name="Sandbox"; try{ rememberList(listCode, "Sandbox"); }catch(e){} return true; }
-function rememberList(code,name){ const a=getLists(); const i=a.findIndex(x=>x.code===code);
+/* v2.56 item 6: a list removed on this phone stays removed — the home-screen address (?list=) and the account sync
+   would otherwise bring it back. ml_gonelists: code → when it was removed (ms). Opening or joining it on purpose clears it. */
+function goneGet(){ try{ const o=JSON.parse(localStorage.getItem("ml_gonelists")||"{}"); return (o && typeof o==="object" && !Array.isArray(o)) ? o : {}; }catch(e){ return {}; } }
+function goneMark(code){ const o=goneGet(); o[code]=Date.now(); try{ localStorage.setItem("ml_gonelists", JSON.stringify(o)); }catch(e){} }
+function goneClear(code){ const o=goneGet(); if(!(code in o)) return; delete o[code]; try{ localStorage.setItem("ml_gonelists", JSON.stringify(o)); }catch(e){} }
+function rememberList(code,name){ goneClear(code); const a=getLists(); const i=a.findIndex(x=>x.code===code);
   if(i>=0){ if(name && a[i].name!==name){ a[i].name=name; saveLists(a); if(!_acctQuiet) acctWrite({ lists:{ [code]:{ name, ts:Date.now() } } }); } }   // v2.40: the account keeps the name
   else { a.push({code, name:name||"Groceries"}); saveLists(a); if(!_acctQuiet) acctWrite({ lists:{ [code]:{ name:name||"Groceries", ts:Date.now() } } }); } }   // v2.40: and the new list
 function newListPrompt(){ listsOpen=false; newListOpen=true; newListDraft=""; render(); }
@@ -1733,6 +1758,7 @@ function moveList(code,dir){ const a=getLists(); const i=a.findIndex(x=>x.code==
 function delList(code){ const a=getLists(); const l=a.find(x=>x.code===code);
   if(!confirm(`Remove "${(l&&l.name)||'this list'}" from your lists?\n\nThe list itself isn't deleted — you can re-add it later with its share link.`)) return;
   const b=a.filter(x=>x.code!==code); saveLists(b);
+  goneMark(code); acctWrite({ gone:{ [code]:Date.now() } });   // v2.56 item 6: stays removed
   if(code===listCode){ if(b.length){ switchList(b[0].code); } else { localStorage.removeItem(LS_LASTLIST); location.href=location.pathname; } }
   else { render(); } }
 let soundOn = localStorage.getItem("ml_sound")==="1";
@@ -2049,9 +2075,9 @@ function startAppCheck(app){ const key = appCheckKey(); if(!key || _appCheck) re
   const ready = import("/vendor/firebasejs/10.12.2/firebase-app-check.js").then(m => { _appCheckMod = m;
     _appCheck = m.initializeAppCheck(app, { provider: new m.ReCaptchaEnterpriseProvider(key), isTokenAutoRefreshEnabled: true }); })
   .catch(() => {});   // offline or blocked: the app works on; the server decides what an unchecked call gets
-  return Promise.race([ready, new Promise(r => setTimeout(r, 2500))]); }   // offline or blocked: the app works on; the server decides what an unchecked call gets
+  return Promise.race([ready, new Promise(r => setTimeout(r, 10000))]); }   // v2.56: 10 s (was 2.5) — on a slow line reCAPTCHA took longer and 4% went unverified; the list shows from the phone's copy meanwhile   // offline or blocked: the app works on; the server decides what an unchecked call gets
 async function appCheckToken(){ if(!_appCheck || !_appCheckMod) return "";
-  try{ const r = await Promise.race([_appCheckMod.getToken(_appCheck, false), new Promise(res => setTimeout(() => res(null), 3000))]); return (r && r.token) || ""; }catch(e){ return ""; } }
+  try{ const r = await Promise.race([_appCheckMod.getToken(_appCheck, false), new Promise(res => setTimeout(() => res(null), 8000))]); return (r && r.token) || ""; }catch(e){ return ""; } }   // v2.56: 8 s (was 3)
 var _authM = null;   // v2.40 (sign-in by email): the auth module, kept for the email-link calls
 function authStart(fbApp){ import("/vendor/firebasejs/10.12.2/firebase-auth.js").then(m=>{
     if(!m || typeof m.initializeAuth!=="function") return;   // the test stub has no auth
@@ -2190,6 +2216,7 @@ function acctSync(){ const ref=acctRef(); if(!ref) return; const uid=_auth.curre
     const have=(data && data.lists) || {}, gone=(data && data.gone) || {}; let added=0;
     for(const [code, v] of Object.entries(have)){ if(!/^[A-Za-z0-9_-]{1,64}$/.test(code)) continue;
       if(gone[code] && gone[code] >= ((v && v.ts) || 0)) continue;
+      { const lg=goneGet()[code]; if(lg && lg >= ((v && v.ts) || 0)) continue; }   // v2.56 item 6: removed on this phone
       if(!getLists().some(x=>x.code===code)){ _acctQuiet=true; try{ rememberList(code, String((v && v.name) || "Groceries").slice(0,60)); }finally{ _acctQuiet=false; } added++; } }
     const push={}; for(const l of getLists()) if(!have[l.code]) push[l.code]={ name:String(l.name||"").slice(0,60), ts:Date.now() };
     if(Object.keys(push).length) acctWrite({ lists:push });
@@ -2473,9 +2500,12 @@ function rcMatchItem(name, used){ const k=priceKey(name); if(!k) return null;
 function moveToBuyAgain(entries){
   state.baTomb = state.baTomb || {};
   for(const e of entries){ const k=baKey(e);
+    const old=state.buyAgain.find(x=>baKey(x)===k);   // v2.56: a Regular keeps its place (pos) when it is saved again
     state.buyAgain = state.buyAgain.filter(x=>baKey(x)!==k);
     delete state.baTomb[k];
-    state.buyAgain.unshift({name:e.name,cat:e.cat,qty:e.qty||1,weight:e.weight||"",sub:e.sub||"",note:e.note||"",where:e.where||"",ts:Date.now()}); }
+    const ne={name:e.name,cat:e.cat,qty:e.qty||1,weight:e.weight||"",sub:e.sub||"",note:e.note||"",where:e.where||"",ts:Date.now()};
+    if(old && typeof old.pos==="number") ne.pos=old.pos;
+    state.buyAgain.unshift(ne); }
   state.buyAgain = state.buyAgain.slice(0,BA_CAP);
 }
 function sweep(msg){ const checked=state.items.filter(i=>i.checked); if(!checked.length) return;
@@ -2525,10 +2555,14 @@ function deleteItemEditing(){ const prev=snapState(); const nm=editing.name; con
 function saveBA(){ const nm=(editing.name||"").trim(); if(!nm) return; const cat=editing.cat; const qty=Math.max(1,editing.qty||1);
   state.baTomb = state.baTomb || {};
   const newK=nm.toLowerCase()+"|"+cat;
+  const _old=state.buyAgain.find(x=>x.name===editing.origName && x.cat===editing.origCat);   // v2.56: keep its pos in the same category
   state.buyAgain = state.buyAgain.filter(x=>!(x.name===editing.origName && x.cat===editing.origCat));
   if(((editing.origName||"").toLowerCase()+"|"+editing.origCat)!==newK) baForget(editing.origName, editing.origCat);   // renamed → forget the old key
   delete state.baTomb[newK];
-  if(!state.buyAgain.some(x=>baKey(x)===newK)) state.buyAgain.unshift({name:nm,cat,qty,weight:editing.weight||"",sub:editing.sub||"",ts:Date.now()});
+  if(!state.buyAgain.some(x=>baKey(x)===newK)){ const ne={name:nm,cat,qty,weight:editing.weight||"",sub:editing.sub||"",ts:Date.now()};
+    if(_old && _old.note) ne.note=_old.note; if(_old && _old.where) ne.where=_old.where;   // v2.56: the fixed-shape trap — a re-saved Regular kept neither (v2.22 fields)
+    if(_old && _old.cat===cat && typeof _old.pos==="number") ne.pos=_old.pos;
+    state.buyAgain.unshift(ne); }
   editing=null; save(); render(); }
 function removeBAfromSheet(){ baForget(editing.origName, editing.origCat);
   state.buyAgain = state.buyAgain.filter(x=>!(x.name===editing.origName && x.cat===editing.origCat));
@@ -2901,6 +2935,10 @@ const FLASK_SVG   = sz => ICO('<path d="M9.5 3.5h5"/><path d="M10.5 3.5v5.2L5.3 
 const BIN_SVG     = sz => ICO('<path d="M4.5 6.5h15"/><path d="M9.5 6.5V4.2h5v2.3"/><path d="M6.5 6.5l1 13.3h9l1-13.3"/><path d="M10.2 10v6.6M13.8 10v6.6"/>', sz);
 /* v2.13: Report a problem — a speech bubble with an exclamation mark, for the top banner's right-hand button */
 const REPORT_SVG  = sz => ICO('<path d="M5 4.5h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7l-4.5 3.5v-3.5H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z"/><path d="M12 8.2v3.8"/><path d="M12 15h.01"/>', sz);
+/* v2.56: a microphone, a picture, and the empty basket (the Others category's drawn mark, shown large) */
+const MIC_SVG     = sz => ICO('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0013 0"/><path d="M12 17.5V21"/>', sz);
+const IMAGE_SVG   = sz => ICO('<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="9.5" r="1.7"/><path d="M20.5 15.5l-5-5-9 9"/>', sz);
+const BASKET_SVG  = `<svg class="cmark" viewBox="0 0 24 24" aria-hidden="true"><path d="${CATMARK.others}"/></svg>`;
 const MENU_SVG    = sz => ICO('<circle cx="5.5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="18.5" cy="12" r="1.6" fill="currentColor"/>', sz);   // v2.30 the Shop page's menu
 const CARD_SVG    = sz => ICO('<rect x="3" y="5.5" width="18" height="13" rx="2.2"/><path d="M3 9.5h18"/><path d="M6.5 14.5h4"/>', sz);   // v2.31 a membership card
 const SHARE_SVG   = sz => ICO('<path d="M12 3.5v11"/><path d="M8 7.2l4-3.7 4 3.7"/><path d="M8.5 10.5H6.5a1.5 1.5 0 0 0-1.5 1.5v7a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5h-2"/>', sz);
@@ -2950,7 +2988,11 @@ function catMarkSVG(id){ return CATMARK[id] ? `<svg class="cmark" viewBox="0 0 2
 function itemIcon(name, cat){
   if(!itemEmojiOn()) return "";
   if(iconStyle()==="drawn"){ const k=drawKey(name); if(k) return illSVG(k);
-    const c=CAT(cat); if(c && CAT_IDS.has(c.id)) return catMarkSVG(c.id); }
+    /* v2.56 item 7: text the app cannot place at all (no drawing, no category from the dictionary) gets the drawn basket;
+       a name with no drawing but a known category keeps that category's mark, so tofu still shows Asian */
+    const c=CAT(cat); if(c && c.id!=="others" && !CAT_IDS.has(c.id)) return itemEmoji(name, cat);   // a household-made category keeps its emoji (v2.04)
+    const kc = (c && c.id!=="others") ? c.id : guessCat(name);
+    return (kc && kc!=="others" && CATMARK[kc]) ? catMarkSVG(kc) : catMarkSVG("others"); }
   return itemEmoji(name, cat); }
 function itemEmoji(name, cat){ if(!itemEmojiOn()) return "";
   const n=(name||"").toLowerCase();
@@ -2994,12 +3036,21 @@ function addSheetRows(){
   // item), so fall back to the query that produced these results — the pills stay put until Done.
   const frag = addEditId ? addLastQuery : addFrag();
   const f = frag.toLowerCase();
-  if(!frag) return "";
+  const dashed = `class="pill addstart" style="border:1.5px dashed var(--accent);color:var(--accent);background:transparent"`;
+  const smartT = smartOn() ? `<button ${dashed} data-add-smart aria-label="${t("Smart add")}">✨ ${t("Smart add")}</button>` : "";
+  /* v2.56 item 7: with nothing typed, the ways in — Smart add, a photo of a list (camera or the phone's photos), Paste */
+  if(!frag) return addEditId ? "" : `<div class="shop addwrap"><div class="pills addgrid addstartrow">${smartT}`
+    + `<button ${dashed} data-add-photo="camera" aria-label="${t("Take a photo")}">${CAMERA_SVG(18)} ${t("Take a photo")}</button>`
+    + `<button ${dashed} data-add-photo="gallery" aria-label="${t("From your photos")}">${IMAGE_SVG(18)} ${t("From your photos")}</button>`
+    + `<button ${dashed} data-add-paste aria-label="${t("Paste")}">${PASTE_SVG(18)} ${t("Paste")}</button></div></div>`;
   const segs=(draftMain||"").split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
   const p=parseEntry(frag);
   const lbl= segs.length>1 ? tf("Add {n} items", { n:segs.length }) : tf("Add “{x}”", { x:(p.qty>1?p.qty+"× ":"")+(p.weight?esc(showAmt(p.weight))+" ":"")+esc(cap(p.name)) });
   // the "Add …" pill is a commit action for what's typed — meaningless while the edit panel owns the bar
-  const typed = addEditId ? "" : `<button class="pill" data-add-typed style="border:1.5px dashed var(--accent);color:var(--accent);background:transparent">${esc(lbl)}</button>`;
+  /* v2.56 item 7: the tile shows the drawing the item would get (the empty basket when its name matches none), and Smart add
+     sits right after it */
+  const tIc = segs.length>1 ? "" : itemIcon(p.name, guessCat(p.name)||"others");
+  const typed = addEditId ? "" : `<button class="pill" data-add-typed style="border:1.5px dashed var(--accent);color:var(--accent);background:transparent">${tIc?`<span class="pemoji" aria-hidden="true">${tIc}</span>`:""}${esc(lbl)}</button>${smartT}`;
   /* v1.66 item 1: a bounded list. `addMatches` walks the whole dictionary, so a one-letter query
      returned everything — fine when the results were one clipped row, but they wrap now and the
      panel would have to scroll through hundreds of them to reach the search bar. */
@@ -3023,7 +3074,6 @@ function addSheet(){
     <div class="addsheet-body" id="addSheetBody">${addBodyHTML()}</div>
     <div class="addsheet-foot">
       <div class="addsheet-barrow">
-        ${smartOn()?`<button class="smartbtn" id="smartBtn" aria-label="Smart add" title="Smart add — turn a list or a whole recipe into items">✨</button>`:""}
         <div class="searchbar">
           <span class="searchbar-ic" aria-hidden="true">${SEARCH_SVG}</span>
           <div class="inwrap"><textarea id="mainInput" rows="1" enterkeyhint="done" placeholder="${addEditId?t('Next item…'):t('Add item…')}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"></textarea><button class="clearbtn" id="mainClear" aria-label="Clear">×</button></div>
@@ -3136,6 +3186,13 @@ function wireAddRows(){
       stageAdds(()=>addEntries(t,null));
       /* v2.29: a new name opens its details, the way a Regular does — one new item; several typed at once stay as they are */
       const fresh=state.items.filter(i=>!before.has(i.id)); if(fresh.length===1) openAddEdit(fresh[0].id); } }, null, true));
+  /* v2.56 item 7: Smart add, photo and paste tiles (the ✨ beside the search bar is gone) */
+  document.querySelectorAll("[data-add-smart]").forEach(b=>{ b.onmousedown=e=>e.preventDefault();
+    b.onclick=()=>{ const m=document.getElementById("mainInput");
+      if(!m || !m.value.trim()){ if(m) m.focus(); showToast("Type or paste a list, then tap Smart add"); return; }
+      smartAdd(); }; });
+  document.querySelectorAll("[data-add-photo]").forEach(b=>{ b.onclick=()=>smartPhoto(b.dataset.addPhoto==="camera"); });
+  document.querySelectorAll("[data-add-paste]").forEach(b=>{ b.onmousedown=e=>e.preventDefault(); b.onclick=addPaste; });
   document.querySelectorAll("[data-add-ba]").forEach(b=>{ const p=b.dataset.addBa.split("|"), cat=p.pop(), name=p.join("|");
     /* v2.42 added a Regular picked here without its panel; v2.43 (the household): picked from "+ Add items", its Edit item panel
        opens straight away, as for any other pick. (A tap under "Add from your regulars" still just adds it.) */
@@ -3539,6 +3596,30 @@ function startMic(){
 function stopMic(){ listening=false; if(recog){ try{ recog.stop(); }catch(e){} }
   setMicUI(false); const m=micField(); if(m) m.value=m.value.replace(/,\s*$/,""); }
 function toggleMic(){ if(listening) stopMic(); else startMic(); }
+
+/* v2.56 item 5: dragging a Regular within its category (see regPress). The other tiles are hit-tested by their centres,
+   measured once when the drag starts; the tile the dragged one would land before is outlined. */
+function regDragStart(b, e){ const group=b.closest(".pills"); if(!group) return null;
+  const tiles=[...group.querySelectorAll("[data-regk]")]; if(tiles.length<2) return null;
+  const others=tiles.filter(x=>x!==b).map(x=>{ const r=x.getBoundingClientRect(); return { el:x, cx:r.left+r.width/2, cy:r.top+r.height/2, h:r.height }; });
+  b.classList.add("regdrag"); b.style.touchAction="none";
+  try{ b.setPointerCapture(e.pointerId); }catch(_){}
+  return { b, others, to:tiles.indexOf(b) }; }
+function regDragMove(d, e, dx, dy){
+  d.b.style.transform=`translate(${dx}px,${dy}px)`;
+  const px=e.clientX, py=e.clientY;
+  d.to = d.others.filter(r=>(r.cy < py - r.h/2) || (Math.abs(r.cy-py) <= r.h/2 && r.cx < px)).length;
+  d.others.forEach((r,i)=>{ r.el.classList.toggle("regdropb", i===d.to); r.el.classList.toggle("regdropa", d.to===d.others.length && i===d.others.length-1); }); }
+function regDragEnd(d, commit){
+  d.b.classList.remove("regdrag"); d.b.style.transform=""; d.b.style.touchAction="";
+  d.others.forEach(r=>r.el.classList.remove("regdropb","regdropa"));
+  if(!commit) return;
+  const keys=d.others.map(r=>r.el.dataset.regk); keys.splice(d.to, 0, d.b.dataset.regk);
+  const now=Date.now();
+  keys.forEach((k,i)=>{ const p=k.split("|"), cat=p.pop(), name=p.join("|");
+    const en=state.buyAgain.find(x=>x.name===name && x.cat===cat);
+    if(en && en.pos!==i){ en.pos=i; en.ts=now; } });
+  save(); render(); }
 
 /* ---- press handling (tap vs long-press) ---- */
 let pressTimer=null, longFired=false;
@@ -4010,7 +4091,7 @@ function regPill(entry, cat, it){
        CSS so that one rule owns all four sides of the border — see .pill.reg-in / .pill.reg-out. */
     const style = full ? fullStyle(cat.color, true)
       : (fillMode()==="empty" ? "" : `border-left:4px solid ${catEdge(cat.color, true)}`);
-    return `<button class="pill reg-in" data-reg-rm="${it.id}" style="${style}">${emS}${name}${metaS}</button>`;
+    return `<button class="pill reg-in" data-reg-rm="${it.id}" data-regk="${esc(entry.name)}|${esc(entry.cat)}" style="${style}">${emS}${name}${metaS}</button>`;
   }
   /* v1.57 item 1: the unselected regular used to hard-code its own border, background and text
      inline. The Empty-mode rule repaints border-left-color with !important, which beat the inline
@@ -4019,12 +4100,17 @@ function regPill(entry, cat, it){
   const outStyle = fillMode()==="full" ? fullStyle(cat.color, false)
     : fillMode()==="empty" ? ""
     : `border-left:4px solid ${catEdge(cat.color, false)}`;
-  return `<button class="pill reg-out" data-reg-add="${esc(entry.name)}|${cat.id}" style="${outStyle}">${emS}${name}${metaS}</button>`;
+  return `<button class="pill reg-out" data-reg-add="${esc(entry.name)}|${cat.id}" data-regk="${esc(entry.name)}|${esc(entry.cat)}" style="${outStyle}">${emS}${name}${metaS}</button>`;
 }
+/* v2.56 item 5: Regulars a person has dragged into order carry a numeric `pos` and come first, in that order; the rest
+   stay A–Z after them — so nothing moves until someone reorders a category. */
+function regSortCmp(a,b){ const pa=typeof a.pos==="number", pb=typeof b.pos==="number";
+  if(pa && pb) return (a.pos-b.pos) || a.name.localeCompare(b.name);
+  if(pa) return -1; if(pb) return 1; return a.name.localeCompare(b.name); }
 function planningSection(){
   // v1.24 the "Regulars" section shows its categories by default; each category is collapsed by default.
   const groups = catList().map(cat=>{
-    const regs = state.buyAgain.filter(e=>catShown(e.cat)===cat.id).slice().sort((a,b)=>a.name.localeCompare(b.name));   // A–Z
+    const regs = state.buyAgain.filter(e=>catShown(e.cat)===cat.id).slice().sort(regSortCmp);   // v2.56: the household's order (pos), then A–Z
     /* v2.34 (the household's item 5): every category is listed, even with no Regulars yet, and ends with a "+" tile that adds
        a Regular straight into it. v2.37 (item 4): it opens the same add sheet as '+ Add items'; what is added there goes on
        the list in this category and is kept as a Regular */
@@ -4219,11 +4305,13 @@ function renderMain(){
     <div class="wrap ${shopMode?'shop':''}" role="main">
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${lockedHTML()}${newerDataHTML()}${shoppingHTML()}${(()=>{ const c=lookCardHTML()+installCardHTML()+cardNudgeHTML()+rcptNudgeHTML(); return c || onbCardHTML(); })()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
-          <div class="empty-emoji">🧺</div>
+          ${/* v2.56 item 4: a drawn empty basket, and two ways to start — say it, or type it */""}
+          <div class="empty-basket">${BASKET_SVG}</div>
           <p class="empty-title">${t("Your list is empty")}</p>
-          <p class="empty-sub">${t("Tap <b>Add items</b> below — or start from these:")}</p>
-          <div class="pills" style="justify-content:center">${["Milk","Eggs","Bananas","Bread"].map(x=>`<button class="sugchip" data-example="${x}">+ ${x}</button>`).join("")}</div>
-          <p class="empty-sub" style="margin-top:16px">${t("Shared via this link — open <b>Settings › Share link</b> to invite up to 4 people.")}</p>
+          <div class="pills empty-start" style="justify-content:center">
+            <button class="pill baadd" id="emptyMic" aria-label="${t("Say what you need")}">${MIC_SVG(26)}</button>
+            <button class="pill baadd" id="emptyAdd" aria-label="${t("Add items")}"><span class="baplus" aria-hidden="true">+</span></button>
+          </div>
         </div>`:""}
       ${mergeCardHTML()}
       ${listBody}
@@ -4277,10 +4365,14 @@ function wireListsSheet(){
   app.querySelectorAll("[data-list]").forEach(b=>{ const code=b.dataset.list;
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
-    b.onpointerup=()=>{ pressCancel();
+    b.onpointerup=e=>{ pressCancel(); if(e.target.closest && e.target.closest(".lp-more")) return;   // v2.56 the ⋯ has its own tap
       if(longFired){ listActCode=code; listActOpen=true; listsOpen=false; render(); }
       else switchList(code); };
+    b.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); switchList(code); } };
   });
+  app.querySelectorAll("[data-list-more]").forEach(m=>{   // v2.56 item 3: the row's ⋯ opens the list-action sheet
+    m.onpointerdown=e=>e.stopPropagation();
+    m.onclick=e=>{ e.stopPropagation(); listActCode=m.dataset.listMore; listActOpen=true; listsOpen=false; render(); }; });
   wireListActSheet();
   app.querySelectorAll("[data-list-up]").forEach(b=>b.onclick=()=>moveList(b.dataset.listUp,-1));
   app.querySelectorAll("[data-list-down]").forEach(b=>b.onclick=()=>moveList(b.dataset.listDown,1));
@@ -5114,7 +5206,16 @@ function cardChainOf(name, num){ const n=String(name||"").toLowerCase(), d=Strin
   if(/everyday|rewards|woolworths|woolies/.test(n)) return "woolworths";
   return ""; }
 function cardChain(c){ return (c && (c.chain || cardChainOf(c.name, c.num))) || ""; }
-function cardFor(store){ const k=chainOfStore(store && store.name); return k ? (cardsGet().find(c=>cardChain(c)===k) || null) : null; }
+/* v2.56 item 8: a card can be for any shop. First a card the household tied to this shop (`stores`, its ids), then the chain
+   as before, then a shared word between the card's name and the shop's ("My Dan's" / "Dan Murphy's Box Hill" → "dan"). */
+const CARD_NAME_STOP = new Set(["my","the","card","club","member","members","rewards","plus","australia","store","shop"]);
+function cardWords(x){ return String(x||"").toLowerCase().replace(/['’]s\b/g,"").replace(/['’]/g,"").split(/[^a-z0-9]+/)
+  .filter(w=>w.length>=3 && !CARD_NAME_STOP.has(w)); }
+function cardFor(store){ if(!store) return null; const all=cardsGet();
+  const tied=all.find(c=>Array.isArray(c.stores) && c.stores.includes(store.id)); if(tied) return tied;
+  const k=chainOfStore(store.name); const byChain = k ? all.find(c=>cardChain(c)===k) : null; if(byChain) return byChain;
+  const sw=new Set(cardWords(store.name)); if(!sw.size) return null;
+  return all.find(c=>cardWords(c.name).some(w=>sw.has(w))) || null; }
 function cardNumFmt(n){ return String(n||"").replace(/\s+/g,"").replace(/(.{4})(?=.)/g,"$1 "); }
 /* v2.34 (the household's items 1–3): the card comes down from the TOP of the screen — a phone is scanned by its top end —
    with the barcode first. It opens on the card for the shop you are at (or the one asked for), and a swipe left or right
@@ -5199,6 +5300,8 @@ function cardEditBody(){ const e=cardEdit;
     <input id="ceName" class="cefield" value="${esc(e.name)}" placeholder="Flybuys" autocomplete="off" />
     <p class="palabel">${t("Card number")}</p>
     <input id="ceNum" class="cefield" value="${esc(e.num)}" inputmode="numeric" placeholder="${t("The number under the barcode")}" autocomplete="off" />
+    ${(()=>{ const ws=rcSavedStores(), on=Array.isArray(e.stores)?e.stores:[]; if(!ws.length) return "";   // v2.56 item 8: the shops this card is for
+      return `<p class="palabel">${t("Shops")}</p><div style="display:flex;flex-wrap:wrap;gap:6px">${ws.map(s=>`<button class="catchip" data-ce-store="${esc(s.id)}" aria-pressed="${on.includes(s.id)}" style="${on.includes(s.id)?'background:var(--btn);border-color:var(--btn);color:#fff':''}">${esc(s.name)}</button>`).join("")}</div>`; })()}
     ${e.inline ? "" : `<p class="palabel">${t("Photo of the card (if the barcode won't scan)")}</p>
     <div style="display:flex;gap:8px;align-items:center">${e.photo ? `<img class="cethumb" src="${esc(e.photo)}" alt="" />` : ""}<button class="optaction" id="cePhoto" style="margin-top:0">${CAMERA_SVG(16)} ${e.photo ? t("New photo") : t("Add a photo")}</button>${e.photo ? `<button class="optaction" id="ceNoPhoto" style="margin-top:0">${t("Remove")}</button>` : ""}</div>`}
     ${e.busy ? `<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>${t("Preparing the photo…")}</div>` : ""}
@@ -5247,6 +5350,11 @@ function cardNudgeHTML(){ let at=0; try{ at=+localStorage.getItem("ml_cardnudge"
       <button class="cardface cardface-sm" id="cardNudgeBig" aria-label="${t("Show the card bigger")}"><div class="cardband" style="background:${br.bg};color:${br.fg}"><span class="cardband-n">${esc(c.name)}</span></div>${(!bc && c.photo) ? `<img src="${esc(c.photo)}" alt="${tf("Photo of the {x} card", { x:esc(c.name) })}" />` : `${bc}<div class="cardnum">${esc(cardNumFmt(c.num))}</div>`}</button>
       <div class="ic-btns"><button class="optaction" id="cardNudgeDone">${t("Done")}</button></div></div>`; }
   if(!real || !cardAskOn()) return "";
+  const mine=cardsGet();
+  if(mine.length) return `<div class="installcard cardnudge" id="cardNudge" role="region" aria-label="${t("Membership card")}">
+    <div class="ic-t">${CARD_SVG(18)} ${t("Use one of your cards here?")}</div>
+    <div class="ic-btns" style="flex-wrap:wrap">${mine.map(c=>`<button class="catchip" data-card-use="${esc(c.id)}">${esc(c.name)}</button>`).join("")}</div>
+    <div class="ic-btns"><button class="newlist" id="cardNudgeAdd">${t("Add a new card")}</button><button class="optaction" id="cardNudgeNo">${t("Not now")}</button></div></div>`;   // v2.56 item 8
   const k=chainOfStore(st.name), nm=k==="coles" ? t("Flybuys card") : k==="woolworths" ? t("Everyday Rewards card") : t("membership card");
   return `<div class="installcard cardnudge" id="cardNudge" role="region" aria-label="${t("Membership card")}">
     <div class="ic-t">${CARD_SVG(18)} ${tf("Got a {x}?", { x:esc(nm) })}</div>
@@ -5294,6 +5402,10 @@ function wireCards(){
     if(nb) nb.onclick=()=>{ const c=cardHere().c; if(c){ cardShow={ id:c.id }; render(); } };
     if(na) na.onclick=()=>{ const st=activeStore(), k=chainOfStore(st && st.name);
       cardEdit={ id:"", name:k==="coles" ? "Flybuys" : k==="woolworths" ? "Everyday Rewards" : "", chain:k||"", num:"", photo:"" }; render(); };
+    app.querySelectorAll("[data-card-use]").forEach(b=>b.onclick=()=>{ const st=activeStore(); if(!st) return;   // v2.56 item 8: this card is for this shop
+      const a=cardsGet(), c=a.find(x=>x.id===b.dataset.cardUse); if(!c) return;
+      c.stores=[...new Set([...(Array.isArray(c.stores)?c.stores:[]), st.id])];
+      if(!cardsPut(a)){ showToast("This phone's storage is full"); return; } render(); });
     app.querySelectorAll("[data-opt-cardask]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_cardask", b.dataset.optCardask); }catch(e){} render(); }); }
   const keep=()=>{ const n=app.querySelector("#ceName"), u=app.querySelector("#ceNum"); if(cardEdit){ if(n) cardEdit.name=n.value; if(u) cardEdit.num=u.value; } };
   app.querySelectorAll("[data-card-add]").forEach(b=>b.onclick=()=>{ if(cardsGet().length>=CARD_MAX){ showToast(tf("Up to {n} cards", { n:CARD_MAX })); return; } cardShow={ add:true }; render(); });   // v2.35: the same add panel as the card sheet's
@@ -5302,6 +5414,8 @@ function wireCards(){
   if(cardEdit){
     ["#ceName","#ceNum"].forEach(s=>{ const f=app.querySelector(s); if(f) f.oninput=keep; });   // no re-render while typing
     const ph=app.querySelector("#cePhoto"); if(ph) ph.onclick=()=>{ keep(); cardPick(); };
+    app.querySelectorAll("[data-ce-store]").forEach(b=>b.onclick=()=>{ keep(); const id=b.dataset.ceStore, cur=Array.isArray(cardEdit.stores)?cardEdit.stores:[];   // v2.56 item 8
+      cardEdit.stores = cur.includes(id) ? cur.filter(x=>x!==id) : [...cur, id]; render(); });
     const np=app.querySelector("#ceNoPhoto"); if(np) np.onclick=()=>{ keep(); cardEdit.photo=""; render(); };
     const close=()=>{ cardEdit=null; render(); };   // v2.37: cardShow is untouched, so an inline Cancel stays on the add panel
     const cc=app.querySelector("#ceCancel"); if(cc) cc.onclick=close;
@@ -5312,6 +5426,7 @@ function wireCards(){
       if(!num && !e.photo){ e.err="Add the card's number, or a photo of it."; render(); return; }
       if(num && !code128SVG(num)){ e.err="That number has characters a barcode can't carry. Check it, or add a photo instead."; render(); return; }
       const c={ id:e.id || ("c"+Date.now().toString(36)), name:e.name.trim().slice(0,40), chain:cardChainOf(e.name, num) || e.chain || "", num, photo:e.photo||"" };   // v2.35: worked out, not asked
+      if(Array.isArray(e.stores) && e.stores.length) c.stores=e.stores.slice();   // v2.56 item 8: the shops it is for
       const a=cardsGet(), i=a.findIndex(x=>x.id===c.id); if(i>=0) a[i]=c; else a.push(c);
       if(!cardsPut(a)){ e.err="This phone's storage is full — try without the photo."; render(); return; }
       if(e.inline){ cardEdit=null; cardShow={ id:c.id }; render(); return; }   // v2.37 (item 1): show the new card with its band
@@ -6219,6 +6334,8 @@ function filterOptions(){ const page=document.querySelector(".optpage"); if(!pag
   if(!words.length){ if(none){ none.hidden=true; none.textContent=""; } return; }
   const hit=t=>{ const n=optNorm(t); return words.every(w=>n.includes(w)); };
   let any=0;
+  page.querySelectorAll(".optlangtop").forEach(r=>{   // v2.56 item 1: the Language row, outside every section
+    if(hit(r.textContent+" "+(r.dataset.find||""))) any++; else r.classList.add("optnomatch"); });
   page.querySelectorAll(".optsect").forEach(h=>{ const body=h.nextElementSibling;
     if(!body || !body.classList.contains("optgrpbody")) return;
     const secHit=hit(h.dataset.sect||"") || (appLang!=="en" && hit(t(h.dataset.sect||"")));   // v2.45 the shown name too
@@ -6487,11 +6604,36 @@ async function smartAdd(){
   const text=(mi?mi.value:"").trim();
   if(!text) return;
   const recipe=looksLikeRecipe(text);
-  smartOpen=true; smartLoading=true; smartError=""; smartItems=[]; smartEdit=null; smartServings=null; smartTitle=""; render();
+  smartOpen=true; smartLoading=true; smartStep=""; smartError=""; smartItems=[]; smartEdit=null; smartServings=null; smartTitle=""; render();
+  return smartRequest(recipe?"/api/recipe":"/api/parse", {text}, recipe);
+}
+/* v2.56 item 7: a photo of a list (or a recipe) read by the recipe reader — the same resize and the same call as the Plan
+   page's Photo import (planShrinkImage → /api/recipe {image}), landing in the Smart add review like a recipe. */
+var smartStep = "";
+function smartPhoto(camera){
+  pickFile(camera ? { accept:"image/*", capture:"environment" } : { accept:"image/*" }).then(file=>{ if(!file) return;
+    smartOpen=true; smartLoading=true; smartStep="Preparing the photo…"; smartError=""; smartItems=[]; smartEdit=null; smartServings=null; smartTitle=""; render();
+    planShrinkImage(file, 1400, 0.72)
+      .then(img=>{ smartStep="Reading the photo…"; render();
+        /* v2.56: every wait ends — 75 s at most (the function's own limit is 60 s) */
+        return Promise.race([smartRequest("/api/recipe", { image:img }, true),
+          new Promise(r=>setTimeout(()=>{ if(smartLoading && smartStep){ smartLoading=false; smartStep=""; smartError="Reading the photo took too long. Try again, or type the list."; render(); } r(); }, 75000))]); })
+      .catch(()=>{ smartLoading=false; smartStep=""; smartError="Couldn't open that photo."; render(); }); }); }
+/* v2.56 item 7: Paste — read inside the tap (iOS asks), into the search box, then Smart add when it is on */
+function addPaste(){
+  const fail=()=>showToast("Paste isn't available here — long-press in the box and choose Paste");
+  if(!canReadClipboard()){ fail(); return; }
+  let p; try{ p=readClipboardText(); }catch(e){ fail(); return; }
+  Promise.resolve(p).then(txt=>{ txt=String(txt||"").trim(); if(!txt){ fail(); return; }
+    const m=document.getElementById("mainInput"); if(!m) return;
+    m.value=txt; m.dispatchEvent(new Event("input")); grow(m);
+    if(smartOn()) smartAdd(); else m.focus(); }).catch(fail); }
+async function smartRequest(path, payload, recipe){
   let res, data;
   try{
-    res=await apiFetch(recipe?"/api/recipe":"/api/parse",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({text})});
+    res=await apiFetch(path,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
   }catch(e){ res=null; }
+  smartStep="";
   if(!res){
     smartLoading=false; smartError="Couldn't reach Smart add. Check your connection — you can still type items normally."; render(); return;
   }
@@ -6579,7 +6721,7 @@ function wireSmartSheet(){
 function smartSheet(){
   let inner;
   if(smartLoading){
-    inner=`<div style="padding:22px 4px;text-align:center;color:var(--muted);font-weight:700">✨ ${t("Reading your list…")}</div>`;
+    inner=`<div role="status" style="padding:22px 4px;text-align:center;color:var(--muted);font-weight:700">✨ ${t(smartStep||"Reading your list…")}</div>`;
   } else if(smartError){
     inner=`<div style="padding:6px 2px 16px;color:var(--text);font-weight:600;line-height:1.5">${esc(t(smartError))}</div>
       <button class="optaction" id="smartOk">${t("OK")}</button>`;
@@ -6826,7 +6968,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_jk_)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_jk_)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -6979,6 +7121,10 @@ function optionsBody(){
   return `
     ${view!=="lists" ? `<div class="optsearch${optQuery?' has':''}"><span class="optsearch-ic" aria-hidden="true">${SEARCH_SVG}</span><input id="optSearch" type="search" placeholder="${t("Search settings")}" aria-label="${t("Search settings")}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" value="${esc(optQuery)}"><button id="optSearchClear" type="button" aria-label="Clear search">×</button></div>
     <p class="optnone" id="optNoMatch" role="status" hidden></p>` : ""}
+    ${/* v2.56 item 1: Language sits above every section, where the household looks first (it was folded
+          inside Appearance and nobody found it). Outside any section, so filterOptions matches it on its own
+          — by "Language" and "Langue" whichever language is showing. */""}
+    <div class="optrow optnl optlangtop" data-layer="main" data-find="Language Langue"><span class="optlabel">${t("Language")}</span><span class="optctrl"><div class="seg">${LANGS.map(l=>`<button data-opt-lang="${l.code}" lang="${l.code}" class="${appLang===l.code?'on':''}">${l.name}</button>`).join("")}</div></span></div>
     ${sect("Appearance")}
     ${rowNL(t("Theme"), `<div class="seg segfull" style="flex-wrap:wrap">${
       [{k:"light",label:"Light",bg:"#F6F2E7",br:"#DAD3C0",dot:"#D2542B"},
@@ -7019,7 +7165,6 @@ function optionsBody(){
     ${/* v1.57 item 2: Text size sits with the wallpaper and the theme — the three things that change
           the whole page at once — and with no rule between them, because they are one group. */""}
     ${rowNL(t("Text size"), `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
-    ${rowNL(t("Language"), `<div class="seg">${LANGS.map(l=>`<button data-opt-lang="${l.code}" lang="${l.code}" class="${appLang===l.code?'on':''}">${l.name}</button>`).join("")}</div>`)}
     ${/* v2.00 item 2: the appearance slots, the margin steppers and the page-transition controls
           are real preferences, but they are not what someone opens Settings to find — and they sat
           in front of Sort and Smart add. Their own section, folded by default. */""}
@@ -7345,12 +7490,13 @@ function listsSheet(){
   const lists=getLists();
   const rows=lists.map(l=>{ const st=listStats(l.code); const cur=l.code===listCode;
     const sub = st.total ? `${st.total===1?tf("{n} item",{ n:st.total }):tf("{n} items",{ n:st.total })}${st.done?` · ${tf("{n} in cart",{ n:st.done })}`:""}` : t("Empty");
-    return `<button class="listpick${cur?' cur':''}" data-list="${esc(l.code)}"${cur?' aria-current="true"':''}>
+    /* v2.56 item 3: a "⋯" on each row opens what you can do to the list (press & hold still does too); no radio —
+       the current list is shown by its border, tint and name colour. A div, so the ⋯ button can sit inside it. */
+    return `<div role="button" tabindex="0" class="listpick${cur?' cur':''}" data-list="${esc(l.code)}"${cur?' aria-current="true"':''}>
       <span class="lp-main"><span class="lp-name">${esc(l.name||t('Untitled list'))}</span><span class="lp-sub">${sub}</span></span>
-      <span class="lp-radio${cur?' on':''}" aria-hidden="true"></span></button>`; }).join("");
+      <button class="lp-more" data-list-more="${esc(l.code)}" aria-label="${t("List options")}">${MENU_SVG(20)}</button></div>`; }).join("");
   return `<div class="sheet-bg" id="listsBg"><div class="sheet" id="listsSheetEl">
-    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:2px">${t("Your lists")}</div>
-    <p class="hint" style="margin:0 0 12px">${t("Tap to switch · press &amp; hold for rename, share, reorder or delete.")}</p>
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${t("Your lists")}</div>
     <div class="listrows">${rows||`<p class="empty-sub">${t("No lists yet.")}</p>`}</div>
     <button class="newlist" id="newList">${t("+ Create new list")}</button>
   </div></div>`;
@@ -7502,7 +7648,6 @@ function wireAddBar(){
       const looksLikeBlock = t && (t.indexOf("\n")>=0 || /\b(meat|fruit|vegetable|veg|fresh|bulk|asian|alcohol|health|others)\s*:/i.test(t) || t.split(",").length>2);
       if(looksLikeBlock){ e.preventDefault(); commit(t); } }; }
   if(mc){ mc.onpointerdown=e=>e.preventDefault(); mc.onclick=()=>{ if(mi){ mi.value=""; draftMain=""; grow(mi); toggleClear(mi,mc); if(addOpen) refreshAddBody(); mi.focus(); } }; }
-  const sb=document.querySelector("#smartBtn"); if(sb){ sb.onpointerdown=e=>e.preventDefault(); sb.onclick=smartAdd; }
 }
 function wire(){
   const et=app.querySelector("#elseToggle"); if(et) et.onclick=()=>{ elseOpen=!elseOpen; render(); };   // v2.22 R17
@@ -7613,9 +7758,22 @@ function wire(){
     b.onclick=()=>{ if(!collapse.regOpen) collapse.regOpen=[];
       collapse.regOpen = collapse.regOpen.includes(id) ? collapse.regOpen.filter(x=>x!==id) : [...collapse.regOpen, id];
       localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }; });
+  /* v2.56 item 5: hold a Regular (the usual 450 ms buzz), then move the finger more than 8px — it drags within its category
+     instead of opening its details; letting go renumbers the category's `pos` 0..n-1 (ts bumped so the order syncs).
+     A hold with no movement still opens the details as before. touch-action and the touchmove block only apply once held,
+     so the page scrolls normally otherwise. */
   const regPress=(b,shortFn,longIdFn)=>{ b.oncontextmenu=e=>e.preventDefault();   // v1.17 tap toggles, long-press edits
-    b.onpointerdown=e=>{ e.preventDefault(); pressStart(); }; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
-    b.onpointerup=()=>{ pressCancel(); if(longFired){ const id=longIdFn&&longIdFn(); if(id) editItemById(id); return; } shortFn(); }; };
+    let down=null, drag=null;
+    b.onpointerdown=e=>{ e.preventDefault(); pressStart(); down={ x:e.clientX, y:e.clientY }; try{ b.setPointerCapture(e.pointerId); }catch(_){} };   // held from the start, so a mouse or trackpad that slips off the tile still drags
+    b.onpointermove=e=>{ if(!down) return; const dx=e.clientX-down.x, dy=e.clientY-down.y;
+      if(!drag){ if(!longFired || Math.hypot(dx,dy)<=8 || !b.dataset.regk) return; drag=regDragStart(b,e); if(!drag) return; }
+      regDragMove(drag, e, dx, dy); };
+    b.onpointerleave=()=>{ if(!drag) pressCancel(); };
+    b.onpointercancel=()=>{ pressCancel(); down=null; if(drag){ const d=drag; drag=null; regDragEnd(d,false); } };
+    b.addEventListener("touchmove", e=>{ if(down && longFired) e.preventDefault(); }, { passive:false });
+    b.onpointerup=()=>{ pressCancel(); down=null;
+      if(drag){ const d=drag; drag=null; regDragEnd(d,true); return; }
+      if(longFired){ const id=longIdFn&&longIdFn(); if(id) editItemById(id); return; } shortFn(); }; };
   app.querySelectorAll("[data-reg-add]").forEach(b=>{ const p=b.dataset.regAdd.split("|"), cat=p.pop(), name=p.join("|");
     /* v2.36 opened the add sheet and its Edit item panel on a tap here. v2.42 (the household): no need — a Regular already has
        its amount and details, so a tap adds it, as before v2.36; a long-press still opens its details */
@@ -7624,6 +7782,10 @@ function wire(){
     regPress(b, ()=>removeFromList(id), ()=>id); });
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; listsOpen=false; render(); };
   app.querySelectorAll("[data-example]").forEach(b=>b.onclick=()=>{ addEntries(b.dataset.example, null); });
+  /* v2.56 item 4: the empty list's two tiles. openAdd mounts the sheet synchronously, so #mainInput exists for startMic,
+     and both stay inside the tap (iOS keyboard and microphone permission need the gesture). */
+  { const em=app.querySelector("#emptyMic"); if(em) em.onclick=()=>{ openAdd(); startMic(); };
+    const ea=app.querySelector("#emptyAdd"); if(ea) ea.onclick=()=>openAdd(); }
   wireQuickPanel();
   const ac=app.querySelector("#addCat"); if(ac) ac.onclick=addCategory;
 

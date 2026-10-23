@@ -119,7 +119,7 @@ const PARSE_STUB = JSON.stringify({ items:[
 
     /* ── 2. Smart add still works through the shared sheet ──────────────── */
     await page.locator('#mainInput').fill('milk, eggs, bread');
-    await tap('#smartBtn');
+    await tap('[data-add-smart]');   /* SUPERSEDED by v2.56: the ✨ beside the search bar became a Smart add tile in the add sheet; still protects the Smart add flow itself */
     await page.waitForTimeout(1200);
     let r = await review();
     ok('Smart add opens the review sheet', r.open===true, JSON.stringify({open:r.open}));
