@@ -112,7 +112,12 @@ Do this after step 2 (sign-in), so the endpoints can check who is asking.
 ## 6. Daily limits and a firewall (≈15 min)
 **Unlocks:** nobody can run up the AI bill, even with the app's address.
 
-1. **Upstash** — create a free Redis database at upstash.com (whether the free tier still exists could not be checked
+**Since v2.53 the daily limits need nothing from you except publishing the rules:** they are counted in Firestore
+(`quota/{uid}/days/{day}`), written by the server as the calling phone — no admin key. Upstash below is optional; when its two
+variables are set it is used instead. `QUOTA_STORE=off` turns the count off. The firewall (2) is not available on the
+Hobby plan's API (tried 21 Oct 2026).
+
+1. *(Optional)* **Upstash** — create a free Redis database at upstash.com (whether the free tier still exists could not be checked
    from here). Copy its REST URL and token into Vercel env `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` and
    redeploy. The limits per phone per day are in `lib/guard.js`; change one with `QUOTA_RECEIPT`, `QUOTA_PARSE` etc.
 2. **Vercel Firewall** — add a rate-limit rule on `/api/` (for example 30 requests per minute per IP). The names of the

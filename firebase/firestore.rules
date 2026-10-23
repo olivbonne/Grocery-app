@@ -110,6 +110,23 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // v2.53 (architecture review S4): the AI functions' daily count, one document per phone per day, written by the server
+    // AS THAT PHONE (its own sign-in — no admin key anywhere). A phone may only add exactly one to one of its own counters:
+    // never lower one, never delete, never touch another phone's. Numbers only; nothing about the list.
+    match /quota/{uid}/days/{day} {
+      function mine() { return request.auth != null && request.auth.uid == uid; }
+      function plusOne() {
+        let d = request.resource.data;
+        let ks = resource == null ? d.keys().toSet() : d.diff(resource.data).affectedKeys();
+        let k = ks.toList()[0];
+        return ks.size() == 1 && d[k] is int && d[k] == (resource == null ? 0 : resource.data.get(k, 0)) + 1;
+      }
+      allow read: if mine();
+      allow create, update: if mine() && day.matches('^20[0-9]{2}-[0-9]{2}-[0-9]{2}$')
+                            && request.resource.data.keys().hasOnly(['receipt', 'card', 'aisle', 'parse', 'recipe', 'recipeSearch', 'feedback'])
+                            && plusOne();
+      allow delete: if false;
+    }
     match /{document=**} {
       allow read, write: if false;
     }
