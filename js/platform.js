@@ -32,6 +32,8 @@ export function share(data){ return navigator.share(data); }
 export function hasClipboard(){ return !!(navigator.clipboard && navigator.clipboard.writeText); }
 /* throws (or rejects) where there is no clipboard, as the raw call did */
 export function copyText(t){ return navigator.clipboard.writeText(t); }
+export function canReadClipboard(){ return !!(navigator.clipboard && navigator.clipboard.readText); }   // v2.56 the add sheet's Paste
+export function readClipboardText(){ return navigator.clipboard.readText(); }
 
 export function vibrate(ms){ if(navigator.vibrate) navigator.vibrate(ms); }
 

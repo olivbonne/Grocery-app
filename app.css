@@ -332,12 +332,14 @@
   .listpick { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:11px 13px;
     border-radius:14px; border:1.5px solid var(--line); background:var(--card); color:var(--text);
     user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; touch-action:manipulation; }
-  .listpick.cur { border-color:var(--accent); }
+  /* v2.56 item 3: the current list is obvious — solid accent border, an accent tint, its name in the accent */
+  .listpick.cur { border:2px solid var(--accent); background:color-mix(in srgb, var(--accent) 12%, var(--card)); padding:10.5px 12.5px; }
+  .listpick.cur .lp-name { color:var(--accent); }
+  .listpick .lp-more { flex:none; width:36px; height:36px; margin:-6px -6px -6px 0; display:flex; align-items:center; justify-content:center;
+    border:none; border-radius:50%; background:transparent; color:var(--muted); }
   .listpick .lp-main { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
   .listpick .lp-name { font-weight:800; font-size:15.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .listpick .lp-sub { font-size:12px; color:var(--muted2); font-weight:600; }
-  .listpick .lp-radio { flex:none; width:20px; height:20px; border-radius:50%; border:2px solid var(--line); box-sizing:border-box; }
-  .listpick .lp-radio.on { border-color:var(--accent); box-shadow:inset 0 0 0 3.5px var(--card), inset 0 0 0 20px var(--accent); }
   .newlist { width:100%; margin-top:12px; padding:13px; border-radius:14px; border:none; background:var(--accent); color:var(--on-accent); font-weight:800; font-size:15px; }
   .disp { font-family:'Outfit',system-ui,sans-serif; }
   input, textarea { font-family:inherit; font-size:16px; }
@@ -997,6 +999,10 @@
   /* v2.34 the "+" that adds a Regular to a category */
   .pill.baadd, .shop .pill.baadd { min-width:52px; justify-content:center; font-size:22px; font-weight:800; background:transparent; }
   .pill.baadd .baplus { font-size:28px; font-weight:600; line-height:1; }
+  /* v2.56 item 5: a Regular being dragged, and where it would land */
+  .pill.regdrag { position:relative; z-index:20; opacity:.9; box-shadow:0 8px 20px rgba(0,0,0,.25); transition:none; }
+  .pill.regdropb { box-shadow:-3px 0 0 0 var(--accent); }
+  .pill.regdropa { box-shadow:3px 0 0 0 var(--accent); }
   /* v2.34 location diagnostics */
   .ldrec { padding:3px 2px 3px 10px; font-size:13px; color:var(--muted2); font-weight:600; }
   .ldrec b { color:var(--text); }
@@ -1033,6 +1039,10 @@
   .pill.done .byinit { background:var(--done-line); color:var(--done-text); }
   .empty { text-align:center; padding:36px 12px 12px; color:var(--muted); }
   .empty-emoji { font-size:44px; }
+  .empty-basket { color:var(--muted); display:flex; justify-content:center; }   /* v2.56 item 4 */
+  .empty-basket .cmark { width:72px; height:72px; }
+  .empty-start { gap:10px; margin-top:14px; }
+  .empty-start .pill.baadd { border:1.5px dashed var(--muted); color:var(--muted); min-height:52px; }
   .empty-title { font-size:18px; font-weight:800; color:var(--text); margin:10px 0 4px; }
   .empty-sub { font-size:13px; color:var(--muted); margin:4px 0; }
   /* A3 Shopping mode: bigger glanceable targets, editing chrome hidden */

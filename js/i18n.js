@@ -8,6 +8,7 @@
 
    Never translate stored data, item or list names, or text sent to the server — only what is shown to the person. */
 export const FR = {
+  "Reading the photo took too long. Try again, or type the list.": "La lecture de la photo a pris trop de temps. Réessayez, ou tapez la liste.",
   "This list is closed to this phone": "Cette liste est fermée pour ce téléphone",
   "Where do you usually shop?": "Où faites-vous vos courses d'habitude ?",
   "Untick the ones you never use, or add yours. The list then walks the shop you're in.": "Décochez ceux où vous n'allez jamais, ou ajoutez les vôtres. La liste suit ensuite le magasin où vous êtes.",
@@ -877,6 +878,19 @@ export const FR = {
   "Update now": "Mettre à jour",
   "This phone isn't signed in yet. Check your connection and try again.": "Ce téléphone n'est pas encore connecté. Vérifiez votre connexion et réessayez.",
   "The app couldn't prove it's the real app. Close it completely and open it again.": "L'application n'a pas pu prouver qu'elle est la vraie. Fermez-la complètement et rouvrez-la.",
+  /* v2.56 */
+  "List options": "Options de la liste",
+  "Say what you need": "Dites ce qu’il vous faut",
+  "Take a photo": "Prendre une photo",
+  "From your photos": "Depuis vos photos",
+  "Paste": "Coller",
+  "Type or paste a list, then tap Smart add": "Tapez ou collez une liste, puis touchez Ajout intelligent",
+  "Paste isn't available here — long-press in the box and choose Paste": "Coller n’est pas disponible ici — appuyez longuement dans le champ et choisissez Coller",
+  "Reading the photo…": "Lecture de la photo…",
+  "Use one of your cards here?": "Utiliser une de vos cartes ici ?",
+  "Add a new card": "Ajouter une nouvelle carte",
+  "Shops": "Magasins",
+  "This phone's storage is full": "La mémoire de ce téléphone est pleine",
 };
 
 /* v2.55: the languages the app speaks. To add one: write its table (same keys as FR — the English text — with that
