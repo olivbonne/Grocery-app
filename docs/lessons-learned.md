@@ -102,3 +102,28 @@ architecture review at v2.38 — over two hundred releases in.*
 30. **A limit counted on the phone is not a limit.** Anything that protects a bill or other people's
     data (daily caps, the number of people on a list) has to be enforced by the server or the database
     rules. The phone can only make it polite.
+
+## 9. Switching protection on (October 2026, v2.49–v2.54)
+
+31. **A security rule you cannot run is a guess.** The v2.53 daily-count rule used a function the rules
+    language may not have, so production refused every count — it failed open, so nobody noticed but the
+    log. Rules cannot be run in an emulator from where this app is built, so: keep a new rule as small as
+    possible, make the server log *Firestore's own reason* when a write is refused (v2.54), and check the
+    first real write in the console before calling it done.
+32. **Protection that loads late protects nothing at first.** App Check was started alongside the database,
+    so every launch's first requests went out without its proof (15% "outdated" in the console). Anything
+    that vouches for the app must be in place before the first request it covers — and the console's
+    numbers are the test, not the code.
+33. **Watch before you enforce.** Every protection here went on in "log" mode first (sign-in on the AI
+    functions, App Check in the console and on the server), and was switched to "block" only once the logs
+    or the console showed the household's own phones passing. Enforcing first would have locked the
+    household out twice.
+34. **A key's power matters more than which service holds it.** The daily count could live in Firestore or
+    in Upstash; what decided it was the key the server would need. Writing as the calling phone (its own
+    sign-in, under rules that only allow +1) needs no new key at all — prefer that to any admin key.
+35. **One release at a time, even when several are ready.** Pushing the next version onto a pull request
+    that is still being checked mixes two releases and restarts the checks. Keep it as a local commit and
+    put it on top of `main` once the first one merges (`git rebase --onto origin/main <old head>`).
+36. **A slow check is not always a slow app.** A test group that took 18 minutes instead of 7 spent the
+    difference downloading system packages before any test ran. Read where the time went before "fixing"
+    the code.
