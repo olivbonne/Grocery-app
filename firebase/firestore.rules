@@ -115,11 +115,14 @@ service cloud.firestore {
     // never lower one, never delete, never touch another phone's. Numbers only; nothing about the list.
     match /quota/{uid}/days/{day} {
       function mine() { return request.auth != null && request.auth.uid == uid; }
+      // v2.54: written without turning the set of changed keys into a list (v2.53 did, and every count was refused in production —
+      // suspected cause). The one changed key is named by hasOnly against each counter in turn.
+      function was(k) { return resource == null ? 0 : resource.data.get(k, 0); }
+      function up(ks, k) { return ks.hasOnly([k]) && request.resource.data[k] is int && request.resource.data[k] == was(k) + 1; }
       function plusOne() {
-        let d = request.resource.data;
-        let ks = resource == null ? d.keys().toSet() : d.diff(resource.data).affectedKeys();
-        let k = ks.toList()[0];
-        return ks.size() == 1 && d[k] is int && d[k] == (resource == null ? 0 : resource.data.get(k, 0)) + 1;
+        let ks = request.resource.data.diff(resource == null ? {} : resource.data).affectedKeys();
+        return ks.size() == 1 && (up(ks, 'receipt') || up(ks, 'card') || up(ks, 'aisle') || up(ks, 'parse')
+          || up(ks, 'recipe') || up(ks, 'recipeSearch') || up(ks, 'feedback'));
       }
       allow read: if mine();
       allow create, update: if mine() && day.matches('^20[0-9]{2}-[0-9]{2}-[0-9]{2}$')

@@ -7,23 +7,23 @@
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, onSnapshot, setDoc }
   from "/vendor/firebasejs/10.12.2/firebase-firestore.js";
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.53";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.53";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.53";
-import { compareStores, worthIt } from "./compare.js?v=2.53";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.53";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.53";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.53";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.53";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.53";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.53";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines } from "./parse.js?v=2.53";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.53";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf } from "./i18n.js?v=2.53";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13 } from "./data/catalog.js?v=2.54";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.54";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.54";
+import { compareStores, worthIt } from "./compare.js?v=2.54";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.54";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.54";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.54";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.54";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.54";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.54";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines } from "./parse.js?v=2.54";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.54";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf } from "./i18n.js?v=2.54";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.53";
+const APP_VERSION = "v2.54";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -2042,10 +2042,14 @@ var _auth = null, _authErr = "";   // var: Settings reads them at any time
 const APPCHECK_SITE_KEY = "6LcX4vwtAAAAACbmrxOgibD3Gv8wOrIrUc-icGU9";   // v2.52, Fraud Defense
 var _appCheck = null, _appCheckMod = null;
 function appCheckKey(){ try{ if(navigator.webdriver) return String(window.__appCheckKey || ""); }catch(e){} return APPCHECK_SITE_KEY; }   // under automation only a test's own key: no suite ever loads Google's real script
-function startAppCheck(app){ const key = appCheckKey(); if(!key || _appCheck) return;
-  import("/vendor/firebasejs/10.12.2/firebase-app-check.js").then(m => { _appCheckMod = m;
+/* v2.54: returns when App Check is in place (or at most 2.5 s, or at once without a key), so the database and sign-in are
+   started AFTER it — v2.52 started them alongside, and the first requests of every launch went out unverified (seen in
+   Firebase › App Check: 6 of 39 in an hour), which enforcement would have refused. */
+function startAppCheck(app){ const key = appCheckKey(); if(!key || _appCheck) return Promise.resolve();
+  const ready = import("/vendor/firebasejs/10.12.2/firebase-app-check.js").then(m => { _appCheckMod = m;
     _appCheck = m.initializeAppCheck(app, { provider: new m.ReCaptchaEnterpriseProvider(key), isTokenAutoRefreshEnabled: true }); })
-  .catch(() => {}); }   // offline or blocked: the app works on; the server decides what an unchecked call gets
+  .catch(() => {});   // offline or blocked: the app works on; the server decides what an unchecked call gets
+  return Promise.race([ready, new Promise(r => setTimeout(r, 2500))]); }   // offline or blocked: the app works on; the server decides what an unchecked call gets
 async function appCheckToken(){ if(!_appCheck || !_appCheckMod) return "";
   try{ const r = await Promise.race([_appCheckMod.getToken(_appCheck, false), new Promise(res => setTimeout(() => res(null), 3000))]); return (r && r.token) || ""; }catch(e){ return ""; } }
 var _authM = null;   // v2.40 (sign-in by email): the auth module, kept for the email-link calls
@@ -2228,12 +2232,15 @@ function acctHTML(){ if(!configured) return "";
 try {
   if(firebaseConfig.apiKey !== "REPLACE_ME"){
     const app = initializeApp(firebaseConfig);
-    startAppCheck(app);   // v2.50: before Firestore and Auth make their first requests (dormant without a site key)
-    try { db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); }
-    catch(e){ db = getFirestore(app); }   // fallback if persistence unavailable
-    configured = true;
-    subscribe();
-    authStart(app);
+    /* v2.54: App Check first, then the database and sign-in (see startAppCheck). Until then the app runs on its local copy:
+       a change made meanwhile is kept, stamped, and merged in by the first snapshot (v2.51). */
+    configured = true;   // the screens ask this at once; save() waits for listRef, which subscribe() sets
+    startAppCheck(app).then(() => { try {
+      try { db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }); }
+      catch(e){ db = getFirestore(app); }   // fallback if persistence unavailable
+      subscribe();
+      authStart(app);
+    } catch(e){ console.error(e); } });
   }
 } catch(e){ console.error(e); }
 /* v2.15: the service worker (sw.js) keeps the app, its fonts, its icons and the Firebase SDK on the phone, so it
@@ -2306,7 +2313,7 @@ async function save(){
   stampItems(state.items || [], _itemSigs, state.itemTomb, Date.now());
   state.itemTomb = pruneTomb(state.itemTomb, Date.now());
   try { localStorage.setItem(LS.cache, JSON.stringify(state)); } catch(e){}
-  if(!configured) return;
+  if(!configured || !listRef) return;   // v2.54: !listRef — the database starts after App Check (a change made before is merged in by the first snapshot)
   if(_newerData) return;   // never write over a newer app's data
   syncing = true;
   try { await setDoc(listRef, Object.assign(listDoc(state), { shopping: state.shopping||{}, itemTomb: state.itemTomb||{}, v: LIST_V })); }   // v2.49: only the fields the app knows (the rules refuse others)

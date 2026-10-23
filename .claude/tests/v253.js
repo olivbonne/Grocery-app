@@ -70,7 +70,9 @@ const req = (tok, ac) => ({ method:'POST', headers: Object.assign({ 'x-forwarded
 
     const rules = fs.readFileSync(path.join(ROOT, 'firebase', 'firestore.rules'), 'utf8'); const q = rules.slice(rules.indexOf('match /quota/{uid}/days/{day}'));
     ok('the rules: only the phone itself, only one counter, up by exactly one, never deleted', /function mine\(\) \{ return request\.auth != null && request\.auth\.uid == uid; \}/.test(q)
-       && /ks\.size\(\) == 1 && d\[k\] is int && d\[k\] == \(resource == null \? 0 : resource\.data\.get\(k, 0\)\) \+ 1/.test(q) && /allow delete: if false;/.test(q)
+       /* SUPERSEDED by v2.54: the rule no longer uses Set.toList() (refused every count in production). Still protects: one key
+          changed, an int, exactly one more than before. */
+       && /ks\.size\(\) == 1 && \(up\(ks, 'receipt'\)/.test(q) && /function up\(ks, k\) \{ return ks\.hasOnly\(\[k\]\) && request\.resource\.data\[k\] is int && request\.resource\.data\[k\] == was\(k\) \+ 1; \}/.test(q) && !/toList\(\)/.test(q) && /allow delete: if false;/.test(q)
        && /hasOnly\(\['receipt', 'card', 'aisle', 'parse', 'recipe', 'recipeSearch', 'feedback'\]\)/.test(q), '');
     ok('every field name the server writes is one the rules accept', Object.values({ receipt:1 }) && ['receipt', 'card', 'aisle', 'parse', 'recipe', 'recipeSearch', 'feedback'].every(k => q.includes(`'${k}'`)), '');
     ok('the privacy page and the rules doc say what is counted', /Daily limits/.test(fs.readFileSync(path.join(ROOT, 'privacy.html'), 'utf8')) && /quota\/\{uid\}\/days\/\{day\}/.test(fs.readFileSync(path.join(ROOT, 'docs', 'firestore-rules.md'), 'utf8')), '');
