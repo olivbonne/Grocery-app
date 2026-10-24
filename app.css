@@ -1639,6 +1639,16 @@
   .shop .zoomer.gridmode:not(.smalltile) .pill:has(> .pemoji) .pname, .shop .zoomer.largevar .pill:has(> .pemoji) .pname, html[data-icosize="l"] .shop .zoomer .pill:has(> .pemoji) .pname, html[data-icosize="xl"] .shop .zoomer .pill:has(> .pemoji) .pname { line-height:1.2; min-height:2.4em; }
   .shop .zoomer.gridmode:not(.smalltile) .pill:has(> .pemoji) .pill-meta, .shop .zoomer.largevar .pill:has(> .pemoji) .pill-meta, html[data-icosize="l"] .shop .zoomer .pill:has(> .pemoji) .pill-meta, html[data-icosize="xl"] .shop .zoomer .pill:has(> .pemoji) .pill-meta { margin-top:auto; }
   .shop .zoomer.gridmode:not(.smalltile) .pill:has(> .pemoji) > .pmarks, .shop .zoomer.largevar .pill:has(> .pemoji) > .pmarks, html[data-icosize="l"] .shop .zoomer .pill:has(> .pemoji) > .pmarks, html[data-icosize="xl"] .shop .zoomer .pill:has(> .pemoji) > .pmarks { position:absolute; top:7px; left:9px; }
+  /* v2.66 (the household, after another app's tiles): in the column grids the icon, the name and the lines under it are ONE
+     centred block — a tile with nothing under its name shows the icon lowest, one line under it lifts the icon a little, two
+     lines lift it more; the icon never changes size. The lines under the name are smaller than the name, and the note wraps
+     to a second line instead of being cut. Supersedes v2.12's three fixed bands (name in a two-line band, amount pinned to
+     the bottom) for these grids; the one-line modes (1 per row, variable) are untouched. */
+  .shop .zoomer.gridmode:not(.smalltile) .pill.pill:has(> .pemoji) { justify-content:center; }
+  .shop .zoomer.gridmode:not(.smalltile) .pill.pill:has(> .pemoji) .pname { min-height:0; }
+  .shop .zoomer.gridmode:not(.smalltile) .pill.pill:has(> .pemoji) .pill-meta { margin-top:0; font-size:.8em; line-height:1.25; }
+  .shop .zoomer.gridmode:not(.smalltile) .pill.pill:has(> .pemoji) .pnote { font-size:.78em; line-height:1.25; white-space:normal;
+    overflow:hidden; text-overflow:clip; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; }
   /* v1.16 display picker (2×2) */
   .dispgrid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
   .dispopt { border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:12.5px; padding:10px 6px; border-radius:11px; }
