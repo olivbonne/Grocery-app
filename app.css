@@ -1985,3 +1985,7 @@
   html body .shop .zoomer.zoomer.largevar .pill.pill { flex:none; max-width:100%; padding:6px 12px; }
   html body .shop .zoomer.zoomer.largevar .pill.pill .pill-meta { margin-left:0; }
   html body .shop .zoomer.zoomer.largevar .pill.pill .pname { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+
+/* v2.59 the microphone help card */
+.michint { color:var(--muted); font-size:14px; line-height:1.45; }
+.michelp { margin:10px 0 8px; padding-left:22px; display:flex; flex-direction:column; gap:8px; font-size:15px; line-height:1.4; color:var(--text); }
