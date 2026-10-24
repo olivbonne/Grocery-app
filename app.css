@@ -1967,7 +1967,7 @@
     flex-direction:row; align-items:center; flex-wrap:nowrap; gap:8px; min-height:44px; height:auto;
     justify-content:flex-start; text-align:left; position:relative; }
   html body .zoomer.zoomer.zoomer.linelist .pill.pill .pemoji, html body .shop .zoomer.zoomer.largevar .pill.pill .pemoji {
-    flex:none; margin:0; zoom:1; --illzoom:1; font-size:22px; }
+    flex:none; margin:0; }   /* the icon-size setting (S–XL) still scales the drawing; it stays on the name's line */
   html body .zoomer.zoomer.zoomer.linelist .pill.pill .pname, html body .shop .zoomer.zoomer.largevar .pill.pill .pname {
     white-space:nowrap; min-height:0; line-height:1.2; }
   html body .zoomer.zoomer.zoomer.linelist .pill.pill .pnote, html body .shop .zoomer.zoomer.largevar .pill.pill .pnote {

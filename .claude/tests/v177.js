@@ -120,7 +120,9 @@ const SEED = (extra)=>`(() => {
   await setLarge(0);
   const vari = await flagRows();
   ok('variable-width large tiles keep them on one line too',
-     vari && vari.dir==='column' && vari.rows===1, JSON.stringify(vari));
+     /* SUPERSEDED by v2.58: variable tiles are a ROW now (one line, the household's ask), not a column. Still protects:
+        the flags stay together on one line. */
+     vari && vari.dir==='row' && vari.rows===1, JSON.stringify(vari));
 
   /* the row layouts must be untouched */
   await setLarge(1);

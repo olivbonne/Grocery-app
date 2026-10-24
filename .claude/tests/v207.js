@@ -86,7 +86,10 @@ const SEED = `(() => {
     await load(); await tap('#cartNavP, #cartNav');   // the app reopens on the last page (Settings)
     const sx = await tile('Croissant');
     ok('XL draws a tile\'s icon about twice as big as S', s0 && sx && sx.icoH >= s0.icoH*1.9, JSON.stringify({S:s0&&s0.icoH, XL:sx&&sx.icoH}));
-    ok('…and the name moves under the icon, so the text is not squeezed beside it', sx && sx.dir==='column' && sx.textTop>=sx.icoBottom-1, JSON.stringify(sx));
+    /* SUPERSEDED by v2.58: the default is now variable tiles, which the household asked to keep on ONE line — the name
+       stays beside a big icon instead of moving under it. Still protects: XL really is bigger (above), and the name is not
+       squeezed: it sits after the icon on the same row, not overlapping it. */
+    ok('…and the name moves under the icon, so the text is not squeezed beside it', sx && sx.dir==='row' && sx.textTop < sx.icoBottom, JSON.stringify(sx));
     ok('at S the tile is laid out as before (icon beside the name)', s0 && s0.dir==='row', JSON.stringify(s0));
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-xl.png') });
     ok('Icon size is a look: kept OUT of both exclusion lists, so an appearance slot carries it',
