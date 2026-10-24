@@ -32,6 +32,13 @@ New lists also get stronger codes from v2.25 on: 128 random bits (25 characters)
 generator, instead of 8 characters from `Math.random()`. Existing lists keep their codes. To move the household's
 list to a strong code, make a new list and use Settings › Restore from a backup file, or copy items across.
 
+## v2.71 — settings remembered by the account
+
+An email account's record (`users/{uid}`) may now also hold `prefs: { at, json }` — a copy of that person's settings (the
+look, language and preferences; never list data, kept as one string of at most 40,000 characters), so a new phone signed in with the same email gets them
+back. **Publish these rules before releasing v2.71.** Until they are published the settings copy is refused, nothing else
+breaks, and the account block in Settings already shows the "publish the new database rules" note (`acctDenied`).
+
 ## v2.58 — each item its own record (S8 step 2)
 The v2.58 rules add `lists/{code}/items/{id}` (one record per item, read and written by the list's people, never deleted — a
 removal is the record `{id, gone}`), allow the list record's new `parts` field, and refuse writing a split list (`v` 3) back

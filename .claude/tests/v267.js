@@ -82,7 +82,8 @@ const CATS13 = [
     await page.locator('[data-smart-edit="2"]').click(); await page.waitForTimeout(400);
     const ed = await page.evaluate(()=>{ const s=document.querySelector('.smartchip.open'); const labs=[...s.querySelectorAll('.editsec-l')].map(l=>l.textContent.trim());
       return { title:!!s.querySelector('input.edtitle[data-smart-name]'), labs, stepper:!!s.querySelector('.eqty [data-smart-q]'), measure:(s.querySelector('[data-smart-wopen] .edval')||{}).textContent, cat:!!s.querySelector('[data-smart-copen] .edval'), sub:/Subcategory/.test(s.innerText) }; });
-    ok('an opened item looks like Edit item: name as a title, Quantity, Measure ("unit"), Category; no Subcategory', ed.title && JSON.stringify(ed.labs)==='["Quantity","Measure","Category"]' && ed.stepper && /^unit/.test((ed.measure||'').trim()) && ed.cat && !ed.sub, JSON.stringify(ed));
+    /* SUPERSEDED by v2.71: "Measure" is called "Unit", and the empty tile reads "Unit". Still protected: the rows and their order. */
+    ok('an opened item looks like Edit item: name as a title, Quantity, Unit ("Unit"), Category; no Subcategory', ed.title && JSON.stringify(ed.labs)==='["Quantity","Unit","Category"]' && ed.stepper && /^Unit/.test((ed.measure||'').trim()) && ed.cat && !ed.sub, JSON.stringify(ed));
     await page.locator('.smartchip.open input.edtitle').fill('Eggs'); await page.waitForTimeout(200);
     ok('typing the name updates its row at once ("6× Eggs", not "6× 6x")', /6×\s*Eggs/.test(await page.locator('.smartchip.open .smartchip-name').innerText()), await page.locator('.smartchip.open .smartchip-name').innerText());
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-review.png') });
@@ -90,7 +91,8 @@ const CATS13 = [
     await page.locator('[data-smart-cat="2|frozen"]').click(); await page.waitForTimeout(300);
     await page.locator('[data-smart-wopen="2"]').click(); await page.waitForTimeout(300);
     const wch = await page.evaluate(()=>[...document.querySelectorAll('[data-smart-wt]')].map(b=>b.textContent.trim()));
-    ok('Measure opens the same choices as Edit item (6 pack among them)', wch.includes('6 pack') && wch.includes('unit'), JSON.stringify(wch));
+    /* SUPERSEDED by v2.71: the empty choice reads "Unit". */
+    ok('Unit opens the same choices as Edit item (6 pack among them)', wch.includes('6 pack') && wch.includes('Unit'), JSON.stringify(wch));
     await page.locator('#smartConfirm').click(); await page.waitForTimeout(600);
     const c = await cache();
     const by = n=>(c.items.find(i=>i.name.toLowerCase()===n)||{}).cat;

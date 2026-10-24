@@ -174,7 +174,9 @@ const LINK = 'https://grocery-list-88109.firebaseapp.com/__/auth/action?apiKey=k
     const src = fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8');
     ok('ml_signinemail is in both appearance-slot exclusion lists', (src.match(/ml_signinemail\$/g)||[]).length===2, '');
     const rules = fs.readFileSync(path.join(ROOT,'firebase','firestore.rules'),'utf8');
-    ok('the rules let only the account\'s own person read or write users/{uid}, with only lists, gone and updated', /match \/users\/\{uid\}/.test(rules) && /request\.auth\.uid == uid/.test(rules) && /hasOnly\(\['lists', 'gone', 'updated'\]\)/.test(rules), '');
+    /* SUPERSEDED by v2.71: the record may also hold prefs (the person's settings, never list data). Still protected: only
+       the account's own person, and a fixed set of fields. */
+    ok('the rules let only the account\'s own person read or write users/{uid}, with only lists, gone, updated (and v2.71 prefs)', /match \/users\/\{uid\}/.test(rules) && /request\.auth\.uid == uid/.test(rules) && /hasOnly\(\['lists', 'gone', 'updated', 'prefs'\]\)/.test(rules), '');
     ok('the privacy page says what the account keeps', /codes and names/.test(fs.readFileSync(path.join(ROOT,'privacy.html'),'utf8')), '');
   } catch(e){ ok('suite ran to the end', false, e.message.slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));

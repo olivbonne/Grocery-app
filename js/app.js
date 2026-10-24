@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.70";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.70";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.70";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.70";
-import { compareStores, worthIt } from "./compare.js?v=2.70";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.70";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.70";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.70";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.70";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.70";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.70";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.70";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.70";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.70";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.71";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.71";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.71";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.71";
+import { compareStores, worthIt } from "./compare.js?v=2.71";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.71";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.71";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.71";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.71";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.71";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.71";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.71";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.71";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.71";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.70";
+const APP_VERSION = "v2.71";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -79,7 +79,13 @@ function showAmt(w){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_jk_)/;
+/* v2.71: was this phone fresh when the app opened — no look of its own yet? Read here, before boot writes ml_theme (it always
+   does, ≈ line 680) or the slot migration writes ml_appmig163. Both absent = never opened here before (or after "Forget this
+   phone" / a reinstall), so the account's settings may be applied silently. var: read by acctSync at any time. */
+/* A first launch reloads once on its own (the v1.63 slot migration) before sign-in, so the answer is kept for the session. */
+var _prefsFresh = (()=>{ try{ if(sessionStorage.getItem("ml_prefsfresh") === "1") return true;
+  const f = !localStorage.getItem("ml_theme") && !localStorage.getItem("ml_appmig163"); if(f) sessionStorage.setItem("ml_prefsfresh", "1"); return f; }catch(e){ return false; } })();
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_jk_)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -2464,12 +2470,60 @@ function acctSync(){ const ref=acctRef(); if(!ref) return; const uid=_auth.curre
       if(!getLists().some(x=>x.code===code)){ _acctQuiet=true; try{ rememberList(code, String((v && v.name) || "Groceries").slice(0,60)); }finally{ _acctQuiet=false; } added++; } }
     const push={}; for(const l of getLists()) if(!have[l.code]) push[l.code]={ name:String(l.name||"").slice(0,60), ts:Date.now() };
     if(Object.keys(push).length) acctWrite({ lists:push });
-    if(added){ showToast(added===1 ? "1 list came back from your account" : `${added} lists came back from your account`); render(); } };
+    if(added){ showToast(added===1 ? "1 list came back from your account" : `${added} lists came back from your account`); render(); }
+    prefsFromAccount(data, uid); };
   try{ off=listen(ref, s=>finish(s && s.exists && s.exists() ? s.data() : null), err=>{ done=true; acctDenied(err); }); }catch(e){ acctDenied(e); }
   setTimeout(()=>{ if(!done){ done=true; try{ if(off) off(); }catch(e){} } }, 15000); }
 var _acctQuiet = false;   // true while lists come back FROM the account, so they are not written straight back
 function acctWrite(part){ const ref=acctRef(); if(!ref) return; part.updated=Date.now();
   Promise.resolve().then(()=>put(ref, part, true)).then(()=>{ _acctNote=""; }).catch(acctDenied); }
+/* v2.71 settings remembered by the account. Signed in with an email (never anonymous), the phone keeps a copy of its
+   settings in users/{uid}.prefs = { at, json } (json: the keys as one string): the look (lookKeys, v2.26) plus PREF_KEYS — never list data. Written 4 s
+   after a change (prefsSchedule, armed by every render; never during boot, never before acctSync has read the record, and
+   only when the snapshot differs from the last one sent or read). Read back in acctSync: a fresh phone (_prefsFresh) takes
+   them silently and reloads once; any other phone is offered them on the Shop page when they are newer than ml_prefsseen.
+   Two phones: the newest settings win only when the person accepts the card — a phone never overwrites its own look
+   unasked, and its next change is what the account then keeps. A fresh phone takes them silently. */
+const PREF_KEYS = ["ml_lang","ml_units","ml_numdef","ml_smart","ml_siriSmart","ml_wakelock","ml_sayshop","ml_optcoll"];
+var _prefsSig = null, _prefsUid = "", _prefsT = null, _prefsOffer = null;   // var: render reads them at any time
+function prefsKeys(){ const out = lookKeys();
+  for(const k of PREF_KEYS){ let v = null; try{ v = localStorage.getItem(k); }catch(e){} if(v !== null) out[k] = String(v); }
+  let n = Object.values(out).reduce((a, v) => a + v.length, 0);
+  for(const k of Object.keys(out).sort((a, b) => out[b].length - out[a].length)){ if(n <= 30000) break; n -= out[k].length; delete out[k]; }   // the largest go first
+  return out; }
+function prefsSig(o){ const s = {}; for(const k of Object.keys(o || {}).sort()) s[k] = o[k]; return JSON.stringify(s); }
+function prefsSeen(){ try{ return +localStorage.getItem("ml_prefsseen") || 0; }catch(e){ return 0; } }
+function prefsSeenSet(at){ try{ localStorage.setItem("ml_prefsseen", String(at)); }catch(e){} }
+function prefsSchedule(){ if(_prefsT) clearTimeout(_prefsT);
+  _prefsT = setTimeout(()=>{ _prefsT = null;
+    if(!_booted || !acctEmail() || _prefsSig === null) return;   // not during boot; signed out or anonymous: nothing is written
+    const u = _auth && _auth.currentUser; if(!u || u.uid !== _prefsUid) return;   // only after acctSync has read THIS account
+    const keys = prefsKeys(), sig = prefsSig(keys); if(sig === _prefsSig) return;
+    const at = Date.now(); _prefsSig = sig; prefsSeenSet(at); acctWrite({ prefs:{ at, json: JSON.stringify(keys) } }); }, 4000); }   // one string, not a map: acctWrite merges, and a merged map would keep keys this phone has since reset
+function prefsApply(keys){ const look = {};
+  for(const [k, v] of Object.entries(keys || {})){ if(typeof k !== "string" || k.indexOf("ml_") !== 0) continue;
+    if(PREF_KEYS.includes(k)){ try{ localStorage.setItem(k, String(v)); }catch(e){} }
+    else if(!APP_EXCLUDE.test(k)) look[k] = String(v); }
+  applyStoredAppearance(look); }   // reloads
+function prefsFromAccount(data, uid){ _prefsUid = uid; _prefsOffer = null;
+  const P = data && data.prefs, at = (P && +P.at) || 0;
+  let keys = null; try{ const o = P && typeof P.json === "string" ? JSON.parse(P.json) : null; if(o && typeof o === "object" && !Array.isArray(o)) keys = o; }catch(e){}
+  if(!keys){ _prefsSig = ""; prefsSchedule(); return; }   // the account has none yet: this phone's are sent
+  _prefsSig = prefsSig(prefsKeys());   // from now on only a real change is sent
+  if(at <= prefsSeen()) return;
+  if(prefsSig(keys) === _prefsSig){ prefsSeenSet(at); return; }   // this phone already has them
+  /* a fresh phone: apply silently and reload ONCE. ml_prefsseen is set first and a session flag guards the reload, so it
+     cannot loop (after the reload at <= ml_prefsseen, and ml_theme exists so the phone is no longer fresh). */
+  let reloaded = false; try{ reloaded = sessionStorage.getItem("ml_prefsreload") === "1"; }catch(e){}
+  if(_prefsFresh && !reloaded){ _prefsFresh = false; prefsSeenSet(at); try{ sessionStorage.setItem("ml_prefsreload", "1"); }catch(e){} prefsApply(keys); return; }
+  _prefsOffer = { at, keys }; render(); }
+function prefsCardHTML(){ const P = _prefsOffer; if(!P || P.at <= prefsSeen() || !acctEmail()) return "";
+  const when = new Date(+P.at).toLocaleDateString(dateLoc(), { day:"numeric", month:"short" });
+  return `<div class="installcard lookcard" id="prefsCard" role="note">
+    <div class="ic-t">${t("Your settings from your account")}</div>
+    <div class="ic-b">${tf("Saved on {x}: look, language and preferences. Use them on this phone?", { x:esc(when) })}</div>
+    <div class="ic-btns"><button class="newlist" id="prefsUse">${t("Use them")}</button><button class="optaction" id="prefsNo">${t("Not now")}</button></div>
+  </div>`; }
 function acctDenied(e){ if(/permission/i.test(String((e && (e.code||e.message)) || ""))) { _acctNote="Your lists can't be saved to your account yet: the app's owner still has to publish the new database rules."; render(); } }
 function acctHTML(){ if(!configured) return "";
   const em=acctEmail(), a=acct||{};
@@ -3586,7 +3640,7 @@ function tapNoScroll(el, fn){
 const WEIGHTS = ["","cup","tsp","Tbsp","4 pack","6 pack","12 pack","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"];
 function weightChips(id, cur){
   if(wOpen!==id) return "";
-  return `<div class="wgrid" role="listbox">${WEIGHTS.map(w=>`<button role="option" class="catchip${(cur||"")===w?' on':''}" data-w-set="${id}|${esc(w)}">${w?esc(w):t("unit")}</button>`).join("")}</div>`;
+  return `<div class="wgrid" role="listbox">${WEIGHTS.map(w=>`<button role="option" class="catchip${(cur||"")===w?' on':''}" data-w-set="${id}|${esc(w)}">${w?esc(w):t("Unit")}</button>`).join("")}</div>`;
 }
 function addEditPanel(){
   const it=state.items.find(i=>i.id===addEditId);
@@ -3600,15 +3654,16 @@ function addEditPanel(){
     ${/* v1.46 item 2: tighter heading + 40px controls — the panel has to share the screen with the
           keyboard, so every row it saves is a row you don't have to scroll to. */""}
     ${/* v2.63 item D: the title IS the name field; then flags, Quantity, Measure, Note, Category (no Subcategory) */""}
+    ${/* v2.71: the Note moves up to right below the title; "Measure" is now "Unit" */""}
     <input class="edtitle" data-ae-name="${it.id}" value="${esc(it.name)}" aria-label="${t("Item name")}" />
+    ${noteSecHTML(it.note||"", it.name, { input:`data-ae-note="${it.id}"`, chip:"data-ae-notechip" })}
     <div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button data-ae-minus="${it.id}" aria-label="${t("Less")}">−</button><span>${it.qty||1}</span><button data-ae-plus="${it.id}" aria-label="${t("More")}">+</button></span></div>
-    <button class="editsec" data-w-open="${it.id}" aria-expanded="${wOpen===it.id}"><span class="editsec-l">${t("Measure")}</span><span class="editsec-v"><span class="edval">${esc(it.weight||t("unit"))} <span class="editsec-ch">${wOpen===it.id?'▾':'▸'}</span></span></span></button>
+    <button class="editsec" data-w-open="${it.id}" aria-expanded="${wOpen===it.id}"><span class="editsec-l">${t("Unit")}</span><span class="editsec-v"><span class="edval">${esc(it.weight||t("Unit"))} <span class="editsec-ch">${wOpen===it.id?'▾':'▸'}</span></span></span></button>
     ${weightChips(it.id, it.weight)}
     ${/* v1.59 item 3: the weight is the same wheel the shop-page Edit item uses, in the same place —
           between the quantity and the name. It was a scrolling chip strip on its own row here, which
           is a second way to do one thing and cost a row of a panel that already shares the screen
           with the keyboard. */""}
-    ${noteSecHTML(it.note||"", it.name, { input:`data-ae-note="${it.id}"`, chip:"data-ae-notechip" })}
     <button class="editsec" data-ae-sechead="cat"><span class="editsec-l">${t("Category")}</span><span class="editsec-v"><span class="edval">${cat?`${catIcon(cat,14)} ${esc(catLabel(cat))}`:'—'} <span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></span></button>
     ${editCatOpen ? `<div class="edchips">${catChips}<button class="catchip" data-ae-addcat="${it.id}" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}
     ${/* v2.70: the flags sit just above the buttons, as in Edit item */""}
@@ -4347,6 +4402,7 @@ function pinAddSheet(){
 }
 function render(){
   queueMicrotask(syncWakeLock);   // v2.16 keep-screen-on follows every change of page and cart
+  prefsSchedule();   // v2.71: every settings change ends in a render — the one central place; it only arms a 4 s timer
   queueMicrotask(()=>{ try{ healStuck(); }catch(e){} });   // v2.29 (a microtask: after the module has finished loading)
   if(_colorPicking) return;
   ensureCats();
@@ -4513,7 +4569,7 @@ function qpanelHTML(i, cat){ const cur=i.weight||"";
   const W=["","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"];
   return `<div class="qpanel" style="border-left:4px solid ${cat.color}">
     <div class="qstep2"><button data-qm-minus="${i.id}" aria-label="Less">−</button><span>${i.qty||1}</span><button data-qm-plus="${i.id}" aria-label="More">+</button></div>
-    <div class="wrowq">${W.map(w=>`<button class="wchipq ${cur===w?'on':''}" data-qm-weight="${i.id}|${w}">${w?(w==="500g"||w==="1kg"?'★'+w:w):'unit'}</button>`).join("")}</div>
+    <div class="wrowq">${W.map(w=>`<button class="wchipq ${cur===w?'on':''}" data-qm-weight="${i.id}|${w}">${w?(w==="500g"||w==="1kg"?'★'+w:w):t('Unit')}</button>`).join("")}</div>
     <button class="qm-edit" data-qm-edit="${i.id}" aria-label="Full edit">⋯</button>
   </div>`; }
 
@@ -4781,7 +4837,7 @@ function renderMain(){
     ${checkedBar}
     <div class="wrap ${shopMode?'shop':''}" role="main">
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
-      ${lockedHTML()}${newerDataHTML()}${shoppingHTML()}${(()=>{ const c=lookCardHTML()+installCardHTML()+cardNudgeHTML()+rcptNudgeHTML(); return c || onbCardHTML(); })()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
+      ${lockedHTML()}${newerDataHTML()}${shoppingHTML()}${(()=>{ const c=(lookCardHTML()||prefsCardHTML())+installCardHTML()+cardNudgeHTML()+rcptNudgeHTML(); return c || onbCardHTML(); })()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
           ${/* v2.56 item 4: a drawn empty basket, and two ways to start — say it, or type it */""}
           <div class="empty-basket">${BASKET_SVG}</div>
           <p class="empty-title">${t("Your list is empty")}</p>
@@ -4918,7 +4974,7 @@ function planQBannerHTML(){
     <div class="qbanner-top"><span class="qbanner-name">${(it.qty||1)>1?it.qty+'× ':''}${cur?esc(cur)+' ':''}${esc(cap(it.name))}</span><span style="display:flex;gap:8px;flex:none"><button class="qbanner-rm" id="qbannerRemove">${t("Remove")}</button><button class="qbanner-close" id="qbannerClose">${t("Done")}</button></span></div>
     <div class="qbanner-row">
       <div class="qstep2"><button data-qm-minus="${it.id}" aria-label="${t("Less")}">−</button><span>${it.qty||1}</span><button data-qm-plus="${it.id}" aria-label="${t("More")}">+</button></div>
-      <div class="wrowq">${W.map(w=>`<button class="wchipq ${cur===w?'on':''}" data-qm-weight="${it.id}|${w}">${w?(w==="500g"||w==="1kg"?'★'+w:w):t('unit')}</button>`).join("")}</div>
+      <div class="wrowq">${W.map(w=>`<button class="wchipq ${cur===w?'on':''}" data-qm-weight="${it.id}|${w}">${w?(w==="500g"||w==="1kg"?'★'+w:w):t('Unit')}</button>`).join("")}</div>
       <button class="qm-edit" data-qm-edit="${it.id}" aria-label="${t("Full edit")}">⋯</button>
     </div>
   </div>`;
@@ -5539,6 +5595,8 @@ function lookCardHTML(){ const L = lookOffer(); if(!L) return "";
 function wireLook(){
   const s = app.querySelector("#optLookSend"); if(s) s.onclick = lookSend;
   const u = app.querySelector("#lookUse"); if(u) u.onclick = () => { const L = lookOffer(); if(!L) return; lookSeenSet(L.at); applyStoredAppearance(L.keys); };   // reloads
+  const pu = app.querySelector("#prefsUse"); if(pu) pu.onclick = () => { const P = _prefsOffer; if(!P) return; prefsSeenSet(P.at); _prefsOffer = null; prefsApply(P.keys); };   // v2.71, reloads
+  const pn = app.querySelector("#prefsNo"); if(pn) pn.onclick = () => { const P = _prefsOffer; prefsSeenSet((P && P.at) || Date.now()); _prefsOffer = null; render(); };
   const n = app.querySelector("#lookNo"); if(n) n.onclick = () => { const L = me && state.looks && state.looks[me]; lookSeenSet((L && +L.at) || Date.now()); render(); };
 }
 /* v2.27 the aisle map editor: one line per aisle, in walking order, as the sign says it. Kept in the list for everyone. */
@@ -7262,8 +7320,8 @@ function smartSheet(){
       const editor = open ? `<div class="smartedit">
           <input class="edtitle" data-smart-name="${idx}" value="${esc(cap(it.name))}" autocomplete="off" autocapitalize="words" aria-label="${t("Item name")}" />
           <div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button data-smart-q="${idx}|-1" aria-label="${t("Less")}">−</button><span>${it.qty||1}</span><button data-smart-q="${idx}|1" aria-label="${t("More")}">+</button></span></div>
-          <button class="editsec" data-smart-wopen="${idx}" aria-expanded="${smartWOpen===idx}"><span class="editsec-l">${t("Measure")}</span><span class="editsec-v"><span class="edval">${it.weight ? esc(it.weight) : t("unit")} <span class="editsec-ch">${smartWOpen===idx?'▾':'▸'}</span></span></span></button>
-          ${smartWOpen===idx ? `<div class="wgrid">${WEIGHTS.map(w=>`<button class="catchip${((it.weight||"")===w)?' on':''}" data-smart-wt="${idx}|${esc(w)}">${w?esc(w):t("unit")}</button>`).join("")}</div>` : ""}
+          <button class="editsec" data-smart-wopen="${idx}" aria-expanded="${smartWOpen===idx}"><span class="editsec-l">${t("Unit")}</span><span class="editsec-v"><span class="edval">${it.weight ? esc(it.weight) : t("Unit")} <span class="editsec-ch">${smartWOpen===idx?'▾':'▸'}</span></span></span></button>
+          ${smartWOpen===idx ? `<div class="wgrid">${WEIGHTS.map(w=>`<button class="catchip${((it.weight||"")===w)?' on':''}" data-smart-wt="${idx}|${esc(w)}">${w?esc(w):t("Unit")}</button>`).join("")}</div>` : ""}
           <button class="editsec" data-smart-copen="${idx}" aria-expanded="${smartCOpen===idx}"><span class="editsec-l">${t("Category")}</span><span class="editsec-v"><span class="edval">${catIcon(c,14)} ${esc(catLabel(c))} <span class="editsec-ch">${smartCOpen===idx?'▾':'▸'}</span></span></span></button>
           ${smartCOpen===idx ? `<div class="edchips">${catList().map(cc=>`<button class="catchip" data-smart-cat="${idx}|${cc.id}" style="${cc.id===it.category?`background:${cc.color};border-color:${cc.color};color:#fff`:''}">${catIcon(cc,13)} ${esc(catLabel(cc))}</button>`).join("")}<button class="catchip" data-smart-addcat="${idx}" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}
         </div>` : "";
@@ -7488,7 +7546,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_jk_)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_jk_)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -8130,11 +8188,12 @@ function editSheet(){
   return `<div class="sheet-bg kbpin" id="sheetBg"><div class="sheet" id="sheet" data-look="edit">
     ${/* v2.63 item D: the title IS the name field; then flags, Quantity, Measure, price, Note, Category, Where to buy (no Subcategory) */""}
     ${/* v2.70: the last price sits in the title row; the flags move down to just above the buttons */""}
+    ${/* v2.71: the Note moves up to right below the title; "Measure" is now "Unit" */""}
     <div class="edtitlerow"><input id="editName" class="edtitle" value="${esc(editing.name)}" aria-label="${t("Item name")}" />${priceLine(editing.name, { compact:true })}</div>
-    <div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button id="qMinus" aria-label="${t("Less")}">−</button><span>${editing.qty||1}</span><button id="qPlus" aria-label="${t("More")}">+</button></span></div>
-    <button class="editsec" data-w-open="edit" aria-expanded="${wOpen==="edit"}"><span class="editsec-l">${t("Measure")}</span><span class="editsec-v"><span class="edval">${esc(editing.weight||t("unit"))} <span class="editsec-ch">${wOpen==="edit"?'▾':'▸'}</span></span></span></button>
-    ${weightChips("edit", editing.weight)}
     ${noteSecHTML(editing.note||"", editing.name, { input:'id="editNote"', chip:"data-en-chip" })}
+    <div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button id="qMinus" aria-label="${t("Less")}">−</button><span>${editing.qty||1}</span><button id="qPlus" aria-label="${t("More")}">+</button></span></div>
+    <button class="editsec" data-w-open="edit" aria-expanded="${wOpen==="edit"}"><span class="editsec-l">${t("Unit")}</span><span class="editsec-v"><span class="edval">${esc(editing.weight||t("Unit"))} <span class="editsec-ch">${wOpen==="edit"?'▾':'▸'}</span></span></span></button>
+    ${weightChips("edit", editing.weight)}
     <button class="editsec" id="ecHead"><span class="editsec-l">${t("Category")}</span><span class="editsec-v"><span class="edval">${selCat?`${catIcon(selCat,14)} ${esc(catLabel(selCat))}`:'—'} <span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></span></button>
     ${editCatOpen ? `<div class="edchips">${chipsHTML(editing.cat)}<button class="catchip" id="ecAddCat" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}
     ${isItem ? (()=>{ const ws=rcSavedStores(), w=editing.where||"", wl=whereIds({ where:w }), cur=whereNames(wl).join(", ");

@@ -124,7 +124,9 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
         folded: ![...sh.querySelectorAll('.catchip')].some(c=>c.offsetParent!==null) }; });   // v2.65: note chips are in the page but hidden until the note has focus
     /* SUPERSEDED by v2.63: Quantity and Measure are rows now, above Note (was: Note first). Still protected: flags first,
        one label size, no capitals, everything folded. */
-    ok('9 · Edit item: flags below the quantity (v2.70); Quantity, Measure, Note, Category… one size, no capitals; everything folded', ed && ed.flagsFirst && ed.labels.slice(0,3).join()==='Quantity,Measure,Note' && ed.sizes.length===1 && !ed.upper && ed.folded, JSON.stringify(ed));
+    /* SUPERSEDED by v2.71: Note first, right under the name, and "Measure" is called "Unit". Still protected: the order of the
+       three rows, one label size, no capitals, everything folded. */
+    ok('9 · Edit item: flags below the quantity (v2.70); Note, Quantity, Unit, Category… (v2.71) one size, no capitals; everything folded', ed && ed.flagsFirst && ed.labels.slice(0,3).join()==='Note,Quantity,Unit' && ed.sizes.length===1 && !ed.upper && ed.folded, JSON.stringify(ed));
     /* SUPERSEDED by v2.65: the note is always a field (no fold); its suggestions show while it has focus. Still protected:
        a field, and this item's suggestions. */
     await page.locator('#sheet #editNote').click(); await page.waitForTimeout(400);
