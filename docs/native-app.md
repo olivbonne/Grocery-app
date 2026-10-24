@@ -38,8 +38,10 @@ could not be checked from where this was written — check them when you get the
 **Today (web).** On an iPhone, a Shortcut opens the list's link ending in `?add=` with the dictated words (the person builds
 it once from Settings › Smart features › Set up Siri). On Android, the manifest's share_target sends `?text=`. Both go through
 `takeOutsideText()` in `js/platform.js`, then `addFromOutside()` in `js/app.js`.
+Since v2.62 there is one link for every list (`?add=` with no list): the list is the one named in the words
+(`pickListFromText` in `js/parse.js`, chosen at boot) or the one used last.
 
-**iPhone app.** An **App Intent** ("Add to Market List", with a text parameter), written in Swift inside the Capacitor iOS
+**iPhone app.** An **App Intent** ("Add to Market List", with a text parameter and an optional list parameter — an AppEnum of the household's lists — instead of guessing the list from the words), written in Swift inside the Capacitor iOS
 project. Siri and the Shortcuts app see it with no setup, and phrases like "Add milk to Market List" work from the lock screen.
 The intent hands the text to the web view — a small Capacitor plugin, or the App plugin's `appUrlOpen` with the universal link
 `https://…/?add=…` (which needs the apple-app-site-association file from step 6) — and platform.js calls the `onOutsideText`
