@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.67";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.67";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.67";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.67";
-import { compareStores, worthIt } from "./compare.js?v=2.67";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.67";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.67";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.67";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.67";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.67";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.67";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.67";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.67";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.67";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.68";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.68";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.68";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.68";
+import { compareStores, worthIt } from "./compare.js?v=2.68";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.68";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.68";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.68";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.68";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.68";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.68";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.68";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.68";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.68";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.67";
+const APP_VERSION = "v2.68";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -589,8 +589,11 @@ const NUMOPT = {
   srchr: { ls:"ml_srchr", vr:"--srchr", def:0,  min:0,   max:40,  step:2, off:0, label:"Corner" },
   /* v2.63 item D: the Edit item pills. erad's `off` is its default, so an untouched install writes nothing and
      the stylesheet's 999px (fully round) stands. */
-  erad:  { ls:"ml_eprad", vr:"--epillrad", def:20, min:0,  max:24,  step:2, off:20, label:"Corner" },
-  egap:  { ls:"ml_epgap", vr:"--epillgap", def:6,  min:0,  max:16,  step:1, label:"Gap" }
+  erad:  { ls:"ml_eprad", vr:"--epillrad", def:20, min:0,  max:28,  step:2, off:20, label:"Corner" },
+  /* v2.68: the gap is two numbers, like the tiles' — Across (column-gap, the same key and var as before) and Down
+     (row-gap of the chip rows and the space between the editor's rows). Both are a LOOK, so an appearance slot carries them. */
+  egap:  { ls:"ml_epgap", vr:"--epillgap", def:6,  min:0,  max:16,  step:1, label:"Across" },
+  egapy: { ls:"ml_epgapy", vr:"--epillgapy", def:6, min:0,  max:24,  step:1, label:"Down" }
 };
 /* v1.55 item 2: two levels of default. NUMOPT[].def is the FACTORY value — what the stylesheet used
    before any of this was settable, and the thing to fall back to when an experiment goes wrong.
@@ -1850,24 +1853,35 @@ function noteSuggest(name){ const nm=String(name||"").trim().toLowerCase(); if(!
   const seen=new Set(), out=[];
   const add=x=>{ const k=x.toLowerCase(); if(!seen.has(k)){ seen.add(k); out.push(x); } };
   const used=[]; [...(state.items||[]), ...(state.buyAgain||[])].forEach(i=>{ if(i && String(i.name||"").trim().toLowerCase()===nm) noteParts(i.note).forEach(x=>used.push(x)); });
-  used.forEach(x=>{ if(out.length<6) add(x); });
+  used.forEach(add);   // v2.68: every part learned from this name's Regulars and items, first
   const stem=Object.keys(NOTE_HINTS).sort((a,b)=>b.length-a.length).find(k=>new RegExp("(^|[^a-z])"+k+"(e?s)?($|[^a-z])").test(nm));
   if(stem) NOTE_HINTS[stem].forEach(add);
-  return out; }
+  return out.slice(0,12); }
 function noteToggle(note, chip){ const ps=noteParts(note), i=ps.findIndex(x=>x.toLowerCase()===chip.toLowerCase());
   if(i>=0) ps.splice(i,1); else ps.push(chip); return ps.join(", ").slice(0,140); }
-/* the Note section, shared by both editors: attr names the data attributes each one wires */
-function noteSecHTML(note, name, a){ const ps=noteParts(note).map(x=>x.toLowerCase());
-  /* v2.65: always a field (no fold); its suggestions show only while it has focus (CSS :focus-within) */
-  const sg=noteSuggest(name);
+/* the Note section, shared by both editors: attr names the data attributes each one wires.
+   v2.68 (the household): the parts of the note that are suggestions show as SELECTED chips, always visible, under the field;
+   the field holds only the rest (free text). The stored note = the selected parts, in order, then the free text. */
+function noteSecHTML(note, name, a){
+  const sg=noteSuggest(name), sgL=sg.map(x=>x.toLowerCase());
+  const parts=noteParts(note), sel=parts.filter(x=>sgL.includes(x.toLowerCase())), selL=sel.map(x=>x.toLowerCase());
+  const free=parts.filter(x=>!sgL.includes(x.toLowerCase())).join(", ");
   const ph = sg.length ? tf("e.g. {x}", { x: sg.slice(0,2).join(", ") }) : t("e.g. organic");
-  return `<div class="ednotewrap"><div class="editsec edrow ednote"><span class="editsec-l">${t("Note")}</span><input ${a.input} class="edval ednotein" value="${esc(note||"")}" maxlength="140" placeholder="${esc(ph)}" aria-label="${t("Note")}"></div>
-      ${sg.length ? `<div class="edchips ednotechips">${sg.map(x=>{ const on=ps.includes(x.toLowerCase());
-        return `<button class="catchip${on?' on':''}" ${a.chip}="${esc(x)}" aria-pressed="${on}">${esc(x)}</button>`; }).join("")}</div>` : ""}</div>`; }
-/* v2.65: a note chip toggles in place — no re-render, so the field keeps focus and the keyboard stays up */
-function noteChipSync(b, note){ const w=b.closest(".ednotewrap"); const inp=w && w.querySelector(".ednotein"); if(inp) inp.value=note||"";
-  const ps=noteParts(note).map(x=>x.toLowerCase());
-  if(w) w.querySelectorAll(".ednotechips .catchip").forEach(c=>{ const k=Object.values(c.dataset)[0]||""; const on=ps.includes(k.toLowerCase()); c.classList.toggle("on", on); c.setAttribute("aria-pressed", String(on)); }); }
+  const chip=(x,on)=>`<button class="catchip${on?' on':''}" ${a.chip}="${esc(x)}" aria-pressed="${on}">${esc(x)}</button>`;
+  return `<div class="ednotewrap"><div class="editsec edrow ednote"><span class="editsec-l">${t("Note")}</span><input ${a.input} class="edval ednotein" value="${esc(free)}" maxlength="140" placeholder="${esc(ph)}" aria-label="${t("Note")}"></div>
+      ${sg.length ? `<div class="edchips ednotesel">${sel.map(x=>chip(x,true)).join("")}</div><div class="edchips ednotechips">${sg.filter(x=>!selL.includes(x.toLowerCase())).map(x=>chip(x,false)).join("")}</div>` : ""}</div>`; }
+/* v2.68: the note as the editor shows it — the selected chips, in order, then the field's free text */
+function noteFromWrap(w){ if(!w) return "";
+  const sel=[...w.querySelectorAll(".ednotesel .catchip")].map(c=>Object.values(c.dataset)[0]||"");
+  const inp=w.querySelector(".ednotein");
+  return [...sel, ...noteParts(inp ? inp.value : "")].join(", ").slice(0,140); }
+/* v2.65: a note chip toggles in place — no re-render, so the field keeps focus and the keyboard stays up.
+   v2.68: it moves between the selected group and the suggestions; returns the new note */
+function noteChipTap(b){ const w=b.closest(".ednotewrap"); if(!w) return "";
+  const on=!b.classList.contains("on"); b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on));
+  const dst=w.querySelector(on ? ".ednotesel" : ".ednotechips");
+  if(dst){ if(on) dst.appendChild(b); else dst.insertBefore(b, dst.firstChild); }
+  return noteFromWrap(w); }
 var editWhereOpen=false, elseOpen=false;   // v2.22 the edit sheet's "Where to buy" section; the Shop page's "For other shops". var: renders read them at boot
 /* v2.22 R17 where to buy it. "Away" is the shop you are at — a real saved store, not Home or an unknown place — and an
    item for ANOTHER shop is not "here". At home nothing is away, so everything is here. */
@@ -2612,8 +2626,16 @@ function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){
    letting the whole-doc write clobber the other person's additions — so items
    checked off on one phone can't silently vanish from another. Cap 250. */
 const BA_CAP = 500;
-function baKey(e){ return (e.name||"").toLowerCase()+"|"+e.cat; }
-function baForget(name,cat){ (state.baTomb||(state.baTomb={}))[(name||"").toLowerCase()+"|"+cat] = Date.now(); }
+/* v2.68 (the household): a Regular is its name, category AND note — "Chili · large, red" and "Chili · small, green" are two.
+   noteKey makes the parts' order and case not matter. A Regular with no note keeps exactly the pre-v2.68 key, so stored
+   tombstones (baTomb) and every Regular already saved stay valid. */
+function noteKey(n){ return String(n||"").toLowerCase().split(",").map(x=>x.trim()).filter(Boolean).sort().join(","); }
+function baKey(e){ const nk=noteKey(e.note); return (e.name||"").toLowerCase()+"|"+e.cat+(nk?"|"+nk:""); }
+function baForget(name,cat,note){ (state.baTomb||(state.baTomb={}))[baKey({name,cat,note})] = Date.now(); }
+function regFind(name,cat,note){ const k=baKey({name,cat,note}); return state.buyAgain.find(x=>baKey(x)===k); }
+function regDrop(name,cat,note){ const k=baKey({name,cat,note}); state.buyAgain=state.buyAgain.filter(x=>baKey(x)!==k); }
+/* an unticked list item that is this Regular: same name, category and note */
+function itemIsReg(i,name,cat,note){ return !i.checked && (i.name||"").toLowerCase()===String(name||"").toLowerCase() && i.cat===cat && noteKey(i.note)===noteKey(note); }
 function baMerge(listA, tombA, listB, tombB){
   const tomb = Object.assign({}, tombA||{});
   for(const k in (tombB||{})) tomb[k] = Math.max(tomb[k]||0, tombB[k]);
@@ -2712,18 +2734,18 @@ function sweep(msg){ const checked=state.items.filter(i=>i.checked); if(!checked
   aiPublish(); rcptNudgeSet(); shoppingClear(); save(); render(); showUndo(prev, msg || (checked.length+" saved to Regulars")); }   // v2.10: msg from autoFinishAt
 /* v1.10 add-sheet variant of restore(): copies the regular onto the list but KEEPS it in
    Buy-again, so the sheet row stays put and flips to ✓ (second tap bumps quantity). */
-function addFromRegular(name,cat){ playPlan(true);
-  const entry = state.buyAgain.find(x=>x.name===name && x.cat===cat) || {name,cat,qty:1};
-  const ex = state.items.find(i=>!i.checked && i.name.toLowerCase()===name.toLowerCase() && i.cat===cat);
+function addFromRegular(name,cat,note){ playPlan(true);
+  const entry = regFind(name,cat,note) || {name,cat,qty:1,note:note||""};
+  const ex = state.items.find(i=>itemIsReg(i,name,cat,note));
   if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",note:entry.note||"",where:entry.where||"",checked:false,by:me}); histLog("add", entry.name); }
   save(); renderKeepingAdd();
 }
-function restore(name,cat){ playPlan(true);
-  const entry = state.buyAgain.find(x=>x.name===name && x.cat===cat) || {name,cat,qty:1};
-  const ex = state.items.find(i=>!i.checked && i.name.toLowerCase()===name.toLowerCase() && i.cat===cat);
+function restore(name,cat,note){ playPlan(true);
+  const entry = regFind(name,cat,note) || {name,cat,qty:1,note:note||""};
+  const ex = state.items.find(i=>itemIsReg(i,name,cat,note));
   if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",note:entry.note||"",where:entry.where||"",checked:false,by:me}); histLog("add", entry.name); }
   histLog("regrm", entry.name);
-  state.buyAgain = state.buyAgain.filter(x=>!(x.name.toLowerCase()===name.toLowerCase() && x.cat===cat));
+  regDrop(name,cat,note);
   save(); render();
 }
 
@@ -2738,11 +2760,11 @@ function applyEdit(){   // v2.65: saveEdit's field updates, without closing (sav
    AND, when it is on the list (an unticked item of the same name and category), on the list too. */
 function regularFrom(e, orig){ const nm=String(e.name||"").trim(); if(!nm) return false;
   state.baTomb = state.baTomb || {};
-  const o=orig||e, oldK=baKey({ name:String(o.name||"").trim(), cat:o.cat }), newK=baKey({ name:nm, cat:e.cat });
+  const o=orig||e, oldK=baKey({ name:String(o.name||"").trim(), cat:o.cat, note:o.note }), newK=baKey({ name:nm, cat:e.cat, note:e.note });   // v2.68: the note is part of the key
   let idx=state.buyAgain.findIndex(x=>baKey(x)===oldK); const byOrig=idx>=0;
   if(idx<0) idx=state.buyAgain.findIndex(x=>baKey(x)===newK);
   const old = idx>=0 ? state.buyAgain[idx] : null;
-  if(byOrig && oldK!==newK) baForget(o.name, o.cat);   // renamed or moved → forget the old key
+  if(byOrig && oldK!==newK) baForget(o.name, o.cat, o.note);   // renamed, moved or re-noted → forget the old key (a Regular already at the new key is merged: the filter below drops it, the newer fields win)
   state.buyAgain = state.buyAgain.filter(x=>x!==old && baKey(x)!==newK);
   delete state.baTomb[newK];
   const ne={ name:nm, cat:e.cat, qty:Math.max(1,e.qty||1), weight:e.weight||"", sub:e.sub||"", note:String(e.note||"").trim().slice(0,140), where:e.where||"", ts:Date.now() };
@@ -2753,13 +2775,12 @@ function regularFrom(e, orig){ const nm=String(e.name||"").trim(); if(!nm) retur
   return true; }
 function saveEverywhere(){ if(!editing) return;
   if(editing.kind==="item"){ if(!(editing.name||"").trim()) return;
-    const it=state.items.find(i=>i.id===editing.id); const orig = it ? { name:it.name, cat:it.cat } : null;   // before applyEdit changes it
+    const it=state.items.find(i=>i.id===editing.id); const orig = it ? { name:it.name, cat:it.cat, note:it.note||"" } : null;   // before applyEdit changes it
     applyEdit();
     regularFrom({ name:editing.name, cat:editing.cat, qty:editing.qty, weight:editing.weight, sub:editing.sub, note:editing.note, where:editing.where }, orig);
     editing=null; save(); render(); showToast(tf("Saved — also in Regulars")); return; }
   const nm=(editing.name||"").trim(); if(!nm) return;
-  const on=(editing.origName||"").toLowerCase(), oc=editing.origCat;
-  const li=state.items.find(i=>!i.checked && (i.name||"").toLowerCase()===on && i.cat===oc);
+  const li=state.items.find(i=>itemIsReg(i, editing.origName, editing.origCat, editing.origNote));   // v2.68: and the same note
   if(li){ if(li.cat!==editing.cat) delete li.pos;
     li.name=nm; li.qty=Math.max(1,editing.qty||1); li.cat=editing.cat; li.weight=editing.weight||"";
     if(editing.note!==undefined) li.note=String(editing.note||"").trim().slice(0,140);
@@ -2769,31 +2790,32 @@ function saveEverywhere(){ if(!editing) return;
 function removeEditing(){ moveToBuyAgain([{name:editing.name,cat:editing.cat,qty:editing.qty||1,weight:editing.weight||"",sub:editing.sub||"",note:editing.note||"",where:editing.where||""}]);
   histLog("rm", editing.name); histLog("regadd", editing.name);
   state.items = state.items.filter(i=>i.id!==editing.id); editing=null; save(); render(); }
-function deleteItemEditing(){ const prev=snapState(); const nm=editing.name; const ct=editing.cat;
+function deleteItemEditing(){ const prev=snapState(); const nm=editing.name; const ct=editing.cat; const _it0=state.items.find(i=>i.id===editing.id); const nt=_it0?(_it0.note||""):(editing.note||"");
   state.items = state.items.filter(i=>i.id!==editing.id);
-  baForget(nm, ct); state.buyAgain = state.buyAgain.filter(x=>!(x.name===nm && x.cat===ct));   // v1.37 item 6: Delete also drops it from Regulars ("Buy again" is the keep-it button)
+  baForget(nm, ct, nt); regDrop(nm, ct, nt);   // v1.37 item 6: Delete also drops it from Regulars ("Buy again" is the keep-it button)
   histLog("del", nm); histLog("regrm", nm);
   editing=null; save(); render(); showUndo(prev, esc(nm)+" deleted"); }
 
 /* buy-again edit */
 function saveBA(){ const nm=(editing.name||"").trim(); if(!nm) return; const cat=editing.cat; const qty=Math.max(1,editing.qty||1);
   state.baTomb = state.baTomb || {};
-  const newK=nm.toLowerCase()+"|"+cat;
-  const _old=state.buyAgain.find(x=>x.name===editing.origName && x.cat===editing.origCat);   // v2.56: keep its pos in the same category
-  state.buyAgain = state.buyAgain.filter(x=>!(x.name===editing.origName && x.cat===editing.origCat));
-  if(((editing.origName||"").toLowerCase()+"|"+editing.origCat)!==newK) baForget(editing.origName, editing.origCat);   // renamed → forget the old key
+  const _old=regFind(editing.origName, editing.origCat, editing.origNote);   // v2.56: keep its pos in the same category
+  const _nt=String(editing.note!==undefined ? editing.note : ((_old && _old.note) || "")).trim().slice(0,140);
+  const newK=baKey({name:nm,cat,note:_nt}), oldK=baKey({name:editing.origName,cat:editing.origCat,note:editing.origNote});   // v2.68: the note is part of the key
+  state.buyAgain = state.buyAgain.filter(x=>x!==_old && baKey(x)!==newK);   // v2.68: a Regular already at the new key is merged into this one (newer fields)
+  if(oldK!==newK) baForget(editing.origName, editing.origCat, editing.origNote);   // renamed or re-noted → forget the old key
   delete state.baTomb[newK];
-  if(!state.buyAgain.some(x=>baKey(x)===newK)){ const ne={name:nm,cat,qty,weight:editing.weight||"",sub:editing.sub||"",ts:Date.now()};
-    { const nt = String(editing.note!==undefined ? editing.note : ((_old && _old.note) || "")).trim().slice(0,140); if(nt) ne.note=nt; }   // v2.57 item 9d: the Note section edits a Regular's note too
+  { const ne={name:nm,cat,qty,weight:editing.weight||"",sub:editing.sub||"",ts:Date.now()};
+    if(_nt) ne.note=_nt;   // v2.57 item 9d: the Note section edits a Regular's note too
     if(_old && _old.where) ne.where=_old.where;   // v2.56: the fixed-shape trap — a re-saved Regular kept neither (v2.22 fields)
     if(_old && _old.cat===cat && typeof _old.pos==="number") ne.pos=_old.pos;
     state.buyAgain.unshift(ne); }
   editing=null; save(); render(); }
-function removeBAfromSheet(){ baForget(editing.origName, editing.origCat);
-  state.buyAgain = state.buyAgain.filter(x=>!(x.name===editing.origName && x.cat===editing.origCat));
+function removeBAfromSheet(){ baForget(editing.origName, editing.origCat, editing.origNote);
+  regDrop(editing.origName, editing.origCat, editing.origNote);
   editing=null; save(); render(); }
 function restoreEditingToList(){ const nm=(editing.name||"").trim()||editing.origName; const cat=editing.cat; const qty=Math.max(1,editing.qty||1);
-  state.buyAgain = state.buyAgain.filter(x=>!(x.name===editing.origName && x.cat===editing.origCat));
+  regDrop(editing.origName, editing.origCat, editing.origNote);
   const ex=state.items.find(i=>!i.checked && i.name.toLowerCase()===nm.toLowerCase() && i.cat===cat);
   if(!ex) state.items.push({id:uid(),name:nm,qty,cat,weight:editing.weight||"",sub:editing.sub||"",checked:false,by:me});
   editing=null; save(); render(); }
@@ -3257,11 +3279,11 @@ function addFrag(){ const v=draftMain||""; const i=Math.max(v.lastIndexOf(","), 
 function addMatches(f){
   const onList=(name,cat)=> state.items.find(i=>!i.checked && i.name.toLowerCase()===String(name).toLowerCase() && (cat==null||i.cat===cat));
   const out=[], seen=new Set();
-  const push=(m)=>{ const k=m.name.toLowerCase()+"|"+m.cat; if(seen.has(k)) return; seen.add(k); out.push(m); };
+  const push=(m)=>{ const k=baKey(m); if(seen.has(k)) return; seen.add(k); out.push(m); };   // v2.68: a Regular's note is part of its key
   predictDue().filter(d=>!f || d.name.toLowerCase().includes(f)).forEach(d=>{ const it=onList(d.name,d.cat);
     push({name:d.name, cat:d.cat, qty:it?(it.qty||1):(d.qty||1), weight:it?(it.weight||""):"", onId:it&&it.id, predKey:it?null:d.key}); });
-  state.buyAgain.filter(e=>!f || e.name.toLowerCase().includes(f)).forEach(e=>{ const it=onList(e.name,e.cat);
-    push({name:e.name, cat:e.cat, qty:it?(it.qty||1):(e.qty||1), weight:it?(it.weight||""):(e.weight||""), onId:it&&it.id, ba:!it}); });
+  state.buyAgain.filter(e=>!f || e.name.toLowerCase().includes(f)).forEach(e=>{ const it=state.items.find(i=>itemIsReg(i,e.name,e.cat,e.note));   // v2.68: and the same note
+    push({name:e.name, cat:e.cat, note:e.note||"", qty:it?(it.qty||1):(e.qty||1), weight:it?(it.weight||""):(e.weight||""), onId:it&&it.id, ba:!it}); });
   for(const c of catList()){ const words=DICT[c.id]; if(!words) continue;
     for(const w of [...new Set(words)]){ if(DICT_HIDE.has(w) || (f && !w.includes(f))) continue; const it=onList(w,c.id);
       push({name:w, cat:c.id, qty:it?(it.qty||1):1, weight:it?(it.weight||""):"", onId:it&&it.id, dict:!it}); } }
@@ -3279,7 +3301,7 @@ function addPillHTML(m){
   const meta=[(m.qty>1?m.qty+"×":""), m.weight].filter(Boolean).join(" ");
   const metaS = meta?`<span class="pill-meta"><span class="qty" style="color:${qtxt}">${esc(meta)}</span></span>`:"";
   const em=itemIcon(m.name,m.cat); const emS=em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
-  const attr = on ? `data-add-inc="${m.onId}"` : (m.predKey?`data-add-pred="${esc(m.predKey)}"` : m.ba?`data-add-ba="${esc(m.name)}|${m.cat}"` : `data-add-dict="${esc(m.name)}|${m.cat}"`);
+  const attr = on ? `data-add-inc="${m.onId}"` : (m.predKey?`data-add-pred="${esc(m.predKey)}"` : m.ba?`data-add-ba="${esc(m.name)}|${m.cat}" data-reg-note="${esc(m.note||"")}"` : `data-add-dict="${esc(m.name)}|${m.cat}"`);
   return `<button class="pill" ${attr} style="${style}">${emS}${esc(cap(m.name))}${metaS}</button>`;
 }
 // v1.34 item 4: nothing typed → nothing shown (no browsing). Typing shows matches as a
@@ -3447,11 +3469,12 @@ function wireAddRows(){
       if(!m || !m.value.trim()){ if(m) m.focus(); showToast("Type or paste a list, then tap Smart add"); return; }
       smartAdd(); }; });
   document.querySelectorAll("[data-add-photo]").forEach(b=>{ b.onclick=()=>smartPhoto(b.dataset.addPhoto==="camera"); });
-  document.querySelectorAll("[data-add-ba]").forEach(b=>{ const p=b.dataset.addBa.split("|"), cat=p.pop(), name=p.join("|");
+  document.querySelectorAll("[data-add-ba]").forEach(b=>{ const p=b.dataset.addBa.split("|"), cat=p.pop(), name=p.join("|"), note=b.dataset.regNote||"";
     /* v2.42 added a Regular picked here without its panel; v2.43 (the household): picked from "+ Add items", its Edit item panel
        opens straight away, as for any other pick. (A tap under "Add from your regulars" still just adds it.) */
-    const go=()=>{ stageAdds(()=>addFromRegular(name,cat)); const it=findItem(name,cat); if(it) openAddEdit(it.id); };
-    press(b, go, ()=>{ stageAdds(()=>addFromRegular(name,cat)); const it=findItem(name,cat); return it&&it.id; }); });
+    const fnd=()=>state.items.find(i=>itemIsReg(i,name,cat,note));   // v2.68: the item of this Regular's note
+    const go=()=>{ stageAdds(()=>addFromRegular(name,cat,note)); const it=fnd(); if(it) openAddEdit(it.id); };
+    press(b, go, ()=>{ stageAdds(()=>addFromRegular(name,cat,note)); const it=fnd(); return it&&it.id; }); });
   document.querySelectorAll("[data-add-dict]").forEach(b=>{ const p=b.dataset.addDict.split("|"), cat=p.pop(), name=p.join("|");
     const go=()=>{ playPlan(true); stageAdds(()=>addEntries(name,cat)); const it=findItem(name,cat); if(it) openAddEdit(it.id); };
     press(b, go, ()=>{ playPlan(true); stageAdds(()=>addEntries(name,cat)); const it=findItem(name,cat); return it&&it.id; }); });
@@ -3570,9 +3593,9 @@ function wireAddEdit(){
     b.onclick=()=>{ if(b.dataset.aeSechead==='cat') editCatOpen=!editCatOpen; refreshAddBody(); }; });
   /* v2.57 item 9d: the Note section — its header, the field (saved as typed, like the name) and the suggestion chips */
   document.querySelectorAll("[data-ae-note]").forEach(inp=>{
-    inp.oninput=()=>{ const it=state.items.find(i=>i.id===inp.dataset.aeNote); if(it){ it.note=String(inp.value||"").slice(0,140); touch(it); } };
+    inp.oninput=()=>{ const it=state.items.find(i=>i.id===inp.dataset.aeNote); if(it){ it.note=noteFromWrap(inp.closest(".ednotewrap")); touch(it); } };   // v2.68: selected chips + the free text
     inp.onblur=()=>{ if(inp.isConnected) refreshAddBody(); }; });
-  document.querySelectorAll("[data-ae-notechip]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=cur(); if(it){ it.note=noteToggle(it.note, b.dataset.aeNotechip); touch(it); noteChipSync(b, it.note); } }; });
+  document.querySelectorAll("[data-ae-notechip]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=cur(); if(it){ it.note=noteChipTap(b); touch(it); } }; });
   document.querySelectorAll("[data-ae-cat]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const [id,cid]=b.dataset.aeCat.split("|"); const it=state.items.find(i=>i.id===id); if(it){ it.cat=cid; it.sub=null; touch(it); refreshAddBody(); } }; });
   document.querySelectorAll("[data-ae-sub]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const p=b.dataset.aeSub.split("|"), id=p[0], sub=p[1]||null; const it=state.items.find(i=>i.id===id); if(it){ it.sub=sub; touch(it); refreshAddBody(); } }; });
   /* v1.47: prompt() blurs the page and focus never comes back on its own, so the keyboard stayed
@@ -3581,7 +3604,7 @@ function wireAddEdit(){
   document.querySelectorAll("[data-ae-addcat]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.aeAddcat); if(!it) return; const nm=prompt(t("New category name:"),""); if(nm&&nm.trim()){ const cid=makeCategory(nm); if(cid){ it.cat=cid; it.sub=null; touch(it); refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); } } }; });
   document.querySelectorAll("[data-ae-addsub]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.aeAddsub); if(!it) return; const nm=prompt(t("New subcategory name:"),""); if(nm&&nm.trim()){ const sid=makeSub(it.cat,nm); if(sid){ it.sub=sid; touch(it); refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); } } }; });
   document.querySelectorAll("[data-ae-remove]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const id=b.dataset.aeRemove; const it=state.items.find(i=>i.id===id);
-    if(it){ baForget(it.name, it.cat); state.buyAgain=state.buyAgain.filter(x=>!(x.name===it.name && x.cat===it.cat)); }   // v1.37 item 6
+    if(it){ baForget(it.name, it.cat, it.note); regDrop(it.name, it.cat, it.note); }   // v1.37 item 6 · v2.68: only the Regular of its note
     state.items=state.items.filter(i=>i.id!==id); addEditId=null; save(); refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }; });
   // v1.36 item 2: Done finishes the whole add flow and returns to the shop page — it no longer
   // just dismisses the panel back to another search view that needs a second Done.
@@ -3980,7 +4003,7 @@ function tileDragEnd(d, commit){
 function regDragStart(b, e){ return tileDragStart(b, e, b.closest(".pills"), "[data-regk]", els=>{
   const now=Date.now();
   els.forEach((el,i)=>{ const p=el.dataset.regk.split("|"), cat=p.pop(), name=p.join("|");
-    const en=state.buyAgain.find(x=>x.name===name && x.cat===cat);
+    const en=regFind(name, cat, el.dataset.regNote||"");   // v2.68: the note is part of a Regular's key
     if(en && en.pos!==i){ en.pos=i; en.ts=now; } });
   save(); render(); }); }
 const regDragMove = tileDragMove;
@@ -4464,12 +4487,16 @@ function regPill(entry, cat, it){
   const meta = `${q>1?`<span class="qty" style="color:${qtxt}">${q}×</span>`:""}${w?`<span class="qty" style="color:${qtxt}">${esc(w)}</span>`:""}`;
   const metaS = meta?`<span class="pill-meta">${meta}</span>`:"";
   const name = `<span class="pname">${esc(cap(tileName(entry.name)))}</span>`;   // v2.10: own span so it can be clamped and measured
+  /* v2.68: a Regular is its name, category AND note — the tile shows its note, as a list item does, and carries it */
+  const nl = noteLine(selected ? it : entry);
+  const noteS = nl ? `<span class="pnote">${esc(nl)}</span>` : "";
+  const nAttr = ` data-reg-note="${esc(entry.note||"")}"`;
   if(selected){
     /* v1.57 item 1: only the category-driven parts stay inline. Fill, line and text now come from
        CSS so that one rule owns all four sides of the border — see .pill.reg-in / .pill.reg-out. */
     const style = full ? fullStyle(cat.color, true)
       : (fillMode()==="empty" ? "" : `border-left:4px solid ${catEdge(cat.color, true)}`);
-    return `<button class="pill reg-in" data-reg-rm="${it.id}" data-regk="${esc(entry.name)}|${esc(entry.cat)}" style="${style}">${emS}${name}${metaS}</button>`;
+    return `<button class="pill reg-in" data-reg-rm="${it.id}" data-regk="${esc(entry.name)}|${esc(entry.cat)}"${nAttr} style="${style}">${emS}${name}${metaS}${noteS}</button>`;
   }
   /* v1.57 item 1: the unselected regular used to hard-code its own border, background and text
      inline. The Empty-mode rule repaints border-left-color with !important, which beat the inline
@@ -4478,7 +4505,7 @@ function regPill(entry, cat, it){
   const outStyle = fillMode()==="full" ? fullStyle(cat.color, false)
     : fillMode()==="empty" ? ""
     : `border-left:4px solid ${catEdge(cat.color, false)}`;
-  return `<button class="pill reg-out" data-reg-add="${esc(entry.name)}|${cat.id}" data-regk="${esc(entry.name)}|${esc(entry.cat)}" style="${outStyle}">${emS}${name}${metaS}</button>`;
+  return `<button class="pill reg-out" data-reg-add="${esc(entry.name)}|${cat.id}" data-regk="${esc(entry.name)}|${esc(entry.cat)}"${nAttr} style="${outStyle}">${emS}${name}${metaS}${noteS}</button>`;
 }
 /* v2.56 item 5: Regulars a person has dragged into order carry a numeric `pos` and come first, in that order; the rest
    stay A–Z after them — so nothing moves until someone reorders a category. */
@@ -4495,7 +4522,7 @@ function planningSection(){
     const addT = `<button class="pill baadd" data-ba-new="${esc(cat.id)}" style="border:1.5px dashed ${cat.color};color:${cat.color}" aria-label="${esc(tf("Add a Regular to {x}", { x:catLabel(cat) }))}"><span class="baplus" aria-hidden="true">+</span></button>`;
     const ccol = !(collapse.regOpen||[]).includes(cat.id);   // v1.24 per-category collapse — collapsed unless the user opened it
     const pills = ccol ? "" : `<div class="pills" style="margin-top:6px">${regs.map(e=>{
-      const it = state.items.find(i=>!i.checked && i.name.toLowerCase()===e.name.toLowerCase() && catShown(i.cat)===cat.id);   // show selected ones too
+      const it = state.items.find(i=>!i.checked && i.name.toLowerCase()===e.name.toLowerCase() && catShown(i.cat)===cat.id && noteKey(i.note)===noteKey(e.note));   // show selected ones too · v2.68: of the same note
       return regPill(e,cat,it); }).join("")}${addT}</div>`;
     return `<div class="regcat"><button class="regcatlbl" data-regc="${cat.id}"><span>${esc(catLabel(cat))}</span><span class="regcnum">${regs.length}${ccol?' ▸':' ▾'}</span></button>${pills}</div>`;
   }).filter(Boolean).join("");
@@ -4608,9 +4635,7 @@ function renderMain(){
   if(disp==="cat"){ bodyBlocks = buildCatBlocks(!subOn); }                              // v1.23 Subcategory toggle controls sub-grouping
   else if(sm==="ai"){ ensureLocCheck(); const unchecked=state.items.filter(i=>!i.checked && listHere(i)).slice().sort(byAI);   // AI = accepted per-store check order
     // A25 item-level order, frozen at trip start (aiResetTrip) — learns per item, applies next trip, never reshuffles mid-shop
-    const seenItems = Object.keys(aiItemsApplied[aiStoreKey()]||{}).length;
-    const note = `<div class="aihint">✨ AI order · ${seenItems?`following your learned item route · frozen for this trip`:`sorted by category — learns your route each time you finish a shop`}</div>`;
-    bodyBlocks = [ `<section class="cat">${note}${ unchecked.length ? pillsMixed(urgentFirst(unchecked)) : "" }</section>` ]; }
+    bodyBlocks = [ `<section class="cat">${ unchecked.length ? pillsMixed(urgentFirst(unchecked)) : "" }</section>` ]; }
   else if(sm==="location"){ ensureLocCheck(); const useStore=locActive(); const cmp=useStore?byAisle:bySortKey;
     let unchecked=state.items.filter(i=>!i.checked && listHere(i)); const n0=unchecked.length;
     if(useStore) unchecked=unchecked.filter(storeShows);
@@ -4824,7 +4849,7 @@ function planQBannerHTML(){
     </div>
   </div>`;
 }
-function planOutlineChip(e, cat){ return `<button class="pill plan-out ba-restore" data-restore="${esc(e.name)}|${e.cat}" style="background:transparent;border:1.5px dashed ${cat.color}">${(e.qty||1)>1?`<span class="qty" style="color:${cat.color}">${e.qty}×</span>`:""}${e.weight?`<span class="qty" style="color:${cat.color}">${esc(e.weight)} </span>`:""}${esc(cap(e.name))}<span class="qmore" style="visibility:hidden" aria-hidden="true">▾</span></button>`; }
+function planOutlineChip(e, cat){ return `<button class="pill plan-out ba-restore" data-restore="${esc(e.name)}|${e.cat}" data-reg-note="${esc(e.note||"")}" style="background:transparent;border:1.5px dashed ${cat.color}">${(e.qty||1)>1?`<span class="qty" style="color:${cat.color}">${e.qty}×</span>`:""}${e.weight?`<span class="qty" style="color:${cat.color}">${esc(e.weight)} </span>`:""}${esc(cap(e.name))}<span class="qmore" style="visibility:hidden" aria-hidden="true">▾</span></button>`; }
 /* v1.11 done-shopping dialog: one step to finish the trip and bank the bought items */
 function finishSheet(){ const n=state.items.filter(i=>i.checked).length;
   return `<div class="sheet-bg" id="finishBg"><div class="sheet" id="finishSheetEl">
@@ -5480,6 +5505,11 @@ function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRe
   return `<div class="smbg" id="smBg"><div class="smenu" id="shopMenuEl" role="menu" aria-label="${t("More")}">
     <div class="smtiles"><span class="smtlabel">${t("Tiles")}</span><div class="smcols">${[1,2,3,4,5,6].map(n=>`<button class="colbtn ${largeCols()===n?'on':''}" data-sm-cols="${n}">${n}</button>`).join("")}<button class="colbtn ${largeCols()===0?'on':''}" data-sm-cols="0" aria-label="${t("Variable width — tiles size to the word")}">↔</button></div></div>
     ${/* v2.63 item C: Text size, as in Settings — the menu stays open */""}<div class="smtiles smzoom"><span class="smtlabel">${t("Text size")}</span><div class="smcols"><button class="colbtn" data-sm-zoom="-1" aria-label="${t("Smaller text")}">−</button><span class="smzpct">${Math.round(dens()*100)}%</span><button class="colbtn" data-sm-zoom="1" aria-label="${t("Larger text")}">+</button></div></div>
+    ${/* v2.68 (the household): Theme, Group by category and Sort, as in Settings — the menu stays open */""}<div class="smtiles smtext"><span class="smtlabel">${t("Theme")}</span><div class="smcols"><button class="colbtn ${theme==='light'?'on':''}" data-sm-theme="light">${t("Light")}</button><button class="colbtn ${theme==='dark'?'on':''}" data-sm-theme="dark">${t("Dark")}</button></div></div>
+    <div class="smtiles smtext"><span class="smtlabel">${t("Group by category")}</span><div class="smcols"><button class="colbtn ${catOn?'on':''}" data-sm-caton="1">${t("On")}</button><button class="colbtn ${!catOn?'on':''}" data-sm-caton="0">${t("Off")}</button></div></div>
+    ${(()=>{ const cs=(displayFor()==="cat" && (sortModeFor()==="location"||sortModeFor()==="ai")) ? "cat" : sortModeFor();   // as Settings reads it
+      const sb=(v,l)=>`<button class="colbtn ${cs===v?'on':''}" data-sm-sort="${v}">${l}</button>`;
+      return `<div class="smtiles smtext"><span class="smtlabel">${t("Sort")}</span><div class="smcols">${(displayFor()==="flat" && shopMode && aiSortOK())?sb("ai",t("✨ AI")):""}${displayFor()==="flat"?sb("location",t("Location")):""}${sb("cat",t("Category"))}${sb("alpha",t("A–Z"))}</div></div>`; })()}
     <div class="smsep"></div>
     ${item("smCard", CARD_SVG(18), cardsGet().length ? t("Show my card") : t("Add a membership card"))}
     ${item("smRcpt", CAMERA_SVG(18), t("Read a receipt"))}
@@ -5531,6 +5561,10 @@ function wireShopMenu(){
   on("smReport", () => { rpt = { kind:"broken", text:"", diag:true }; render(); });
   app.querySelectorAll("[data-sm-cols]").forEach(c => c.onclick = () => setLargeCols(+c.dataset.smCols));   // v2.58: the menu stays open, re-drawn with the new choice
   app.querySelectorAll("[data-sm-zoom]").forEach(c => c.onclick = () => setDensity(dens() + 0.1 * (+c.dataset.smZoom)));   // v2.63: as #optZoomMinus/#optZoomPlus; setDensity re-renders, the menu stays open
+  /* v2.68: each re-renders with the menu still open (shopMenuOpen is left true) */
+  app.querySelectorAll("[data-sm-theme]").forEach(c => c.onclick = () => { if(theme !== c.dataset.smTheme) setTheme(c.dataset.smTheme); });
+  app.querySelectorAll("[data-sm-caton]").forEach(c => c.onclick = () => setCatOn(c.dataset.smCaton === "1"));
+  app.querySelectorAll("[data-sm-sort]").forEach(c => c.onclick = () => setSort(c.dataset.smSort));
 }
 /* v2.28 map a shop by photographing its signs: "Read a sign" takes a photo, /api/aisle reads the aisle's number and what
    the sign lists, and the line joins the end of the box — walk the shop once, a photo per sign. The wait shows its step
@@ -6568,19 +6602,19 @@ function renderPlanPage(){
 }
 function planRemove(id){ const it=state.items.find(i=>i.id===id); if(!it) return; playPlan(false);
   state.baTomb = state.baTomb || {};
-  if(!state.buyAgain.some(b=>b.name.toLowerCase()===it.name.toLowerCase() && b.cat===it.cat)){
+  if(!state.buyAgain.some(b=>baKey(b)===baKey(it))){   // v2.68: the note is part of a Regular's key
     delete state.baTomb[baKey(it)];
-    state.buyAgain.push({name:it.name,cat:it.cat,qty:it.qty||1,weight:it.weight||"",sub:it.sub||"",ts:Date.now()}); histLog("regadd", it.name); }
+    state.buyAgain.push({name:it.name,cat:it.cat,qty:it.qty||1,weight:it.weight||"",sub:it.sub||"",note:it.note||"",where:it.where||"",ts:Date.now()}); histLog("regadd", it.name); }
   histLog("rm", it.name);
   state.items = state.items.filter(i=>i.id!==id); save(); render(); }
 function wirePlanPage(){
   wireAddSheet();
-  app.querySelectorAll(".ba-restore").forEach(b=>{ const _p=b.dataset.restore.split("|"), cat=_p.pop(), name=_p.join("|");
+  app.querySelectorAll(".ba-restore").forEach(b=>{ const _p=b.dataset.restore.split("|"), cat=_p.pop(), name=_p.join("|"), note=b.dataset.regNote||"";
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
     b.onpointerup=()=>{ pressCancel();
-      if(longFired){ const en=state.buyAgain.find(x=>x.name===name && x.cat===cat); editing={kind:"ba", name, cat, qty:(en?en.qty||1:1), weight:(en?en.weight||"":""), sub:(en?en.sub||"":""), note:(en?en.note||"":""), origName:name, origCat:cat}; render(); }
-      else { restore(name,cat); } }; });
+      if(longFired){ const en=regFind(name,cat,note); editing={kind:"ba", name, cat, qty:(en?en.qty||1:1), weight:(en?en.weight||"":""), sub:(en?en.sub||"":""), note:(en?en.note||"":note), origName:name, origCat:cat, origNote:(en?en.note||"":note)}; render(); }
+      else { restore(name,cat,note); } }; });
   app.querySelectorAll(".plan-in").forEach(b=>{ const id=b.dataset.planRm;
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
@@ -7747,7 +7781,7 @@ function optionsBody(){
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Roundness")}</span><div class="optwide">
       <div class="numgrid">${numCell("erad")}</div></div></div>
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Gap")}</span><div class="optwide">
-      <div class="numgrid">${numCell("egap")}</div></div></div>
+      <div class="numgrid">${numCell("egap")}${numCell("egapy")}</div></div></div>
     ${sect("Shopping")}${/* v2.30: was "Sort" — the store, its order, its aisle map, and the sound and screen while you shop (Sound folded in) */""}
     ${rowNL(t("Location"), `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">${t("On")}</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">${t("Off")}</button></div>`)}
     <div class="optrow optrow-wide optnl"><span class="optlabel">${t("Store")}</span><div class="optwide">
@@ -8130,12 +8164,12 @@ function wire(){
       else { toggleBA(); } }; }
 
   /* buy-again: tap = restore, hold = edit (remove lives inside the edit popup) */
-  app.querySelectorAll(".ba-restore").forEach(b=>{ const _p=b.dataset.restore.split("|"), cat=_p.pop(), name=_p.join("|");
+  app.querySelectorAll(".ba-restore").forEach(b=>{ const _p=b.dataset.restore.split("|"), cat=_p.pop(), name=_p.join("|"), note=b.dataset.regNote||"";
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
     b.onpointerup=()=>{ pressCancel();
-      if(longFired){ const en=state.buyAgain.find(x=>x.name===name && x.cat===cat); editing={kind:"ba", name, cat, qty:(en?en.qty||1:1), weight:(en?en.weight||"":""), sub:(en?en.sub||"":""), note:(en?en.note||"":""), origName:name, origCat:cat}; render(); }
-      else { restore(name,cat); } }; });
+      if(longFired){ const en=regFind(name,cat,note); editing={kind:"ba", name, cat, qty:(en?en.qty||1:1), weight:(en?en.weight||"":""), sub:(en?en.sub||"":""), note:(en?en.note||"":note), origName:name, origCat:cat, origNote:(en?en.note||"":note)}; render(); }
+      else { restore(name,cat,note); } }; });
   const cba=app.querySelector("#clearBA"); if(cba) cba.onclick=()=>{ const prev=snapState(); const now=Date.now(); state.baTomb=state.baTomb||{}; state.buyAgain.forEach(e=>{ state.baTomb[baKey(e)]=now; }); state.buyAgain=[]; save(); render(); showUndo(prev,"Buy-again cleared"); };
 
   const dsh=app.querySelector("#doneShop"); if(dsh) dsh.onclick=()=>{ if(state.items.some(i=>i.checked)){ finishOpen=true; render(); } else gotoPage(1); };
@@ -8187,13 +8221,13 @@ function wire(){
     b.onpointerup=()=>{ pressCancel(); down=null;
       if(drag){ const d=drag; drag=null; regDragEnd(d,true); return; }
       if(longFired){ const id=longIdFn&&longIdFn(); if(id) editItemById(id); return; } shortFn(); }; };
-  app.querySelectorAll("[data-reg-add]").forEach(b=>{ const p=b.dataset.regAdd.split("|"), cat=p.pop(), name=p.join("|");
+  app.querySelectorAll("[data-reg-add]").forEach(b=>{ const p=b.dataset.regAdd.split("|"), cat=p.pop(), name=p.join("|"), note=b.dataset.regNote||"";   // v2.68: the note rides in data-reg-note
     /* v2.36 opened the add sheet and its Edit item panel on a tap here. v2.42 (the household): no need — a Regular already has
        its amount and details, so a tap adds it, as before v2.36; a long-press still opens its details */
     /* v2.65 (the household): a long-press opens the Regular's own editor WITHOUT putting it on the list — its Save keeps it a
        Regular only, as long as it is not on the list (v2.42 added it first, then edited the list item) */
-    regPress(b, ()=>{ addFromRegular(name,cat); }, ()=>{ const en=state.buyAgain.find(x=>x.name===name && x.cat===cat)||{};
-      quickEdit=null; editing={kind:"ba", name, cat, qty:en.qty||1, weight:en.weight||"", sub:en.sub||"", note:en.note||"", where:en.where||"", origName:name, origCat:cat}; render(); return null; }); });
+    regPress(b, ()=>{ addFromRegular(name,cat,note); }, ()=>{ const en=regFind(name,cat,note)||{};
+      quickEdit=null; editing={kind:"ba", name, cat, qty:en.qty||1, weight:en.weight||"", sub:en.sub||"", note:en.note||"", where:en.where||"", origName:name, origCat:cat, origNote:en.note||""}; render(); return null; }); });
   app.querySelectorAll("[data-reg-rm]").forEach(b=>{ const id=b.dataset.regRm;
     regPress(b, ()=>removeFromList(id), ()=>id); });
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; listsOpen=false; render(); };
@@ -8278,8 +8312,8 @@ function wireEditSheet(){
       /* v2.35: shops toggle on and off — several can be ticked; Anywhere clears them */
       app.querySelectorAll("[data-ew]").forEach(b=>b.onclick=()=>{ const id=b.dataset.ew; if(!id){ editing.where=""; render(); return; }
         const s=new Set(whereIds(editing)); if(s.has(id)) s.delete(id); else s.add(id); editing.where=[...s].join(","); render(); });
-      const enote=app.querySelector("#editNote"); if(enote) enote.oninput=e=>{ editing.note=e.target.value; };   // v2.22 R16
-      app.querySelectorAll("[data-en-chip]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ editing.note=noteToggle(editing.note, b.dataset.enChip); noteChipSync(b, editing.note); }; });   // v2.65: no re-render — the field keeps focus
+      const enote=app.querySelector("#editNote"); if(enote) enote.oninput=e=>{ editing.note=noteFromWrap(e.target.closest(".ednotewrap")); };   // v2.22 R16 · v2.68: selected chips + the free text
+      app.querySelectorAll("[data-en-chip]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ editing.note=noteChipTap(b); }; });   // v2.65: no re-render — the field keeps focus
       const eac=app.querySelector("#ecAddCat"); if(eac) eac.onclick=()=>{ const nm=prompt(t("New category name:"),""); if(nm&&nm.trim()){ const id=makeCategory(nm); if(id){ editing.cat=id; editing.sub=null; render(); } } };
       const eas=app.querySelector("#esAddSub"); if(eas) eas.onclick=()=>{ if(!editing.cat){ showToast("Pick a category first"); return; } const nm=prompt(t("New subcategory name:"),""); if(nm&&nm.trim()){ const id=makeSub(editing.cat,nm); if(id){ editing.sub=id; render(); } } };
       const del=app.querySelector("#delBtn"); if(del) del.onclick=()=> editing.kind==="item" ? deleteItemEditing() : removeBAfromSheet();
