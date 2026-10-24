@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.59";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.59";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.59";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.59";
-import { compareStores, worthIt } from "./compare.js?v=2.59";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.59";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.59";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.59";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.59";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.59";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.59";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines } from "./parse.js?v=2.59";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.59";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.59";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.60";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.60";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.60";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.60";
+import { compareStores, worthIt } from "./compare.js?v=2.60";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.60";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.60";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.60";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.60";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.60";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.60";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines } from "./parse.js?v=2.60";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.60";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.60";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.59";
+const APP_VERSION = "v2.60";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -79,7 +79,7 @@ function showAmt(w){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_jk_)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_jk_)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -2846,7 +2846,7 @@ function removeSub(catId, subId){ const c=catList().find(x=>x.id===catId); if(!c
 function join(name){ const c=name.trim(); if(!c) return;
   if(!state.members.includes(c)){ if(state.members.length>=4) return; state.members.push(c); }
   if(!localStorage.getItem(LS.me)) onbSet(o=>{ o.fresh=1; });   // v2.48 a phone giving its name for the first time is new: moments 1 and 2 are for it
-  me=c; localStorage.setItem(LS.me,c); view="detail"; shopMode=false; save(); render(); }   // first stop after joining: the list (planning) page
+  me=c; localStorage.setItem(LS.me,c); view="detail"; shopMode=false; save(); render(); takePendingOutside(); }   // first stop after joining: the list (planning) page
 function toggleCat(id){ collapse.cats = collapse.cats.includes(id) ? collapse.cats.filter(x=>x!==id) : [...collapse.cats,id];
   localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }
 function toggleBA(){ collapse.ba=!collapse.ba; localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); }
@@ -4618,7 +4618,7 @@ function renderMain(){
   ${fabMoveOpen?fabMoveSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
-  ${voiceOpen?voiceSheet():""}${micHelpOpen?micHelpHTML():""}${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${voiceOpen?voiceSheet():""}${micHelpOpen?micHelpHTML():""}${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}
   ${editing?editSheet():(_editFoldKey="")}
   ${toast?`<div class="toast" id="toast"><span>${esc(t(toast))}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(t(toastAction.label))}</button>`:""}</div>`:""}`;
 }
@@ -4957,7 +4957,7 @@ function renderPlanTab(){
   ${planWeekOpen?planWeekSheet():""}
   ${planAdd?planAddSheet():""}
   ${planPick?planPickSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}
   ${listsOpen?listsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
@@ -6473,7 +6473,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>${t("Add items…")}</span></button></div>`:""}
-  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}
   ${editing?editSheet():(_editFoldKey="")}
   ${toast?`<div class="toast" id="toast"><span>${esc(t(toast))}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(t(toastAction.label))}</button>`:""}</div>`:""}`;
 }
@@ -6851,6 +6851,7 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-wallpos]").forEach(b=>b.onclick=()=>{ if(wallPos!==b.dataset.optWallpos) setWallPos(b.dataset.optWallpos); });
   app.querySelectorAll("[data-opt-caton]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optCaton==="1"; if(catOn!==v) setCatOn(v); });
   app.querySelectorAll("[data-opt-subon]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optSubon==="1"; if(subOn!==v) setSubOn(v); });
+  wireSiri();   // v2.60
   app.querySelectorAll("[data-opt-smart]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optSmart==="1"; if(smartOn()!==want) setSmart(want); });
   app.querySelectorAll("[data-opt-units]").forEach(b=>b.onclick=()=>setUnitsMode(b.dataset.optUnits));
   app.querySelectorAll("[data-opt-mealslots]").forEach(b=>b.onclick=()=>setMealSlots(b.dataset.optMealslots==="1"));
@@ -7287,7 +7288,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_jk_)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_jk_)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -7674,7 +7675,7 @@ function optionsBody(){
     ${row(t("First-time questions"), `<button class="storechip" id="optOnbReset">${t("Ask again")}</button>`)}<div class="opthint">${t("Your shops, pinning a shop, the aisle map and the how-it-works tip each ask once. This brings back any you answered with Skip or Never.")}</div>
     ${row(t("Keep screen on"), `<div class="seg"><button data-opt-wake="1" class="${wakePref()?'on':''}">${t("On")}</button><button data-opt-wake="0" class="${!wakePref()?'on':''}">${t("Off")}</button></div>`)}
     <div class="opthint">${t("While the cart has something in it, so the phone does not dim and lock mid-aisle.")}</div>
-    ${(view!=="lists") ? `${sect("Smart features")}${/* v2.30: Smart add, restock suggestions, receipts and prices, memberships — the AI-assisted things, in one place */""}${row(t("Smart add"), `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">${t("On")}</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">${t("Off")}</button></div>`)}<div class="opthint">${t("The ✨ button in the add bar. Type or paste a whole list or a recipe — “2 kg chicken, milk and eggs for pancakes” — and it becomes separate items with amounts and categories. What you type is sent to the AI reader; nothing else. Recipes on the Plan page have their own reader and work either way.")}</div>` : ""}
+    ${(view!=="lists") ? `${sect("Smart features")}${/* v2.30: Smart add, restock suggestions, receipts and prices, memberships — the AI-assisted things, in one place */""}${row(t("Smart add"), `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">${t("On")}</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">${t("Off")}</button></div>`)}<div class="opthint">${t("The ✨ button in the add bar. Type or paste a whole list or a recipe — “2 kg chicken, milk and eggs for pancakes” — and it becomes separate items with amounts and categories. What you type is sent to the AI reader; nothing else. Recipes on the Plan page have their own reader and work either way.")}</div>${row(t("Siri & Shortcuts"), `<button class="storechip" id="optSiri">${t("Set up Siri")}</button>`)}<div class="opthint">${t("Add to this list by voice from anywhere, with an iPhone Shortcut. On Android, share any text to Market List.")}</div>` : ""}
     ${(view!=="lists") ? `<div class="optsub">${t("Restock suggestions")}</div>${rowNL(t("Suggest restocks"), `<div class="seg"><button data-pred-on="1" class="${predictCfg.on?'on':''}">${t("On")}</button><button data-pred-on="0" class="${!predictCfg.on?'on':''}">${t("Off")}</button></div>`)}
     ${predictCfg.on ? `${rowNL(t("Remind me"), `<div class="seg"><button data-pred-freq="weekly" class="${predictCfg.freq==='weekly'?'on':''}">${t("Weekly")}</button><button data-pred-freq="monthly" class="${predictCfg.freq==='monthly'?'on':''}">${t("Monthly")}</button></div>`)}
     ${predictCfg.freq==='weekly' ? `<div class="optrow optrow-wide optnl"><span class="optlabel">${t("Day")}</span><div class="optwide">
@@ -7794,7 +7795,7 @@ function renderSettingsPage(){
     ${bottomNav({planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
     ${diagOpen?diagSheet():""}
     ${listsOpen?listsSheet():""}
-    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}
     ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
     ${editing?editSheet():(_editFoldKey="")}
@@ -8273,6 +8274,56 @@ function transitionTo(idx){
   const fin=()=>{ _pageAnim=false; if(nw.isConnected) nw.style.willChange=""; };
   a.onfinish=fin; a.oncancel=fin; setTimeout(fin, ms+130);          // safety net if WAAPI events don't fire
 }
+/* v2.60: the one door for items arriving from outside the app — Siri through an iPhone Shortcut (?add=), Android's share
+   sheet (?text=), and later the store apps' App Intents / Assistant / share intents (platform.js onOutsideText). Only
+   platform.js knows how the text arrives. A text seen in the last 2 minutes is ignored (Siri sometimes opens a link twice);
+   with no name yet it waits in sessionStorage until join() sets one. ml_lastoutside and ml_siriSmart are in BOTH exclusions. */
+function siriSmartOn(){ try{ return localStorage.getItem("ml_siriSmart")==="1"; }catch(e){ return false; } }
+function setSiriSmart(on){ try{ localStorage.setItem("ml_siriSmart", on?"1":"0"); }catch(e){} render(); }
+function addFromOutside(text, source){
+  text = String(text||"").trim().slice(0, 1000); if(!text) return;
+  if(!me){ try{ sessionStorage.setItem("ml_pendingoutside", JSON.stringify({ text, source })); }catch(e){} return; }
+  const h = text.toLowerCase();
+  try{ const last = JSON.parse(localStorage.getItem("ml_lastoutside")||"null");
+    if(last && last.h===h && Date.now()-(+last.t||0) < 120000) return;
+    localStorage.setItem("ml_lastoutside", JSON.stringify({ h, t:Date.now() })); }catch(e){}
+  if(source==="shortcut") text = text.replace(/\s+(and|et|then|puis)\s+/gi, ", ");
+  if(siriSmartOn() && smartOn()){ smartAddText(text); return; }
+  const before = addStaged.slice(); addStaged = [];
+  stageAdds(()=>addEntries(text, null));
+  const ids = addStaged.slice(); addStaged = before;
+  const n = ids.length; if(!n){ render(); return; }
+  toast = source==="shortcut" ? tf("Added {n} from Siri", { n }) : tf("Added {n} from a share", { n });
+  toastAction = { label:"Undo", fn:()=>{ const drop=new Set(ids); state.items = state.items.filter(i=>!drop.has(i.id)); toast=null; toastAction=null; clearTimeout(_toastT); save(); render(); } };
+  render(); clearTimeout(_toastT); _toastT=setTimeout(()=>{ toast=null; toastAction=null; render(); }, 5000);
+}
+var siriOpen=false;   // v2.60 the "Add with Siri" sheet. var: render reads it at boot
+function siriLink(){ let k=""; try{ k=localStorage.getItem("ml_jk_"+listCode)||""; }catch(e){}
+  return location.origin+"/?list="+encodeURIComponent(listCode)+(k?("&k="+encodeURIComponent(k)):"")+"&add="; }
+function siriSheetHTML(){
+  const steps=[t("Open the Shortcuts app and tap +."), t("Add the action “Dictate Text”."),
+    t("Add the action “URL”, paste the link, then tap at the very end and choose “Dictated Text”."),
+    t("Add the action “Open URLs”."), t("Name the shortcut “Market List”. Now say “Hey Siri, Market List”.")];
+  const on=siriSmartOn();
+  return `<div class="sheet-bg" id="siriBg"><div class="sheet" id="siriSheet" role="dialog" aria-labelledby="siriT">
+    <div class="disp" id="siriT" style="font-weight:800;font-size:17px;margin-bottom:6px">${t("Add with Siri")}</div>
+    <div class="michint">${t("Say “Hey Siri, Market List” and what you need — it lands on this list. Siri turns your voice into text on your iPhone; only the words reach the app.")}</div>
+    <input id="siriLink" readonly value="${esc(siriLink())}" style="width:100%;margin-top:12px;padding:10px 12px;border-radius:12px;border:1.5px solid var(--muted2);background:transparent;color:var(--text);font-size:13px">
+    <button id="siriCopy" class="storechip" style="margin-top:8px">${t("Copy link")}</button>
+    <ol class="michelp">${steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>
+    <div class="michint">${t("The shortcut may open the list in Safari rather than the home-screen app; the items still land on the same list.")}</div>
+    <div class="optrow" style="margin-top:12px"><span class="optlabel">${t("Voice adds go through Smart add")}</span><span class="optctrl"><div class="seg"><button data-siri-smart="1" class="${on?'on':''}">${t("On")}</button><button data-siri-smart="0" class="${!on?'on':''}">${t("Off")}</button></div></span></div>
+    <div class="michint">${t("On: Smart add tidies what you said into separate items, and the words are sent to the AI. Off: nothing leaves your phone except the items saved to your list.")}</div>
+  </div></div>`; }
+function wireSiri(){
+  const ob=app.querySelector("#optSiri"); if(ob) ob.onclick=()=>{ siriOpen=true; render(); };
+  const bg=app.querySelector("#siriBg"); if(bg) bg.onclick=e=>{ if(e.target===bg){ siriOpen=false; render(); } };
+  const cp=app.querySelector("#siriCopy"); if(cp) cp.onclick=()=>{ const u=siriLink();
+    if(hasClipboard()){ copyText(u); showToast("Link copied"); } else { const i=app.querySelector("#siriLink"); if(i){ i.focus(); i.select(); } } };
+  app.querySelectorAll("[data-siri-smart]").forEach(b=>b.onclick=()=>{ const want=b.dataset.siriSmart==="1"; if(siriSmartOn()!==want) setSiriSmart(want); });
+}
+function takePendingOutside(){ let o=null; try{ o=JSON.parse(sessionStorage.getItem("ml_pendingoutside")||"null"); sessionStorage.removeItem("ml_pendingoutside"); }catch(e){}
+  if(o && o.text) addFromOutside(o.text, o.source); }
 function gotoPage(idx){ transitionTo(idx); }
 // v1.20 swipe-between-pages is disabled — navigation is via the bottom nav only (the transition
 // still animates, sliding in the logical direction based on the pages' relative positions).
@@ -8288,4 +8339,6 @@ if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ try{ 
 if(migrateAppSlots163()){ applyStoredAppearance(appSlots()[0]); }
 render();
 _booted=true; if(_pendingFinish){ const n=_pendingFinish; _pendingFinish=null; autoFinishAt(n); }   // v2.10
+{ const o = takeOutsideText(); if(o){ params.delete("add"); if(o.source==="share"){ params.delete("text"); params.delete("title"); } addFromOutside(o.text, o.source); } }   // v2.60 Siri (?add=) or a shared text (?text=) — first, and out of the app's own copy of the address too, so the recipe importer's rewrite below can never put it back
 takeSharedRecipe();   // v1.90 a page shared in from the phone's share sheet
+onOutsideText(addFromOutside);

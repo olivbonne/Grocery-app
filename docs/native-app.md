@@ -15,6 +15,7 @@ could not be checked from where this was written — check them when you get the
 | Email + password sign-in | v2.41 | Works the same inside the app. **Sign in with Apple is only required when the app offers Google/Facebook sign-in — it does not**, so it is not needed today. |
 | App Check (website) | v2.50 | Dormant until the owner gives a reCAPTCHA key. The apps need App Attest (iPhone) and Play Integrity (Android) instead — see below. |
 | The shell itself (`native/`) | v2.50 | `capacitor.config.json`, `package.json`, `copy-web.mjs` (copies the web app into `native/www`). Kept out of the website by `.vercelignore`. |
+| Add from outside (`takeOutsideText`/`onOutsideText`, `addFromOutside`) | v2.60 | Siri, Assistant and share intents call one handler. |
 
 ## What only the owner can do
 1. **Accounts.** Apple Developer Program (about US$99 a year) and Google Play Console (about US$25 once). Apple needs your
@@ -32,6 +33,28 @@ could not be checked from where this was written — check them when you get the
 7. **Store listings:** name, description, screenshots (the suites already take 390×844 ones), the privacy page
    (`privacy.html`, already written for it) and the privacy questionnaires: data collected = email (if an account is made),
    list contents (synced, not used for tracking), photos (sent to the AI reader only when asked); no tracking, no ads.
+
+## Adding from outside the app (Siri, Google Assistant, sharing)
+**Today (web).** On an iPhone, a Shortcut opens the list's link ending in `?add=` with the dictated words (the person builds
+it once from Settings › Smart features › Set up Siri). On Android, the manifest's share_target sends `?text=`. Both go through
+`takeOutsideText()` in `js/platform.js`, then `addFromOutside()` in `js/app.js`.
+
+**iPhone app.** An **App Intent** ("Add to Market List", with a text parameter), written in Swift inside the Capacitor iOS
+project. Siri and the Shortcuts app see it with no setup, and phrases like "Add milk to Market List" work from the lock screen.
+The intent hands the text to the web view — a small Capacitor plugin, or the App plugin's `appUrlOpen` with the universal link
+`https://…/?add=…` (which needs the apple-app-site-association file from step 6) — and platform.js calls the `onOutsideText`
+handler. Optionally `openAppWhenRun = false` with a background write: that needs the item written without the web view, i.e.
+a server endpoint, which is later work.
+
+**Android app.** Share intents (ACTION_SEND text/plain) and **Google Assistant App Actions** (shortcuts.xml with a built-in
+intent for adding to a list; which built-in intent fits needs checking against Google's current catalogue — not checkable
+from here). Both deliver text to the same `onOutsideText`. Android App Links (assetlinks.json, step 6) make `https://…/?add=`
+open the app instead of the browser.
+
+**What doesn't change:** the list code, the join key, the one door `addFromOutside`, the duplicate guard and the Smart add switch.
+
+**Said out loud:** the link a Shortcut uses carries the list's code and join key, like a share link — fine for a household.
+In the store apps the App Intent replaces it, and no key leaves the app.
 
 ## Still to build once the shell runs
 - **Native storage (S14):** iOS can clear a web view's storage when space runs low. Move the durable keys (lists, cards,

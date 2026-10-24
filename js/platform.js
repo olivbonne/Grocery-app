@@ -42,3 +42,24 @@ export function speechRecognitionCtor(){ return window.SpeechRecognition || wind
 
 // v2.49 S13: true inside a Capacitor shell (the future iPhone/Android app); the web app is never one
 export function isNativeApp(){ try{ return !!(window.Capacitor && typeof window.Capacitor.isNativePlatform==="function" && window.Capacitor.isNativePlatform()); }catch(e){ return false; } }
+
+/* v2.60: text handed to the app from outside — Siri through an iPhone Shortcut (?add=…), Android's share sheet (?text=…,
+   the manifest's share_target). Returns { text, source } once and removes it from the address, so a reload never adds it
+   twice. A native app (Capacitor) replaces this file's insides: Siri App Intents / Google Assistant App Actions / share
+   intents call the same handler through onOutsideText(). */
+export function takeOutsideText(){
+  try{
+    const p = new URLSearchParams(location.search);
+    let text = "", source = "", drop = [];
+    if(p.get("add")){ text = p.get("add"); source = "shortcut"; drop = ["add"]; }
+    else if(p.get("text") && !/https?:\/\//i.test(p.get("text"))){ text = p.get("text"); source = "share"; drop = ["text","title"]; }   // a text with a link stays the recipe importer's
+    if(!source) return null;
+    drop.forEach(k=>p.delete(k));
+    const q = p.toString();
+    try{ history.replaceState(null, "", location.pathname + (q?("?"+q):"") + location.hash); }catch(e){}
+    text = String(text).trim().slice(0, 1000);
+    return text ? { text, source } : null;
+  }catch(e){ return null; }
+}
+let _outsideCb = null;   // web: kept for a native shell to call; the web never calls it
+export function onOutsideText(cb){ _outsideCb = cb; }
