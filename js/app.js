@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.63";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.63";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.63";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.63";
-import { compareStores, worthIt } from "./compare.js?v=2.63";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.63";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.63";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.63";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.63";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.63";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.63";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.63";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.63";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.63";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.64";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.64";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.64";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.64";
+import { compareStores, worthIt } from "./compare.js?v=2.64";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.64";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.64";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.64";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.64";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.64";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.64";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.64";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.64";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.64";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.63";
+const APP_VERSION = "v2.64";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -3827,10 +3827,36 @@ function voiceStop(){ voiceOn=false; const r=voiceRec; voiceRec=null;
    phone's Settings itself (only an App Store app can). The refusal is remembered (ml_micdenied), so the next tap shows the
    steps straight away; "Try again" still asks, inside the tap; the first words heard forget the refusal. */
 var micHelpOpen=false, micHelpWhy="";   // var: render reads it at boot
+/* v2.64: iOS refuses speech recognition to home-screen web apps, and the household won't send their voice to an AI. The
+   keyboard's own 🎤 is Apple's dictation and always works, so on an iPhone the microphone opens a box that is already
+   focused (keyboard up) with a hint pointing at that 🎤; return / Done sends the TEXT to Smart add. A store app replaces
+   this with Apple's speech recognition (docs/native-app.md). */
+var dictOpen=false, _dictCancel=false;
+function useDictation(){ return isAppleMobile() && !isNativeApp(); }
+function openDictation(){
+  micHelpOpen=false; voiceOpen=false; dictOpen=true; _dictCancel=false; render();
+  const b=document.getElementById("dictBox"); if(b){ b.focus(); } }   // synchronously, inside the tap: iOS raises the keyboard only then
+function dictSheetHTML(){
+  return `<div class="sheet-bg kbpin" id="dictBg"><div class="sheet dictsheet" role="dialog" aria-labelledby="dictT">
+    <div class="voicehead">
+      <span class="voicemic" aria-hidden="true">${MIC_SVG(26)}</span>
+      <div class="voicettl"><div class="voicetitle" id="dictT">${t("Say what you need")}</div><div class="voicestatus">${t("Tap 🎤 on the keyboard, speak, then tap Done.")}</div></div>
+      <button class="voiceclose" id="dictClose" aria-label="${t("Close")}">×</button>
+    </div>
+    <textarea id="dictBox" class="dictbox" rows="3" enterkeyhint="done" autocomplete="off" autocapitalize="sentences" placeholder="${t("e.g. “two litres of milk, butter, six eggs…”")}"></textarea>
+    <button id="dictGo" style="width:100%;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">${smartOn() ? t("✨ Add with Smart add") : t("Add")}</button>
+    <div class="michint" style="margin-top:8px;font-size:13px;color:var(--muted)">${smartOn() ? t("Your iPhone turns your voice into text. Only the text is sent to Smart add.") : t("Your iPhone turns your voice into text. Nothing leaves your phone except the items.")}</div>
+  </div></div>`; }
+function dictSubmit(){
+  if(!dictOpen) return;
+  const b=document.getElementById("dictBox"); const text=((b&&b.value)||"").trim(); dictOpen=false; render(); if(!text) return;
+  if(smartOn()) smartAddText(text);
+  else stageAdds(()=>addEntries(text.replace(/\s+(and|et|then|puis)\s+/gi, ", "), null)); }
 function micDenied(){ try{ return localStorage.getItem("ml_micdenied")==="1"; }catch(e){ return false; } }
 function setMicDenied(on){ try{ if(on) localStorage.setItem("ml_micdenied","1"); else localStorage.removeItem("ml_micdenied"); }catch(e){} }
 function micRefused(){ setMicDenied(true); voiceOpen=false; voiceOn=false; micHelpWhy="denied"; micHelpOpen=true; render(); }
 function openVoice(force){
+  if(useDictation()){ openDictation(); return; }
   const SR = speechRecognitionCtor();
   if(!SR){ micHelpWhy="nosr"; micHelpOpen=true; render(); return; }
   if(!force && micDenied()){ micHelpWhy="denied"; micHelpOpen=true; render(); return; }
@@ -3879,7 +3905,13 @@ function wireVoice(){
   const mbg=app.querySelector("#micHelpBg"); if(mbg) mbg.onclick=e=>{ if(e.target===mbg){ micHelpOpen=false; render(); } };
   const mtr=app.querySelector("#micTry"); if(mtr) mtr.onclick=()=>{ openVoice(true); };   // asks again, inside the tap
   const msi=app.querySelector("#micSiri"); if(msi) msi.onclick=()=>{ micHelpOpen=false; siriOpen=true; render(); };   // v2.61
-  const mkb=app.querySelector("#micKbd"); if(mkb) mkb.onclick=()=>{ micHelpOpen=false; render(); openAdd(); showToast(t("Tap the microphone on the keyboard and say what you need")); };
+  const mkb=app.querySelector("#micKbd"); if(mkb) mkb.onclick=()=>{ openDictation(); };   // v2.64
+  const dbx=app.querySelector("#dictBox");   // v2.64 the dictation sheet
+  if(dbx){ dbx.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); dictSubmit(); } };
+    dbx.onblur=()=>{ setTimeout(()=>{ if(dictOpen && !_dictCancel){ const b=document.getElementById("dictBox"); if(b && b.value.trim()) dictSubmit(); } }, 250); }; }   // the keyboard bar's Done only blurs
+  const dgo=app.querySelector("#dictGo"); if(dgo){ dgo.onpointerdown=e=>e.preventDefault(); dgo.onclick=()=>dictSubmit(); }
+  const dcl=app.querySelector("#dictClose"); if(dcl){ dcl.onpointerdown=()=>{ _dictCancel=true; }; dcl.onclick=()=>{ dictOpen=false; render(); }; }
+  const dbg=app.querySelector("#dictBg"); if(dbg){ dbg.onpointerdown=e=>{ if(e.target===dbg) _dictCancel=true; }; dbg.onclick=e=>{ if(e.target===dbg){ dictOpen=false; render(); } }; }
   const mty=app.querySelector("#micType"); if(mty) mty.onclick=()=>{ micHelpOpen=false; render(); openAdd(); };
   const mic=app.querySelector("#voiceMic");
   if(mic) mic.onclick=()=>{ if(voiceOn){ voiceStop(); mic.setAttribute("aria-label", t("Start listening")); return; }
@@ -4637,7 +4669,7 @@ function renderMain(){
   ${fabMoveOpen?fabMoveSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
-  ${voiceOpen?voiceSheet():""}${micHelpOpen?micHelpHTML():""}${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${noListOpen?noListSheetHTML():""}
+  ${voiceOpen?voiceSheet():""}${micHelpOpen?micHelpHTML():""}${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${dictOpen?dictSheetHTML():""}${noListOpen?noListSheetHTML():""}
   ${editing?editSheet():(_editFoldKey="")}
   ${toast?`<div class="toast" id="toast"><span>${esc(t(toast))}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(t(toastAction.label))}</button>`:""}</div>`:""}`;
 }
@@ -4976,7 +5008,7 @@ function renderPlanTab(){
   ${planWeekOpen?planWeekSheet():""}
   ${planAdd?planAddSheet():""}
   ${planPick?planPickSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${noListOpen?noListSheetHTML():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${dictOpen?dictSheetHTML():""}${noListOpen?noListSheetHTML():""}
   ${listsOpen?listsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
@@ -6160,7 +6192,7 @@ function planWeekToList(){
   smartServings = null; smartOpen = true; smartLoading = false; smartError = ""; smartEdit = null;
   render();
 }
-function wirePlanTab(){ wireSiri();   // v2.62: the Siri / no-list sheets render here too
+function wirePlanTab(){ wireSiri(); wireVoice();   // v2.62: the Siri / no-list sheets render here too
 
   const lsw=app.querySelector("#listSwitch"); if(lsw) lsw.onclick=()=>{ listsOpen=true; render(); };
   const pwh=app.querySelector("#pwHint"); if(pwh) pwh.onclick=()=>{ const b=app.querySelector('.pdmore[data-pd="'+pwh.dataset.pd+'"]'); if(b) b.click(); };   // v2.16
@@ -6495,7 +6527,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>${t("Add items…")}</span></button></div>`:""}
-  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${noListOpen?noListSheetHTML():""}
+  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${dictOpen?dictSheetHTML():""}${noListOpen?noListSheetHTML():""}
   ${editing?editSheet():(_editFoldKey="")}
   ${toast?`<div class="toast" id="toast"><span>${esc(t(toast))}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(t(toastAction.label))}</button>`:""}</div>`:""}`;
 }
@@ -6877,7 +6909,7 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-wallpos]").forEach(b=>b.onclick=()=>{ if(wallPos!==b.dataset.optWallpos) setWallPos(b.dataset.optWallpos); });
   app.querySelectorAll("[data-opt-caton]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optCaton==="1"; if(catOn!==v) setCatOn(v); });
   app.querySelectorAll("[data-opt-subon]").forEach(b=>b.onclick=()=>{ const v=b.dataset.optSubon==="1"; if(subOn!==v) setSubOn(v); });
-  wireSiri();   // v2.60
+  wireSiri(); wireVoice();   // v2.60; v2.64 the dictation sheet renders here too
   app.querySelectorAll("[data-opt-smart]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optSmart==="1"; if(smartOn()!==want) setSmart(want); });
   app.querySelectorAll("[data-opt-units]").forEach(b=>b.onclick=()=>setUnitsMode(b.dataset.optUnits));
   app.querySelectorAll("[data-opt-mealslots]").forEach(b=>b.onclick=()=>setMealSlots(b.dataset.optMealslots==="1"));
@@ -7829,7 +7861,7 @@ function renderSettingsPage(){
     ${bottomNav({planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
     ${diagOpen?diagSheet():""}
     ${listsOpen?listsSheet():""}
-    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${noListOpen?noListSheetHTML():""}
+    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${dictOpen?dictSheetHTML():""}${noListOpen?noListSheetHTML():""}
     ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
     ${editing?editSheet():(_editFoldKey="")}

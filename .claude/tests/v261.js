@@ -46,16 +46,15 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     await page.addInitScript(seed({ docs:{ v101:DOC({ items:[] }) } }));
     await page.addInitScript(`window.webkitSpeechRecognition = class { start(){ const me=this; setTimeout(()=>me.onerror && me.onerror({ error:"not-allowed" }), 60); } stop(){} }; window.SpeechRecognition = window.webkitSpeechRecognition;`);
     await page.goto(`http://127.0.0.1:${port}/index.html?list=v101`, { waitUntil:'domcontentloaded' }); await page.waitForTimeout(1400);
+    /* SUPERSEDED by v2.64: on an iPhone the microphone no longer ends at the refusal card — it opens a box ready for the
+       keyboard's own dictation (v264.js). Still protected: an iPhone is never sent through settings that cannot help, and the
+       card's "keyboard's microphone" button (still there for any other way in) leads to that same box. */
     await page.locator('#emptyMic').click(); await page.waitForTimeout(500);
-    const c = await page.evaluate(()=>{ const s=document.querySelector('#micHelpSheet'); return s ? { siri:!!s.querySelector('#micSiri'), kbd:!!s.querySelector('#micKbd'), again:!!s.querySelector('#micTry'), steps:s.querySelectorAll('.michelp li').length, text:s.textContent } : null; });
-    ok('on an iPhone, a refused microphone offers Siri and the keyboard\'s microphone (not settings that cannot help)', c && c.siri && c.kbd && c.again && c.steps===0, JSON.stringify(c && { siri:c.siri, kbd:c.kbd, again:c.again, steps:c.steps }));
+    const c = await page.evaluate(()=>({ help:!!document.querySelector('#micHelpSheet .michelp li'), dict:!!document.querySelector('#dictBox') }));
+    ok('on an iPhone, the microphone never sends people through settings that cannot help (it opens the dictation box)', c.dict && !c.help, JSON.stringify(c));
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-iphone.png') });
-    await page.locator('#micSiri').click(); await page.waitForTimeout(500);
-    ok('"Add with Siri" opens the Siri set-up sheet, right there on the Shop page', /Add with Siri/.test(await page.evaluate(()=>document.body.innerText)) && /Shortcuts app/.test(await page.evaluate(()=>document.body.innerText)) && !(await page.locator('#micHelpSheet').count()), '');
-    await page.evaluate(()=>{ const b=document.querySelector('#siriBg'); if(b) b.click(); }); await page.waitForTimeout(400);
-    await page.locator('#emptyMic').click(); await page.waitForTimeout(500);
-    await page.locator('#micKbd').click(); await page.waitForTimeout(900);
-    ok('"Use the keyboard\'s microphone" opens the add sheet and says to tap the keyboard\'s mic', await page.locator('#addSheet').count()===1 && /microphone on the keyboard/.test(await page.evaluate(()=>document.body.innerText)), '');
+    const src = fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8');
+    ok('the card\'s "keyboard\'s microphone" button opens the same dictation box', /#micKbd"\); if\(mkb\) mkb\.onclick=\(\)=>\{[^}]*openDictation\(\)/.test(src), '');
     const plat = fs.readFileSync(path.join(ROOT,'js','platform.js'),'utf8');
     ok('iPhone detection lives in platform.js', /export function isAppleMobile/.test(plat), '');
   } catch(e){ ok('suite ran to the end', false, (e.stack||e.message).slice(0,300)); }
