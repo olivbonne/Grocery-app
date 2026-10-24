@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.58";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.58";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.58";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.58";
-import { compareStores, worthIt } from "./compare.js?v=2.58";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.58";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.58";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.58";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.58";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.58";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.58";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines } from "./parse.js?v=2.58";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.58";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.58";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.59";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.59";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.59";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.59";
+import { compareStores, worthIt } from "./compare.js?v=2.59";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.59";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.59";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.59";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.59";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.59";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.59";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines } from "./parse.js?v=2.59";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.59";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.59";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.58";
+const APP_VERSION = "v2.59";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -79,7 +79,7 @@ function showAmt(w){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_nosmall$|ml_jk_)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_jk_)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -1552,12 +1552,26 @@ function fabCheck(src){ const fw=document.getElementById("shopAddFabWrap"), bb=d
     lock:!!_locked, page:["plan","shop","settings"][curPageIdx()]||"", trail:_uiTrail.slice(-8) };
   try{ const a=stuckLog(); a.unshift(entry); localStorage.setItem("ml_stucklog", JSON.stringify(a.slice(0,10))); }catch(e){}
   uiTrail("fab put back ("+gap+"px)"); syncZoomHeight(); }
+/* v2.59 (the household's screen log): after the keyboard closes, an iPhone can leave the bars that are pinned to the screen
+   where the keyboard pushed them — fabCheck put the "+" back, but the bottom bar stayed up, and on a page with no "+"
+   (Settings) nothing was checked at all. A one-pixel scroll and back makes iOS place pinned bars again; it never jumps the
+   page. Logged like the "+" so the Screen log shows it. */
+function barCheck(src){ const bb=document.getElementById("bottomnav"); if(!bb) return;
+  const ae=document.activeElement; if(ae && (ae.tagName==="INPUT" || ae.tagName==="TEXTAREA")) return;   // the keyboard may be up
+  const vv=window.visualViewport, b=bb.getBoundingClientRect(); if(!b.height) return;
+  const off = vv ? Math.round(vv.offsetTop) : 0, high = Math.round(window.innerHeight - b.bottom);
+  if(off <= 0 && high <= 120) return;   // where it belongs: about 44px above the foot of the screen
+  const y = window.scrollY; try{ window.scrollTo(window.scrollX, y + 1); window.scrollTo(window.scrollX, y); }catch(e){}
+  try{ const a=stuckLog(); a.unshift({ t:Date.now(), v:APP_VERSION, src:"bar "+src, gap:high, bar:Math.round(b.top), ih:window.innerHeight,
+    vvh:vv?Math.round(vv.height):0, vvt:off, sy:Math.round(y), page:["plan","shop","settings"][curPageIdx()]||"", trail:_uiTrail.slice(-8) });
+    localStorage.setItem("ml_stucklog", JSON.stringify(a.slice(0,10))); }catch(e){}
+  uiTrail("bar put back ("+high+"px)"); }
 if(typeof document !== "undefined"){
   document.addEventListener("focusin", e=>{ const t=e.target; uiTrail("focus "+((t&&t.tagName)||"")+((t&&t.id)?"#"+t.id:"")); });
   document.addEventListener("focusout", e=>{ const t=e.target; uiTrail("blur "+((t&&t.tagName)||"")+((t&&t.id)?"#"+t.id:""));
-    setTimeout(()=>{ try{ syncZoomHeight(); fabCheck("blur"); }catch(x){} }, 400); });   // the keyboard has closed: measure again
+    setTimeout(()=>{ try{ syncZoomHeight(); fabCheck("blur"); barCheck("blur"); }catch(x){} }, 400); });   // the keyboard has closed: measure again
   if(window.visualViewport){ let _vvT=0; window.visualViewport.addEventListener("resize", ()=>{ clearTimeout(_vvT);
-    _vvT=setTimeout(()=>{ try{ uiTrail("view "+Math.round(window.visualViewport.height)); fabCheck("resize"); }catch(x){} }, 300); }); } }
+    _vvT=setTimeout(()=>{ try{ uiTrail("view "+Math.round(window.visualViewport.height)); fabCheck("resize"); barCheck("resize"); }catch(x){} }, 300); }); } }
 /* v1.44 item 5: everything added while the sheet is open is provisional. The return key keeps it;
    Cancel (button, scrim tap, swipe-down) takes it all back off the list. Only ids CREATED during this
    session are tracked, so an item that was already on the list before you opened the sheet is never
@@ -2029,8 +2043,16 @@ function subscribe(){
 /* v2.58: "Saving…" while either listener has a write outstanding; v2.57's timing runs on the combined flag */
 function setSyncing(){ const pend = docPend || itemsPend;
   if(pend && !syncing) _pendSince = Date.now();
-  else if(!pend && syncing && _pendSince){ saveDiag.last = Date.now() - _pendSince; saveDiag.max = Math.max(saveDiag.max, saveDiag.last); }
+  else if(!pend && syncing && _pendSince){ const w = Date.now() - _pendSince - _hiddenMs(_pendSince);   // v2.59: time locked or in the background does not count
+    saveDiag.last = Math.max(0, w); saveDiag.max = Math.max(saveDiag.max, saveDiag.last); }
   syncing = pend; }
+/* v2.59: how long the app was hidden (phone locked, another app) since a moment — the save timer leaves it out */
+var _hidSince = 0, _hidSpans = [];
+function _hiddenMs(from){ let ms = 0; for(const [a,b] of _hidSpans){ if(b > from) ms += b - Math.max(a, from); }
+  if(_hidSince) ms += Date.now() - Math.max(_hidSince, from); return ms; }
+if(typeof document !== "undefined") document.addEventListener("visibilitychange", ()=>{
+  if(document.hidden){ _hidSince = Date.now(); }
+  else if(_hidSince){ _hidSpans.push([_hidSince, Date.now()]); _hidSpans = _hidSpans.slice(-20); _hidSince = 0; } });
 /* v2.58 (S8 step 2): a split list's items, lists/{code}/items/{id}, one record each; a removal is the record {id, gone} */
 function startItems(){
   if(unsubItems || !canSplit()) return;
@@ -2371,7 +2393,12 @@ try {
        a change made meanwhile is kept, stamped, and merged in by the first snapshot (v2.51). */
     configured = true;   // the screens ask this at once; save() waits for listRef, which subscribe() sets
     startAppCheck(app).then(() => { try {
-      try { db = FS.initializeFirestore(app, { localCache: FS.persistentLocalCache({ tabManager: FS.persistentMultipleTabManager() }) }); }
+      /* v2.59: ONE tab manager that owns its own writes. With the multi-tab manager only the "primary" copy of the app sends,
+         and the others queue; on an iPhone a copy that iOS froze in the background can hold that role, and saves waited for
+         it (the household's Connection check showed one waiting 54 minutes). A home-screen app has one window, so it takes
+         ownership; a second browser tab, rare, falls back to working without the offline cache. */
+      const tm = typeof FS.persistentSingleTabManager === "function" ? FS.persistentSingleTabManager({ forceOwnership:true }) : FS.persistentMultipleTabManager();
+      try { db = FS.initializeFirestore(app, { localCache: FS.persistentLocalCache({ tabManager: tm }) }); }
       catch(e){ db = FS.getFirestore(app); }   // fallback if persistence unavailable
       storeInit(FS, db);
       subscribe();
@@ -3770,7 +3797,8 @@ function voicePhrases(){ return (voiceText + (voiceInterim ? (voiceText ? ", " :
 function voiceListHTML(){
   const rows = voicePhrases().map(ph=>`<div class="voicerow"><span class="voiceico" aria-hidden="true">${itemIcon(ph, guessCat(ph)||"others")}</span><span>${esc(ph)}</span></div>`).join("");
   return rows + (voiceOn ? `<div class="voicerow voiceskel" aria-hidden="true"><span class="voiceico"></span><span class="voicebar"></span></div>` : ""); }
-function voiceStatusText(){ return voiceOn ? t("Listening…") : t("Paused — tap the microphone to continue"); }
+var voiceWhy = "";   // v2.59 why the phone stopped listening (its own error code)
+function voiceStatusText(){ return voiceOn ? t("Listening…") : voiceWhy ? tf("Paused ({why}) — tap the microphone to continue", { why:voiceWhy }) : t("Paused — tap the microphone to continue"); }
 function voiceUpdate(){ const l=document.getElementById("voiceList"); if(l) l.innerHTML=voiceListHTML();
   const st=document.getElementById("voiceStatus"); if(st) st.textContent=voiceStatusText();
   const sh=document.querySelector(".voicesheet"); if(sh) sh.classList.toggle("on", voiceOn); }
@@ -3780,20 +3808,44 @@ function voiceListen(){ const SR = speechRecognitionCtor(); if(!SR) return false
   r.onresult = e => { let interim="";
     for(let i=e.resultIndex; i<e.results.length; i++){ const res=e.results[i]; const tx=(res[0].transcript||"").trim();
       if(res.isFinal){ if(tx) voiceText = voiceText ? voiceText + ", " + tx : tx; } else interim += res[0].transcript; }
-    voiceInterim = interim.trim(); voiceUpdate(); };
-  r.onerror = ev => { if(ev.error==="not-allowed" || ev.error==="service-not-allowed"){ showToast(t("Allow microphone access to use voice input")); voiceStop(); } };   // "no-speech": ignore
+    voiceInterim = interim.trim(); if(voiceText || voiceInterim) setMicDenied(false); voiceUpdate(); };
+  r.onerror = ev => { if(ev.error==="not-allowed" || ev.error==="service-not-allowed"){ voiceStop(); micRefused(); return; }
+    if(ev.error && ev.error!=="no-speech" && ev.error!=="aborted") voiceWhy = String(ev.error).slice(0,40); };   // v2.59: the phone's reason, shown when it pauses
   r.onend = () => { if(voiceRec!==r) return;
     if(voiceOpen && voiceOn){ try{ r.start(); }catch(e){ voiceOn=false; voiceUpdate(); } } };
   r.start(); return true; }
 function voiceStop(){ voiceOn=false; const r=voiceRec; voiceRec=null;
   if(voiceInterim){ voiceText = voiceText ? voiceText + ", " + voiceInterim : voiceInterim; voiceInterim=""; }
   if(r){ try{ r.stop(); }catch(e){} } voiceUpdate(); }
-function openVoice(){
+/* v2.59 (the household): when the phone refuses the microphone, a help card with the steps — a web app cannot open the
+   phone's Settings itself (only an App Store app can). The refusal is remembered (ml_micdenied), so the next tap shows the
+   steps straight away; "Try again" still asks, inside the tap; the first words heard forget the refusal. */
+var micHelpOpen=false, micHelpWhy="";   // var: render reads it at boot
+function micDenied(){ try{ return localStorage.getItem("ml_micdenied")==="1"; }catch(e){ return false; } }
+function setMicDenied(on){ try{ if(on) localStorage.setItem("ml_micdenied","1"); else localStorage.removeItem("ml_micdenied"); }catch(e){} }
+function micRefused(){ setMicDenied(true); voiceOpen=false; voiceOn=false; micHelpWhy="denied"; micHelpOpen=true; render(); }
+function openVoice(force){
   const SR = speechRecognitionCtor();
-  if(!SR){ showToast(t("Voice input isn't available here — tap the microphone on your keyboard instead")); return; }
-  voiceText=""; voiceInterim="";
-  try{ voiceListen(); }catch(e){ showToast(t("Allow microphone access to use voice input")); return; }
-  voiceOpen=true; voiceOn=true; render(); }
+  if(!SR){ micHelpWhy="nosr"; micHelpOpen=true; render(); return; }
+  if(!force && micDenied()){ micHelpWhy="denied"; micHelpOpen=true; render(); return; }
+  voiceText=""; voiceInterim=""; voiceWhy="";
+  try{ voiceListen(); }catch(e){ micRefused(); return; }
+  micHelpOpen=false; voiceOpen=true; voiceOn=true; render(); }
+function micHelpHTML(){
+  const steps = [t("Open Settings › Apps › Safari (on older iPhones: Settings › Safari)."),
+    t("Under Settings for Websites, tap Microphone and choose Allow."),
+    t("In Settings › General › Keyboard, turn on Enable Dictation."),
+    t("Close Market List completely (swipe it away), open it again, and tap Try again.")];
+  return `<div class="sheet-bg" id="micHelpBg"><div class="sheet" id="micHelpSheet" role="dialog" aria-labelledby="micHelpT">
+    <div class="disp" id="micHelpT" style="font-weight:800;font-size:17px;margin-bottom:6px">${t("Let the app hear you")}</div>
+    <div class="michint">${micHelpWhy==="nosr" ? t("Voice input isn't switched on for this app yet. Check these steps:") : t("Your phone didn't let the app use the microphone. These steps fix it:")}</div>
+    <ol class="michelp">${steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>
+    <div class="michint">${t("On Android: Settings › Apps › Chrome › Permissions › Microphone › Allow.")}</div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button id="micType" style="padding:13px 14px;border-radius:14px;border:2px solid var(--ink);background:transparent;color:var(--text);font-weight:700;font-size:15px">${t("Type instead")}</button>
+      <button id="micTry" style="flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">${t("Try again")}</button>
+    </div>
+  </div></div>`; }
 function voiceSheet(){
   return `<div class="sheet-bg" id="voiceBg"><div class="sheet voicesheet${voiceOn?' on':''}" role="dialog" aria-label="${t("Speak now!")}">
     <div class="voicehead">
@@ -3807,6 +3859,9 @@ function voiceSheet(){
       <button class="voicedone" id="voiceDone" aria-label="${t("Done")}"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button></div>
   </div></div>`; }
 function wireVoice(){
+  const mbg=app.querySelector("#micHelpBg"); if(mbg) mbg.onclick=e=>{ if(e.target===mbg){ micHelpOpen=false; render(); } };
+  const mtr=app.querySelector("#micTry"); if(mtr) mtr.onclick=()=>{ openVoice(true); };   // asks again, inside the tap
+  const mty=app.querySelector("#micType"); if(mty) mty.onclick=()=>{ micHelpOpen=false; render(); openAdd(); };
   const mic=app.querySelector("#voiceMic");
   if(mic) mic.onclick=()=>{ if(voiceOn){ voiceStop(); mic.setAttribute("aria-label", t("Start listening")); return; }
     try{ if(voiceListen()){ voiceOn=true; voiceUpdate(); mic.setAttribute("aria-label", t("Stop listening")); } }catch(e){ voiceOn=false; voiceUpdate(); } };
@@ -4563,7 +4618,7 @@ function renderMain(){
   ${fabMoveOpen?fabMoveSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
-  ${voiceOpen?voiceSheet():""}${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
+  ${voiceOpen?voiceSheet():""}${micHelpOpen?micHelpHTML():""}${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}
   ${editing?editSheet():(_editFoldKey="")}
   ${toast?`<div class="toast" id="toast"><span>${esc(t(toast))}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(t(toastAction.label))}</button>`:""}</div>`:""}`;
 }
@@ -7232,7 +7287,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_nosmall$|ml_jk_)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_jk_)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
