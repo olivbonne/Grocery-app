@@ -120,8 +120,10 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
       return { flagsFirst: !!(flags && qty && (flags.compareDocumentPosition(qty) & Node.DOCUMENT_POSITION_FOLLOWING)),
         labels: labs.map(l=>l.textContent.trim()), sizes:[...new Set(labs.map(l=>getComputedStyle(l).fontSize))], upper: labs.some(l=>getComputedStyle(l).textTransform==='uppercase'),
         folded: !sh.querySelector('.catchip') }; });
-    ok('9 · Edit item: flags above the quantity; Note, Category… one size, no capitals; everything folded', ed && ed.flagsFirst && ed.labels[0]==='Note' && ed.sizes.length===1 && !ed.upper && ed.folded, JSON.stringify(ed));
-    await page.locator('#sheet .editsec').first().click(); await page.waitForTimeout(400);
+    /* SUPERSEDED by v2.63: Quantity and Measure are rows now, above Note (was: Note first). Still protected: flags first,
+       one label size, no capitals, everything folded. */
+    ok('9 · Edit item: flags above the quantity; Quantity, Measure, Note, Category… one size, no capitals; everything folded', ed && ed.flagsFirst && ed.labels.slice(0,3).join()==='Quantity,Measure,Note' && ed.sizes.length===1 && !ed.upper && ed.folded, JSON.stringify(ed));
+    await page.locator('#sheet #enHead').click(); await page.waitForTimeout(400);
     const chips = await page.evaluate(()=>[...document.querySelectorAll('#sheet .catchip')].map(c=>c.textContent.trim()));
     ok('9 · Note opens a field and suggestions for this item (yogurt → Greek, low fat…)', chips.includes('Greek') && chips.some(c=>/low fat/i.test(c)) && await page.locator('#sheet input.editnote').count()===1, JSON.stringify(chips));
     await shot('edititem');

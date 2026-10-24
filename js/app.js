@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.62";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.62";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.62";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.62";
-import { compareStores, worthIt } from "./compare.js?v=2.62";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.62";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.62";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.62";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.62";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.62";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.62";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.62";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.62";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.62";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.63";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.63";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.63";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.63";
+import { compareStores, worthIt } from "./compare.js?v=2.63";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.63";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.63";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.63";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.63";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.63";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.63";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.63";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.63";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.63";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.62";
+const APP_VERSION = "v2.63";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -278,7 +278,9 @@ const SHADE_KEYS = { accent:"ml_accentshade", text:"ml_textcolshade", cat:"ml_ca
                      srchbar:"ml_srchbarshade",
                      /* v2.13: the tiles ON the bars — the top banner's name, count and store, and the bottom
                         bar's selected tab — get their own colour, on the same terms. */
-                     toptile:"ml_toptileshade", navsel:"ml_navselshade" };
+                     toptile:"ml_toptileshade", navsel:"ml_navselshade",
+                     /* v2.63 item D: the Edit item pills, on the same terms as the unselected tiles */
+                     epilltext:"ml_epilltextshade", epillbg:"ml_epillbgshade", epillbrd:"ml_epillbrdshade" };
 const SHADE_MAX = 5;
 (function(){ const OLD = { accent:"ml_accentcalm", text:"ml_textcolcalm", cat:"ml_cattextcalm",
     tiletext:"ml_tiletextcalm", tilebg:"ml_tilebgcalm", tilebrd:"ml_tilebrdcalm",
@@ -317,6 +319,9 @@ let tileTxt  = localStorage.getItem("ml_tiletext") || "auto";
 let uTileBg  = localStorage.getItem("ml_utilebg")   || "auto";
 let uTileBrd = localStorage.getItem("ml_utilebrd")  || "auto";
 let uTileTxt = localStorage.getItem("ml_utiletext") || "auto";
+let ePillTxt = localStorage.getItem("ml_epilltext") || "auto";   // v2.63 item D: the Edit item pills
+let ePillBg  = localStorage.getItem("ml_epillbg")   || "auto";
+let ePillBrd = localStorage.getItem("ml_epillbrd")  || "auto";
 let catTxt   = localStorage.getItem("ml_cattext")   || "auto";
 function setTileBg(v, quiet){ tileBg=v; setLS("ml_tilebg",v); applyTheme(); if(!quiet) render(); }
 function setTileBrd(v, quiet){ tileBrd=v; setLS("ml_tilebrd",v); applyTheme(); if(!quiet) render(); }
@@ -324,6 +329,9 @@ function setTileTxt(v, quiet){ tileTxt=v; setLS("ml_tiletext",v); applyTheme(); 
 function setUTileBg(v, quiet){ uTileBg=v; setLS("ml_utilebg",v); applyTheme(); if(!quiet) render(); }
 function setUTileBrd(v, quiet){ uTileBrd=v; setLS("ml_utilebrd",v); applyTheme(); if(!quiet) render(); }
 function setUTileTxt(v, quiet){ uTileTxt=v; setLS("ml_utiletext",v); applyTheme(); if(!quiet) render(); }
+function setEPillTxt(v, quiet){ ePillTxt=v; setLS("ml_epilltext",v); applyTheme(); if(!quiet) render(); }
+function setEPillBg(v, quiet){ ePillBg=v; setLS("ml_epillbg",v); applyTheme(); if(!quiet) render(); }
+function setEPillBrd(v, quiet){ ePillBrd=v; setLS("ml_epillbrd",v); applyTheme(); if(!quiet) render(); }
 function setCatTxt(v, quiet){ catTxt=v; setLS("ml_cattext",v); applyTheme(); if(!quiet) render(); }
 /* v1.76 item 1: the two bars are the only surfaces the user cannot reach — every other colour in the
    app is settable and these two were fixed glass. Untouched they stay exactly that: the colour is
@@ -529,6 +537,9 @@ function tileTxtHex(){ return pickHex(tileTxt, TEXTCOLS); }
 function uTileBgHex(){  return pickHex(uTileBg); }
 function uTileBrdHex(){ return pickHex(uTileBrd); }
 function uTileTxtHex(){ return pickHex(uTileTxt, TEXTCOLS); }
+function ePillTxtHex(){ return pickHex(ePillTxt, TEXTCOLS); }
+function ePillBgHex(){  return pickHex(ePillBg); }
+function ePillBrdHex(){ return pickHex(ePillBrd); }
 function catTxtHex(){ return pickHex(catTxt, TEXTCOLS); }
 /* v1.54 item 1: the geometry settings. One table so the stepper UI, the clamping and the CSS
    variable stay in one place instead of eight near-identical globals. Defaults are exactly the
@@ -575,7 +586,11 @@ const NUMOPT = {
   srchy: { ls:"ml_srchy", vr:"--srchy", def:0,  min:-120,max:40,  step:2, label:"Down" },
   srchw: { ls:"ml_srchw", vr:"--srchw", def:0,  min:0,   max:640, step:10, off:0, label:"Width" },
   srchh: { ls:"ml_srchh", vr:"--srchh", def:0,  min:0,   max:40,  step:2, label:"Height" },
-  srchr: { ls:"ml_srchr", vr:"--srchr", def:0,  min:0,   max:40,  step:2, off:0, label:"Corner" }
+  srchr: { ls:"ml_srchr", vr:"--srchr", def:0,  min:0,   max:40,  step:2, off:0, label:"Corner" },
+  /* v2.63 item D: the Edit item pills. erad's `off` is its default, so an untouched install writes nothing and
+     the stylesheet's 999px (fully round) stands. */
+  erad:  { ls:"ml_eprad", vr:"--epillrad", def:20, min:0,  max:24,  step:2, off:20, label:"Corner" },
+  egap:  { ls:"ml_epgap", vr:"--epillgap", def:6,  min:0,  max:16,  step:1, label:"Gap" }
 };
 /* v1.55 item 2: two levels of default. NUMOPT[].def is the FACTORY value — what the stylesheet used
    before any of this was settable, and the thing to fall back to when an experiment goes wrong.
@@ -605,8 +620,6 @@ function resetNums(){ Object.keys(NUMOPT).forEach(k=>{ try{ localStorage.removeI
 function factoryNums(){ clearNumDefs(); resetNums(); }
 const THEMES = {
   light:    { dark:false, tc:"#F6F2E7" },
-  ink:      { dark:false, tc:"#FFFFFF" },   // v1.37 true black & white
-  noir:     { dark:true,  tc:"#000000" },   // v1.39 Ink inverted
   dark:     { dark:true,  tc:"#141C18" }
 };
 let theme = localStorage.getItem("ml_theme") || ((typeof window!=="undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark");
@@ -616,6 +629,10 @@ let theme = localStorage.getItem("ml_theme") || ((typeof window!=="undefined" &&
 if(theme==="calm"){ theme="light"; localStorage.setItem("ml_theme","light"); }
 else if(theme==="mono"){ theme="dark"; localStorage.setItem("ml_theme","dark"); }
 if(theme==="market") theme="light"; else if(theme==="midnight") theme="dark";   // v1.28 removed themes migrate
+/* v2.63 item A: Ink and Noir are gone from Settings — Ink becomes Light, Noir becomes Dark. Every
+   stored look (slots, member looks) is applied through storage + reload, so it lands here too. */
+function normTheme(v){ return v==="ink" ? "light" : v==="noir" ? "dark" : v; }
+if(theme==="ink" || theme==="noir"){ theme=normTheme(theme); try{ localStorage.setItem("ml_theme", theme); }catch(e){} }
 /* v1.52: the five tinted themes from v1.51 became WALLPAPERS instead — same colours, but as a
    backdrop under the Light palette rather than a whole token set. Anyone already on one keeps their
    colour: the theme falls back to Light and the matching wallpaper is switched on for them. */
@@ -661,6 +678,7 @@ function applyTheme(){ _cardHexMemo=null; const t = THEMES[theme] || THEMES.ligh
        colour, so "auto" falls through to the CSS fallback and the theme keeps deciding. */
     const T={ "--tilebg":tileBgHex(), "--tilebrd":tileBrdHex(), "--tiletext":tileTxtHex(),
               "--utilebg":uTileBgHex(), "--utilebrd":uTileBrdHex(), "--utiletext":uTileTxtHex(),
+              "--epillbg":ePillBgHex(), "--epillbrd":ePillBrdHex(), "--epilltext":ePillTxtHex(),   // v2.63 item D
               "--cattext":catTxtHex(),
               /* v1.76 item 2: the heading's own surface, and the Regulars heading's separate three. */
               "--cathdbg":catHdBgHex(), "--cathdbrd":catHdBrdHex(),
@@ -670,6 +688,7 @@ function applyTheme(){ _cardHexMemo=null; const t = THEMES[theme] || THEMES.ligh
        user has picked one. Same for the unselected state. */
     if(T["--tilebg"] && !T["--tiletext"]) rs.setProperty("--tiletext", onAccent(T["--tilebg"]));
     if(T["--utilebg"] && !T["--utiletext"]) rs.setProperty("--utiletext", onAccent(T["--utilebg"]));
+    if(T["--epillbg"] && !T["--epilltext"]) rs.setProperty("--epilltext", onAccent(T["--epillbg"]));   // v2.63 item D
     /* v1.76 item 2: the same rule for the two headings — a chosen heading background must not leave
        its label unreadable, but a chosen label colour always wins, so this only fills in the gap. */
     if(T["--cathdbg"] && !T["--cattext"]) rs.setProperty("--cattext", onAccent(T["--cathdbg"]));
@@ -741,7 +760,7 @@ function applyTheme(){ _cardHexMemo=null; const t = THEMES[theme] || THEMES.ligh
     (typeof wall!=="undefined" && wall && isTintWall(wall)) ? "luminosity, normal" : "normal");
   if(typeof fill!=="undefined") applyFill();
   applyIcoSize(); applyLineW(); }
-function setTheme(v){ if(!THEMES[v]) return; theme = v; localStorage.setItem("ml_theme", theme); applyTheme(); render(); }
+function setTheme(v){ v = normTheme(v); if(!THEMES[v]) return; theme = v; localStorage.setItem("ml_theme", theme); applyTheme(); render(); }
 function toggleTheme(){ setTheme(theme==="dark" ? "light" : "dark"); }   // kept for back-compat
 /* v1.41 item 2: three looks now — full (solid category colour), accent (transparent + coloured left
    bar) and empty (no coloured bar at all). The old "empty" WAS the accent look, so migrate stored
@@ -1839,7 +1858,7 @@ function noteToggle(note, chip){ const ps=noteParts(note), i=ps.findIndex(x=>x.t
 function noteSecHTML(note, name, a){ const ps=noteParts(note).map(x=>x.toLowerCase());
   return `<button class="editsec" ${a.head}><span class="editsec-l">${t("Note")}</span><span class="editsec-v">${esc(note||"—")}<span class="editsec-ch">${editNoteOpen?'▾':'▸'}</span></span></button>
     ${editNoteOpen ? `<input ${a.input} value="${esc(note||"")}" maxlength="140" placeholder="${t("Note")}" aria-label="${t("Note")}" class="editnote" />
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${noteSuggest(name).map(x=>{ const on=ps.includes(x.toLowerCase());
+      <div class="edchips">${noteSuggest(name).map(x=>{ const on=ps.includes(x.toLowerCase());
         return `<button class="catchip${on?' on':''}" ${a.chip}="${esc(x)}" aria-pressed="${on}" style="${on?'background:var(--btn);border-color:var(--btn);color:#fff':''}">${esc(x)}</button>`; }).join("")}</div>` : ""}`; }
 var editWhereOpen=false, elseOpen=false;   // v2.22 the edit sheet's "Where to buy" section; the Shop page's "For other shops". var: renders read them at boot
 /* v2.22 R17 where to buy it. "Away" is the shop you are at — a real saved store, not Home or an unknown place — and an
@@ -3430,43 +3449,26 @@ function tapNoScroll(el, fn){
    bar, and no amount of flipping it upward could help. The choices are part of the panel's flow now,
    exactly like the Category and Subcategory chips directly below them: the button expands a wrapping
    grid, the body scrolls to it, and nothing can be clipped by anything. */
-const WEIGHTS = ["","cup","tsp","Tbsp","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"];
-function weightBtn(id, cur){
-  const label = cur || "unit";
-  return `<button class="wbtn" data-w-open="${id}" aria-expanded="${wOpen===id}">${esc(label)}<span class="wcar" aria-hidden="true">${wOpen===id?'▴':'▾'}</span></button>`;
-}
+const WEIGHTS = ["","cup","tsp","Tbsp","4 pack","6 pack","12 pack","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"];
 function weightChips(id, cur){
   if(wOpen!==id) return "";
-  return `<div class="wgrid" role="listbox">${WEIGHTS.map(w=>`<button role="option" class="catchip${(cur||"")===w?' on':''}" data-w-set="${id}|${esc(w)}">${w?esc(w):'unit'}</button>`).join("")}</div>`;
+  return `<div class="wgrid" role="listbox">${WEIGHTS.map(w=>`<button role="option" class="catchip${(cur||"")===w?' on':''}" data-w-set="${id}|${esc(w)}">${w?esc(w):t("None")}</button>`).join("")}</div>`;
 }
 function addEditPanel(){
   const it=state.items.find(i=>i.id===addEditId);
   if(!it){ addEditId=null; return addSheetRows(); }
   aeFold("ae|" + it.id);   // v2.57 item 9a
   const cat=CAT(it.cat)||null;
-  const subs=(cat&&Array.isArray(cat.subs))?cat.subs:[];
-  const flags=[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If discounted")},{k:"convenient",label:t("If convenient")}];
-  const selSubLabel = (()=>{ if(!it.sub) return t("None"); const s=subs.find(x=>x.id===it.sub); return s?s.label:t("None"); })();
+  const flags=[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If discounted")}];   // v2.63: no "If convenient" button (the tag itself stays)
   const catChips = catList().map(c=>`<button class="catchip" data-ae-cat="${it.id}|${c.id}" style="${it.cat===c.id?`background:${c.color};border-color:${c.color};color:#fff`:''}">${catIcon(c,15)} ${esc(catLabel(c))}</button>`).join("");
   return `<div class="addedit">
     ${/* v1.46 item 2: tighter heading + 40px controls — the panel has to share the screen with the
           keyboard, so every row it saves is a row you don't have to scroll to. */""}
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
-      <div class="disp" style="font-weight:800;font-size:15px">${t("Edit item")}</div>
-    </div>
-    ${/* v2.57 item 9c: flags first, then quantity / weight / name, then Note, Category, Subcategory */""}
-    <div class="addedit-flags">${flags.map(f=>{ const on=(it.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-ae-flag="${it.id}|${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>
-    <div style="display:flex;gap:6px;align-items:stretch">
-      <div class="qstep" style="height:40px;align-items:center;flex:none;border:none;background:var(--chip)"><button data-ae-minus="${it.id}" aria-label="${t("Less")}" style="width:32px">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:15px">${it.qty||1}</span><button data-ae-plus="${it.id}" aria-label="${t("More")}" style="width:32px">+</button></div>
-      ${/* v1.62 item 5: the native <select> is gone again, and this restores what v1.44 item 5 was
-            protecting. v1.59 accepted the iOS picker as the price of matching the shop-page editor;
-            in use that price is the whole keyboard AND half the screen, every time you set a weight
-            on a phone. The replacement is part of the sheet and cancels pointerdown, so picking a
-            weight costs nothing — and the shop-page editor uses the same control, so the two editors
-            still match. (v1.64: it expands in the flow rather than floating over it — see weightChips.) */""}
-      ${weightBtn(it.id, it.weight)}
-      <input data-ae-name="${it.id}" value="${esc(it.name)}" style="flex:1;min-width:0;height:40px;padding:0 12px;border-radius:14px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:15px" />
-    </div>
+    ${/* v2.63 item D: the title IS the name field; then flags, Quantity, Measure, Note, Category (no Subcategory) */""}
+    <input class="edtitle" data-ae-name="${it.id}" value="${esc(it.name)}" aria-label="${t("Item name")}" />
+    <div class="addedit-flags edchips">${flags.map(f=>{ const on=(it.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-ae-flag="${it.id}|${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>
+    <div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button data-ae-minus="${it.id}" aria-label="${t("Less")}">−</button><span>${it.qty||1}</span><button data-ae-plus="${it.id}" aria-label="${t("More")}">+</button></span></div>
+    <button class="editsec" data-w-open="${it.id}" aria-expanded="${wOpen===it.id}"><span class="editsec-l">${t("Measure")}</span><span class="editsec-v">${esc(it.weight||t("None"))}<span class="editsec-ch">${wOpen===it.id?'▾':'▸'}</span></span></button>
     ${weightChips(it.id, it.weight)}
     ${/* v1.59 item 3: the weight is the same wheel the shop-page Edit item uses, in the same place —
           between the quantity and the name. It was a scrolling chip strip on its own row here, which
@@ -3474,13 +3476,7 @@ function addEditPanel(){
           with the keyboard. */""}
     ${noteSecHTML(it.note||"", it.name, { head:'data-ae-notehead', input:`data-ae-note="${it.id}"`, chip:"data-ae-notechip" })}
     <button class="editsec" data-ae-sechead="cat"><span class="editsec-l">${t("Category")}</span><span class="editsec-v">${cat?`${catIcon(cat,14)} ${esc(catLabel(cat))}`:'—'}<span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></button>
-    ${editCatOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${catChips}<button class="catchip" data-ae-addcat="${it.id}" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}
-    ${cat ? `<button class="editsec" data-ae-sechead="sub"><span class="editsec-l">${t("Subcategory")}</span><span class="editsec-v">${esc(selSubLabel)}<span class="editsec-ch">${editSubOpen?'▾':'▸'}</span></span></button>
-    ${editSubOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
-      <button class="catchip" data-ae-sub="${it.id}|" style="${!it.sub?`background:var(--btn);border-color:var(--btn);color:#fff`:''}">${t("None")}</button>
-      ${subs.map(s=>`<button class="catchip" data-ae-sub="${it.id}|${s.id}" style="${it.sub===s.id?`background:${cat.color};border-color:${cat.color};color:#fff`:''}">${esc(s.label)}</button>`).join("")}
-      <button class="catchip" data-ae-addsub="${it.id}" style="border-style:dashed;font-weight:800">${t("＋ New")}</button>
-    </div>` : ""}` : ""}
+    ${editCatOpen ? `<div class="edchips">${catChips}<button class="catchip" data-ae-addcat="${it.id}" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}
     <div class="addedit-actions">
       <button class="addedit-more" data-ae-again="${it.id}">${t("Add to Regulars")}</button>
       <button class="addedit-remove" data-ae-remove="${it.id}">${t("Delete")}</button>
@@ -3528,7 +3524,7 @@ function wireAddEdit(){
   /* v1.44 item 5: without the preventDefault the section header steals focus from #mainInput and the
      keyboard drops mid-edit — every sibling control already guards against this. */
   document.querySelectorAll("[data-ae-sechead]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
-    b.onclick=()=>{ if(b.dataset.aeSechead==='cat') editCatOpen=!editCatOpen; else editSubOpen=!editSubOpen; refreshAddBody(); }; });
+    b.onclick=()=>{ if(b.dataset.aeSechead==='cat') editCatOpen=!editCatOpen; refreshAddBody(); }; });
   /* v2.57 item 9d: the Note section — its header, the field (saved as typed, like the name) and the suggestion chips */
   document.querySelectorAll("[data-ae-notehead]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ editNoteOpen=!editNoteOpen; refreshAddBody(); }; });
   document.querySelectorAll("[data-ae-note]").forEach(inp=>{
@@ -4271,7 +4267,7 @@ function fullStyle(catColor, sel){
     return `background:${fill};border:1.5px solid ${tileBrdHex()||catEdge(catColor,true)};color:${tileTxtHex()||onAccent(fill)};--illbg:${fill};`;
   }
   /* an unselected tile is an OUTLINE in Full — transparent unless a background was picked. */
-  return `background:${uTileBgHex()||"transparent"};border:1.5px solid ${uTileBrdHex()||catEdge(catColor,false)};color:${uTileTxtHex()||"var(--muted)"};--illbg:${uTileBgHex()||"var(--paper)"};`;
+  return `background:${uTileBgHex()||"transparent"};border:1.5px solid ${uTileBrdHex()||catEdge(catColor,false)};color:${uTileTxtHex()||"var(--muted)"};--illbg:${uTileBgHex()||((typeof wall!=="undefined" && wall) ? "transparent" : "var(--paper)")};`;   // v2.63 item B: see-through over a wallpaper, as app.css body.haswall .pill.reg-out
 }
 /* v1.67 item 1: one rule for every scrap of text on a tile. A chosen tile-text colour owns the WHOLE
    tile — name, quantity and weight — because a "text colour" that leaves two of the three in the
@@ -4366,7 +4362,7 @@ function wireQuickPanel(){
   app.querySelectorAll("[data-qm-edit]").forEach(b=>b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.qmEdit); if(it){ quickEdit=null; editing={kind:"item", ...it}; render(); } });
 }
 // A26 — calmer category header + per-aisle progress bar, used only by the midnight/market/mono themes.
-const CALM_THEMES = new Set(["light","ink","noir","dark"]);   // v1.39 all themes use the calm header
+const CALM_THEMES = new Set(["light","dark"]);   // v1.39 all themes use the calm header
 function calmHead(cat, done, total, collapsed, attr, entryOpen){
   const pct = total ? Math.round(done/total*100) : 0;
   // v1.38 item 6: show the category ICON when Category icons is on (every theme uses this header
@@ -5418,6 +5414,7 @@ function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRe
   const item = (id, icon, label) => `<button class="smitem" id="${id}" role="menuitem">${icon}<span>${label}</span></button>`;
   return `<div class="smbg" id="smBg"><div class="smenu" id="shopMenuEl" role="menu" aria-label="${t("More")}">
     <div class="smtiles"><span class="smtlabel">${t("Tiles")}</span><div class="smcols">${[1,2,3,4,5,6].map(n=>`<button class="colbtn ${largeCols()===n?'on':''}" data-sm-cols="${n}">${n}</button>`).join("")}<button class="colbtn ${largeCols()===0?'on':''}" data-sm-cols="0" aria-label="${t("Variable width — tiles size to the word")}">↔</button></div></div>
+    ${/* v2.63 item C: Text size, as in Settings — the menu stays open */""}<div class="smtiles smzoom"><span class="smtlabel">${t("Text size")}</span><div class="smcols"><button class="colbtn" data-sm-zoom="-1" aria-label="${t("Smaller text")}">−</button><span class="smzpct">${Math.round(dens()*100)}%</span><button class="colbtn" data-sm-zoom="1" aria-label="${t("Larger text")}">+</button></div></div>
     <div class="smsep"></div>
     ${item("smCard", CARD_SVG(18), cardsGet().length ? t("Show my card") : t("Add a membership card"))}
     ${item("smRcpt", CAMERA_SVG(18), t("Read a receipt"))}
@@ -5468,6 +5465,7 @@ function wireShopMenu(){
   on("smCard", () => { const c = cardHere().c || cardsGet()[0]; cardShow = c ? { id:c.id } : { add:true }; render(); });   // v2.35: the shop you are at, else the first; none yet → straight to adding one
   on("smReport", () => { rpt = { kind:"broken", text:"", diag:true }; render(); });
   app.querySelectorAll("[data-sm-cols]").forEach(c => c.onclick = () => setLargeCols(+c.dataset.smCols));   // v2.58: the menu stays open, re-drawn with the new choice
+  app.querySelectorAll("[data-sm-zoom]").forEach(c => c.onclick = () => setDensity(dens() + 0.1 * (+c.dataset.smZoom)));   // v2.63: as #optZoomMinus/#optZoomPlus; setDensity re-renders, the menu stays open
 }
 /* v2.28 map a shop by photographing its signs: "Read a sign" takes a photo, /api/aisle reads the aisle's number and what
    the sign lists, and the line joins the end of the box — walk the shop once, a photo per sign. The wait shows its step
@@ -6602,8 +6600,8 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
    search across both. Memory only: the look page is where you are, not a preference, and a search left on would
    make Settings look broken the next time. var, not let: boot-order rule. */
 var setLook = false, optQuery = "", _lookY = 0;
-const LOOK_SECTS = new Set(["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tile colours and shape"]);
-const OPT_COLL_DEFAULT = ["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tile colours and shape"];
+const LOOK_SECTS = new Set(["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tile colours and shape", "Edit item"]);
+const OPT_COLL_DEFAULT = ["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tile colours and shape", "Edit item"];   // v2.63: Edit item joins the look page, folded like the rest
 function optColl(){ try{ const raw=localStorage.getItem("ml_optcoll"); if(raw===null) return new Set(OPT_COLL_DEFAULT);
     const a=JSON.parse(raw||"[]"); return new Set(Array.isArray(a)?a:[]); }catch(e){ return new Set(); } }
 /* Calls groupOptions() and NOT render(): folding a section must not rebuild the page and throw away
@@ -6771,6 +6769,9 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-utilebg]").forEach(b=>b.onclick=()=>setUTileBg(b.dataset.optUtilebg));
   app.querySelectorAll("[data-opt-utilebrd]").forEach(b=>b.onclick=()=>setUTileBrd(b.dataset.optUtilebrd));
   app.querySelectorAll("[data-opt-utiletext]").forEach(b=>b.onclick=()=>setUTileTxt(b.dataset.optUtiletext));
+  app.querySelectorAll("[data-opt-epilltext]").forEach(b=>b.onclick=()=>setEPillTxt(b.dataset.optEpilltext));   // v2.63 item D
+  app.querySelectorAll("[data-opt-epillbg]").forEach(b=>b.onclick=()=>setEPillBg(b.dataset.optEpillbg));
+  app.querySelectorAll("[data-opt-epillbrd]").forEach(b=>b.onclick=()=>setEPillBrd(b.dataset.optEpillbrd));
   app.querySelectorAll("[data-opt-cattext]").forEach(b=>b.onclick=()=>setCatTxt(b.dataset.optCattext));
   /* v1.76 items 1 & 2: the seven new rows, wired exactly like the nine above them. */
   app.querySelectorAll("[data-opt-topbar]").forEach(b=>b.onclick=()=>setTopBar(b.dataset.optTopbar));
@@ -6793,6 +6794,7 @@ function wireOptions(){
   const CUSTOM_SET = { "opt-accent":setAccent, "opt-textcol":setTextCol, "opt-cattext":setCatTxt,
     "opt-tiletext":setTileTxt, "opt-tilebg":setTileBg, "opt-tilebrd":setTileBrd,
     "opt-utiletext":setUTileTxt, "opt-utilebg":setUTileBg, "opt-utilebrd":setUTileBrd,
+    "opt-epilltext":setEPillTxt, "opt-epillbg":setEPillBg, "opt-epillbrd":setEPillBrd,   // v2.63 item D
     /* v1.76 items 1 & 2: sixteen now. Every one of these setters takes `quiet`, so the custom picker
        can follow the drag without rebuilding the page underneath it. */
     "opt-topbar":setTopBar, "opt-navbar":setNavBar,
@@ -7283,9 +7285,9 @@ function histPeriod(ts){
 const APP_PRESETS = [
   { name:"Market", keys:{ ml_theme:"light", ml_wall:"", ml_fill:"accent", ml_fill_v141:"1", ml_accent:"orange",
       ml_tilerad:"12", ml_gapx:"8", ml_gapy:"8", ml_caton:"1", ml_catemoji:"1", ml_itememoji:"1" } },
-  { name:"Paper",  keys:{ ml_theme:"ink", ml_wall:"", ml_fill:"empty", ml_fill_v141:"1", ml_accent:"black",
+  { name:"Paper",  keys:{ ml_theme:"light", ml_wall:"", ml_fill:"empty", ml_fill_v141:"1", ml_accent:"black",
       ml_tilerad:"4", ml_gapx:"6", ml_gapy:"6", ml_caton:"1", ml_catemoji:"0", ml_itememoji:"0" } },
-  { name:"Night",  keys:{ ml_theme:"noir", ml_wall:"", ml_fill:"full", ml_fill_v141:"1", ml_accent:"white",
+  { name:"Night",  keys:{ ml_theme:"dark", ml_wall:"", ml_fill:"full", ml_fill_v141:"1", ml_accent:"white",
       ml_tilerad:"18", ml_gapx:"8", ml_gapy:"8", ml_tilebgcalm:"1", ml_caton:"1", ml_catemoji:"1", ml_itememoji:"1" } },
   { name:"Compact",keys:{ ml_theme:"light", ml_wall:"", ml_fill:"accent", ml_fill_v141:"1", ml_accent:"green",
       ml_tilerad:"8", ml_gapx:"2", ml_gapy:"2", ml_padt:"2", ml_largecols:"2",
@@ -7472,9 +7474,7 @@ function optionsBody(){
     ${sect("Appearance")}
     ${rowNL(t("Theme"), `<div class="seg segfull" style="flex-wrap:wrap">${
       [{k:"light",label:"Light",bg:"#F6F2E7",br:"#DAD3C0",dot:"#D2542B"},
-       {k:"dark", label:"Dark", bg:"#141C18",br:"#33433B",dot:"#E2502C"},
-       {k:"ink",  label:"Ink",  bg:"#FFFFFF",br:"#D8D8D8",dot:"#000000"},
-       {k:"noir", label:"Noir", bg:"#000000",br:"#333333",dot:"#FFFFFF"}]
+       {k:"dark", label:"Dark", bg:"#141C18",br:"#33433B",dot:"#E2502C"}]
       .map(th=>`<button data-opt-theme="${th.k}" class="themebtn ${theme===th.k?'on':''}"><span class="themesw" style="background:${th.bg};border-color:${th.br}"><i style="background:${accentHex()||th.dot}"></i></span>${t(th.label)}</button>`).join("")
     }</div>`)}
     ${/* v1.57 item 2: no rule after Wallpaper in either case. Theme, Wallpaper and Text size are the
@@ -7679,6 +7679,16 @@ function optionsBody(){
       <div class="numgrid">${numCell("rad")}</div></div></div>
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Tile gap")}</span><div class="optwide">
       <div class="numgrid">${numCell("gapx")}${numCell("gapy")}</div></div></div>
+    ${/* v2.63 item D: the Edit item pills — the same three colours as a tile state, and their shape */""}
+    ${sectHR("Edit item")}
+    ${colRow(t("Text"), "opt-epilltext", ePillTxt, "epilltext", {pal:TEXTCOLS, page:true})}
+    ${colRow(t("Background"), "opt-epillbg", ePillBg, "epillbg", {page:true})}
+    ${colRow(t("Border"), "opt-epillbrd", ePillBrd, "epillbrd", {page:true})}
+    ${subhead("Shape")}
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Roundness")}</span><div class="optwide">
+      <div class="numgrid">${numCell("erad")}</div></div></div>
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Gap")}</span><div class="optwide">
+      <div class="numgrid">${numCell("egap")}</div></div></div>
     ${sect("Shopping")}${/* v2.30: was "Sort" — the store, its order, its aisle map, and the sound and screen while you shop (Sound folded in) */""}
     ${rowNL(t("Location"), `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">${t("On")}</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">${t("Off")}</button></div>`)}
     <div class="optrow optrow-wide optnl"><span class="optlabel">${t("Store")}</span><div class="optwide">
@@ -7937,35 +7947,20 @@ function editSheet(){
   const btnDelStyle = "padding:13px 12px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:14px";
   const btnSaveStyle = "flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px";
   const selCat = CAT(editing.cat);
-  const selSubs = (selCat && Array.isArray(selCat.subs)) ? selCat.subs : [];
-  const selSubLabel = (()=>{ if(!editing.sub) return t("None"); const s=selSubs.find(x=>x.id===editing.sub); return s?s.label:t("None"); })();
-  const subChips = selCat
-    ? `<button class="editsec" id="esHead"><span class="editsec-l">${t("Subcategory")}</span><span class="editsec-v">${esc(selSubLabel)}<span class="editsec-ch">${editSubOpen?'▾':'▸'}</span></span></button>
-       ${editSubOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
-         <button class="catchip" data-es="" style="${!editing.sub?`background:var(--btn);border-color:var(--btn);color:#fff`:''}">${t("None")}</button>
-         ${selSubs.map(s=>`<button class="catchip" data-es="${s.id}" style="${editing.sub===s.id?`background:${selCat.color};border-color:${selCat.color};color:#fff`:''}">${esc(s.label)}</button>`).join("")}
-         <button class="catchip" id="esAddSub" style="border-style:dashed;font-weight:800">${t("＋ New")}</button>
-       </div>` : ""}` : "";
   return `<div class="sheet-bg kbpin" id="sheetBg"><div class="sheet" id="sheet">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div class="disp" style="font-weight:800;font-size:17px">${isItem?t("Edit item"):t("Edit Regular")}</div>
-    </div>
-    ${/* v2.57 item 9c: flags first, then quantity / weight / name, then Note, then Category, Subcategory and Where to buy */""}
-    ${isItem ? `<div style="display:flex;flex-wrap:nowrap;gap:6px;margin-bottom:10px">${[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If discounted")},{k:"convenient",label:t("If convenient")}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}
-    <div style="display:flex;gap:6px;align-items:stretch">
-      <div class="qstep" style="height:46px;align-items:center;flex:none;border:none;background:var(--chip)"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>
-      ${weightBtn("edit", editing.weight)}
-      <input id="editName" value="${esc(editing.name)}" style="flex:1;min-width:0;height:46px;padding:0 12px;border-radius:14px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:15px" />
-    </div>
+    ${/* v2.63 item D: the title IS the name field; then flags, Quantity, Measure, price, Note, Category, Where to buy (no Subcategory) */""}
+    <input id="editName" class="edtitle" value="${esc(editing.name)}" aria-label="${t("Item name")}" />
+    ${isItem ? `<div class="edchips" style="flex-wrap:nowrap;margin-bottom:10px">${[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If discounted")}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}
+    <div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button id="qMinus" aria-label="${t("Less")}">−</button><span>${editing.qty||1}</span><button id="qPlus" aria-label="${t("More")}">+</button></span></div>
+    <button class="editsec" data-w-open="edit" aria-expanded="${wOpen==="edit"}"><span class="editsec-l">${t("Measure")}</span><span class="editsec-v">${esc(editing.weight||t("None"))}<span class="editsec-ch">${wOpen==="edit"?'▾':'▸'}</span></span></button>
     ${weightChips("edit", editing.weight)}
     ${priceLine(editing.name)}
     ${noteSecHTML(editing.note||"", editing.name, { head:'id="enHead"', input:'id="editNote"', chip:"data-en-chip" })}
     <button class="editsec" id="ecHead"><span class="editsec-l">${t("Category")}</span><span class="editsec-v">${selCat?`${catIcon(selCat,14)} ${esc(catLabel(selCat))}`:'—'}<span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></button>
-    ${editCatOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${chipsHTML(editing.cat)}<button class="catchip" id="ecAddCat" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}
-    ${subChips}
+    ${editCatOpen ? `<div class="edchips">${chipsHTML(editing.cat)}<button class="catchip" id="ecAddCat" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}
     ${isItem ? (()=>{ const ws=rcSavedStores(), w=editing.where||"", wl=whereIds({ where:w }), cur=whereNames(wl).join(", ");
       return `<button class="editsec" id="ewHead"><span class="editsec-l">${t("Where to buy")}</span><span class="editsec-v">${esc(cur||t("Anywhere"))}<span class="editsec-ch">${editWhereOpen?'▾':'▸'}</span></span></button>
-      ${editWhereOpen ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"><button class="catchip" data-ew="" style="${!w?'background:var(--btn);border-color:var(--btn);color:#fff':''}">${t("Anywhere")}</button>${ws.map(s=>`<button class="catchip" data-ew="${esc(s.id)}" style="${wl.includes(s.id)?'background:var(--btn);border-color:var(--btn);color:#fff':''}" aria-pressed="${wl.includes(s.id)}">${esc(s.name)}</button>`).join("")}</div>` : ""}`; })() : ""}
+      ${editWhereOpen ? `<div class="edchips"><button class="catchip" data-ew="" style="${!w?'background:var(--btn);border-color:var(--btn);color:#fff':''}">${t("Anywhere")}</button>${ws.map(s=>`<button class="catchip" data-ew="${esc(s.id)}" style="${wl.includes(s.id)?'background:var(--btn);border-color:var(--btn);color:#fff':''}" aria-pressed="${wl.includes(s.id)}">${esc(s.name)}</button>`).join("")}</div>` : ""}`; })() : ""}
     <div style="display:flex;gap:8px;margin-top:16px">
       <button id="secBtn" style="${btnSecStyle}">${secLabel}</button>
       <button id="delBtn" style="${btnDelStyle}">${t("Delete")}</button>
@@ -8220,7 +8215,6 @@ function wireEditSheet(){
       editing.starred = (editing.tags||[]).includes("urgent");
       render(); });
       const ech=app.querySelector("#ecHead"); if(ech) ech.onclick=()=>{ editCatOpen=!editCatOpen; render(); };
-      const esh=app.querySelector("#esHead"); if(esh) esh.onclick=()=>{ editSubOpen=!editSubOpen; render(); };
       const ewh=app.querySelector("#ewHead"); if(ewh) ewh.onclick=()=>{ editWhereOpen=!editWhereOpen; render(); };   // v2.22 R17
       /* v2.35: shops toggle on and off — several can be ticked; Anywhere clears them */
       app.querySelectorAll("[data-ew]").forEach(b=>b.onclick=()=>{ const id=b.dataset.ew; if(!id){ editing.where=""; render(); return; }

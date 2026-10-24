@@ -86,8 +86,9 @@ const IDEAS = { source:"model", provider:"", results:[
     /* SUPERSEDED by v2.18: the five heavy sections are the "Customise the look" page's — the tiles' colours and shape
        are "Tile colours and shape" there, and everyday Tiles (display, grouping, icons) starts open. Still protects:
        the heavy sections start folded, by name. */
-    ok('the five heavy sections start folded',
-       JSON.stringify(folded)===JSON.stringify(['Bars and overlays','Category headings','Colour','Layout & motion','Tile colours and shape']),
+    /* SUPERSEDED by v2.63: the look page has a sixth section, Edit item, folded like the rest. Still protects the same. */
+    ok('the heavy sections start folded',
+       JSON.stringify(folded)===JSON.stringify(['Bars and overlays','Category headings','Colour','Edit item','Layout & motion','Tile colours and shape']),
        JSON.stringify(folded));
     ok('…and Appearance is not among them, since Theme and Text size are why people come',
        s.some(x=>x.name==='Appearance' && !x.folded), JSON.stringify(s.map(x=>x.name+(x.folded?'*':''))));

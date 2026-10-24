@@ -38,7 +38,9 @@ const seed = (coll, extra) => `(() => {
    This still protects the order of the everyday sections and that no look section appears among them. */
 /* SUPERSEDED by v2.30: Settings was regrouped (Sort+Sound → Shopping, Predictions/Prices/Memberships → Smart features, Plan → Plan & recipes, Users → People, Other → Lists & sharing + Help). */
 const EVERYDAY = ["Appearance","Tiles","Shopping","Smart features","Plan & recipes","People","Lists & sharing","History","Help","Your data"];
-const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings","Tile colours and shape"];
+/* SUPERSEDED by v2.63: the look page has a sixth section, "Edit item" (the editor's pill colours and shape). Still protected:
+   exactly the look sections, in order, folded as an index. */
+const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings","Tile colours and shape","Edit item"];
 
 (async () => {
   const [port,out]=process.argv.slice(2);
@@ -84,7 +86,7 @@ const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings"
     await tap('#optLook');
     v = await view();
     ok('"Customise the look" opens its own page, titled so, with ‹ back', v.title==='Customise the look' && v.back, JSON.stringify({t:v.title,b:v.back}));
-    ok('…showing exactly the five look sections, and no search box', JSON.stringify(v.names)===JSON.stringify(LOOK) && !v.search, JSON.stringify(v.names));
+    ok('…showing exactly the look sections, and no search box', JSON.stringify(v.names)===JSON.stringify(LOOK) && !v.search, JSON.stringify(v.names));
     const heads = v.secs.find(x=>x.name==='Category headings')||{rows:[]};
     ok('Category headings is colours only now', !heads.rows.some(r=>/^(Category icons|Icon style)/.test(r)) && heads.rows.length>=6, JSON.stringify(heads.rows));
     await shot('look');
@@ -105,7 +107,7 @@ const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings"
     ok('a new phone: every everyday section open, Tiles included', v.secs.every(s=>s.open), JSON.stringify(v.secs.map(s=>s.name+':'+s.open)));
     await tap('#optLook');
     v = await view();
-    ok('…and the look page starts folded, as an index of its five sections', v.secs.length===5 && v.secs.every(s=>!s.open), JSON.stringify(v.secs.map(s=>s.name+':'+s.open)));
+    ok('…and the look page starts folded, as an index of its sections', v.secs.length===LOOK.length && v.secs.every(s=>!s.open), JSON.stringify(v.secs.map(s=>s.name+':'+s.open)));
 
     /* ── search ─────────────────────────────────────────────────────── */
     await mk([]);
@@ -113,7 +115,8 @@ const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings"
     ok('"wallpaper" leaves the Wallpaper row under Appearance, and nothing else', JSON.stringify(v.names)==='["Appearance"]' && v.secs[0].rows.length>=1 && v.secs[0].rows.every(r=>/^Wallpaper/.test(r)), JSON.stringify(v.secs));
     v = await search('roundness');
     ok('the search reaches the look page: "roundness" finds Tile roundness, its section marked "Customise the look"',
-       JSON.stringify(v.names)==='["Tile colours and shape"]' && v.secs[0].tag && JSON.stringify(v.secs[0].rows)==='["Shape","Tile roundness"]', JSON.stringify(v.secs));
+       /* SUPERSEDED by v2.63: "roundness" also finds Edit item's Roundness. Still protected: Tile roundness is found, tagged. */
+       v.names[0]==='Tile colours and shape' && v.secs[0].tag && JSON.stringify(v.secs[0].rows)==='["Shape","Tile roundness"]' && v.names.every(n=>["Tile colours and shape","Edit item"].includes(n)), JSON.stringify(v.secs));
     v = await search('shopping');   // v2.30: Sort is Shopping
     ok('a section\'s name shows the whole section ("shopping")', v.names.includes('Shopping') && ((v.secs.find(s=>s.name==='Shopping')||{}).rows||[]).length>=3, JSON.stringify(v.secs.map(s=>s.name+':'+s.rows.length)));
     v = await search('in regulars');
