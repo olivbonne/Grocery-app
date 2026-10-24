@@ -41,6 +41,10 @@ export function detectBarcodes(source){ return new BarcodeDetector().detect(sour
 export function speechRecognitionCtor(){ return window.SpeechRecognition || window.webkitSpeechRecognition || null; }
 
 // v2.49 S13: true inside a Capacitor shell (the future iPhone/Android app); the web app is never one
+/* v2.61: an iPhone or iPad (iPadOS reports a Mac with touch). There, a home-screen web app may not use speech recognition
+   at all (the household's phone answered "not allowed" with every setting right), so the app offers Siri and the
+   keyboard's own microphone instead. */
+export function isAppleMobile(){ try{ const u=navigator.userAgent||""; return /iPhone|iPad|iPod/.test(u) || (/Macintosh/.test(u) && navigator.maxTouchPoints>1); }catch(e){ return false; } }
 export function isNativeApp(){ try{ return !!(window.Capacitor && typeof window.Capacitor.isNativePlatform==="function" && window.Capacitor.isNativePlatform()); }catch(e){ return false; } }
 
 /* v2.60: text handed to the app from outside — Siri through an iPhone Shortcut (?add=…), Android's share sheet (?text=…,
