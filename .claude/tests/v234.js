@@ -105,9 +105,11 @@ const seed = (o) => { o=o||{}; return `(() => {
     /* ── 7 the unit box ──────────────────────────────────────────────── */
     await mk({});
     const p1 = pill('1'); await p1.dispatchEvent('pointerdown'); await page.waitForTimeout(650); await p1.dispatchEvent('pointerup'); await page.waitForTimeout(500);
+    /* SUPERSEDED by v2.63: the unit box, the amount and the name are no longer one row — the name is the title, and Quantity
+       and Measure are rows like Category. Still protected: both controls are there. */
     const hs = await page.evaluate(()=>{ const s=document.querySelector('#sheet'); if(!s) return null; const h=e=>e?Math.round(e.getBoundingClientRect().height):0;
-      return { unit:h(s.querySelector('.wbtn')), name:h(s.querySelector('#editName')), qty:h(s.querySelector('.qstep')) }; });
-    ok('(7) in Edit item the unit box, the amount and the name are one height', hs && hs.unit===hs.name && hs.unit===hs.qty, JSON.stringify(hs));
+      return { qty:h(s.querySelector('.edrow')), measure:h(s.querySelector('button.editsec[data-w-open]')), name:!!s.querySelector('#editName') }; });
+    ok('(7) in Edit item the quantity and the measure are there, as rows', hs && hs.name && hs.qty>0 && hs.measure>0, JSON.stringify(hs));
     await page.keyboard.press('Escape');
 
     /* ── 5 Regulars ──────────────────────────────────────────────────── */
