@@ -130,6 +130,7 @@
   .smartchip-head{ flex:1; min-width:0; display:flex; align-items:center; gap:8px; border:none; background:transparent;
     color:var(--text); text-align:left; padding:0; cursor:pointer; }
   .smartchip-name{ flex:1; min-width:0; font-weight:700; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .smartchip-note { color:var(--muted); font-weight:600; }   /* v2.70: the AI's note after the name */
   .smartchip-cat{ font-size:11px; font-weight:700; color:var(--muted2); flex:none; display:inline-flex; align-items:center; gap:3px; }
   .smartchip-caret{ flex:none; color:var(--muted2); font-size:12px; font-weight:800; transition:transform .15s ease; }
   .smartchip.open .smartchip-caret{ transform:rotate(180deg); }
@@ -1413,6 +1414,16 @@
   .ednotewrap .ednotechips { display:none; }
   .ednotewrap .ednotesel:empty { display:none; }   /* v2.68: the selected note parts, always shown; the rest only while the field has focus */
   .ednotewrap:focus-within .ednotechips { display:flex; }
+  /* v2.70 (the household): the Note row is one wrapping line of tiles — the chosen parts (tap to remove, ×) then a small
+     pencil entry. The label stays on the left; the tiles take the rest of the width. */
+  .editsec.ednote { flex-wrap:wrap; align-items:center; column-gap:10px; }
+  .ednote .ednotesel { flex:1 1 200px; min-width:0; margin-top:0; justify-content:flex-end; }
+  .ednotesel .catchip .ednotex { margin-left:6px; font-size:15px; line-height:1; opacity:.75; }
+  .ednotechips .catchip .ednotex { display:none; }
+  .ednotefree { display:inline-flex; align-items:center; gap:5px; flex:0 1 140px; min-width:110px; height:36px; box-sizing:border-box;
+    padding:0 10px; border:1.5px dashed var(--epillbrd, var(--muted2)); border-radius:var(--epillrad, 999px); color:var(--muted); }
+  .ednotefree svg { flex:none; }
+  #sheet .ednotefree .edval.ednotein, .addedit .ednotefree .edval.ednotein { flex:1; min-width:0; width:100%; height:auto; border:none; background:transparent; padding:0; color:var(--text); font-size:14px; }
   .regcat { margin-top:2px; }
   /* v1.76 item 2: the Regulars heading is bare text, so it takes the tile shape only once a colour is
      set — the width and padding come from applyTheme and are 0px until then, so an untouched install
@@ -1533,6 +1544,9 @@
   .checkedbar, .qbanner { background:var(--glass-bg); }
   /* v2.69: a sheet's chosen background wraps the glass; unset (--lksbg invalid), the glass paints as before */
   .sheet { background:var(--lksbg, var(--glass-bg)); color:var(--lkstext, inherit); }
+  /* v2.70: a sheet's Transparency — only when set (html[data-lka-<sheet>], written by applyTheme), so an untouched sheet paints exactly as before */
+  html[data-lka-edit] .sheet[data-look="edit"], html[data-lka-smart] .sheet[data-look="smart"], html[data-lka-add] .sheet[data-look="add"], html[data-lka-card] .sheet[data-look="card"], html[data-lka-other] .sheet:not([data-look]) {
+    background:color-mix(in srgb, var(--lksbg, var(--glass-bg)) calc(var(--lksa, 100) * 1%), transparent); }
   /* v1.78: the search bar is split out of the shared list the same way v1.76 split the two bars, so it
      can take its own colour. The fallback is the glass recipe, so untouched it paints what it painted. */
   .addpill { background:var(--srchbar-bg, var(--glass-bg)); color:var(--srchbar-text, var(--muted)); }
@@ -1568,6 +1582,8 @@
     /* v1.76 item 1: split the same way as the glass block above, with the solid paper as the fallback. */
     .checkedbar, .qbanner { background:var(--paper); }
     .sheet { background:var(--lksbg, var(--paper)); }   /* v2.69 */
+    html[data-lka-edit] .sheet[data-look="edit"], html[data-lka-smart] .sheet[data-look="smart"], html[data-lka-add] .sheet[data-look="add"], html[data-lka-card] .sheet[data-look="card"], html[data-lka-other] .sheet:not([data-look]) {
+      background:color-mix(in srgb, var(--lksbg, var(--paper)) calc(var(--lksa, 100) * 1%), transparent); }   /* v2.70 */
     .addpill { background:var(--srchbar-bg, var(--paper)); }
     .topfix { background:var(--topbar-bg, var(--paper)); }
     .bottomnav { background:var(--navbar-bg, var(--paper)); }
@@ -1578,6 +1594,8 @@
     /* v1.76 item 1: same split again — the user's bar colour still applies with transparency reduced. */
     .checkedbar, .qbanner { background:var(--paper); }
     .sheet { background:var(--lksbg, var(--paper)); }   /* v2.69 */
+    html[data-lka-edit] .sheet[data-look="edit"], html[data-lka-smart] .sheet[data-look="smart"], html[data-lka-add] .sheet[data-look="add"], html[data-lka-card] .sheet[data-look="card"], html[data-lka-other] .sheet:not([data-look]) {
+      background:color-mix(in srgb, var(--lksbg, var(--paper)) calc(var(--lksa, 100) * 1%), transparent); }   /* v2.70 */
     .addpill { background:var(--srchbar-bg, var(--paper)); }
     .topfix { background:var(--topbar-bg, var(--paper)); }
     .bottomnav { background:var(--navbar-bg, var(--paper)); }
@@ -1898,8 +1916,9 @@
   .wgrid .catchip.on { background:var(--btn); border-color:var(--btn); color:var(--btn-text); }
   .addedit-actions { display:flex; gap:8px; margin-top:2px; }
   .addedit-more { flex:none; border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:14px; padding:8px 12px; border-radius:12px; }
-  .addedit-remove { flex:none; border:1.5px solid #C24A33; background:transparent; color:#C24A33; font-weight:700; font-size:14px; padding:8px 12px; border-radius:12px; }
-  .addedit-done { flex:1; border:none; background:var(--btn); color:var(--btn-text); font-weight:800; font-size:15px; border-radius:12px; padding:9px; }
+  .addedit-remove { flex:none; border:1.5px solid #C24A33; background:transparent; color:#C24A33; font-weight:700; font-size:14px; padding:0 12px; border-radius:var(--epillrad, 999px);   /* v2.70: the tile shape, 44px */
+    height:44px; box-sizing:border-box; display:inline-flex; align-items:center; gap:6px; }
+  .addedit-done { flex:1; border:1.5px solid var(--btn); background:var(--btn); color:var(--btn-text); font-weight:800; font-size:15px; border-radius:var(--epillrad, 999px); padding:0 9px; height:44px; box-sizing:border-box; }
   /* v1.46: .flagchip and .editsec are shared with the full-screen edit sheet — tighten them only
      inside the inline panel. Two classes beat the single-class base rules on specificity. */
   .addedit .flagchip { padding:6px 5px; font-size:14px; }   /* v2.57 item 9b: the same size as the full sheet */
@@ -1910,6 +1929,11 @@
     border-bottom:1.5px solid transparent; outline:none; padding:4px 0; color:var(--text); font-family:inherit; }
   .edtitle:focus { border-bottom-color:var(--line); }
   .addedit .edtitle { font-size:17px; }
+  /* v2.70: the title row — the name on the left, the last price on the right on its baseline */
+  .edtitlerow { display:flex; align-items:baseline; gap:8px; }
+  .edtitlerow .edtitle { flex:1; min-width:0; width:auto; }
+  .pricemem.pricemem-c { flex:0 1 auto; max-width:45%; margin:0; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .edflags { margin-top:10px; }
   .edchips { display:flex; flex-wrap:wrap; column-gap:var(--epillgap, 6px); row-gap:var(--epillgapy, 6px); margin-top:6px; }
   .editsec.edrow { cursor:default; }
   .eqty { display:inline-flex; align-items:center; height:36px; box-sizing:border-box; }
@@ -2041,11 +2065,11 @@
    when chosen; each sheet maps its own onto --lksbg/--lkstext (the surface) and the --epill* pill tokens. A var() of an unset
    custom property makes the token invalid, so every usage's own fallback — today's look — applies. A sheet with no
    data-look is "other". The Edit item panel inside the add sheet (.addedit) carries data-look="edit" and takes the edit look back. */
-.sheet:not([data-look]) { --lksbg:var(--lk-other-bg); --lkstext:var(--lk-other-text); }
-.sheet[data-look="edit"]  { --lksbg:var(--lk-edit-bg);  --lkstext:var(--lk-edit-text); }
-.sheet[data-look="smart"] { --lksbg:var(--lk-smart-bg); --lkstext:var(--lk-smart-text); }
-.sheet[data-look="add"]   { --lksbg:var(--lk-add-bg);   --lkstext:var(--lk-add-text); }
-.sheet[data-look="card"]  { --lksbg:var(--lk-card-bg);  --lkstext:var(--lk-card-text); }
+.sheet:not([data-look]) { --lksbg:var(--lk-other-bg); --lksa:var(--lk-other-alpha); --lkstext:var(--lk-other-text); }
+.sheet[data-look="edit"]  { --lksbg:var(--lk-edit-bg); --lksa:var(--lk-edit-alpha);  --lkstext:var(--lk-edit-text); }
+.sheet[data-look="smart"] { --lksbg:var(--lk-smart-bg); --lksa:var(--lk-smart-alpha); --lkstext:var(--lk-smart-text); }
+.sheet[data-look="add"]   { --lksbg:var(--lk-add-bg); --lksa:var(--lk-add-alpha);   --lkstext:var(--lk-add-text); }
+.sheet[data-look="card"]  { --lksbg:var(--lk-card-bg); --lksa:var(--lk-card-alpha);  --lkstext:var(--lk-card-text); }
 .sheet:not([data-look]) { --epillbg:var(--lk-other-pbg); --epilltext:var(--lk-other-ptext); --epillbrd:var(--lk-other-pbrd);
   --epillrad:var(--lk-other-rad); --epillgap:var(--lk-other-gapx); --epillgapy:var(--lk-other-gapy); }
 [data-look="edit"]  { --epillbg:var(--lk-edit-pbg); --epilltext:var(--lk-edit-ptext); --epillbrd:var(--lk-edit-pbrd);
@@ -2078,3 +2102,6 @@
   column-gap:var(--epillgap, 6px); row-gap:var(--epillgapy, 6px); }
 :where(.sheet:not([data-look]), [data-look="smart"], [data-look="add"], [data-look="card"]) .smartchips {
   column-gap:var(--epillgap, 8px); row-gap:var(--epillgapy, 8px); }
+  /* v2.70: the note's small entry is one tile — its input never draws a ring of its own; the tile shows the focus */
+  #sheet .ednotefree .ednotein:focus, .addedit .ednotefree .ednotein:focus, .ednotefree .ednotein:focus { border:none !important; box-shadow:none !important; outline:none !important; }
+  .ednotefree:focus-within { border-color:var(--accent); border-style:solid; }

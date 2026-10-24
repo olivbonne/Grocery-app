@@ -117,16 +117,18 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     await hold('[data-pill="1"]');
     const ed = await page.evaluate(()=>{ const sh=document.querySelector('#sheet'); if(!sh) return null;
       const flags=sh.querySelector('[data-flag]'), qty=sh.querySelector('#qMinus'), labs=[...sh.querySelectorAll('.editsec-l')];
-      return { flagsFirst: !!(flags && qty && (flags.compareDocumentPosition(qty) & Node.DOCUMENT_POSITION_FOLLOWING)),
+      /* SUPERSEDED by v2.70: the flags moved to just above Delete / Save (the household). Still protected: one label size, no
+         capitals, everything folded — and the flags are in the sheet, after the quantity now. */
+      return { flagsFirst: !!(flags && qty && (qty.compareDocumentPosition(flags) & Node.DOCUMENT_POSITION_FOLLOWING)),
         labels: labs.map(l=>l.textContent.trim()), sizes:[...new Set(labs.map(l=>getComputedStyle(l).fontSize))], upper: labs.some(l=>getComputedStyle(l).textTransform==='uppercase'),
         folded: ![...sh.querySelectorAll('.catchip')].some(c=>c.offsetParent!==null) }; });   // v2.65: note chips are in the page but hidden until the note has focus
     /* SUPERSEDED by v2.63: Quantity and Measure are rows now, above Note (was: Note first). Still protected: flags first,
        one label size, no capitals, everything folded. */
-    ok('9 · Edit item: flags above the quantity; Quantity, Measure, Note, Category… one size, no capitals; everything folded', ed && ed.flagsFirst && ed.labels.slice(0,3).join()==='Quantity,Measure,Note' && ed.sizes.length===1 && !ed.upper && ed.folded, JSON.stringify(ed));
+    ok('9 · Edit item: flags below the quantity (v2.70); Quantity, Measure, Note, Category… one size, no capitals; everything folded', ed && ed.flagsFirst && ed.labels.slice(0,3).join()==='Quantity,Measure,Note' && ed.sizes.length===1 && !ed.upper && ed.folded, JSON.stringify(ed));
     /* SUPERSEDED by v2.65: the note is always a field (no fold); its suggestions show while it has focus. Still protected:
        a field, and this item's suggestions. */
     await page.locator('#sheet #editNote').click(); await page.waitForTimeout(400);
-    const chips = await page.evaluate(()=>[...document.querySelectorAll('#sheet .ednotechips .catchip')].filter(c=>c.offsetParent!==null).map(c=>c.textContent.trim()));
+    const chips = await page.evaluate(()=>[...document.querySelectorAll('#sheet .ednotechips .catchip')].filter(c=>c.offsetParent!==null).map(c=>c.textContent.replace('×','').trim()));   // v2.70: a chip carries a (hidden) × span
     ok('9 · the Note field shows suggestions for this item while typing (yogurt → Greek, low fat…)', chips.includes('Greek') && chips.some(c=>/low fat/i.test(c)) && await page.locator('#sheet input#editNote').count()===1, JSON.stringify(chips));
     await shot('edititem');
     await page.locator('#sheet .catchip', { hasText:'Greek' }).click(); await page.waitForTimeout(300);

@@ -449,6 +449,7 @@ export const FR = {
   "Add to list": "Ajouter à la liste",
   "A note for whoever shops — “the green bottle”": "Une note pour qui fait les courses — « la bouteille verte »",
   "Note": "Note",
+  "Add note": "Ajouter une note",
   "Where to buy": "Où l’acheter",
   "Anywhere": "N’importe où",
   "Pick a category first": "Choisissez d’abord une catégorie",

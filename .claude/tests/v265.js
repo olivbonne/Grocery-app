@@ -62,18 +62,20 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
       return { rows, note: note && { ph:note.placeholder, val:note.value }, btns:[...s.querySelectorAll('button')].map(b=>b.textContent.trim()).filter(x=>/Regulars|Add to list|Save|Delete/.test(x)) }; });
     ok('Measure, Category and Where to buy show their value as a tile with the arrow inside', ['Measure','Category','Where to buy'].every(k=>sh.rows[k] && sh.rows[k].tile && sh.rows[k].arrowIn), JSON.stringify(sh.rows));
     ok('…an empty Measure reads "unit", not "None"', /^unit/.test((sh.rows.Measure||{}).text.trim()), (sh.rows.Measure||{}).text);
-    ok('the Note is always a field, with a grey example in it ("e.g. …")', sh.note && /^e\.g\. /.test(sh.note.ph) && sh.note.val==='', JSON.stringify(sh.note));
+    /* SUPERSEDED by v2.70: the free note is a small pencil tile ("Add note"); the chosen options are tiles in line with it.
+       Still protected: the note entry is always there and starts empty. */
+    ok('the Note is always a field (a small pencil tile, "Add note")', sh.note && sh.note.val==='' && await page.locator('#sheet .ednotefree svg').count()===1, JSON.stringify(sh.note));
     ok('only Delete and Save — no "Add to Regulars" / "Add to list"', JSON.stringify(sh.btns)==='["Delete","Save"]', JSON.stringify(sh.btns));
     const hidden = await page.evaluate(()=>[...document.querySelectorAll('#sheet .ednotechips .catchip')].filter(c=>c.offsetParent!==null).length);
     await page.locator('#editNote').click(); await page.waitForTimeout(300);
-    const shown = await page.evaluate(()=>[...document.querySelectorAll('#sheet .ednotechips .catchip')].filter(c=>c.offsetParent!==null).map(c=>c.textContent.trim()));
+    const shown = await page.evaluate(()=>[...document.querySelectorAll('#sheet .ednotechips .catchip')].filter(c=>c.offsetParent!==null).map(c=>c.textContent.replace('×','').trim()));   // v2.70: a chip carries a (hidden) × span
     ok('its suggestions show only while it has focus', hidden===0 && shown.length>0, JSON.stringify(shown));
     await page.evaluate(()=>{ window.__sameSheet = document.querySelector('#sheet'); });
     await page.locator('#sheet .ednotechips .catchip').first().click(); await page.waitForTimeout(300);
     /* SUPERSEDED by v2.68: a tapped suggestion becomes a chosen TILE (.ednotesel), and the box keeps only the free text. Still
        protected: no re-render, the field keeps focus, and the choice is in the note. */
     const after = await page.evaluate(()=>({ same: window.__sameSheet===document.querySelector('#sheet'), focus: document.activeElement && document.activeElement.id,
-      val: [...document.querySelectorAll('#sheet .ednotesel .catchip')].map(c=>c.textContent.trim()).join(', ') }));
+      val: [...document.querySelectorAll('#sheet .ednotesel .catchip')].map(c=>c.textContent.replace('×','').trim()).join(', ') }));
     ok('tapping a suggestion makes it a chosen tile without a re-render, and the field keeps focus (keyboard stays up)', after.same && after.focus==='editNote' && after.val===shown[0], JSON.stringify(after));
     const onBg = await page.evaluate(()=>{ const c=document.querySelector('#sheet .ednotesel .catchip.on'); const o=document.querySelector('#sheet .ednotechips .catchip:not(.on)'); return c&&o ? [getComputedStyle(c).backgroundColor, getComputedStyle(o).backgroundColor] : null; });
     ok('…and the chosen suggestion shows as chosen', onBg && onBg[0]!==onBg[1], JSON.stringify(onBg));

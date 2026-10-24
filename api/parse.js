@@ -2,7 +2,7 @@
 //
 // Turns free-form grocery text into structured items using Gemini or Groq, keeping
 // the API key SERVER-SIDE so the client (index.html) never sees it.
-// Contract:  POST /api/parse  { text }  ->  { items: [{ name, qty, category }] }
+// Contract:  POST /api/parse  { text }  ->  { items: [{ name, qty, category, note }] }
 //
 // The key lives in the GEMINI_API_KEY or GROQ_API_KEY environment variable (Vercel
 // Project Settings -> Environment Variables). It is never logged, never returned to the
@@ -145,6 +145,7 @@ const SYSTEM = [
   '  "name": string  — the item name, lowercase, singular where natural',
   '  "qty": integer  — quantity, default 1 if unspecified (e.g. "dozen eggs" -> 12)',
   '  "category": one of ' + CATEGORIES.map((c) => '"' + c + '"').join(', '),
+  '  "note": string  — the words that tell this item apart from others of its kind (flavour, variety, size, brand), lowercase, comma-separated; "" if none. Keep "name" as the plain item (e.g. "yogurt") and put "calcium, mango" in "note".',
   'Choose the closest category; use "others" when nothing fits.',
   'Return only the JSON object — no prose, no markdown fences.',
 ].join('\n');
@@ -159,7 +160,9 @@ function clampItem(x) {
   if (qty > 999) qty = 999;
   let category = String(x.category || '').toLowerCase().trim();
   if (!CATEGORIES.includes(category)) category = 'others';
-  return { name, qty, category };
+  // v2.70: what tells this item apart (flavour, variety…) — one line, at most 80 characters
+  const note = String(x.note == null ? '' : x.note).replace(/[\r\n]+/g, ' ').trim().slice(0, 80).trim();
+  return { name, qty, category, note };
 }
 
 module.exports = async (req, res) => {

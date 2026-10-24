@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.69";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.69";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.69";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.69";
-import { compareStores, worthIt } from "./compare.js?v=2.69";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.69";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.69";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.69";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.69";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.69";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.69";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.69";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.69";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.69";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.70";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.70";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.70";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.70";
+import { compareStores, worthIt } from "./compare.js?v=2.70";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.70";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.70";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.70";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.70";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.70";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.70";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.70";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.70";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.70";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.69";
+const APP_VERSION = "v2.70";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -623,6 +623,10 @@ SHEET_LOOKS.filter(sh=>sh!=="edit").forEach(sh=>{
   NUMOPT["lk_"+sh+"_rad"]  = { ls:"ml_lk_"+sh+"_rad",  vr:"--lk-"+sh+"-rad",  def:20, min:0, max:28, step:2, off:20, label:"Corner" };
   NUMOPT["lk_"+sh+"_gapx"] = { ls:"ml_lk_"+sh+"_gapx", vr:"--lk-"+sh+"-gapx", def:6,  min:0, max:16, step:1, off:6,  label:"Across" };
   NUMOPT["lk_"+sh+"_gapy"] = { ls:"ml_lk_"+sh+"_gapy", vr:"--lk-"+sh+"-gapy", def:6,  min:0, max:24, step:1, off:6,  label:"Down" }; });
+/* v2.70: every sheet's Transparency — how opaque its background is, 0–100 %. A plain number (unit ""), off at 100, so an
+   untouched sheet writes nothing; applyTheme() also marks <html data-lka-<sheet>> so the colour-mix applies only when set. */
+SHEET_LOOKS.forEach(sh=>{
+  NUMOPT["lk_"+sh+"_alpha"] = { ls:"ml_lk_"+sh+"_alpha", vr:"--lk-"+sh+"-alpha", def:100, min:0, max:100, step:5, off:100, unit:"", label:"Transparency" }; });
 /* v1.55 item 2: two levels of default. NUMOPT[].def is the FACTORY value — what the stylesheet used
    before any of this was settable, and the thing to fall back to when an experiment goes wrong.
    `ml_numdef` is the user's own baseline, saved from whatever is on screen; once it exists, clearing
@@ -704,7 +708,7 @@ function applyTheme(){ _cardHexMemo=null; const t = THEMES[theme] || THEMES.ligh
        expressed as a number, so the escape has to be a value the var simply never takes. */
     Object.keys(NUMOPT).forEach(k=>{ const o=NUMOPT[k]; if(!o.vr) return;
       if(o.off!==undefined && numVal(k)===o.off) rs.removeProperty(o.vr);
-      else rs.setProperty(o.vr, numVal(k)+"px"); });
+      else rs.setProperty(o.vr, numVal(k)+(o.unit!==undefined ? o.unit : "px")); });   // v2.70: unit "" for a plain number
     /* v1.57 item 2: six tile tokens plus the category one. Each is written only when its picker has a
        colour, so "auto" falls through to the CSS fallback and the theme keeps deciding. */
     const T={ "--tilebg":tileBgHex(), "--tilebrd":tileBrdHex(), "--tiletext":tileTxtHex(),
@@ -730,6 +734,8 @@ function applyTheme(){ _cardHexMemo=null; const t = THEMES[theme] || THEMES.ligh
          inside the add sheet (.addedit, data-look="edit") can take it back from the add sheet's own tokens */
       if(sh==="edit") Object.keys(LK_NUMALIAS).forEach(g=>{ const k=LK_NUMALIAS[g], o=NUMOPT[k], v="--lk-edit-"+g;
         if(o.off!==undefined && numVal(k)===o.off) rs.removeProperty(v); else rs.setProperty(v, numVal(k)+"px"); }); });
+    /* v2.70: the attribute that switches a sheet's Transparency on — only when it is not 100 */
+    SHEET_LOOKS.forEach(sh=>{ const k="lk_"+sh+"_alpha"; document.documentElement.toggleAttribute("data-lka-"+sh, numVal(k)!==NUMOPT[k].off); });
     /* v1.76 item 2: the same rule for the two headings — a chosen heading background must not leave
        its label unreadable, but a chosen label colour always wins, so this only fills in the gap. */
     if(T["--cathdbg"] && !T["--cattext"]) rs.setProperty("--cattext", onAccent(T["--cathdbg"]));
@@ -1901,24 +1907,43 @@ function noteToggle(note, chip){ const ps=noteParts(note), i=ps.findIndex(x=>x.t
    v2.68 (the household): the parts of the note that are suggestions show as SELECTED chips, always visible, under the field;
    the field holds only the rest (free text). The stored note = the selected parts, in order, then the free text. */
 function noteSecHTML(note, name, a){
+  /* v2.70 (the household): one wrapping line of tiles — every part of the note is a chosen tile (tap to remove, ×), then a
+     small pencil entry; typed text becomes tiles at a comma, Enter or leaving the field. Unchosen suggestions show below
+     while the entry has focus. The stored note = the chosen tiles in order, plus anything still in the entry. */
   const sg=noteSuggest(name), sgL=sg.map(x=>x.toLowerCase());
-  const parts=noteParts(note), sel=parts.filter(x=>sgL.includes(x.toLowerCase())), selL=sel.map(x=>x.toLowerCase());
-  const free=parts.filter(x=>!sgL.includes(x.toLowerCase())).join(", ");
-  const ph = sg.length ? tf("e.g. {x}", { x: sg.slice(0,2).join(", ") }) : t("e.g. organic");
-  const chip=(x,on)=>`<button class="catchip${on?' on':''}" ${a.chip}="${esc(x)}" aria-pressed="${on}">${esc(x)}</button>`;
-  return `<div class="ednotewrap"><div class="editsec edrow ednote"><span class="editsec-l">${t("Note")}</span><input ${a.input} class="edval ednotein" value="${esc(free)}" maxlength="140" placeholder="${esc(ph)}" aria-label="${t("Note")}"></div>
-      ${sg.length ? `<div class="edchips ednotesel">${sel.map(x=>chip(x,true)).join("")}</div><div class="edchips ednotechips">${sg.filter(x=>!selL.includes(x.toLowerCase())).map(x=>chip(x,false)).join("")}</div>` : ""}</div>`; }
-/* v2.68: the note as the editor shows it — the selected chips, in order, then the field's free text */
+  const parts=noteParts(note), selL=parts.map(x=>x.toLowerCase());
+  const chip=(x,on)=>noteChipHTML(a.chip, x, on, sgL.includes(x.toLowerCase()));
+  return `<div class="ednotewrap" data-chipattr="${a.chip}"><div class="editsec edrow ednote"><span class="editsec-l">${t("Note")}</span><div class="edchips ednotesel">${parts.map(x=>chip(x,true)).join("")}<span class="ednotefree">${PENCIL_SVG(14)}<input ${a.input} class="edval ednotein" value="" maxlength="140" placeholder="${t("Add note")}" aria-label="${t("Note")}"></span></div></div>
+      ${sg.length ? `<div class="edchips ednotechips">${sg.filter(x=>!selL.includes(x.toLowerCase())).map(x=>chip(x,false)).join("")}</div>` : ""}</div>`; }
+function noteChipHTML(attr, x, on, isSg){ return `<button class="catchip${on?' on':''}${isSg?' ednote-sg':''}" ${attr}="${esc(x)}" aria-pressed="${on}">${esc(x)}<span class="ednotex" aria-hidden="true">×</span></button>`; }
+function noteChipVal(c){ return c.getAttribute(c.closest(".ednotewrap").dataset.chipattr)||""; }
+/* v2.68: the note as the editor shows it — the chosen tiles, in order, then the entry's text not yet made a tile */
 function noteFromWrap(w){ if(!w) return "";
-  const sel=[...w.querySelectorAll(".ednotesel .catchip")].map(c=>Object.values(c.dataset)[0]||"");
+  const sel=[...w.querySelectorAll(".ednotesel .catchip")].map(noteChipVal);
   const inp=w.querySelector(".ednotein");
   return [...sel, ...noteParts(inp ? inp.value : "")].join(", ").slice(0,140); }
 /* v2.65: a note chip toggles in place — no re-render, so the field keeps focus and the keyboard stays up.
-   v2.68: it moves between the selected group and the suggestions; returns the new note */
+   v2.70: a chosen tile is removed (a suggestion goes back below); a suggestion becomes a chosen tile before the entry */
 function noteChipTap(b){ const w=b.closest(".ednotewrap"); if(!w) return "";
-  const on=!b.classList.contains("on"); b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on));
+  const on=!b.classList.contains("on");
+  if(!on && !b.classList.contains("ednote-sg")){ b.remove(); return noteFromWrap(w); }
+  b.classList.toggle("on", on); b.setAttribute("aria-pressed", String(on));
   const dst=w.querySelector(on ? ".ednotesel" : ".ednotechips");
-  if(dst){ if(on) dst.appendChild(b); else dst.insertBefore(b, dst.firstChild); }
+  if(dst){ if(on) dst.insertBefore(b, dst.querySelector(".ednotefree")); else dst.insertBefore(b, dst.firstChild); }
+  return noteFromWrap(w); }
+/* v2.70: the entry's text becomes tiles — split on commas; a part matching a suggestion selects it, one already chosen is
+   skipped. keep: text after the last comma stays in the entry (typing a comma). wire(b) attaches a new tile's tap. */
+function noteCommit(inp, wire, keep){ const w=inp.closest(".ednotewrap"); if(!w) return "";
+  let txt=inp.value, rest="";
+  if(keep){ const k=txt.lastIndexOf(","); if(k<0) return noteFromWrap(w); rest=txt.slice(k+1); txt=txt.slice(0,k); }
+  const sel=w.querySelector(".ednotesel"), free=w.querySelector(".ednotefree"), attr=w.dataset.chipattr;
+  noteParts(txt).forEach(x=>{ const xl=x.toLowerCase();
+    if([...sel.querySelectorAll(".catchip")].some(c=>noteChipVal(c).toLowerCase()===xl)) return;
+    const sg=[...w.querySelectorAll(".ednotechips .catchip")].find(c=>noteChipVal(c).toLowerCase()===xl);
+    if(sg){ noteChipTap(sg); return; }
+    const tmp=document.createElement("div"); tmp.innerHTML=noteChipHTML(attr, x, true, false);
+    const b=tmp.firstChild; sel.insertBefore(b, free); if(wire) wire(b); });
+  inp.value=rest.replace(/^\s+/,"");
   return noteFromWrap(w); }
 var editWhereOpen=false, elseOpen=false;   // v2.22 the edit sheet's "Where to buy" section; the Shop page's "For other shops". var: renders read them at boot
 /* v2.22 R17 where to buy it. "Away" is the shop you are at — a real saved store, not Home or an unknown place — and an
@@ -2643,7 +2668,7 @@ function addEntries(text, override){
   const parsed = parseInput(text); if(!parsed.length) return;
   for(const e of parsed){
     const cat = override || e.cat;
-    const ex = state.items.find(i=>!i.checked && i.name.toLowerCase()===e.name.toLowerCase());
+    const ex = state.items.find(i=>!i.checked && i.name.toLowerCase()===e.name.toLowerCase() && !noteKey(i.note));   // v2.70: never fold a plain name into one with a note
     if(ex){ if(e.qty>1) ex.qty=(ex.qty||1)+e.qty; if(e.weight) ex.weight=e.weight; markDirty(ex.id); continue; }
     const nid=uid();
     const known = knownEntry(e.name);
@@ -2740,7 +2765,9 @@ function cartEstimate(){ const s=activeStore(), sid=(s && s.id) || "";
   return { total:Math.round(total*100)/100, priced, n }; }
 function priceDay(d){ try{ return new Date(d+"T00:00:00").toLocaleDateString(dateLoc(),{day:"numeric",month:"short"}); }catch(e){ return d||""; } }
 /* "Last paid $5.50 at Coles Dandenong · 2 Oct", plus the latest at up to two other stores. */
-function priceLine(name){ const a=priceLookup(name); if(!a || !a.length) return "";
+function priceLine(name, o){ const a=priceLookup(name); if(!a || !a.length) return "";
+  /* v2.70: compact — one muted line for the Edit item title row: the last price and its shop */
+  if(o && o.compact){ const l=a[a.length-1]; return `<span class="pricemem pricemem-c">${priceMoney(l.p)}${l.sn?` · ${esc(l.sn)}`:""}</span>`; }
   const last=a[a.length-1], seen={}, others=[]; seen[last.sn||""]=1;
   for(let i=a.length-2;i>=0 && others.length<2;i--){ const x=a[i]; if(seen[x.sn||""]) continue; seen[x.sn||""]=1; others.push(x); }
   return `<div class="pricemem">Last paid <b>${priceMoney(last.p)}</b>${last.sn?` at ${esc(last.sn)}`:""} · ${esc(priceDay(last.d))}${others.map(x=>`<span class="pricemem-o">${priceMoney(x.p)}${x.sn?` at ${esc(x.sn)}`:""} · ${esc(priceDay(x.d))}</span>`).join("")}</div>`; }
@@ -3242,6 +3269,9 @@ const HOME_SVG    = sz => ICO('<path d="M4 11.5L12 4l8 7.5"/><path d="M6.5 9.5V2
 const PIN_SVG     = sz => ICO('<path d="M12 21s-6.5-6.2-6.5-11.2a6.5 6.5 0 0113 0C18.5 14.8 12 21 12 21z"/><circle cx="12" cy="9.8" r="2.4"/>', sz);
 const RESTOCK_SVG = sz => ICO('<path d="M19.5 8.5A8 8 0 005.2 7.4"/><path d="M5 3.8v3.9h3.9"/><path d="M4.5 15.5a8 8 0 0014.3 1.1"/><path d="M19 20.2v-3.9h-3.9"/>', sz);
 const FLASK_SVG   = sz => ICO('<path d="M9.5 3.5h5"/><path d="M10.5 3.5v5.2L5.3 18a1.8 1.8 0 001.6 2.5h10.2a1.8 1.8 0 001.6-2.5l-5.2-9.3V3.5"/><path d="M7.6 14.5h8.8"/>', sz);
+/* v2.70: the Edit item sheet's Delete and the note entry — line-drawn in currentColor, stroke 1.8 */
+const TRASH_SVG   = sz => ICO('<path d="M4 6.5h16"/><path d="M9.5 6.5V4.5h5v2"/><path d="M6.2 6.5l.9 13a1.6 1.6 0 001.6 1.5h6.6a1.6 1.6 0 001.6-1.5l.9-13"/><path d="M10 10.5v6.5M14 10.5v6.5"/>', sz).replace('stroke-width="2.2"','stroke-width="1.8"');
+const PENCIL_SVG  = sz => ICO('<path d="M4 20l1-4.2L15.6 5.2a2 2 0 012.8 0l.4.4a2 2 0 010 2.8L8.2 19 4 20z"/><path d="M13.8 7l3.2 3.2"/>', sz).replace('stroke-width="2.2"','stroke-width="1.8"');
 const BIN_SVG     = sz => ICO('<path d="M4.5 6.5h15"/><path d="M9.5 6.5V4.2h5v2.3"/><path d="M6.5 6.5l1 13.3h9l1-13.3"/><path d="M10.2 10v6.6M13.8 10v6.6"/>', sz);
 /* v2.13: Report a problem — a speech bubble with an exclamation mark, for the top banner's right-hand button */
 const REPORT_SVG  = sz => ICO('<path d="M5 4.5h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7l-4.5 3.5v-3.5H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z"/><path d="M12 8.2v3.8"/><path d="M12 15h.01"/>', sz);
@@ -3571,7 +3601,6 @@ function addEditPanel(){
           keyboard, so every row it saves is a row you don't have to scroll to. */""}
     ${/* v2.63 item D: the title IS the name field; then flags, Quantity, Measure, Note, Category (no Subcategory) */""}
     <input class="edtitle" data-ae-name="${it.id}" value="${esc(it.name)}" aria-label="${t("Item name")}" />
-    <div class="addedit-flags edchips">${flags.map(f=>{ const on=(it.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-ae-flag="${it.id}|${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>
     <div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button data-ae-minus="${it.id}" aria-label="${t("Less")}">−</button><span>${it.qty||1}</span><button data-ae-plus="${it.id}" aria-label="${t("More")}">+</button></span></div>
     <button class="editsec" data-w-open="${it.id}" aria-expanded="${wOpen===it.id}"><span class="editsec-l">${t("Measure")}</span><span class="editsec-v"><span class="edval">${esc(it.weight||t("unit"))} <span class="editsec-ch">${wOpen===it.id?'▾':'▸'}</span></span></span></button>
     ${weightChips(it.id, it.weight)}
@@ -3582,8 +3611,10 @@ function addEditPanel(){
     ${noteSecHTML(it.note||"", it.name, { input:`data-ae-note="${it.id}"`, chip:"data-ae-notechip" })}
     <button class="editsec" data-ae-sechead="cat"><span class="editsec-l">${t("Category")}</span><span class="editsec-v"><span class="edval">${cat?`${catIcon(cat,14)} ${esc(catLabel(cat))}`:'—'} <span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></span></button>
     ${editCatOpen ? `<div class="edchips">${catChips}<button class="catchip" data-ae-addcat="${it.id}" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}
+    ${/* v2.70: the flags sit just above the buttons, as in Edit item */""}
+    <div class="addedit-flags edchips edflags">${flags.map(f=>{ const on=(it.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-ae-flag="${it.id}|${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>
     <div class="addedit-actions">
-      <button class="addedit-remove" data-ae-remove="${it.id}">${t("Delete")}</button>
+      <button class="addedit-remove" data-ae-remove="${it.id}">${TRASH_SVG(16)}${t("Delete")}</button>
       <button class="addedit-done" id="addEditDone">${t("Save")}</button>
     </div>
   </div>`;
@@ -3631,9 +3662,14 @@ function wireAddEdit(){
     b.onclick=()=>{ if(b.dataset.aeSechead==='cat') editCatOpen=!editCatOpen; refreshAddBody(); }; });
   /* v2.57 item 9d: the Note section — its header, the field (saved as typed, like the name) and the suggestion chips */
   document.querySelectorAll("[data-ae-note]").forEach(inp=>{
-    inp.oninput=()=>{ const it=state.items.find(i=>i.id===inp.dataset.aeNote); if(it){ it.note=noteFromWrap(inp.closest(".ednotewrap")); touch(it); } };   // v2.68: selected chips + the free text
-    inp.onblur=()=>{ if(inp.isConnected) refreshAddBody(); }; });
-  document.querySelectorAll("[data-ae-notechip]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=cur(); if(it){ it.note=noteChipTap(b); touch(it); } }; });
+    /* v2.70: typed text becomes tiles at a comma, Enter or leaving the field — in place, no re-render while typing */
+    const it0=()=>state.items.find(i=>i.id===inp.dataset.aeNote);
+    const setN=n=>{ const it=it0(); if(it){ it.note=n; touch(it); } };
+    inp.oninput=()=>{ setN(inp.value.indexOf(",")>=0 ? noteCommit(inp, aeChip, true) : noteFromWrap(inp.closest(".ednotewrap"))); };   // v2.68: selected chips + the free text
+    inp.onkeydown=e=>{ if(e.key===","||e.key==="Enter"){ e.preventDefault(); setN(noteCommit(inp, aeChip)); } };
+    inp.onblur=()=>{ if(!inp.isConnected) return; setN(noteCommit(inp, aeChip)); refreshAddBody(); }; });
+  function aeChip(b){ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=cur(); if(it){ it.note=noteChipTap(b); touch(it); } }; }
+  document.querySelectorAll("[data-ae-notechip]").forEach(aeChip);
   document.querySelectorAll("[data-ae-cat]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const [id,cid]=b.dataset.aeCat.split("|"); const it=state.items.find(i=>i.id===id); if(it){ it.cat=cid; it.sub=null; touch(it); refreshAddBody(); } }; });
   document.querySelectorAll("[data-ae-sub]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const p=b.dataset.aeSub.split("|"), id=p[0], sub=p[1]||null; const it=state.items.find(i=>i.id===id); if(it){ it.sub=sub; touch(it); refreshAddBody(); } }; });
   /* v1.47: prompt() blurs the page and focus never comes back on its own, so the keyboard stayed
@@ -7155,8 +7191,9 @@ async function smartRequest(path, payload, recipe){
   smartItems=raw.map(it=>{ const nm0=String(it&&it.name||"").trim(), ai=String(it&&it.category||"others"), mapped=newCat(ai, nm0);
     const q=(Number.isFinite(+(it&&it.qty))&&+it.qty>=1)?Math.min(999,Math.round(+it.qty)):1;
     const w=(it&&typeof it.weight==="string")?it.weight.trim().slice(0,16):"";
+    const nt=(it&&typeof it.note==="string")?it.note.replace(/[\r\n]+/g," ").trim().slice(0,140):"";   // v2.70: what tells it apart
     return {
-      name:nm0,
+      name:nm0, note:nt,
       qty:q, baseQty:q, sub:"", sel:true,
       category:allowed.includes(mapped) ? mapped : (allowed.includes(ai) ? ai : "others"),   // v2.67: the AI speaks the nine
       weight:w, baseWeight:w,
@@ -7237,7 +7274,7 @@ function smartSheet(){
                    The weight chips below it are the editor and deliberately stay literal — same split
                    as a shop pill and its quick-edit. Leaving this one alone would have shown "8 oz"
                    here and "225 g" on the pill it creates, one tap apart. */""}
-            <span class="smartchip-name">${(it.qty>1)?`<b>${it.qty}× </b>`:""}${it.weight?`<b>${esc(showAmt(it.weight))} </b>`:""}${esc(cap(it.name))}</span>
+            <span class="smartchip-name">${(it.qty>1)?`<b>${it.qty}× </b>`:""}${it.weight?`<b>${esc(showAmt(it.weight))} </b>`:""}${esc(cap(it.name))}${it.note?` <span class="smartchip-note">· ${esc(it.note)}</span>`:""}</span>
             ${have?`<span class="smartchip-have" title="${t("Already on your list")}">${t("in list")}</span>`:""}
             ${it.have?`<span class="smartchip-have" title="${it.haveDays===1?t("Bought 1 day ago — probably still in the cupboard"):tf("Bought {n} days ago — probably still in the cupboard", { n:it.haveDays })}">${t("probably have")}</span>`:""}
             <span class="smartchip-cat">${catIcon(c,13)} ${esc(catLabel(c))}</span>
@@ -7285,12 +7322,13 @@ function smartSheet(){
 function commitSmartItems(){
   for(const it of smartItems){
     if(it.sel===false) continue;
-    const ex=state.items.find(i=>!i.checked && i.name.toLowerCase()===it.name.toLowerCase());
+    /* v2.70: the same item with a different note is a separate item — merge only when name AND note match */
+    const ex=state.items.find(i=>!i.checked && i.name.toLowerCase()===it.name.toLowerCase() && noteKey(i.note)===noteKey(it.note));
     if(ex){ if(it.qty>1) ex.qty=(ex.qty||1)+it.qty; if(it.weight) ex.weight=it.weight; if(it.sub) ex.sub=it.sub; markDirty(ex.id); continue; }
     const nid=uid();
     const known=knownEntry(it.name);
     const sub=it.sub || ((known&&known.cat===it.category&&known.sub)||"");
-    state.items.push({id:nid,name:it.name,qty:it.qty,cat:it.catPicked ? it.category : newCat(it.category, it.name),sub,weight:it.weight||"",checked:false,by:me});
+    state.items.push({id:nid,name:it.name,qty:it.qty,cat:it.catPicked ? it.category : newCat(it.category, it.name),sub,weight:it.weight||"",note:it.note||"",checked:false,by:me});
     markDirty(nid);
   }
   const mi=document.getElementById("mainInput"); if(mi) mi.value="";
@@ -7820,6 +7858,8 @@ function optionsBody(){
     ${sectHR("Sheets")}
     ${rowNL(t("Sheet"), `<div class="seg">${[["edit","Edit item"],["smart","Smart add"],["add","Add items"],["card","My card"],["other","Other sheets"]].map(([k,l])=>`<button data-lk-sheet="${k}" class="${lookSheet===k?'on':''}">${t(l)}</button>`).join("")}</div>`)}
     ${colRow(t("Background"), lkAttr(lookSheet,"bg"), lkGet(lookSheet,"bg"), lkId(lookSheet,"bg"), {page:true})}
+    <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Transparency")}</span><div class="optwide">
+      <div class="numgrid">${numCell("lk_"+lookSheet+"_alpha")}</div></div></div>${/* v2.70: how opaque the sheet is, % */""}
     ${colRow(t("Text"), lkAttr(lookSheet,"text"), lkGet(lookSheet,"text"), lkId(lookSheet,"text"), {pal:TEXTCOLS, page:true})}
     ${subhead("Buttons and tiles")}
     ${colRow(t("Text"), lkAttr(lookSheet,"ptext"), lkGet(lookSheet,"ptext"), lkId(lookSheet,"ptext"), {pal:TEXTCOLS, page:true})}
@@ -8083,25 +8123,26 @@ function editSheet(){
   const isItem = editing.kind==="item";
   editFold(editing.kind + "|" + (editing.id || editing.origName || ""));   // v2.57 item 9a
   const qtyBlock = `<div class="qstep"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>`;
-  const btnDelStyle = "padding:13px 12px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:14px";
-  const btnSaveStyle = "flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px";
+  /* v2.70: Save and Delete take the tile shape — the pills' roundness and border width, 44px tall */
+  const btnDelStyle = "display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;box-sizing:border-box;padding:0 14px;border-radius:var(--epillrad, 999px);border:1.5px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:14px";
+  const btnSaveStyle = "flex:1;height:44px;box-sizing:border-box;padding:0 14px;border-radius:var(--epillrad, 999px);border:1.5px solid var(--btn);background:var(--btn);color:#fff;font-weight:800;font-size:15px";
   const selCat = CAT(editing.cat);
   return `<div class="sheet-bg kbpin" id="sheetBg"><div class="sheet" id="sheet" data-look="edit">
     ${/* v2.63 item D: the title IS the name field; then flags, Quantity, Measure, price, Note, Category, Where to buy (no Subcategory) */""}
-    <input id="editName" class="edtitle" value="${esc(editing.name)}" aria-label="${t("Item name")}" />
-    ${isItem ? `<div class="edchips" style="flex-wrap:nowrap;margin-bottom:10px">${[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If discounted")}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}
+    ${/* v2.70: the last price sits in the title row; the flags move down to just above the buttons */""}
+    <div class="edtitlerow"><input id="editName" class="edtitle" value="${esc(editing.name)}" aria-label="${t("Item name")}" />${priceLine(editing.name, { compact:true })}</div>
     <div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button id="qMinus" aria-label="${t("Less")}">−</button><span>${editing.qty||1}</span><button id="qPlus" aria-label="${t("More")}">+</button></span></div>
     <button class="editsec" data-w-open="edit" aria-expanded="${wOpen==="edit"}"><span class="editsec-l">${t("Measure")}</span><span class="editsec-v"><span class="edval">${esc(editing.weight||t("unit"))} <span class="editsec-ch">${wOpen==="edit"?'▾':'▸'}</span></span></span></button>
     ${weightChips("edit", editing.weight)}
-    ${priceLine(editing.name)}
     ${noteSecHTML(editing.note||"", editing.name, { input:'id="editNote"', chip:"data-en-chip" })}
     <button class="editsec" id="ecHead"><span class="editsec-l">${t("Category")}</span><span class="editsec-v"><span class="edval">${selCat?`${catIcon(selCat,14)} ${esc(catLabel(selCat))}`:'—'} <span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></span></button>
     ${editCatOpen ? `<div class="edchips">${chipsHTML(editing.cat)}<button class="catchip" id="ecAddCat" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}
     ${isItem ? (()=>{ const ws=rcSavedStores(), w=editing.where||"", wl=whereIds({ where:w }), cur=whereNames(wl).join(", ");
       return `<button class="editsec" id="ewHead"><span class="editsec-l">${t("Where to buy")}</span><span class="editsec-v"><span class="edval">${esc(cur||t("Anywhere"))} <span class="editsec-ch">${editWhereOpen?'▾':'▸'}</span></span></span></button>
       ${editWhereOpen ? `<div class="edchips"><button class="catchip" data-ew="" style="${!w?'background:var(--btn);border-color:var(--btn);color:#fff':''}">${t("Anywhere")}</button>${ws.map(s=>`<button class="catchip" data-ew="${esc(s.id)}" style="${wl.includes(s.id)?'background:var(--btn);border-color:var(--btn);color:#fff':''}" aria-pressed="${wl.includes(s.id)}">${esc(s.name)}</button>`).join("")}</div>` : ""}`; })() : ""}
+    ${isItem ? `<div class="edchips edflags" style="flex-wrap:nowrap">${[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If discounted")}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}
     <div style="display:flex;gap:8px;margin-top:16px">
-      <button id="delBtn" style="${btnDelStyle}">${t("Delete")}</button>
+      <button id="delBtn" style="${btnDelStyle}">${TRASH_SVG(17)}${t("Delete")}</button>
       <button id="saveBtn" style="${btnSaveStyle}">${t("Save")}</button>
     </div>
   </div></div>`;
@@ -8360,8 +8401,13 @@ function wireEditSheet(){
       /* v2.35: shops toggle on and off — several can be ticked; Anywhere clears them */
       app.querySelectorAll("[data-ew]").forEach(b=>b.onclick=()=>{ const id=b.dataset.ew; if(!id){ editing.where=""; render(); return; }
         const s=new Set(whereIds(editing)); if(s.has(id)) s.delete(id); else s.add(id); editing.where=[...s].join(","); render(); });
-      const enote=app.querySelector("#editNote"); if(enote) enote.oninput=e=>{ editing.note=noteFromWrap(e.target.closest(".ednotewrap")); };   // v2.22 R16 · v2.68: selected chips + the free text
-      app.querySelectorAll("[data-en-chip]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ editing.note=noteChipTap(b); }; });   // v2.65: no re-render — the field keeps focus
+      /* v2.70: a chosen tile is removed by a tap; typed text becomes tiles at a comma, Enter or leaving the field */
+      const enChip=b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ editing.note=noteChipTap(b); }; };   // v2.65: no re-render — the field keeps focus
+      const enote=app.querySelector("#editNote"); if(enote){
+        enote.oninput=()=>{ editing.note = enote.value.indexOf(",")>=0 ? noteCommit(enote, enChip, true) : noteFromWrap(enote.closest(".ednotewrap")); };   // v2.22 R16 · v2.68: selected chips + the free text
+        enote.onkeydown=e=>{ if(e.key===","||e.key==="Enter"){ e.preventDefault(); editing.note=noteCommit(enote, enChip); } };
+        enote.onblur=()=>{ if(enote.isConnected) editing.note=noteCommit(enote, enChip); }; }
+      app.querySelectorAll("[data-en-chip]").forEach(enChip);
       const eac=app.querySelector("#ecAddCat"); if(eac) eac.onclick=()=>{ const nm=prompt(t("New category name:"),""); if(nm&&nm.trim()){ const id=makeCategory(nm); if(id){ editing.cat=id; editing.sub=null; render(); } } };
       const eas=app.querySelector("#esAddSub"); if(eas) eas.onclick=()=>{ if(!editing.cat){ showToast("Pick a category first"); return; } const nm=prompt(t("New subcategory name:"),""); if(nm&&nm.trim()){ const id=makeSub(editing.cat,nm); if(id){ editing.sub=id; render(); } } };
       const del=app.querySelector("#delBtn"); if(del) del.onclick=()=> editing.kind==="item" ? deleteItemEditing() : removeBAfromSheet();
