@@ -130,8 +130,9 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     ok('9 · the Note field shows suggestions for this item while typing (yogurt → Greek, low fat…)', chips.includes('Greek') && chips.some(c=>/low fat/i.test(c)) && await page.locator('#sheet input#editNote').count()===1, JSON.stringify(chips));
     await shot('edititem');
     await page.locator('#sheet .catchip', { hasText:'Greek' }).click(); await page.waitForTimeout(300);
-    const nv = await page.evaluate(()=>{ const i=document.querySelector('#sheet input#editNote'); return i ? i.value : null; });
-    ok('9 · tapping a suggestion puts it in the note', /Greek/.test(nv||''), String(nv));
+    /* SUPERSEDED by v2.68: the chosen suggestion shows as a tile, not in the box. Still protected: it is in the note. */
+    const nv = await page.evaluate(()=>[...document.querySelectorAll('#sheet .ednotesel .catchip')].map(c=>c.textContent.trim()).join(', '));
+    ok('9 · tapping a suggestion puts it in the note (as a chosen tile)', /Greek/.test(nv||''), String(nv));
 
     /* 10a ─ dragging an item on the Shop page */
     await mk({ docs:{ v101:DOC({ items:[it("1","Apples","fruit"), it("2","Bananas","fruit"), it("3","Cherries","fruit")] }) } });
