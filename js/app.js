@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.61";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.61";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.61";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.61";
-import { compareStores, worthIt } from "./compare.js?v=2.61";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.61";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.61";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.61";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.61";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.61";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.61";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines } from "./parse.js?v=2.61";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.61";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.61";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.62";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.62";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.62";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.62";
+import { compareStores, worthIt } from "./compare.js?v=2.62";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.62";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.62";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.62";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.62";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.62";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.62";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.62";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.62";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.62";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.61";
+const APP_VERSION = "v2.62";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -145,8 +145,18 @@ const LS_LASTLIST = "ml_lastlist";
 const _bootUrlList = params.get("list"), _bootLast = localStorage.getItem(LS_LASTLIST);
 const _bootKnown = (()=>{ try{ const a=JSON.parse(localStorage.getItem("ml_lists")||"[]"); return Array.isArray(a) ? a.map(x=>x && x.code).filter(Boolean) : []; }catch(e){ return []; } })();
 const _bootGone = (()=>{ try{ const o=JSON.parse(localStorage.getItem("ml_gonelists")||"{}"); return (o && typeof o==="object") ? o : {}; }catch(e){ return {}; } })();
+/* v2.62: one Siri shortcut for every list (?add= with no list). _bootOutside: the list named in the words, and the words with
+   that name taken off ({from, text, code}); _outsideNoList: this browser knows no list, so a shortcut's words are not put on
+   a brand-new empty one. var: boot-order rule. */
+var _bootOutside = null, _outsideNoList = false;
 let listCode = (()=>{
-  if(_bootUrlList && params.has("k")){   // a share link: always honoured, and it un-gones the list
+  if(params.has("add") && !_bootUrlList){
+    let known = []; try{ const a=JSON.parse(localStorage.getItem("ml_lists")||"[]"); if(Array.isArray(a)) known = a.filter(x=>x && x.code && !_bootGone[x.code]); }catch(e){}
+    if(known.length > 1){ const p = pickListFromText(params.get("add")||"", known);
+      if(p){ _bootOutside = { from:(params.get("add")||"").trim(), text:p.text, code:p.code }; return p.code; } }
+    if(known.length === 0) _outsideNoList = true;
+  }
+  if(_bootUrlList && (params.has("k") || params.has("add"))){   // a share link (or v2.62 a per-list Siri link): always honoured, and it un-gones the list
     if(_bootGone[_bootUrlList]){ try{ delete _bootGone[_bootUrlList]; localStorage.setItem("ml_gonelists", JSON.stringify(_bootGone)); }catch(e){} }
     return _bootUrlList; }
   const lastOK = _bootLast && _bootKnown.includes(_bootLast) && !_bootGone[_bootLast];
@@ -4631,7 +4641,7 @@ function renderMain(){
   ${fabMoveOpen?fabMoveSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
-  ${voiceOpen?voiceSheet():""}${micHelpOpen?micHelpHTML():""}${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}
+  ${voiceOpen?voiceSheet():""}${micHelpOpen?micHelpHTML():""}${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${noListOpen?noListSheetHTML():""}
   ${editing?editSheet():(_editFoldKey="")}
   ${toast?`<div class="toast" id="toast"><span>${esc(t(toast))}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(t(toastAction.label))}</button>`:""}</div>`:""}`;
 }
@@ -4970,7 +4980,7 @@ function renderPlanTab(){
   ${planWeekOpen?planWeekSheet():""}
   ${planAdd?planAddSheet():""}
   ${planPick?planPickSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${noListOpen?noListSheetHTML():""}
   ${listsOpen?listsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
@@ -6152,7 +6162,8 @@ function planWeekToList(){
   smartServings = null; smartOpen = true; smartLoading = false; smartError = ""; smartEdit = null;
   render();
 }
-function wirePlanTab(){
+function wirePlanTab(){ wireSiri();   // v2.62: the Siri / no-list sheets render here too
+
   const lsw=app.querySelector("#listSwitch"); if(lsw) lsw.onclick=()=>{ listsOpen=true; render(); };
   const pwh=app.querySelector("#pwHint"); if(pwh) pwh.onclick=()=>{ const b=app.querySelector('.pdmore[data-pd="'+pwh.dataset.pd+'"]'); if(b) b.click(); };   // v2.16
   const pv=app.querySelector("#pwPrev"); if(pv) pv.onclick=()=>{ planWeek--; render(); };
@@ -6486,7 +6497,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>${t("Add items…")}</span></button></div>`:""}
-  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}
+  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${noListOpen?noListSheetHTML():""}
   ${editing?editSheet():(_editFoldKey="")}
   ${toast?`<div class="toast" id="toast"><span>${esc(t(toast))}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(t(toastAction.label))}</button>`:""}</div>`:""}`;
 }
@@ -7688,7 +7699,7 @@ function optionsBody(){
     ${row(t("First-time questions"), `<button class="storechip" id="optOnbReset">${t("Ask again")}</button>`)}<div class="opthint">${t("Your shops, pinning a shop, the aisle map and the how-it-works tip each ask once. This brings back any you answered with Skip or Never.")}</div>
     ${row(t("Keep screen on"), `<div class="seg"><button data-opt-wake="1" class="${wakePref()?'on':''}">${t("On")}</button><button data-opt-wake="0" class="${!wakePref()?'on':''}">${t("Off")}</button></div>`)}
     <div class="opthint">${t("While the cart has something in it, so the phone does not dim and lock mid-aisle.")}</div>
-    ${(view!=="lists") ? `${sect("Smart features")}${/* v2.30: Smart add, restock suggestions, receipts and prices, memberships — the AI-assisted things, in one place */""}${row(t("Smart add"), `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">${t("On")}</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">${t("Off")}</button></div>`)}<div class="opthint">${t("The ✨ button in the add bar. Type or paste a whole list or a recipe — “2 kg chicken, milk and eggs for pancakes” — and it becomes separate items with amounts and categories. What you type is sent to the AI reader; nothing else. Recipes on the Plan page have their own reader and work either way.")}</div>${row(t("Siri & Shortcuts"), `<button class="storechip" id="optSiri">${t("Set up Siri")}</button>`)}<div class="opthint">${t("Add to this list by voice from anywhere, with an iPhone Shortcut. On Android, share any text to Market List.")}</div>` : ""}
+    ${(view!=="lists") ? `${sect("Smart features")}${/* v2.30: Smart add, restock suggestions, receipts and prices, memberships — the AI-assisted things, in one place */""}${row(t("Smart add"), `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">${t("On")}</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">${t("Off")}</button></div>`)}<div class="opthint">${t("The ✨ button in the add bar. Type or paste a whole list or a recipe — “2 kg chicken, milk and eggs for pancakes” — and it becomes separate items with amounts and categories. What you type is sent to the AI reader; nothing else. Recipes on the Plan page have their own reader and work either way.")}</div>${row(t("Siri & Shortcuts"), `<button class="storechip" id="optSiri">${t("Set up Siri")}</button>`)}<div class="opthint">${t("Add to any of your lists by voice from anywhere, with an iPhone Shortcut. On Android, share any text to Market List.")}</div>` : ""}
     ${(view!=="lists") ? `<div class="optsub">${t("Restock suggestions")}</div>${rowNL(t("Suggest restocks"), `<div class="seg"><button data-pred-on="1" class="${predictCfg.on?'on':''}">${t("On")}</button><button data-pred-on="0" class="${!predictCfg.on?'on':''}">${t("Off")}</button></div>`)}
     ${predictCfg.on ? `${rowNL(t("Remind me"), `<div class="seg"><button data-pred-freq="weekly" class="${predictCfg.freq==='weekly'?'on':''}">${t("Weekly")}</button><button data-pred-freq="monthly" class="${predictCfg.freq==='monthly'?'on':''}">${t("Monthly")}</button></div>`)}
     ${predictCfg.freq==='weekly' ? `<div class="optrow optrow-wide optnl"><span class="optlabel">${t("Day")}</span><div class="optwide">
@@ -7808,7 +7819,7 @@ function renderSettingsPage(){
     ${bottomNav({planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
     ${diagOpen?diagSheet():""}
     ${listsOpen?listsSheet():""}
-    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}
+    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${noListOpen?noListSheetHTML():""}
     ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
     ${editing?editSheet():(_editFoldKey="")}
@@ -8306,12 +8317,20 @@ function addFromOutside(text, source){
   stageAdds(()=>addEntries(text, null));
   const ids = addStaged.slice(); addStaged = before;
   const n = ids.length; if(!n){ render(); return; }
-  toast = source==="shortcut" ? tf("Added {n} from Siri", { n }) : tf("Added {n} from a share", { n });
+  toast = source==="shortcut" ? (getLists().length>1 ? tf("Added {n} to {list}", { n, list: state.name||"Groceries" }) : tf("Added {n} from Siri", { n })) : tf("Added {n} from a share", { n });
   toastAction = { label:"Undo", fn:()=>{ const drop=new Set(ids); state.items = state.items.filter(i=>!drop.has(i.id)); toast=null; toastAction=null; clearTimeout(_toastT); save(); render(); } };
   render(); clearTimeout(_toastT); _toastT=setTimeout(()=>{ toast=null; toastAction=null; render(); }, 5000);
 }
 var siriOpen=false;   // v2.60 the "Add with Siri" sheet. var: render reads it at boot
-function siriLink(){ let k=""; try{ k=localStorage.getItem("ml_jk_"+listCode)||""; }catch(e){}
+var noListOpen=false;   // v2.62 a shortcut's words reached a browser that knows no list. var: render reads it at boot
+function noListSheetHTML(){
+  return `<div class="sheet-bg" id="noListBg"><div class="sheet" id="noListSheet" role="dialog" aria-labelledby="noListT">
+    <div class="disp" id="noListT" style="font-weight:800;font-size:17px;margin-bottom:6px">${t("Which list?")}</div>
+    <div class="michint">${t("This browser doesn't know your lists yet, so nothing was added. Open your list here once with its share link, or open the shortcut's link in the home-screen app.")}</div>
+    <button id="noListOk" class="optaction" style="margin-top:12px">${t("OK")}</button>
+  </div></div>`; }
+function siriLink(){ return location.origin+"/?add="; }   // v2.62: one link for every list — the phone picks the list
+function siriListLink(){ let k=""; try{ k=localStorage.getItem("ml_jk_"+listCode)||""; }catch(e){}
   return location.origin+"/?list="+encodeURIComponent(listCode)+(k?("&k="+encodeURIComponent(k)):"")+"&add="; }
 function siriSheetHTML(){
   const steps=[t("Open the Shortcuts app and tap +."), t("Add the action “Dictate Text”."),
@@ -8320,11 +8339,14 @@ function siriSheetHTML(){
   const on=siriSmartOn();
   return `<div class="sheet-bg" id="siriBg"><div class="sheet" id="siriSheet" role="dialog" aria-labelledby="siriT">
     <div class="disp" id="siriT" style="font-weight:800;font-size:17px;margin-bottom:6px">${t("Add with Siri")}</div>
-    <div class="michint">${t("Say “Hey Siri, Market List” and what you need — it lands on this list. Siri turns your voice into text on your iPhone; only the words reach the app.")}</div>
+    <div class="michint">${t("Say “Hey Siri, Market List” and what you need. It lands on the list you used last — or say a list's name first: “Hardware, nails and glue”. Siri turns your voice into text on your iPhone; only the words reach the app.")}</div>
+    <div class="optlabel" style="margin-top:12px">${t("One link for all your lists")}</div>
     <input id="siriLink" readonly value="${esc(siriLink())}" style="width:100%;margin-top:12px;padding:10px 12px;border-radius:12px;border:1.5px solid var(--muted2);background:transparent;color:var(--text);font-size:13px">
     <button id="siriCopy" class="storechip" style="margin-top:8px">${t("Copy link")}</button>
     <ol class="michelp">${steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>
-    <div class="michint">${t("The shortcut may open the list in Safari rather than the home-screen app; the items still land on the same list.")}</div>
+    <div class="michint">${t("If the shortcut opens Safari instead of the app, Safari doesn't know your lists. Use this list's own link instead:")}</div>
+    <input id="siriListLink" readonly value="${esc(siriListLink())}" style="width:100%;margin-top:8px;padding:10px 12px;border-radius:12px;border:1.5px solid var(--muted2);background:transparent;color:var(--text);font-size:13px">
+    <button id="siriCopyList" class="storechip" style="margin-top:8px">${t("Copy this list's link")}</button>
     <div class="optrow" style="margin-top:12px"><span class="optlabel">${t("Voice adds go through Smart add")}</span><span class="optctrl"><div class="seg"><button data-siri-smart="1" class="${on?'on':''}">${t("On")}</button><button data-siri-smart="0" class="${!on?'on':''}">${t("Off")}</button></div></span></div>
     <div class="michint">${t("On: Smart add tidies what you said into separate items, and the words are sent to the AI. Off: nothing leaves your phone except the items saved to your list.")}</div>
   </div></div>`; }
@@ -8333,6 +8355,10 @@ function wireSiri(){
   const bg=app.querySelector("#siriBg"); if(bg) bg.onclick=e=>{ if(e.target===bg){ siriOpen=false; render(); } };
   const cp=app.querySelector("#siriCopy"); if(cp) cp.onclick=()=>{ const u=siriLink();
     if(hasClipboard()){ copyText(u); showToast("Link copied"); } else { const i=app.querySelector("#siriLink"); if(i){ i.focus(); i.select(); } } };
+  const cl=app.querySelector("#siriCopyList"); if(cl) cl.onclick=()=>{ const u=siriListLink();
+    if(hasClipboard()){ copyText(u); showToast("Link copied"); } else { const i=app.querySelector("#siriListLink"); if(i){ i.focus(); i.select(); } } };
+  const nb=app.querySelector("#noListBg"); if(nb) nb.onclick=e=>{ if(e.target===nb){ noListOpen=false; render(); } };
+  const nk=app.querySelector("#noListOk"); if(nk) nk.onclick=()=>{ noListOpen=false; render(); };
   app.querySelectorAll("[data-siri-smart]").forEach(b=>b.onclick=()=>{ const want=b.dataset.siriSmart==="1"; if(siriSmartOn()!==want) setSiriSmart(want); });
 }
 function takePendingOutside(){ let o=null; try{ o=JSON.parse(sessionStorage.getItem("ml_pendingoutside")||"null"); sessionStorage.removeItem("ml_pendingoutside"); }catch(e){}
@@ -8352,6 +8378,8 @@ if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ try{ 
 if(migrateAppSlots163()){ applyStoredAppearance(appSlots()[0]); }
 render();
 _booted=true; if(_pendingFinish){ const n=_pendingFinish; _pendingFinish=null; autoFinishAt(n); }   // v2.10
-{ const o = takeOutsideText(); if(o){ params.delete("add"); if(o.source==="share"){ params.delete("text"); params.delete("title"); } addFromOutside(o.text, o.source); } }   // v2.60 Siri (?add=) or a shared text (?text=) — first, and out of the app's own copy of the address too, so the recipe importer's rewrite below can never put it back
+{ const o = takeOutsideText(); if(o){ params.delete("add"); if(o.source==="share"){ params.delete("text"); params.delete("title"); }
+    if(_outsideNoList && o.source==="shortcut"){ try{ sessionStorage.removeItem("ml_pendingoutside"); }catch(e){} if(me){ noListOpen=true; render(); } }   // v2.62: a browser that knows no list — nothing added, and nothing kept for later
+    else addFromOutside((_bootOutside && o.source==="shortcut" && o.text===_bootOutside.from.slice(0,1000).trim()) ? _bootOutside.text : o.text, o.source); } }   // v2.60 Siri (?add=) or a shared text (?text=) — first, and out of the app's own copy of the address too, so the recipe importer's rewrite below can never put it back
 takeSharedRecipe();   // v1.90 a page shared in from the phone's share sheet
 onOutsideText(addFromOutside);
