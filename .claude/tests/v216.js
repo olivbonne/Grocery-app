@@ -118,9 +118,14 @@ function cr(a,b){ const x=lum(a), y=lum(b); return (Math.max(x,y)+0.05)/(Math.mi
     const across = await page.evaluate(()=>[...document.querySelectorAll('#zoomer .pill[data-pill]')].map(p=>Math.round(p.getBoundingClientRect().height)));
     ok('small tiles in three columns: one height across every category', across.length>=4 && new Set(across).size===1, JSON.stringify(across));
     await page.locator('#checkedHead').click(); await page.waitForTimeout(500);
-    const cartT = await page.evaluate(()=>({ hs:[...document.querySelectorAll('#checkedbar .pill[data-pill]')].map(p=>Math.round(p.getBoundingClientRect().height)),
-      v:document.documentElement.style.getPropertyValue('--tileh-cart') }));
-    ok('…and the cart, opened, one height over both its rows, from its own usual tile', cartT.hs.length===5 && new Set(cartT.hs).size===1 && cartT.hs[0]===parseInt(cartT.v), JSON.stringify(cartT));
+    /* SUPERSEDED by v2.66: grid tiles centre their content and no longer reserve a two-line band for every name, so a tile
+       with a two-line name AND a line under it is a few px taller than the usual tile and its row grows with it (one cart
+       row came out 91px against an 88px floor). Still protected: the cart has its own usual height, no tile is below it,
+       and each row is even. */
+    const cartT = await page.evaluate(()=>{ const ps=[...document.querySelectorAll('#checkedbar .pill[data-pill]')]; const m={};
+      ps.forEach(p=>{ const r=p.getBoundingClientRect(); (m[Math.round(r.top)]=m[Math.round(r.top)]||[]).push(Math.round(r.height)); });
+      return { hs:ps.map(p=>Math.round(p.getBoundingClientRect().height)), rows:Object.values(m), v:document.documentElement.style.getPropertyValue('--tileh-cart') }; });
+    ok('…and the cart, opened, from its own usual tile: none below it, each row even', cartT.hs.length===5 && cartT.hs.every(h=>h>=parseInt(cartT.v)) && cartT.rows.every(r=>new Set(r).size===1), JSON.stringify(cartT));
 
     /* ── R8. the add bar says what it does ─────────────────────────────── */
     await mk(L16);
