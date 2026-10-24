@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.60";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.60";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.60";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.60";
-import { compareStores, worthIt } from "./compare.js?v=2.60";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.60";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.60";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.60";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.60";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.60";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.60";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines } from "./parse.js?v=2.60";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.60";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.60";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.61";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.61";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.61";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.61";
+import { compareStores, worthIt } from "./compare.js?v=2.61";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.61";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.61";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.61";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.61";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.61";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.61";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines } from "./parse.js?v=2.61";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.61";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.61";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.60";
+const APP_VERSION = "v2.61";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -3832,6 +3832,17 @@ function openVoice(force){
   try{ voiceListen(); }catch(e){ micRefused(); return; }
   micHelpOpen=false; voiceOpen=true; voiceOn=true; render(); }
 function micHelpHTML(){
+  /* v2.61: on an iPhone the steps cannot fix it — iOS refuses speech recognition to home-screen web apps — so the card
+     offers what does work there: Siri (v2.60) and the keyboard's own microphone. The steps stay for other phones. */
+  if(isAppleMobile() && !isNativeApp()) return `<div class="sheet-bg" id="micHelpBg"><div class="sheet" id="micHelpSheet" role="dialog" aria-labelledby="micHelpT">
+    <div class="disp" id="micHelpT" style="font-weight:800;font-size:17px;margin-bottom:6px">${t("Speak with Siri instead")}</div>
+    <div class="michint">${t("iPhone doesn't let apps on the home screen listen by themselves, whatever the settings. Two ways that work:")}</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+      <button id="micSiri" style="padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">${t("Add with Siri")}</button>
+      <button id="micKbd" style="padding:13px;border-radius:14px;border:2px solid var(--ink);background:transparent;color:var(--text);font-weight:700;font-size:15px">${t("Use the keyboard's microphone")}</button>
+      <button id="micTry" style="padding:8px;border:none;background:transparent;color:var(--muted);font-weight:600;font-size:14px;text-decoration:underline">${t("Try the app's microphone again")}</button>
+    </div>
+  </div></div>`;
   const steps = [t("Open Settings › Apps › Safari (on older iPhones: Settings › Safari)."),
     t("Under Settings for Websites, tap Microphone and choose Allow."),
     t("In Settings › General › Keyboard, turn on Enable Dictation."),
@@ -3861,6 +3872,8 @@ function voiceSheet(){
 function wireVoice(){
   const mbg=app.querySelector("#micHelpBg"); if(mbg) mbg.onclick=e=>{ if(e.target===mbg){ micHelpOpen=false; render(); } };
   const mtr=app.querySelector("#micTry"); if(mtr) mtr.onclick=()=>{ openVoice(true); };   // asks again, inside the tap
+  const msi=app.querySelector("#micSiri"); if(msi) msi.onclick=()=>{ micHelpOpen=false; siriOpen=true; render(); };   // v2.61
+  const mkb=app.querySelector("#micKbd"); if(mkb) mkb.onclick=()=>{ micHelpOpen=false; render(); openAdd(); showToast(t("Tap the microphone on the keyboard and say what you need")); };
   const mty=app.querySelector("#micType"); if(mty) mty.onclick=()=>{ micHelpOpen=false; render(); openAdd(); };
   const mic=app.querySelector("#voiceMic");
   if(mic) mic.onclick=()=>{ if(voiceOn){ voiceStop(); mic.setAttribute("aria-label", t("Start listening")); return; }
@@ -7979,7 +7992,7 @@ function wireAddBar(){
 function wire(){
   const et=app.querySelector("#elseToggle"); if(et) et.onclick=()=>{ elseOpen=!elseOpen; render(); };   // v2.22 R17
   wireAddSheet();
-  wireSmartSheet(); wireVoice();
+  wireSmartSheet(); wireVoice(); wireSiri();
   wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();
   const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>catShown(i.cat)===c.id)).map(c=>c.id);
