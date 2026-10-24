@@ -140,14 +140,17 @@ const LIST = [["Frozen raspberries","frozen",2],["Ginger beer no sugar","drinks"
       ["White wine","alcohol"],["Kosher salt","pantry",7]].map((x,i)=>it(String(i),x[0],x[1],x[2],x[3]));
     for(const [cols,size] of [[4,'l'],[3,'xl'],[4,'s']]){
       await mk(TALL, `localStorage.setItem("ml_displays", JSON.stringify({shop:"large"})); localStorage.setItem("ml_largecols","${cols}"); localStorage.setItem("ml_caton","0"); localStorage.setItem("ml_icosize","${size}");`);
-      const rows = await page.evaluate(()=>{ const m={}; [...document.querySelectorAll('#zoomer .pill[data-pill]')].forEach(p=>{ const r=p.getBoundingClientRect(), n=p.querySelector('.pname').getBoundingClientRect(), mt=p.querySelector('.pill-meta');
-        const k=Math.round(r.top); (m[k]=m[k]||[]).push({ name:p.querySelector('.pname').textContent.trim(), nameTop:Math.round(n.top), nameH:Math.round(n.height), lh:parseFloat(getComputedStyle(p.querySelector('.pname')).lineHeight),
-          metaBottom: mt ? Math.round(r.bottom - mt.getBoundingClientRect().bottom) : null }); }); return Object.values(m); });
-      const level = rows.every(r=>new Set(r.map(x=>x.nameTop)).size===1);
-      const twoLines = rows.flat().every(x=>Math.abs(x.nameH - 2*x.lh) <= 1);
-      const metas = rows.flat().filter(x=>x.metaBottom!==null).map(x=>x.metaBottom);
-      ok(`icon on top (${cols} columns, icon ${size.toUpperCase()}): every name starts at the same height in its row, with two lines' room`, level && twoLines, JSON.stringify(rows.map(r=>r.map(x=>[x.name,x.nameTop,x.nameH]))));
-      ok(`…and every amount sits on the same bottom line`, metas.length>=6 && new Set(metas).size===1, JSON.stringify(metas));
+      /* SUPERSEDED by v2.66: the household asked for another app's tiles — the icon, the name and the lines under it are ONE
+         centred block, so more lines lift the icon (the old three fixed bands kept every name level and every amount on the
+         bottom line). Still protected: a tidy, measured layout — every tile's block is centred in it, and the icon is the same
+         size in every tile. */
+      const blocks = await page.evaluate(()=>[...document.querySelectorAll('#zoomer .pill[data-pill]')].map(p=>{ const r=p.getBoundingClientRect();
+        const kids=[...p.children].filter(k=>getComputedStyle(k).position!=='absolute' && k.getBoundingClientRect().height>0);
+        const top=Math.min(...kids.map(k=>k.getBoundingClientRect().top)), bot=Math.max(...kids.map(k=>k.getBoundingClientRect().bottom));
+        const ic=p.querySelector('.pemoji'); const ib=ic?ic.getBoundingClientRect():{width:0,height:0};
+        return { name:p.querySelector('.pname').textContent.trim(), gapT:Math.round(top-r.top), gapB:Math.round(r.bottom-bot), icon:Math.round(ib.width)+'x'+Math.round(ib.height) }; }));
+      ok(`icon on top (${cols} columns, icon ${size.toUpperCase()}): each tile's icon, name and lines are one centred block`, blocks.length>=8 && blocks.every(b=>Math.abs(b.gapT-b.gapB)<=3), JSON.stringify(blocks.map(b=>[b.name,b.gapT,b.gapB])));
+      ok(`…and the icon is the same size in every tile`, new Set(blocks.map(b=>b.icon)).size===1, JSON.stringify([...new Set(blocks.map(b=>b.icon))]));
       await shot('icons'+cols+size);
     }
   } catch(e){ ok('suite ran to the end', false, e.message.slice(0,300)); }
