@@ -1412,6 +1412,15 @@
   .editnote { width:100%; box-sizing:border-box; margin-top:6px; height:42px; padding:0 12px; border-radius:12px; border:none; outline:none;
     background:var(--chip); color:var(--text); font-size:15px; font-family:inherit; }
   .editsec-ch { color:var(--muted2); font-size:13px; }
+  /* v2.65: the values as tiles, styled like the editor pills; the Note always a field, its chips only while it has focus */
+  .edval { display:inline-flex; align-items:center; gap:6px; max-width:100%; box-sizing:border-box; padding:6px 12px; font-size:15px; font-weight:700;
+    border:1.5px solid var(--epillbrd, var(--line)); background:var(--epillbg, var(--card)); color:var(--epilltext, var(--text)); border-radius:var(--epillrad, 999px);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ednote { cursor:default; }
+  .ednotein { flex:1; min-width:0; text-align:left; font-weight:600; font-family:inherit; outline:none; }
+  .ednotein::placeholder { color:var(--muted2); }
+  .ednotewrap .ednotechips { display:none; }
+  .ednotewrap:focus-within .ednotechips { display:flex; }
   .regcat { margin-top:2px; }
   /* v1.76 item 2: the Regulars heading is bare text, so it takes the tile shape only once a colour is
      set — the width and padding come from applyTheme and are 0px until then, so an untouched install
@@ -1904,7 +1913,7 @@
     border:1.5px solid var(--epillbrd, var(--line)); background:var(--epillbg, var(--card)); color:var(--epilltext, var(--text));
     border-radius:var(--epillrad, 999px); }
   #sheet .flagchip.on, .addedit .flagchip.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
-  #sheet .wgrid .catchip.on, .addedit .wgrid .catchip.on { background:var(--btn); border-color:var(--btn); color:var(--btn-text); }
+  #sheet .wgrid .catchip.on, .addedit .wgrid .catchip.on, #sheet .ednotechips .catchip.on, .addedit .ednotechips .catchip.on { background:var(--btn); border-color:var(--btn); color:var(--btn-text); }
   .addedit-flags, #sheet .wgrid, .addedit .wgrid { gap:var(--epillgap, 6px); }
   .searchbar .inwrap { flex:1; min-width:0; }
   /* display:block matters — a textarea is inline-level by default, so its .inwrap parent reserved a

@@ -109,12 +109,14 @@ const seed = (o) => { o=o||{}; return `(() => {
     await tap('#shopAddFab');
     await page.locator('#mainInput').fill('Zzyzx tea'); await page.waitForTimeout(400);
     await page.locator('[data-add-typed]').first().click(); await page.waitForTimeout(600);
-    ok('(10) the edit panel says "Add to Regulars"', (await page.evaluate(()=>(document.querySelector('[data-ae-again]')||{}).textContent||''))==='Add to Regulars', '');
+    /* SUPERSEDED by v2.65: the household removed the "Add to Regulars" button — Save keeps an item as a Regular too. Still
+       protected: nothing in the editors says "Buy again". */
+    ok('(10) the edit panel never says "Buy again" (Save keeps it as a Regular)', !/Buy again/.test(await page.evaluate(()=>(document.querySelector('.addedit')||{}).textContent||'')) && !(await page.locator('[data-ae-again]').count()), '');
     const src = fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8');
     /* SUPERSEDED by v2.45: the words go through t() for French. Still protects: the same English words, in the same places. */
     /* SUPERSEDED by v2.63: the editor's heading is now the item's own name (an editable title), so there is no "Edit Regular"
        heading left to name. Still protected: the button says "Add to Regulars", never "Buy again". */
-    ok('(10) …and the editor\'s button says "Add to Regulars"', /secLabel = isItem \? (?:t\()?"Add to Regulars"/.test(src), '');
+    ok('(10) …and the editor\'s Save keeps the item as a Regular (v2.65: no separate button)', /function saveEverywhere/.test(src) && /function regularFrom/.test(src) && !/secLabel/.test(src), '');
 
     /* ── (4) removing the open list ──────────────────────────────────── */
     await mk({ extra:`localStorage.setItem("ml_lists", JSON.stringify([{code:"v101",name:"Groceries"},{code:"v202",name:"Party"}]));

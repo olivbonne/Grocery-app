@@ -119,16 +119,18 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
       const flags=sh.querySelector('[data-flag]'), qty=sh.querySelector('#qMinus'), labs=[...sh.querySelectorAll('.editsec-l')];
       return { flagsFirst: !!(flags && qty && (flags.compareDocumentPosition(qty) & Node.DOCUMENT_POSITION_FOLLOWING)),
         labels: labs.map(l=>l.textContent.trim()), sizes:[...new Set(labs.map(l=>getComputedStyle(l).fontSize))], upper: labs.some(l=>getComputedStyle(l).textTransform==='uppercase'),
-        folded: !sh.querySelector('.catchip') }; });
+        folded: ![...sh.querySelectorAll('.catchip')].some(c=>c.offsetParent!==null) }; });   // v2.65: note chips are in the page but hidden until the note has focus
     /* SUPERSEDED by v2.63: Quantity and Measure are rows now, above Note (was: Note first). Still protected: flags first,
        one label size, no capitals, everything folded. */
     ok('9 · Edit item: flags above the quantity; Quantity, Measure, Note, Category… one size, no capitals; everything folded', ed && ed.flagsFirst && ed.labels.slice(0,3).join()==='Quantity,Measure,Note' && ed.sizes.length===1 && !ed.upper && ed.folded, JSON.stringify(ed));
-    await page.locator('#sheet #enHead').click(); await page.waitForTimeout(400);
-    const chips = await page.evaluate(()=>[...document.querySelectorAll('#sheet .catchip')].map(c=>c.textContent.trim()));
-    ok('9 · Note opens a field and suggestions for this item (yogurt → Greek, low fat…)', chips.includes('Greek') && chips.some(c=>/low fat/i.test(c)) && await page.locator('#sheet input.editnote').count()===1, JSON.stringify(chips));
+    /* SUPERSEDED by v2.65: the note is always a field (no fold); its suggestions show while it has focus. Still protected:
+       a field, and this item's suggestions. */
+    await page.locator('#sheet #editNote').click(); await page.waitForTimeout(400);
+    const chips = await page.evaluate(()=>[...document.querySelectorAll('#sheet .ednotechips .catchip')].filter(c=>c.offsetParent!==null).map(c=>c.textContent.trim()));
+    ok('9 · the Note field shows suggestions for this item while typing (yogurt → Greek, low fat…)', chips.includes('Greek') && chips.some(c=>/low fat/i.test(c)) && await page.locator('#sheet input#editNote').count()===1, JSON.stringify(chips));
     await shot('edititem');
     await page.locator('#sheet .catchip', { hasText:'Greek' }).click(); await page.waitForTimeout(300);
-    const nv = await page.evaluate(()=>{ const i=document.querySelector('#sheet input.editnote'); return i ? i.value : null; });
+    const nv = await page.evaluate(()=>{ const i=document.querySelector('#sheet input#editNote'); return i ? i.value : null; });
     ok('9 · tapping a suggestion puts it in the note', /Greek/.test(nv||''), String(nv));
 
     /* 10a ─ dragging an item on the Shop page */
