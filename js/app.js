@@ -6601,7 +6601,7 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
    make Settings look broken the next time. var, not let: boot-order rule. */
 var setLook = false, optQuery = "", _lookY = 0;
 const LOOK_SECTS = new Set(["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tile colours and shape", "Edit item"]);
-const OPT_COLL_DEFAULT = ["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tile colours and shape"];
+const OPT_COLL_DEFAULT = ["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tile colours and shape", "Edit item"];   // v2.63: Edit item joins the look page, folded like the rest
 function optColl(){ try{ const raw=localStorage.getItem("ml_optcoll"); if(raw===null) return new Set(OPT_COLL_DEFAULT);
     const a=JSON.parse(raw||"[]"); return new Set(Array.isArray(a)?a:[]); }catch(e){ return new Set(); } }
 /* Calls groupOptions() and NOT render(): folding a section must not rebuild the page and throw away
