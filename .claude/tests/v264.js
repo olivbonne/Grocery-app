@@ -55,7 +55,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     await mk({}, IPHONE);
     await page.locator('#emptyMic').click(); await page.waitForTimeout(400);
     const s = await page.evaluate(()=>({ box:!!document.querySelector('#dictBox'), focused:document.activeElement && document.activeElement.id==='dictBox',
-      hint:/Tap 🎤 on the keyboard/.test(document.body.innerText), done:(document.querySelector('#dictBox')||{}).getAttribute && document.querySelector('#dictBox').getAttribute('enterkeyhint'),
+      hint:!!document.querySelector('.dictsheet .dictmark svg') && !/Tap 🎤 on the keyboard/.test(document.body.innerText),   /* v2.67: the keyboard's own mic glyph, no text */ done:(document.querySelector('#dictBox')||{}).getAttribute && document.querySelector('#dictBox').getAttribute('enterkeyhint'),
       voice:!!document.querySelector('.voicesheet'), help:!!document.querySelector('#micHelpSheet') }));
     ok('on an iPhone the microphone opens the dictation box, already focused (keyboard up), pointing at the keyboard\'s 🎤', s.box && s.focused && s.hint && s.done==='done' && !s.voice && !s.help, JSON.stringify(s));
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-dict.png') });

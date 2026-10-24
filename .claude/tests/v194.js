@@ -172,7 +172,10 @@ const SUGGESTED = { source:"model", results:[
       const h=document.querySelector('.smartchip-head'); if(h) h.click();
       return null; });
     await page.waitForTimeout(500);
-    const swt = await page.evaluate(()=>[...document.querySelectorAll('.swt')].map(b=>b.textContent.trim()));
+    /* SUPERSEDED by v2.67: the weight chips live behind the Measure row (Edit item's look) — open it first. Still protected:
+       literal values, never converted ones. */
+    await page.evaluate(()=>{ const m=document.querySelector('[data-smart-wopen]'); if(m) m.click(); }); await page.waitForTimeout(400);
+    const swt = await page.evaluate(()=>[...document.querySelectorAll('[data-smart-wt]')].map(b=>b.textContent.trim()));
     ok('the weight picker still offers its own literal values, not converted ones',
        swt.length>0 && swt.some(t=>/^\d+g$/.test(t)) && !swt.some(t=>/(oz|lb)$/.test(t)),
        JSON.stringify({ picker, swt:swt.slice(0,8) }));
