@@ -106,7 +106,9 @@ const SEED = `(() => {
     const pill = page.locator('.pill', { hasText:'Milk' }).first(); const bb = await pill.boundingBox();
     await page.mouse.move(bb.x+bb.width/2, bb.y+bb.height/2); await page.mouse.down(); await page.waitForTimeout(800); await page.mouse.up(); await page.waitForTimeout(600);
     const mem = await page.evaluate(()=>{ const m=document.querySelector('#sheet .pricemem'); return m ? m.textContent.replace(/\s+/g,' ').trim() : null; });
-    ok('the item\'s sheet says what was last paid, and where', /^Last paid \$3\.10 at Coles Dandenong · /.test(mem||''), mem);
+    /* SUPERSEDED by v2.70: the household asked for the last price beside the item's name — a compact "$3.10 · Coles
+       Dandenong" in the title row. Still protected: the sheet says what was last paid, and where. */
+    ok('the item\'s sheet says what was last paid, and where', /^\$3\.10 · Coles Dandenong/.test(mem||''), mem);
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-item.png') });
     await page.evaluate(()=>{ const b=document.querySelector('#sheetBg'); if(b) b.click(); }); await page.waitForTimeout(300);
     ok('the prices survive a reload', Object.keys((await cache()).prices||{}).length===2, '');
