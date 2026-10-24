@@ -252,14 +252,16 @@ const SEED = (extra)=>`(() => {
      the fixed set is seventeen — and the number is only worth asserting alongside WHICH they are,
      which is what would actually catch a tile row leaking into the shared count. */
   const fixed = await page.evaluate(()=>[...document.querySelectorAll('.optrow-col')].map(r=>{
-    const sw=r.querySelector('[data-opt-accent],[data-opt-textcol],[data-opt-cattext],[data-opt-topbar],[data-opt-navbar],[data-opt-srchbar],[data-opt-toptile],[data-opt-navsel],[data-opt-cathdbg],[data-opt-cathdbrd],[data-opt-reghdtext],[data-opt-reghdbg],[data-opt-reghdbrd],[data-opt-tilebg],[data-opt-tilebrd],[data-opt-tiletext],[data-opt-utilebg],[data-opt-utilebrd],[data-opt-utiletext],[data-opt-epilltext],[data-opt-epillbg],[data-opt-epillbrd],[data-tile-col]');
+    const sw=r.querySelector('[data-opt-accent],[data-opt-textcol],[data-opt-cattext],[data-opt-topbar],[data-opt-navbar],[data-opt-srchbar],[data-opt-toptile],[data-opt-navsel],[data-opt-cathdbg],[data-opt-cathdbrd],[data-opt-reghdtext],[data-opt-reghdbg],[data-opt-reghdbrd],[data-opt-tilebg],[data-opt-tilebrd],[data-opt-tiletext],[data-opt-utilebg],[data-opt-utilebrd],[data-opt-utiletext],[data-opt-epilltext],[data-opt-epillbg],[data-opt-epillbrd],[data-opt-lk-edit-bg],[data-opt-lk-edit-text],[data-tile-col]');
     return sw?[...sw.attributes].map(a=>a.name).find(n=>/^data-/.test(n)):'??'; }));
   /* SUPERSEDED by v2.13: two shared rows were added on purpose — the top banner's name/count/store tiles and the
      bottom bar's selected tab — so the fixed set is nineteen. Still protects that no tile row leaks in. */
   /* SUPERSEDED by v2.63: three more shared rows on purpose — the Edit item pills' text, background and border — so the fixed
      set is twenty-two. Still protects that no tile row leaks in. */
-  ok('the twenty-two fixed colour rows are there, and only those',
-     fixed.length===22 && new Set(fixed).size===22 && !fixed.includes('data-tile-col') && !fixed.includes('??'),
+  /* SUPERSEDED by v2.69: the Sheets section shows the chosen sheet's Background and Text too (Edit item by default), so the
+     fixed set is twenty-four. Still protects that no tile row leaks in. */
+  ok('the twenty-four fixed colour rows are there, and only those',
+     fixed.length===24 && new Set(fixed).size===24 && !fixed.includes('data-tile-col') && !fixed.includes('??'),
      JSON.stringify(fixed));
   await page.locator('[data-opt-accent="blue"]').first().click(); await page.waitForTimeout(600);
   ok('…and one of them still works',

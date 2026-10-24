@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.68";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.68";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.68";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.68";
-import { compareStores, worthIt } from "./compare.js?v=2.68";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.68";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.68";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.68";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.68";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.68";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.68";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.68";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.68";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.68";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.69";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.69";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.69";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.69";
+import { compareStores, worthIt } from "./compare.js?v=2.69";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.69";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.69";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.69";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.69";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.69";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.69";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.69";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.69";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.69";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.68";
+const APP_VERSION = "v2.69";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -281,6 +281,17 @@ const SHADE_KEYS = { accent:"ml_accentshade", text:"ml_textcolshade", cat:"ml_ca
                      toptile:"ml_toptileshade", navsel:"ml_navselshade",
                      /* v2.63 item D: the Edit item pills, on the same terms as the unselected tiles */
                      epilltext:"ml_epilltextshade", epillbg:"ml_epillbgshade", epillbrd:"ml_epillbrdshade" };
+/* v2.69: every sliding sheet gets its own look — the sheet's background and text, and its pills' three colours and
+   shape. One table builds them all. The Edit item sheet's pill trio and shape stay the v2.63 keys (aliases), so a
+   setting someone already made keeps applying; everything else is ml_lk_<sheet>_<prop> (+ "shade"). */
+const SHEET_LOOKS = ["edit","smart","add","card","other"];
+const SHEET_PROPS = ["bg","text","ptext","pbg","pbrd"];
+const LK_ALIAS = { ptext:"epilltext", pbg:"epillbg", pbrd:"epillbrd" };
+const LK_NUMALIAS = { rad:"erad", gapx:"egap", gapy:"egapy" };
+function lkId(sh,p){ return (sh==="edit" && LK_ALIAS[p]) || ("lk_"+sh+"_"+p); }     // the SHADE_KEYS name of the row
+function lkAttr(sh,p){ return (sh==="edit" && LK_ALIAS[p]) ? "opt-"+LK_ALIAS[p] : "opt-lk-"+sh+"-"+p; }
+function lkNumKey(sh,g){ return sh==="edit" ? LK_NUMALIAS[g] : "lk_"+sh+"_"+g; }
+SHEET_LOOKS.forEach(sh=>SHEET_PROPS.forEach(p=>{ const id=lkId(sh,p); if(!SHADE_KEYS[id]) SHADE_KEYS[id]="ml_"+id+"shade"; }));
 const SHADE_MAX = 5;
 (function(){ const OLD = { accent:"ml_accentcalm", text:"ml_textcolcalm", cat:"ml_cattextcalm",
     tiletext:"ml_tiletextcalm", tilebg:"ml_tilebgcalm", tilebrd:"ml_tilebrdcalm",
@@ -332,6 +343,16 @@ function setUTileTxt(v, quiet){ uTileTxt=v; setLS("ml_utiletext",v); applyTheme(
 function setEPillTxt(v, quiet){ ePillTxt=v; setLS("ml_epilltext",v); applyTheme(); if(!quiet) render(); }
 function setEPillBg(v, quiet){ ePillBg=v; setLS("ml_epillbg",v); applyTheme(); if(!quiet) render(); }
 function setEPillBrd(v, quiet){ ePillBrd=v; setLS("ml_epillbrd",v); applyTheme(); if(!quiet) render(); }
+/* v2.69: the sheet looks' values. The edit sheet's pill trio reads and writes the v2.63 variables above. */
+var lookSheet = "edit";   // which sheet the look page is showing — memory only, not stored
+const lkVals = {};
+SHEET_LOOKS.forEach(sh=>SHEET_PROPS.forEach(p=>{ if(!(sh==="edit" && LK_ALIAS[p])) lkVals[lkId(sh,p)] = localStorage.getItem("ml_"+lkId(sh,p)) || "auto"; }));
+function lkGet(sh,p){
+  if(sh==="edit" && LK_ALIAS[p]) return p==="ptext" ? ePillTxt : p==="pbg" ? ePillBg : ePillBrd;
+  return lkVals[lkId(sh,p)] || "auto"; }
+function setLk(sh,p,v,quiet){
+  if(sh==="edit" && LK_ALIAS[p]) return (p==="ptext" ? setEPillTxt : p==="pbg" ? setEPillBg : setEPillBrd)(v, quiet);
+  lkVals[lkId(sh,p)]=v; setLS("ml_"+lkId(sh,p), v); applyTheme(); if(!quiet) render(); }
 function setCatTxt(v, quiet){ catTxt=v; setLS("ml_cattext",v); applyTheme(); if(!quiet) render(); }
 /* v1.76 item 1: the two bars are the only surfaces the user cannot reach — every other colour in the
    app is settable and these two were fixed glass. Untouched they stay exactly that: the colour is
@@ -540,6 +561,7 @@ function uTileTxtHex(){ return pickHex(uTileTxt, TEXTCOLS); }
 function ePillTxtHex(){ return pickHex(ePillTxt, TEXTCOLS); }
 function ePillBgHex(){  return pickHex(ePillBg); }
 function ePillBrdHex(){ return pickHex(ePillBrd); }
+function lkHex(sh,p){ return pickHex(lkGet(sh,p), (p==="text"||p==="ptext") ? TEXTCOLS : undefined); }   // v2.69
 function catTxtHex(){ return pickHex(catTxt, TEXTCOLS); }
 /* v1.54 item 1: the geometry settings. One table so the stepper UI, the clamping and the CSS
    variable stay in one place instead of eight near-identical globals. Defaults are exactly the
@@ -595,6 +617,12 @@ const NUMOPT = {
   egap:  { ls:"ml_epgap", vr:"--epillgap", def:6,  min:0,  max:16,  step:1, label:"Across" },
   egapy: { ls:"ml_epgapy", vr:"--epillgapy", def:6, min:0,  max:24,  step:1, label:"Down" }
 };
+/* v2.69: each other sheet's pill shape. Every one has `off` at its default, so an untouched install writes nothing and the
+   stylesheet's own radius and gaps stand. (The edit sheet's are erad/egap/egapy above.) */
+SHEET_LOOKS.filter(sh=>sh!=="edit").forEach(sh=>{
+  NUMOPT["lk_"+sh+"_rad"]  = { ls:"ml_lk_"+sh+"_rad",  vr:"--lk-"+sh+"-rad",  def:20, min:0, max:28, step:2, off:20, label:"Corner" };
+  NUMOPT["lk_"+sh+"_gapx"] = { ls:"ml_lk_"+sh+"_gapx", vr:"--lk-"+sh+"-gapx", def:6,  min:0, max:16, step:1, off:6,  label:"Across" };
+  NUMOPT["lk_"+sh+"_gapy"] = { ls:"ml_lk_"+sh+"_gapy", vr:"--lk-"+sh+"-gapy", def:6,  min:0, max:24, step:1, off:6,  label:"Down" }; });
 /* v1.55 item 2: two levels of default. NUMOPT[].def is the FACTORY value — what the stylesheet used
    before any of this was settable, and the thing to fall back to when an experiment goes wrong.
    `ml_numdef` is the user's own baseline, saved from whatever is on screen; once it exists, clearing
@@ -692,6 +720,16 @@ function applyTheme(){ _cardHexMemo=null; const t = THEMES[theme] || THEMES.ligh
     if(T["--tilebg"] && !T["--tiletext"]) rs.setProperty("--tiletext", onAccent(T["--tilebg"]));
     if(T["--utilebg"] && !T["--utiletext"]) rs.setProperty("--utiletext", onAccent(T["--utilebg"]));
     if(T["--epillbg"] && !T["--epilltext"]) rs.setProperty("--epilltext", onAccent(T["--epillbg"]));   // v2.63 item D
+    /* v2.69: every sheet's look, --lk-<sheet>-<prop>; written only when chosen. A chosen background with no chosen text
+       gets the text that reads on it — for the sheet and for its pills. (Shape: the NUMOPT loop above.) */
+    SHEET_LOOKS.forEach(sh=>{ const L={}; SHEET_PROPS.forEach(p=>L[p]=lkHex(sh,p));
+      if(L.pbg && !L.ptext) L.ptext=onAccent(L.pbg);
+      if(L.bg && !L.text) L.text=onAccent(L.bg);
+      SHEET_PROPS.forEach(p=>{ const v="--lk-"+sh+"-"+p; if(L[p]) rs.setProperty(v, L[p]); else rs.removeProperty(v); });
+      /* the edit sheet's shape is erad/egap/egapy (--epill*); it is mirrored as --lk-edit-* so the Edit item panel
+         inside the add sheet (.addedit, data-look="edit") can take it back from the add sheet's own tokens */
+      if(sh==="edit") Object.keys(LK_NUMALIAS).forEach(g=>{ const k=LK_NUMALIAS[g], o=NUMOPT[k], v="--lk-edit-"+g;
+        if(o.off!==undefined && numVal(k)===o.off) rs.removeProperty(v); else rs.setProperty(v, numVal(k)+"px"); }); });
     /* v1.76 item 2: the same rule for the two headings — a chosen heading background must not leave
        its label unreadable, but a chosen label colour always wins, so this only fills in the gap. */
     if(T["--cathdbg"] && !T["--cattext"]) rs.setProperty("--cattext", onAccent(T["--cathdbg"]));
@@ -3346,7 +3384,7 @@ function addBodyHTML(){
   return addSheetRows();
 }
 function addSheet(){
-  return `<div class="sheet-bg" id="addBg"><div class="addsheet-under" id="addUnder" aria-hidden="true"></div><div class="sheet addsheet" id="addSheet">
+  return `<div class="sheet-bg" id="addBg"><div class="addsheet-under" id="addUnder" aria-hidden="true"></div><div class="sheet addsheet" id="addSheet" data-look="add">
     <div class="addsheet-grab" id="addGrab" aria-hidden="true"><span class="grabbar"></span></div>
     <div class="addsheet-body" id="addSheetBody">${addBodyHTML()}</div>
     <div class="addsheet-foot">
@@ -3528,7 +3566,7 @@ function addEditPanel(){
   const cat=CAT(it.cat)||null;
   const flags=[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If discounted")}];   // v2.63: no "If convenient" button (the tag itself stays)
   const catChips = catList().map(c=>`<button class="catchip" data-ae-cat="${it.id}|${c.id}" style="${it.cat===c.id?`background:${c.color};border-color:${c.color};color:#fff`:''}">${catIcon(c,15)} ${esc(catLabel(c))}</button>`).join("");
-  return `<div class="addedit">
+  return `<div class="addedit" data-look="edit">
     ${/* v1.46 item 2: tighter heading + 40px controls — the panel has to share the screen with the
           keyboard, so every row it saves is a row you don't have to scroll to. */""}
     ${/* v2.63 item D: the title IS the name field; then flags, Quantity, Measure, Note, Category (no Subcategory) */""}
@@ -5673,7 +5711,7 @@ function cardShowHTML(){ const all=cardsGet(); let ix=cardShow.add ? all.length 
        v2.38 (the household's items 2, 3): shorter words — Add card, Choose photo, Type it — no explanations under them, and
        the form opens right below the buttons, without a photo row (the Add card tile above is the camera) */
     const typing = !!(cardEdit && cardEdit.inline);
-    return `<div class="sheet-bg sheettop" id="cardBg"><div class="sheet" id="cardSheet" role="dialog" aria-labelledby="cardTitle">
+    return `<div class="sheet-bg sheettop" id="cardBg"><div class="sheet" id="cardSheet" data-look="card" role="dialog" aria-labelledby="cardTitle">
       <div class="cardface cardadd" id="cardSwipe" role="button" tabindex="0" aria-label="${t("Take a photo of the card")}" ${rd&&rd.busy?'aria-disabled="true"':""}><span class="cardadd-plus" aria-hidden="true">+</span><div class="disp" id="cardTitle">${t("Add card")}</div></div>
       ${rd && rd.busy ? `<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>${esc(t(rd.step||"Reading the card…"))}</div>` : ""}
       ${rd && rd.err ? `<div class="rpterr" role="alert">${esc(t(rd.err))}</div>` : ""}
@@ -5685,7 +5723,7 @@ function cardShowHTML(){ const all=cardsGet(); let ix=cardShow.add ? all.length 
   const c=all[ix];
   const bc=c.num ? code128SVG(c.num, 70) : "", want=cardShow.view || cardViewPref(), view=((want==="photo" && c.photo) || !bc) ? "photo" : "code";
   const br=cardBrand(c.name, cardChain(c));   // v2.37 (the household's item 3): the programme's colour and name above the barcode
-  return `<div class="sheet-bg sheettop" id="cardBg"><div class="sheet" id="cardSheet" role="dialog" aria-labelledby="cardTitle">
+  return `<div class="sheet-bg sheettop" id="cardBg"><div class="sheet" id="cardSheet" data-look="card" role="dialog" aria-labelledby="cardTitle">
     <div class="cardface" id="cardSwipe"><div class="cardband" style="background:${br.bg};color:${br.fg}"><span class="cardband-n" id="cardTitle">${esc(c.name)}</span></div>${view==="photo" && c.photo ? `<img src="${esc(c.photo)}" alt="${esc(tf("Photo of the {name} card", { name:c.name }))}" />` : `${bc}<div class="cardnum">${esc(cardNumFmt(c.num))}</div>`}</div>
     ${(bc && c.photo) ? `<div class="cardhead"><div class="seg"><button data-card-view="code" class="${view==="code"?'on':''}">${t("Barcode")}</button><button data-card-view="photo" class="${view==="photo"?'on':''}">${t("Photo")}</button></div></div>` : ""}
     ${dots}
@@ -6701,8 +6739,8 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
    search across both. Memory only: the look page is where you are, not a preference, and a search left on would
    make Settings look broken the next time. var, not let: boot-order rule. */
 var setLook = false, optQuery = "", _lookY = 0;
-const LOOK_SECTS = new Set(["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tile colours and shape", "Edit item"]);
-const OPT_COLL_DEFAULT = ["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tile colours and shape", "Edit item"];   // v2.63: Edit item joins the look page, folded like the rest
+const LOOK_SECTS = new Set(["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tile colours and shape", "Sheets"]);
+const OPT_COLL_DEFAULT = ["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tile colours and shape", "Sheets"];   // v2.69: "Edit item" became "Sheets"   // v2.63: Edit item joins the look page, folded like the rest
 function optColl(){ try{ const raw=localStorage.getItem("ml_optcoll"); if(raw===null) return new Set(OPT_COLL_DEFAULT);
     const a=JSON.parse(raw||"[]"); return new Set(Array.isArray(a)?a:[]); }catch(e){ return new Set(); } }
 /* Calls groupOptions() and NOT render(): folding a section must not rebuild the page and throw away
@@ -6873,6 +6911,10 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-epilltext]").forEach(b=>b.onclick=()=>setEPillTxt(b.dataset.optEpilltext));   // v2.63 item D
   app.querySelectorAll("[data-opt-epillbg]").forEach(b=>b.onclick=()=>setEPillBg(b.dataset.optEpillbg));
   app.querySelectorAll("[data-opt-epillbrd]").forEach(b=>b.onclick=()=>setEPillBrd(b.dataset.optEpillbrd));
+  /* v2.69: the sheet looks — which sheet the page shows, and every sheet x prop row (the edit pill trio is wired above) */
+  app.querySelectorAll("[data-lk-sheet]").forEach(b=>b.onclick=()=>{ if(lookSheet!==b.dataset.lkSheet){ lookSheet=b.dataset.lkSheet; render(); } });
+  SHEET_LOOKS.forEach(sh=>SHEET_PROPS.forEach(p=>{ if(sh==="edit" && LK_ALIAS[p]) return; const a="data-"+lkAttr(sh,p);
+    app.querySelectorAll("["+a+"]").forEach(b=>b.onclick=()=>setLk(sh,p,b.getAttribute(a))); }));
   app.querySelectorAll("[data-opt-cattext]").forEach(b=>b.onclick=()=>setCatTxt(b.dataset.optCattext));
   /* v1.76 items 1 & 2: the seven new rows, wired exactly like the nine above them. */
   app.querySelectorAll("[data-opt-topbar]").forEach(b=>b.onclick=()=>setTopBar(b.dataset.optTopbar));
@@ -6904,6 +6946,7 @@ function wireOptions(){
     "opt-toptile":setTopTile, "opt-navsel":setNavSel,   // v2.13
     "opt-cathdbg":setCatHdBg, "opt-cathdbrd":setCatHdBrd,
     "opt-reghdtext":setRegHdTxt, "opt-reghdbg":setRegHdBg, "opt-reghdbrd":setRegHdBrd };
+  SHEET_LOOKS.forEach(sh=>SHEET_PROPS.forEach(p=>{ const a=lkAttr(sh,p); if(!CUSTOM_SET[a]) CUSTOM_SET[a]=(v,q)=>setLk(sh,p,v,q); }));   // v2.69
   app.querySelectorAll("[data-opt-custom]").forEach(inp=>{
     const fn=CUSTOM_SET[inp.dataset.optCustom]; if(!fn) return;
     /* v1.70: `change` is NOT "the picker closed" — on iOS it fires for every colour chosen inside the
@@ -7234,7 +7277,7 @@ function smartSheet(){
   /* v1.85: only the Smart-add recipe path carries a servings scaler.
      v2.01: a planned recipe has servings now too, so it gets the scaler; the whole-week review does
      not (it mixes recipes), so the line must not promise a control that is not there. */
-  return `<div class="sheet-bg" id="smartBg"><div class="sheet" id="smartSheetEl">
+  return `<div class="sheet-bg" id="smartBg"><div class="sheet" id="smartSheetEl" data-look="smart">
     <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${ttl}</div>
     ${inner}
   </div></div>`;
@@ -7773,15 +7816,20 @@ function optionsBody(){
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Tile gap")}</span><div class="optwide">
       <div class="numgrid">${numCell("gapx")}${numCell("gapy")}</div></div></div>
     ${/* v2.63 item D: the Edit item pills — the same three colours as a tile state, and their shape */""}
-    ${sectHR("Edit item")}
-    ${colRow(t("Text"), "opt-epilltext", ePillTxt, "epilltext", {pal:TEXTCOLS, page:true})}
-    ${colRow(t("Background"), "opt-epillbg", ePillBg, "epillbg", {page:true})}
-    ${colRow(t("Border"), "opt-epillbrd", ePillBrd, "epillbrd", {page:true})}
+    ${/* v2.69: one section for every sliding sheet — pick the sheet, then its surface, its pills and their shape */""}
+    ${sectHR("Sheets")}
+    ${rowNL(t("Sheet"), `<div class="seg">${[["edit","Edit item"],["smart","Smart add"],["add","Add items"],["card","My card"],["other","Other sheets"]].map(([k,l])=>`<button data-lk-sheet="${k}" class="${lookSheet===k?'on':''}">${t(l)}</button>`).join("")}</div>`)}
+    ${colRow(t("Background"), lkAttr(lookSheet,"bg"), lkGet(lookSheet,"bg"), lkId(lookSheet,"bg"), {page:true})}
+    ${colRow(t("Text"), lkAttr(lookSheet,"text"), lkGet(lookSheet,"text"), lkId(lookSheet,"text"), {pal:TEXTCOLS, page:true})}
+    ${subhead("Buttons and tiles")}
+    ${colRow(t("Text"), lkAttr(lookSheet,"ptext"), lkGet(lookSheet,"ptext"), lkId(lookSheet,"ptext"), {pal:TEXTCOLS, page:true})}
+    ${colRow(t("Background"), lkAttr(lookSheet,"pbg"), lkGet(lookSheet,"pbg"), lkId(lookSheet,"pbg"), {page:true})}
+    ${colRow(t("Border"), lkAttr(lookSheet,"pbrd"), lkGet(lookSheet,"pbrd"), lkId(lookSheet,"pbrd"), {page:true})}
     ${subhead("Shape")}
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Roundness")}</span><div class="optwide">
-      <div class="numgrid">${numCell("erad")}</div></div></div>
+      <div class="numgrid">${numCell(lkNumKey(lookSheet,"rad"))}</div></div></div>
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Gap")}</span><div class="optwide">
-      <div class="numgrid">${numCell("egap")}${numCell("egapy")}</div></div></div>
+      <div class="numgrid">${numCell(lkNumKey(lookSheet,"gapx"))}${numCell(lkNumKey(lookSheet,"gapy"))}</div></div></div>
     ${sect("Shopping")}${/* v2.30: was "Sort" — the store, its order, its aisle map, and the sound and screen while you shop (Sound folded in) */""}
     ${rowNL(t("Location"), `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">${t("On")}</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">${t("Off")}</button></div>`)}
     <div class="optrow optrow-wide optnl"><span class="optlabel">${t("Store")}</span><div class="optwide">
@@ -8038,7 +8086,7 @@ function editSheet(){
   const btnDelStyle = "padding:13px 12px;border-radius:14px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:14px";
   const btnSaveStyle = "flex:1;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px";
   const selCat = CAT(editing.cat);
-  return `<div class="sheet-bg kbpin" id="sheetBg"><div class="sheet" id="sheet">
+  return `<div class="sheet-bg kbpin" id="sheetBg"><div class="sheet" id="sheet" data-look="edit">
     ${/* v2.63 item D: the title IS the name field; then flags, Quantity, Measure, price, Note, Category, Where to buy (no Subcategory) */""}
     <input id="editName" class="edtitle" value="${esc(editing.name)}" aria-label="${t("Item name")}" />
     ${isItem ? `<div class="edchips" style="flex-wrap:nowrap;margin-bottom:10px">${[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If discounted")}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}

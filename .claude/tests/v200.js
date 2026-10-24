@@ -88,7 +88,7 @@ const IDEAS = { source:"model", provider:"", results:[
        the heavy sections start folded, by name. */
     /* SUPERSEDED by v2.63: the look page has a sixth section, Edit item, folded like the rest. Still protects the same. */
     ok('the heavy sections start folded',
-       JSON.stringify(folded)===JSON.stringify(['Bars and overlays','Category headings','Colour','Edit item','Layout & motion','Tile colours and shape']),
+       JSON.stringify(folded)===JSON.stringify(['Bars and overlays','Category headings','Colour','Layout & motion','Sheets','Tile colours and shape']   /* SUPERSEDED by v2.69: Edit item → Sheets */),
        JSON.stringify(folded));
     ok('…and Appearance is not among them, since Theme and Text size are why people come',
        s.some(x=>x.name==='Appearance' && !x.folded), JSON.stringify(s.map(x=>x.name+(x.folded?'*':''))));
