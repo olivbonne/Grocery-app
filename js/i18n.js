@@ -945,6 +945,10 @@ export const FR = {
   /* v2.56 */
   "List options": "Options de la liste",
   "Say what you need": "Dites ce qu’il vous faut",
+  "Tap 🎤 on the keyboard, speak, then tap Done.": "Touchez 🎤 sur le clavier, parlez, puis touchez OK.",
+  "✨ Add with Smart add": "✨ Ajouter avec l’ajout intelligent",
+  "Your iPhone turns your voice into text. Only the text is sent to Smart add.": "Votre iPhone transforme votre voix en texte. Seul le texte est envoyé à l’ajout intelligent.",
+  "Your iPhone turns your voice into text. Nothing leaves your phone except the items.": "Votre iPhone transforme votre voix en texte. Rien ne quitte votre téléphone, sauf les articles.",
   "Type or paste a list, then tap Smart add": "Tapez ou collez une liste, puis touchez Ajout intelligent",
   "Reading the photo…": "Lecture de la photo…",
   "Use one of your cards here?": "Utiliser une de vos cartes ici ?",

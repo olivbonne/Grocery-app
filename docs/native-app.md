@@ -38,6 +38,7 @@ could not be checked from where this was written — check them when you get the
 **Today (web).** On an iPhone, a Shortcut opens the list's link ending in `?add=` with the dictated words (the person builds
 it once from Settings › Smart features › Set up Siri). On Android, the manifest's share_target sends `?text=`. Both go through
 `takeOutsideText()` in `js/platform.js`, then `addFromOutside()` in `js/app.js`.
+**Voice (v2.64).** On an iPhone the web app's microphone opens a box for the keyboard's dictation; in the store app it uses Apple's Speech framework (SFSpeechRecognizer, on-device where available) through a Capacitor plugin in `js/platform.js` — tap, speak, tap stop — and the text then goes the same way.
 Since v2.62 there is one link for every list (`?add=` with no list): the list is the one named in the words
 (`pickListFromText` in `js/parse.js`, chosen at boot) or the one used last.
 
