@@ -78,7 +78,14 @@ const seed = (extra, checkedStore) => `(() => {
     ok('small tiles in 3 columns: every tile the same height', new Set(h).size===1, JSON.stringify(h));
     const iconsLeft = await page.evaluate(()=>[...document.querySelectorAll('#zoomer .pill[data-pill]')].every(p=>{ const e=p.querySelector('.pemoji'), n=p.querySelector('.pname');
       if(!e||!n) return true; return e.getBoundingClientRect().right <= n.getBoundingClientRect().left + 1; }));
-    ok('…and every icon stays to the LEFT of its name (none flips on top)', iconsLeft, '');
+    /* SUPERSEDED by v2.58: small tiles are gone (the household's choice); a phone on small·3 moves to Tile display·3, whose
+       tiles put the drawing above the name. Still protects: the move lands on 3 per row, and the one-line modes (1 per row,
+       variable — the old small·variable) keep the drawing to the left of the name. */
+    const z3 = await page.evaluate(()=>document.querySelector('#zoomer').className);
+    await mk();
+    const iconsLeftVar = await page.evaluate(()=>[...document.querySelectorAll('#zoomer .pill[data-pill]')].every(p=>{ const e=p.querySelector('.pemoji'), n=p.querySelector('.pname');
+      if(!e||!n) return true; return e.getBoundingClientRect().right <= n.getBoundingClientRect().left + 1; }));
+    ok('…and every icon stays to the LEFT of its name (none flips on top)', /gridmode grid3/.test(z3) && iconsLeftVar && iconsLeft!==undefined, z3);
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-small3.png') });
     await mk({ ls:'localStorage.setItem("ml_displays", JSON.stringify({shop:"large"})); localStorage.setItem("ml_largecols","3");' });
     h = await heights();

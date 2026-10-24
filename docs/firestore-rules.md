@@ -32,6 +32,14 @@ New lists also get stronger codes from v2.25 on: 128 random bits (25 characters)
 generator, instead of 8 characters from `Math.random()`. Existing lists keep their codes. To move the household's
 list to a strong code, make a new list and use Settings › Restore from a backup file, or copy items across.
 
+## v2.58 — each item its own record (S8 step 2)
+The v2.58 rules add `lists/{code}/items/{id}` (one record per item, read and written by the list's people, never deleted — a
+removal is the record `{id, gone}`), allow the list record's new `parts` field, and refuse writing a split list (`v` 3) back
+as an older one. **Publish them BEFORE the v2.58 release goes live.** Until they are published, the move is simply refused
+and waits: the list stays exactly as it was, in one record, and the app tries again the next time it is opened — nothing
+breaks. To check, open the Sandbox list on a phone on v2.58, then in the console look at Firestore › `lists` › `<code>`:
+an `items` collection appears under it, and the list record shows `parts` `["items"]` and `v` `3`.
+
 ## Publishing (about five minutes)
 1. Open the [Firebase console](https://console.firebase.google.com/) → the Market List project → **Firestore Database** → **Rules**.
 2. **Copy what is there now** into a note first, so you can put it back.

@@ -130,16 +130,19 @@ const seed = (store, extra) => `(() => {
       return { n:t.querySelector('.pname').textContent, nameW:Math.round(n.width), below:o.top>=n.bottom-1, inTile:o.left>=r.left-1 && o.right<=r.right+1, inRow:r.right<=row.right+1 }; }));
     const D = (d, more)=>`localStorage.setItem("ml_displays", JSON.stringify({shop:"${d}"})); ${more||''}`;
     const LONG = `const c=JSON.parse(localStorage.getItem("ml_cache_v101")); c.items[2].note="full cream, the blue one from the back of the fridge, two litres please"; localStorage.setItem("ml_cache_v101", JSON.stringify(c));`;
-    for(const [tag, ls, want] of [['small tiles, 2 columns', D('small','localStorage.setItem("ml_smallcols","2");'), 3],
+    for(const [tag, ls, want, oneLine] of [['small tiles, 2 columns', D('small','localStorage.setItem("ml_smallcols","2");'), 3],
                                   ['small tiles, 3 columns', D('small','localStorage.setItem("ml_smallcols","3");'), 3],
                                   ['large tiles, 4 columns', D('large','localStorage.setItem("ml_largecols","4");'), 3],
-                                  ['the list', D('list'), 3],
+                                  ['the list', D('list'), 3, true],
                                   ['XL icons in 2 small columns', D('small','localStorage.setItem("ml_smallcols","2"); localStorage.setItem("ml_icosize","xl");'), 3],
-                                  ['tiles sized to their words, with a long note', LONG, 4]]){
+                                  ['tiles sized to their words, with a long note', LONG, 4, true]]){
+      /* SUPERSEDED by v2.58 (the household): one per row and tiles sized to their words keep everything on ONE line — the
+         note beside the name, not under it. Still protects in those two: the name keeps its room, the note stays inside the
+         tile, the tile inside its row (a long note is cut short with "…", never pushed off the screen). */
       await mk('home', ls);
       const g = await geo();
       ok(`${tag}: every tile with a note keeps its name, the note under it and inside the tile, the tile inside its row`,
-         g.length===want && g.every(x=>x.nameW>10 && x.below && x.inTile && x.inRow), JSON.stringify(g));
+         g.length===want && g.every(x=>x.nameW>10 && (oneLine ? !x.below : x.below) && x.inTile && x.inRow), JSON.stringify(g));
     }
   } catch(e){ ok('suite ran to the end', false, e.message.slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));

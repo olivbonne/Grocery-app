@@ -122,10 +122,6 @@
   .micbtn{ width:46px; height:44px; flex:none; border-radius:14px; border:none;
     background:var(--mic-img) center/cover no-repeat; }
   /* A18 ✨ Smart add */
-  .smartbtn{ width:46px; height:44px; flex:none; border-radius:14px; border:none;
-    background:var(--chip); color:var(--text); font-size:20px; line-height:1; padding:0;
-    display:flex; align-items:center; justify-content:center; }
-  .smartbtn:active{ transform:scale(0.96); }
   .smartchips{ display:flex; flex-direction:column; gap:8px; }
   .smartchips .recgroup{margin:8px 2px 2px}   /* v2.08 */
   .smartchip{ border-radius:13px; background:var(--card); border:1px solid var(--line); overflow:hidden; }
@@ -1957,3 +1953,35 @@
   .voicedone { flex:none; width:52px; height:52px; border-radius:50%; border:none; background:var(--accent); color:var(--on-accent, #fff);
     display:flex; align-items:center; justify-content:center; cursor:pointer; }
   @media (prefers-reduced-motion: reduce){ .voicesheet.on .voicemic::after, .voicesheet.on .voicewave i { animation:none !important; } }
+  /* v2.58 the Shop menu's tile choice: 1–6 and ↔ in one line, about 34px each, so it fits at 390px */
+  .smtiles { display:flex; flex-direction:column; gap:6px; padding:6px 8px 4px; }
+  .smtlabel { font-size:12px; font-weight:700; color:var(--muted); }
+  .smcols { display:flex; gap:4px; }
+  .smcols .colbtn { flex:none; width:34px; height:34px; padding:0; border-radius:10px; border:1.5px solid var(--line);
+    background:transparent; color:var(--text); font:inherit; font-size:14px; font-weight:700; }
+  .smcols .colbtn.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent, #fff); }
+  /* v2.58 one line in 1-per-row (.linelist) and variable (.largevar): icon, name, note, quantity and marks on ONE line.
+     Overrides the column rules of v1.39 / v2.12 and the icon-size and .hasnote rules by specificity (html body + repeated
+     classes), without deleting them — the grid modes still use those. Cart ticks and Regulars are the same .pill. */
+  html body .zoomer.zoomer.zoomer.linelist .pill.pill, html body .shop .zoomer.zoomer.largevar .pill.pill {
+    flex-direction:row; align-items:center; flex-wrap:nowrap; gap:8px; min-height:44px; height:auto;
+    justify-content:flex-start; text-align:left; position:relative; }
+  html body .zoomer.zoomer.zoomer.linelist .pill.pill .pemoji, html body .shop .zoomer.zoomer.largevar .pill.pill .pemoji {
+    flex:none; margin:0; zoom:1; --illzoom:1; font-size:22px; }
+  html body .zoomer.zoomer.zoomer.linelist .pill.pill .pname, html body .shop .zoomer.zoomer.largevar .pill.pill .pname {
+    white-space:nowrap; min-height:0; line-height:1.2; }
+  html body .zoomer.zoomer.zoomer.linelist .pill.pill .pnote, html body .shop .zoomer.zoomer.largevar .pill.pill .pnote {
+    flex:0 1 auto; width:auto; order:0; white-space:nowrap; text-align:left; color:var(--muted); }
+  html body .zoomer.zoomer.zoomer.linelist .pill.pill .pill-meta, html body .shop .zoomer.zoomer.largevar .pill.pill .pill-meta {
+    flex:none; white-space:nowrap; margin-top:0; padding-left:0; justify-content:flex-start; }
+  html body .zoomer.zoomer.zoomer.linelist .pill.pill > .pmarks, html body .shop .zoomer.zoomer.largevar .pill.pill > .pmarks {
+    position:static; flex:none; }
+  /* 1-per-row: the quantity is pushed right; the name and note shrink with an ellipsis, so the row never wraps */
+  html body .zoomer.zoomer.zoomer.linelist .pill.pill .pill-meta { margin-left:auto; }
+  html body .zoomer.zoomer.zoomer.linelist .pill.pill .pname, html body .zoomer.zoomer.zoomer.linelist .pill.pill .pnote {
+    min-width:0; overflow:hidden; text-overflow:ellipsis; }
+  html body .zoomer.zoomer.zoomer.linelist .pill.pill .pname { flex:0 1 auto; }
+  /* variable: the tile is as wide as its content; the name ellipsises only when one tile is wider than the screen */
+  html body .shop .zoomer.zoomer.largevar .pill.pill { flex:none; max-width:100%; padding:6px 12px; }
+  html body .shop .zoomer.zoomer.largevar .pill.pill .pill-meta { margin-left:0; }
+  html body .shop .zoomer.zoomer.largevar .pill.pill .pname { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; }

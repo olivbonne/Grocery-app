@@ -95,6 +95,7 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   `<div class="opthint">` right after its row: `infoBubbles()` folds it behind an (i) on the row's label — write new ones that way. The search (`filterOptions`) only toggles classes — never `render()` from it,
   or the field loses focus and the keyboard drops. A suite that drives a look control opens that page first.
 - **Device features go through `js/platform.js` (v2.43)** — file pickers, location, wake lock, share, barcode, speech. A future native app replaces that file's insides; never call `navigator.*` device APIs or build a file `<input>` directly in js/app.js.
+- **The database goes through `js/store.js` (v2.55).** Since v2.58 a split list's items live in lists/{code}/items/{id} (store.js `col`/`listenAll`/`putMany`); `save()` writes only the items that changed and the list record only when it changed; `maybeMigrate()` moves a v2 list once, parts last.
 - **Two category sets (v2.33).** Lists made before v2.33 keep the nine (`DEFAULT_CATS`); a list made since (`_freshList`)
   starts with the thirteen plus Others (`CATS13`, in the order a shop is walked). The dictionary, the AI readers and receipts
   still speak the nine: every place an item is ADDED goes through `newCat(cat, name)`, which on a thirteen-list puts it where
@@ -113,7 +114,8 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   named in each. The list document itself is one: `subscribe()` rebuilds `state` field by field, so a new
   top-level field (v2.09 `prices`, v2.16 `aisle`, v2.20 `memb`, v2.23 `templates`, v2.24 `spend`, v2.26 `looks`, v2.27 `aislemap`) must be named there, in the two default
   `state` literals, in `listDoc()` (the v2.15 backups) and in `restoreList()`. Presence is the exception: v2.23 `shopping`
-  (who is at a shop now) is synced, so it is in the literals and `subscribe()`, but never backed up or restored.
+  (who is at a shop now) is synced, so it is in the literals and `subscribe()`, but never backed up or restored. v2.58 `parts` (which parts of the list live as records of their own) is named in `subscribe()` and both literals, and
+  deliberately NOT in `listDoc()` or `restoreList()`.
 
 ## Workflow
 - Develop on the branch the session is given, push, and open a PR into `main`.

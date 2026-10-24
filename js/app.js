@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has } from "./store.js?v=2.57";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.57";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.57";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.57";
-import { compareStores, worthIt } from "./compare.js?v=2.57";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.57";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.57";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.57";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.57";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.57";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.57";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines } from "./parse.js?v=2.57";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.57";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.57";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.58";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.58";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.58";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.58";
+import { compareStores, worthIt } from "./compare.js?v=2.58";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.58";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.58";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.58";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.58";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isNativeApp } from "./platform.js?v=2.58";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.58";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines } from "./parse.js?v=2.58";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.58";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.58";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.57";
+const APP_VERSION = "v2.58";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -79,7 +79,7 @@ function showAmt(w){
    since v2.00 gives five of them a folded default, a slot that wiped the key would silently re-fold
    them under someone who had opened them, with no way to tell why. Found by a suite that applies a
    slot and then reaches for a colour control. */
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_jk_)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_nosmall$|ml_jk_)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -1460,15 +1460,22 @@ let displays = {}; try{ displays = JSON.parse(localStorage.getItem("ml_displays"
      become a 3- or 4-column grid. They were not using Large, so its remembered count is the thing to lose. */
   if(ch){ localStorage.setItem("ml_displays", JSON.stringify(displays));
     localStorage.setItem("ml_largecols","1"); } })();
+/* v2.58: one tile system — Small tiles are gone. Once per phone (ml_nosmall), the column count the Shop page showed
+   is kept: a small-tile phone carries its small column count into ml_largecols, then every non-large display becomes large. */
+(function(){ try{ if(localStorage.getItem("ml_nosmall")==="1") return;
+  const L=["large","grid3","grid4","grid5"], wasSmall=!L.includes(displays.shop);
+  if(wasSmall){ const v=parseInt(localStorage.getItem("ml_smallcols")||"0",10); localStorage.setItem("ml_largecols", String((v>=0&&v<=6)?v:0)); }
+  ["shop","plan"].forEach(k=>{ if(!(k in displays)) displays[k]=undefined; });
+  Object.keys(displays).forEach(k=>{ if(!L.includes(displays[k])) displays[k]="large"; });
+  localStorage.setItem("ml_displays", JSON.stringify(displays)); localStorage.setItem("ml_nosmall","1"); }catch(e){} })();
 // v1.27 display model: List / Large Tile (2–6 cols) / Small Tile flow + independent Category / Subcategory toggles
 function dispBase(){ const d=displays[optMode()];
   if(d==="list") return "list";
-  if(d==="large"||d==="grid3"||d==="grid4"||d==="grid5") return "large";
-  return "small"; }                                   // "small"/"tile"/null → small-tile flow
+  return "large"; }                                   // v2.58: Small tiles are gone — everything else is large
 function largeCols(){ const d=displays[optMode()];
   if(d==="grid3") return 3; if(d==="grid4") return 4; if(d==="grid5") return 5;
-  const v=parseInt(localStorage.getItem("ml_largecols")||"3",10);
-  return (v>=0&&v<=6)?v:3; }   // v1.39: 0 = variable width (tiles size to the word), 1..6 = fixed columns
+  const v=parseInt(localStorage.getItem("ml_largecols")||"0",10);
+  return (v>=0&&v<=6)?v:0; }   // v1.39: 0 = variable width (tiles size to the word), 1..6 = fixed columns
 function displayFor(){ return catOn ? "cat" : "flat"; }
 function lineList(){ return dispBase()==="list" || (dispBase()==="large" && largeCols()===1); }   // v1.43 item 4: large·1 renders as the old List
 /* v1.43 item 4: large·1 must NOT also emit `gridmode grid1` — the list layout and the 1-column grid
@@ -1480,10 +1487,6 @@ function setCatOn(v){ catOn=!!v; localStorage.setItem("ml_caton", catOn?"1":"0")
 function setSubOn(v){ subOn=!!v; localStorage.setItem("ml_subon", subOn?"1":"0"); render(); }
 function setDispBase(b){ displays[optMode()]=b; localStorage.setItem("ml_displays", JSON.stringify(displays)); render(); }
 function setLargeCols(n){ localStorage.setItem("ml_largecols", String(n)); displays[optMode()]="large"; localStorage.setItem("ml_displays", JSON.stringify(displays)); render(); }
-/* v1.41 item 2: Small tiles get the same column control Large tiles have. 0 = variable width
-   (tiles size to the word — the behaviour Small tiles have always had, so it stays the default). */
-function smallCols(){ const v=parseInt(localStorage.getItem("ml_smallcols")||"0",10); return (v>=0&&v<=6)?v:0; }
-function setSmallCols(n){ localStorage.setItem("ml_smallcols", String(n)); displays[optMode()]="small"; localStorage.setItem("ml_displays", JSON.stringify(displays)); render(); }
 // v1.16 two independent icon switches — category icons (emoji AND images) and item emojis.
 let _emojiCat = localStorage.getItem("ml_emoji_cat");
 let _emojiItem = localStorage.getItem("ml_emoji_item");
@@ -1742,7 +1745,7 @@ function switchList(code){ const wasPlan = (view==="plan"); listsOpen=false; if(
   reloadLearn();
   try{ collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}'); }catch(e){ collapse={cats:[],ba:false}; }
   collapse.checked = false;   // v2.10: the cart always opens folded; a tap unfolds it for the session
-  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[], looks:{}, aislemap:{}, itemTomb:{}, mv:0 };
+  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[], looks:{}, aislemap:{}, itemTomb:{}, parts:[], mv:0 };
   try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state=c; dropTube(); aiAdopt(); } }catch(e){}
   resetItemSigs();
   if(!state.purch || typeof state.purch!=="object") state.purch={};
@@ -1782,7 +1785,7 @@ function playPlan(add){ if(!soundOn) return;
   } catch(e){} }
 let lastPop=null;
 
-let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[], looks:{}, aislemap:{}, itemTomb:{}, mv:0 };
+let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[], looks:{}, aislemap:{}, itemTomb:{}, parts:[], mv:0 };
 rememberList(listCode);
 try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state = c; dropTube(); aiAdopt(); } } catch(e){}
 resetItemSigs();
@@ -1956,8 +1959,14 @@ function parseInput(text){ return parseLines(text, labelMap()); }   // v2.46: th
 /* v2.49 (architecture review S9): the list document carries the shape's version. A phone running an older app that sees a
    NEWER version stops writing (it would overwrite fields it does not know) and asks to be updated. The next data-shape
    change (v2.51, items saved one by one) raises it.
-   v2.51: version 2 — items carry `ts` and removals `itemTomb`; a v2.49/v2.50 phone seeing v2 stops writing and asks to update. */
-const LIST_V = 2;
+   v2.51: version 2 — items carry `ts` and removals `itemTomb`; a v2.49/v2.50 phone seeing v2 stops writing and asks to update.
+   v2.58: version 3 — the items live in items/{id} (the list record names it in `parts`); a phone on v2.49–v2.57 seeing 3 stops
+   writing ("Update now"). Lists not yet split keep being written as v:2 — so save() writes `v: splitOn() ? 3 : 2`, never LIST_V blindly. */
+const LIST_V = 3;
+function splitOn(){ return (state.parts||[]).includes("items") && canSplit(); }
+/* v2.58 (S8 step 2): the items listener's state. var: boot-order rule. _remoteItems: id → {sig, ts} or {gone} of what the server
+   holds (the last items snapshot); _frozenItems/_frozenTomb: the list record's old items array, kept as written (the backup) */
+var _itemsSeen=false, unsubItems=null, _remoteItems=new Map(), _frozenItems=null, _frozenTomb=null, _lastDocSig="", _migrating="", itemsPend=false, docPend=false;
 /* v2.51 (S8): each item is merged on its own. _itemSigs holds what every item was at this phone's last merge; save() stamps
    (ts) the items that changed since and tombstones the ones that went, and subscribe() merges the server's items with ours,
    the newer copy winning. The rules live in js/merge.js. */
@@ -1972,17 +1981,19 @@ let dirtyIds = new Set();   // items changed locally, not yet confirmed by serve
 function markDirty(id){ if(id) dirtyIds.add(id); }
 function subscribe(){
   if(unsub){ try{ unsub(); }catch(e){} unsub=null; }
+  if(unsubItems){ try{ unsubItems(); }catch(e){} unsubItems=null; }
+  _remoteItems=new Map(); _frozenItems=null; _frozenTomb=null; _lastDocSig=""; docPend=false; itemsPend=false; _itemsSeen=false;
   if(!db) return;
   listRef = ref("lists", listCode);
   unsub = listen(listRef, snap => {
-    { const pend = snap.metadata.hasPendingWrites;
-      if(pend && !syncing) _pendSince = Date.now();
-      else if(!pend && syncing && _pendSince){ saveDiag.last = Date.now() - _pendSince; saveDiag.max = Math.max(saveDiag.max, saveDiag.last); }
-      syncing = pend; }
+    docPend = snap.metadata.hasPendingWrites; setSyncing();
     fromCache = snap.metadata.fromCache;
     if(snap.exists() && !snap.metadata.hasPendingWrites){ const d = snap.data();
       _newerData = (+d.v||0) > LIST_V;
       if(_newerData){ render(); return; }   // v2.49 S9: a newer app's data — leave state alone, show the update card
+      /* v2.58: a split list — the items listener owns state.items/itemTomb; the record's old array is kept frozen (the backup) */
+      const split = Array.isArray(d.parts) && d.parts.includes("items") && canSplit();
+      if(split){ _frozenItems = d.items||[]; _frozenTomb = d.itemTomb||{}; }
       const mg = baMerge(d.buyAgain||[], d.baTomb||{}, state.buyAgain||[], state.baTomb||{});   // A24 conflict-free Buy-again
       const mgPurch = purchMerge(d.purch||{}, purch||{});                                        // B4 shared restock history (union merge)
       /* v2.09: prices rides along like plan does. This line rebuilds state from a fixed shape, so a field it does not name is wiped by the next snapshot (CLAUDE.md, the fixed-shape trap). */
@@ -1991,8 +2002,8 @@ function subscribe(){
          this phone has was added before the other phone saw it — keep it. Otherwise only this phone's own unsent change is kept:
          an older app may have removed it without a tombstone. */
       const trust = rv >= 2 && (+state.mv || 0) >= 2;
-      const mi = mergeItems(d.items||[], d.itemTomb||{}, state.items||[], state.itemTomb||{}, id => trust || dirtyIds.has(id));
-      state = { items:mi.items, itemTomb:mi.tomb, mv:rv, buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]}, prices: d.prices||{}, aisle: d.aisle||{}, memb: d.memb||{}, shopping: d.shopping||{}, templates: Array.isArray(d.templates)?d.templates:[], spend: Array.isArray(d.spend)?d.spend:[], looks: (d.looks && typeof d.looks==="object") ? d.looks : {}, aislemap: (d.aislemap && typeof d.aislemap==="object") ? d.aislemap : {} };
+      const mi = split ? { items:state.items||[], tomb:state.itemTomb||{} } : mergeItems(d.items||[], d.itemTomb||{}, state.items||[], state.itemTomb||{}, id => trust || dirtyIds.has(id));
+      state = { items:mi.items, itemTomb:mi.tomb, mv:rv, parts: Array.isArray(d.parts) ? d.parts : [], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]}, prices: d.prices||{}, aisle: d.aisle||{}, memb: d.memb||{}, shopping: d.shopping||{}, templates: Array.isArray(d.templates)?d.templates:[], spend: Array.isArray(d.spend)?d.spend:[], looks: (d.looks && typeof d.looks==="object") ? d.looks : {}, aislemap: (d.aislemap && typeof d.aislemap==="object") ? d.aislemap : {} };
       resetItemSigs();
       purch = state.purch;                                                                        // keep the working ref pointed at the shared copy
       if(!state.name){ const ln=(getLists().find(l=>l.code===listCode)||{}).name; if(ln){ state.name=ln; save(); } }
@@ -2000,7 +2011,8 @@ function subscribe(){
       if(state.name) rememberList(listCode, state.name);
       if((state.predictReset||0) > _predReset) applyPredictReset(state.predictReset);   // household-wide predictions reset propagated via the synced epoch
       // converge: if our merged view holds Buy-again / restock history the server was missing, write it back once
-      if(baSig(mg.list, mg.tomb) !== baSig(d.buyAgain||[], d.baTomb||{}) || purchSig(state.purch||{}) !== purchSig(d.purch||{}) || itemsSig(mi.items, mi.tomb) !== itemsSig(d.items||[], d.itemTomb||{})) save(); }
+      if(baSig(mg.list, mg.tomb) !== baSig(d.buyAgain||[], d.baTomb||{}) || purchSig(state.purch||{}) !== purchSig(d.purch||{}) || (!split && itemsSig(mi.items, mi.tomb) !== itemsSig(d.items||[], d.itemTomb||{}))) save();
+      if(split) startItems(); else maybeMigrate(d, snap); }
     else if(snap.exists() && snap.metadata.hasPendingWrites){ /* keep local optimistic state */ }
     if(!syncing && !fromCache) dirtyIds.clear();   // v2.51: after the merge, which reads it
     ensureCats();
@@ -2014,6 +2026,59 @@ function subscribe(){
     showToast("⚠︎ Can't read database — publish Firestore rules"); }, { includeMetadataChanges:true });
   listDenied = false;
 }
+/* v2.58: "Saving…" while either listener has a write outstanding; v2.57's timing runs on the combined flag */
+function setSyncing(){ const pend = docPend || itemsPend;
+  if(pend && !syncing) _pendSince = Date.now();
+  else if(!pend && syncing && _pendSince){ saveDiag.last = Date.now() - _pendSince; saveDiag.max = Math.max(saveDiag.max, saveDiag.last); }
+  syncing = pend; }
+/* v2.58 (S8 step 2): a split list's items, lists/{code}/items/{id}, one record each; a removal is the record {id, gone} */
+function startItems(){
+  if(unsubItems || !canSplit()) return;
+  const c = col("lists", listCode, "items");
+  unsubItems = listenAll(c, snap => {
+    itemsPend = snap.metadata.hasPendingWrites; setSyncing();
+    const remote=[], remoteTomb={}; _remoteItems = new Map();
+    snap.docs.forEach(doc => { const x = doc.data() || {};
+      if(x.gone){ remoteTomb[doc.id] = +x.gone; _remoteItems.set(doc.id, { gone:+x.gone }); }
+      else { remote.push(x); _remoteItems.set(doc.id, { sig:itemSig(x), ts:+x.ts||0 }); } });
+    if(!snap.metadata.hasPendingWrites){ _itemsSeen = true;
+      /* in a split list every phone is v3-aware and an item is never deleted without a tombstone, so an item only this
+         phone has is an unsent add — keep it */
+      const mi = mergeItems(remote, remoteTomb, state.items||[], state.itemTomb||{}, () => true);
+      state.items = mi.items; state.itemTomb = mi.tomb; resetItemSigs();
+      const differs = mi.items.some(it => { const r = _remoteItems.get(String(it.id)); return !r || r.gone || r.sig !== _isig(it) || r.ts !== (+it.ts||0); })
+        || Object.keys(mi.tomb||{}).some(id => { const r = _remoteItems.get(id); return !r || !r.gone; });
+      if(differs) save(); }
+    if(!itemsPend && !snap.metadata.fromCache) dirtyIds.clear();
+    ensureCats();
+    try { localStorage.setItem(LS.cache, JSON.stringify(state)); } catch(e){}
+    applyingRemote = true; renderKeepingAdd(); applyingRemote = false;
+  }, err => { console.error(err); }, { includeMetadataChanges:true });
+}
+/* v2.58 (S8 step 2): move a v2 list's items into records of their own, once per list per launch. Why this order is safe:
+   each copy is keyed by the item's id, so repeating it (a second phone, a retry) writes the same records again; `parts`
+   is written LAST, only after the whole batch landed, so until then every phone still reads the one record; the old items
+   array stays in the list record, frozen, as the backup until step 4; and v:3 makes v2.49–v2.57 phones read-only, so none
+   of them can write items into the old array that nobody reads any more. A refused batch (rules not yet published) leaves
+   the list exactly as it was; it is tried again at the next opening. */
+function maybeMigrate(d, snap){
+  if(!canSplit() || _newerData || snap.metadata.fromCache || snap.metadata.hasPendingWrites) return;
+  if((+d.v||0) !== 2 || (Array.isArray(d.parts) && d.parts.includes("items")) || _migrating === listCode) return;
+  if(!configured || !listRef) return;   // the same test save() uses before it writes
+  _migrating = listCode;
+  forceSnapshot();
+  const code = listCode;
+  const writes = (state.items||[]).filter(it => okItemId(String(it && it.id))).map(it => ({ ref: ref("lists",code,"items",String(it.id)), data:Object.assign({}, it, { id:String(it.id) }) }))
+    .concat(Object.entries(state.itemTomb||{}).filter(([id]) => okItemId(id)).map(([id,t]) => ({ ref: ref("lists",code,"items",id), data:{ id, gone:+t } })));
+  putMany(writes).then(() => { if(listCode !== code) return;
+    state.parts = Array.from(new Set([...(state.parts||[]), "items"]));
+    _frozenItems = state.items.map(i => Object.assign({}, i)); _frozenTomb = Object.assign({}, state.itemTomb||{});
+    _lastDocSig = ""; startItems(); return save(); })
+  .catch(e => { console.warn("[split] not moved yet", e && (e.code||e.message)); _migrating = ""; });
+}
+/* the signature as the record holds it: its id is always a string (a local id may be a number) */
+function _isig(it){ return itemSig(Object.assign({}, it, { id:String(it.id) })); }
+function okItemId(id){ return !!id && id.length <= 64 && !id.includes("/"); }
 /* v2.44 (architecture review A2, members by account): who may open a list is kept beside it in access/{code}
    (firebase/firestore.rules). Until the owner publishes those rules every write here is refused — shrugged off quietly. */
 var _accessFor = "", accessInfo = null, accessDenied = "", listDenied = false, accessBusy = null;
@@ -2387,7 +2452,25 @@ async function save(){
   if(!configured || !listRef) return;   // v2.54: !listRef — the database starts after App Check (a change made before is merged in by the first snapshot)
   if(_newerData) return;   // never write over a newer app's data
   syncing = true;
-  try { await put(listRef, Object.assign(listDoc(state), { shopping: state.shopping||{}, itemTomb: state.itemTomb||{}, v: LIST_V })); }   // v2.49: only the fields the app knows (the rules refuse others)
+  if(splitOn()){   // v2.58: only the items that changed, and the list record only when it changed (a tick is ONE small write)
+    try {
+      const code = listCode, writes = [];
+      /* until the first items snapshot this phone does not know what the server holds — it would re-send every item. A change
+         made meanwhile is stamped (ts) and written by the merge that snapshot runs. */
+      if(_itemsSeen) (state.items||[]).forEach(it => { const id = String(it && it.id); if(!okItemId(id)) return;
+        const r = _remoteItems.get(id);
+        if(!r || r.gone || r.sig !== _isig(it) || r.ts !== (+it.ts||0)) writes.push({ ref: ref("lists", code, "items", id), data: Object.assign({}, it, { id }) }); });
+      if(_itemsSeen) Object.entries(state.itemTomb||{}).forEach(([id,t]) => { if(!okItemId(id)) return; const r = _remoteItems.get(id);
+        if(!(r && r.gone)) writes.push({ ref: ref("lists", code, "items", id), data: { id, gone:t } }); });
+      if(writes.length) await putMany(writes);
+      if(_frozenItems !== null){   // no list snapshot yet: items only
+        const doc = Object.assign(listDoc(state), { items:_frozenItems||[], itemTomb:_frozenTomb||{}, shopping:state.shopping||{}, parts:state.parts, v:3 });
+        const sig = JSON.stringify(Object.assign({}, doc, { items:0, itemTomb:0 }));
+        if(sig !== _lastDocSig){ await put(listRef, doc); _lastDocSig = sig; } } }
+    catch(e){ console.error(e);
+      if(Date.now()-__saveWarned > 5000){ __saveWarned = Date.now(); showToast("⚠︎ Not syncing — check Firestore rules"); } }
+    return; }
+  try { await put(listRef, Object.assign(listDoc(state), { shopping: state.shopping||{}, itemTomb: state.itemTomb||{}, v: 2 })); }   // v2.49: only the fields the app knows (the rules refuse others)
   catch(e){ console.error(e);
     if(Date.now()-__saveWarned > 5000){ __saveWarned = Date.now(); showToast("⚠︎ Not syncing — check Firestore rules"); } }
 }
@@ -2835,11 +2918,14 @@ function maybeSnapshot(){ if(_forgetting) return; try{
 /* v2.57 item 4: move this list to the thirteen categories, asked for by the household, per list, from Settings › Lists & sharing.
    This is the ONE deliberate exception to "nothing stored is ever re-categorised" (v2.33): the person asks for it, for this list,
    and a backup is written first (even if one was taken today). Categories the household made stay, before Others. */
-function switchToCats13(){
-  if(!state || !listCode) return;
+/* a backup written now, even if one was taken today (v2.57 switchToCats13, v2.58 maybeMigrate) */
+function forceSnapshot(){
   try{ let next=[{ day:dayKey(new Date()), at:Date.now(), v:APP_VERSION, list:JSON.parse(JSON.stringify(listDoc(state))) }, ...snapList(listCode)].slice(0, SNAP_KEEP);
     for(;;){ try{ localStorage.setItem(snapKey(listCode), JSON.stringify(next)); break; }
-      catch(e){ if(next.length<=1) break; next=next.slice(0,-1); } } }catch(e){}
+      catch(e){ if(next.length<=1) break; next=next.slice(0,-1); } } }catch(e){} }
+function switchToCats13(){
+  if(!state || !listCode) return;
+  forceSnapshot();
   const old = Array.isArray(state.categories) ? state.categories : [];
   const custom = old.filter(c=>!DEFAULT_CATS.some(d=>d.id===c.id) && !CATS13.some(d=>d.id===c.id));
   const oldMeat = old.find(c=>c.id==="meat");
@@ -3128,7 +3214,7 @@ function addSheetRows(){
   /* v1.43 item 4: `largeCols()>1`, not `>0` — large·1 is now the list layout, and emitting
      `gridmode grid1` here turned the single horizontally-scrolling result strip into a one-column
      grid. The list look wants the base shop-pill sizing, exactly as the old "list" mode did. */
-  return `<div class="shop addwrap"><div class="zoomer ${styl()}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}${(dispBase()==='large'&&largeCols()>1)?(' gridmode grid'+largeCols()):''}" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})"><div class="pills addgrid">${cells}</div></div></div>`;   /* v2.42: .pills, so the results take the list's own grid and tile sizes */
+  return `<div class="shop addwrap"><div class="zoomer ${styl()}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}${(dispBase()==='large'&&largeCols()>1)?(' gridmode grid'+largeCols()):''}" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})"><div class="pills addgrid">${cells}</div></div></div>`;   /* v2.42: .pills, so the results take the list's own grid and tile sizes */
 }
 function addBodyHTML(){
   /* v1.47: once an item is picked, its Edit panel is the whole point of the sheet — the leftover
@@ -4432,7 +4518,7 @@ function renderMain(){
         <button class="checkedbarhead" id="checkedHead"><span class="chk-in"><span class="chk-tick">✓</span><span class="chk-txt"><span class="chk-n">${tf("{n} in cart", { n:done })}</span>${(()=>{ const e=cartEstimate(); return e.priced ? `<span class="cartest">${tf("about {x}", { x:priceMoney(e.total) })}${e.priced<e.n?tf(" for {a} of {b}", { a:e.priced, b:e.n }):""}</span>` : ""; })()}</span></span><svg class="cbtri${checkedOpen?' open':''}" width="8" height="9.5" viewBox="0 0 8 9.5" aria-hidden="true"><path d="M1 .6 L7.4 4.75 L1 8.9 Z" fill="currentColor" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg></button>
         <button id="sweepBtn" class="sweepbtn sweepbanner">${t("Save to Regulars")}</button>
       </div>
-      ${checkedOpen?`<div class="checkedscroll"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">${pillsMixed(checkedItems.slice().sort((a,b)=>(b.checkedAt||0)-(a.checkedAt||0)))}</div></div>`:""}
+      ${checkedOpen?`<div class="checkedscroll"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">${pillsMixed(checkedItems.slice().sort((a,b)=>(b.checkedAt||0)-(a.checkedAt||0)))}</div></div>`:""}
     </div>` : "";
   app.innerHTML = `
     <div class="topfix" id="topfix">
@@ -4456,7 +4542,7 @@ function renderMain(){
     </div>
     ${checkedBar}
     <div class="wrap ${shopMode?'shop':''}" role="main">
-    <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
+    <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${lockedHTML()}${newerDataHTML()}${shoppingHTML()}${(()=>{ const c=lookCardHTML()+installCardHTML()+cardNudgeHTML()+rcptNudgeHTML(); return c || onbCardHTML(); })()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
           ${/* v2.56 item 4: a drawn empty basket, and two ways to start — say it, or type it */""}
           <div class="empty-basket">${BASKET_SVG}</div>
@@ -4921,7 +5007,7 @@ const RPT_DAY_CAP = 10;
 function rptToday(){ const d=dayKey(new Date()); try{ const v=String(localStorage.getItem("ml_rptday")||"").split("|"); return v[0]===d ? (+v[1]||0) : 0; }catch(e){ return 0; } }
 function rptCount(){ const d=dayKey(new Date()); try{ localStorage.setItem("ml_rptday", d+"|"+(rptToday()+1)); }catch(e){} }
 function rptDiag(){ let th=""; try{ th=document.documentElement.getAttribute("data-theme")||(document.body.classList.contains("dark")?"dark":"light"); }catch(e){}
-  return { version:APP_VERSION, page:["plan","shop","settings"][curPageIdx()]||String(curPageIdx()), layout:dispBase()+" "+(dispBase()==="small"?smallCols():largeCols())+" cols",
+  return { version:APP_VERSION, page:["plan","shop","settings"][curPageIdx()]||String(curPageIdx()), layout:dispBase()+" "+largeCols()+" cols",
     icons:itemEmojiOn()?(iconStyle()+" "+icoSize()):"off", theme:th, screen:innerWidth+"x"+innerHeight, ua:String(navigator.userAgent||"").slice(0,120) }; }
 function rptSheet(){
   const head=`<div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">${REPORT_SVG(18)} ${t("Report a problem")}</div>`;
@@ -5253,6 +5339,8 @@ var shopMenuOpen = false;   // var: render() reads it at boot
 function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRealStore(st.id));
   const item = (id, icon, label) => `<button class="smitem" id="${id}" role="menuitem">${icon}<span>${label}</span></button>`;
   return `<div class="smbg" id="smBg"><div class="smenu" id="shopMenuEl" role="menu" aria-label="${t("More")}">
+    <div class="smtiles"><span class="smtlabel">${t("Tiles")}</span><div class="smcols">${[1,2,3,4,5,6].map(n=>`<button class="colbtn ${largeCols()===n?'on':''}" data-sm-cols="${n}">${n}</button>`).join("")}<button class="colbtn ${largeCols()===0?'on':''}" data-sm-cols="0" aria-label="${t("Variable width — tiles size to the word")}">↔</button></div></div>
+    <div class="smsep"></div>
     ${item("smCard", CARD_SVG(18), cardsGet().length ? t("Show my card") : t("Add a membership card"))}
     ${item("smRcpt", CAMERA_SVG(18), t("Read a receipt"))}
     ${item("smCompare", CART_SVG, t("Which store is cheaper"))}
@@ -5301,6 +5389,7 @@ function wireShopMenu(){
   on("smOcc", () => { occSheet = { mode:"add" }; render(); });
   on("smCard", () => { const c = cardHere().c || cardsGet()[0]; cardShow = c ? { id:c.id } : { add:true }; render(); });   // v2.35: the shop you are at, else the first; none yet → straight to adding one
   on("smReport", () => { rpt = { kind:"broken", text:"", diag:true }; render(); });
+  app.querySelectorAll("[data-sm-cols]").forEach(c => c.onclick = () => setLargeCols(+c.dataset.smCols));   // v2.58: the menu stays open, re-drawn with the new choice
 }
 /* v2.28 map a shop by photographing its signs: "Read a sign" takes a photo, /api/aisle reads the aisle's number and what
    the sign lists, and the line joins the end of the box — walk the shop once, a photo per sign. The wait shows its step
@@ -6321,7 +6410,7 @@ function renderPlanPage(){
       ${locChip()}
       ${atStorePrompt()}
     </div>
-    <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${dispBase()==='small'?' smalltile':''}${(dispBase()==='small'&&smallCols()>0)?(' gridmode grid'+smallCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
+    <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
       ${mergeCardHTML()}
       ${hasAny ? planBody : `<div class="empty"><div class="empty-emoji">🛒</div><p class="empty-title">${t("Nothing planned yet")}</p><p class="empty-sub">${t("Tap <b>Add</b> below — pick from your Regulars in one tap or type anything new.")}</p></div>`}
       <button id="addCatPlan" style="margin:4px 0 2px;border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:4px 0">+ ${t("New category")}</button>
@@ -6595,7 +6684,6 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-sort]").forEach(b=>b.onclick=()=>setSort(b.dataset.optSort));
   app.querySelectorAll("[data-tiledisp]").forEach(b=>b.onclick=()=>setDispBase(b.dataset.tiledisp));   // v1.29 sets the display base only; grouping is separate
   app.querySelectorAll("[data-opt-cols]").forEach(b=>b.onclick=()=>setLargeCols(+b.dataset.optCols));
-  app.querySelectorAll("[data-opt-smallcols]").forEach(b=>b.onclick=()=>setSmallCols(+b.dataset.optSmallcols));
   app.querySelectorAll("[data-opt-accent]").forEach(b=>b.onclick=()=>setAccent(b.dataset.optAccent));
   app.querySelectorAll("[data-opt-textcol]").forEach(b=>b.onclick=()=>setTextCol(b.dataset.optTextcol));
   app.querySelectorAll("[data-opt-tilebg]").forEach(b=>b.onclick=()=>setTileBg(b.dataset.optTilebg));
@@ -6784,7 +6872,10 @@ async function smartAddText(text){
   text=String(text||"").trim();
   if(!text) return;
   const recipe=looksLikeRecipe(text);
+  /* v2.58 (the household): the keyboard goes down when Smart add starts, so its suggestions can be seen */
+  try{ const ae=document.activeElement; if(ae && ae.blur) ae.blur(); }catch(e){}
   smartOpen=true; smartLoading=true; smartStep=""; smartError=""; smartItems=[]; smartEdit=null; smartServings=null; smartTitle=""; smartFromPhoto=false; render();
+  try{ const ae=document.activeElement; if(ae && ae.blur && /^(INPUT|TEXTAREA)$/.test(ae.tagName)) ae.blur(); }catch(e){}   // a render that put the focus back
   return smartRequest(recipe?"/api/recipe":"/api/parse", {text}, recipe);
 }
 /* v2.56 item 7: a photo of a list (or a recipe) read by the recipe reader — the same resize and the same call as the Plan
@@ -7117,8 +7208,8 @@ const APP_PRESETS = [
   { name:"Night",  keys:{ ml_theme:"noir", ml_wall:"", ml_fill:"full", ml_fill_v141:"1", ml_accent:"white",
       ml_tilerad:"18", ml_gapx:"8", ml_gapy:"8", ml_tilebgcalm:"1", ml_caton:"1", ml_catemoji:"1", ml_itememoji:"1" } },
   { name:"Compact",keys:{ ml_theme:"light", ml_wall:"", ml_fill:"accent", ml_fill_v141:"1", ml_accent:"green",
-      ml_tilerad:"8", ml_gapx:"2", ml_gapy:"2", ml_padt:"2", ml_smallcols:"2",
-      ml_displays:JSON.stringify({cat:"small",flat:"small"}), ml_densities:JSON.stringify({cat:0.9,flat:0.9}),
+      ml_tilerad:"8", ml_gapx:"2", ml_gapy:"2", ml_padt:"2", ml_largecols:"2",
+      ml_displays:JSON.stringify({cat:"large",flat:"large"}), ml_densities:JSON.stringify({cat:0.9,flat:0.9}),
       ml_caton:"1", ml_catemoji:"1", ml_itememoji:"0" } },
   { name:"Airy",   keys:{ ml_theme:"light", ml_wall:"wall-3", ml_wallpos:"bottom", ml_fill:"empty", ml_fill_v141:"1",
       ml_accent:"sand", ml_tilerad:"22", ml_gapx:"14", ml_gapy:"14", ml_padl:"20", ml_padr:"20", ml_padt:"14",
@@ -7141,7 +7232,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_jk_)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_nosmall$|ml_jk_)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -7476,12 +7567,8 @@ function optionsBody(){
     ${view!=="lists" ? `<div class="optrow optrow-wide optnl"><span class="optlabel">${t("Tile display")}</span><div class="optwide">
       <div class="tdlist">
         <div class="tdrow">
-        <button class="tdopt ${dispBase()==='large'?'on':''}" data-tiledisp="large">${largeCols()===1?`<span class="tdprev ${catOn?'tdprev-listcat':'tdprev-list'}">${catOn?'<b></b><i></i><i></i>':'<i></i><i></i><i></i>'}</span>`:largeCols()===0?`<span class="tdprev tdprev-var">${catOn?'<b></b>':''}${Array.from({length:5},()=>'<u></u>').join("")}</span>`:`<span class="tdprev tdprev-grid" style="grid-template-columns:repeat(${largeCols()},1fr)">${catOn?'<b></b>':''}${Array.from({length:catOn?largeCols():largeCols()*2},()=>'<u></u>').join("")}</span>`}<span class="tdlabel">${t("Large tiles")}${largeCols()===0?t(' · variable'):largeCols()===1?t(' · list'):''}</span></button>
+        <button class="tdopt ${dispBase()==='large'?'on':''}" data-tiledisp="large">${largeCols()===1?`<span class="tdprev ${catOn?'tdprev-listcat':'tdprev-list'}">${catOn?'<b></b><i></i><i></i>':'<i></i><i></i><i></i>'}</span>`:largeCols()===0?`<span class="tdprev tdprev-var">${catOn?'<b></b>':''}${Array.from({length:5},()=>'<u></u>').join("")}</span>`:`<span class="tdprev tdprev-grid" style="grid-template-columns:repeat(${largeCols()},1fr)">${catOn?'<b></b>':''}${Array.from({length:catOn?largeCols():largeCols()*2},()=>'<u></u>').join("")}</span>`}<span class="tdlabel">${t("Tile display")}${largeCols()===0?t(' · variable'):largeCols()===1?t(' · list'):''}</span></button>
         <div class="dispcols">${[1,2,3,4,5,6].map(n=>`<button class="colbtn ${dispBase()==='large'&&largeCols()===n?'on':''}" data-opt-cols="${n}">${n}</button>`).join("")}<button class="colbtn ${dispBase()==='large'&&largeCols()===0?'on':''}" data-opt-cols="0" title="${t("Variable width — tiles size to the word")}">↔</button></div>
-        </div>
-        <div class="tdrow">
-        <button class="tdopt ${dispBase()==='small'?'on':''}" data-tiledisp="small">${smallCols()===1?`<span class="tdprev ${catOn?'tdprev-listcat':'tdprev-list'}">${catOn?'<b></b><i></i><i></i>':'<i></i><i></i><i></i>'}</span>`:smallCols()===0?`<span class="tdprev tdprev-var">${catOn?'<b></b>':''}${Array.from({length:5},()=>'<u></u>').join("")}</span>`:`<span class="tdprev tdprev-grid" style="grid-template-columns:repeat(${smallCols()},1fr)">${catOn?'<b></b>':''}${Array.from({length:catOn?smallCols():smallCols()*2},()=>'<u></u>').join("")}</span>`}<span class="tdlabel">${t("Small tiles")}${smallCols()===0?t(' · variable'):smallCols()===1?t(' · list'):''}</span></button>
-        <div class="dispcols">${[1,2,3,4,5,6].map(n=>`<button class="colbtn ${dispBase()==='small'&&smallCols()===n?'on':''}" data-opt-smallcols="${n}">${n}</button>`).join("")}<button class="colbtn ${dispBase()==='small'&&smallCols()===0?'on':''}" data-opt-smallcols="0" title="${t("Variable width — tiles size to the word")}">↔</button></div>
         </div>
       </div></div></div>
     ${rowNL(t("Group by category"), `<div class="seg"><button data-opt-caton="1" class="${catOn?'on':''}">${t("On")}</button><button data-opt-caton="0" class="${!catOn?'on':''}">${t("Off")}</button></div>`)}
