@@ -1530,7 +1530,9 @@
     -webkit-backdrop-filter:blur(var(--glass-blur)) saturate(160%);
     backdrop-filter:blur(var(--glass-blur)) saturate(160%);
   }
-  .checkedbar, .qbanner, .sheet { background:var(--glass-bg); }
+  .checkedbar, .qbanner { background:var(--glass-bg); }
+  /* v2.69: a sheet's chosen background wraps the glass; unset (--lksbg invalid), the glass paints as before */
+  .sheet { background:var(--lksbg, var(--glass-bg)); color:var(--lkstext, inherit); }
   /* v1.78: the search bar is split out of the shared list the same way v1.76 split the two bars, so it
      can take its own colour. The fallback is the glass recipe, so untouched it paints what it painted. */
   .addpill { background:var(--srchbar-bg, var(--glass-bg)); color:var(--srchbar-text, var(--muted)); }
@@ -1564,7 +1566,8 @@
     box-shadow: inset 0 1px 0 var(--glass-hi), 0 10px 26px rgba(20,30,22,.22); }
   @supports not (backdrop-filter: blur(1px)){
     /* v1.76 item 1: split the same way as the glass block above, with the solid paper as the fallback. */
-    .checkedbar, .qbanner, .sheet { background:var(--paper); }
+    .checkedbar, .qbanner { background:var(--paper); }
+    .sheet { background:var(--lksbg, var(--paper)); }   /* v2.69 */
     .addpill { background:var(--srchbar-bg, var(--paper)); }
     .topfix { background:var(--topbar-bg, var(--paper)); }
     .bottomnav { background:var(--navbar-bg, var(--paper)); }
@@ -1573,7 +1576,8 @@
     .topfix, .bottomnav, .checkedbar, .qbanner, .sheet, .addpill {
       -webkit-backdrop-filter:none; backdrop-filter:none; }
     /* v1.76 item 1: same split again — the user's bar colour still applies with transparency reduced. */
-    .checkedbar, .qbanner, .sheet { background:var(--paper); }
+    .checkedbar, .qbanner { background:var(--paper); }
+    .sheet { background:var(--lksbg, var(--paper)); }   /* v2.69 */
     .addpill { background:var(--srchbar-bg, var(--paper)); }
     .topfix { background:var(--topbar-bg, var(--paper)); }
     .bottomnav { background:var(--navbar-bg, var(--paper)); }
@@ -2032,3 +2036,45 @@
 /* v2.59 the microphone help card */
 .michint { color:var(--muted); font-size:14px; line-height:1.45; }
 .michelp { margin:10px 0 8px; padding-left:22px; display:flex; flex-direction:column; gap:8px; font-size:15px; line-height:1.4; color:var(--text); }
+
+/* B69 v2.69: every sliding sheet's look (Settings › Customise the look › Sheets). applyTheme() writes --lk-<sheet>-<prop> only
+   when chosen; each sheet maps its own onto --lksbg/--lkstext (the surface) and the --epill* pill tokens. A var() of an unset
+   custom property makes the token invalid, so every usage's own fallback — today's look — applies. A sheet with no
+   data-look is "other". The Edit item panel inside the add sheet (.addedit) carries data-look="edit" and takes the edit look back. */
+.sheet:not([data-look]) { --lksbg:var(--lk-other-bg); --lkstext:var(--lk-other-text); }
+.sheet[data-look="edit"]  { --lksbg:var(--lk-edit-bg);  --lkstext:var(--lk-edit-text); }
+.sheet[data-look="smart"] { --lksbg:var(--lk-smart-bg); --lkstext:var(--lk-smart-text); }
+.sheet[data-look="add"]   { --lksbg:var(--lk-add-bg);   --lkstext:var(--lk-add-text); }
+.sheet[data-look="card"]  { --lksbg:var(--lk-card-bg);  --lkstext:var(--lk-card-text); }
+.sheet:not([data-look]) { --epillbg:var(--lk-other-pbg); --epilltext:var(--lk-other-ptext); --epillbrd:var(--lk-other-pbrd);
+  --epillrad:var(--lk-other-rad); --epillgap:var(--lk-other-gapx); --epillgapy:var(--lk-other-gapy); }
+[data-look="edit"]  { --epillbg:var(--lk-edit-pbg); --epilltext:var(--lk-edit-ptext); --epillbrd:var(--lk-edit-pbrd);
+  --epillrad:var(--lk-edit-rad); --epillgap:var(--lk-edit-gapx); --epillgapy:var(--lk-edit-gapy); }
+[data-look="smart"] { --epillbg:var(--lk-smart-pbg); --epilltext:var(--lk-smart-ptext); --epillbrd:var(--lk-smart-pbrd);
+  --epillrad:var(--lk-smart-rad); --epillgap:var(--lk-smart-gapx); --epillgapy:var(--lk-smart-gapy); }
+[data-look="add"]   { --epillbg:var(--lk-add-pbg); --epilltext:var(--lk-add-ptext); --epillbrd:var(--lk-add-pbrd);
+  --epillrad:var(--lk-add-rad); --epillgap:var(--lk-add-gapx); --epillgapy:var(--lk-add-gapy); }
+[data-look="card"]  { --epillbg:var(--lk-card-pbg); --epilltext:var(--lk-card-ptext); --epillbrd:var(--lk-card-pbrd);
+  --epillrad:var(--lk-card-rad); --epillgap:var(--lk-card-gapx); --epillgapy:var(--lk-card-gapy); }
+/* The chips and small buttons in the four non-edit looks. :where() keeps these at the element's own weight, so every more
+   specific rule — the .on/selected states, .addtyped, the editors' own pill rules — still wins, and the fallbacks are each
+   element's current colours and radius, so an unset look is identical. */
+:where(.sheet:not([data-look]), [data-look="smart"], [data-look="add"], [data-look="card"]) .catchip {
+  border-color:var(--epillbrd, var(--line)); background:var(--epillbg, var(--card)); color:var(--epilltext, var(--text)); border-radius:var(--epillrad, 999px); }
+:where(.sheet:not([data-look]), [data-look="smart"], [data-look="add"], [data-look="card"]) .storechip {
+  border-color:var(--epillbrd, var(--line)); background:var(--epillbg, var(--card)); color:var(--epilltext, var(--text)); border-radius:var(--epillrad, 11px); }
+:where(.sheet:not([data-look]), [data-look="smart"], [data-look="add"], [data-look="card"]) .flagchip {
+  border-color:var(--epillbrd, var(--line)); background:var(--epillbg, var(--card)); color:var(--epilltext, var(--text)); border-radius:var(--epillrad, 999px); }
+:where(.sheet:not([data-look]), [data-look="smart"], [data-look="add"], [data-look="card"]) .colbtn {
+  border-color:var(--epillbrd, var(--line)); background:var(--epillbg, var(--card)); color:var(--epilltext, var(--text)); border-radius:var(--epillrad, 10px); }
+:where(.sheet:not([data-look]), [data-look="smart"], [data-look="add"], [data-look="card"]) .addrow {
+  border-color:var(--epillbrd, var(--line)); background:var(--epillbg, var(--card)); color:var(--epilltext, var(--text)); border-radius:var(--epillrad, 14px); }
+:where(.sheet:not([data-look]), [data-look="smart"], [data-look="add"], [data-look="card"]) .recsort button {
+  border-color:var(--epillbrd, var(--line)); background:var(--epillbg, var(--card)); color:var(--epilltext, var(--text)); border-radius:var(--epillrad, 10px); }
+:where(.sheet:not([data-look]), [data-look="smart"], [data-look="add"], [data-look="card"]) .seg button {
+  background:var(--epillbg, var(--card)); color:var(--epilltext, var(--text)); }
+:where(.sheet:not([data-look]), [data-look="smart"], [data-look="add"], [data-look="card"]) .wgrid,
+:where(.sheet:not([data-look]), [data-look="smart"], [data-look="add"], [data-look="card"]) .storegrid {
+  column-gap:var(--epillgap, 6px); row-gap:var(--epillgapy, 6px); }
+:where(.sheet:not([data-look]), [data-look="smart"], [data-look="add"], [data-look="card"]) .smartchips {
+  column-gap:var(--epillgap, 8px); row-gap:var(--epillgapy, 8px); }

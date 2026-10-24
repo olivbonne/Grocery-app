@@ -40,7 +40,8 @@ const seed = (coll, extra) => `(() => {
 const EVERYDAY = ["Appearance","Tiles","Shopping","Smart features","Plan & recipes","People","Lists & sharing","History","Help","Your data"];
 /* SUPERSEDED by v2.63: the look page has a sixth section, "Edit item" (the editor's pill colours and shape). Still protected:
    exactly the look sections, in order, folded as an index. */
-const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings","Tile colours and shape","Edit item"];
+/* SUPERSEDED by v2.69: v2.63's "Edit item" look section became "Sheets" (every sliding sheet, chosen at its top). */
+const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings","Tile colours and shape","Sheets"];
 
 (async () => {
   const [port,out]=process.argv.slice(2);
@@ -116,7 +117,7 @@ const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings"
     v = await search('roundness');
     ok('the search reaches the look page: "roundness" finds Tile roundness, its section marked "Customise the look"',
        /* SUPERSEDED by v2.63: "roundness" also finds Edit item's Roundness. Still protected: Tile roundness is found, tagged. */
-       v.names[0]==='Tile colours and shape' && v.secs[0].tag && JSON.stringify(v.secs[0].rows)==='["Shape","Tile roundness"]' && v.names.every(n=>["Tile colours and shape","Edit item"].includes(n)), JSON.stringify(v.secs));
+       v.names[0]==='Tile colours and shape' && v.secs[0].tag && JSON.stringify(v.secs[0].rows)==='["Shape","Tile roundness"]' && v.names.every(n=>["Tile colours and shape","Sheets"].includes(n))   /* v2.69: Edit item → Sheets */, JSON.stringify(v.secs));
     v = await search('shopping');   // v2.30: Sort is Shopping
     ok('a section\'s name shows the whole section ("shopping")', v.names.includes('Shopping') && ((v.secs.find(s=>s.name==='Shopping')||{}).rows||[]).length>=3, JSON.stringify(v.secs.map(s=>s.name+':'+s.rows.length)));
     v = await search('in regulars');

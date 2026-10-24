@@ -110,7 +110,8 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     const lk = await page.evaluate(()=>{ const u=document.querySelector('#sheet .flagchip'); const c=getComputedStyle(u); return { bg:c.backgroundColor, r:c.borderTopLeftRadius }; });
     ok('Customise the look › Edit item: its background and roundness reach the pills', lk.bg==='rgb(255, 224, 138)' && lk.r==='4px', JSON.stringify(lk));
     const src = fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8');
-    ok('…and "Edit item" is a section of the look page', /LOOK_SECTS = new Set\([^)]*"Edit item"/.test(src), '');
+    /* SUPERSEDED by v2.69: the section is "Sheets" now, with Edit item as its first choice. */
+    ok('…and "Sheets" (with Edit item) is a section of the look page', /LOOK_SECTS = new Set\([^)]*"Sheets"/.test(src) && /data-lk-sheet/.test(src), '');
   } catch(e){ ok('suite ran to the end', false, (e.stack||e.message).slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));
   if(browser) await browser.close();

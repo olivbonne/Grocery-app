@@ -556,6 +556,11 @@ export const FR = {
   "Tile gap": "Espacement des tuiles",
   /* v2.63: the Edit item redesign, its look section and the Shop menu's Text size */
   "Edit item": "Modifier l’article",
+  "Sheets": "Volets",
+  "Sheet": "Volet",
+  "My card": "Ma carte",
+  "Other sheets": "Autres volets",
+  "Buttons and tiles": "Boutons et tuiles",
   "Item name": "Nom de l’article",
   "Measure": "Mesure",
   "Roundness": "Arrondi",
