@@ -82,7 +82,7 @@ const PARSE_STUB = JSON.stringify({ items:[
     const s=document.querySelector('#smartSheetEl'); if(!s) return { open:false };
     return { open:true,
       title:(s.querySelector('.disp')||{}).textContent,
-      hd:(s.querySelector('.smarthd .lbl')||{}).textContent,
+      hd:(s.querySelector('.smarthd')||{}).textContent,   /* v2.67: the label is gone; the header is its Select all button */
       sub:(s.querySelectorAll('.disp')[0] && s.children[1]) ? s.children[1].textContent : "",
       servings:!!s.querySelector('.servrow'),
       toggle:(document.querySelector('#smartToggleAll')||{}).textContent,
@@ -182,14 +182,17 @@ const PARSE_STUB = JSON.stringify({ items:[
     ok('…titled with the recipe', /Goulash/.test(r.title||''), r.title);
     ok('…one row per ingredient, all selected', r.rows.length===4 && r.rows.every(x=>x.on),
        JSON.stringify(r.rows.map(x=>x.name)));
-    ok('…and it says what the list is for', /Items to add/i.test(r.hd||''), r.hd);
+    /* SUPERSEDED by v2.67: the household removed the review's explanation text ("Items to add", the subtitle) as self-evident.
+       Still protected: the header keeps its one control, Select all / Deselect all. */
+    ok('…and its header keeps Select all / Deselect all (no explanation text)', /Deselect all|Select all/i.test(r.hd||'') && !/Items to add/i.test(r.hd||''), r.hd);
     /* The servings scaler belongs to Smart add's recipe parse, which knows how many a recipe serves.
        A recipe out of the plan's own book does not, so the sheet must not offer to "set servings". */
     /* SUPERSEDED by v2.01: a planned recipe now carries its servings, so its review DOES show the
        scaler. What this still protects is the original point — the sheet's words and its controls
        agree: "set servings" is promised exactly when the control is on screen. */
-    ok('…and promises a servings control exactly when it shows one',
-       r.servings===true && /set servings/i.test(r.sub||''), JSON.stringify({servings:r.servings, sub:r.sub}));
+    /* SUPERSEDED by v2.67: there is no subtitle to make promises any more. Still protected: a planned recipe shows the
+       servings control. */
+    ok('…and shows the servings control', r.servings===true && !/set servings/i.test(r.sub||''), JSON.stringify({servings:r.servings, sub:r.sub}));
 
     const b2 = await listNames();
     await tap('[data-smart-sel]');                       // "already have the beef"

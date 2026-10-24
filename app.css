@@ -140,18 +140,10 @@
   .smartcheck.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
   .smartchip.off { opacity:.45; }
   .smarthd { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:2px 0 8px; }
-  .smarthd .lbl { font-size:12px; font-weight:700; color:var(--muted); }
   .smarthd button { border:none; background:transparent; color:var(--accent); font-weight:800;
     font-size:13px; padding:6px 2px; font-family:'Outfit',system-ui,sans-serif; }
-  .smartedit{ padding:2px 12px 12px; display:flex; flex-direction:column; gap:7px; animation:rise .15s ease; }
-  .smartedit-row{ display:flex; align-items:center; gap:10px; }
-  .smartedit-lbl{ font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.3px; flex:none; width:74px; }
-  .scatrow, .swtrow{ display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px; }
-  .scat{ flex:none; display:inline-flex; align-items:center; gap:4px; padding:7px 11px; border-radius:999px;
-    border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:12px; white-space:nowrap; }
-  .swt{ flex:none; padding:7px 11px; border-radius:999px; border:1.5px solid var(--line); background:var(--card);
-    color:var(--text); font-weight:700; font-size:12px; min-width:38px; }
-  .swt.on{ background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+  .smartedit{ padding:4px 14px 10px 16px; animation:rise .15s ease; }   /* v2.67: Edit item's rows */
+  .smartedit .edtitle { font-size:17px; }
   /* B3 recipe → list */
   .rechint{ margin:6px 2px 0; font-size:12px; font-weight:600; color:var(--muted); line-height:1.4;
     display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
@@ -1919,12 +1911,12 @@
   .eqty { display:inline-flex; align-items:center; height:38px; box-sizing:border-box; }
   .eqty button { width:32px; height:100%; padding:0; border:none; background:transparent; color:inherit; font-size:18px; }
   .eqty span { min-width:22px; text-align:center; font-weight:800; font-size:15px; }
-  #sheet .flagchip, .addedit .flagchip, #sheet .catchip, .addedit .catchip, #sheet .eqty, .addedit .eqty {
+  #sheet .flagchip, .addedit .flagchip, #sheet .catchip, .addedit .catchip, .smartedit .catchip, #sheet .eqty, .addedit .eqty, .smartedit .eqty {
     border:1.5px solid var(--epillbrd, var(--line)); background:var(--epillbg, var(--card)); color:var(--epilltext, var(--text));
     border-radius:var(--epillrad, 999px); }
   #sheet .flagchip.on, .addedit .flagchip.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
-  #sheet .wgrid .catchip.on, .addedit .wgrid .catchip.on, #sheet .ednotechips .catchip.on, .addedit .ednotechips .catchip.on { background:var(--btn); border-color:var(--btn); color:var(--btn-text); }
-  .addedit-flags, #sheet .wgrid, .addedit .wgrid { gap:var(--epillgap, 6px); }
+  #sheet .wgrid .catchip.on, .addedit .wgrid .catchip.on, .smartedit .wgrid .catchip.on, #sheet .ednotechips .catchip.on, .addedit .ednotechips .catchip.on { background:var(--btn); border-color:var(--btn); color:var(--btn-text); }
+  .addedit-flags, #sheet .wgrid, .addedit .wgrid, .smartedit .wgrid { gap:var(--epillgap, 6px); }
   .searchbar .inwrap { flex:1; min-width:0; }
   /* display:block matters — a textarea is inline-level by default, so its .inwrap parent reserved a
      line box with descender space under it and the bar measured 51px instead of the shop pill's 47px. */
@@ -1958,6 +1950,7 @@
   /* v2.57 item 6: the voice sheet (the empty list's microphone). Tokens only, so it follows dark, ink and noir. */
   .sheet.voicesheet { padding:18px 18px calc(16px + env(safe-area-inset-bottom)); }
   /* v2.64 the iPhone dictation sheet */
+  .dictmark { display:inline-flex; align-items:flex-end; gap:2px; color:var(--text); flex:none; }
   .sheet.dictsheet { padding:18px 18px calc(16px + env(safe-area-inset-bottom)); }
   .dictbox { width:100%; box-sizing:border-box; min-height:96px; margin:12px 0 10px; padding:12px 14px; border-radius:14px;
     border:1.5px solid var(--line); background:var(--card); color:var(--text); font-size:17px; resize:none; outline:none; }

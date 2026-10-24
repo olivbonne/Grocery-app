@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.66";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.66";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.66";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.66";
-import { compareStores, worthIt } from "./compare.js?v=2.66";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.66";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.66";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.66";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.66";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.66";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.66";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.66";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.66";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.66";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.67";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.67";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.67";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.67";
+import { compareStores, worthIt } from "./compare.js?v=2.67";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.67";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.67";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.67";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.67";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.67";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.67";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.67";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.67";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.67";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.66";
+const APP_VERSION = "v2.67";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -1673,6 +1673,7 @@ function endColorPick(){
 let finishOpen=false;
 // A18 ✨ Smart add (planning-mode AI parse → preview → confirm)
 let smartOpen=false, smartLoading=false, smartError="", smartItems=[], smartEdit=null;
+var smartWOpen=null, smartCOpen=null;   // v2.67: the review editor's open Measure / Category row (an index)
 // B3 recipe → list (text-first): pours extracted ingredients into the shared Smart-add preview
 let smartServings=null;
 let smartTitle="";
@@ -3185,6 +3186,8 @@ const BIN_SVG     = sz => ICO('<path d="M4.5 6.5h15"/><path d="M9.5 6.5V4.2h5v2.
 /* v2.13: Report a problem — a speech bubble with an exclamation mark, for the top banner's right-hand button */
 const REPORT_SVG  = sz => ICO('<path d="M5 4.5h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7l-4.5 3.5v-3.5H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z"/><path d="M12 8.2v3.8"/><path d="M12 15h.01"/>', sz);
 /* v2.56: a microphone, a picture, and the empty basket (the Others category's drawn mark, shown large) */
+/* v2.67: the iOS keyboard's dictation key, so the dictation sheet points at the very mark the person must tap */
+const KBD_MIC_SVG = sz => `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text)"><path d="M12 3.5a3 3 0 0 1 3 3v5a3 3 0 0 1-6 0v-5a3 3 0 0 1 3-3z"/><path d="M6 11a6 6 0 0 0 12 0"/><path d="M12 17v3.5"/><path d="M8.5 20.5h7"/></svg>`;
 const MIC_SVG     = sz => ICO('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0013 0"/><path d="M12 17.5V21"/>', sz);
 const IMAGE_SVG   = sz => ICO('<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="9.5" r="1.7"/><path d="M20.5 15.5l-5-5-9 9"/>', sz);
 /* v2.57: the household picked option B for the empty list — the supermarket hand basket (two handles, slots), drawn in the
@@ -3870,13 +3873,12 @@ function openDictation(){
 function dictSheetHTML(){
   return `<div class="sheet-bg kbpin" id="dictBg"><div class="sheet dictsheet" role="dialog" aria-labelledby="dictT">
     <div class="voicehead">
-      <span class="voicemic" aria-hidden="true">${MIC_SVG(26)}</span>
-      <div class="voicettl"><div class="voicetitle" id="dictT">${t("Say what you need")}</div><div class="voicestatus">${t("Tap 🎤 on the keyboard, speak, then tap Done.")}</div></div>
+      <span class="dictmark" aria-hidden="true">${KBD_MIC_SVG(34)}<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10M17 9v8H9"/></svg></span>
+      <div class="voicettl"><div class="voicetitle" id="dictT">${t("Say what you need")}</div></div>
       <button class="voiceclose" id="dictClose" aria-label="${t("Close")}">×</button>
     </div>
-    <textarea id="dictBox" class="dictbox" rows="3" enterkeyhint="done" autocomplete="off" autocapitalize="sentences" placeholder="${t("e.g. “two litres of milk, butter, six eggs…”")}"></textarea>
+    <textarea id="dictBox" class="dictbox" aria-label="${t("Say what you need")}" rows="3" enterkeyhint="done" autocomplete="off" autocapitalize="sentences" placeholder="${t("e.g. “two litres of milk, butter, six eggs…”")}"></textarea>
     <button id="dictGo" style="width:100%;padding:13px;border-radius:14px;border:none;background:var(--btn);color:#fff;font-weight:800;font-size:15px">${smartOn() ? t("✨ Add with Smart add") : t("Add")}</button>
-    <div class="michint" style="margin-top:8px;font-size:13px;color:var(--muted)">${smartOn() ? t("Your iPhone turns your voice into text. Only the text is sent to Smart add.") : t("Your iPhone turns your voice into text. Nothing leaves your phone except the items.")}</div>
   </div></div>`; }
 function dictSubmit(){
   if(!dictOpen) return;
@@ -6215,12 +6217,13 @@ function planWeekToList(){
   smartItems = rows.map(x=>{
     const c0 = x.cats.find(c=>c && allowed.includes(c));
     const known = knownEntry(x.name);
-    const cat = c0 || ((known && known.cat) || "others");
+    const ai = c0 || ((known && known.cat) || "others"), mapped = newCat(ai, x.name);
+    const cat = allowed.includes(mapped) ? mapped : (allowed.includes(ai) ? ai : "others");
     const q = Math.min(999, x.qty);
     return markHave({ name:x.name, qty:q, baseQty:q, weight:x.weight, baseWeight:x.weight, sub:"", category:cat, sel:true });
   });
   smartTitle = weekLabel(planWeek) + " — " + (meals===1 ? t("1 meal") : tf("{n} meals", { n:meals }));
-  smartServings = null; smartOpen = true; smartLoading = false; smartError = ""; smartEdit = null;
+  smartServings = null; smartOpen = true; smartLoading = false; smartError = ""; smartEdit = null; smartWOpen = null; smartCOpen = null;
   render();
 }
 function wirePlanTab(){ wireSiri(); wireVoice();   // v2.62: the Siri / no-list sheets render here too
@@ -6391,7 +6394,8 @@ function wirePlanTab(){ wireSiri(); wireVoice();   // v2.62: the Siri / no-list 
       const allowed=catList().map(c=>c.id);
       smartItems = r.ing.map(planIngNorm).map(x=>{
         const known = knownEntry(x.name);
-        const cat = allowed.includes(x.cat) ? x.cat : ((known && known.cat) || "others");
+        const ai = allowed.includes(x.cat) ? x.cat : ((known && known.cat) || "others"), mapped = newCat(ai, x.name);
+        const cat = allowed.includes(mapped) ? mapped : (allowed.includes(ai) ? ai : "others");
         /* v1.94: the amount travels with the ingredient. It was hardcoded to one-of-each and no
            weight, so a recipe asking for 2lb of beef and 3 onions arrived as "beef" and "onion". */
         return markHave({ name:x.name, qty:x.qty, baseQty:x.qty, sub:"", category:cat, weight:x.weight, baseWeight:x.weight, sel:true });
@@ -6400,7 +6404,7 @@ function wirePlanTab(){ wireSiri(); wireVoice();   // v2.62: the Siri / no-list 
          factor is applied once, here, the same way the scaler applies it. */
       smartTitle = r.name || ""; smartServings = { src: r.servings||4, target: e.serves||r.servings||4 };
       applyServingsScale();
-      smartOpen = true; smartLoading = false; smartError = ""; smartEdit = null;
+      smartOpen = true; smartLoading = false; smartError = ""; smartEdit = null; smartWOpen = null; smartCOpen = null;
       planPick = null; render(); return;
     }
     addEntries(e.name, e.cat || null); save();
@@ -7019,7 +7023,7 @@ async function smartAddText(text){
   const recipe=looksLikeRecipe(text);
   /* v2.58 (the household): the keyboard goes down when Smart add starts, so its suggestions can be seen */
   try{ const ae=document.activeElement; if(ae && ae.blur) ae.blur(); }catch(e){}
-  smartOpen=true; smartLoading=true; smartStep=""; smartError=""; smartItems=[]; smartEdit=null; smartServings=null; smartTitle=""; smartFromPhoto=false; render();
+  smartOpen=true; smartLoading=true; smartStep=""; smartError=""; smartItems=[]; smartEdit=null; smartWOpen=null; smartCOpen=null; smartServings=null; smartTitle=""; smartFromPhoto=false; render();
   try{ const ae=document.activeElement; if(ae && ae.blur && /^(INPUT|TEXTAREA)$/.test(ae.tagName)) ae.blur(); }catch(e){}   // a render that put the focus back
   return smartRequest(recipe?"/api/recipe":"/api/parse", {text}, recipe);
 }
@@ -7029,7 +7033,7 @@ var smartStep = "";
 var smartFromPhoto = false;   // v2.57 item 3: the review came from a photo of a list — its header and its "nothing found" say so
 function smartPhoto(camera){
   pickFile(camera ? { accept:"image/*", capture:"environment" } : { accept:"image/*" }).then(file=>{ if(!file) return;
-    smartOpen=true; smartLoading=true; smartStep="Preparing the photo…"; smartError=""; smartItems=[]; smartEdit=null; smartServings=null; smartTitle=""; smartFromPhoto=true; render();
+    smartOpen=true; smartLoading=true; smartStep="Preparing the photo…"; smartError=""; smartItems=[]; smartEdit=null; smartWOpen=null; smartCOpen=null; smartServings=null; smartTitle=""; smartFromPhoto=true; render();
     planShrinkImage(file, 1400, 0.72)
       .then(img=>{ smartStep="Reading the photo…"; render();
         /* v2.56: every wait ends — 75 s at most (the function's own limit is 60 s) */
@@ -7071,12 +7075,13 @@ async function smartRequest(path, payload, recipe){
   const raw=(data&&Array.isArray(data.items))?data.items:null;
   if(!raw){ smartLoading=false; smartError="Couldn't read that — try rephrasing, or just type your items."; render(); return; }
   const allowed=catList().map(c=>c.id);
-  smartItems=raw.map(it=>{ const q=(Number.isFinite(+(it&&it.qty))&&+it.qty>=1)?Math.min(999,Math.round(+it.qty)):1;
+  smartItems=raw.map(it=>{ const nm0=String(it&&it.name||"").trim(), ai=String(it&&it.category||"others"), mapped=newCat(ai, nm0);
+    const q=(Number.isFinite(+(it&&it.qty))&&+it.qty>=1)?Math.min(999,Math.round(+it.qty)):1;
     const w=(it&&typeof it.weight==="string")?it.weight.trim().slice(0,16):"";
     return {
-      name:String(it&&it.name||"").trim(),
+      name:nm0,
       qty:q, baseQty:q, sub:"", sel:true,
-      category:(it&&allowed.includes(String(it.category)))?String(it.category):"others",
+      category:allowed.includes(mapped) ? mapped : (allowed.includes(ai) ? ai : "others"),   // v2.67: the AI speaks the nine
       weight:w, baseWeight:w,
     }; }).filter(it=>it.name);
   if(recipe){ const src=(data&&+data.servings>=1)?Math.round(+data.servings):4;
@@ -7106,9 +7111,9 @@ function applyServingsScale(){
     else it.qty=Math.max(1,Math.round(b*f)); }
 }
 function wireSmartSheet(){
-  const sBg=app.querySelector("#smartBg"); if(sBg) sBg.onclick=e=>{ if(e.target===sBg){ smartOpen=false; smartTitle=""; smartFromPhoto=false; render(); } };
+  const sBg=app.querySelector("#smartBg"); if(sBg) sBg.onclick=e=>{ if(e.target===sBg){ smartOpen=false; smartWOpen=null; smartCOpen=null; smartTitle=""; smartFromPhoto=false; render(); } };
   const sOk=app.querySelector("#smartOk"); if(sOk) sOk.onclick=()=>{ smartOpen=false; smartError=""; render(); };
-  const sCancel=app.querySelector("#smartCancel"); if(sCancel) sCancel.onclick=()=>{ smartOpen=false; smartItems=[]; smartEdit=null; smartServings=null; smartTitle=""; smartFromPhoto=false; render(); };
+  const sCancel=app.querySelector("#smartCancel"); if(sCancel) sCancel.onclick=()=>{ smartOpen=false; smartItems=[]; smartEdit=null; smartWOpen=null; smartCOpen=null; smartServings=null; smartTitle=""; smartFromPhoto=false; render(); };
   const sConfirm=app.querySelector("#smartConfirm"); if(sConfirm) sConfirm.onclick=commitSmartItems;
   app.querySelectorAll("[data-recipe-serv]").forEach(b=>{ b.onclick=()=>recipeScale(+b.dataset.recipeServ); });
   /* v1.85: selection, not removal — unchecking a row is the same intent and can be changed back. */
@@ -7117,14 +7122,16 @@ function wireSmartSheet(){
   const sAll=app.querySelector("#smartToggleAll"); if(sAll) sAll.onclick=()=>{
     const any=smartItems.some(it=>it.sel!==false);
     smartItems.forEach(it=>{ it.sel = !any; }); render(); };
-  app.querySelectorAll("[data-smart-edit]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartEdit; smartEdit = (smartEdit===i ? null : i); render(); }; });
+  app.querySelectorAll("[data-smart-edit]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartEdit; smartEdit = (smartEdit===i ? null : i); smartWOpen=null; smartCOpen=null; render(); }; });
+  app.querySelectorAll("[data-smart-wopen]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartWopen; smartWOpen = (smartWOpen===i ? null : i); render(); }; });
+  app.querySelectorAll("[data-smart-copen]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartCopen; smartCOpen = (smartCOpen===i ? null : i); render(); }; });
   app.querySelectorAll("[data-smart-q]").forEach(b=>{ b.onclick=()=>{ const [i,d]=b.dataset.smartQ.split("|"); const it=smartItems[+i]; if(it){ it.qty=Math.max(1,Math.min(999,(it.qty||1)+(+d))); render(); } }; });
-  app.querySelectorAll("[data-smart-cat]").forEach(b=>{ b.onclick=()=>{ const [i,cid]=b.dataset.smartCat.split("|"); const it=smartItems[+i]; if(it){ if(it.category!==cid) it.sub=""; it.category=cid; render(); } }; });
-  app.querySelectorAll("[data-smart-sub]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartSub.split("|"); const it=smartItems[+p[0]]; if(it){ it.sub=(it.sub===(p[1]||"")?"":(p[1]||"")); render(); } }; });
-  app.querySelectorAll("[data-smart-name]").forEach(inp=>{ inp.oninput=()=>{ const it=smartItems[+inp.dataset.smartName]; if(it) it.name=inp.value; }; });   // no re-render: keep focus while typing
-  app.querySelectorAll("[data-smart-addcat]").forEach(b=>{ b.onclick=()=>{ const it=smartItems[+b.dataset.smartAddcat]; if(!it) return; const nm=prompt(t("New category name:"),""); if(nm&&nm.trim()){ const id=makeCategory(nm); if(id){ it.category=id; it.sub=""; render(); } } }; });
-  app.querySelectorAll("[data-smart-addsub]").forEach(b=>{ b.onclick=()=>{ const it=smartItems[+b.dataset.smartAddsub]; if(!it) return; const nm=prompt(t("New subcategory name:"),""); if(nm&&nm.trim()){ const id=makeSub(it.category,nm); if(id){ it.sub=id; render(); } } }; });
-  app.querySelectorAll("[data-smart-wt]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartWt.split("|"); const i=+p[0], w=p[1]||""; const it=smartItems[i]; if(it){ it.weight = (it.weight===w ? "" : w); render(); } }; });
+  app.querySelectorAll("[data-smart-cat]").forEach(b=>{ b.onclick=()=>{ const [i,cid]=b.dataset.smartCat.split("|"); const it=smartItems[+i]; if(it){ if(it.category!==cid) it.sub=""; it.category=cid; it.catPicked=true; smartCOpen=null; render(); } }; });
+  app.querySelectorAll("[data-smart-name]").forEach(inp=>{ inp.oninput=()=>{ const it=smartItems[+inp.dataset.smartName]; if(!it) return; it.name=inp.value;
+    const nm=inp.closest(".smartchip")&&inp.closest(".smartchip").querySelector(".smartchip-name");   // the head follows the name, still without a render
+    if(nm) nm.innerHTML=`${(it.qty>1)?`<b>${it.qty}× </b>`:""}${it.weight?`<b>${esc(showAmt(it.weight))} </b>`:""}${esc(cap(it.name))}`; }; });   // no re-render: keep focus while typing
+  app.querySelectorAll("[data-smart-addcat]").forEach(b=>{ b.onclick=()=>{ const it=smartItems[+b.dataset.smartAddcat]; if(!it) return; const nm=prompt(t("New category name:"),""); if(nm&&nm.trim()){ const id=makeCategory(nm); if(id){ it.category=id; it.sub=""; it.catPicked=true; smartCOpen=null; render(); } } }; });
+  app.querySelectorAll("[data-smart-wt]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartWt.split("|"); const i=+p[0], w=p[1]||""; const it=smartItems[i]; if(it){ it.weight = (it.weight===w ? "" : w); smartWOpen=null; render(); } }; });
   app.querySelectorAll("[data-smartsort]").forEach(b=>b.onclick=()=>{ setIngSort(b.dataset.smartsort); render(); });   // v2.08
 }
 function smartSheet(){
@@ -7136,21 +7143,15 @@ function smartSheet(){
       <button class="optaction" id="smartOk">${t("OK")}</button>`;
   } else {
     const n=smartItems.length;
-    const WOPTS=["","100g","200g","300g","500g","750g","1kg","2kg","5kg"];
     const chipOf=(it,idx)=>{ const c=CAT(it.category); const open=smartEdit===idx;
       const have=state.items.some(i=>!i.checked && (i.name||"").toLowerCase()===it.name.toLowerCase());
-      const subs=(c.subs&&c.subs.length)?c.subs:[];
       const editor = open ? `<div class="smartedit">
-          <div class="smartedit-row"><span class="smartedit-lbl">${t("Name")}</span>
-            <input class="smartname" data-smart-name="${idx}" value="${esc(cap(it.name))}" autocomplete="off" autocapitalize="words" style="flex:1;min-width:0;padding:8px 11px;border-radius:10px;border:2px solid var(--ink);background:var(--card);color:var(--text);font-size:14px;font-weight:600" /></div>
-          <div class="smartedit-row"><span class="smartedit-lbl">${t("Quantity")}</span>
-            <div class="qstep2"><button data-smart-q="${idx}|-1" aria-label="${t("Less")}">−</button><span>${it.qty||1}</span><button data-smart-q="${idx}|1" aria-label="${t("More")}">+</button></div></div>
-          <div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">${t("Weight")}</span>
-            <div class="swtrow">${WOPTS.map(w=>`<button class="swt ${((it.weight||"")===w)?'on':''}" data-smart-wt="${idx}|${w}">${w||t('unit')}</button>`).join("")}</div></div>
-          <div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">${t("Category")}</span>
-            <div class="scatrow">${catList().map(cc=>`<button class="scat" data-smart-cat="${idx}|${cc.id}" style="${cc.id===it.category?`background:${cc.color};border-color:${cc.color};color:#fff`:''}">${catIcon(cc,13)} ${esc(catLabel(cc))}</button>`).join("")}<button class="scat" data-smart-addcat="${idx}" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div></div>
-          <div class="smartedit-row" style="align-items:flex-start"><span class="smartedit-lbl" style="margin-top:7px">${t("Subcategory")}</span>
-            <div class="scatrow"><button class="scat" data-smart-sub="${idx}|" style="${!it.sub?`background:${c.color};border-color:${c.color};color:#fff`:''}">${t("None")}</button>${subs.map(s=>`<button class="scat" data-smart-sub="${idx}|${s.id}" style="${it.sub===s.id?`background:${c.color};border-color:${c.color};color:#fff`:''}">${esc(s.label)}</button>`).join("")}<button class="scat" data-smart-addsub="${idx}" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div></div>
+          <input class="edtitle" data-smart-name="${idx}" value="${esc(cap(it.name))}" autocomplete="off" autocapitalize="words" aria-label="${t("Item name")}" />
+          <div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button data-smart-q="${idx}|-1" aria-label="${t("Less")}">−</button><span>${it.qty||1}</span><button data-smart-q="${idx}|1" aria-label="${t("More")}">+</button></span></div>
+          <button class="editsec" data-smart-wopen="${idx}" aria-expanded="${smartWOpen===idx}"><span class="editsec-l">${t("Measure")}</span><span class="editsec-v"><span class="edval">${it.weight ? esc(it.weight) : t("unit")} <span class="editsec-ch">${smartWOpen===idx?'▾':'▸'}</span></span></span></button>
+          ${smartWOpen===idx ? `<div class="wgrid">${WEIGHTS.map(w=>`<button class="catchip${((it.weight||"")===w)?' on':''}" data-smart-wt="${idx}|${esc(w)}">${w?esc(w):t("unit")}</button>`).join("")}</div>` : ""}
+          <button class="editsec" data-smart-copen="${idx}" aria-expanded="${smartCOpen===idx}"><span class="editsec-l">${t("Category")}</span><span class="editsec-v"><span class="edval">${catIcon(c,14)} ${esc(catLabel(c))} <span class="editsec-ch">${smartCOpen===idx?'▾':'▸'}</span></span></span></button>
+          ${smartCOpen===idx ? `<div class="edchips">${catList().map(cc=>`<button class="catchip" data-smart-cat="${idx}|${cc.id}" style="${cc.id===it.category?`background:${cc.color};border-color:${cc.color};color:#fff`:''}">${catIcon(cc,13)} ${esc(catLabel(cc))}</button>`).join("")}<button class="catchip" data-smart-addcat="${idx}" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}
         </div>` : "";
       return `<div class="smartchip ${open?'open':''}${it.sel===false?' off':''}" style="border-left:4px solid ${c.color}">
         <div class="smartchip-top">
@@ -7186,7 +7187,7 @@ function smartSheet(){
         <span class="servnote">${tf("recipe makes {n} · quantities scale", { n:smartServings.src })}</span>
       </div>` : "";
     const nSel=smartItems.filter(it=>it.sel!==false).length;
-    const head=`<div class="smarthd"><span class="lbl">${t("Items to add")}</span>
+    const head=`<div class="smarthd" style="justify-content:flex-end">
       <button id="smartToggleAll">${nSel?t("Deselect all"):t("Select all")}</button></div>`;
     inner=`${scaler}${head}${sortRow}<div class="smartchips">${chips}</div>
       <div style="display:flex;gap:8px;margin-top:14px">
@@ -7199,13 +7200,8 @@ function smartSheet(){
   /* v1.85: only the Smart-add recipe path carries a servings scaler.
      v2.01: a planned recipe has servings now too, so it gets the scaler; the whole-week review does
      not (it mixes recipes), so the line must not promise a control that is not there. */
-  const sub=(smartError||smartLoading) ? t("Review what AI understood, then add.")
-    : smartServings ? t("Review ingredients — set servings, edit any item, then add. Items already on your list are tagged.")
-    : rec ? t("Turn off anything you already have, then add. Items already on your list are tagged.")
-    : t("Tap an item to edit its category, quantity or weight.");
   return `<div class="sheet-bg" id="smartBg"><div class="sheet" id="smartSheetEl">
-    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">${ttl}</div>
-    <div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:14px">${sub}</div>
+    <div class="disp" style="font-weight:800;font-size:17px;margin-bottom:12px">${ttl}</div>
     ${inner}
   </div></div>`;
 }
@@ -7217,12 +7213,12 @@ function commitSmartItems(){
     const nid=uid();
     const known=knownEntry(it.name);
     const sub=it.sub || ((known&&known.cat===it.category&&known.sub)||"");
-    state.items.push({id:nid,name:it.name,qty:it.qty,cat:newCat(it.category, it.name),sub,weight:it.weight||"",checked:false,by:me});
+    state.items.push({id:nid,name:it.name,qty:it.qty,cat:it.catPicked ? it.category : newCat(it.category, it.name),sub,weight:it.weight||"",checked:false,by:me});
     markDirty(nid);
   }
   const mi=document.getElementById("mainInput"); if(mi) mi.value="";
   draftMain="";
-  smartOpen=false; smartItems=[]; smartError=""; smartEdit=null; smartServings=null; smartTitle=""; smartFromPhoto=false;
+  smartOpen=false; smartItems=[]; smartError=""; smartEdit=null; smartWOpen=null; smartCOpen=null; smartServings=null; smartTitle=""; smartFromPhoto=false;
   save(); render();
 }
 /* B8 hidden AI diagnostics — long-press the version number to inspect the
