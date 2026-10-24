@@ -59,11 +59,11 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     /* A. a Regular is its name, category and note */
     await mk({ docs:{ v101:DOC({ items:[it("1","Chili","vegetable",{ note:"small, green" })], buyAgain:[{name:"Chili",cat:"vegetable",qty:1,note:"large, red"}] }) } }, '');
     await hold(page.locator('.pill[data-pill="1"]').first());
-    const sel = await page.evaluate(()=>({ chosen:[...document.querySelectorAll('#sheet .ednotesel .catchip')].map(c=>c.textContent.trim()), free:(document.querySelector('#editNote')||{}).value,
-      offered:[...document.querySelectorAll('#sheet .ednotechips .catchip, #sheet .ednotesel .catchip')].map(c=>c.textContent.trim().toLowerCase()) }));
+    const sel = await page.evaluate(()=>({ chosen:[...document.querySelectorAll('#sheet .ednotesel .catchip')].map(c=>c.textContent.replace('×','').trim()), free:(document.querySelector('#editNote')||{}).value,
+      offered:[...document.querySelectorAll('#sheet .ednotechips .catchip, #sheet .ednotesel .catchip')].map(c=>c.textContent.replace('×','').trim().toLowerCase()) }));   // v2.70: chips carry a × span
     ok('a note used before is offered again for that item ("large", "red" from the other Chili)', ['large','red'].every(x=>sel.offered.includes(x)), JSON.stringify(sel.offered));
     ok('the note shows its chosen options as tiles and only free text in the box', sel.chosen.length>=1 && !sel.chosen.some(c=>(sel.free||'').includes(c)), JSON.stringify(sel));
-    const shape = await page.evaluate(()=>{ const s=document.querySelector('#sheet'); const hs=[...s.querySelectorAll('.flagchip, .eqty, .editsec .edval')].filter(e=>e.offsetParent!==null).map(e=>Math.round(e.getBoundingClientRect().height));
+    const shape = await page.evaluate(()=>{ const s=document.querySelector('#sheet'); const hs=[...s.querySelectorAll('.flagchip, .eqty, .editsec .edval:not(.ednotein), .ednotefree')]   /* v2.70: the note's input sits inside its pencil tile */.filter(e=>e.offsetParent!==null).map(e=>Math.round(e.getBoundingClientRect().height));
       const lines=[...s.querySelectorAll('.editsec')].map(e=>getComputedStyle(e).borderTopStyle==='none'||getComputedStyle(e).borderTopWidth==='0px');
       return { hs, noLines: lines.every(Boolean) }; });
     ok('every pill in Edit item is one height (Urgent, the quantity, the tiles)', shape.hs.length>=5 && new Set(shape.hs).size===1, JSON.stringify(shape.hs));
