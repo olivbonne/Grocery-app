@@ -8,7 +8,8 @@ rules_version = '2';
 //  - who may open a list is kept in access/{code} (v2.44): once that exists, only its people can open the list;
 //  - shared shelf prices (shared/{key}, v2.47): read by any signed-in phone; each email account writes only its own entry;
 //  - nothing outside lists/, access/, users/ and shared/ can be read or written.
-// The app only ever does: get/listen to lists/{code}, and set it whole (create or update). Publish from the Firebase
+// The app only ever does: get/listen to lists/{code}, and set it whole (create or update); since v2.58 it also
+// listens to lists/{code}/items and sets each lists/{code}/items/{id} whole (one record per item, never deleted). Publish from the Firebase
 // console (Firestore Database › Rules) and try it in the Rules Playground first — see docs/firestore-rules.md.
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -30,14 +31,15 @@ service cloud.firestore {
       // v2.49 (architecture review S2): only the fields the app writes, of the right kind. A phone on an app older than
       // v2.49 may write a stray old field and be refused until it updates — the owner publishes this (docs/firestore-rules.md).
       function listOk(d) {
-        return d.keys().hasOnly(['items','buyAgain','baTomb','stores','storeMeta','members','categories','name','baMeta','predictReset','purch','plan','prices','aisle','memb','shopping','templates','spend','looks','aislemap','itemTomb','v'])
+        return d.keys().hasOnly(['items','buyAgain','baTomb','stores','storeMeta','members','categories','name','baMeta','predictReset','purch','plan','prices','aisle','memb','shopping','templates','spend','looks','aislemap','itemTomb','parts','v'])
           && d.get('items', []) is list && d.get('items', []).size() <= 3000
           && d.get('itemTomb', {}) is map && d.get('itemTomb', {}).size() <= 5000
           && d.get('buyAgain', []) is list && d.get('buyAgain', []).size() <= 3000
           && d.get('members', []) is list
           && d.get('name', '') is string && d.get('name', '').size() <= 200
           && d.get('stores', []) is list && d.get('stores', []).size() <= 200
-          && d.get('v', 0) is int;
+          && d.get('v', 0) is int
+          && d.get('parts', []) is list && d.get('parts', []).size() <= 8;
       }
       allow get: if !hasAccess(code) || memberOf(code);
       allow list: if false;
@@ -45,8 +47,23 @@ service cloud.firestore {
       allow update: if (!hasAccess(code) || memberOf(code))
                     && listOk(request.resource.data)
                     && (people(request.resource.data) <= 4
-                        || people(request.resource.data) <= people(resource.data));
+                        || people(request.resource.data) <= people(resource.data))
+                    // v2.58: a split list (v 3) can never be written back as an old one (an app older than v2.49 does not know v)
+                    && (resource.data.get('v', 0) < 3 || request.resource.data.get('v', 0) >= 3);
       allow delete: if false;
+
+      match /items/{id} {
+        // v2.58 (S8 step 2): one record per item. Read and written by the list's people (the same check as the list).
+        // An item is never deleted: a removal is the record {id, gone: ms}, so it travels to the other phones.
+        function itemOk(d) {
+          return d.keys().size() <= 40 && d.get('id', '') == id && id.size() <= 64
+            && d.get('name', '') is string && d.get('name', '').size() <= 200
+            && d.get('gone', 0) is int && d.get('ts', 0) is number;
+        }
+        allow get, list: if !hasAccess(code) || memberOf(code);
+        allow create, update: if (!hasAccess(code) || memberOf(code)) && itemOk(request.resource.data);
+        allow delete: if false;
+      }
     }
 
     match /access/{code} {

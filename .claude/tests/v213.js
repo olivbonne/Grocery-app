@@ -90,7 +90,7 @@ const SMALL = n => SMALL0(n);
     const cut=[];
     for(const sz of ['l','xl']) for(const ic of ['0','1']) for(const n of [0,1,2,3,4]){
       await mk(LIST, SMALL(n)+`localStorage.setItem("ml_icosize","${sz}"); localStorage.setItem("ml_emoji_item","${ic}");`);
-      const bad = await page.evaluate(()=>[...document.querySelectorAll('#zoomer .pill[data-pill]')].map(p=>{ const e=p.querySelector('.pname'), lh=parseFloat(getComputedStyle(e).lineHeight)||18;
+      const bad = await page.evaluate(()=>[...document.querySelectorAll('#zoomer .pill[data-pill]')].map(p=>{ const e=p.querySelector('.pname'), cs=getComputedStyle(e), lh=parseFloat(cs.lineHeight)||parseFloat(cs.fontSize)*1.22;   /* SUPERSEDED by v2.58: small tiles are gone, so this now measures Tile display (large tiles), whose name line height is "normal" — read it from the font size, not a fixed 18px. Still protects: two lines shown in full */
         return { n:e.textContent.trim(), h:e.getBoundingClientRect().height, want:Math.min(e.scrollHeight, 2*lh) }; }).filter(x=>x.h < x.want - 1.5));
       if(bad.length) cut.push({sz,ic,n,bad:bad.slice(0,2)});
       if(sz==='l' && ic==='0' && n===3) await shot('small-l');

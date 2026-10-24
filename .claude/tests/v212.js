@@ -117,7 +117,9 @@ const LIST = [["Frozen raspberries","frozen",2],["Ginger beer no sugar","drinks"
     await shot('small1');
     await mk(LIST.map((x,i)=>it(String(i),x[0],x[1],x[2],x[3])), SMALL(3));
     const m3 = await meta();
-    ok('small tiles, three columns: the amount is at the right too (its own line — no room beside the name)', m3.length>=5 && m3.every(x=>Math.abs(x.right)<=1), JSON.stringify(m3));
+    /* SUPERSEDED by v2.58: small tiles are gone; a phone on small·3 now has Tile display·3, whose amount sits on its own line
+       under the name, centred like every large tile. Still protects: the amount is shown, on its own line, inside the tile. */
+    ok('small tiles, three columns: the amount is at the right too (its own line — no room beside the name)', m3.length>=5 && m3.every(x=>!x.sameLine && x.right>=0), JSON.stringify(m3));
     await shot('small3');
 
     /* ── 5. the header ─────────────────────────────────────────────────── */

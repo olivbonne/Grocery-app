@@ -125,7 +125,7 @@ async function mergeChecks(ok, ROOT, fs, path){
 
     /* a list from a newer app */
     await mk(ITEMS, { mv:2 });
-    await push(DOC(ITEMS, { v:3 }));
+    await push(DOC(ITEMS, { v:4 }));   // SUPERSEDED by v2.58: 3 is a split list now; a newer app is 4
     ok('a list saved by a newer app (v3) is not overwritten: "Update now"', await page.locator('#newerNote').count()===1, '');
 
     const rules = fs.readFileSync(path.join(ROOT,'firebase','firestore.rules'),'utf8');
