@@ -70,9 +70,12 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     ok('its suggestions show only while it has focus', hidden===0 && shown.length>0, JSON.stringify(shown));
     await page.evaluate(()=>{ window.__sameSheet = document.querySelector('#sheet'); });
     await page.locator('#sheet .ednotechips .catchip').first().click(); await page.waitForTimeout(300);
-    const after = await page.evaluate(()=>({ same: window.__sameSheet===document.querySelector('#sheet'), focus: document.activeElement && document.activeElement.id, val: document.querySelector('#editNote').value }));
-    ok('tapping a suggestion fills the field without a re-render, and the field keeps focus (keyboard stays up)', after.same && after.focus==='editNote' && after.val===shown[0], JSON.stringify(after));
-    const onBg = await page.evaluate(()=>{ const c=document.querySelector('#sheet .ednotechips .catchip.on'); const o=document.querySelector('#sheet .ednotechips .catchip:not(.on)'); return c&&o ? [getComputedStyle(c).backgroundColor, getComputedStyle(o).backgroundColor] : null; });
+    /* SUPERSEDED by v2.68: a tapped suggestion becomes a chosen TILE (.ednotesel), and the box keeps only the free text. Still
+       protected: no re-render, the field keeps focus, and the choice is in the note. */
+    const after = await page.evaluate(()=>({ same: window.__sameSheet===document.querySelector('#sheet'), focus: document.activeElement && document.activeElement.id,
+      val: [...document.querySelectorAll('#sheet .ednotesel .catchip')].map(c=>c.textContent.trim()).join(', ') }));
+    ok('tapping a suggestion makes it a chosen tile without a re-render, and the field keeps focus (keyboard stays up)', after.same && after.focus==='editNote' && after.val===shown[0], JSON.stringify(after));
+    const onBg = await page.evaluate(()=>{ const c=document.querySelector('#sheet .ednotesel .catchip.on'); const o=document.querySelector('#sheet .ednotechips .catchip:not(.on)'); return c&&o ? [getComputedStyle(c).backgroundColor, getComputedStyle(o).backgroundColor] : null; });
     ok('…and the chosen suggestion shows as chosen', onBg && onBg[0]!==onBg[1], JSON.stringify(onBg));
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-sheet.png') });
     await page.locator('#editName').fill('Greek yogurt');
