@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.71";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.71";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.71";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.71";
-import { compareStores, worthIt } from "./compare.js?v=2.71";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.71";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.71";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.71";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.71";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.71";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.71";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.71";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.71";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.71";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.72";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.72";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.72";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.72";
+import { compareStores, worthIt } from "./compare.js?v=2.72";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.72";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.72";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.72";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.72";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.72";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.72";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.72";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.72";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.72";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.71";
+const APP_VERSION = "v2.72";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -85,7 +85,7 @@ function showAmt(w){
 /* A first launch reloads once on its own (the v1.63 slot migration) before sign-in, so the answer is kept for the session. */
 var _prefsFresh = (()=>{ try{ if(sessionStorage.getItem("ml_prefsfresh") === "1") return true;
   const f = !localStorage.getItem("ml_theme") && !localStorage.getItem("ml_appmig163"); if(f) sessionStorage.setItem("ml_prefsfresh", "1"); return f; }catch(e){ return false; } })();
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_jk_)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_jk_)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -2733,7 +2733,10 @@ function addEntries(text, override){
   }
   save(); renderKeepingAdd();
 }
-function toggleItem(id){ const it=state.items.find(i=>i.id===id); if(it){
+/* v2.72: when the first tick makes the cart bar appear, the list drops and a quick second tap at the same spot lands
+   on the cart's head and unfolds it. The head ignores a tap this soon after a tick. var: read before any tick. */
+var _lastTickAt = 0;
+function toggleItem(id){ _lastTickAt = Date.now(); const it=state.items.find(i=>i.id===id); if(it){
   if(!it.checked){ lastPop=id; playTick(true); vibrate(8); setTimeout(()=>{ if(lastPop===id) lastPop=null; },350); }
   else { playTick(false); vibrate(5); }
   it.checked=!it.checked; if(it.checked){ it.checkedBy=me; it.checkedAt=Date.now(); it.checkedStore = (()=>{ const s=activeStore(); return (s && isRealStore(s.id)) ? s.id : ""; })(); if(it.checkedStore) onbVisit(it.checkedStore); shoppingMark(); /* v2.23 R19 — v2.29: the AI order learns at the finish (sweep), not here */ } markDirty(id); save(); render(); } }
@@ -2786,8 +2789,11 @@ function purchSig(p){ return Object.keys(p||{}).sort().map(k=>k+"@"+((p[k].ts||[
    to read. It lives in the list's own document (state.prices), so it is shared with the people on the
    list and nobody else. { key: [{ p, s, sn, d, q, w, t }] }, oldest first: p price in dollars, s store
    id ("" if not a saved store), sn store name, d YYYY-MM-DD, q qty, w weight, t when recorded. At most 8
-   per item and 600 items, so the list document stays far under Firestore's 1 MiB limit. */
-const PRICE_PER_ITEM = 8, PRICE_ITEMS = 600;
+   per item and 600 items, so the list document stays far under Firestore's 1 MiB limit.
+   v2.72: also n the noteKey of the item's note (omitted when empty), u the unit price and per "kg" | "l" | "each"
+   (what u is for). Records from before v2.72 have none of the three and are read as before. 12 per item now, since
+   several notes (cubes, steak) share one name's bucket. */
+const PRICE_PER_ITEM = 12, PRICE_ITEMS = 600;
 function priceWord(w){ return (w.length>3 && /s$/.test(w) && !/ss$/.test(w)) ? (/ies$/.test(w) ? w.slice(0,-3)+"y" : w.slice(0,-1)) : w; }
 function priceKey(name){ return String(name||"").toLowerCase().replace(/[^a-z0-9 ]+/g," ").split(/\s+/).filter(Boolean).map(priceWord).join(" "); }
 function priceLastT(a){ return (a && a.length) ? (a[a.length-1].t||0) : 0; }
@@ -2805,26 +2811,49 @@ function priceLookup(name){ const P=state.prices||{}, k=priceKey(name); if(!k) r
     if((k.length>=3 && priceWordsIn(k,key)) || (key.length>=3 && priceWordsIn(key,k))){ if(!best || priceLastT(P[key])>priceLastT(best)) best=P[key]; } }
   return best; }
 function priceMoney(p){ return "$"+(Math.round((+p||0)*100)/100).toFixed(2); }
+/* v2.72: a weight as written ("3.180 kg", "500g", "2 L") → { per:"kg"|"l", amt } in kilos or litres, else null */
+function priceAmt(w){ const m=String(w||"").toLowerCase().replace(",",".").match(/(\d+(?:\.\d+)?)\s*(kg|g|ml|l)\b/); if(!m) return null;
+  const v=parseFloat(m[1]); if(!(v>0)) return null;
+  return (m[2]==="kg"||m[2]==="g") ? { per:"kg", amt:m[2]==="g"?v/1000:v } : { per:"l", amt:m[2]==="ml"?v/1000:v }; }
+/* v2.72: the best record for an item { name, note }: same note first, else one with no note (any note when the item has
+   none); within that, the newest at store sid, else the newest anywhere. An item WITH a note whose every record has a
+   different note gets null — a cubes estimate from a steak price is worse than none. */
+function priceFor(item, sid){ const a=priceLookup(item && item.name); if(!a || !a.length) return null;
+  const nk=noteKey(item.note);
+  const pick=f=>{ let r=null; for(let k=a.length-1;k>=0;k--){ if(f(a[k]) && sid && a[k].s===sid){ r=a[k]; break; } }
+    if(!r) for(let k=a.length-1;k>=0;k--){ if(f(a[k])){ r=a[k]; break; } } return r; };
+  if(!nk) return pick(()=>true);
+  return pick(x=>x.n===nk) || pick(x=>!x.n) || null; }
+/* v2.72: what a record says it cost — "$32.99/kg", "$2.50 each", or the line total for old records */
+function priceUnitTxt(r){ if((r.per==="kg"||r.per==="l") && +r.u>0) return priceMoney(r.u)+(r.per==="kg"?"/kg":"/L");
+  if(r.per==="each" && (+r.q||1)>1 && +r.u>0) return tf("{x} each", { x:priceMoney(r.u) });
+  return priceMoney(r.p); }
 /* v2.17: what the cart is likely to cost, from the prices this household has read off its receipts. Each item uses
    its newest price at the store you are in (else its newest anywhere), as a unit price times the quantity on the
    list. Items with no price are left out and counted, so the total never pretends to be complete. */
 function cartEstimate(){ const s=activeStore(), sid=(s && s.id) || "";
   let total=0, priced=0, n=0;
   for(const i of state.items){ if(!i.checked) continue; n++;
-    const a=priceLookup(i.name); if(!a || !a.length) continue;
-    let r=null; for(let k=a.length-1;k>=0;k--){ if(sid && a[k].s===sid){ r=a[k]; break; } }
-    if(!r) r=a[a.length-1];
+    const r=priceFor(i, sid); if(!r) continue;
+    /* v2.72: a price per kilo / litre times the item's weight ("800g" → 0.8, 3 × "200g" → 0.6); with no readable
+       weight, what that purchase cost, once. Per item (and old records with no per): unit × qty, as before. */
+    if((r.per==="kg"||r.per==="l") && +r.u>0){ const w=priceAmt(i.weight);
+      if(w && w.per===r.per){ total+=(+r.u)*w.amt*Math.max(1, +i.qty||1); priced++; }
+      else if(+r.p>0){ total+=+r.p; priced++; }
+      continue; }
     const unit=(+r.p||0)/Math.max(1, +r.q||1); if(!(unit>0)) continue;
     total+=unit*Math.max(1, +i.qty||1); priced++; }
   return { total:Math.round(total*100)/100, priced, n }; }
 function priceDay(d){ try{ return new Date(d+"T00:00:00").toLocaleDateString(dateLoc(),{day:"numeric",month:"short"}); }catch(e){ return d||""; } }
 /* "Last paid $5.50 at Coles Dandenong · 2 Oct", plus the latest at up to two other stores. */
 function priceLine(name, o){ const a=priceLookup(name); if(!a || !a.length) return "";
+  /* v2.72: o.note picks the last record the way priceFor does; a per-kilo record shows its unit price */
+  const last=priceFor({ name, note:(o && o.note)||"" }, ""); if(!last) return "";
   /* v2.70: compact — one muted line for the Edit item title row: the last price and its shop */
-  if(o && o.compact){ const l=a[a.length-1]; return `<span class="pricemem pricemem-c">${priceMoney(l.p)}${l.sn?` · ${esc(l.sn)}`:""}</span>`; }
-  const last=a[a.length-1], seen={}, others=[]; seen[last.sn||""]=1;
+  if(o && o.compact){ const l=last; return `<span class="pricemem pricemem-c">${priceUnitTxt(l)}${l.sn?` · ${esc(l.sn)}`:""}</span>`; }
+  const seen={}, others=[]; seen[last.sn||""]=1;
   for(let i=a.length-2;i>=0 && others.length<2;i--){ const x=a[i]; if(seen[x.sn||""]) continue; seen[x.sn||""]=1; others.push(x); }
-  return `<div class="pricemem">Last paid <b>${priceMoney(last.p)}</b>${last.sn?` at ${esc(last.sn)}`:""} · ${esc(priceDay(last.d))}${others.map(x=>`<span class="pricemem-o">${priceMoney(x.p)}${x.sn?` at ${esc(x.sn)}`:""} · ${esc(priceDay(x.d))}</span>`).join("")}</div>`; }
+  return `<div class="pricemem">Last paid <b>${priceUnitTxt(last)}</b>${last.sn?` at ${esc(last.sn)}`:""} · ${esc(priceDay(last.d))}${others.map(x=>`<span class="pricemem-o">${priceMoney(x.p)}${x.sn?` at ${esc(x.sn)}`:""} · ${esc(priceDay(x.d))}</span>`).join("")}</div>`; }
 /* a receipt line ticks off the list item it names — same whole-word rule, unchecked items only */
 function rcMatchItem(name, used){ const k=priceKey(name); if(!k) return null;
   return state.items.find(i=>!i.checked && !(used && used.has(i.id)) && (()=>{ const ik=priceKey(i.name); return ik && (ik===k || (ik.length>=3 && priceWordsIn(ik,k)) || (k.length>=3 && priceWordsIn(k,ik))); })()) || null; }
@@ -4828,7 +4857,7 @@ function renderMain(){
           </div>
           ${open>0?`<span class="hcount hcount-mid">${tf("{n} to buy", { n:open })}</span>`:""}
           <div style="display:flex;align-items:center;gap:8px">
-            ${syncChip()}<button class="iconbtn hshare" id="shopMenu" aria-label="${t("More")}" aria-haspopup="true" aria-expanded="${shopMenuOpen?"true":"false"}" title="${t("More")}">${MENU_SVG(19)}</button>
+            ${syncChip()}<span class="smwrap"><button class="iconbtn hshare" id="shopMenu" aria-label="${t("More")}" aria-haspopup="true" aria-expanded="${shopMenuOpen?"true":"false"}" title="${t("More")}">${MENU_SVG(19)}</button><span class="appver" id="appVer">${esc(APP_VERSION)}</span></span>${/* v2.72 (the household): the version under the ⋯ */""}
           </div>
         </div>
         ${locChip()?`<div class="hloc">${locChip()}</div>`:""}
@@ -5385,7 +5414,7 @@ function rcRead(file){
       const lines=(Array.isArray(j.items)?j.items:[]).map(x=>{ const known=knownEntry(x.name);
         const cat=newCat(allowed.includes(x.category) ? x.category : ((known && known.cat) || "others"), x.name);
         const m=rcMatchItem(x.name, used); if(m) used.add(m.id);
-        return { raw:String(x.raw||""), name:String(x.name||""), qty:+x.qty||1, weight:String(x.weight||""), price:+x.price||0, cat, keep:true, match:m?m.id:null }; });
+        return { raw:String(x.raw||""), name:String(x.name||""), qty:+x.qty||1, weight:String(x.weight||""), note:String(x.note||"").slice(0,60), unit:+x.unit_price||0, per:String(x.per||""), price:+x.price||0, cat, keep:true, match:m?m.id:null }; });
       if(!lines.length){ rcpt={ err:"Couldn't find any items on that. Is it a receipt?" }; render(); return; }
       rcpt={ store:rcStoreFor(j.store), detected:String(j.store||""), date:(/^\d{4}-\d{2}-\d{2}$/.test(j.date||"") ? j.date : dayKey(new Date())), total:+j.total||0, lines, discounts:Array.isArray(j.discounts)?j.discounts:[], place:String(j.place||"").slice(0,40) };
       rcPair();   // v2.31: pair the lines with the cart, in tick order
@@ -5394,10 +5423,25 @@ function rcRead(file){
         : (e && e.name==="AbortError") ? "That took too long. Try again, or with a closer photo."
         : "Couldn't read that receipt." }; render(); } })
     .finally(()=>clearTimeout(timer)); }
+/* v2.72: a line's unit price — per kilo / litre from its weight (the printed one preferred when it agrees), else the
+   reader's printed one, else per item: price / qty. */
+function rcUnit(L){ const pr=+L.price||0, w=priceAmt(L.weight), rp=String(L.per||""), ru=+L.unit||0;
+  if(w){ if(ru>0 && rp===w.per) return { u:Math.round(ru*100)/100, per:rp }; return { u:Math.round(pr/w.amt*100)/100, per:w.per }; }
+  if(ru>0 && (rp==="kg"||rp==="l"||rp==="each")) return { u:Math.round(ru*100)/100, per:rp };
+  return { u:Math.round(pr/Math.max(1, +L.qty||1)*100)/100, per:"each" }; }
+function rcUnitTxt(L){ const x=rcUnit(L); return x.per==="each" ? tf("{x} each", { x:priceMoney(x.u) }) : priceMoney(x.u)+(x.per==="kg"?"/kg":"/L"); }
 function rcSave(){ if(!rcpt || !rcpt.lines) return;
+  /* v2.72: a shop the receipt names that the list does not have joins the list's shops — unpinned (the receipt may be
+     read at home), and without changing which shop is selected */
+  if(rcpt.store && rcpt.store.id==="" && String(rcpt.store.name||"").trim()){ const nm=String(rcpt.store.name).trim();
+    const hit=rcSavedStores().find(s=>s.name.toLowerCase()===nm.toLowerCase());
+    if(hit) rcpt.store.id=hit.id;
+    else { const ns={ id:"c"+uid().slice(0,6), name:nm, aisles:[] }; state.stores=[...(state.stores||[]), ns]; rcpt.store.id=ns.id; } }
   const used=new Set(); let n=0, m=0; const at=Date.now();   // v2.49 not "t": that name is the translation function
   for(const L of rcpt.lines){ const nm=String(L.name||"").trim(); if(!L.keep || !nm || !isFinite(L.price)) continue;
-    priceRecord(nm, { p:Math.round(L.price*100)/100, s:rcpt.store.id||"", sn:rcpt.store.name||"", l:rcpt.place||"", d:rcpt.date, q:L.qty||1, w:L.weight||"", t:at });   // v2.32 l: the shop's suburb, from the receipt n++;
+    const un=rcUnit(L), rec={ p:Math.round(L.price*100)/100, s:rcpt.store.id||"", sn:rcpt.store.name||"", l:rcpt.place||"", d:rcpt.date, q:L.qty||1, w:L.weight||"", t:at, u:un.u, per:un.per };
+    const nk=noteKey(L.note); if(nk) rec.n=nk;
+    priceRecord(nm, rec); n++;   // v2.32 l: the shop's suburb, from the receipt. v2.72: n++ was inside this comment, so the toast said 0
     /* the name may have been corrected in the sheet, so match again on what was saved */
     const it=rcMatchItem(nm, used); if(it){ used.add(it.id); it.checked=true; it.checkedBy=me; it.checkedAt=at; it.checkedStore=rcpt.store.id||""; markDirty(it.id); m++; } }
   /* v2.20: a receipt from a member chain that shows the member discount uses up that period's 10% */
@@ -5632,9 +5676,11 @@ function wireAisleMap(){
 /* v2.30 the Shop page's menu (item 17): what you reach for in the shop — read the receipt, which store is cheaper, what we
    spend, this shop's aisle map, send the list, add an occasion — and Report a problem, which the button used to be. */
 var shopMenuOpen = false;   // var: render() reads it at boot
+var smStoreAdding = false;   // v2.72: the menu's "＋ New shop" row is showing. var: render() reads it at boot
 function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRealStore(st.id));
   const item = (id, icon, label) => `<button class="smitem" id="${id}" role="menuitem">${icon}<span>${label}</span></button>`;
   return `<div class="smbg" id="smBg"><div class="smenu" id="shopMenuEl" role="menu" aria-label="${t("More")}">
+    ${/* v2.72: choose the shop here, as Settings › Shopping › Store does — the menu stays open */""}<div class="smtiles smtext"><span class="smtlabel">${t("Store")}</span><div class="smcols smstores">${[{id:"auto",name:t("Auto-detect")},{id:"home",name:t("Home")},...STORES.filter(s=>!storeOverride(s.id).hidden).map(s=>storeById(s.id)),...(state.stores||[]).filter(s=>!storeOverride(s.id).hidden),{id:"other",name:t("Other")}].filter(Boolean).map(s=>`<button class="colbtn ${storeSel===s.id?'on':''}" data-sm-store="${esc(s.id)}">${esc(s.name)}</button>`).join("")}<button class="colbtn smadd" data-sm-storeadd>${t("＋ New shop")}</button></div>${smStoreAdding?`<div class="smaddrow"><input id="smStoreName" placeholder="${t("Shop name")}" aria-label="${t("Shop name")}" autocomplete="off" /><button class="colbtn" id="smStoreAddGo" style="width:auto;padding:0 12px">${t("Add")}</button></div>`:""}</div>
     <div class="smtiles"><span class="smtlabel">${t("Tiles")}</span><div class="smcols">${[1,2,3,4,5,6].map(n=>`<button class="colbtn ${largeCols()===n?'on':''}" data-sm-cols="${n}">${n}</button>`).join("")}<button class="colbtn ${largeCols()===0?'on':''}" data-sm-cols="0" aria-label="${t("Variable width — tiles size to the word")}">↔</button></div></div>
     ${/* v2.63 item C: Text size, as in Settings — the menu stays open */""}<div class="smtiles smzoom"><span class="smtlabel">${t("Text size")}</span><div class="smcols"><button class="colbtn" data-sm-zoom="-1" aria-label="${t("Smaller text")}">−</button><span class="smzpct">${Math.round(dens()*100)}%</span><button class="colbtn" data-sm-zoom="1" aria-label="${t("Larger text")}">+</button></div></div>
     ${/* v2.68 (the household): Theme, Group by category and Sort, as in Settings — the menu stays open */""}<div class="smtiles smtext"><span class="smtlabel">${t("Theme")}</span><div class="smcols"><button class="colbtn ${theme==='light'?'on':''}" data-sm-theme="light">${t("Light")}</button><button class="colbtn ${theme==='dark'?'on':''}" data-sm-theme="dark">${t("Dark")}</button></div></div>
@@ -5661,10 +5707,10 @@ function priceDiagHTML(){ const P = state.prices || {}, q = priceDiagQ.trim().to
   const total = Object.keys(P).length, recs = Object.values(P).reduce((n, a) => n + (Array.isArray(a) ? a.length : 0), 0);
   const rows = keys.slice(0, 300).map(k => { const a = (P[k] || []).slice().sort((x, y) => (y.t || 0) - (x.t || 0));
     return `<details class="pdrow"><summary><span class="pd-n">${esc(cap(k))}</span><span class="pd-s">${a[0] ? `${priceMoney(a[0].p)} · ${esc(a[0].sn || "—")}` : ""} · ${a.length}</span></summary>
-      ${a.map(r => `<div class="pdrec"><span>${esc(r.d || "")}</span><span>${esc(r.sn || "—")}${r.l ? `<small class="pd-l">${esc(r.l)}</small>` : ""}</span><span>${r.q > 1 ? r.q + "× " : ""}${esc(r.w || "")}</span><b>${priceMoney(r.p)}</b></div>`).join("")}</details>`; }).join("");
+      ${a.map(r => `<div class="pdrec"><span>${esc(r.d || "")}</span><span>${esc(r.sn || "—")}${r.l ? `<small class="pd-l">${esc(r.l)}</small>` : ""}</span><span>${r.q > 1 ? r.q + "× " : ""}${esc(r.w || "")}</span><b>${priceMoney(r.p)}</b>${r.n ? `<small class="pd-note">${esc(r.n)}</small>` : ""}${(r.per && +r.u > 0) ? `<small class="pd-u">${r.per === "each" ? tf("{x} each", { x:priceMoney(r.u) }) : priceMoney(r.u) + (r.per === "kg" ? "/kg" : "/L")}</small>` : ""}</div>`).join("")}</details>`; }).join("");
   return `<div class="sheet-bg kbpin" id="pdBg"><div class="sheet" id="pdSheet" role="dialog" aria-labelledby="pdTitle">
     <div class="disp" id="pdTitle" style="font-weight:800;font-size:17px;margin-bottom:6px">${t("Price diagnostics")}</div>
-    <div class="hint" style="text-align:left;margin:0 0 10px">${tf("{n} items, {p} prices from receipts, newest first. The memory keeps the last 8 prices of each item, and {max} items.", { n:total, p:recs, max:PRICE_ITEMS })}</div>
+    <div class="hint" style="text-align:left;margin:0 0 10px">${tf("{n} items, {p} prices from receipts, newest first. The memory keeps the last {k} prices of each item, and {max} items.", { n:total, p:recs, k:PRICE_PER_ITEM, max:PRICE_ITEMS })}</div>
     <input id="pdQ" value="${esc(priceDiagQ)}" placeholder="${t("Find an item")}" aria-label="${t("Find an item")}" autocomplete="off" style="width:100%;box-sizing:border-box;height:42px;padding:0 12px;border-radius:12px;border:none;outline:none;background:var(--chip);color:var(--text);font-size:16px" />
     <div class="pdlist">${rows || `<div class="hint" style="text-align:left;margin-top:10px">${total ? t("Nothing matches.") : t("No prices yet. Read a receipt after a shop and they appear here.")}</div>`}</div>
     ${keys.length > 300 ? `<div class="hint" style="text-align:left">${tf("Showing 300 of {n}.", { n:keys.length })}</div>` : ""}
@@ -5697,6 +5743,16 @@ function wireShopMenu(){
   app.querySelectorAll("[data-sm-theme]").forEach(c => c.onclick = () => { if(theme !== c.dataset.smTheme) setTheme(c.dataset.smTheme); });
   app.querySelectorAll("[data-sm-caton]").forEach(c => c.onclick = () => setCatOn(c.dataset.smCaton === "1"));
   app.querySelectorAll("[data-sm-sort]").forEach(c => c.onclick = () => setSort(c.dataset.smSort));
+  /* v2.72: the shop, exactly as Settings' data-opt-store; render() leaves shopMenuOpen true */
+  const smPick = v => { if(storeSel !== v){ storeSel = v; localStorage.setItem("ml_store", v); locState = {checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(v === "auto") ensureLocCheck(); } render(); };
+  app.querySelectorAll("[data-sm-store]").forEach(c => c.onclick = () => smPick(c.dataset.smStore));
+  { const box = app.querySelector(".smstores"), on = box && box.querySelector(".on"); if(on) box.scrollTop = Math.max(0, on.offsetTop - box.offsetTop - 4); }   // the chosen shop is in view
+  app.querySelectorAll("[data-sm-storeadd]").forEach(c => c.onclick = () => { smStoreAdding = !smStoreAdding; render(); const f = app.querySelector("#smStoreName"); if(f) f.focus(); });
+  const sn = app.querySelector("#smStoreName"), sg = app.querySelector("#smStoreAddGo");
+  const smAdd = () => { const name = String((sn && sn.value) || "").trim(); if(!name) return;
+    const ns = { id:"c"+uid().slice(0,6), name, aisles:[] }; state.stores = [...(state.stores||[]), ns]; smStoreAdding = false; save(); smPick(ns.id); };
+  if(sg) sg.onclick = smAdd;
+  if(sn) sn.onkeydown = e => { if(e.key === "Enter"){ e.preventDefault(); smAdd(); } };
 }
 /* v2.28 map a shop by photographing its signs: "Read a sign" takes a photo, /api/aisle reads the aisle's number and what
    the sign lists, and the line joins the end of the box — walk the shop once, a photo per sign. The wait shows its step
@@ -5748,18 +5804,21 @@ function rcptNudgeClear(){ try{ localStorage.removeItem("ml_rcptnudge"); }catch(
    receipt read afterwards is paired with it line by line (js/till.js) — by name, then by order between the named ones. */
 const LASTCART_MS = 2*24*60*60*1000;
 function lastCartSet(checked){ try{ localStorage.setItem("ml_lastcart", JSON.stringify({ code:listCode, t:Date.now(),
-  items:checked.slice().sort((a,b)=>(a.checkedAt||0)-(b.checkedAt||0)).map(i=>({ name:i.name, cat:i.cat, qty:i.qty||1 })) })); }catch(e){} }
+  items:checked.slice().sort((a,b)=>(a.checkedAt||0)-(b.checkedAt||0)).map(i=>({ name:i.name, cat:i.cat, qty:i.qty||1, weight:i.weight||"", note:i.note||"" })) })); }catch(e){} }
 function lastCartClear(){ try{ localStorage.removeItem("ml_lastcart"); }catch(e){} }
 /* the cart a receipt is matched against: what is ticked now, if anything is (a receipt read before finishing), else this
    list's last finished shop from the last two days */
 function rcCart(){ const now=state.items.filter(i=>i.checked);
-  if(now.length) return now.slice().sort((a,b)=>(a.checkedAt||0)-(b.checkedAt||0)).map(i=>({ name:i.name, cat:i.cat, qty:i.qty||1 }));
+  if(now.length) return now.slice().sort((a,b)=>(a.checkedAt||0)-(b.checkedAt||0)).map(i=>({ name:i.name, cat:i.cat, qty:i.qty||1, weight:i.weight||"", note:i.note||"" }));   // v2.72: weight and note tell two beefs apart
   try{ const o=JSON.parse(localStorage.getItem("ml_lastcart")||"null");
     if(o && o.code===listCode && Date.now()-(+o.t||0) < LASTCART_MS && Array.isArray(o.items)) return o.items.filter(x=>x && x.name); }catch(e){}
   return []; }
 function rcPair(){ if(!rcpt || !rcpt.lines) return; const cart=rcCart(); rcpt.cart=cart; if(!cart.length) return;
-  const r=reconcile(rcpt.lines, cart, (a, b, L)=>Math.max(nameScore(a, b), nameScore(L && L.raw, b)));   // v2.35: the read name or the printed line, word by word
-  rcpt.lines.forEach((L,i)=>{ L.read=L.name; L.cart=r.pair[i]; L.how=r.how[i]; if(L.cart!==null) L.name=cart[L.cart].name; }); }
+  /* v2.35: the read name or the printed line, word by word. v2.72: when the names agree, the cart item's note counts too —
+     "TOPSIDE STEAK" goes to "Beef · Topside steak", not to whichever beef was ticked first */
+  const r=reconcile(rcpt.lines, cart, (a, b, L, x)=>{ const base=Math.max(nameScore(a, b), nameScore(L && L.raw, b));
+    return (base>0 && x && x.note) ? base + Math.max(nameScore(L && L.raw, x.note), nameScore(L && L.note, x.note)) : base; });
+  rcpt.lines.forEach((L,i)=>{ L.read=L.name; L.readNote=L.note||""; L.cart=r.pair[i]; L.how=r.how[i]; if(L.cart!==null){ L.name=cart[L.cart].name; L.note=cart[L.cart].note||""; } }); }
 function rcCartSummary(){ const cart=rcpt.cart, took=new Set(rcpt.lines.filter(L=>L.keep && L.cart!==null && L.cart!==undefined).map(L=>L.cart));
   const miss=cart.filter((c,k)=>!took.has(k)), guess=rcpt.lines.filter(L=>L.keep && L.how==="order").length;
   return `<div class="rccartsum" role="status"><b>${tf(cart.length===1?"{a} of {b} ticked item found on the receipt":"{a} of {b} ticked items found on the receipt", { a:cart.length-miss.length, b:cart.length })}</b>${guess?` · ${tf("{n} matched by the order you ticked them — check those", { n:guess })}`:""}
@@ -5911,6 +5970,11 @@ var CARD_NUDGE_MS = 30*60*1000;   // var: the Shop page reads it, and the first 
 function cardNudgeSet(){ try{ localStorage.setItem("ml_cardnudge", String(Date.now())); }catch(e){} }
 function cardNudgeClear(){ try{ localStorage.removeItem("ml_cardnudge"); }catch(e){} }
 function cardAskOn(){ try{ return localStorage.getItem("ml_cardask")!=="0"; }catch(e){ return true; } }
+/* v2.72: "No card at this shop" — the shops this phone has said have no card (ml_nocard, a JSON array of store ids, at
+   most 200). Cards are on this phone, so this is too; it is in BOTH exclusion lists. Linking a card to a shop removes it. */
+function noCardGet(){ try{ const a=JSON.parse(localStorage.getItem("ml_nocard")||"[]"); return Array.isArray(a) ? a.filter(x=>typeof x==="string") : []; }catch(e){ return []; } }
+function noCardAdd(id){ if(!id) return; const a=noCardGet().filter(x=>x!==id); a.push(id); try{ localStorage.setItem("ml_nocard", JSON.stringify(a.slice(-200))); }catch(e){} }
+function noCardDrop(ids){ const a=noCardGet(), b=a.filter(x=>!(ids||[]).includes(x)); if(b.length!==a.length){ try{ localStorage.setItem("ml_nocard", JSON.stringify(b)); }catch(e){} } }
 function cardHere(){ const st=activeStore(), real=!!(st && isRealStore(st.id));
   return { st, real, c:real ? cardFor(st) : null }; }   // v2.35 (item 6): only at a real shop, only that shop's card — never at home
 function cardNudgeHTML(){ let at=0; try{ at=+localStorage.getItem("ml_cardnudge")||0; }catch(e){}
@@ -5921,18 +5985,20 @@ function cardNudgeHTML(){ let at=0; try{ at=+localStorage.getItem("ml_cardnudge"
       <div class="ic-t">${CARD_SVG(18)} ${tf("{x} — scan before you pay", { x:esc(c.name) })}</div>
       <button class="cardface cardface-sm" id="cardNudgeBig" aria-label="${t("Show the card bigger")}"><div class="cardband" style="background:${br.bg};color:${br.fg}"><span class="cardband-n">${esc(c.name)}</span></div>${(!bc && c.photo) ? `<img src="${esc(c.photo)}" alt="${tf("Photo of the {x} card", { x:esc(c.name) })}" />` : `${bc}<div class="cardnum">${esc(cardNumFmt(c.num))}</div>`}</button>
       <div class="ic-btns"><button class="optaction" id="cardNudgeDone">${t("Done")}</button></div></div>`; }
-  if(!real || !cardAskOn()) return "";
+  if(!real || !cardAskOn() || noCardGet().includes(st.id)) return "";
   const mine=cardsGet();
   if(mine.length) return `<div class="installcard cardnudge" id="cardNudge" role="region" aria-label="${t("Membership card")}">
     <div class="ic-t">${CARD_SVG(18)} ${t("Use one of your cards here?")}</div>
     <div class="ic-btns" style="flex-wrap:wrap">${mine.map(c=>`<button class="catchip" data-card-use="${esc(c.id)}">${esc(c.name)}</button>`).join("")}</div>
-    <div class="ic-btns"><button class="newlist" id="cardNudgeAdd">${t("Add a new card")}</button><button class="optaction" id="cardNudgeNo">${t("Not now")}</button></div></div>`;   // v2.56 item 8
+    <div class="ic-btns"><button class="newlist" id="cardNudgeAdd">${t("Add a new card")}</button><button class="optaction" id="cardNudgeNo">${t("Not now")}</button></div>
+    <button class="cardnever" id="cardNudgeNone">${t("No card at this shop")}</button></div>`;   // v2.56 item 8
   const k=chainOfStore(st.name), nm=k==="coles" ? t("Flybuys card") : k==="woolworths" ? t("Everyday Rewards card") : t("membership card");
   return `<div class="installcard cardnudge" id="cardNudge" role="region" aria-label="${t("Membership card")}">
     <div class="ic-t">${CARD_SVG(18)} ${tf("Got a {x}?", { x:esc(nm) })}</div>
     <div class="ic-b">${tf("Add it once — a photo and its number — and it shows here after every shop at {x}, ready to scan before you pay. It stays on this phone.", { x:esc(st.name) })}</div>
     <div class="ic-btns"><button class="newlist" id="cardNudgeAdd">${t("Add the card")}</button><button class="optaction" id="cardNudgeNo">${t("Not now")}</button></div>
-    <button class="cardnever" id="cardNudgeNever">${t("No card — don't ask again")}</button></div>`; }
+    <button class="cardnever" id="cardNudgeNone">${t("No card at this shop")}</button>
+    <button class="cardnever" id="cardNudgeNever">${t("Never ask, at any shop")}</button></div>`; }
 /* v2.34 (the household's item 5): the "+" tile at the end of each category in Regulars. v2.37 (item 4): it opens the same
    add sheet as "+ Add items", and what is added there goes in this category and is kept as a Regular */
 function wireBaNew(){
@@ -5971,13 +6037,14 @@ function wireCards(){
     if(nd) nd.onclick=()=>{ cardNudgeClear(); render(); };
     if(nn) nn.onclick=()=>{ cardNudgeClear(); render(); };
     if(nv) nv.onclick=()=>{ try{ localStorage.setItem("ml_cardask","0"); }catch(e){} cardNudgeClear(); render(); };
+    const nz=app.querySelector("#cardNudgeNone"); if(nz) nz.onclick=()=>{ const st=activeStore(); if(st) noCardAdd(st.id); cardNudgeClear(); render(); };   // v2.72
     if(nb) nb.onclick=()=>{ const c=cardHere().c; if(c){ cardShow={ id:c.id }; render(); } };
     if(na) na.onclick=()=>{ const st=activeStore(), k=chainOfStore(st && st.name);
       cardEdit={ id:"", name:k==="coles" ? "Flybuys" : k==="woolworths" ? "Everyday Rewards" : "", chain:k||"", num:"", photo:"" }; render(); };
     app.querySelectorAll("[data-card-use]").forEach(b=>b.onclick=()=>{ const st=activeStore(); if(!st) return;   // v2.56 item 8: this card is for this shop
       const a=cardsGet(), c=a.find(x=>x.id===b.dataset.cardUse); if(!c) return;
       c.stores=[...new Set([...(Array.isArray(c.stores)?c.stores:[]), st.id])];
-      if(!cardsPut(a)){ showToast("This phone's storage is full"); return; } render(); });
+      if(!cardsPut(a)){ showToast("This phone's storage is full"); return; } noCardDrop([st.id]); render(); });
     app.querySelectorAll("[data-opt-cardask]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_cardask", b.dataset.optCardask); }catch(e){} render(); }); }
   const keep=()=>{ const n=app.querySelector("#ceName"), u=app.querySelector("#ceNum"); if(cardEdit){ if(n) cardEdit.name=n.value; if(u) cardEdit.num=u.value; } };
   app.querySelectorAll("[data-card-add]").forEach(b=>b.onclick=()=>{ if(cardsGet().length>=CARD_MAX){ showToast(tf("Up to {n} cards", { n:CARD_MAX })); return; } cardShow={ add:true }; render(); });   // v2.35: the same add panel as the card sheet's
@@ -6001,6 +6068,7 @@ function wireCards(){
       if(Array.isArray(e.stores) && e.stores.length) c.stores=e.stores.slice();   // v2.56 item 8: the shops it is for
       const a=cardsGet(), i=a.findIndex(x=>x.id===c.id); if(i>=0) a[i]=c; else a.push(c);
       if(!cardsPut(a)){ e.err="This phone's storage is full — try without the photo."; render(); return; }
+      if(c.stores) noCardDrop(c.stores);   // v2.72: a card for a shop undoes its "No card at this shop"
       if(e.inline){ cardEdit=null; cardShow={ id:c.id }; render(); return; }   // v2.37 (item 1): show the new card with its band
       close(); }; }
   if(cardShow && !app.querySelector("#cardSheet")) cardShow=null;   // its card was deleted: nothing to show, nothing to come back later
@@ -6059,7 +6127,7 @@ function rcptSheet(){
   ${(rcpt.cart && rcpt.cart.length) ? rcCartSummary() : ""}<div class="rclines">${rcpt.lines.map((L,i)=>`<div class="rcrow${L.keep?"":" off"}">
      <button class="smartcheck ${L.keep?"on":""}" data-rckeep="${i}" role="checkbox" aria-checked="${L.keep?"true":"false"}" aria-label="${esc(tf(L.keep?"Leave out {name}":"Keep {name}", { name:L.name }))}">✓</button>
      <div class="rcmid"><input class="rcname" data-rcname="${i}" value="${esc(L.name)}" aria-label="${tf("Item {n}", { n:i+1 })}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
-       <span class="rcraw">${esc(L.raw)}${L.qty>1?` · ${L.qty}×`:""}${L.weight?` · ${esc(L.weight)}`:""}${L.match?` · <b>${t("on your list")}</b>`:""}</span>${(rcpt.cart && rcpt.cart.length && L.keep) ? `<select class="rccart${L.how==="order"?" guess":""}" data-rccart="${i}" aria-label="${tf("Which ticked item is line {n}", { n:i+1 })}"><option value="">${t("Not from the cart")}</option>${rcpt.cart.map((c,k)=>`<option value="${k}"${L.cart===k?" selected":""}>${k+1}. ${esc(c.name)}</option>`).join("")}</select>${L.how==="order"?`<span class="rcguess">${t("Matched by the order you ticked — check")}</span>`:""}` : ""}</div>
+       <span class="rcraw">${esc(L.raw)}${L.note?` · ${esc(L.note)}`:""}${L.qty>1?` · ${L.qty}×`:""}${L.weight?` · ${esc(L.weight)}`:""} · ${esc(rcUnitTxt(L))}${L.match?` · <b>${t("on your list")}</b>`:""}</span>${(rcpt.cart && rcpt.cart.length && L.keep) ? `<select class="rccart${L.how==="order"?" guess":""}" data-rccart="${i}" aria-label="${tf("Which ticked item is line {n}", { n:i+1 })}"><option value="">${t("Not from the cart")}</option>${rcpt.cart.map((c,k)=>`<option value="${k}"${L.cart===k?" selected":""}>${k+1}. ${esc(c.name)}${c.weight?` · ${esc((+c.qty||1)>1?c.qty+"× "+c.weight:c.weight)}`:""}${c.note?` · ${esc(c.note)}`:""}</option>`).join("")}</select>${L.how==="order"?`<span class="rcguess">${t("Matched by the order you ticked — check")}</span>`:""}` : ""}</div>
      <span class="rcprice">${priceMoney(L.price)}</span></div>`).join("")}</div>
   <div class="ppedbtns"><button class="optaction" id="rcCancel">${t("Cancel")}</button><button class="newlist" id="rcSaveBtn">${kept===1?tf("Save {n} price",{ n:kept }):tf("Save {n} prices",{ n:kept })}</button></div>
 </div></div>`; }
@@ -6078,8 +6146,10 @@ function wireRcptSheet(){
   /* v2.31: choosing which ticked item a line is — one item per line, so a line that had it gives it up */
   app.querySelectorAll("[data-rccart]").forEach(s=>{ s.onchange=()=>{ const L=rcpt.lines[+s.dataset.rccart]; if(!L) return;
     const k=s.value==="" ? null : +s.value;
-    if(k!==null) rcpt.lines.forEach(M=>{ if(M!==L && M.cart===k){ M.cart=null; M.how=""; M.name=M.read||M.name; } });
-    L.cart=k; L.how=k===null ? "" : "you"; L.name=k===null ? (L.read||L.name) : rcpt.cart[k].name; render(); }; });
+    /* v2.72: the note follows the pairing too, and the reader's comes back on unpair */
+    if(k!==null) rcpt.lines.forEach(M=>{ if(M!==L && M.cart===k){ M.cart=null; M.how=""; M.name=M.read||M.name; if(M.readNote!==undefined) M.note=M.readNote; } });
+    if(L.readNote===undefined) L.readNote=L.note||"";
+    L.cart=k; L.how=k===null ? "" : "you"; L.name=k===null ? (L.read||L.name) : rcpt.cart[k].name; L.note=k===null ? L.readNote : (rcpt.cart[k].note||""); render(); }; });
   const sv=app.querySelector("#rcSaveBtn"); if(sv) sv.onclick=rcSave;
 }
 /* Every failure the server can name gets a sentence that says what to do about it. A generic
@@ -7546,7 +7616,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_jk_)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_jk_)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -8189,7 +8259,7 @@ function editSheet(){
     ${/* v2.63 item D: the title IS the name field; then flags, Quantity, Measure, price, Note, Category, Where to buy (no Subcategory) */""}
     ${/* v2.70: the last price sits in the title row; the flags move down to just above the buttons */""}
     ${/* v2.71: the Note moves up to right below the title; "Measure" is now "Unit" */""}
-    <div class="edtitlerow"><input id="editName" class="edtitle" value="${esc(editing.name)}" aria-label="${t("Item name")}" />${priceLine(editing.name, { compact:true })}</div>
+    <div class="edtitlerow"><input id="editName" class="edtitle" value="${esc(editing.name)}" aria-label="${t("Item name")}" />${priceLine(editing.name, { compact:true, note:editing.note||"" })}</div>
     ${noteSecHTML(editing.note||"", editing.name, { input:'id="editNote"', chip:"data-en-chip" })}
     <div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button id="qMinus" aria-label="${t("Less")}">−</button><span>${editing.qty||1}</span><button id="qPlus" aria-label="${t("More")}">+</button></span></div>
     <button class="editsec" data-w-open="edit" aria-expanded="${wOpen==="edit"}"><span class="editsec-l">${t("Unit")}</span><span class="editsec-v"><span class="edval">${esc(editing.weight||t("Unit"))} <span class="editsec-ch">${wOpen==="edit"?'▾':'▸'}</span></span></span></button>
@@ -8238,7 +8308,8 @@ function wire(){
   wireAddSheet();
   wireSmartSheet(); wireVoice(); wireSiri();
   wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();
-  const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
+  const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ if(Date.now() - _lastTickAt < 700) return;   /* v2.72: a stray tap from the tick that moved the list */
+    collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>catShown(i.cat)===c.id)).map(c=>c.id);
     const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);
     collapse.cats = open ? ids.slice() : [];

@@ -4,7 +4,7 @@
 // Gemini or Groq key as /api/recipe, kept SERVER-SIDE.
 //
 // Contract:  POST /api/receipt  { image }   a data: URL of a photo of a receipt
-//            ->  { store, place, date, total, items: [{ raw, name, qty, weight, price, category }], discounts: [{ raw, amount }] }
+//            ->  { store, place, date, total, items: [{ raw, name, qty, weight, note, unit_price, per, price, category }], discounts: [{ raw, amount }] }
 //            errors are { error, code }: bad_image, too_large, missing, not_configured, model, busy,
 //            quota, vision_model, upstream, unreadable, unexpected.
 //
@@ -78,6 +78,9 @@ const SYSTEM = [
   '  "name": string — what the product is in plain words, lowercase, without brand codes or pack abbreviations where you can tell (e.g. "WW FR RANGE EGGS 12PK" -> "free range eggs")',
   '  "qty": integer — how many were bought (default 1)',
   '  "weight": string — the weight or pack size if the line shows one, e.g. "0.512 kg", "2 L"; else ""',
+  '  "note": string — the words on the line that tell this product apart from others of its kind (cut, variety, flavour, size), lowercase, comma-separated, e.g. "BEEF BONES" -> name "beef", note "bones"; "TOPSIDE STEAK" -> name "beef", note "topside steak" when it is beef; "" if none',
+  '  "unit_price": number — the price per kilo, per litre or per item when the line prints one (e.g. "32.99/kg" -> 32.99); 0 if not printed',
+  '  "per": one of "kg", "l", "each", "" — what unit_price is for',
   '  "price": number — what was paid for that line in dollars, after any discount printed directly under it',
   '  "category": one of ' + CATEGORIES.map((c) => '"' + c + '"').join(', '),
   'Leave out subtotals, totals, GST or tax lines, payment, change, card and loyalty lines, and anything that is not a product.',
@@ -110,7 +113,13 @@ function clampLine(x) {
   const price = Math.round(p * 100) / 100;
   let category = String(x.category || '').toLowerCase().trim();
   if (!CATEGORIES.includes(category)) category = 'others';
-  return { raw, name, qty, weight, price, category };
+  // v2.72: the note (cut, variety) and a printed price per kilo / litre / item.
+  const note = String(x.note || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 60);
+  const up = Number(x.unit_price);
+  const unit_price = Number.isFinite(up) && up > 0 && up <= 5000 ? Math.round(up * 100) / 100 : 0;
+  let per = String(x.per || '').toLowerCase().trim();
+  if (!['kg', 'l', 'each'].includes(per)) per = '';
+  return { raw, name, qty, weight, note, unit_price, per, price, category };
 }
 
 /* v1.92: providers word "that model is gone" differently — Groq says model_decommissioned, Google
