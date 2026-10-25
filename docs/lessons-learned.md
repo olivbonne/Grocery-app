@@ -131,7 +131,8 @@ architecture review at v2.38 — over two hundred releases in.*
 ## 10. Bugs fixed in v2.71–v2.77, and the guard for each (October 2026)
 
 *Added 25 October 2026 at the owner's request: every fix of something broken ends with a lesson here — what went wrong,
-the rule, and the guard (a test, a check or a habit) that stops it happening again.*
+the rule, and the guard (a test, a check or a habit) that stops it happening again. Bugs only: a change of layout or look
+the household asked for is not a lesson.*
 
 37. **A first launch can reload before the app is ready, so anything "fresh install" must survive one reload.** The settings
     copy in the account was never applied on a new phone: the slot migration reloads the page once at first launch, and the
@@ -159,10 +160,7 @@ the rule, and the guard (a test, a check or a habit) that stops it happening aga
     is written only once it is needed (`clr` only after a clear), and the release waits for the owner to publish the rules.
 44. **A test's "newer version" must be newer than the app.** Two suites used v4 as "a list from a newer app"; when v2.75 made 4
     the app's own version they failed (v2.75). *Guard:* such tests use `LIST_V + 1`, not a literal.
-45. **A tile that is 100% wide cannot sit beside another.** With `display:contents` the open row's tile became a flex item still
-    set to `width:100%`, so it dropped to a line of its own (v2.76, fixed v2.77). *Guard:* when an element is lifted into another
-    container's flow, reset its sizing (`width:auto`) and test its position relative to its neighbour, not on the screen.
-46. **Re-rendering a sheet replays its entrance and resets its scroll.** Every pick in Edit item rebuilt the sheet, which slid
+45. **Re-rendering a sheet replays its entrance and resets its scroll.** Every pick in Edit item rebuilt the sheet, which slid
     in again, jumped to the top and shrank when a list closed — "the sheet jumps up and down" (fixed v2.77). *Guard:* render keeps
     an open sheet still (no animation, same scroll, never shorter while open), and a suite checks the sheet's top edge before and
     after a pick.
