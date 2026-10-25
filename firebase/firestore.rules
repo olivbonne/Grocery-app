@@ -4,7 +4,8 @@ rules_version = '2';
 //  - a list is read only by its exact code; nobody can ask for the list of lists (so codes cannot be harvested);
 //  - a list has at most four people (one that somehow has more is never locked out — it just cannot grow);
 //  - lists are never deleted through the app (Settings › Your data empties one instead);
-//  - an account's own record (users/{uid}) is read and written only by that signed-in person (v2.40);
+//  - an account's own record (users/{uid}) is read and written only by that signed-in person (v2.40); since v2.71 it may
+//    also hold a copy of that person's settings (prefs: { at, json }, the keys as one string of at most 40,000 characters) — never list data;
 //  - who may open a list is kept in access/{code} (v2.44): once that exists, only its people can open the list;
 //  - shared shelf prices (shared/{key}, v2.47): read by any signed-in phone; each email account writes only its own entry;
 //  - nothing outside lists/, access/, users/ and shared/ can be read or written.
@@ -100,13 +101,18 @@ service cloud.firestore {
     }
 
     // v2.40: an account remembers which lists are its person's (codes and names only), so a new phone gets them back.
-    // Only that person can read or write it.
+    // Only that person can read or write it. v2.71: it also keeps the person's settings (prefs: { at, json }) — the look,
+    // language and preferences, no list data — so a new phone gets them back.
     match /users/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
       allow write: if request.auth != null && request.auth.uid == uid
-                   && request.resource.data.keys().hasOnly(['lists', 'gone', 'updated'])
+                   && request.resource.data.keys().hasOnly(['lists', 'gone', 'updated', 'prefs'])
                    && request.resource.data.get('lists', {}).size() <= 200
-                   && request.resource.data.get('gone', {}).size() <= 500;
+                   && request.resource.data.get('gone', {}).size() <= 500
+                   && request.resource.data.get('prefs', {}) is map
+                   && request.resource.data.get('prefs', {}).keys().hasOnly(['at', 'json'])
+                   && request.resource.data.get('prefs', {}).get('json', '') is string
+                   && request.resource.data.get('prefs', {}).get('json', '').size() <= 40000;
     }
 
     // v2.47: shared shelf prices (opt-in). One record per chain and item; each email account writes only its own

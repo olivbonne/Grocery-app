@@ -60,8 +60,10 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
       s.querySelectorAll('.editsec').forEach(r=>{ const l=r.querySelector('.editsec-l'); if(l) rows[l.textContent.trim()] = { tile:!!r.querySelector('.edval'), text:(r.querySelector('.edval')||{}).textContent||'', arrowIn:!!r.querySelector('.edval .editsec-ch') }; });
       const note=s.querySelector('input#editNote');
       return { rows, note: note && { ph:note.placeholder, val:note.value }, btns:[...s.querySelectorAll('button')].map(b=>b.textContent.trim()).filter(x=>/Regulars|Add to list|Save|Delete/.test(x)) }; });
-    ok('Measure, Category and Where to buy show their value as a tile with the arrow inside', ['Measure','Category','Where to buy'].every(k=>sh.rows[k] && sh.rows[k].tile && sh.rows[k].arrowIn), JSON.stringify(sh.rows));
-    ok('…an empty Measure reads "unit", not "None"', /^unit/.test((sh.rows.Measure||{}).text.trim()), (sh.rows.Measure||{}).text);
+    /* SUPERSEDED by v2.71: the row "Measure" is called "Unit", and its empty tile reads "Unit" with a capital. Still protected:
+       the three rows show their value as a tile with the arrow inside, and an empty one never reads "None". */
+    ok('Unit, Category and Where to buy show their value as a tile with the arrow inside', ['Unit','Category','Where to buy'].every(k=>sh.rows[k] && sh.rows[k].tile && sh.rows[k].arrowIn), JSON.stringify(sh.rows));
+    ok('…an empty Unit reads "Unit", not "None"', /^Unit/.test((sh.rows.Unit||{}).text.trim()), (sh.rows.Unit||{}).text);
     /* SUPERSEDED by v2.70: the free note is a small pencil tile ("Add note"); the chosen options are tiles in line with it.
        Still protected: the note entry is always there and starts empty. */
     ok('the Note is always a field (a small pencil tile, "Add note")', sh.note && sh.note.val==='' && await page.locator('#sheet .ednotefree svg').count()===1, JSON.stringify(sh.note));

@@ -1663,6 +1663,13 @@
   .shop .zoomer.gridmode:not(.smalltile) .pill.pill:has(> .pemoji) .pill-meta { margin-top:0; font-size:.8em; line-height:1.25; }
   .shop .zoomer.gridmode:not(.smalltile) .pill.pill:has(> .pemoji) .pnote { font-size:13px; line-height:1.25; white-space:normal;
     overflow:hidden; text-overflow:clip; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; }
+  /* v2.71 (the household): under the name, the note first, then the amount ("2× 1kg") — in the column grids and the L/XL
+     stacked tiles. The icon (order 0) and the name (order 0) stay first; .pmarks is absolute there, so order does not move it.
+     The one-line modes (1 per row, variable) keep their own order. */
+  .shop .zoomer.gridmode:not(.smalltile) .pill .pnote,
+  html[data-icosize="l"] .shop .zoomer:not(.linelist):not(.largevar) .pill .pnote, html[data-icosize="xl"] .shop .zoomer:not(.linelist):not(.largevar) .pill .pnote { order:20; }
+  .shop .zoomer.gridmode:not(.smalltile) .pill .pill-meta,
+  html[data-icosize="l"] .shop .zoomer:not(.linelist):not(.largevar) .pill .pill-meta, html[data-icosize="xl"] .shop .zoomer:not(.linelist):not(.largevar) .pill .pill-meta { order:21; }
   /* v1.16 display picker (2×2) */
   .dispgrid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
   .dispopt { border:1.5px solid var(--line); background:var(--card); color:var(--text); font-weight:700; font-size:12.5px; padding:10px 6px; border-radius:11px; }
