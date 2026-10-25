@@ -96,7 +96,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     await page.locator('#qPlus').click(); await page.waitForTimeout(250);
     await page.locator('#sheet button.editsec[data-w-open]').click(); await page.waitForTimeout(400);
     /* SUPERSEDED by v2.76: the packs are a counter, 2–12 in twos. Still protected: the choices offer packs, and a 6 pack is kept. */
-    const ch = await page.evaluate(()=>[...document.querySelectorAll('#sheet .wcount .editsec-l')].map(b=>b.textContent.trim()));
+    const ch = await page.evaluate(()=>[...document.querySelectorAll('#sheet .wcount .wcount-v')].map(b=>b.textContent.trim()));   // SUPERSEDED by v2.77: the counter reads its unit inside it
     ok('Measure opens the choices, with a pack counter', ch.includes('Pack'), JSON.stringify(ch));
     for(let k=0;k<3;k++){ await page.locator('#sheet [data-wstep="edit|pack|+1"]').click(); await page.waitForTimeout(200); }
     await page.locator('#editName').fill('Rib steak');

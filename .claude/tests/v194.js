@@ -177,7 +177,7 @@ const SUGGESTED = { source:"model", results:[
     await page.evaluate(()=>{ const m=document.querySelector('[data-smart-wopen]'); if(m) m.click(); }); await page.waitForTimeout(400);
     /* SUPERSEDED by v2.76: grams, kilos, litres and packs are counters (the g counter reads "—" or e.g. "500g"). Still
        protected: the picker offers literal metric units, never converted ones. */
-    const swt = await page.evaluate(()=>[...document.querySelectorAll('[data-smart-wt], .wcount .editsec-l')].map(b=>b.textContent.trim()));
+    const swt = await page.evaluate(()=>[...document.querySelectorAll('[data-smart-wt], .wcount .wcount-v')]   /* SUPERSEDED by v2.77: the counter reads its unit inside it */.map(b=>b.textContent.trim()));
     ok('the weight picker still offers its own literal values, not converted ones',
        swt.length>0 && swt.includes('g') && swt.includes('kg') && !swt.some(t=>/(oz|lb)$/.test(t)),
        JSON.stringify({ picker, swt:swt.slice(0,8) }));

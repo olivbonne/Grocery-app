@@ -37,3 +37,12 @@ prices from receipts but there may be a better way to import all the shop data."
 - Waiting on the owner (25 Oct 2026): an Apify account (its key in Vercel), how products are pinned (pasted links and/or
   an AI-proposed match), the hotprices.org permission email, the fridge-photo approach. Built after the S8 step 3
   database move, since the price records live there.
+
+## What is already at home — photo, barcodes, video (October 2026)
+The household (25 Oct 2026): keep both as future options — (A) the AI recognises the products in one photo of the fridge or
+pantry (brand, product, size), matched to the Regulars and the list as "you have it", confirmed before anything changes;
+(B) live scanning of several barcodes at once, which needs the native (App Store) app. "I want to explore the feasibility
+of a video model that recognises items, so the user can move things around and the AI picks them up."
+- A video model (sending a short clip to a model that takes video) and on-device live recognition (the phone's own vision
+  frameworks in a native app) are the two routes; their accuracy, cost per clip and privacy are to be written up before
+  any code. Either sends images or video only when the person starts it; the privacy page would say so.

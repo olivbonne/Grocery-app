@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.76";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.76";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.76";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.76";
-import { compareStores, worthIt } from "./compare.js?v=2.76";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.76";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.76";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.76";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.76";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.76";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.76";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.76";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.76";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.76";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.77";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.77";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.77";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.77";
+import { compareStores, worthIt } from "./compare.js?v=2.77";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.77";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.77";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.77";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.77";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.77";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.77";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.77";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.77";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.77";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.76";
+const APP_VERSION = "v2.77";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -3791,7 +3791,7 @@ function tapNoScroll(el, fn){
    grid, the body scrolls to it, and nothing can be clipped by anything. */
 const WEIGHTS = ["","cup","tsp","Tbsp"];   // v2.76: the packs, grams, kilos and litres are counters (wCounters)   // v2.76: the 100g…10kg chips became the g / kg / L counters below
 /* v2.76: three counters under the Unit chips — g by 100 (100–2000), kg by 0.5 (0.5–20), L by 0.5 (0.5–10) */
-const WCOUNT = { pack:{ step:2, min:2, max:12 }, g:{ step:100, min:100, max:900 }, kg:{ step:0.5, min:0.5, max:20 }, L:{ step:0.5, min:0.5, max:10 } };
+const WCOUNT = { g:{ step:100, min:100, max:900 }, kg:{ step:0.5, min:0.5, max:20 }, L:{ step:0.5, min:0.5, max:10 }, pack:{ step:2, min:2, max:12 } };   // v2.77: in the household's order — g, kg, L, pack
 function wParse(w){ const m=String(w||"").trim().match(/^(\d+(?:[.,]\d+)?)\s*(kg|g|l|pack)$/i); if(!m) return null;
   const u=m[2].toLowerCase(); return { n:parseFloat(m[1].replace(",",".")), u: u==="l" ? "L" : u }; }
 function wFmt(n, u){ return String(+n.toFixed(1)).replace(/\.0$/,"") + (u==="pack" ? " pack" : u); }   // v2.76: "6 pack", as the old chips wrote it
@@ -3801,13 +3801,15 @@ function wStep(cur, u, dir){ const c=WCOUNT[u], p=wParse(cur), n=(p&&p.u===u) ? 
   const v=Math.min(c.max, Math.max(c.min, Math.round((n+dir*c.step)/c.step)*c.step)); return wFmt(v,u); }
 function wCounters(attr, key, cur){ const p=wParse(cur);
   return Object.keys(WCOUNT).map(u=>{ const on=p&&p.u===u;
-    return `<div class="wcount"><span class="editsec-l">${u==="pack"?t("Pack"):u}</span><span class="eqty"><button ${attr}="${key}|${u}|-1" aria-label="${t("Less")}">−</button><span class="wcount-v">${on?esc(wFmt(p.n,u)):"—"}</span><button ${attr}="${key}|${u}|+1" aria-label="${t("More")}">+</button></span></div>`; }).join(""); }
+    /* v2.77 (the household): no separate label — an empty counter shows its unit ("g", "Pack"), a set one its amount ("500g") */
+    return `<div class="wcount${on?' on':''}"><span class="eqty"><button ${attr}="${key}|${u}|-1" aria-label="${t("Less")} ${u==="pack"?t("Pack"):u}">−</button><span class="wcount-v">${on?esc(wFmt(p.n,u)):(u==="pack"?t("Pack"):u)}</span><button ${attr}="${key}|${u}|+1" aria-label="${t("More")}">+</button></span></div>`; }).join(""); }
 /* v2.76: an opened row's choices are shown to their end — the sheet scrolls just enough, the page behind does not */
 function edShowEnd(root, row){ const c=root && root.querySelector(`.edcell[data-row="${row}"][data-open="1"]`);
   const last=c && c.querySelector(".wgrid > :last-child, .edchips > :last-child"); if(last) last.scrollIntoView({ block:"nearest" }); }
 function weightChips(id, cur){
   if(wOpen!==id) return "";
-  return `<div class="wgrid" role="listbox">${WEIGHTS.map(w=>`<button role="option" class="catchip${(cur||"")===w?' on':''}" data-w-set="${id}|${esc(w)}">${w?esc(w):t("Unit")}</button>`).join("")}${wCounters("data-wstep", id, cur)}</div>`;
+  const chip=w=>`<button role="option" class="catchip${(cur||"")===w?' on':''}" data-w-set="${id}|${esc(w)}">${w?esc(w):t("Unit")}</button>`;
+  return `<div class="wgrid" role="listbox">${chip("")}${wCounters("data-wstep", id, cur)}${WEIGHTS.filter(Boolean).map(chip).join("")}</div>`;   // v2.77: Unit, g, kg, L, pack, then cup, tsp, Tbsp
 }
 function addEditPanel(){
   const it=state.items.find(i=>i.id===addEditId);
@@ -3865,7 +3867,7 @@ function wireAddEdit(){
   }));
   document.querySelectorAll("#addSheetBody [data-w-set]").forEach(b=>tapNoScroll(b, ()=>{
     const [id,w]=b.dataset.wSet.split("|"); const it=state.items.find(x=>x.id===id);
-    if(it){ it.weight=w||""; wOpen=null; touch(it); refreshAddBody(); }
+    if(it){ it.weight=w||""; touch(it); refreshAddBody(); }   // v2.77: the list stays open (the household) — the Unit tile closes it
     /* belt and braces: if the platform moved focus anyway, put it straight back inside the same
        gesture, which is the only place iOS will re-raise the keyboard without a flicker. */
     const mi=document.getElementById("mainInput"); if(mi) mi.focus();
@@ -4580,6 +4582,23 @@ function render(){
   prefsSchedule();   // v2.71: every settings change ends in a render — the one central place; it only arms a 4 s timer
   queueMicrotask(()=>{ try{ healStuck(); }catch(e){} });   // v2.29 (a microtask: after the module has finished loading)
   if(_colorPicking) return;
+  const _still = sheetsBefore();   // v2.77: a sheet already open does not slide in again, keeps its scroll and does not shrink
+  try{ renderInner(); } finally { sheetsAfter(_still); } }
+/* v2.77 (the household: "every time a selection is made the sheet jumps up and down"). Every render rebuilt the sheet, which
+   replayed its slide-up animation, reset its scroll to the top and let it shrink when a list closed — the top edge moved
+   each time. Now a sheet that was already open keeps still: no animation, the same scroll, and Edit item (#sheet) never
+   gets shorter than it has been while it stays open. */
+var _sheetMinH = {};
+function sheetsBefore(){ const o = {};
+  document.querySelectorAll(".sheet[id]").forEach(s => { o[s.id] = { top:s.scrollTop }; });
+  return o; }
+function sheetsAfter(o){ const seen = {};
+  document.querySelectorAll(".sheet[id]").forEach(s => { seen[s.id] = 1; const was = o && o[s.id]; if(!was) { delete _sheetMinH[s.id]; return; }
+    s.style.animation = "none";
+    if(s.id === "sheet"){ const h = s.getBoundingClientRect().height; _sheetMinH[s.id] = Math.max(_sheetMinH[s.id] || 0, h); s.style.minHeight = _sheetMinH[s.id] + "px"; }
+    s.scrollTop = was.top; });
+  for(const k in _sheetMinH) if(!seen[k]) delete _sheetMinH[k]; }
+function renderInner(){
   ensureCats();
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
   if(!me){ renderOnboarding(); window.__mlRendered=true; return; }
@@ -7518,13 +7537,13 @@ function wireSmartSheet(){
   app.querySelectorAll("[data-smart-wopen]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartWopen; smartWOpen = (smartWOpen===i ? null : i); render(); edShowEnd(app.querySelector(".smartedit"), "unit"); }; });
   app.querySelectorAll("[data-smart-copen]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartCopen; smartCOpen = (smartCOpen===i ? null : i); render(); edShowEnd(app.querySelector(".smartedit"), "cat"); }; });
   app.querySelectorAll("[data-smart-q]").forEach(b=>{ b.onclick=()=>{ const [i,d]=b.dataset.smartQ.split("|"); const it=smartItems[+i]; if(it){ it.qty=Math.max(1,Math.min(999,(it.qty||1)+(+d))); render(); } }; });
-  app.querySelectorAll("[data-smart-cat]").forEach(b=>{ b.onclick=()=>{ const [i,cid]=b.dataset.smartCat.split("|"); const it=smartItems[+i]; if(it){ if(it.category!==cid) it.sub=""; it.category=cid; it.catPicked=true; smartCOpen=null; render(); } }; });
+  app.querySelectorAll("[data-smart-cat]").forEach(b=>{ b.onclick=()=>{ const [i,cid]=b.dataset.smartCat.split("|"); const it=smartItems[+i]; if(it){ if(it.category!==cid) it.sub=""; it.category=cid; it.catPicked=true; render(); } }; });   // v2.77: the list stays open
   app.querySelectorAll("[data-smart-name]").forEach(inp=>{ inp.oninput=()=>{ const it=smartItems[+inp.dataset.smartName]; if(!it) return; it.name=inp.value;
     const nm=inp.closest(".smartchip")&&inp.closest(".smartchip").querySelector(".smartchip-name");   // the head follows the name, still without a render
     if(nm) nm.innerHTML=`${(it.qty>1)?`<b>${it.qty}× </b>`:""}${it.weight?`<b>${esc(showAmt(it.weight))} </b>`:""}${esc(cap(it.name))}`; }; });   // no re-render: keep focus while typing
   app.querySelectorAll("[data-smart-addcat]").forEach(b=>{ b.onclick=()=>{ const it=smartItems[+b.dataset.smartAddcat]; if(!it) return; const nm=prompt(t("New category name:"),""); if(nm&&nm.trim()){ const id=makeCategory(nm); if(id){ it.category=id; it.sub=""; it.catPicked=true; smartCOpen=null; render(); } } }; });
   app.querySelectorAll("[data-smart-wstep]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartWstep.split("|"); const it=smartItems[+p[0]]; if(it){ it.weight=wStep(it.weight,p[1],+p[2]); render(); } }; });   // v2.76: smartWOpen stays
-  app.querySelectorAll("[data-smart-wt]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartWt.split("|"); const i=+p[0], w=p[1]||""; const it=smartItems[i]; if(it){ it.weight = (it.weight===w ? "" : w); smartWOpen=null; render(); } }; });
+  app.querySelectorAll("[data-smart-wt]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartWt.split("|"); const i=+p[0], w=p[1]||""; const it=smartItems[i]; if(it){ it.weight = (it.weight===w ? "" : w); render(); } }; });   // v2.77: the list stays open
   app.querySelectorAll("[data-smartsort]").forEach(b=>b.onclick=()=>{ setIngSort(b.dataset.smartsort); render(); });   // v2.08
 }
 function smartSheet(){
@@ -7543,7 +7562,8 @@ function smartSheet(){
           <div class="edrows">${/* v2.74: the rows in cells, as in Edit item */""}
           <div class="edcell" data-row="qty"><div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button data-smart-q="${idx}|-1" aria-label="${t("Less")}">−</button><span>${it.qty||1}</span><button data-smart-q="${idx}|1" aria-label="${t("More")}">+</button></span></div></div>
           <div class="edcell" data-row="unit"${smartWOpen===idx?' data-open="1"':''}><button class="editsec" data-smart-wopen="${idx}" aria-expanded="${smartWOpen===idx}" aria-label="${t("Unit")}"><span class="editsec-l">${t("Unit")}</span><span class="editsec-v"><span class="edval">${it.weight ? esc(it.weight) : t("Unit")} <span class="editsec-ch">${smartWOpen===idx?'▾':'▸'}</span></span></span></button>
-          ${smartWOpen===idx ? `<div class="wgrid">${WEIGHTS.map(w=>`<button class="catchip${((it.weight||"")===w)?' on':''}" data-smart-wt="${idx}|${esc(w)}">${w?esc(w):t("Unit")}</button>`).join("")}${wCounters("data-smart-wstep", idx, it.weight)}</div>` : ""}</div>
+          ${smartWOpen===idx ? (()=>{ const chip=w=>`<button class="catchip${((it.weight||"")===w)?' on':''}" data-smart-wt="${idx}|${esc(w)}">${w?esc(w):t("Unit")}</button>`;
+            return `<div class="wgrid">${chip("")}${wCounters("data-smart-wstep", idx, it.weight)}${WEIGHTS.filter(Boolean).map(chip).join("")}</div>`; })() : ""}</div>
           <div class="edcell" data-row="cat"${smartCOpen===idx?' data-open="1"':''}><button class="editsec" data-smart-copen="${idx}" aria-expanded="${smartCOpen===idx}" aria-label="${t("Category")}"><span class="editsec-l">${t("Category")}</span><span class="editsec-v"><span class="edval">${catIcon(c,14)} ${esc(catLabel(c))} <span class="editsec-ch">${smartCOpen===idx?'▾':'▸'}</span></span></span></button>
           ${smartCOpen===idx ? `<div class="edchips">${catList().map(cc=>`<button class="catchip" data-smart-cat="${idx}|${cc.id}" style="${cc.id===it.category?`background:${cc.color};border-color:${cc.color};color:#fff`:''}">${catIcon(cc,13)} ${esc(catLabel(cc))}</button>`).join("")}<button class="catchip" data-smart-addcat="${idx}" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}</div>
           </div>
@@ -8677,7 +8697,7 @@ function wireEditSheet(){
           /* v1.64 item 1: bring the newly-opened grid into view — same reason as the add panel. */
           edShowEnd(document.querySelector("#sheet"), "unit"); }; });
       document.querySelectorAll("#sheet [data-w-set]").forEach(b=>tapNoScroll(b, ()=>{
-        const w=b.dataset.wSet.split("|")[1]||""; editing.weight=w; wOpen=null; render(); }));
+        const w=b.dataset.wSet.split("|")[1]||""; editing.weight=w; render(); }));   // v2.77: the list stays open
       document.querySelectorAll("#sheet [data-wstep]").forEach(b=>tapNoScroll(b, ()=>{   // v2.76: the counters keep the Unit row open
         const p=b.dataset.wstep.split("|"); editing.weight=wStep(editing.weight,p[1],+p[2]); render(); }));
       const qm=app.querySelector("#qMinus"); if(qm) qm.onclick=()=>{ editing.qty=Math.max(1,(editing.qty||1)-1); render(); };

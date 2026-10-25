@@ -58,8 +58,8 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     await mk({ doc:D() });
     await hold(page.locator('.pill[data-pill="1"]').first());
     await page.locator('#sheet [data-w-open]').click(); await page.waitForTimeout(400);
-    const ch = await page.evaluate(()=>({ chips:[...document.querySelectorAll('#sheet .wgrid [data-w-set]')].map(b=>b.textContent.trim()), counters:[...document.querySelectorAll('#sheet .wcount')].map(r=>r.querySelector('.editsec-l').textContent.trim()) }));
-    ok('the Unit choices are Unit, cup, tsp, Tbsp, then counters for Pack, g, kg and L', JSON.stringify(ch.chips)==='["Unit","cup","tsp","Tbsp"]' && JSON.stringify(ch.counters)==='["Pack","g","kg","L"]', JSON.stringify(ch));
+    const ch = await page.evaluate(()=>({ chips:[...document.querySelectorAll('#sheet .wgrid [data-w-set]')].map(b=>b.textContent.trim()), counters:[...document.querySelectorAll('#sheet .wcount')].map(r=>r.querySelector('.wcount-v').textContent.trim()) }));   // SUPERSEDED by v2.77: no separate label — an empty counter reads its unit, in the order g, kg, L, Pack
+    ok('the Unit choices are Unit, cup, tsp, Tbsp, then counters for Pack, g, kg and L', JSON.stringify(ch.chips)==='["Unit","cup","tsp","Tbsp"]' && JSON.stringify(ch.counters)==='["500g","kg","L","Pack"]', JSON.stringify(ch));
     ok('…"500g" already on the item shows in the g counter', await val('g')==='500g', await val('g'));
     await page.locator('#sheet [data-wstep="edit|g|+1"]').click(); await page.waitForTimeout(300);
     ok('…+ on g makes it 600g, and the choices stay open', await val('g')==='600g' && await page.locator('#sheet .wgrid').count()===1, await val('g'));
@@ -67,7 +67,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     ok('…grams stop at 900', await val('g')==='900g', await val('g'));
     await page.locator('#sheet [data-wstep="edit|pack|+1"]').click(); await page.waitForTimeout(300);
     await page.locator('#sheet [data-wstep="edit|pack|+1"]').click(); await page.waitForTimeout(300);
-    ok('Pack counts in twos from 2 ("4 pack" after two taps), and the g counter empties', await val('pack')==='4 pack' && await val('g')==='—', (await val('pack'))+' / '+(await val('g')));
+    ok('Pack counts in twos from 2 ("4 pack" after two taps), and the g counter empties', await val('pack')==='4 pack' && await val('g')==='g'   /* SUPERSEDED by v2.77: an empty counter reads its unit, not "—" */, (await val('pack'))+' / '+(await val('g')));
     await page.locator('#sheet [data-wstep="edit|kg|+1"]').click(); await page.waitForTimeout(250);
     await page.locator('#sheet [data-wstep="edit|kg|+1"]').click(); await page.waitForTimeout(250);
     await page.locator('#sheet [data-wstep="edit|kg|+1"]').click(); await page.waitForTimeout(250);
