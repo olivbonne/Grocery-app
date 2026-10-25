@@ -2734,8 +2734,9 @@ function addEntries(text, override){
   save(); renderKeepingAdd();
 }
 /* v2.72: when the first tick makes the cart bar appear, the list drops and a quick second tap at the same spot lands
-   on the cart's head and unfolds it. The head ignores a tap this soon after a tick. var: read before any tick. */
-var _lastTickAt = 0;
+   on the cart's head and unfolds it. The head ignores a tap that comes within 400 ms of the bar appearing — only then
+   does the list move; a tap on a cart already there is always taken. var: read before any tick. */
+var _lastTickAt = 0, _cartAppearedAt = 0;
 function toggleItem(id){ _lastTickAt = Date.now(); const it=state.items.find(i=>i.id===id); if(it){
   if(!it.checked){ lastPop=id; playTick(true); vibrate(8); setTimeout(()=>{ if(lastPop===id) lastPop=null; },350); }
   else { playTick(false); vibrate(5); }
@@ -4832,7 +4833,7 @@ function renderMain(){
     const inner = elseOpen ? Object.keys(groups).map(w=>`<div class="elsehd">${esc(whereNames(whereIds({ where:w })).join(" or ")||"Another shop")}</div>${pillsMixed(sortList(groups[w]))}`).join("") : "";
     bodyBlocks.push(`<section class="cat elsewhere"><button class="elsebtn" id="elseToggle" aria-expanded="${elseOpen?'true':'false'}"><span>${t("For other shops")}</span> <span class="cnum">${elsewhere.length}${elseOpen?' ▾':' ▸'}</span></button>${inner}</section>`); }
   const listBody = bodyBlocks.join("");
-  const cartDrop = done>0 && !_cartWasShown; _cartWasShown = done>0;   // v2.12 slides down only when the first item goes in
+  const cartDrop = done>0 && !_cartWasShown; _cartWasShown = done>0; if(cartDrop) _cartAppearedAt = Date.now();   // v2.12 slides down only when the first item goes in
   const checkedBar = done>0 ? `<div class="checkedbar shop${cartDrop?' drop':''}" id="checkedbar">
       ${/* v2.00 item 1: one row, not two. The label varies because the row already says "N in cart":
            collapsed there is no space and the count would be said twice, so it is just "Finish";
@@ -8308,7 +8309,7 @@ function wire(){
   wireAddSheet();
   wireSmartSheet(); wireVoice(); wireSiri();
   wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();
-  const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ if(Date.now() - _lastTickAt < 700) return;   /* v2.72: a stray tap from the tick that moved the list */
+  const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ if(Date.now() - _cartAppearedAt < 400) return;   /* v2.72: a stray tap from the tick that moved the list */
     collapse.checked = !(collapse.checked!==false); localStorage.setItem(LS.collapse, JSON.stringify(collapse)); render(); };
   const ca=app.querySelector("#collapseAll"); if(ca) ca.onclick=()=>{ const ids=catList().filter(c=>state.items.some(i=>catShown(i.cat)===c.id)).map(c=>c.id);
     const open=ids.some(id=>!collapse.cats.includes(id)) || (state.buyAgain.length>0 && collapse.ba);

@@ -8,7 +8,7 @@
    - a shop named on the receipt that the list does not have is added, with no pin, and the shop chosen is unchanged;
    - "No card at this shop" stops the card question at that shop only;
    - ⋯ › Store picks a shop, and a new one can be added there; the menu stays open;
-   - a tap on the cart's head right after a tick does not unfold it.
+   - a tap on the cart's head as the cart appears does not unfold it; a tap on a cart already there does.
 
    TEST-BUG NOTES CARRIED FORWARD: v2.00 the seed returns early once seeded; v2.10 seed ml_appmig163. */
 const fs = require('fs'), path = require('path');
@@ -105,9 +105,10 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
 
     /* 7. the cart stays folded */
     await mk({ doc:DOC({ items:[it("1","Milk","dairy"), it("2","Bread","bulk"), it("3","Eggs","dairy")] }) });
-    await page.locator('.pill[data-pill="1"]').first().click(); await page.waitForTimeout(150);
-    await page.locator('#checkedHead').click(); await page.waitForTimeout(400);
-    ok('a tap on the cart\'s head right after a tick does not unfold it', await page.locator('.checkedscroll').count()===0, '');
+    await page.locator('.pill[data-pill="1"]').first().click(); await page.waitForTimeout(100);
+    { const b = await page.locator('#checkedHead').boundingBox(); await page.mouse.click(b.x+b.width/3, b.y+b.height/2); }   // a finger, not a waiting click: Playwright waits out the slide-down
+    await page.waitForTimeout(400);
+    ok('a tap on the cart\'s head as it appears (the list just moved) does not unfold it', await page.locator('.checkedscroll').count()===0, '');
     await page.waitForTimeout(800); await page.locator('#checkedHead').click(); await page.waitForTimeout(400);
     ok('…a deliberate tap later still does', await page.locator('.checkedscroll').count()===1, '');
 
