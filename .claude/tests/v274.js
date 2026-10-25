@@ -76,7 +76,8 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     ok('Row names off: no row name is shown', g.lab===0, String(g.lab));
     await page.locator('#sheet [data-w-open]').click(); await page.waitForTimeout(400);
     g = await page.evaluate(()=>{ const c=document.querySelector('#sheet .edcell[data-row="unit"]'), w=c.querySelector('.wgrid'), s=document.querySelector('#sheet .edrows');
-      const cols=getComputedStyle(w).gridTemplateColumns.split(' ').length; return { open:c.dataset.open, cw:c.getBoundingClientRect().width, sw:s.getBoundingClientRect().width, cols }; });
+      const cols=getComputedStyle(w).gridTemplateColumns.split(' ').length; return { open:c.dataset.open, cw:w.getBoundingClientRect().width, sw:s.getBoundingClientRect().width, cols }; });
+    /* SUPERSEDED by v2.76: the open row stays in its place (display:contents) and only its choices take the whole width. */
     ok('…an open row\'s choices take the whole width', g.open==='1' && Math.abs(g.cw-g.sw)<2, JSON.stringify(g));
     ok('Choices 3: the units are in three columns', g.cols===3, String(g.cols));
     const sg = await page.evaluate(()=>{ const s=document.querySelector('#sheet .ednotechips'); return s ? s.offsetParent!==null : false; });

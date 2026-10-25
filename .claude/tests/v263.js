@@ -95,9 +95,10 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     ok('…the pills share one round shape (Urgent, If discounted, the quantity)', ed && ed.rad.length>=3 && new Set(ed.rad).size===1, JSON.stringify(ed && ed.rad));
     await page.locator('#qPlus').click(); await page.waitForTimeout(250);
     await page.locator('#sheet button.editsec[data-w-open]').click(); await page.waitForTimeout(400);
-    const ch = await page.evaluate(()=>[...document.querySelectorAll('#sheet .wgrid button')].map(b=>b.textContent.trim()));
-    ok('Measure opens the choices, with 4, 6 and 12 pack', ['4 pack','6 pack','12 pack'].every(x=>ch.includes(x)), JSON.stringify(ch));
-    await page.locator('#sheet .wgrid button', { hasText:/^6 pack$/ }).click(); await page.waitForTimeout(300);
+    /* SUPERSEDED by v2.76: the packs are a counter, 2–12 in twos. Still protected: the choices offer packs, and a 6 pack is kept. */
+    const ch = await page.evaluate(()=>[...document.querySelectorAll('#sheet .wcount .editsec-l')].map(b=>b.textContent.trim()));
+    ok('Measure opens the choices, with a pack counter', ch.includes('Pack'), JSON.stringify(ch));
+    for(let k=0;k<3;k++){ await page.locator('#sheet [data-wstep="edit|pack|+1"]').click(); await page.waitForTimeout(200); }
     await page.locator('#editName').fill('Rib steak');
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-edit.png') });
     await page.locator('#saveBtn').click(); await page.waitForTimeout(500);
