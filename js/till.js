@@ -55,7 +55,7 @@ export function nameScore(line, item){ const A = words(line), B = words(item); i
 
 /* Pair a receipt's lines with the items ticked in the shop, in the order they were ticked (the household: "match what
    was in the cart, in the order it was checked, which should be the order on the bill").
-   lines: [{ name, keep }] in receipt order; cart: [{ name }] in tick order; score(lineName, itemName, line, item): how well
+   lines: [{ name, keep }] in receipt order; cart: [{ name, qty }] in tick order (qty: how many lines it may take, v2.73); score(lineName, itemName, line, item): how well
    they match, 0 (not at all) to 1 — a true/false answer works too.
    1. by name FIRST (v2.35, the household's item 9) — every kept line against every ticked item; the best matches are
       paired first, so a strong match is never taken by a weak one that happened to come earlier;
@@ -64,21 +64,24 @@ export function nameScore(line, item){ const A = words(line), B = words(item); i
       used as an edge, so the stretches never cross.
    Returns { pair: [cartIndex|null per line], how: ["name"|"order"|"" per line], missing: [cart indices not paired] }. */
 export function reconcile(lines, cart, score){ lines = Array.isArray(lines) ? lines : []; cart = Array.isArray(cart) ? cart : [];
-  const pair = lines.map(() => null), how = lines.map(() => ""), used = new Set(), cands = [];
+  /* v2.73 (the household): an item ticked with a quantity of 2 can be two lines — two kinds of wipes for "2× bathroom
+     wipes". Each cart item takes up to its qty lines (at least one). */
+  const cap = k => Math.max(1, Math.floor(+(cart[k] && cart[k].qty) || 1)), cnt = cart.map(() => 0), full = k => cnt[k] >= cap(k);
+  const pair = lines.map(() => null), how = lines.map(() => ""), cands = [];
   lines.forEach((L, i) => { if(!L || !L.keep) return;
     cart.forEach((x, k) => { if(!x) return; const s = +score(L.name, x.name, L, x) || 0; if(s > 0) cands.push([s, i, k]); }); });
   cands.sort((a, b) => b[0] - a[0] || a[1] - b[1] || a[2] - b[2]);
-  for(const [, i, k] of cands){ if(pair[i] !== null || used.has(k)) continue; pair[i] = k; how[i] = "name"; used.add(k); }
+  for(const [, i, k] of cands){ if(pair[i] !== null || full(k)) continue; pair[i] = k; how[i] = "name"; cnt[k]++; }
   /* the edges: name pairs in receipt order whose cart positions only go forward */
   const edges = []; let last = -1;
-  pair.forEach((c, i) => { if(c !== null && c > last){ edges.push([i, c]); last = c; } });
+  pair.forEach((c, i) => { if(c !== null && c > last){ edges.push([i, c]); last = c; } });   // one edge per item: a second line of the same item is not an edge
   const bounds = [[-1, -1], ...edges, [lines.length, cart.length]];
   for(let b = 0; b + 1 < bounds.length; b++){ const [l0, c0] = bounds[b], [l1, c1] = bounds[b + 1];
     const ls = [], cs = [];
     for(let i = l0 + 1; i < l1; i++) if(pair[i] === null && lines[i] && lines[i].keep) ls.push(i);
-    for(let k = c0 + 1; k < c1; k++) if(!used.has(k)) cs.push(k);
-    for(let n = 0; n < Math.min(ls.length, cs.length); n++){ pair[ls[n]] = cs[n]; how[ls[n]] = "order"; used.add(cs[n]); } }
-  return { pair, how, missing: cart.map((_, k) => k).filter(k => !used.has(k)) }; }
+    for(let k = c0 + 1; k < c1; k++) if(!cnt[k]) cs.push(k);   // in order: one line per item still unpaired (a second line of a qty-2 item is never guessed)
+    for(let n = 0; n < Math.min(ls.length, cs.length); n++){ pair[ls[n]] = cs[n]; how[ls[n]] = "order"; cnt[cs[n]]++; } }
+  return { pair, how, missing: cart.map((_, k) => k).filter(k => !cnt[k]) }; }
 
 /* v2.37 (the household's item 3, option A): a band in the programme's own colour with its name, above the barcode.
    Colours only, by eye — the programmes' logos are trademarks and are not shipped; colours could not be checked against

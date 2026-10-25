@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.72";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.72";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.72";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.72";
-import { compareStores, worthIt } from "./compare.js?v=2.72";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.72";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.72";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.72";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.72";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.72";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.72";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.72";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.72";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.72";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.73";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.73";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.73";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.73";
+import { compareStores, worthIt } from "./compare.js?v=2.73";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.73";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.73";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.73";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.73";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.73";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.73";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.73";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.73";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.73";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.72";
+const APP_VERSION = "v2.73";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -6129,7 +6129,7 @@ function rcptSheet(){
   ${(rcpt.cart && rcpt.cart.length) ? rcCartSummary() : ""}<div class="rclines">${rcpt.lines.map((L,i)=>`<div class="rcrow${L.keep?"":" off"}">
      <button class="smartcheck ${L.keep?"on":""}" data-rckeep="${i}" role="checkbox" aria-checked="${L.keep?"true":"false"}" aria-label="${esc(tf(L.keep?"Leave out {name}":"Keep {name}", { name:L.name }))}">✓</button>
      <div class="rcmid"><input class="rcname" data-rcname="${i}" value="${esc(L.name)}" aria-label="${tf("Item {n}", { n:i+1 })}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
-       <span class="rcraw">${esc(L.raw)}${L.note?` · ${esc(L.note)}`:""}${L.qty>1?` · ${L.qty}×`:""}${L.weight?` · ${esc(L.weight)}`:""} · ${esc(rcUnitTxt(L))}${L.match?` · <b>${t("on your list")}</b>`:""}</span>${(rcpt.cart && rcpt.cart.length && L.keep) ? `<select class="rccart${L.how==="order"?" guess":""}" data-rccart="${i}" aria-label="${tf("Which ticked item is line {n}", { n:i+1 })}"><option value="">${t("Not from the cart")}</option>${rcpt.cart.map((c,k)=>`<option value="${k}"${L.cart===k?" selected":""}>${k+1}. ${esc(c.name)}${c.weight?` · ${esc((+c.qty||1)>1?c.qty+"× "+c.weight:c.weight)}`:""}${c.note?` · ${esc(c.note)}`:""}</option>`).join("")}</select>${L.how==="order"?`<span class="rcguess">${t("Matched by the order you ticked — check")}</span>`:""}` : ""}</div>
+       <span class="rcraw">${esc(L.raw)}${L.note?` · ${esc(L.note)}`:""}${L.qty>1?` · ${L.qty}×`:""}${L.weight?` · ${esc(L.weight)}`:""} · ${esc(rcUnitTxt(L))}${L.match?` · <b>${t("on your list")}</b>`:""}</span>${(rcpt.cart && rcpt.cart.length && L.keep) ? `<select class="rccart${L.how==="order"?" guess":""}" data-rccart="${i}" aria-label="${tf("Which ticked item is line {n}", { n:i+1 })}"><option value="">${t("Not from the cart")}</option>${rcpt.cart.map((c,k)=>`<option value="${k}"${L.cart===k?" selected":""}>${k+1}. ${esc(c.name)}${c.weight?` · ${esc((+c.qty||1)>1?c.qty+"× "+c.weight:c.weight)}`:((+c.qty||1)>1?` · ${+c.qty}×`:"")}${c.note?` · ${esc(c.note)}`:""}</option>`).join("")}</select>${L.how==="order"?`<span class="rcguess">${t("Matched by the order you ticked — check")}</span>`:""}` : ""}</div>
      <span class="rcprice">${priceMoney(L.price)}</span></div>`).join("")}</div>
   <div class="ppedbtns"><button class="optaction" id="rcCancel">${t("Cancel")}</button><button class="newlist" id="rcSaveBtn">${kept===1?tf("Save {n} price",{ n:kept }):tf("Save {n} prices",{ n:kept })}</button></div>
 </div></div>`; }
@@ -6149,7 +6149,9 @@ function wireRcptSheet(){
   app.querySelectorAll("[data-rccart]").forEach(s=>{ s.onchange=()=>{ const L=rcpt.lines[+s.dataset.rccart]; if(!L) return;
     const k=s.value==="" ? null : +s.value;
     /* v2.72: the note follows the pairing too, and the reader's comes back on unpair */
-    if(k!==null) rcpt.lines.forEach(M=>{ if(M!==L && M.cart===k){ M.cart=null; M.how=""; M.name=M.read||M.name; if(M.readNote!==undefined) M.note=M.readNote; } });
+    /* v2.73: an item takes up to its quantity of lines; past that, the line that had it longest gives it up */
+    if(k!==null){ const others=rcpt.lines.filter(M=>M!==L && M.cart===k), capK=Math.max(1, Math.floor(+rcpt.cart[k].qty||1));
+      others.slice(0, Math.max(0, others.length-capK+1)).forEach(M=>{ M.cart=null; M.how=""; M.name=M.read||M.name; if(M.readNote!==undefined) M.note=M.readNote; }); }
     if(L.readNote===undefined) L.readNote=L.note||"";
     L.cart=k; L.how=k===null ? "" : "you"; L.name=k===null ? (L.read||L.name) : rcpt.cart[k].name; L.note=k===null ? L.readNote : (rcpt.cart[k].note||""); render(); }; });
   const sv=app.querySelector("#rcSaveBtn"); if(sv) sv.onclick=rcSave;

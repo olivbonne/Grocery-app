@@ -157,7 +157,10 @@ const seed = (o) => { o=o||{}; return `(() => {
     ok('…choosing "Not from the cart" gives the line back its read name, and the item is listed as ticked but not on the receipt', s.rows[2].name==='thkn crm' && s.rows[2].pick==='' && /3 of 4/.test(s.sum) && /Ticked but not on the receipt: Nexba lemon squash/.test(s.sum), JSON.stringify({r:s.rows[2], sum:s.sum.slice(0,120)}));
     await page.locator('[data-rccart="2"]').selectOption('1'); await page.waitForTimeout(400);
     s = await rs();
-    ok('…picking an item another line had moves it: that line goes back to its own name', s.rows[2].name==='High protein yogurt' && s.rows[1].name==='hp yog' && s.rows[1].pick==='' && !s.rows[2].guess, JSON.stringify(s.rows));
+    /* SUPERSEDED by v2.73: an item takes up to its quantity of lines — the yogurt was ticked with qty 2, so both lines keep
+       it (v273.js checks that a third line takes it from the oldest). Still protected: the line picked by hand takes the
+       item's name, and is not marked as a guess. */
+    ok('…picking an item for a line gives it the item\'s name (the yogurt, ticked ×2, may be two lines — v2.73)', s.rows[2].name==='High protein yogurt' && s.rows[2].pick==='1' && !s.rows[2].guess, JSON.stringify(s.rows));
     await tap('#rcSaveBtn');
     const pr = await page.evaluate(()=>Object.keys(JSON.parse(localStorage.getItem('ml_cache_v101')).prices||{}));
     ok('saving records the prices under the list\'s own names', pr.includes('salad rocket') && pr.includes('high protein yogurt') && pr.includes('linguine'), JSON.stringify(pr));
