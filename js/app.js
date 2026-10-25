@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.73";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.73";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.73";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.73";
-import { compareStores, worthIt } from "./compare.js?v=2.73";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.73";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.73";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.73";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.73";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.73";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.73";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.73";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.73";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.73";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.74";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.74";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.74";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.74";
+import { compareStores, worthIt } from "./compare.js?v=2.74";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.74";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.74";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.74";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.74";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.74";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.74";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.74";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.74";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.74";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.73";
+const APP_VERSION = "v2.74";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -350,6 +350,11 @@ function setEPillTxt(v, quiet){ ePillTxt=v; setLS("ml_epilltext",v); applyTheme(
 function setEPillBg(v, quiet){ ePillBg=v; setLS("ml_epillbg",v); applyTheme(); if(!quiet) render(); }
 function setEPillBrd(v, quiet){ ePillBrd=v; setLS("ml_epillbrd",v); applyTheme(); if(!quiet) render(); }
 /* v2.69: the sheet looks' values. The edit sheet's pill trio reads and writes the v2.63 variables above. */
+/* v2.74: a sheet's layout — rows (first level), chcols (its choices, second level), names ("0" = off). "" = today's look.
+   A LOOK, so not in APP_EXCLUDE. var: applyTheme() reads it at boot. */
+var LK_LAYOUT = ["rows","chcols","names"];
+function lkLay(sh,k){ return localStorage.getItem("ml_lk_"+sh+"_"+k)||""; }
+function setLkLay(sh,k,v){ if(v) localStorage.setItem("ml_lk_"+sh+"_"+k, v); else localStorage.removeItem("ml_lk_"+sh+"_"+k); applyTheme(); render(); }
 var lookSheet = "edit";   // which sheet the look page is showing — memory only, not stored
 const lkVals = {};
 SHEET_LOOKS.forEach(sh=>SHEET_PROPS.forEach(p=>{ if(!(sh==="edit" && LK_ALIAS[p])) lkVals[lkId(sh,p)] = localStorage.getItem("ml_"+lkId(sh,p)) || "auto"; }));
@@ -633,6 +638,10 @@ SHEET_LOOKS.filter(sh=>sh!=="edit").forEach(sh=>{
    untouched sheet writes nothing; applyTheme() also marks <html data-lka-<sheet>> so the colour-mix applies only when set. */
 SHEET_LOOKS.forEach(sh=>{
   NUMOPT["lk_"+sh+"_alpha"] = { ls:"ml_lk_"+sh+"_alpha", vr:"--lk-"+sh+"-alpha", def:100, min:0, max:100, step:5, off:100, unit:"", label:"Transparency" }; });
+/* v2.74: the gap between an editor's rows, Across and Down — only for the sheets with rows (edit, smart); off at the default */
+["edit","smart"].forEach(sh=>{
+  NUMOPT["lk_"+sh+"_rgapx"] = { ls:"ml_lk_"+sh+"_rgapx", vr:"--lk-"+sh+"-rgapx", def:8,  min:0, max:32, step:2, off:8,  label:"Across" };
+  NUMOPT["lk_"+sh+"_rgapy"] = { ls:"ml_lk_"+sh+"_rgapy", vr:"--lk-"+sh+"-rgapy", def:10, min:0, max:32, step:2, off:10, label:"Down" }; });
 /* v1.55 item 2: two levels of default. NUMOPT[].def is the FACTORY value — what the stylesheet used
    before any of this was settable, and the thing to fall back to when an experiment goes wrong.
    `ml_numdef` is the user's own baseline, saved from whatever is on screen; once it exists, clearing
@@ -742,6 +751,12 @@ function applyTheme(){ _cardHexMemo=null; const t = THEMES[theme] || THEMES.ligh
         if(o.off!==undefined && numVal(k)===o.off) rs.removeProperty(v); else rs.setProperty(v, numVal(k)+"px"); }); });
     /* v2.70: the attribute that switches a sheet's Transparency on — only when it is not 100 */
     SHEET_LOOKS.forEach(sh=>{ const k="lk_"+sh+"_alpha"; document.documentElement.toggleAttribute("data-lka-"+sh, numVal(k)!==NUMOPT[k].off); });
+    /* v2.74: each sheet's layout — written only when set, so an untouched install matches no new rule */
+    SHEET_LOOKS.forEach(sh=>LK_LAYOUT.forEach(k=>{ const v=lkLay(sh,k), a="data-lk-"+sh+"-"+k;
+      if(v) document.documentElement.setAttribute(a, v); else document.documentElement.removeAttribute(a); }));
+    /* v2.74: the row gap is set (either number) — so the Default layout takes it only then */
+    ["edit","smart"].forEach(sh=>document.documentElement.toggleAttribute("data-lk-"+sh+"-rgap",
+      ["rgapx","rgapy"].some(g=>{ const k="lk_"+sh+"_"+g; return numVal(k)!==NUMOPT[k].off; })));
     /* v1.76 item 2: the same rule for the two headings — a chosen heading background must not leave
        its label unreadable, but a chosen label colour always wins, so this only fills in the gap. */
     if(T["--cathdbg"] && !T["--cattext"]) rs.setProperty("--cattext", onAccent(T["--cathdbg"]));
@@ -3687,16 +3702,18 @@ function addEditPanel(){
     ${/* v2.63 item D: the title IS the name field; then flags, Quantity, Measure, Note, Category (no Subcategory) */""}
     ${/* v2.71: the Note moves up to right below the title; "Measure" is now "Unit" */""}
     <input class="edtitle" data-ae-name="${it.id}" value="${esc(it.name)}" aria-label="${t("Item name")}" />
-    ${noteSecHTML(it.note||"", it.name, { input:`data-ae-note="${it.id}"`, chip:"data-ae-notechip" })}
-    <div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button data-ae-minus="${it.id}" aria-label="${t("Less")}">−</button><span>${it.qty||1}</span><button data-ae-plus="${it.id}" aria-label="${t("More")}">+</button></span></div>
-    <button class="editsec" data-w-open="${it.id}" aria-expanded="${wOpen===it.id}"><span class="editsec-l">${t("Unit")}</span><span class="editsec-v"><span class="edval">${esc(it.weight||t("Unit"))} <span class="editsec-ch">${wOpen===it.id?'▾':'▸'}</span></span></span></button>
-    ${weightChips(it.id, it.weight)}
+    <div class="edrows">${/* v2.74: the rows in cells, as in Edit item */""}
+    <div class="edcell" data-row="note">${noteSecHTML(it.note||"", it.name, { input:`data-ae-note="${it.id}"`, chip:"data-ae-notechip" })}</div>
+    <div class="edcell" data-row="qty"><div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button data-ae-minus="${it.id}" aria-label="${t("Less")}">−</button><span>${it.qty||1}</span><button data-ae-plus="${it.id}" aria-label="${t("More")}">+</button></span></div></div>
+    <div class="edcell" data-row="unit"${wOpen===it.id?' data-open="1"':''}><button class="editsec" data-w-open="${it.id}" aria-expanded="${wOpen===it.id}" aria-label="${t("Unit")}"><span class="editsec-l">${t("Unit")}</span><span class="editsec-v"><span class="edval">${esc(it.weight||t("Unit"))} <span class="editsec-ch">${wOpen===it.id?'▾':'▸'}</span></span></span></button>
+    ${weightChips(it.id, it.weight)}</div>
     ${/* v1.59 item 3: the weight is the same wheel the shop-page Edit item uses, in the same place —
           between the quantity and the name. It was a scrolling chip strip on its own row here, which
           is a second way to do one thing and cost a row of a panel that already shares the screen
           with the keyboard. */""}
-    <button class="editsec" data-ae-sechead="cat"><span class="editsec-l">${t("Category")}</span><span class="editsec-v"><span class="edval">${cat?`${catIcon(cat,14)} ${esc(catLabel(cat))}`:'—'} <span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></span></button>
-    ${editCatOpen ? `<div class="edchips">${catChips}<button class="catchip" data-ae-addcat="${it.id}" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}
+    <div class="edcell" data-row="cat"${editCatOpen?' data-open="1"':''}><button class="editsec" data-ae-sechead="cat" aria-label="${t("Category")}"><span class="editsec-l">${t("Category")}</span><span class="editsec-v"><span class="edval">${cat?`${catIcon(cat,14)} ${esc(catLabel(cat))}`:'—'} <span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></span></button>
+    ${editCatOpen ? `<div class="edchips">${catChips}<button class="catchip" data-ae-addcat="${it.id}" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}</div>
+    </div>
     ${/* v2.70: the flags sit just above the buttons, as in Edit item */""}
     <div class="addedit-flags edchips edflags">${flags.map(f=>{ const on=(it.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-ae-flag="${it.id}|${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>
     <div class="addedit-actions">
@@ -7080,6 +7097,8 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-epillbg]").forEach(b=>b.onclick=()=>setEPillBg(b.dataset.optEpillbg));
   app.querySelectorAll("[data-opt-epillbrd]").forEach(b=>b.onclick=()=>setEPillBrd(b.dataset.optEpillbrd));
   /* v2.69: the sheet looks — which sheet the page shows, and every sheet x prop row (the edit pill trio is wired above) */
+  /* v2.74: the layout rows — data-lk-<key>="<sheet>|<value>" */
+  LK_LAYOUT.forEach(k=>app.querySelectorAll("[data-lk-"+k+"]").forEach(b=>b.onclick=()=>{ const [sh,v]=b.getAttribute("data-lk-"+k).split("|"); setLkLay(sh,k,v||""); }));
   app.querySelectorAll("[data-lk-sheet]").forEach(b=>b.onclick=()=>{ if(lookSheet!==b.dataset.lkSheet){ lookSheet=b.dataset.lkSheet; render(); } });
   SHEET_LOOKS.forEach(sh=>SHEET_PROPS.forEach(p=>{ if(sh==="edit" && LK_ALIAS[p]) return; const a="data-"+lkAttr(sh,p);
     app.querySelectorAll("["+a+"]").forEach(b=>b.onclick=()=>setLk(sh,p,b.getAttribute(a))); }));
@@ -7393,11 +7412,13 @@ function smartSheet(){
       const have=state.items.some(i=>!i.checked && (i.name||"").toLowerCase()===it.name.toLowerCase());
       const editor = open ? `<div class="smartedit">
           <input class="edtitle" data-smart-name="${idx}" value="${esc(cap(it.name))}" autocomplete="off" autocapitalize="words" aria-label="${t("Item name")}" />
-          <div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button data-smart-q="${idx}|-1" aria-label="${t("Less")}">−</button><span>${it.qty||1}</span><button data-smart-q="${idx}|1" aria-label="${t("More")}">+</button></span></div>
-          <button class="editsec" data-smart-wopen="${idx}" aria-expanded="${smartWOpen===idx}"><span class="editsec-l">${t("Unit")}</span><span class="editsec-v"><span class="edval">${it.weight ? esc(it.weight) : t("Unit")} <span class="editsec-ch">${smartWOpen===idx?'▾':'▸'}</span></span></span></button>
-          ${smartWOpen===idx ? `<div class="wgrid">${WEIGHTS.map(w=>`<button class="catchip${((it.weight||"")===w)?' on':''}" data-smart-wt="${idx}|${esc(w)}">${w?esc(w):t("Unit")}</button>`).join("")}</div>` : ""}
-          <button class="editsec" data-smart-copen="${idx}" aria-expanded="${smartCOpen===idx}"><span class="editsec-l">${t("Category")}</span><span class="editsec-v"><span class="edval">${catIcon(c,14)} ${esc(catLabel(c))} <span class="editsec-ch">${smartCOpen===idx?'▾':'▸'}</span></span></span></button>
-          ${smartCOpen===idx ? `<div class="edchips">${catList().map(cc=>`<button class="catchip" data-smart-cat="${idx}|${cc.id}" style="${cc.id===it.category?`background:${cc.color};border-color:${cc.color};color:#fff`:''}">${catIcon(cc,13)} ${esc(catLabel(cc))}</button>`).join("")}<button class="catchip" data-smart-addcat="${idx}" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}
+          <div class="edrows">${/* v2.74: the rows in cells, as in Edit item */""}
+          <div class="edcell" data-row="qty"><div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button data-smart-q="${idx}|-1" aria-label="${t("Less")}">−</button><span>${it.qty||1}</span><button data-smart-q="${idx}|1" aria-label="${t("More")}">+</button></span></div></div>
+          <div class="edcell" data-row="unit"${smartWOpen===idx?' data-open="1"':''}><button class="editsec" data-smart-wopen="${idx}" aria-expanded="${smartWOpen===idx}" aria-label="${t("Unit")}"><span class="editsec-l">${t("Unit")}</span><span class="editsec-v"><span class="edval">${it.weight ? esc(it.weight) : t("Unit")} <span class="editsec-ch">${smartWOpen===idx?'▾':'▸'}</span></span></span></button>
+          ${smartWOpen===idx ? `<div class="wgrid">${WEIGHTS.map(w=>`<button class="catchip${((it.weight||"")===w)?' on':''}" data-smart-wt="${idx}|${esc(w)}">${w?esc(w):t("Unit")}</button>`).join("")}</div>` : ""}</div>
+          <div class="edcell" data-row="cat"${smartCOpen===idx?' data-open="1"':''}><button class="editsec" data-smart-copen="${idx}" aria-expanded="${smartCOpen===idx}" aria-label="${t("Category")}"><span class="editsec-l">${t("Category")}</span><span class="editsec-v"><span class="edval">${catIcon(c,14)} ${esc(catLabel(c))} <span class="editsec-ch">${smartCOpen===idx?'▾':'▸'}</span></span></span></button>
+          ${smartCOpen===idx ? `<div class="edchips">${catList().map(cc=>`<button class="catchip" data-smart-cat="${idx}|${cc.id}" style="${cc.id===it.category?`background:${cc.color};border-color:${cc.color};color:#fff`:''}">${catIcon(cc,13)} ${esc(catLabel(cc))}</button>`).join("")}<button class="catchip" data-smart-addcat="${idx}" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}</div>
+          </div>
         </div>` : "";
       return `<div class="smartchip ${open?'open':''}${it.sel===false?' off':''}" style="border-left:4px solid ${c.color}">
         <div class="smartchip-top">
@@ -8002,6 +8023,16 @@ function optionsBody(){
       <div class="numgrid">${numCell(lkNumKey(lookSheet,"rad"))}</div></div></div>
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Gap")}</span><div class="optwide">
       <div class="numgrid">${numCell(lkNumKey(lookSheet,"gapx"))}${numCell(lkNumKey(lookSheet,"gapy"))}</div></div></div>
+    ${/* v2.74: the layout — Rows and Choices in two levels, the row names, the gap between rows (Choices only for sheets without rows) */""}
+    ${subhead("Layout")}
+    ${(()=>{ const hasRows = lookSheet==="edit" || lookSheet==="smart";
+      const seg=k=>`<div class="smcols lklay">${[["","Default"],["1"],["2"],["3"],["4"],["5"],["6"],["v"]].map(([v,l])=>`<button class="colbtn ${lkLay(lookSheet,k)===v?'on':''}" data-lk-${k}="${lookSheet}|${v}"${v==="v"?` aria-label="${t("Variable width")}"`:""}${v===""?' style="width:auto;padding:0 10px"':""}>${v===""?t(l):v==="v"?"↔":v}</button>`).join("")}</div>`;
+      const wide=(l,c)=>`<div class="optrow optrow-wide optnl"><span class="optlabel">${l}</span><div class="optwide">${c}</div></div>`;   // the label above: eight buttons do not fit beside it
+      return `${hasRows ? wide(t("Rows"), seg("rows")) : ""}
+    ${wide(t("Choices"), seg("chcols"))}
+    ${hasRows ? rowNL(t("Row names"), `<div class="seg"><button data-lk-names="${lookSheet}|" class="${lkLay(lookSheet,"names")!=="0"?'on':''}">${t("On")}</button><button data-lk-names="${lookSheet}|0" class="${lkLay(lookSheet,"names")==="0"?'on':''}">${t("Off")}</button></div>`) : ""}
+    ${hasRows ? `<div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Row gap")}</span><div class="optwide">
+      <div class="numgrid">${numCell("lk_"+lookSheet+"_rgapx")}${numCell("lk_"+lookSheet+"_rgapy")}</div></div></div>` : ""}`; })()}
     ${sect("Shopping")}${/* v2.30: was "Sort" — the store, its order, its aisle map, and the sound and screen while you shop (Sound folded in) */""}
     ${rowNL(t("Location"), `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">${t("On")}</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">${t("Off")}</button></div>`)}
     <div class="optrow optrow-wide optnl"><span class="optlabel">${t("Store")}</span><div class="optwide">
@@ -8264,15 +8295,17 @@ function editSheet(){
     ${/* v2.70: the last price sits in the title row; the flags move down to just above the buttons */""}
     ${/* v2.71: the Note moves up to right below the title; "Measure" is now "Unit" */""}
     <div class="edtitlerow"><input id="editName" class="edtitle" value="${esc(editing.name)}" aria-label="${t("Item name")}" />${priceLine(editing.name, { compact:true, note:editing.note||"" })}</div>
-    ${noteSecHTML(editing.note||"", editing.name, { input:'id="editNote"', chip:"data-en-chip" })}
-    <div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button id="qMinus" aria-label="${t("Less")}">−</button><span>${editing.qty||1}</span><button id="qPlus" aria-label="${t("More")}">+</button></span></div>
-    <button class="editsec" data-w-open="edit" aria-expanded="${wOpen==="edit"}"><span class="editsec-l">${t("Unit")}</span><span class="editsec-v"><span class="edval">${esc(editing.weight||t("Unit"))} <span class="editsec-ch">${wOpen==="edit"?'▾':'▸'}</span></span></span></button>
-    ${weightChips("edit", editing.weight)}
-    <button class="editsec" id="ecHead"><span class="editsec-l">${t("Category")}</span><span class="editsec-v"><span class="edval">${selCat?`${catIcon(selCat,14)} ${esc(catLabel(selCat))}`:'—'} <span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></span></button>
-    ${editCatOpen ? `<div class="edchips">${chipsHTML(editing.cat)}<button class="catchip" id="ecAddCat" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}
+    <div class="edrows">${/* v2.74: the rows, each with its open choices, in a cell — Customise the look › Sheets › Layout lays them out */""}
+    <div class="edcell" data-row="note">${noteSecHTML(editing.note||"", editing.name, { input:'id="editNote"', chip:"data-en-chip" })}</div>
+    <div class="edcell" data-row="qty"><div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button id="qMinus" aria-label="${t("Less")}">−</button><span>${editing.qty||1}</span><button id="qPlus" aria-label="${t("More")}">+</button></span></div></div>
+    <div class="edcell" data-row="unit"${wOpen==="edit"?' data-open="1"':''}><button class="editsec" data-w-open="edit" aria-expanded="${wOpen==="edit"}" aria-label="${t("Unit")}"><span class="editsec-l">${t("Unit")}</span><span class="editsec-v"><span class="edval">${esc(editing.weight||t("Unit"))} <span class="editsec-ch">${wOpen==="edit"?'▾':'▸'}</span></span></span></button>
+    ${weightChips("edit", editing.weight)}</div>
+    <div class="edcell" data-row="cat"${editCatOpen?' data-open="1"':''}><button class="editsec" id="ecHead" aria-label="${t("Category")}"><span class="editsec-l">${t("Category")}</span><span class="editsec-v"><span class="edval">${selCat?`${catIcon(selCat,14)} ${esc(catLabel(selCat))}`:'—'} <span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></span></button>
+    ${editCatOpen ? `<div class="edchips">${chipsHTML(editing.cat)}<button class="catchip" id="ecAddCat" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}</div>
     ${isItem ? (()=>{ const ws=rcSavedStores(), w=editing.where||"", wl=whereIds({ where:w }), cur=whereNames(wl).join(", ");
-      return `<button class="editsec" id="ewHead"><span class="editsec-l">${t("Where to buy")}</span><span class="editsec-v"><span class="edval">${esc(cur||t("Anywhere"))} <span class="editsec-ch">${editWhereOpen?'▾':'▸'}</span></span></span></button>
-      ${editWhereOpen ? `<div class="edchips"><button class="catchip" data-ew="" style="${!w?'background:var(--btn);border-color:var(--btn);color:#fff':''}">${t("Anywhere")}</button>${ws.map(s=>`<button class="catchip" data-ew="${esc(s.id)}" style="${wl.includes(s.id)?'background:var(--btn);border-color:var(--btn);color:#fff':''}" aria-pressed="${wl.includes(s.id)}">${esc(s.name)}</button>`).join("")}</div>` : ""}`; })() : ""}
+      return `<div class="edcell" data-row="where"${editWhereOpen?' data-open="1"':''}><button class="editsec" id="ewHead" aria-label="${t("Where to buy")}"><span class="editsec-l">${t("Where to buy")}</span><span class="editsec-v"><span class="edval">${esc(cur||t("Anywhere"))} <span class="editsec-ch">${editWhereOpen?'▾':'▸'}</span></span></span></button>
+      ${editWhereOpen ? `<div class="edchips"><button class="catchip" data-ew="" style="${!w?'background:var(--btn);border-color:var(--btn);color:#fff':''}">${t("Anywhere")}</button>${ws.map(s=>`<button class="catchip" data-ew="${esc(s.id)}" style="${wl.includes(s.id)?'background:var(--btn);border-color:var(--btn);color:#fff':''}" aria-pressed="${wl.includes(s.id)}">${esc(s.name)}</button>`).join("")}</div>` : ""}</div>`; })() : ""}
+    </div>
     ${isItem ? `<div class="edchips edflags" style="flex-wrap:nowrap">${[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If discounted")}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}
     <div style="display:flex;gap:8px;margin-top:16px">
       <button id="delBtn" style="${btnDelStyle}">${TRASH_SVG(17)}${t("Delete")}</button>
