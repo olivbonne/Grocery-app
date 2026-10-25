@@ -127,3 +127,45 @@ architecture review at v2.38 — over two hundred releases in.*
 36. **A slow check is not always a slow app.** A test group that took 18 minutes instead of 7 spent the
     difference downloading system packages before any test ran. Read where the time went before "fixing"
     the code.
+
+## 10. Bugs fixed in v2.71–v2.77, and the guard for each (October 2026)
+
+*Added 25 October 2026 at the owner's request: every fix of something broken ends with a lesson here — what went wrong,
+the rule, and the guard (a test, a check or a habit) that stops it happening again. Bugs only: a change of layout or look
+the household asked for is not a lesson.*
+
+37. **A first launch can reload before the app is ready, so anything "fresh install" must survive one reload.** The settings
+    copy in the account was never applied on a new phone: the slot migration reloads the page once at first launch, and the
+    "this phone is fresh" flag was computed again after the reload, when it was no longer true (v2.71). *Guard:* keep such a
+    flag in sessionStorage for the session, and test the fresh-phone path with a profile that has nothing stored at all.
+38. **Never put a statement at the end of a line that ends in a `//` comment.** `n++` slid into a trailing comment, so the
+    receipt toast said "Saved 0 prices" for weeks (fixed v2.72). *Guard:* a toast or count that reports work done gets a test
+    that checks its number, not just that it appears.
+39. **A guard tied to a clock fails on a slower machine; tie it to the event itself.** "Ignore a tap on the cart within 700 ms
+    of a tick" swallowed a deliberate tap in an older test, and 400 ms still did on GitHub's slower runners (v2.72). The list
+    only moves while the cart slides in, so the guard follows that animation. *Guard:* when a fix contains a number of
+    milliseconds, ask what event the number stands for, and use the event.
+40. **A menu or sheet that grows needs to scroll.** Adding a Store row pushed "Report a problem" below the screen, unreachable
+    (v2.72). *Guard:* every panel with a fixed position gets `max-height` + `overflow-y:auto` when it is built, and a suite that
+    adds rows to one taps its last item.
+41. **A layout rule that sets `display` overrides the element's own hidden state.** The Choices grid (`display:grid`) made the
+    note's suggestions, hidden until focus, show all the time (v2.74). *Guard:* layout rules name the containers they mean
+    (`:not(.ednotechips)`), and a suite checks that something meant to be hidden stays hidden with the new setting on.
+42. **Moving data into new records also moves deletion.** Once prices and spending lived as records, "Forget every price" and
+    "Empty this list" only cleared one phone; the next sync brought everything back (caught in review, v2.75). Deletes need a
+    record of their own — a tombstone, or a "cleared at" time every phone honours. *Guard:* when data changes shape, list every
+    action that removes it (forget, empty, restore, undo) and test each across two phones.
+43. **A new field must never reach the database before the rules that allow it.** Writing `clr` on every save would have made
+    the live rules refuse every list save until the owner published new ones (caught before release, v2.75). *Guard:* a new field
+    is written only once it is needed (`clr` only after a clear), and the release waits for the owner to publish the rules.
+44. **A test's "newer version" must be newer than the app.** Two suites used v4 as "a list from a newer app"; when v2.75 made 4
+    the app's own version they failed (v2.75). *Guard:* such tests use `LIST_V + 1`, not a literal.
+45. **Re-rendering a sheet replays its entrance and resets its scroll.** Every pick in Edit item rebuilt the sheet, which slid
+    in again, jumped to the top and shrank when a list closed — "the sheet jumps up and down" (fixed v2.77). *Guard:* render keeps
+    an open sheet still (no animation, same scroll, never shorter while open), and a suite checks the sheet's top edge before and
+    after a pick.
+46. **A fixed-height box must budget every line it holds, and its text must not shrink.** At 3 lines, a tile with a two-line
+    note and an amount squashed its name below one line, so "Milk" was cut through the middle (caught before release, v2.78).
+    The clamps had counted the amount but not the note's own lines, and flex shrank the name to make room. *Guard:* the name
+    never shrinks (`flex-shrink:0`), the note is clamped too, and the suite checks that every name shows a whole number of lines
+    and nothing leaves its tile, at 3, 4 and 8 lines and square.

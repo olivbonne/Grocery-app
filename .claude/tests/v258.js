@@ -19,6 +19,7 @@
 const fs = require('fs'), path = require('path');
 const { chromium } = require(require.resolve('playwright', { paths: [__dirname, '/opt/node22/lib/node_modules', '/tmp'] }));
 const ROOT = path.resolve(__dirname, '..', '..');
+const NEWER_V = +fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8').match(/const LIST_V = (\d+);/)[1] + 1;   // v2.78 (lesson 44): "a newer app" is always one past the app's own version, never a literal
 const results=[]; const ok=(n,c,x)=>results.push([n,!!c,x===undefined?'':String(x)]);
 const FSTUB = `const S = window.__srv || (window.__srv = { docs:{}, subs:[], writes:[], refuse:false });
 S.subs = [];
@@ -135,9 +136,9 @@ const seed = (o) => { o=o||{}; return `(() => {
     /* 6 ─ a newer app's list */
     /* SUPERSEDED by v2.75: version 4 is this app's own now (Regulars, prices and spending as records), so the "newer app"
        is v5. Still protected: a list from a newer app is never written over, and says "Update now". */
-    await mk({ srv:{ "lists/v101": DOC({ v:5 }) } });
+    await mk({ srv:{ "lists/v101": DOC({ v:NEWER_V }) } });
     s = await srv();
-    ok('a list saved by a newer app (v5) is never written over: "Update now"', (await page.locator('#newerNote').count())===1 && s.writes.filter(x=>/^lists\/v101/.test(x.path)).length===0, JSON.stringify(s.writes.map(x=>x.path)));
+    ok('a list saved by a newer app (LIST_V+1) is never written over: "Update now"', (await page.locator('#newerNote').count())===1 && s.writes.filter(x=>/^lists\/v101/.test(x.path)).length===0, JSON.stringify(s.writes.map(x=>x.path)));
 
 
     /* 7 ─ tiles: a phone on small tiles (variable) moves to the same look, once */
