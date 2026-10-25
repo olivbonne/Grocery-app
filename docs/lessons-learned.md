@@ -164,3 +164,8 @@ the household asked for is not a lesson.*
     in again, jumped to the top and shrank when a list closed — "the sheet jumps up and down" (fixed v2.77). *Guard:* render keeps
     an open sheet still (no animation, same scroll, never shorter while open), and a suite checks the sheet's top edge before and
     after a pick.
+46. **A fixed-height box must budget every line it holds, and its text must not shrink.** At 3 lines, a tile with a two-line
+    note and an amount squashed its name below one line, so "Milk" was cut through the middle (caught before release, v2.78).
+    The clamps had counted the amount but not the note's own lines, and flex shrank the name to make room. *Guard:* the name
+    never shrinks (`flex-shrink:0`), the note is clamped too, and the suite checks that every name shows a whole number of lines
+    and nothing leaves its tile, at 3, 4 and 8 lines and square.

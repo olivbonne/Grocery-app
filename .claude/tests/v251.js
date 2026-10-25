@@ -15,6 +15,7 @@
 const fs = require('fs'), path = require('path');
 const { chromium } = require(require.resolve('playwright', { paths: [__dirname, '/opt/node22/lib/node_modules', '/tmp'] }));
 const ROOT = path.resolve(__dirname, '..', '..');
+const NEWER_V = +fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8').match(/const LIST_V = (\d+);/)[1] + 1;   // v2.78 (lesson 44): "a newer app" is always one past the app's own version, never a literal
 const results=[]; const ok=(n,c,x)=>results.push([n,!!c,x===undefined?'':String(x)]);
 /* Firestore: the test pushes snapshots by hand (window.__push) and every write of the list is recorded */
 const FSTUB = `export const initializeApp=()=>({});export const getFirestore=()=>({});
@@ -125,7 +126,7 @@ async function mergeChecks(ok, ROOT, fs, path){
 
     /* a list from a newer app */
     await mk(ITEMS, { mv:2 });
-    await push(DOC(ITEMS, { v:5 }));   // SUPERSEDED by v2.58: 3 is a split list now; a newer app is 4. SUPERSEDED by v2.75: 4 is this app's (Regulars, prices and spending as records); a newer app is 5
+    await push(DOC(ITEMS, { v:NEWER_V }));   // SUPERSEDED by v2.58: 3 is a split list now; a newer app is 4. SUPERSEDED by v2.75: 4 is this app's (Regulars, prices and spending as records); a newer app is 5
     ok('a list saved by a newer app (v3) is not overwritten: "Update now"', await page.locator('#newerNote').count()===1, '');
 
     const rules = fs.readFileSync(path.join(ROOT,'firebase','firestore.rules'),'utf8');

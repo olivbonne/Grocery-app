@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.77";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.77";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.77";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.77";
-import { compareStores, worthIt } from "./compare.js?v=2.77";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.77";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.77";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.77";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.77";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.77";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.77";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.77";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.77";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.77";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.78";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.78";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.78";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.78";
+import { compareStores, worthIt } from "./compare.js?v=2.78";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.78";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.78";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.78";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.78";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.78";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.78";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.78";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.78";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.78";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.77";
+const APP_VERSION = "v2.78";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -827,7 +827,7 @@ function applyTheme(){ _cardHexMemo=null; const t = THEMES[theme] || THEMES.ligh
        with the Settings swatches, so it must mean the same thing in both places. */
     (typeof wall!=="undefined" && wall && isTintWall(wall)) ? "luminosity, normal" : "normal");
   if(typeof fill!=="undefined") applyFill();
-  applyIcoSize(); applyLineW(); }
+  applyIcoSize(); applyLineW(); applyTileLines(); }
 function setTheme(v){ v = normTheme(v); if(!THEMES[v]) return; theme = v; localStorage.setItem("ml_theme", theme); applyTheme(); render(); }
 function toggleTheme(){ setTheme(theme==="dark" ? "light" : "dark"); }   // kept for back-compat
 /* v1.41 item 2: three looks now — full (solid category colour), accent (transparent + coloured left
@@ -850,6 +850,15 @@ function setFill(m){ fill=m; localStorage.setItem("ml_fill", m); applyFill(); re
    data-fill; the stylesheet does the rest. No const here: applyTheme() runs this at boot. */
 function icoSize(){ try{ const v=localStorage.getItem("ml_icosize"); return /^(s|m|l|xl)$/.test(v||"") ? v : "s"; }catch(e){ return "s"; } }
 function applyIcoSize(){ try{ document.documentElement.setAttribute("data-icosize", icoSize()); }catch(e){} }
+/* v2.78: how tall a tile is — "" variable (the v2.16 floor, the default), "3"…"8" a fixed number of text lines (syncTileH
+   measures one probe tile of that many lines into --tileh-fixed), or "sq" as tall as it is wide. A LOOK, like the icon size,
+   so it is deliberately NOT in APP_EXCLUDE. Published on <html> as data-tilelines only when set; the one-line layouts
+   (.linelist, .largevar) ignore it in the stylesheet. No const here: applyTheme() runs this at boot. */
+function tileLines(){ try{ const v=localStorage.getItem("ml_tilelines")||""; return /^([3-8]|sq)$/.test(v) ? v : ""; }catch(e){ return ""; } }
+function applyTileLines(){ try{ const v=tileLines(), h=document.documentElement; if(v) h.setAttribute("data-tilelines", v); else h.removeAttribute("data-tilelines"); }catch(e){} }
+function setTileLines(v){ v=String(v||""); try{ if(/^([3-8]|sq)$/.test(v)) localStorage.setItem("ml_tilelines", v); else localStorage.removeItem("ml_tilelines"); }catch(e){} applyTileLines(); render(); }
+function tileLinesBtns(attr){ return [3,4,5,6,7,8].map(n=>`<button class="colbtn ${tileLines()===String(n)?'on':''}" ${attr}="${n}">${n}</button>`).join("")
+  +`<button class="colbtn ${tileLines()===''?'on':''}" ${attr}="" aria-label="${t("Variable height")}">↔</button><button class="colbtn ${tileLines()==='sq'?'on':''}" ${attr}="sq" aria-label="${t("Square")}">□</button>`; }
 function setIcoSize(v){ try{ localStorage.setItem("ml_icosize", /^(s|m|l|xl)$/.test(v||"") ? v : "s"); }catch(e){} applyIcoSize(); render(); }
 /* v2.08: how heavy the drawn lines are — fine, thin, regular (the v2.04 weight) or bold. A LOOK, like the
    icon size, so it is deliberately NOT in APP_EXCLUDE. */
@@ -4377,7 +4386,8 @@ function watchZoomer(z){ if(!z || typeof ResizeObserver==="undefined" || _zoomEl
    weight, fill, tile width or the fonts arriving. A tap that only moves or folds tiles measures nothing.
    (One stand-in probe tile, "Milk 2×", was tried first: in three columns most names take two lines, and the
    categories came out at different heights.) The cart is its own group, as it was in v2.11. */
-const _tileSig = {}, _tileNat = {};
+const _tileSig = {}, _tileNat = {}, _tileFix = {}, _tileFixSig = {};
+function full_lines(z){ return z.classList.contains("linelist") || z.classList.contains("largevar"); }   // v2.78: the one-line layouts ignore the height setting
 function tileKey(p){ return (p.classList.contains("done") ? "d" : "") + "|" + p.querySelectorAll(".pemoji,.pmark,.penddot").length + "|" + p.textContent; }
 function syncTileH(){ try{
   const h=document.documentElement;
@@ -4389,7 +4399,7 @@ function syncTileH(){ try{
     const grid=z.classList.contains("gridmode"), full=grid || z.classList.contains("linelist");
     const w=grid ? tiles[0].offsetWidth : tiles[0].parentElement.clientWidth;
     const sig=[z.className, h.getAttribute("data-icosize"), h.getAttribute("data-theme"), h.getAttribute("data-linew"), h.getAttribute("data-tilebg"),
-      document.body.className, fillMode(), itemEmojiOn(), iconStyle(), w, document.fonts ? document.fonts.status : ""].join("|");
+      document.body.className, fillMode(), itemEmojiOn(), iconStyle(), w, document.fonts ? document.fonts.status : "", tileLines()].join("|");
     if(_tileSig[v]!==sig || _tileNat[v].size>2000){ _tileSig[v]=sig; _tileNat[v]=new Map(); }   // a new layout, or a long day of edits
     const nat=_tileNat[v], keys=tiles.map(tileKey), miss=new Map();
     keys.forEach((k,i)=>{ if(!nat.has(k) && !miss.has(k)) miss.set(k, tiles[i]); });
@@ -4404,6 +4414,22 @@ function syncTileH(){ try{
     }
     const hs=keys.map(k=>nat.get(k)).sort((a,b)=>a-b), base=hs[Math.floor(0.9*(hs.length-1))]||0;
     if(base>0 && h.style.getPropertyValue(v)!==base+"px") h.style.setProperty(v, base+"px");
+    /* v2.78: a fixed number of lines — ONE probe tile, a copy of a real tile of this layout (its icon and marks kept),
+       its note and amount taken out and its name N lines of "Ag", unclamped. Measured once per layout signature
+       (tileLines() is in it); the main list and the cart each get their own. */
+    const nl=tileLines(), fv=v+"-fixed";
+    if(/^[3-8]$/.test(nl) && !full_lines(z)){
+      if(_tileFix[fv]===undefined || _tileFixSig[fv]!==sig){
+        const host=document.createElement("div"); host.className="tileprobe"; host.setAttribute("aria-hidden","true");
+        host.style.cssText="position:absolute;left:0;top:0;width:"+Math.max(40, w)+"px;visibility:hidden;pointer-events:none;display:flex;flex-direction:column;align-items:stretch";
+        const c=tiles[0].cloneNode(true); c.classList.remove("justpop","hasnote");
+        c.querySelectorAll(".pnote,.pill-meta").forEach(e=>e.remove());
+        c.style.height="auto"; c.style.minHeight="0"; c.style.aspectRatio="auto";
+        const pn=c.querySelector(".pname"); if(pn){ pn.innerHTML=Array.from({length:+nl},()=>"Ag").join("<br>"); pn.style.webkitLineClamp="unset"; pn.style.display="block"; }
+        host.appendChild(c); z.appendChild(host); _tileFix[fv]=c.offsetHeight; _tileFixSig[fv]=sig; host.remove();
+      }
+      if(_tileFix[fv]>0 && h.style.getPropertyValue(fv)!==_tileFix[fv]+"px") h.style.setProperty(fv, _tileFix[fv]+"px");
+    }
   });
 }catch(e){} }
 function syncZoomHeight(){ syncTileH(); const z=document.getElementById("zoomer"); const bb=document.getElementById("bottomnav"); const tf=document.getElementById("topfix");
@@ -5847,6 +5873,7 @@ function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRe
   return `<div class="smbg" id="smBg"><div class="smenu" id="shopMenuEl" role="menu" aria-label="${t("More")}">
     ${/* v2.72: choose the shop here, as Settings › Shopping › Store does — the menu stays open */""}<div class="smtiles smtext"><span class="smtlabel">${t("Store")}</span><div class="smcols smstores">${[{id:"auto",name:t("Auto-detect")},{id:"home",name:t("Home")},...STORES.filter(s=>!storeOverride(s.id).hidden).map(s=>storeById(s.id)),...(state.stores||[]).filter(s=>!storeOverride(s.id).hidden),{id:"other",name:t("Other")}].filter(Boolean).map(s=>`<button class="colbtn ${storeSel===s.id?'on':''}" data-sm-store="${esc(s.id)}">${esc(s.name)}</button>`).join("")}<button class="colbtn smadd" data-sm-storeadd>${t("＋ New shop")}</button></div>${smStoreAdding?`<div class="smaddrow"><input id="smStoreName" placeholder="${t("Shop name")}" aria-label="${t("Shop name")}" autocomplete="off" /><button class="colbtn" id="smStoreAddGo" style="width:auto;padding:0 12px">${t("Add")}</button></div>`:""}</div>
     <div class="smtiles"><span class="smtlabel">${t("Tiles")}</span><div class="smcols">${[1,2,3,4,5,6].map(n=>`<button class="colbtn ${largeCols()===n?'on':''}" data-sm-cols="${n}">${n}</button>`).join("")}<button class="colbtn ${largeCols()===0?'on':''}" data-sm-cols="0" aria-label="${t("Variable width — tiles size to the word")}">↔</button></div></div>
+    ${/* v2.78: tile height, under Tiles — the menu stays open */""}<div class="smtiles"><span class="smtlabel">${t("Height")}</span><div class="smcols">${tileLinesBtns("data-sm-lines")}</div></div>
     ${/* v2.63 item C: Text size, as in Settings — the menu stays open */""}<div class="smtiles smzoom"><span class="smtlabel">${t("Text size")}</span><div class="smcols"><button class="colbtn" data-sm-zoom="-1" aria-label="${t("Smaller text")}">−</button><span class="smzpct">${Math.round(dens()*100)}%</span><button class="colbtn" data-sm-zoom="1" aria-label="${t("Larger text")}">+</button></div></div>
     ${/* v2.68 (the household): Theme, Group by category and Sort, as in Settings — the menu stays open */""}<div class="smtiles smtext"><span class="smtlabel">${t("Theme")}</span><div class="smcols"><button class="colbtn ${theme==='light'?'on':''}" data-sm-theme="light">${t("Light")}</button><button class="colbtn ${theme==='dark'?'on':''}" data-sm-theme="dark">${t("Dark")}</button></div></div>
     <div class="smtiles smtext"><span class="smtlabel">${t("Group by category")}</span><div class="smcols"><button class="colbtn ${catOn?'on':''}" data-sm-caton="1">${t("On")}</button><button class="colbtn ${!catOn?'on':''}" data-sm-caton="0">${t("Off")}</button></div></div>
@@ -5902,7 +5929,8 @@ function wireShopMenu(){
   on("smOcc", () => { occSheet = { mode:"add" }; render(); });
   on("smCard", () => { const c = cardHere().c || cardsGet()[0]; cardShow = c ? { id:c.id } : { add:true }; render(); });   // v2.35: the shop you are at, else the first; none yet → straight to adding one
   on("smReport", () => { rpt = { kind:"broken", text:"", diag:true }; render(); });
-  app.querySelectorAll("[data-sm-cols]").forEach(c => c.onclick = () => setLargeCols(+c.dataset.smCols));   // v2.58: the menu stays open, re-drawn with the new choice
+  app.querySelectorAll("[data-sm-cols]").forEach(c => c.onclick = () => setLargeCols(+c.dataset.smCols));
+  app.querySelectorAll("[data-sm-lines]").forEach(c => c.onclick = () => setTileLines(c.dataset.smLines));   // v2.78: the menu stays open, like Tiles
   app.querySelectorAll("[data-sm-zoom]").forEach(c => c.onclick = () => setDensity(dens() + 0.1 * (+c.dataset.smZoom)));   // v2.63: as #optZoomMinus/#optZoomPlus; setDensity re-renders, the menu stays open
   /* v2.68: each re-renders with the menu still open (shopMenuOpen is left true) */
   app.querySelectorAll("[data-sm-theme]").forEach(c => c.onclick = () => { if(theme !== c.dataset.smTheme) setTheme(c.dataset.smTheme); });
@@ -7231,6 +7259,7 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-sort]").forEach(b=>b.onclick=()=>setSort(b.dataset.optSort));
   app.querySelectorAll("[data-tiledisp]").forEach(b=>b.onclick=()=>setDispBase(b.dataset.tiledisp));   // v1.29 sets the display base only; grouping is separate
   app.querySelectorAll("[data-opt-cols]").forEach(b=>b.onclick=()=>setLargeCols(+b.dataset.optCols));
+  app.querySelectorAll("[data-opt-lines]").forEach(b=>b.onclick=()=>setTileLines(b.dataset.optLines));   // v2.78
   app.querySelectorAll("[data-opt-accent]").forEach(b=>b.onclick=()=>setAccent(b.dataset.optAccent));
   app.querySelectorAll("[data-opt-textcol]").forEach(b=>b.onclick=()=>setTextCol(b.dataset.optTextcol));
   app.querySelectorAll("[data-opt-tilebg]").forEach(b=>b.onclick=()=>setTileBg(b.dataset.optTilebg));
@@ -8126,6 +8155,7 @@ function optionsBody(){
         <div class="dispcols">${[1,2,3,4,5,6].map(n=>`<button class="colbtn ${dispBase()==='large'&&largeCols()===n?'on':''}" data-opt-cols="${n}">${n}</button>`).join("")}<button class="colbtn ${dispBase()==='large'&&largeCols()===0?'on':''}" data-opt-cols="0" title="${t("Variable width — tiles size to the word")}">↔</button></div>
         </div>
       </div></div></div>
+    ${/* v2.78: tile height, next to the columns */""}<div class="optrow optrow-wide optnl"><span class="optlabel">${t("Tile height")}</span><div class="optwide"><div class="dispcols">${tileLinesBtns("data-opt-lines")}</div></div></div>
     ${rowNL(t("Group by category"), `<div class="seg"><button data-opt-caton="1" class="${catOn?'on':''}">${t("On")}</button><button data-opt-caton="0" class="${!catOn?'on':''}">${t("Off")}</button></div>`)}
     ${catOn ? rowNL(t("Group by subcategory"), `<div class="seg"><button data-opt-subon="1" class="${subOn?'on':''}">${t("On")}</button><button data-opt-subon="0" class="${!subOn?'on':''}">${t("Off")}</button></div>`) : ""}` : ""}
     ${row(t("Item icons"), `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">${iconStyle()==="drawn"?illSVG("bread"):"🍞"}</span>${t("On")}</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>${t("Off")}</button></div>`)}
