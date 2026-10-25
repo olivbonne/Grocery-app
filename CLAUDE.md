@@ -139,6 +139,9 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   not for strangers, growth or an app store (a key in a link, one big record, a limit counted on the phone…), tell the owner
   in that reply what would make it not good enough and what fixing it costs, and add it to the report's "Do later" list.
   Raise sign-in, data shape, target platforms and abuse cost before building, not when asked (`docs/lessons-learned.md` §8).
+- **Every fix of something broken ends with a lesson (standing user instruction, 2026-10-25).** Add it to
+  `docs/lessons-learned.md`: what went wrong, the rule, and the guard (a test, a check or a habit) that stops it happening
+  again — in the same PR as the fix. Read that file before planning a batch.
 - **Always end a task by reporting what each agent did** — which subagent made which changes, and
   what the main thread did.
 - Use `/release` for the bump → changelog → commit → PR → merge loop.
