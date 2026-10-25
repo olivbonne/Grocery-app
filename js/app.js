@@ -3791,7 +3791,7 @@ function tapNoScroll(el, fn){
    grid, the body scrolls to it, and nothing can be clipped by anything. */
 const WEIGHTS = ["","cup","tsp","Tbsp"];   // v2.76: the packs, grams, kilos and litres are counters (wCounters)   // v2.76: the 100g…10kg chips became the g / kg / L counters below
 /* v2.76: three counters under the Unit chips — g by 100 (100–2000), kg by 0.5 (0.5–20), L by 0.5 (0.5–10) */
-const WCOUNT = { pack:{ step:2, min:2, max:12 }, g:{ step:100, min:100, max:2000 }, kg:{ step:0.5, min:0.5, max:20 }, L:{ step:0.5, min:0.5, max:10 } };
+const WCOUNT = { pack:{ step:2, min:2, max:12 }, g:{ step:100, min:100, max:900 }, kg:{ step:0.5, min:0.5, max:20 }, L:{ step:0.5, min:0.5, max:10 } };
 function wParse(w){ const m=String(w||"").trim().match(/^(\d+(?:[.,]\d+)?)\s*(kg|g|l|pack)$/i); if(!m) return null;
   const u=m[2].toLowerCase(); return { n:parseFloat(m[1].replace(",",".")), u: u==="l" ? "L" : u }; }
 function wFmt(n, u){ return String(+n.toFixed(1)).replace(/\.0$/,"") + (u==="pack" ? " pack" : u); }   // v2.76: "6 pack", as the old chips wrote it

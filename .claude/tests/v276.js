@@ -3,7 +3,7 @@
    a Regular not on the list has Where to buy, Urgent and If on sale, carried onto the list when it is added.
 
    WHAT THESE CHECKS HAVE TO PROVE:
-   - the Unit choices are Unit / cup / tsp / Tbsp, then four counters: Pack 2–12 in twos, g by 100, kg and L by 0.5; a tap
+   - the Unit choices are Unit / cup / tsp / Tbsp, then four counters: Pack 2–12 in twos, g by 100 to 900, kg and L by 0.5; a tap
      sets the amount and the choices stay open; "500g" already on an item shows in the g counter;
    - the flag reads "If on sale";
    - with Rows 2, opening Unit leaves its row where it was (Quantity and Unit stay side by side), the choices below;
@@ -63,6 +63,8 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     ok('…"500g" already on the item shows in the g counter', await val('g')==='500g', await val('g'));
     await page.locator('#sheet [data-wstep="edit|g|+1"]').click(); await page.waitForTimeout(300);
     ok('…+ on g makes it 600g, and the choices stay open', await val('g')==='600g' && await page.locator('#sheet .wgrid').count()===1, await val('g'));
+    for(let k=0;k<5;k++){ await page.locator('#sheet [data-wstep="edit|g|+1"]').click(); await page.waitForTimeout(150); }
+    ok('…grams stop at 900', await val('g')==='900g', await val('g'));
     await page.locator('#sheet [data-wstep="edit|pack|+1"]').click(); await page.waitForTimeout(300);
     await page.locator('#sheet [data-wstep="edit|pack|+1"]').click(); await page.waitForTimeout(300);
     ok('Pack counts in twos from 2 ("4 pack" after two taps), and the g counter empties', await val('pack')==='4 pack' && await val('g')==='—', (await val('pack'))+' / '+(await val('g')));
@@ -115,6 +117,11 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     c = await page.evaluate(()=>JSON.parse(localStorage.getItem('ml_cache_v101')));
     const ri = (c.items||[]).find(i=>i.name==='Rice');
     ok('…and added to the list, it comes Urgent, for that shop', ri && (ri.tags||[]).includes('urgent') && ri.where==='cdan', JSON.stringify(ri));
+
+    /* 5b. a note is centred on its tile */
+    await mk({ doc:D({ items:[it("1","Yogurt","dairy",{ note:"greek, high protein" }), it("2","Milk","dairy",{ note:"soy" })] }), extra:'localStorage.setItem("ml_nosmall","1"); localStorage.setItem("ml_largecols","2");' });
+    const al = await page.evaluate(()=>[...document.querySelectorAll('.shop .pill .pnote')].map(n=>getComputedStyle(n).textAlign));
+    ok('an item\'s note is centred on its tile', al.length>=2 && al.every(a=>a==='center'), JSON.stringify(al));
 
     /* 5. the ⋯ menu's shop list */
     const many = Array.from({length:16},(_,i)=>({ id:'c'+i, name:'Shop number '+(i+1), aisles:[] }));

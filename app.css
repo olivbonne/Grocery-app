@@ -824,7 +824,7 @@
   /* v2.22 a note, and which shop it is for, as a tile's last line — its own line in the row layouts; in the tile's own
      ink, a little quieter, so it reads on every fill */
   .pill .pnote { display:block; order:20; min-width:0; max-width:100%; font-size:13px; font-weight:600; color:inherit; opacity:.78;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3; text-align:left; }
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.3; text-align:center; }   /* v2.76 (the household): a note is always centred on its tile (the one-line layouts, where it follows the name, keep their own rule) */
   .shop .pill.done .pnote { text-decoration:none; }
   /* row layouts: wrap, so the note takes a line of its own under the icon and name */
   .pill.hasnote { flex-wrap:wrap; max-width:100%; }   /* the cap: a tile sized to its words would otherwise grow to a long note */
