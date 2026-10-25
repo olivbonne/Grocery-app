@@ -2147,7 +2147,9 @@ html[data-lk-edit-rows]:not([data-lk-edit-rows="v"]) [data-look="edit"] .edrows 
 html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) { display:contents; }
 html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > .editsec { min-width:0; }
 html[data-lk-edit-rows="v"] [data-look="edit"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > .editsec { flex:0 1 auto; max-width:100%; }
-html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > :is(.wgrid, .edchips) { grid-column:1/-1; flex-basis:100%; min-width:0; }
+/* v2.77: the open row's tile keeps its own width (.editsec is width:100% by default), so it stays on the line beside Quantity */
+html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > .editsec { width:auto; }
+html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > :is(.wgrid, .edchips) { grid-column:1/-1; flex-basis:100%; min-width:0; order:50; }   /* v2.77: an open list comes after every row tile, so no tile moves when it opens or closes */
 html[data-lk-edit-names="0"] [data-look="edit"] .edrows .editsec-l { display:none; }
 html[data-lk-edit-names="0"] [data-look="edit"] .edrows .editsec { justify-content:flex-start; }
 html[data-lk-edit-rgap]:not([data-lk-edit-rows]) [data-look="edit"] .edrows > .edcell + .edcell { margin-top:var(--lk-edit-rgapy, 10px); }
@@ -2171,7 +2173,8 @@ html[data-lk-smart-rows]:not([data-lk-smart-rows="v"]) [data-look="smart"] .edro
 html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) { display:contents; }
 html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > .editsec { min-width:0; }
 html[data-lk-smart-rows="v"] [data-look="smart"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > .editsec { flex:0 1 auto; max-width:100%; }
-html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > :is(.wgrid, .edchips) { grid-column:1/-1; flex-basis:100%; min-width:0; }
+html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > .editsec { width:auto; }
+html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > :is(.wgrid, .edchips) { grid-column:1/-1; flex-basis:100%; min-width:0; order:50; }   /* v2.77: an open list comes after every row tile, so no tile moves when it opens or closes */
 html[data-lk-smart-names="0"] [data-look="smart"] .edrows .editsec-l { display:none; }
 html[data-lk-smart-names="0"] [data-look="smart"] .edrows .editsec { justify-content:flex-start; }
 html[data-lk-smart-rgap]:not([data-lk-smart-rows]) [data-look="smart"] .edrows > .edcell + .edcell { margin-top:var(--lk-smart-rgapy, 10px); }
@@ -2233,7 +2236,14 @@ html[data-lk-smart-names="0"] [data-look="smart"] .edrows .ednote .ednotesel { j
 :is(html[data-lk-edit-rows="v"], html[data-lk-edit-chcols="v"]) [data-look="edit"] .edflags > .flagchip,
 :is(html[data-lk-smart-rows="v"], html[data-lk-smart-chcols="v"]) [data-look="smart"] .edflags > .flagchip { flex:0 0 auto; width:auto; }
 /* v2.76: the g / kg / L counters under the Unit chips — a full-width line each, the .eqty stepper */
-.wgrid > .wcount { grid-column:1/-1; flex:1 1 100% !important; width:100% !important; display:flex !important; align-items:center; justify-content:space-between; gap:10px; text-align:left !important; overflow:visible !important; white-space:normal !important; }
+/* v2.77 (the household): the counters flow with the chips — sized to their stepper, on the same lines ("variable" and the
+   default); in a 1–6 column Choices layout each takes a cell (two when the columns are narrow) */
+html .wgrid > .wcount.wcount { grid-column:auto; flex:0 0 auto !important; width:auto !important; display:inline-flex !important; align-items:center; gap:0; text-align:center !important; overflow:visible !important; white-space:nowrap !important; padding:0 !important; border:none !important; background:none !important; min-width:0; }
+:is(html[data-lk-edit-chcols="1"],html[data-lk-edit-chcols="2"],html[data-lk-edit-chcols="3"],html[data-lk-smart-chcols="1"],html[data-lk-smart-chcols="2"],html[data-lk-smart-chcols="3"]) .wgrid > .wcount.wcount { width:100% !important; }
+:is(html[data-lk-edit-chcols="4"],html[data-lk-edit-chcols="5"],html[data-lk-edit-chcols="6"],html[data-lk-smart-chcols="4"],html[data-lk-smart-chcols="5"],html[data-lk-smart-chcols="6"]) .wgrid > .wcount.wcount { width:100% !important; grid-column:span 2; }
+.wgrid > .wcount .eqty { width:100%; justify-content:space-between; }
+.wgrid > .wcount.on .wcount-v { font-weight:800; }
+.wgrid > .wcount:not(.on) .wcount-v { color:var(--muted); }
 .wcount .editsec-l, .wcount > span:first-child { font-weight:700; }
 .wcount .wcount-v { min-width:52px; }
 /* v2.76: one font size in the editors (--edfs); the name (.edtitle) stays bigger */
