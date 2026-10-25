@@ -93,7 +93,7 @@ const seed = (o) => `(() => {
     ok('the rules accept every field the app writes (listOk), and require it on create and update', allowed.length && !missing.length && /allow create: if[\s\S]{0,200}listOk\(request\.resource\.data\)/.test(rules) && /allow update: if[\s\S]{0,300}listOk\(request\.resource\.data\)/.test(rules), 'missing: '+missing.join(','));
     ok('…and v must be a whole number, the items a list of at most 3000', /d\.get\('v', 0\) is int/.test(rules) && /d\.get\('items', \[\]\)\.size\(\) <= 3000/.test(rules), '');
 
-    await mk({ items:[it("9","Eggs","dairy")], buyAgain:[], members:["O"], name:"Groceries", v:4, newField:{ a:1 } });   // SUPERSEDED by v2.58: the app knows 3 now (split lists), so "newer" is 4. Still protects: a newer app's data is never written over
+    await mk({ items:[it("9","Eggs","dairy")], buyAgain:[], members:["O"], name:"Groceries", v:5, newField:{ a:1 } });   // SUPERSEDED by v2.58: the app knows 3 now (split lists), so "newer" is 4. SUPERSEDED by v2.75: the app knows 4, so "newer" is 5. Still protects: a newer app's data is never written over
     await page.waitForTimeout(500);
     ok('a list saved by a NEWER app: the phone says so, with Update now', await page.locator('#newerNote').count()===1 && await page.locator('#newerReload').count()===1, '');
     await shot(page, out, 'newer');

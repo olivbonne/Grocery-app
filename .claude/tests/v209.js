@@ -114,7 +114,9 @@ const SEED = `(() => {
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-item.png') });
     await page.evaluate(()=>{ const b=document.querySelector('#sheetBg'); if(b) b.click(); }); await page.waitForTimeout(300);
     ok('the prices survive a reload', Object.keys((await cache()).prices||{}).length===2, '');
-    ok('the sync\'s state rebuild carries prices (the fixed-shape trap)', /prices:\s*d\.prices\s*\|\|\s*\{\}/.test(src), '');
+    /* SUPERSEDED by v2.75: once prices live in records, the rebuild keeps the listener's (moved("prices") ? state.prices : d.prices).
+       Still protected: the rebuild names prices, read from the record when not moved. */
+    ok('the sync\'s state rebuild carries prices (the fixed-shape trap)', /prices:\s*d\.prices\s*\|\|\s*\{\}/.test(src) || /prices:\s*moved\("prices"\)\s*\?[^:]+:\s*\(d\.prices\s*\|\|\s*\{\}\)/.test(src), '');
 
     /* ── D. the cap, and a server that says no ────────────────────────── */
     await tap('#setNav, #setNavP, #setNavS');

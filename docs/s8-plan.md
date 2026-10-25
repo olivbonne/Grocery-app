@@ -31,7 +31,9 @@ records under it too.
    stop writing ("Update now") — they cannot overwrite the new shape. Each phone also keeps its usual daily backup
    (Settings › Backups) and takes one just before the move. New rules for `items/{id}` are published **before** this
    release goes live.
-3. **v2.59+ — Regulars, prices and spending as records,** the same way (`parts` grows). These are what grow without limit.
+3. **v2.75 — Regulars, prices and spending as records (this release),** the same way (`parts` grows to
+   `["items","regulars","prices","spend"]`, `v:4`; phones on v2.58–v2.74 stop writing). These are what grow without limit.
+   Records are `regulars/{rid}`, `prices/{pid}` and `spend/{sid}`, never deleted; the old arrays stay frozen in the list record.
 4. **Later — tidy up.** Once every phone has run step 3 for a couple of weeks, the frozen arrays are cleared from the
    list record, which then stays small for good.
 

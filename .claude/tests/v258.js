@@ -133,9 +133,11 @@ const seed = (o) => { o=o||{}; return `(() => {
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-refused.png') });
 
     /* 6 ─ a newer app's list */
-    await mk({ srv:{ "lists/v101": DOC({ v:4 }) } });
+    /* SUPERSEDED by v2.75: version 4 is this app's own now (Regulars, prices and spending as records), so the "newer app"
+       is v5. Still protected: a list from a newer app is never written over, and says "Update now". */
+    await mk({ srv:{ "lists/v101": DOC({ v:5 }) } });
     s = await srv();
-    ok('a list saved by a newer app (v4) is never written over: "Update now"', (await page.locator('#newerNote').count())===1 && s.writes.filter(x=>/^lists\/v101/.test(x.path)).length===0, JSON.stringify(s.writes.map(x=>x.path)));
+    ok('a list saved by a newer app (v5) is never written over: "Update now"', (await page.locator('#newerNote').count())===1 && s.writes.filter(x=>/^lists\/v101/.test(x.path)).length===0, JSON.stringify(s.writes.map(x=>x.path)));
 
 
     /* 7 ─ tiles: a phone on small tiles (variable) moves to the same look, once */

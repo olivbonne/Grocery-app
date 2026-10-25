@@ -159,7 +159,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 
     const src = fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8'), sw = fs.readFileSync(path.join(ROOT,'sw.js'),'utf8');
     ok('the sync\'s rebuild, the backup and the restore all name the log (the fixed-shape trap)',
-       /spend:\s*Array\.isArray\(d\.spend\)/.test(src) && /spend:\s*Array\.isArray\(s\.spend\)/.test(src) && /state\.spend\s*=\s*list\.spend/.test(src) && (src.match(/templates:\[\], spend:\[\][,} ]/g)||[]).length===2   /* SUPERSEDED by v2.26: the literals go on past spend:[] (looks, …); still protects that both name it */, '');
+       /* SUPERSEDED by v2.75: the rebuild reads d.spend only when spending has not moved to records */ /spend:\s*(moved\("spend"\)[\s\S]{0,90}?\()?Array\.isArray\(d\.spend\)/.test(src) && /spend:\s*Array\.isArray\(s\.spend\)/.test(src) && /state\.spend\s*=\s*list\.spend/.test(src) && (src.match(/templates:\[\], spend:\[\][,} ]/g)||[]).length===2   /* SUPERSEDED by v2.26: the literals go on past spend:[] (looks, …); still protects that both name it */, '');
     ok('js/spend.js is imported versioned and precached', /from "\.\/spend\.js\?v=[\d.]+"/.test(src) && /"\/js\/spend\.js\?v=[\d.]+"/.test(sw), '');
   } catch(e){ ok('suite ran to the end', false, e.message.slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));
