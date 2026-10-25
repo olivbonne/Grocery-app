@@ -47,6 +47,16 @@ and waits: the list stays exactly as it was, in one record, and the app tries ag
 breaks. To check, open the Sandbox list on a phone on v2.58, then in the console look at Firestore › `lists` › `<code>`:
 an `items` collection appears under it, and the list record shows `parts` `["items"]` and `v` `3`.
 
+## v2.75 — Regulars, prices and spending as records (S8 step 3)
+The v2.75 rules add `lists/{code}/regulars/{rid}`, `prices/{pid}` and `spend/{sid}` (one record each, read and written by the
+list's people, never deleted — a removed Regular is the record `{k, gone}`), and refuse writing a `v` 4 list back as 3 or
+lower. The list record may also carry `clr` — when prices and spending were last cleared ("Forget every price", "Empty this
+list"), so records from before are ignored on every phone. **Publish them BEFORE the v2.75 release goes live.** Until they are published, the move is simply refused and waits:
+the list stays exactly as it was (items as records, the rest in the one record, `v` 3), and the app tries again the next time
+it is opened — nothing breaks. To check, open the Sandbox list on a phone on v2.75 (one that has Regulars, prices or
+spending), then in the console look at Firestore › `lists` › `<code>`: `regulars`, `prices` and `spend` collections appear
+under it, and the list record shows `parts` `["items","regulars","prices","spend"]` and `v` `4`.
+
 ## Publishing (about five minutes)
 1. Open the [Firebase console](https://console.firebase.google.com/) → the Market List project → **Firestore Database** → **Rules**.
 2. **Copy what is there now** into a note first, so you can put it back.

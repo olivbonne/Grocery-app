@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.74";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.74";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.74";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.74";
-import { compareStores, worthIt } from "./compare.js?v=2.74";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.74";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.74";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.74";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.74";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.74";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.74";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.74";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.74";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.74";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.75";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.75";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.75";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.75";
+import { compareStores, worthIt } from "./compare.js?v=2.75";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.75";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.75";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.75";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.75";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.75";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.75";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.75";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.75";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.75";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.74";
+const APP_VERSION = "v2.75";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -1858,7 +1858,7 @@ function switchList(code){ const wasPlan = (view==="plan"); listsOpen=false; if(
   reloadLearn();
   try{ collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}'); }catch(e){ collapse={cats:[],ba:false}; }
   collapse.checked = false;   // v2.10: the cart always opens folded; a tap unfolds it for the session
-  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[], looks:{}, aislemap:{}, itemTomb:{}, parts:[], mv:0 };
+  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[], looks:{}, aislemap:{}, itemTomb:{}, parts:[], clr:{}, mv:0 };
   try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state=c; dropTube(); aiAdopt(); } }catch(e){}
   resetItemSigs();
   if(!state.purch || typeof state.purch!=="object") state.purch={};
@@ -1898,7 +1898,7 @@ function playPlan(add){ if(!soundOn) return;
   } catch(e){} }
 let lastPop=null;
 
-let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[], looks:{}, aislemap:{}, itemTomb:{}, parts:[], mv:0 };
+let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[], looks:{}, aislemap:{}, itemTomb:{}, parts:[], clr:{}, mv:0 };
 rememberList(listCode);
 try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state = c; dropTube(); aiAdopt(); } } catch(e){}
 resetItemSigs();
@@ -2110,9 +2110,22 @@ function parseInput(text){ return parseLines(text, labelMap()); }   // v2.46: th
    change (v2.51, items saved one by one) raises it.
    v2.51: version 2 — items carry `ts` and removals `itemTomb`; a v2.49/v2.50 phone seeing v2 stops writing and asks to update.
    v2.58: version 3 — the items live in items/{id} (the list record names it in `parts`); a phone on v2.49–v2.57 seeing 3 stops
-   writing ("Update now"). Lists not yet split keep being written as v:2 — so save() writes `v: splitOn() ? 3 : 2`, never LIST_V blindly. */
-const LIST_V = 3;
+   writing ("Update now"). Lists not yet split keep being written as v:2 — so save() writes `v: splitOn() ? 3 : 2`, never LIST_V blindly.
+   v2.75: version 4 — Regulars, prices and spending live in records too (regulars/{rid}, prices/{pid}, spend/{sid}, named in
+   `parts`); a phone on v2.58–v2.74 seeing 4 stops writing ("Update now"), so none of them writes Regulars into the record's
+   old array, which nobody reads any more. save() writes 4 once any of the three has moved, else 3 (split) or 2. */
+const LIST_V = 4;
 function splitOn(){ return (state.parts||[]).includes("items") && canSplit(); }
+/* v2.75 (S8 step 3): the parts that move after the items, and whether one has moved on this list */
+const MOVED_PARTS = ["regulars", "prices", "spend"];
+function partOn(n){ return (state.parts||[]).includes(n) && canSplit(); }
+/* v2.75: a record id from a key — the same on every phone. Firestore forbids "/" and very long ids */
+function docId(s){ const e = encodeURIComponent(String(s)); if(e.length <= 300) return e;
+  let h = 0x811c9dc5; const str = String(s); for(let i = 0; i < str.length; i++){ h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return e.slice(0, 200) + "~" + h.toString(36); }
+/* v2.75: the parts' listeners' state, like the items' (var: boot-order rule). _remoteParts[n]: id → signature of what the server
+   holds; _partsSeen[n]: a first server snapshot came; _frozenParts[n]: the list record's old array(s), kept as written (the backup) */
+var unsubParts = {}, _remoteParts = {}, _partsSeen = {}, _frozenParts = {}, _partPend = {}, _migratingParts = "";
 /* v2.58 (S8 step 2): the items listener's state. var: boot-order rule. _remoteItems: id → {sig, ts} or {gone} of what the server
    holds (the last items snapshot); _frozenItems/_frozenTomb: the list record's old items array, kept as written (the backup) */
 var _itemsSeen=false, unsubItems=null, _remoteItems=new Map(), _frozenItems=null, _frozenTomb=null, _lastDocSig="", _migrating="", itemsPend=false, docPend=false;
@@ -2131,7 +2144,9 @@ function markDirty(id){ if(id) dirtyIds.add(id); }
 function subscribe(){
   if(unsub){ try{ unsub(); }catch(e){} unsub=null; }
   if(unsubItems){ try{ unsubItems(); }catch(e){} unsubItems=null; }
+  Object.values(unsubParts).forEach(f => { try{ f(); }catch(e){} }); unsubParts = {};   // v2.75
   _remoteItems=new Map(); _frozenItems=null; _frozenTomb=null; _lastDocSig=""; docPend=false; itemsPend=false; _itemsSeen=false;
+  _remoteParts = {}; _partsSeen = {}; _frozenParts = {}; _partPend = {};
   if(!db) return;
   listRef = ref("lists", listCode);
   unsub = listen(listRef, snap => {
@@ -2143,7 +2158,12 @@ function subscribe(){
       /* v2.58: a split list — the items listener owns state.items/itemTomb; the record's old array is kept frozen (the backup) */
       const split = Array.isArray(d.parts) && d.parts.includes("items") && canSplit();
       if(split){ _frozenItems = d.items||[]; _frozenTomb = d.itemTomb||{}; }
-      const mg = baMerge(d.buyAgain||[], d.baTomb||{}, state.buyAgain||[], state.baTomb||{});   // A24 conflict-free Buy-again
+      /* v2.75: a moved part — its listener owns it in state; the record's old array is kept frozen (the backup) */
+      const moved = n => split && d.parts.includes(n);
+      if(moved("regulars")) _frozenParts.regulars = { buyAgain:d.buyAgain||[], baTomb:d.baTomb||{} };
+      if(moved("prices")) _frozenParts.prices = d.prices||{};
+      if(moved("spend")) _frozenParts.spend = Array.isArray(d.spend) ? d.spend : [];
+      const mg = moved("regulars") ? { list:state.buyAgain||[], tomb:state.baTomb||{} } : baMerge(d.buyAgain||[], d.baTomb||{}, state.buyAgain||[], state.baTomb||{});   // A24 conflict-free Buy-again
       const mgPurch = purchMerge(d.purch||{}, purch||{});                                        // B4 shared restock history (union merge)
       /* v2.09: prices rides along like plan does. This line rebuilds state from a fixed shape, so a field it does not name is wiped by the next snapshot (CLAUDE.md, the fixed-shape trap). */
       const rv = +d.v || 0;
@@ -2152,16 +2172,18 @@ function subscribe(){
          an older app may have removed it without a tombstone. */
       const trust = rv >= 2 && (+state.mv || 0) >= 2;
       const mi = split ? { items:state.items||[], tomb:state.itemTomb||{} } : mergeItems(d.items||[], d.itemTomb||{}, state.items||[], state.itemTomb||{}, id => trust || dirtyIds.has(id));
-      state = { items:mi.items, itemTomb:mi.tomb, mv:rv, parts: Array.isArray(d.parts) ? d.parts : [], buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]}, prices: d.prices||{}, aisle: d.aisle||{}, memb: d.memb||{}, shopping: d.shopping||{}, templates: Array.isArray(d.templates)?d.templates:[], spend: Array.isArray(d.spend)?d.spend:[], looks: (d.looks && typeof d.looks==="object") ? d.looks : {}, aislemap: (d.aislemap && typeof d.aislemap==="object") ? d.aislemap : {} };
+      state = { items:mi.items, itemTomb:mi.tomb, mv:rv, parts: Array.isArray(d.parts) ? d.parts : [], clr:(d.clr && typeof d.clr==="object") ? d.clr : {}, buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]}, prices: moved("prices") ? (state.prices||{}) : (d.prices||{}), aisle: d.aisle||{}, memb: d.memb||{}, shopping: d.shopping||{}, templates: Array.isArray(d.templates)?d.templates:[], spend: moved("spend") ? (Array.isArray(state.spend)?state.spend:[]) : (Array.isArray(d.spend)?d.spend:[]), looks: (d.looks && typeof d.looks==="object") ? d.looks : {}, aislemap: (d.aislemap && typeof d.aislemap==="object") ? d.aislemap : {} };
       resetItemSigs();
+      /* v2.75: another phone cleared prices / spending (state.clr): drop what this phone still holds from before it */
+      if(partOn("prices")) partMerge("prices", []); if(partOn("spend")) partMerge("spend", []);
       purch = state.purch;                                                                        // keep the working ref pointed at the shared copy
       if(!state.name){ const ln=(getLists().find(l=>l.code===listCode)||{}).name; if(ln){ state.name=ln; save(); } }
       if(dropTube()) save(); aiAdopt();
       if(state.name) rememberList(listCode, state.name);
       if((state.predictReset||0) > _predReset) applyPredictReset(state.predictReset);   // household-wide predictions reset propagated via the synced epoch
       // converge: if our merged view holds Buy-again / restock history the server was missing, write it back once
-      if(baSig(mg.list, mg.tomb) !== baSig(d.buyAgain||[], d.baTomb||{}) || purchSig(state.purch||{}) !== purchSig(d.purch||{}) || (!split && itemsSig(mi.items, mi.tomb) !== itemsSig(d.items||[], d.itemTomb||{}))) save();
-      if(split) startItems(); else maybeMigrate(d, snap); }
+      if((!moved("regulars") && baSig(mg.list, mg.tomb) !== baSig(d.buyAgain||[], d.baTomb||{})) || purchSig(state.purch||{}) !== purchSig(d.purch||{}) || (!split && itemsSig(mi.items, mi.tomb) !== itemsSig(d.items||[], d.itemTomb||{}))) save();
+      if(split){ startItems(); MOVED_PARTS.forEach(n => { if(moved(n)) startPart(n); }); maybeMigrateParts(d, snap); } else maybeMigrate(d, snap); }
     else if(snap.exists() && snap.metadata.hasPendingWrites){ /* keep local optimistic state */ }
     if(!syncing && !fromCache) dirtyIds.clear();   // v2.51: after the merge, which reads it
     ensureCats();
@@ -2176,7 +2198,7 @@ function subscribe(){
   listDenied = false;
 }
 /* v2.58: "Saving…" while either listener has a write outstanding; v2.57's timing runs on the combined flag */
-function setSyncing(){ const pend = docPend || itemsPend;
+function setSyncing(){ const pend = docPend || itemsPend || Object.values(_partPend).some(Boolean);   // v2.75: and the parts' listeners
   if(pend && !syncing) _pendSince = Date.now();
   else if(!pend && syncing && _pendSince){ const w = Date.now() - _pendSince - _hiddenMs(_pendSince);   // v2.59: time locked or in the background does not count
     saveDiag.last = Math.max(0, w); saveDiag.max = Math.max(saveDiag.max, saveDiag.last); }
@@ -2232,6 +2254,76 @@ function maybeMigrate(d, snap){
     _frozenItems = state.items.map(i => Object.assign({}, i)); _frozenTomb = Object.assign({}, state.itemTomb||{});
     _lastDocSig = ""; startItems(); return save(); })
   .catch(e => { console.warn("[split] not moved yet", e && (e.code||e.message)); _migrating = ""; });
+}
+/* v2.75 (S8 step 3): Regulars, prices and spending as records of their own — lists/{code}/regulars/{rid} (one Regular + k, its
+   baKey; a removal {k, gone}), prices/{pid} ({k, recs}) and spend/{sid} (one entry as is). Records are never deleted. */
+function _psig(o){ return JSON.stringify(o, (k, v) => (v && typeof v === "object" && !Array.isArray(v)) ? Object.keys(v).sort().reduce((a, x) => { a[x] = v[x]; return a; }, {}) : v); }
+function _pclean(o){ return JSON.parse(JSON.stringify(o)); }   // no undefined in a record (Firestore refuses it)
+/* every record a part holds in this phone's state: [id, data] */
+function partRecords(n){
+  if(n === "regulars") return (state.buyAgain||[]).map(e => { const k = baKey(e); return [docId(k), _pclean(Object.assign({}, e, { k }))]; })
+    .concat(Object.entries(state.baTomb||{}).map(([k, t]) => [docId(k), { k, gone:+t }]));
+  if(n === "prices") return Object.entries(state.prices||{}).filter(([k, r]) => k && Array.isArray(r)).map(([k, r]) => [docId(k), { k, recs:_pclean(r) }]);
+  if(n === "spend") return (Array.isArray(state.spend) ? state.spend : []).filter(e => e && e.t).map(e => [docId(String(e.t)), _pclean(e)]);
+  return []; }
+/* the writes a part needs: every record whose signature differs from what the server holds (all of them when `all`) */
+function partWrites(n, code, all){ const r = _remoteParts[n] || new Map(), seen = new Set(), out = [];
+  partRecords(n).forEach(([id, data]) => { if(!id || seen.has(id)) return; seen.add(id);
+    if(all || r.get(id) !== _psig(data)) out.push({ ref: ref("lists", code, n, id), data }); });
+  return out; }
+/* the server's records merged with this phone's state */
+function partMerge(n, recs){
+  if(n === "regulars"){ const list = [], tomb = {};
+    recs.forEach(x => { if(!x || typeof x.k !== "string") return;
+      if(x.gone) tomb[x.k] = Math.max(tomb[x.k]||0, +x.gone); else { const e = Object.assign({}, x); delete e.k; list.push(e); } });
+    const mg = baMerge(list, tomb, state.buyAgain||[], state.baTomb||{}); state.buyAgain = mg.list; state.baTomb = mg.tomb; return; }
+  if(n === "prices"){ const P = {}, mine = (state.prices && typeof state.prices === "object") ? state.prices : {};
+    recs.forEach(x => { if(x && typeof x.k === "string" && Array.isArray(x.recs)) P[x.k] = x.recs; });
+    const out = {};
+    const clr = +((state.clr||{}).prices) || 0;   // v2.75: "forget every price" / "empty the list" — records from before it stay on the server, unread
+    new Set([...Object.keys(P), ...Object.keys(mine)]).forEach(k => { const m = new Map();
+      /* the same receipt line read twice is one record (priceRecord's rule: date, shop and price), the newest kept */
+      [...(P[k]||[]), ...(Array.isArray(mine[k]) ? mine[k] : [])].forEach(r => { if(!r || (+r.t||0) <= clr) return; const key = [r.d, r.sn, Math.round((+r.p||0)*100)].join("|"); const o = m.get(key); if(!o || (+r.t||0) > (+o.t||0)) m.set(key, r); });
+      const a = [...m.values()].sort((a, b) => (a.t||0) - (b.t||0)).slice(-PRICE_PER_ITEM); if(a.length) out[k] = a; });
+    state.prices = out; return; }
+  if(n === "spend"){ const m = new Map(), clr = +((state.clr||{}).spend) || 0;
+    [...recs, ...(Array.isArray(state.spend) ? state.spend : [])].forEach(e => { if(e && e.t && +e.t > clr) m.set(e.t, e); });
+    state.spend = [...m.values()].sort((a, b) => (a.t||0) - (b.t||0)).slice(-SPEND_MAX); } }   // the cap is for what this phone holds; the records stay
+function startPart(n){
+  if(unsubParts[n] || !canSplit()) return;
+  const code = listCode, c = col("lists", code, n);
+  unsubParts[n] = listenAll(c, snap => {
+    _partPend[n] = snap.metadata.hasPendingWrites; setSyncing();
+    const m = new Map(), recs = [];
+    snap.docs.forEach(doc => { const x = doc.data() || {}; m.set(doc.id, _psig(x)); recs.push(x); });
+    _remoteParts[n] = m;
+    if(!snap.metadata.hasPendingWrites){ _partsSeen[n] = true;
+      partMerge(n, recs);
+      if(partWrites(n, code).length) save(); }   // this phone holds something the server lacks
+    try { localStorage.setItem(LS.cache, JSON.stringify(state)); } catch(e){}
+    applyingRemote = true; renderKeepingAdd(); applyingRemote = false;
+  }, err => { console.error(err); }, { includeMetadataChanges:true });
+}
+/* v2.75 (S8 step 3): move a split (v3) list's Regulars, prices and spending into records, the same way and for the same
+   reasons as maybeMigrate: a backup first, the records in one batch, and only after it landed `parts` and v:4. A refused
+   batch leaves the list as it was; it is tried again at the next opening. A list with none of the three yet is left as v3
+   (nothing to move; moved at a later opening once it has some). */
+function maybeMigrateParts(d, snap){
+  if(!canSplit() || _newerData || snap.metadata.fromCache || snap.metadata.hasPendingWrites) return;
+  if((+d.v||0) !== 3 || !Array.isArray(d.parts) || !d.parts.includes("items") || _migratingParts === listCode) return;
+  if(!configured || !listRef) return;
+  const todo = MOVED_PARTS.filter(n => !d.parts.includes(n)); if(!todo.length) return;
+  const code = listCode, writes = [].concat(...todo.map(n => partWrites(n, code, true)));
+  if(!writes.length) return;
+  _migratingParts = code;
+  forceSnapshot();
+  putMany(writes).then(() => { if(listCode !== code) return;
+    state.parts = Array.from(new Set([...(state.parts||[]), ...todo]));
+    if(todo.includes("regulars")) _frozenParts.regulars = { buyAgain:(state.buyAgain||[]).map(e => Object.assign({}, e)), baTomb:Object.assign({}, state.baTomb||{}) };
+    if(todo.includes("prices")) _frozenParts.prices = JSON.parse(JSON.stringify(state.prices||{}));
+    if(todo.includes("spend")) _frozenParts.spend = (Array.isArray(state.spend) ? state.spend : []).map(e => Object.assign({}, e));
+    _lastDocSig = ""; todo.forEach(startPart); return save(); })
+  .catch(e => { console.warn("[split] parts not moved yet", e && (e.code||e.message)); _migratingParts = ""; });
 }
 /* the signature as the record holds it: its id is always a string (a local id may be a number) */
 function _isig(it){ return itemSig(Object.assign({}, it, { id:String(it.id) })); }
@@ -2672,10 +2764,17 @@ async function save(){
         if(!r || r.gone || r.sig !== _isig(it) || r.ts !== (+it.ts||0)) writes.push({ ref: ref("lists", code, "items", id), data: Object.assign({}, it, { id }) }); });
       if(_itemsSeen) Object.entries(state.itemTomb||{}).forEach(([id,t]) => { if(!okItemId(id)) return; const r = _remoteItems.get(id);
         if(!(r && r.gone)) writes.push({ ref: ref("lists", code, "items", id), data: { id, gone:t } }); });
+      /* v2.75: each moved part, after its first snapshot — only the records that differ from the server's */
+      MOVED_PARTS.forEach(n => { if(partOn(n) && _partsSeen[n]) writes.push(...partWrites(n, code)); });
       if(writes.length) await putMany(writes);
       if(_frozenItems !== null){   // no list snapshot yet: items only
-        const doc = Object.assign(listDoc(state), { items:_frozenItems||[], itemTomb:_frozenTomb||{}, shopping:state.shopping||{}, parts:state.parts, v:3 });
-        const sig = JSON.stringify(Object.assign({}, doc, { items:0, itemTomb:0 }));
+        const anyMoved = MOVED_PARTS.some(partOn), fz = _frozenParts;
+        const doc = Object.assign(listDoc(state), { items:_frozenItems||[], itemTomb:_frozenTomb||{}, shopping:state.shopping||{}, parts:state.parts, v: anyMoved ? 4 : 3 });
+        /* v2.75: a moved part's arrays stay as they were when it moved (the record stops growing) */
+        if(partOn("regulars") && fz.regulars){ doc.buyAgain = fz.regulars.buyAgain; doc.baTomb = fz.regulars.baTomb; }
+        if(partOn("prices") && fz.prices) doc.prices = fz.prices;
+        if(partOn("spend") && fz.spend) doc.spend = fz.spend;
+        const sig = JSON.stringify(Object.assign({}, doc, { items:0, itemTomb:0 }, partOn("regulars") ? { buyAgain:0, baTomb:0 } : {}, partOn("prices") ? { prices:0 } : {}, partOn("spend") ? { spend:0 } : {}));
         if(sig !== _lastDocSig){ await put(listRef, doc); _lastDocSig = sig; } } }
     catch(e){ console.error(e);
       if(Date.now()-__saveWarned > 5000){ __saveWarned = Date.now(); showToast("⚠︎ Not syncing — check Firestore rules"); } }
@@ -2820,7 +2919,8 @@ function priceRecord(name, rec){ const k=priceKey(name); if(!k) return;
   const a=(state.prices[k]||[]).filter(x=>!(x.d===rec.d && x.sn===rec.sn && Math.abs((+x.p||0)-rec.p)<0.005));
   a.push(rec); state.prices[k]=a.slice(-PRICE_PER_ITEM);
   const ks=Object.keys(state.prices);
-  if(ks.length>PRICE_ITEMS){ ks.sort((x,y)=>priceLastT(state.prices[x])-priceLastT(state.prices[y])); ks.slice(0, ks.length-PRICE_ITEMS).forEach(x=>{ delete state.prices[x]; }); } }
+  if(ks.length>PRICE_ITEMS && !partOn("prices")){   // v2.75: the cap kept ONE record small; as records of their own, no key is evicted
+    ks.sort((x,y)=>priceLastT(state.prices[x])-priceLastT(state.prices[y])); ks.slice(0, ks.length-PRICE_ITEMS).forEach(x=>{ delete state.prices[x]; }); } }
 /* whole-word containment either way: the receipt's "free range egg" answers for the list's "egg" */
 function priceWordsIn(a, b){ return (" "+b+" ").indexOf(" "+a+" ")>=0; }
 function priceLookup(name){ const P=state.prices||{}, k=priceKey(name); if(!k) return null; if(P[k] && P[k].length) return P[k];
@@ -3134,7 +3234,7 @@ function emptyList(){
   if(!confirm("Sure? Everyone on the list loses it. Only this phone's daily backups could bring it back.")) return;
   const now = Date.now();
   state.baTomb = state.baTomb || {}; (state.buyAgain || []).forEach(e => { state.baTomb[baKey(e)] = now; }); state.buyAgain = [];
-  state.items = []; state.plan = { days:{}, recipes:[] }; state.prices = {}; state.spend = []; state.templates = []; state.memb = {}; state.shopping = {}; state.aisle = {};
+  state.items = []; state.plan = { days:{}, recipes:[] }; state.prices = {}; state.spend = []; state.clr = Object.assign({}, state.clr, { prices:now, spend:now });   /* v2.75: moved prices/spending are records — every phone drops the ones from before now. clr is written only once set, so an app on the old rules (which refuse a field they do not know) keeps saving until it is used */ state.templates = []; state.memb = {}; state.shopping = {}; state.aisle = {};
   applyPredictReset(now); state.predictReset = now;
   save(); render(); showToast("The list is empty"); }
 async function forgetPhone(){
@@ -3183,9 +3283,9 @@ async function exportListText(){
    would be undone by the next phone that syncs. Undo is offered straight after. The list code is never written
    into a backup — it is the key to the list. */
 const SNAP_KEEP = 7;
-function listDoc(s){ return { items:s.items||[], buyAgain:s.buyAgain||[], baTomb:s.baTomb||{}, stores:s.stores||[], storeMeta:s.storeMeta||{},
+function listDoc(s){ return Object.assign((s.clr && typeof s.clr==="object" && Object.keys(s.clr).length) ? { clr:s.clr } : {}, { items:s.items||[], buyAgain:s.buyAgain||[], baTomb:s.baTomb||{}, stores:s.stores||[], storeMeta:s.storeMeta||{},
   members:s.members||[], categories:s.categories===undefined?null:s.categories, name:s.name||"", baMeta:s.baMeta||null, predictReset:s.predictReset||0,
-  purch:s.purch||{}, plan:s.plan||{days:{},recipes:[]}, prices:s.prices||{}, aisle:s.aisle||{}, memb:s.memb||{}, templates:Array.isArray(s.templates)?s.templates:[], spend:Array.isArray(s.spend)?s.spend:[], looks:(s.looks && typeof s.looks==="object") ? s.looks : {}, aislemap:(s.aislemap && typeof s.aislemap==="object") ? s.aislemap : {} }; }   // v2.23: occasions are kept; who is shopping is presence, not data — never backed up
+  purch:s.purch||{}, plan:s.plan||{days:{},recipes:[]}, prices:s.prices||{}, aisle:s.aisle||{}, memb:s.memb||{}, templates:Array.isArray(s.templates)?s.templates:[], spend:Array.isArray(s.spend)?s.spend:[], looks:(s.looks && typeof s.looks==="object") ? s.looks : {}, aislemap:(s.aislemap && typeof s.aislemap==="object") ? s.aislemap : {} }); }   // v2.23: occasions are kept; who is shopping is presence, not data — never backed up
 function snapKey(code){ return "ml_snap_"+code; }
 function snapList(code){ try{ const a=JSON.parse(localStorage.getItem(snapKey(code))||"[]"); return Array.isArray(a)?a.filter(x=>x && x.list && x.at):[]; }catch(e){ return []; } }
 var _forgetting = false;   // v2.25: set by Leave and Forget — the page going hidden as it navigates away must not write a backup of what was just forgotten. var: boot-order rule
@@ -7048,7 +7148,7 @@ function wireOptions(){
   const orc=app.querySelector("#optRcpt"); if(orc) orc.onclick=()=>rcPick();   // v2.09
   app.querySelectorAll("[data-opt-sharepx]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_sharepx", b.dataset.optSharepx); }catch(e){} render(); });   // v2.47
   app.querySelectorAll("[data-opt-rcptask]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_rcptask", b.dataset.optRcptask); }catch(e){} render(); });   // v2.17
-  const opc=app.querySelector("#optPriceClear"); if(opc) opc.onclick=()=>{ if(confirm("Forget every remembered price, and what you spent, in this list?")){ state.prices={}; state.spend=[]; save(); render(); } };
+  const opc=app.querySelector("#optPriceClear"); if(opc) opc.onclick=()=>{ if(confirm("Forget every remembered price, and what you spent, in this list?")){ const now=Date.now(); state.prices={}; state.spend=[]; state.clr=Object.assign({}, state.clr, { prices:now, spend:now }); save(); render(); } };
   app.querySelectorAll("[data-opt-fill]").forEach(b=>b.onclick=()=>{ if(fillMode()!==b.dataset.optFill) setFill(b.dataset.optFill); });
   const ozm=app.querySelector("#optZoomMinus"); if(ozm) ozm.onclick=()=>setDensity(dens()-0.1);
   const ozp=app.querySelector("#optZoomPlus"); if(ozp) ozp.onclick=()=>setDensity(dens()+0.1);
