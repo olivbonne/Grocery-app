@@ -108,7 +108,9 @@ const SEED = `(() => {
     const mem = await page.evaluate(()=>{ const m=document.querySelector('#sheet .pricemem'); return m ? m.textContent.replace(/\s+/g,' ').trim() : null; });
     /* SUPERSEDED by v2.70: the household asked for the last price beside the item's name — a compact "$3.10 · Coles
        Dandenong" in the title row. Still protected: the sheet says what was last paid, and where. */
-    ok('the item\'s sheet says what was last paid, and where', /^\$3\.10 · Coles Dandenong/.test(mem||''), mem);
+    /* SUPERSEDED by v2.72: a price for a weighed or measured line is shown per kilo / litre — the 2 L milk at $3.10 reads
+       "$1.55/L". Still protected: the sheet says what was last paid (or its unit price), and where. */
+    ok('the item\'s sheet says what was last paid, and where', /^\$(3\.10|1\.55\/L) · Coles Dandenong/.test(mem||''), mem);
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-item.png') });
     await page.evaluate(()=>{ const b=document.querySelector('#sheetBg'); if(b) b.click(); }); await page.waitForTimeout(300);
     ok('the prices survive a reload', Object.keys((await cache()).prices||{}).length===2, '');

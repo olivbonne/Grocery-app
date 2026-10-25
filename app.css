@@ -872,7 +872,12 @@
   /* v2.30 the Shop page's menu: a small sheet under the top-right button, over a clear backdrop that closes it */
   .smbg { position:fixed; inset:0; z-index:80; background:transparent; }
   .smenu { position:fixed; top:calc(env(safe-area-inset-top) + 58px); right:12px; min-width:236px; max-width:calc(100vw - 24px); padding:6px;
-    border-radius:16px; background:var(--card); border:1.5px solid var(--line); box-shadow:0 10px 30px rgba(0,0,0,.18); }
+    border-radius:16px; background:var(--card); border:1.5px solid var(--line); box-shadow:0 10px 30px rgba(0,0,0,.18);
+    max-height:calc(100dvh - env(safe-area-inset-top) - 58px - 96px); overflow-y:auto; overscroll-behavior:contain; }   /* v2.72: the menu grew past the screen (the Store row) — it scrolls, so Report a problem stays reachable */
+  /* v2.72 (the household): the app's version, small, under the Shop page's ⋯ — out of the flow, so the header keeps its height */
+  .smwrap { position:relative; display:inline-flex; }
+  .appver { position:absolute; top:100%; left:50%; transform:translateX(-50%); margin-top:1px; font-size:10.5px; font-weight:700;
+    color:var(--muted2); white-space:nowrap; pointer-events:none; letter-spacing:.02em; }
   .smitem { display:flex; align-items:center; gap:12px; width:100%; min-height:46px; padding:8px 12px; border:none; border-radius:11px;
     background:transparent; color:var(--text); font:inherit; font-size:15.5px; font-weight:700; text-align:left; }
   .smitem:active { background:var(--chip); }
@@ -2035,6 +2040,10 @@
   .smcols { display:flex; gap:4px; }
   .smtext .smcols { flex-wrap:wrap; }   /* v2.68: Theme, Group by category and Sort — text buttons, wrapping if they must */
   .smtext .smcols .colbtn { width:auto; padding:0 10px; font-size:13px; }
+  .smstores { max-height:132px; overflow-y:auto; }   /* v2.72: the shop chips wrap; 15+ shops scroll, never push the menu off-screen */
+  .smtext .smcols .colbtn.smadd { border-style:dashed; }
+  .smaddrow { display:flex; gap:6px; }
+  .smaddrow input { flex:1; min-width:0; height:34px; padding:0 10px; border-radius:10px; border:1.5px solid var(--line); background:var(--chip); color:var(--text); font-size:16px; outline:none; }
   .smcols .colbtn { flex:none; width:34px; height:34px; padding:0; border-radius:10px; border:1.5px solid var(--line);
     background:transparent; color:var(--text); font:inherit; font-size:14px; font-weight:700; }
   .smcols .colbtn.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent, #fff); }

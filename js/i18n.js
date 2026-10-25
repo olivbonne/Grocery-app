@@ -8,6 +8,11 @@
 
    Never translate stored data, item or list names, or text sent to the server — only what is shown to the person. */
 export const FR = {
+  /* v2.72 */
+  "{x} each": "{x} pièce",
+  "No card at this shop": "Pas de carte dans ce magasin",
+  "＋ New shop": "＋ Nouveau magasin",
+  "Shop name": "Nom du magasin",
   /* v2.57 */
   "Use the new categories": "Passer aux nouvelles catégories",
   "Moves this list to the thirteen categories, in the order a shop is walked (Bakery, Deli, Dairy, Pantry, Frozen…). Items and Regulars move to where shops shelve them; categories you made stay. A backup is taken first.": "Passe cette liste aux treize catégories, dans l'ordre où l'on parcourt un magasin (Boulangerie, Traiteur, Produits laitiers, Épicerie, Surgelés…). Les articles et les habituels vont là où les magasins les rangent ; les catégories que vous avez créées restent. Une sauvegarde est faite d'abord.",
@@ -295,7 +300,7 @@ export const FR = {
   "Got a {x}?": "Vous avez une {x} ?",
   "Add it once — a photo and its number — and it shows here after every shop at {x}, ready to scan before you pay. It stays on this phone.": "Ajoutez-la une fois — une photo et son numéro — et elle s’affiche ici après chaque passage chez {x}, prête à scanner avant de payer. Elle reste sur ce téléphone.",
   "Add the card": "Ajouter la carte",
-  "No card — don't ask again": "Pas de carte — ne plus demander",
+  "Never ask, at any shop": "Ne plus demander, dans aucun magasin",
   "Add to {x}…": "Ajouter à {x}…",
   "Regulars": "Habituels",
   "Got the receipt?": "Vous avez le ticket ?",
@@ -637,7 +642,7 @@ export const FR = {
   "Saved {n} aisles": "{n} rayons enregistrés",
   "places {n} of {of} on the list": "place {n} sur {of} de la liste",
   "Clear this shop's aisle map?": "Effacer le plan des rayons de ce magasin ?",
-  "{n} items, {p} prices from receipts, newest first. The memory keeps the last 8 prices of each item, and {max} items.": "{n} articles, {p} prix lus sur les tickets, du plus récent au plus ancien. La mémoire garde les 8 derniers prix de chaque article, et {max} articles.",
+  "{n} items, {p} prices from receipts, newest first. The memory keeps the last {k} prices of each item, and {max} items.": "{n} articles, {p} prix lus sur les tickets, du plus récent au plus ancien. La mémoire garde les {k} derniers prix de chaque article, et {max} articles.",
   "Find an item": "Chercher un article",
   "Nothing matches.": "Aucun résultat.",
   "No prices yet. Read a receipt after a shop and they appear here.": "Pas encore de prix. Lisez un ticket après les courses et ils apparaissent ici.",

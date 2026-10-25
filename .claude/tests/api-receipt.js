@@ -84,8 +84,8 @@ const GOOD = { store: 'Coles Dandenong', date: '2026-10-02', total: 23.4, card: 
       Array.isArray(b.discounts) && b.discounts.length === 3 && b.discounts.every(x => JSON.stringify(Object.keys(x).sort()) === '["amount","raw"]')
       && b.discounts[0].raw === 'PLUS SAVER DISCOUNT' && b.discounts[0].amount === 4.72 && b.discounts[2].amount === 2.5 && b.discounts[2].raw.length === 60, JSON.stringify(b.discounts));
     ok('…a long run of digits in one (a loyalty number) is masked', b.discounts[1] && b.discounts[1].raw === 'FLYBUYS …', JSON.stringify(b.discounts[1]));
-    ok('each line carries only its six fields (the barcode the model added is dropped)',
-      b.items.every(x => JSON.stringify(Object.keys(x).sort()) === '["category","name","price","qty","raw","weight"]'), JSON.stringify(b.items[0]));
+    ok('each line carries only its nine fields (v2.72 adds note, unit_price, per; the barcode the model added is dropped)',
+      b.items.every(x => JSON.stringify(Object.keys(x).sort()) === '["category","name","note","per","price","qty","raw","unit_price","weight"]'), JSON.stringify(b.items[0]));
     ok('lines with no usable price are dropped (n/a, negative, nameless)', b.items.map(x => x.name).join() === 'free range eggs,bananas,milk', b.items.map(x => x.name).join());
     ok('prices round to cents, from a string too', b.items[1].price === 3.24, b.items[1].price);
     ok('qty is clamped to at least 1', b.items[2].qty === 1, b.items[2].qty);
