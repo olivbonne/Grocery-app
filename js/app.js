@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.75";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.75";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.75";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.75";
-import { compareStores, worthIt } from "./compare.js?v=2.75";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.75";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.75";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.75";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.75";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.75";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.75";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.75";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.75";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.75";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.76";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.76";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.76";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.76";
+import { compareStores, worthIt } from "./compare.js?v=2.76";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.76";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.76";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.76";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.76";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.76";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.76";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.76";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.76";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.76";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.75";
+const APP_VERSION = "v2.76";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -2981,6 +2981,7 @@ function moveToBuyAgain(entries){
     state.buyAgain = state.buyAgain.filter(x=>baKey(x)!==k);
     delete state.baTomb[k];
     const ne={name:e.name,cat:e.cat,qty:e.qty||1,weight:e.weight||"",sub:e.sub||"",note:e.note||"",where:e.where||"",ts:Date.now()};
+    if(regTags(old).length) ne.tags=regTags(old);   // v2.76: the Regular's own flags stay; the trip's flags do not become the Regular's
     if(old && typeof old.pos==="number") ne.pos=old.pos;
     state.buyAgain.unshift(ne); }
   state.buyAgain = state.buyAgain.slice(0,BA_CAP);
@@ -3002,13 +3003,13 @@ function sweep(msg){ const checked=state.items.filter(i=>i.checked); if(!checked
 function addFromRegular(name,cat,note){ playPlan(true);
   const entry = regFind(name,cat,note) || {name,cat,qty:1,note:note||""};
   const ex = state.items.find(i=>itemIsReg(i,name,cat,note));
-  if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",note:entry.note||"",where:entry.where||"",checked:false,by:me}); histLog("add", entry.name); }
+  if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",note:entry.note||"",where:entry.where||"",tags:regTags(entry),checked:false,by:me}); histLog("add", entry.name); }
   save(); renderKeepingAdd();
 }
 function restore(name,cat,note){ playPlan(true);
   const entry = regFind(name,cat,note) || {name,cat,qty:1,note:note||""};
   const ex = state.items.find(i=>itemIsReg(i,name,cat,note));
-  if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",note:entry.note||"",where:entry.where||"",checked:false,by:me}); histLog("add", entry.name); }
+  if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",note:entry.note||"",where:entry.where||"",tags:regTags(entry),checked:false,by:me}); histLog("add", entry.name); }
   histLog("regrm", entry.name);
   regDrop(name,cat,note);
   save(); render();
@@ -3034,6 +3035,7 @@ function regularFrom(e, orig){ const nm=String(e.name||"").trim(); if(!nm) retur
   delete state.baTomb[newK];
   const ne={ name:nm, cat:e.cat, qty:Math.max(1,e.qty||1), weight:e.weight||"", sub:e.sub||"", note:String(e.note||"").trim().slice(0,140), where:e.where||"", ts:Date.now() };
   if(old && old.cat===e.cat && typeof old.pos==="number") ne.pos=old.pos;   // v2.56: a Regular keeps its place in the same category
+  if(regTags(old).length) ne.tags=regTags(old);   // v2.76: the Regular keeps its own flags (a list item's flags are for this trip)
   if(old) state.buyAgain.splice(Math.min(idx, state.buyAgain.length), 0, ne); else state.buyAgain.unshift(ne);
   state.buyAgain = state.buyAgain.slice(0,BA_CAP);
   if(!old) histLog("regadd", nm);
@@ -3062,6 +3064,9 @@ function deleteItemEditing(){ const prev=snapState(); const nm=editing.name; con
   editing=null; save(); render(); showUndo(prev, esc(nm)+" deleted"); }
 
 /* buy-again edit */
+/* v2.76 (the household): a Regular keeps its own Urgent / If on sale (tags), set in its Edit item and carried onto the list
+   each time it is added. Only these two flags travel; a list item's own flags never change its Regular. */
+function regTags(e){ return (e && Array.isArray(e.tags)) ? e.tags.filter(k=>k==="urgent"||k==="discount") : []; }
 function saveBA(){ const nm=(editing.name||"").trim(); if(!nm) return; const cat=editing.cat; const qty=Math.max(1,editing.qty||1);
   state.baTomb = state.baTomb || {};
   const _old=regFind(editing.origName, editing.origCat, editing.origNote);   // v2.56: keep its pos in the same category
@@ -3072,7 +3077,8 @@ function saveBA(){ const nm=(editing.name||"").trim(); if(!nm) return; const cat
   delete state.baTomb[newK];
   { const ne={name:nm,cat,qty,weight:editing.weight||"",sub:editing.sub||"",ts:Date.now()};
     if(_nt) ne.note=_nt;   // v2.57 item 9d: the Note section edits a Regular's note too
-    if(_old && _old.where) ne.where=_old.where;   // v2.56: the fixed-shape trap — a re-saved Regular kept neither (v2.22 fields)
+    { const w = editing.where!==undefined ? editing.where : ((_old && _old.where) || ""); if(w) ne.where=w; }   // v2.56: the fixed-shape trap; v2.76: Where to buy is edited here too
+    { const tg = regTags(editing.tags!==undefined ? editing : _old); if(tg.length) ne.tags=tg; }   // v2.76: the Regular's own flags
     if(_old && _old.cat===cat && typeof _old.pos==="number") ne.pos=_old.pos;
     state.buyAgain.unshift(ne); }
   editing=null; save(); render(); }
@@ -3783,10 +3789,25 @@ function tapNoScroll(el, fn){
    bar, and no amount of flipping it upward could help. The choices are part of the panel's flow now,
    exactly like the Category and Subcategory chips directly below them: the button expands a wrapping
    grid, the body scrolls to it, and nothing can be clipped by anything. */
-const WEIGHTS = ["","cup","tsp","Tbsp","4 pack","6 pack","12 pack","100g","200g","300g","400g","500g","600g","700g","800g","900g","1kg","2kg","3kg","4kg","5kg","10kg"];
+const WEIGHTS = ["","cup","tsp","Tbsp"];   // v2.76: the packs, grams, kilos and litres are counters (wCounters)   // v2.76: the 100g…10kg chips became the g / kg / L counters below
+/* v2.76: three counters under the Unit chips — g by 100 (100–2000), kg by 0.5 (0.5–20), L by 0.5 (0.5–10) */
+const WCOUNT = { pack:{ step:2, min:2, max:12 }, g:{ step:100, min:100, max:2000 }, kg:{ step:0.5, min:0.5, max:20 }, L:{ step:0.5, min:0.5, max:10 } };
+function wParse(w){ const m=String(w||"").trim().match(/^(\d+(?:[.,]\d+)?)\s*(kg|g|l|pack)$/i); if(!m) return null;
+  const u=m[2].toLowerCase(); return { n:parseFloat(m[1].replace(",",".")), u: u==="l" ? "L" : u }; }
+function wFmt(n, u){ return String(+n.toFixed(1)).replace(/\.0$/,"") + (u==="pack" ? " pack" : u); }   // v2.76: "6 pack", as the old chips wrote it
+function wStep(cur, u, dir){ const c=WCOUNT[u], p=wParse(cur), n=(p&&p.u===u) ? p.n : null;
+  if(n==null) return dir>0 ? wFmt(c.min,u) : (cur||"");
+  if(dir<0 && n<=c.min) return "";
+  const v=Math.min(c.max, Math.max(c.min, Math.round((n+dir*c.step)/c.step)*c.step)); return wFmt(v,u); }
+function wCounters(attr, key, cur){ const p=wParse(cur);
+  return Object.keys(WCOUNT).map(u=>{ const on=p&&p.u===u;
+    return `<div class="wcount"><span class="editsec-l">${u==="pack"?t("Pack"):u}</span><span class="eqty"><button ${attr}="${key}|${u}|-1" aria-label="${t("Less")}">−</button><span class="wcount-v">${on?esc(wFmt(p.n,u)):"—"}</span><button ${attr}="${key}|${u}|+1" aria-label="${t("More")}">+</button></span></div>`; }).join(""); }
+/* v2.76: an opened row's choices are shown to their end — the sheet scrolls just enough, the page behind does not */
+function edShowEnd(root, row){ const c=root && root.querySelector(`.edcell[data-row="${row}"][data-open="1"]`);
+  const last=c && c.querySelector(".wgrid > :last-child, .edchips > :last-child"); if(last) last.scrollIntoView({ block:"nearest" }); }
 function weightChips(id, cur){
   if(wOpen!==id) return "";
-  return `<div class="wgrid" role="listbox">${WEIGHTS.map(w=>`<button role="option" class="catchip${(cur||"")===w?' on':''}" data-w-set="${id}|${esc(w)}">${w?esc(w):t("Unit")}</button>`).join("")}</div>`;
+  return `<div class="wgrid" role="listbox">${WEIGHTS.map(w=>`<button role="option" class="catchip${(cur||"")===w?' on':''}" data-w-set="${id}|${esc(w)}">${w?esc(w):t("Unit")}</button>`).join("")}${wCounters("data-wstep", id, cur)}</div>`;
 }
 function addEditPanel(){
   const it=state.items.find(i=>i.id===addEditId);
@@ -3794,7 +3815,7 @@ function addEditPanel(){
   if(!_aeOrig || _aeOrig.id!==it.id) _aeOrig={ id:it.id, name:it.name, cat:it.cat };   // v2.65: the key it had when the panel opened, for regularFrom
   aeFold("ae|" + it.id);   // v2.57 item 9a
   const cat=CAT(it.cat)||null;
-  const flags=[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If discounted")}];   // v2.63: no "If convenient" button (the tag itself stays)
+  const flags=[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If on sale")}];   // v2.63: no "If convenient" button (the tag itself stays)
   const catChips = catList().map(c=>`<button class="catchip" data-ae-cat="${it.id}|${c.id}" style="${it.cat===c.id?`background:${c.color};border-color:${c.color};color:#fff`:''}">${catIcon(c,15)} ${esc(catLabel(c))}</button>`).join("");
   return `<div class="addedit" data-look="edit">
     ${/* v1.46 item 2: tighter heading + 40px controls — the panel has to share the screen with the
@@ -3835,7 +3856,13 @@ function wireAddEdit(){
       /* v1.64 item 1: the grid is taller than the row it replaced, so bring it into view rather than
          leaving it under the fold of a sheet that is sized to its content. scrollIntoView on a plain
          div moves no focus, so the keyboard is unaffected. */
-      const g=document.querySelector("#addSheetBody .wgrid"); if(g) g.scrollIntoView({block:"nearest"}); }; });
+      edShowEnd(document.querySelector("#addSheetBody"), "unit"); }; });
+  /* v2.76: the g / kg / L counters — the Unit row stays open */
+  document.querySelectorAll("#addSheetBody [data-wstep]").forEach(b=>tapNoScroll(b, ()=>{
+    const [id,u,d]=b.dataset.wstep.split("|"); const it=state.items.find(x=>x.id===id);
+    if(it){ it.weight=wStep(it.weight,u,+d); touch(it); refreshAddBody(); }
+    const mi=document.getElementById("mainInput"); if(mi) mi.focus();
+  }));
   document.querySelectorAll("#addSheetBody [data-w-set]").forEach(b=>tapNoScroll(b, ()=>{
     const [id,w]=b.dataset.wSet.split("|"); const it=state.items.find(x=>x.id===id);
     if(it){ it.weight=w||""; wOpen=null; touch(it); refreshAddBody(); }
@@ -3862,7 +3889,7 @@ function wireAddEdit(){
   /* v1.44 item 5: without the preventDefault the section header steals focus from #mainInput and the
      keyboard drops mid-edit — every sibling control already guards against this. */
   document.querySelectorAll("[data-ae-sechead]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
-    b.onclick=()=>{ if(b.dataset.aeSechead==='cat') editCatOpen=!editCatOpen; refreshAddBody(); }; });
+    b.onclick=()=>{ if(b.dataset.aeSechead==='cat') editCatOpen=!editCatOpen; refreshAddBody(); edShowEnd(document.querySelector("#addSheetBody"), "cat"); }; });
   /* v2.57 item 9d: the Note section — its header, the field (saved as typed, like the name) and the suggestion chips */
   document.querySelectorAll("[data-ae-note]").forEach(inp=>{
     /* v2.70: typed text becomes tiles at a comma, Enter or leaving the field — in place, no re-render while typing */
@@ -4699,7 +4726,7 @@ function pillHTML(i, cat){
      unchanged inside a row one. The saving dot goes in with them: it is the same kind of marker. */
   const markInner = `${dirtyIds.has(i.id)?`<span class="penddot" title="Saving…"></span>`:""}`
     + `${urgent?mk(FLAG_STAR_SVG, full?'#fff':'#E8A91D', 'Urgent'):""}`
-    + `${(!checked&&tg.includes("discount"))?mk(FLAG_TAG_SVG,'currentColor','If discounted'):""}`
+    + `${(!checked&&tg.includes("discount"))?mk(FLAG_TAG_SVG,'currentColor',t("If on sale")):""}`
     + `${(!checked&&tg.includes("convenient"))?mk(FLAG_CLOCK_SVG,'currentColor','If convenient'):""}`;
   const marks = markInner ? `<span class="pmarks">${markInner}</span>` : "";
   // v1.20 unified row anatomy (shared with regPill): emoji · name, then qty/weight pushed to the right.
@@ -6936,7 +6963,7 @@ function wirePlanPage(){
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
     b.onpointerup=()=>{ pressCancel();
-      if(longFired){ const en=regFind(name,cat,note); editing={kind:"ba", name, cat, qty:(en?en.qty||1:1), weight:(en?en.weight||"":""), sub:(en?en.sub||"":""), note:(en?en.note||"":note), origName:name, origCat:cat, origNote:(en?en.note||"":note)}; render(); }
+      if(longFired){ const en=regFind(name,cat,note); editing={kind:"ba", name, cat, qty:(en?en.qty||1:1), weight:(en?en.weight||"":""), sub:(en?en.sub||"":""), note:(en?en.note||"":note), where:(en?en.where||"":""), tags:regTags(en), origName:name, origCat:cat, origNote:(en?en.note||"":note)}; render(); }
       else { restore(name,cat,note); } }; });
   app.querySelectorAll(".plan-in").forEach(b=>{ const id=b.dataset.planRm;
     b.oncontextmenu=e=>e.preventDefault();
@@ -7488,14 +7515,15 @@ function wireSmartSheet(){
     const any=smartItems.some(it=>it.sel!==false);
     smartItems.forEach(it=>{ it.sel = !any; }); render(); };
   app.querySelectorAll("[data-smart-edit]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartEdit; smartEdit = (smartEdit===i ? null : i); smartWOpen=null; smartCOpen=null; render(); }; });
-  app.querySelectorAll("[data-smart-wopen]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartWopen; smartWOpen = (smartWOpen===i ? null : i); render(); }; });
-  app.querySelectorAll("[data-smart-copen]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartCopen; smartCOpen = (smartCOpen===i ? null : i); render(); }; });
+  app.querySelectorAll("[data-smart-wopen]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartWopen; smartWOpen = (smartWOpen===i ? null : i); render(); edShowEnd(app.querySelector(".smartedit"), "unit"); }; });
+  app.querySelectorAll("[data-smart-copen]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartCopen; smartCOpen = (smartCOpen===i ? null : i); render(); edShowEnd(app.querySelector(".smartedit"), "cat"); }; });
   app.querySelectorAll("[data-smart-q]").forEach(b=>{ b.onclick=()=>{ const [i,d]=b.dataset.smartQ.split("|"); const it=smartItems[+i]; if(it){ it.qty=Math.max(1,Math.min(999,(it.qty||1)+(+d))); render(); } }; });
   app.querySelectorAll("[data-smart-cat]").forEach(b=>{ b.onclick=()=>{ const [i,cid]=b.dataset.smartCat.split("|"); const it=smartItems[+i]; if(it){ if(it.category!==cid) it.sub=""; it.category=cid; it.catPicked=true; smartCOpen=null; render(); } }; });
   app.querySelectorAll("[data-smart-name]").forEach(inp=>{ inp.oninput=()=>{ const it=smartItems[+inp.dataset.smartName]; if(!it) return; it.name=inp.value;
     const nm=inp.closest(".smartchip")&&inp.closest(".smartchip").querySelector(".smartchip-name");   // the head follows the name, still without a render
     if(nm) nm.innerHTML=`${(it.qty>1)?`<b>${it.qty}× </b>`:""}${it.weight?`<b>${esc(showAmt(it.weight))} </b>`:""}${esc(cap(it.name))}`; }; });   // no re-render: keep focus while typing
   app.querySelectorAll("[data-smart-addcat]").forEach(b=>{ b.onclick=()=>{ const it=smartItems[+b.dataset.smartAddcat]; if(!it) return; const nm=prompt(t("New category name:"),""); if(nm&&nm.trim()){ const id=makeCategory(nm); if(id){ it.category=id; it.sub=""; it.catPicked=true; smartCOpen=null; render(); } } }; });
+  app.querySelectorAll("[data-smart-wstep]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartWstep.split("|"); const it=smartItems[+p[0]]; if(it){ it.weight=wStep(it.weight,p[1],+p[2]); render(); } }; });   // v2.76: smartWOpen stays
   app.querySelectorAll("[data-smart-wt]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartWt.split("|"); const i=+p[0], w=p[1]||""; const it=smartItems[i]; if(it){ it.weight = (it.weight===w ? "" : w); smartWOpen=null; render(); } }; });
   app.querySelectorAll("[data-smartsort]").forEach(b=>b.onclick=()=>{ setIngSort(b.dataset.smartsort); render(); });   // v2.08
 }
@@ -7515,7 +7543,7 @@ function smartSheet(){
           <div class="edrows">${/* v2.74: the rows in cells, as in Edit item */""}
           <div class="edcell" data-row="qty"><div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button data-smart-q="${idx}|-1" aria-label="${t("Less")}">−</button><span>${it.qty||1}</span><button data-smart-q="${idx}|1" aria-label="${t("More")}">+</button></span></div></div>
           <div class="edcell" data-row="unit"${smartWOpen===idx?' data-open="1"':''}><button class="editsec" data-smart-wopen="${idx}" aria-expanded="${smartWOpen===idx}" aria-label="${t("Unit")}"><span class="editsec-l">${t("Unit")}</span><span class="editsec-v"><span class="edval">${it.weight ? esc(it.weight) : t("Unit")} <span class="editsec-ch">${smartWOpen===idx?'▾':'▸'}</span></span></span></button>
-          ${smartWOpen===idx ? `<div class="wgrid">${WEIGHTS.map(w=>`<button class="catchip${((it.weight||"")===w)?' on':''}" data-smart-wt="${idx}|${esc(w)}">${w?esc(w):t("Unit")}</button>`).join("")}</div>` : ""}</div>
+          ${smartWOpen===idx ? `<div class="wgrid">${WEIGHTS.map(w=>`<button class="catchip${((it.weight||"")===w)?' on':''}" data-smart-wt="${idx}|${esc(w)}">${w?esc(w):t("Unit")}</button>`).join("")}${wCounters("data-smart-wstep", idx, it.weight)}</div>` : ""}</div>
           <div class="edcell" data-row="cat"${smartCOpen===idx?' data-open="1"':''}><button class="editsec" data-smart-copen="${idx}" aria-expanded="${smartCOpen===idx}" aria-label="${t("Category")}"><span class="editsec-l">${t("Category")}</span><span class="editsec-v"><span class="edval">${catIcon(c,14)} ${esc(catLabel(c))} <span class="editsec-ch">${smartCOpen===idx?'▾':'▸'}</span></span></span></button>
           ${smartCOpen===idx ? `<div class="edchips">${catList().map(cc=>`<button class="catchip" data-smart-cat="${idx}|${cc.id}" style="${cc.id===it.category?`background:${cc.color};border-color:${cc.color};color:#fff`:''}">${catIcon(cc,13)} ${esc(catLabel(cc))}</button>`).join("")}<button class="catchip" data-smart-addcat="${idx}" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}</div>
           </div>
@@ -8387,8 +8415,8 @@ function editSheet(){
   editFold(editing.kind + "|" + (editing.id || editing.origName || ""));   // v2.57 item 9a
   const qtyBlock = `<div class="qstep"><button id="qMinus">−</button><span style="min-width:22px;text-align:center;font-weight:800;font-size:16px">${editing.qty||1}</span><button id="qPlus">+</button></div>`;
   /* v2.70: Save and Delete take the tile shape — the pills' roundness and border width, 44px tall */
-  const btnDelStyle = "display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;box-sizing:border-box;padding:0 14px;border-radius:var(--epillrad, 999px);border:1.5px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:14px";
-  const btnSaveStyle = "flex:1;height:44px;box-sizing:border-box;padding:0 14px;border-radius:var(--epillrad, 999px);border:1.5px solid var(--btn);background:var(--btn);color:#fff;font-weight:800;font-size:15px";
+  const btnDelStyle = "display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;box-sizing:border-box;padding:0 14px;border-radius:var(--epillrad, 999px);border:1.5px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:var(--edfs, 15px)";
+  const btnSaveStyle = "flex:1;height:44px;box-sizing:border-box;padding:0 14px;border-radius:var(--epillrad, 999px);border:1.5px solid var(--btn);background:var(--btn);color:#fff;font-weight:800;font-size:var(--edfs, 15px)";
   const selCat = CAT(editing.cat);
   return `<div class="sheet-bg kbpin" id="sheetBg"><div class="sheet" id="sheet" data-look="edit">
     ${/* v2.63 item D: the title IS the name field; then flags, Quantity, Measure, price, Note, Category, Where to buy (no Subcategory) */""}
@@ -8402,11 +8430,11 @@ function editSheet(){
     ${weightChips("edit", editing.weight)}</div>
     <div class="edcell" data-row="cat"${editCatOpen?' data-open="1"':''}><button class="editsec" id="ecHead" aria-label="${t("Category")}"><span class="editsec-l">${t("Category")}</span><span class="editsec-v"><span class="edval">${selCat?`${catIcon(selCat,14)} ${esc(catLabel(selCat))}`:'—'} <span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></span></button>
     ${editCatOpen ? `<div class="edchips">${chipsHTML(editing.cat)}<button class="catchip" id="ecAddCat" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}</div>
-    ${isItem ? (()=>{ const ws=rcSavedStores(), w=editing.where||"", wl=whereIds({ where:w }), cur=whereNames(wl).join(", ");
+    ${(isItem || editing.kind==="ba") ? (()=>{ const ws=rcSavedStores(), w=editing.where||"", wl=whereIds({ where:w }), cur=whereNames(wl).join(", ");
       return `<div class="edcell" data-row="where"${editWhereOpen?' data-open="1"':''}><button class="editsec" id="ewHead" aria-label="${t("Where to buy")}"><span class="editsec-l">${t("Where to buy")}</span><span class="editsec-v"><span class="edval">${esc(cur||t("Anywhere"))} <span class="editsec-ch">${editWhereOpen?'▾':'▸'}</span></span></span></button>
       ${editWhereOpen ? `<div class="edchips"><button class="catchip" data-ew="" style="${!w?'background:var(--btn);border-color:var(--btn);color:#fff':''}">${t("Anywhere")}</button>${ws.map(s=>`<button class="catchip" data-ew="${esc(s.id)}" style="${wl.includes(s.id)?'background:var(--btn);border-color:var(--btn);color:#fff':''}" aria-pressed="${wl.includes(s.id)}">${esc(s.name)}</button>`).join("")}</div>` : ""}</div>`; })() : ""}
     </div>
-    ${isItem ? `<div class="edchips edflags" style="flex-wrap:nowrap">${[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If discounted")}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}
+    ${(isItem || editing.kind==="ba") ? `<div class="edchips edflags" style="flex-wrap:nowrap">${[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If on sale")}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}
     <div style="display:flex;gap:8px;margin-top:16px">
       <button id="delBtn" style="${btnDelStyle}">${TRASH_SVG(17)}${t("Delete")}</button>
       <button id="saveBtn" style="${btnSaveStyle}">${t("Save")}</button>
@@ -8526,7 +8554,7 @@ function wire(){
     b.oncontextmenu=e=>e.preventDefault();
     b.onpointerdown=pressStart; b.onpointerleave=pressCancel; b.onpointercancel=pressCancel;
     b.onpointerup=()=>{ pressCancel();
-      if(longFired){ const en=regFind(name,cat,note); editing={kind:"ba", name, cat, qty:(en?en.qty||1:1), weight:(en?en.weight||"":""), sub:(en?en.sub||"":""), note:(en?en.note||"":note), origName:name, origCat:cat, origNote:(en?en.note||"":note)}; render(); }
+      if(longFired){ const en=regFind(name,cat,note); editing={kind:"ba", name, cat, qty:(en?en.qty||1:1), weight:(en?en.weight||"":""), sub:(en?en.sub||"":""), note:(en?en.note||"":note), where:(en?en.where||"":""), tags:regTags(en), origName:name, origCat:cat, origNote:(en?en.note||"":note)}; render(); }
       else { restore(name,cat,note); } }; });
   const cba=app.querySelector("#clearBA"); if(cba) cba.onclick=()=>{ const prev=snapState(); const now=Date.now(); state.baTomb=state.baTomb||{}; state.buyAgain.forEach(e=>{ state.baTomb[baKey(e)]=now; }); state.buyAgain=[]; save(); render(); showUndo(prev,"Buy-again cleared"); };
 
@@ -8585,7 +8613,7 @@ function wire(){
     /* v2.65 (the household): a long-press opens the Regular's own editor WITHOUT putting it on the list — its Save keeps it a
        Regular only, as long as it is not on the list (v2.42 added it first, then edited the list item) */
     regPress(b, ()=>{ addFromRegular(name,cat,note); }, ()=>{ const en=regFind(name,cat,note)||{};
-      quickEdit=null; editing={kind:"ba", name, cat, qty:en.qty||1, weight:en.weight||"", sub:en.sub||"", note:en.note||"", where:en.where||"", origName:name, origCat:cat, origNote:en.note||""}; render(); return null; }); });
+      quickEdit=null; editing={kind:"ba", name, cat, qty:en.qty||1, weight:en.weight||"", sub:en.sub||"", note:en.note||"", where:en.where||"", tags:regTags(en), origName:name, origCat:cat, origNote:en.note||""}; render(); return null; }); });
   app.querySelectorAll("[data-reg-rm]").forEach(b=>{ const id=b.dataset.regRm;
     regPress(b, ()=>removeFromList(id), ()=>id); });
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; listsOpen=false; render(); };
@@ -8647,9 +8675,11 @@ function wireEditSheet(){
       document.querySelectorAll("#sheet [data-w-open]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
         b.onclick=()=>{ wOpen = (wOpen==="edit") ? null : "edit"; render();
           /* v1.64 item 1: bring the newly-opened grid into view — same reason as the add panel. */
-          const g=document.querySelector("#sheet .wgrid"); if(g) g.scrollIntoView({block:"nearest"}); }; });
+          edShowEnd(document.querySelector("#sheet"), "unit"); }; });
       document.querySelectorAll("#sheet [data-w-set]").forEach(b=>tapNoScroll(b, ()=>{
         const w=b.dataset.wSet.split("|")[1]||""; editing.weight=w; wOpen=null; render(); }));
+      document.querySelectorAll("#sheet [data-wstep]").forEach(b=>tapNoScroll(b, ()=>{   // v2.76: the counters keep the Unit row open
+        const p=b.dataset.wstep.split("|"); editing.weight=wStep(editing.weight,p[1],+p[2]); render(); }));
       const qm=app.querySelector("#qMinus"); if(qm) qm.onclick=()=>{ editing.qty=Math.max(1,(editing.qty||1)-1); render(); };
       const qp=app.querySelector("#qPlus"); if(qp) qp.onclick=()=>{ editing.qty=(editing.qty||1)+1; render(); };
       app.querySelectorAll("[data-ec]").forEach(b=>b.onclick=()=>{ editing.cat=b.dataset.ec; editing.sub=null; render(); });
@@ -8665,8 +8695,8 @@ function wireEditSheet(){
          item saved by an older build both keep working. */
       editing.starred = (editing.tags||[]).includes("urgent");
       render(); });
-      const ech=app.querySelector("#ecHead"); if(ech) ech.onclick=()=>{ editCatOpen=!editCatOpen; render(); };
-      const ewh=app.querySelector("#ewHead"); if(ewh) ewh.onclick=()=>{ editWhereOpen=!editWhereOpen; render(); };   // v2.22 R17
+      const ech=app.querySelector("#ecHead"); if(ech) ech.onclick=()=>{ editCatOpen=!editCatOpen; render(); edShowEnd(document.querySelector("#sheet"), "cat"); };
+      const ewh=app.querySelector("#ewHead"); if(ewh) ewh.onclick=()=>{ editWhereOpen=!editWhereOpen; render(); edShowEnd(document.querySelector("#sheet"), "where"); };   // v2.22 R17
       /* v2.35: shops toggle on and off — several can be ticked; Anywhere clears them */
       app.querySelectorAll("[data-ew]").forEach(b=>b.onclick=()=>{ const id=b.dataset.ew; if(!id){ editing.where=""; render(); return; }
         const s=new Set(whereIds(editing)); if(s.has(id)) s.delete(id); else s.add(id); editing.where=[...s].join(","); render(); });

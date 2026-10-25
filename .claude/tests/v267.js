@@ -92,7 +92,9 @@ const CATS13 = [
     await page.locator('[data-smart-wopen="2"]').click(); await page.waitForTimeout(300);
     const wch = await page.evaluate(()=>[...document.querySelectorAll('[data-smart-wt]')].map(b=>b.textContent.trim()));
     /* SUPERSEDED by v2.71: the empty choice reads "Unit". */
-    ok('Unit opens the same choices as Edit item (6 pack among them)', wch.includes('6 pack') && wch.includes('Unit'), JSON.stringify(wch));
+    /* SUPERSEDED by v2.76: packs, grams, kilos and litres are counters, in Smart add as in Edit item. */
+    const wcnt = await page.evaluate(()=>document.querySelectorAll('[data-smart-wstep]').length);
+    ok('Unit opens the same choices as Edit item (the pack counter among them)', wch.includes('Unit') && wcnt===8, JSON.stringify({ wch, wcnt }));
     await page.locator('#smartConfirm').click(); await page.waitForTimeout(600);
     const c = await cache();
     const by = n=>(c.items.find(i=>i.name.toLowerCase()===n)||{}).cat;

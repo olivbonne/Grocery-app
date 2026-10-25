@@ -2043,7 +2043,7 @@
   .smcols { display:flex; gap:4px; }
   .smtext .smcols { flex-wrap:wrap; }   /* v2.68: Theme, Group by category and Sort — text buttons, wrapping if they must */
   .smtext .smcols .colbtn { width:auto; padding:0 10px; font-size:13px; }
-  .smstores { max-height:132px; overflow-y:auto; }   /* v2.72: the shop chips wrap; 15+ shops scroll, never push the menu off-screen */
+  /* v2.76: .smstores lists every shop — the menu itself scrolls (v2.72's max-height:132px removed) */
   .smtext .smcols .colbtn.smadd { border-style:dashed; }
   .smaddrow { display:flex; gap:6px; }
   .smaddrow input { flex:1; min-width:0; height:34px; padding:0 10px; border-radius:10px; border:1.5px solid var(--line); background:var(--chip); color:var(--text); font-size:16px; outline:none; }
@@ -2140,8 +2140,14 @@ html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell { min-width:0; }
 html[data-lk-edit-rows] [data-look="edit"] .edrows .editsec { flex-direction:column; align-items:flex-start; justify-content:flex-start; gap:4px; margin-top:0 !important; padding-top:0; }
 html[data-lk-edit-rows] [data-look="edit"] .edrows .editsec.ednote { flex-direction:row; flex-wrap:wrap; align-items:center; }
 html[data-lk-edit-rows] [data-look="edit"] .edrows .edval, html[data-lk-edit-rows] [data-look="edit"] .edrows .eqty, html[data-lk-edit-rows] [data-look="edit"] .edrows .editsec-v { max-width:100%; }
-html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-open="1"], html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-row="note"] { grid-column:1/-1; }
-html[data-lk-edit-rows="v"] [data-look="edit"] .edrows > .edcell[data-open="1"], html[data-lk-edit-rows="v"] [data-look="edit"] .edrows > .edcell[data-row="note"] { flex-basis:100%; }
+/* v2.76: an open cell's head keeps its place; only its choices take the next line, full width (v2.74 spanned the whole cell) */
+html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-row="note"] { grid-column:1/-1; }
+html[data-lk-edit-rows="v"] [data-look="edit"] .edrows > .edcell[data-row="note"] { flex-basis:100%; }
+html[data-lk-edit-rows]:not([data-lk-edit-rows="v"]) [data-look="edit"] .edrows { grid-auto-flow:row dense; }
+html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) { display:contents; }
+html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > .editsec { min-width:0; }
+html[data-lk-edit-rows="v"] [data-look="edit"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > .editsec { flex:0 1 auto; max-width:100%; }
+html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > :is(.wgrid, .edchips) { grid-column:1/-1; flex-basis:100%; min-width:0; }
 html[data-lk-edit-names="0"] [data-look="edit"] .edrows .editsec-l { display:none; }
 html[data-lk-edit-names="0"] [data-look="edit"] .edrows .editsec { justify-content:flex-start; }
 html[data-lk-edit-rgap]:not([data-lk-edit-rows]) [data-look="edit"] .edrows > .edcell + .edcell { margin-top:var(--lk-edit-rgapy, 10px); }
@@ -2158,8 +2164,14 @@ html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell { min-width:0; }
 html[data-lk-smart-rows] [data-look="smart"] .edrows .editsec { flex-direction:column; align-items:flex-start; justify-content:flex-start; gap:4px; margin-top:0 !important; padding-top:0; }
 html[data-lk-smart-rows] [data-look="smart"] .edrows .editsec.ednote { flex-direction:row; flex-wrap:wrap; align-items:center; }
 html[data-lk-smart-rows] [data-look="smart"] .edrows .edval, html[data-lk-smart-rows] [data-look="smart"] .edrows .eqty, html[data-lk-smart-rows] [data-look="smart"] .edrows .editsec-v { max-width:100%; }
-html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-open="1"], html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-row="note"] { grid-column:1/-1; }
-html[data-lk-smart-rows="v"] [data-look="smart"] .edrows > .edcell[data-open="1"], html[data-lk-smart-rows="v"] [data-look="smart"] .edrows > .edcell[data-row="note"] { flex-basis:100%; }
+/* v2.76: an open cell's head keeps its place; only its choices take the next line, full width (v2.74 spanned the whole cell) */
+html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-row="note"] { grid-column:1/-1; }
+html[data-lk-smart-rows="v"] [data-look="smart"] .edrows > .edcell[data-row="note"] { flex-basis:100%; }
+html[data-lk-smart-rows]:not([data-lk-smart-rows="v"]) [data-look="smart"] .edrows { grid-auto-flow:row dense; }
+html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) { display:contents; }
+html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > .editsec { min-width:0; }
+html[data-lk-smart-rows="v"] [data-look="smart"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > .editsec { flex:0 1 auto; max-width:100%; }
+html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > :is(.wgrid, .edchips) { grid-column:1/-1; flex-basis:100%; min-width:0; }
 html[data-lk-smart-names="0"] [data-look="smart"] .edrows .editsec-l { display:none; }
 html[data-lk-smart-names="0"] [data-look="smart"] .edrows .editsec { justify-content:flex-start; }
 html[data-lk-smart-rgap]:not([data-lk-smart-rows]) [data-look="smart"] .edrows > .edcell + .edcell { margin-top:var(--lk-smart-rgapy, 10px); }
@@ -2214,3 +2226,17 @@ html[data-lk-edit-names="0"] [data-look="edit"] .edrows .ednote .ednotesel,
 html[data-lk-smart-names="0"] [data-look="smart"] .edrows .ednote .ednotesel { justify-content:flex-start; }
 /* v2.74: the Layout rows' buttons wrap rather than run off the page */
 .lklay { display:flex; flex-wrap:wrap; gap:6px; }
+
+/* v2.76: Urgent and If discounted fit their text when a sheet's Rows or Choices layout is "variable" */
+:is(html[data-lk-edit-rows="v"], html[data-lk-edit-chcols="v"]) [data-look="edit"] .edflags,
+:is(html[data-lk-smart-rows="v"], html[data-lk-smart-chcols="v"]) [data-look="smart"] .edflags { justify-content:flex-start; }
+:is(html[data-lk-edit-rows="v"], html[data-lk-edit-chcols="v"]) [data-look="edit"] .edflags > .flagchip,
+:is(html[data-lk-smart-rows="v"], html[data-lk-smart-chcols="v"]) [data-look="smart"] .edflags > .flagchip { flex:0 0 auto; width:auto; }
+/* v2.76: the g / kg / L counters under the Unit chips — a full-width line each, the .eqty stepper */
+.wgrid > .wcount { grid-column:1/-1; flex:1 1 100% !important; width:100% !important; display:flex !important; align-items:center; justify-content:space-between; gap:10px; text-align:left !important; overflow:visible !important; white-space:normal !important; }
+.wcount .editsec-l, .wcount > span:first-child { font-weight:700; }
+.wcount .wcount-v { min-width:52px; }
+/* v2.76: one font size in the editors (--edfs); the name (.edtitle) stays bigger */
+#sheet[data-look="edit"], .addedit, .smartedit { --edfs:15px; }
+:is(#sheet[data-look="edit"], .addedit, .smartedit) :is(.editsec-l, .edval, .catchip, .flagchip, .eqty, .eqty span, .wcount, .wcount span, .ednotein, .pricemem-c, .addedit-remove, .addedit-done),
+#sheet .ednotefree .edval.ednotein, .addedit .ednotefree .edval.ednotein { font-size:var(--edfs); }
