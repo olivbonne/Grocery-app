@@ -42,7 +42,7 @@ const SHELL = "ml-shell-1";        // bump only if the meaning of the precache c
 const PRECACHE = ["/", "/index.html", "/manifest.webmanifest", "/outfit-latin.woff2", "/outfit-latin-ext.woff2",
   "/img/icon-180.png", "/img/icon-192.png", "/img/icon-512.png",
   "/vendor/firebasejs/10.12.2/firebase-app.js", "/vendor/firebasejs/10.12.2/firebase-firestore.js", "/vendor/firebasejs/10.12.2/firebase-auth.js", "/vendor/firebasejs/10.12.2/firebase-app-check.js",
-  "/app.css?v=2.73", "/js/app.js?v=2.73", "/js/data/catalog.js?v=2.73", "/js/data/drawings.js?v=2.73", "/js/tenpct.js?v=2.73", "/js/compare.js?v=2.73", "/js/shared.js?v=2.73", "/js/spend.js?v=2.73", "/js/aisles.js?v=2.73", "/js/till.js?v=2.73", "/js/platform.js?v=2.73", "/js/amounts.js?v=2.73", "/js/i18n.js?v=2.73", "/js/parse.js?v=2.73", "/js/merge.js?v=2.73", "/js/store.js?v=2.73"];
+  "/app.css?v=2.74", "/js/app.js?v=2.74", "/js/data/catalog.js?v=2.74", "/js/data/drawings.js?v=2.74", "/js/tenpct.js?v=2.74", "/js/compare.js?v=2.74", "/js/shared.js?v=2.74", "/js/spend.js?v=2.74", "/js/aisles.js?v=2.74", "/js/till.js?v=2.74", "/js/platform.js?v=2.74", "/js/amounts.js?v=2.74", "/js/i18n.js?v=2.74", "/js/parse.js?v=2.74", "/js/merge.js?v=2.74", "/js/store.js?v=2.74"];
 const NAV_TIMEOUT_MS = 4000;       // every wait ends: a slow network never holds the app back longer than this when a copy is on the phone
 
 const ALWAYS = new Set(["/", "/index.html", "/manifest.webmanifest"]);   // re-fetched on every install; the rest only when missing
