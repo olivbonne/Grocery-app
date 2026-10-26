@@ -73,8 +73,9 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     await page.locator('#shopMenuBtn, [aria-label="More"]').first().click(); await page.waitForTimeout(400);
     /* SUPERSEDED by v2.81: the ↕ glyph looked unlike the ↔ beside it; the button is the width's ↔ turned 90°. Still protected:
        the variable-height button is visibly vertical. */
-    const vb = await page.evaluate(()=>{ const s=document.querySelector('[data-sm-lines=""] .rot90'); return s ? { t:s.textContent.trim(), tr:getComputedStyle(s).transform } : null; });
-    ok('the ⋯ menu\'s variable-height button is ↔ turned upright', vb && vb.t==='↔' && /matrix\((-?0|6\.1\d*e-17|-?[0-9.e-]+), 1, -1, (-?0|6\.1\d*e-17|-?[0-9.e-]+), 0, 0\)/.test(vb.tr), JSON.stringify(vb));
+    /* SUPERSEDED by v2.82: the arrow is a drawn mark (iOS drew the characters as emoji), turned upright for height. */
+    const vb = await page.evaluate(()=>{ const s=document.querySelector('[data-sm-lines=""] svg.arrowmk.up'); return s ? { tr:getComputedStyle(s).transform } : null; });
+    ok('the ⋯ menu\'s variable-height button is the arrow turned upright', vb && /^matrix\([^,]+, 1, -1,/.test(vb.tr), JSON.stringify(vb));
     await page.evaluate(()=>{ const b=document.querySelector('#smBg'); if(b) b.click(); }); await page.waitForTimeout(300);
 
     /* the note in the one-line layouts, filled tiles */
@@ -105,9 +106,9 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     await mk({ doc:TD, extra:TX+'localStorage.setItem("ml_largecols","3");' });
     await page.locator('#setNav').click(); await page.waitForTimeout(600);
     const st = await page.evaluate(()=>({ across:/Tiles across/.test(document.body.textContent), old:/Tile display/.test(document.body.textContent), box:document.querySelectorAll('[data-tiledisp], .tdopt').length,
-      varh:(document.querySelector('[data-opt-lines=""] .rot90')||{}).textContent }));
+      varh:!!document.querySelector('[data-opt-lines=""] svg.arrowmk.up') }));
     ok('Settings: "Tiles across", no "Tile display" box', st.across && !st.old && st.box===0, JSON.stringify(st));
-    ok('…the variable-height button is the turned ↔ too', (st.varh||'').trim()==='↔', JSON.stringify(st));   // SUPERSEDED by v2.81 (was ↕)
+    ok('…the variable-height button is the turned arrow too', st.varh===true, JSON.stringify(st));   // SUPERSEDED by v2.81 (was ↕), v2.82 (drawn)
     await page.locator('[data-opt-cols="2"]').click(); await page.waitForTimeout(500);
     ok('…and its 2 sets two columns', await page.evaluate(()=>localStorage.getItem('ml_largecols'))==='2', '');
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-settings.png') });
