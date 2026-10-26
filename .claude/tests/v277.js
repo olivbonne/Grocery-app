@@ -63,13 +63,17 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     const rel = async()=>{ const q=await top('#sheet .edcell[data-row="qty"]'); return { unit:(await top('#sheet [data-w-open]'))-q, cat:(await top('#ecHead'))-q, where:(await top('#ewHead'))-q }; };
     const cRel = { unit:closed.unit-closed.qty, cat:closed.cat-closed.qty, where:closed.where-closed.qty };
     let r1 = await rel();
-    ok('opening Unit moves no row tile (Unit stays beside Quantity)', JSON.stringify(r1)===JSON.stringify(cRel) && r1.unit===0, JSON.stringify({ cRel, r1 }));
+    /* SUPERSEDED by v2.79: Unit's list now opens between the Quantity/Unit line and the Category/Where line (the household's
+       order), so Category and Where move down by the list. Still protected: Unit stays beside Quantity, and Category and
+       Where stay on one line together. */
+    ok('opening Unit keeps it beside Quantity; Category and Where stay together', r1.unit===0 && r1.cat===r1.where && r1.cat>cRel.cat, JSON.stringify({ cRel, r1 }));
+    const rOpen = r1;
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-unit.png') });
     const t0 = await top('#sheet');
     await page.locator('#sheet [data-w-set="edit|cup"]').click(); await page.waitForTimeout(500);
     const after = { open:await page.locator('#sheet .wgrid').count(), unit:await top('#sheet [data-w-open]'), sheet:await top('#sheet'), anim:await page.evaluate(()=>getComputedStyle(document.querySelector('#sheet')).animationName) };
     r1 = await rel();
-    ok('picking cup keeps the list open, and no row tile moves', after.open===1 && JSON.stringify(r1)===JSON.stringify(cRel), JSON.stringify({ after, r1 }));
+    ok('picking cup keeps the list open, and no row tile moves', after.open===1 && JSON.stringify(r1)===JSON.stringify(rOpen), JSON.stringify({ after, r1, rOpen }));   // SUPERSEDED by v2.79: compared with Unit open, not closed
     ok('…the sheet keeps still: its top does not move, and it does not slide in again', after.sheet===t0 && after.anim==='none', JSON.stringify({ t0, after }));
     await page.locator('#sheet [data-w-open]').click(); await page.waitForTimeout(400);
     await page.locator('#ecHead').click(); await page.waitForTimeout(500);

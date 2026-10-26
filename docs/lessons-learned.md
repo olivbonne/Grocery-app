@@ -169,3 +169,8 @@ the household asked for is not a lesson.*
     The clamps had counted the amount but not the note's own lines, and flex shrank the name to make room. *Guard:* the name
     never shrinks (`flex-shrink:0`), the note is clamped too, and the suite checks that every name shows a whole number of lines
     and nothing leaves its tile, at 3, 4 and 8 lines and square.
+47. **A fix that holds something still must say when to let go.** v2.77 stopped Edit item jumping by never letting the sheet
+    get shorter while it was open — so after every list was closed it stayed tall, and with the keyboard up it was mostly
+    empty space (fixed v2.79). The floor was meant for picks inside an open list, not for closing one. *Guard:* the floor is
+    tied to the set of open lists and resets when it changes, and the suite checks that closing the last list brings the
+    sheet back to its closed height. When a fix freezes a size, a position or a scroll, write down the event that releases it.

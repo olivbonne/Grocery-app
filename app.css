@@ -1171,6 +1171,13 @@
   html[data-tilelines="7"] .shop .zoomer:not(.linelist):not(.largevar) .pill .pname { -webkit-line-clamp:7; } html[data-tilelines="7"] .shop .zoomer:not(.linelist):not(.largevar) .pill:has(.pill-meta) .pname { -webkit-line-clamp:6; } html[data-tilelines="7"] .shop .zoomer:not(.linelist):not(.largevar) .pill.hasnote .pname { -webkit-line-clamp:5; } html[data-tilelines="7"] .shop .zoomer:not(.linelist):not(.largevar) .pill.hasnote:has(.pill-meta) .pname { -webkit-line-clamp:4; } html[data-tilelines="7"] .shop .zoomer:not(.linelist):not(.largevar) .pill.hasnote .pnote { -webkit-line-clamp:2; }
   html[data-tilelines="8"] .shop .zoomer:not(.linelist):not(.largevar) .pill .pname { -webkit-line-clamp:8; } html[data-tilelines="8"] .shop .zoomer:not(.linelist):not(.largevar) .pill:has(.pill-meta) .pname { -webkit-line-clamp:7; } html[data-tilelines="8"] .shop .zoomer:not(.linelist):not(.largevar) .pill.hasnote .pname { -webkit-line-clamp:6; } html[data-tilelines="8"] .shop .zoomer:not(.linelist):not(.largevar) .pill.hasnote:has(.pill-meta) .pname { -webkit-line-clamp:5; } html[data-tilelines="8"] .shop .zoomer:not(.linelist):not(.largevar) .pill.hasnote .pnote { -webkit-line-clamp:2; }
   html[data-tilelines="sq"] .shop .zoomer:not(.linelist):not(.largevar) .pill.hasnote:has(.pill-meta) .pname { -webkit-line-clamp:1; }
+  /* B79 v2.79: heights 1 and 2 — no room for the amount's line, so it becomes a badge in the top-right corner, above the name (bottom-right ran into the name and note) (the marks
+     sit top-left, the aisle badge outside top-right); 1 line: the name only, the note hidden (still in Edit item);
+     2 lines: the name 2 lines, or the name 1 + the note 1 */
+  html[data-tilelines="1"] .shop .zoomer:not(.linelist):not(.largevar) .pill, html[data-tilelines="2"] .shop .zoomer:not(.linelist):not(.largevar) .pill { position:relative; }
+  html[data-tilelines="1"] .shop .zoomer:not(.linelist):not(.largevar) .pill .pill-meta, html[data-tilelines="2"] .shop .zoomer:not(.linelist):not(.largevar) .pill .pill-meta { position:absolute; top:4px; right:5px; z-index:2; font-size:11px; line-height:1; margin:0; padding:2px 3px; border-radius:6px; background:inherit; }
+  html[data-tilelines="1"] .shop .zoomer:not(.linelist):not(.largevar) .pill .pname { -webkit-line-clamp:1; } html[data-tilelines="1"] .shop .zoomer:not(.linelist):not(.largevar) .pill.hasnote .pnote { display:none; }
+  html[data-tilelines="2"] .shop .zoomer:not(.linelist):not(.largevar) .pill .pname { -webkit-line-clamp:2; } html[data-tilelines="2"] .shop .zoomer:not(.linelist):not(.largevar) .pill.hasnote .pname { -webkit-line-clamp:1; }
   /* in fixed-column small tiles the icon and name share the first line and the amount takes its own line
      under the name — on one line the amount left a 115px tile no room for "Chicken thigh" */
   .shop .zoomer.smalltile.gridmode .pill { flex-wrap:wrap; align-content:center; row-gap:0; column-gap:5px; padding:6px 8px; font-size:14px; }
@@ -1736,6 +1743,20 @@
   .tdprev-var u:nth-child(5){ width:20%; }
   .tdprev-grid b, .tdprev-small b { grid-column:1/-1; display:block; height:4px; border-radius:2px; background:var(--accent); opacity:.85; }
   .tdprev-var b { width:100%; display:block; height:4px; border-radius:2px; background:var(--accent); opacity:.85; }
+  /* v2.79: Settings › Tiles › Preview — display × height in miniature */
+  .tlprev { width:200px; max-width:100%; box-sizing:border-box; background:var(--chip); padding:8px; border-radius:10px; }
+  .tlprev-list { display:flex; flex-direction:column; gap:5px; }
+  .tlprev-list i { display:block; height:12px; border-radius:3px; background:var(--tilebg, var(--card)); }
+  .tlprev-var { display:flex; flex-wrap:wrap; gap:4px; }
+  .tlprev-var u { display:block; height:12px; border-radius:3px; background:var(--tilebg, var(--card)); }
+  .tlprev-var u:nth-child(3n+1){ width:30%; } .tlprev-var u:nth-child(3n+2){ width:45%; } .tlprev-var u:nth-child(3n){ width:18%; }
+  .tlprev-grid { display:grid; gap:4px; align-items:stretch; }
+  .tlptile { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:4px 3px; border-radius:4px; background:var(--tilebg, var(--card)); min-width:0; box-sizing:border-box; }
+  .tlptile.tlpsq { aspect-ratio:1/1; overflow:hidden; }
+  .tlptile em { display:block; width:7px; height:7px; border-radius:50%; background:var(--muted2); opacity:.6; flex:none; }
+  .tlptile i { display:block; width:100%; height:4px; border-radius:2px; background:var(--muted2); opacity:.45; flex:none; }
+  .tlptile i:first-of-type { background:var(--ink); opacity:.7; }
+  .tlprevhint { font-size:12px; color:var(--muted2); margin-top:4px; }
   /* v1.15 combined-page planning section (regulars to re-add, below the shopping list) */
   .plansec { margin-top:22px; border-top:1.5px dashed var(--line); padding-top:12px; }
   /* v1.74 item 2: the same type as the category labels it heads — 18px/600, sentence case, the page's
@@ -2167,7 +2188,21 @@ html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-open="1"]:not(
 html[data-lk-edit-rows="v"] [data-look="edit"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > .editsec { flex:0 1 auto; max-width:100%; }
 /* v2.77: the open row's tile keeps its own width (.editsec is width:100% by default), so it stays on the line beside Quantity */
 html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > .editsec { width:auto; }
-html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > :is(.wgrid, .edchips) { grid-column:1/-1; flex-basis:100%; min-width:0; order:50; }   /* v2.77: an open list comes after every row tile, so no tile moves when it opens or closes */
+html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > :is(.wgrid, .edchips) { grid-column:1/-1; flex-basis:100%; min-width:0; }
+/* v2.79 (the household): Quantity and Unit on the first line, Category and Where to buy on the next; Unit's list opens
+   between the two lines, Category's and Where's under the second (v2.77 put every open list after all the tiles). */
+html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-row="qty"], html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-row="qty"][data-open="1"] > .editsec { order:1; }
+html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-row="unit"], html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-row="unit"][data-open="1"] > .editsec { order:2; }
+html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-row="unit"][data-open="1"] > :is(.wgrid, .edchips) { order:3; }
+html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-row="cat"], html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-row="cat"][data-open="1"] > .editsec { order:5; }
+html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-row="where"], html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-row="where"][data-open="1"] > .editsec { order:6; }
+html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-row="cat"][data-open="1"] > :is(.wgrid, .edchips) { order:7; }
+html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-row="where"][data-open="1"] > :is(.wgrid, .edchips) { order:8; }
+html[data-lk-edit-rows="v"] [data-look="edit"] .edrows::before { content:""; order:4; flex-basis:100%; height:0; }
+/* the break line is empty, so in "variable" the space between lines is each tile's bottom margin, not row-gap (which would
+   count the empty line too); the last line's margin is taken back */
+html[data-lk-edit-rows="v"] [data-look="edit"] .edrows { row-gap:0; margin-bottom:calc(-1 * var(--lk-edit-rgapy, 10px)); }
+html[data-lk-edit-rows="v"] [data-look="edit"] .edrows > .edcell:not([data-open="1"]), html[data-lk-edit-rows="v"] [data-look="edit"] .edrows > .edcell[data-open="1"] > * { margin-bottom:var(--lk-edit-rgapy, 10px); }
 html[data-lk-edit-names="0"] [data-look="edit"] .edrows .editsec-l { display:none; }
 html[data-lk-edit-names="0"] [data-look="edit"] .edrows .editsec { justify-content:flex-start; }
 html[data-lk-edit-rgap]:not([data-lk-edit-rows]) [data-look="edit"] .edrows > .edcell + .edcell { margin-top:var(--lk-edit-rgapy, 10px); }
@@ -2192,7 +2227,17 @@ html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-open="1"]:no
 html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > .editsec { min-width:0; }
 html[data-lk-smart-rows="v"] [data-look="smart"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > .editsec { flex:0 1 auto; max-width:100%; }
 html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > .editsec { width:auto; }
-html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > :is(.wgrid, .edchips) { grid-column:1/-1; flex-basis:100%; min-width:0; order:50; }   /* v2.77: an open list comes after every row tile, so no tile moves when it opens or closes */
+html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > :is(.wgrid, .edchips) { grid-column:1/-1; flex-basis:100%; min-width:0; }
+html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-row="qty"], html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-row="qty"][data-open="1"] > .editsec { order:1; }
+html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-row="unit"], html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-row="unit"][data-open="1"] > .editsec { order:2; }
+html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-row="unit"][data-open="1"] > :is(.wgrid, .edchips) { order:3; }
+html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-row="cat"], html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-row="cat"][data-open="1"] > .editsec { order:5; }
+html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-row="where"], html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-row="where"][data-open="1"] > .editsec { order:6; }
+html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-row="cat"][data-open="1"] > :is(.wgrid, .edchips) { order:7; }
+html[data-lk-smart-rows] [data-look="smart"] .edrows > .edcell[data-row="where"][data-open="1"] > :is(.wgrid, .edchips) { order:8; }
+html[data-lk-smart-rows="v"] [data-look="smart"] .edrows::before { content:""; order:4; flex-basis:100%; height:0; }
+html[data-lk-smart-rows="v"] [data-look="smart"] .edrows { row-gap:0; margin-bottom:calc(-1 * var(--lk-smart-rgapy, 10px)); }
+html[data-lk-smart-rows="v"] [data-look="smart"] .edrows > .edcell:not([data-open="1"]), html[data-lk-smart-rows="v"] [data-look="smart"] .edrows > .edcell[data-open="1"] > * { margin-bottom:var(--lk-smart-rgapy, 10px); }
 html[data-lk-smart-names="0"] [data-look="smart"] .edrows .editsec-l { display:none; }
 html[data-lk-smart-names="0"] [data-look="smart"] .edrows .editsec { justify-content:flex-start; }
 html[data-lk-smart-rgap]:not([data-lk-smart-rows]) [data-look="smart"] .edrows > .edcell + .edcell { margin-top:var(--lk-smart-rgapy, 10px); }
