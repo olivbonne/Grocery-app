@@ -2316,3 +2316,11 @@ html .wgrid > .wcount.wcount { grid-column:auto; flex:0 0 auto !important; width
 #sheet[data-look="edit"], .addedit, .smartedit { --edfs:15px; }
 :is(#sheet[data-look="edit"], .addedit, .smartedit) :is(.editsec-l, .edval, .catchip, .flagchip, .eqty, .eqty span, .wcount, .wcount span, .ednotein, .pricemem-c, .addedit-remove, .addedit-done),
 #sheet .ednotefree .edval.ednotein, .addedit .ednotefree .edval.ednotein { font-size:var(--edfs); }
+/* v2.80+: the variable-height button is the width's ↔ turned upright (the household: the ↕ glyph looked different) */
+.rot90 { display:inline-block; transform:rotate(90deg); }
+/* v2.81: the note and the amount are 0.65 of the name, in every layout (the household measured it on a reference app:
+   cap height 36px for the name, 23–24px for the line under it). The tile's own font-size is the name's (18px, 11.5px at
+   5 columns…), so em follows it; before, the note was a fixed 13px (bigger than the name at 5 columns) and the amount
+   0.8 of the name in columns and as big as the name in the one-line layouts. */
+html body .zoomer.zoomer.zoomer.zoomer .pill.pill.pill > :is(.pnote, .pill-meta) { font-size:max(10px, .65em); }   /* never under 10px: 0.65 of the 11.5px name at 5 columns would be 7.5px */
+html body .zoomer.zoomer.zoomer.zoomer .pill.pill.pill > .pill-meta .qty { font-size:inherit; }   /* .qty's own 13px (v1.38) would ignore the ratio */

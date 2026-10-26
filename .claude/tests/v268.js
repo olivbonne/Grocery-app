@@ -84,7 +84,9 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
 
     /* the line under the name */
     const fs13 = await page.evaluate(()=>{ const n=document.querySelector('#zoomer .pill[data-pill] .pnote'), q=document.querySelector('#zoomer .pill .qty'); return { note:n&&getComputedStyle(n).fontSize, qty:q&&getComputedStyle(q).fontSize }; });
-    ok('the line under an item\'s name is as big as its quantity (13px)', fs13.note==='13px', JSON.stringify(fs13));
+    /* SUPERSEDED by v2.81: the note and the quantity are 0.65 of the name (never under 10px), not a fixed 13px. Still
+       protected: the line under the name is as big as the quantity. */
+    ok('the line under an item\'s name is as big as its quantity', fs13.note && (!fs13.qty || fs13.note===fs13.qty), JSON.stringify(fs13));
 
     /* B. shape settings */
     const src = fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8');
