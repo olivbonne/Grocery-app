@@ -1755,7 +1755,7 @@
   .tlprev-var u:nth-child(3n+1){ width:30%; } .tlprev-var u:nth-child(3n+2){ width:45%; } .tlprev-var u:nth-child(3n){ width:18%; }
   .tlprev-grid { display:grid; gap:4px; align-items:stretch; }
   .tlptile { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; padding:4px 3px; border-radius:4px; background:var(--tilebg, var(--card)); min-width:0; box-sizing:border-box; }
-  .tlptile.tlpsq { aspect-ratio:1/1; overflow:hidden; }
+  .tlptile.tlpsq { aspect-ratio:1/1; overflow:hidden; width:100%; justify-self:stretch; align-self:start; }   /* v2.82: Safari sizes an aspect-ratio box to its content unless told (lesson 48 again — the preview was missed) */
   .tlptile em { display:block; width:7px; height:7px; border-radius:50%; background:var(--muted2); opacity:.6; flex:none; }
   .tlptile i { display:block; width:100%; height:4px; border-radius:2px; background:var(--muted2); opacity:.45; flex:none; }
   .tlptile i:first-of-type { background:var(--ink); opacity:.7; }
@@ -2084,6 +2084,7 @@
   .smzpct { min-width:46px; text-align:center; font-weight:800; font-size:14px; }
   .smcols { display:flex; gap:4px; }
   .smtext .smcols { flex-wrap:wrap; }   /* v2.68: Theme, Group by category and Sort — text buttons, wrapping if they must */
+  .smtiles .smcols { flex-wrap:wrap; row-gap:4px; }   /* v2.82: Height has 10 buttons since v2.79 — the last (square) ran off the menu's edge */
   .smtext .smcols .colbtn { width:auto; padding:0 10px; font-size:13px; }
   /* v2.76: .smstores lists every shop — the menu itself scrolls (v2.72's max-height:132px removed) */
   .smtext .smcols .colbtn.smadd { border-style:dashed; }
@@ -2316,8 +2317,10 @@ html .wgrid > .wcount.wcount { grid-column:auto; flex:0 0 auto !important; width
 #sheet[data-look="edit"], .addedit, .smartedit { --edfs:15px; }
 :is(#sheet[data-look="edit"], .addedit, .smartedit) :is(.editsec-l, .edval, .catchip, .flagchip, .eqty, .eqty span, .wcount, .wcount span, .ednotein, .pricemem-c, .addedit-remove, .addedit-done),
 #sheet .ednotefree .edval.ednotein, .addedit .ednotefree .edval.ednotein { font-size:var(--edfs); }
-/* v2.80+: the variable-height button is the width's ↔ turned upright (the household: the ↕ glyph looked different) */
-.rot90 { display:inline-block; transform:rotate(90deg); }
+/* v2.82: the width and height arrows are one drawn mark (arrowSVG); height is it turned upright. Characters were not
+   reliable: iOS drew ↕ as a blue emoji box. */
+.arrowmk { display:block; margin:auto; }
+.arrowmk.up { transform:rotate(90deg); }
 /* v2.81: the note and the amount are 0.65 of the name, in every layout (the household measured it on a reference app:
    cap height 36px for the name, 23–24px for the line under it). The tile's own font-size is the name's (18px, 11.5px at
    5 columns…), so em follows it; before, the note was a fixed 13px (bigger than the name at 5 columns) and the amount

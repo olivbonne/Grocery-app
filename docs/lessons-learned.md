@@ -180,3 +180,10 @@ the household asked for is not a lesson.*
     *Guard:* say the size you mean (`width:100%; justify-self:stretch`) instead of relying on a default the engines disagree
     on, and when a phone screenshot disagrees with the tests, make the test play the phone's rule (v280.js injects Safari's
     `justify-self:start` and checks the tiles still fill their columns). There is no WebKit in this container.
+49. **Fix the pattern, not the one place it showed.** v2.80 fixed square tiles in Safari (lesson 48) but not the Settings
+    preview's own square mini tiles, which collapsed to 13px on the iPhone; and v2.79 added two buttons to the ⋯ menu's Height
+    row, which does not wrap, so its last button ran off the edge (lesson 40's "a growing panel" again, one level down). The
+    same release also learned that iOS draws some arrow characters as emoji (↕ became a blue box), which is why the project
+    rule says interface marks are drawn SVGs, not characters (fixed v2.82). *Guard:* when a fix names a rule ("an
+    aspect-ratio box in a grid", "a row of buttons"), grep for every place that rule applies before shipping; the v2.82 suite
+    plays Safari on the preview, checks every menu button sits inside the menu, and fails on an arrow character in a button.

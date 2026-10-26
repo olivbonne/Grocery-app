@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.81";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.81";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.81";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.81";
-import { compareStores, worthIt } from "./compare.js?v=2.81";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.81";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.81";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.81";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.81";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.81";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.81";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.81";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.81";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.81";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.82";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.82";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.82";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.82";
+import { compareStores, worthIt } from "./compare.js?v=2.82";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.82";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.82";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.82";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.82";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.82";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.82";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.82";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.82";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.82";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.81";
+const APP_VERSION = "v2.82";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -854,11 +854,14 @@ function applyIcoSize(){ try{ document.documentElement.setAttribute("data-icosiz
    measures one probe tile of that many lines into --tileh-fixed), or "sq" as tall as it is wide. A LOOK, like the icon size,
    so it is deliberately NOT in APP_EXCLUDE. Published on <html> as data-tilelines only when set; the one-line layouts
    (.linelist, .largevar) ignore it in the stylesheet. No const here: applyTheme() runs this at boot. */
+/* v2.82: the width / height arrows are drawn (interface chrome gets drawn marks, CLAUDE.md): iOS showed the ↕ character as a
+   blue emoji box. One mark, turned upright for height. A function so it is ready whenever render() first runs. */
+function arrowSVG(up){ return `<svg class="arrowmk${up?' up':''}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg>`; }
 function tileLines(){ try{ const v=localStorage.getItem("ml_tilelines")||""; return /^([1-8]|sq)$/.test(v) ? v : ""; }catch(e){ return ""; } }
 function applyTileLines(){ try{ const v=tileLines(), h=document.documentElement; if(v) h.setAttribute("data-tilelines", v); else h.removeAttribute("data-tilelines"); }catch(e){} }
 function setTileLines(v){ v=String(v||""); try{ if(/^([1-8]|sq)$/.test(v)) localStorage.setItem("ml_tilelines", v); else localStorage.removeItem("ml_tilelines"); }catch(e){} applyTileLines(); render(); }
 function tileLinesBtns(attr){ return [1,2,3,4,5,6,7,8].map(n=>`<button class="colbtn ${tileLines()===String(n)?'on':''}" ${attr}="${n}">${n}</button>`).join("")
-  +`<button class="colbtn ${tileLines()===''?'on':''}" ${attr}="" aria-label="${t("Variable height")}"><span class="rot90" aria-hidden="true">↔</span></button><button class="colbtn ${tileLines()==='sq'?'on':''}" ${attr}="sq" aria-label="${t("Square")}">□</button>`; }
+  +`<button class="colbtn ${tileLines()===''?'on':''}" ${attr}="" aria-label="${t("Variable height")}">${arrowSVG(true)}</button><button class="colbtn ${tileLines()==='sq'?'on':''}" ${attr}="sq" aria-label="${t("Square")}">□</button>`; }
 /* v2.79: Settings › Tiles › Preview — the list in miniature as tile display and height combine. Bars, not real tiles. */
 function tilePrevHTML(){
   const large=dispBase()==='large', cols=large?largeCols():4, h=tileLines(), dot=itemEmojiOn();
@@ -5887,7 +5890,7 @@ function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRe
   const item = (id, icon, label) => `<button class="smitem" id="${id}" role="menuitem">${icon}<span>${label}</span></button>`;
   return `<div class="smbg" id="smBg"><div class="smenu" id="shopMenuEl" role="menu" aria-label="${t("More")}">
     ${/* v2.72: choose the shop here, as Settings › Shopping › Store does — the menu stays open */""}<div class="smtiles smtext"><span class="smtlabel">${t("Store")}</span><div class="smcols smstores">${[{id:"auto",name:t("Auto-detect")},{id:"home",name:t("Home")},...STORES.filter(s=>!storeOverride(s.id).hidden).map(s=>storeById(s.id)),...(state.stores||[]).filter(s=>!storeOverride(s.id).hidden),{id:"other",name:t("Other")}].filter(Boolean).map(s=>`<button class="colbtn ${storeSel===s.id?'on':''}" data-sm-store="${esc(s.id)}">${esc(s.name)}</button>`).join("")}<button class="colbtn smadd" data-sm-storeadd>${t("＋ New shop")}</button></div>${smStoreAdding?`<div class="smaddrow"><input id="smStoreName" placeholder="${t("Shop name")}" aria-label="${t("Shop name")}" autocomplete="off" /><button class="colbtn" id="smStoreAddGo" style="width:auto;padding:0 12px">${t("Add")}</button></div>`:""}</div>
-    <div class="smtiles"><span class="smtlabel">${t("Tiles")}</span><div class="smcols">${[1,2,3,4,5,6].map(n=>`<button class="colbtn ${largeCols()===n?'on':''}" data-sm-cols="${n}">${n}</button>`).join("")}<button class="colbtn ${largeCols()===0?'on':''}" data-sm-cols="0" aria-label="${t("Variable width — tiles size to the word")}">↔</button></div></div>
+    <div class="smtiles"><span class="smtlabel">${t("Tiles")}</span><div class="smcols">${[1,2,3,4,5,6].map(n=>`<button class="colbtn ${largeCols()===n?'on':''}" data-sm-cols="${n}">${n}</button>`).join("")}<button class="colbtn ${largeCols()===0?'on':''}" data-sm-cols="0" aria-label="${t("Variable width — tiles size to the word")}">${arrowSVG()}</button></div></div>
     ${/* v2.78: tile height, under Tiles — the menu stays open */""}<div class="smtiles"><span class="smtlabel">${t("Height")}</span><div class="smcols">${tileLinesBtns("data-sm-lines")}</div></div>
     ${/* v2.63 item C: Text size, as in Settings — the menu stays open */""}<div class="smtiles smzoom"><span class="smtlabel">${t("Text size")}</span><div class="smcols"><button class="colbtn" data-sm-zoom="-1" aria-label="${t("Smaller text")}">−</button><span class="smzpct">${Math.round(dens()*100)}%</span><button class="colbtn" data-sm-zoom="1" aria-label="${t("Larger text")}">+</button></div></div>
     ${/* v2.68 (the household): Theme, Group by category and Sort, as in Settings — the menu stays open */""}<div class="smtiles smtext"><span class="smtlabel">${t("Theme")}</span><div class="smcols"><button class="colbtn ${theme==='light'?'on':''}" data-sm-theme="light">${t("Light")}</button><button class="colbtn ${theme==='dark'?'on':''}" data-sm-theme="dark">${t("Dark")}</button></div></div>
@@ -8167,7 +8170,7 @@ function optionsBody(){
       <div class="tdlist">
         <div class="tdrow">
         ${/* v2.80: the "Tile display" box went (the household) — the numbers say it, the Preview row shows it */""}
-        <div class="dispcols">${[1,2,3,4,5,6].map(n=>`<button class="colbtn ${dispBase()==='large'&&largeCols()===n?'on':''}" data-opt-cols="${n}">${n}</button>`).join("")}<button class="colbtn ${dispBase()==='large'&&largeCols()===0?'on':''}" data-opt-cols="0" title="${t("Variable width — tiles size to the word")}">↔</button></div>
+        <div class="dispcols">${[1,2,3,4,5,6].map(n=>`<button class="colbtn ${dispBase()==='large'&&largeCols()===n?'on':''}" data-opt-cols="${n}">${n}</button>`).join("")}<button class="colbtn ${dispBase()==='large'&&largeCols()===0?'on':''}" data-opt-cols="0" title="${t("Variable width — tiles size to the word")}">${arrowSVG()}</button></div>
         </div>
       </div></div></div>
     ${/* v2.78: tile height, next to the columns */""}<div class="optrow optrow-wide optnl"><span class="optlabel">${t("Tile height")}</span><div class="optwide"><div class="dispcols">${tileLinesBtns("data-opt-lines")}</div></div></div>
@@ -8220,7 +8223,7 @@ function optionsBody(){
     ${/* v2.74: the layout — Rows and Choices in two levels, the row names, the gap between rows (Choices only for sheets without rows) */""}
     ${subhead("Layout")}
     ${(()=>{ const hasRows = lookSheet==="edit" || lookSheet==="smart";
-      const seg=k=>`<div class="smcols lklay">${[["","Default"],["1"],["2"],["3"],["4"],["5"],["6"],["v"]].map(([v,l])=>`<button class="colbtn ${lkLay(lookSheet,k)===v?'on':''}" data-lk-${k}="${lookSheet}|${v}"${v==="v"?` aria-label="${t("Variable width")}"`:""}${v===""?' style="width:auto;padding:0 10px"':""}>${v===""?t(l):v==="v"?"↔":v}</button>`).join("")}</div>`;
+      const seg=k=>`<div class="smcols lklay">${[["","Default"],["1"],["2"],["3"],["4"],["5"],["6"],["v"]].map(([v,l])=>`<button class="colbtn ${lkLay(lookSheet,k)===v?'on':''}" data-lk-${k}="${lookSheet}|${v}"${v==="v"?` aria-label="${t("Variable width")}"`:""}${v===""?' style="width:auto;padding:0 10px"':""}>${v===""?t(l):v==="v"?arrowSVG():v}</button>`).join("")}</div>`;
       const wide=(l,c)=>`<div class="optrow optrow-wide optnl"><span class="optlabel">${l}</span><div class="optwide">${c}</div></div>`;   // the label above: eight buttons do not fit beside it
       return `${hasRows ? wide(t("Rows"), seg("rows")) : ""}
     ${wide(t("Choices"), seg("chcols"))}

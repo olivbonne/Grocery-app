@@ -66,8 +66,10 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     const s5 = await sizes();
     ok('5 columns: never under 10px, and the note never bigger than the name', s5.note===10 && s5.meta===10 && s5.note<=s5.name, JSON.stringify(s5));
     await page.locator('#setNav').click(); await page.waitForTimeout(600);
-    const vb = await page.evaluate(()=>{ const s=document.querySelector('[data-opt-lines=""] .rot90'), w=document.querySelector('[data-opt-cols="0"]'); return s ? { t:s.textContent.trim(), w:w&&w.textContent.trim(), tr:getComputedStyle(s).transform } : null; });
-    ok('Settings: the variable-height button is the width\'s ↔ turned 90°', vb && vb.t==='↔' && vb.w==='↔' && /^matrix\([^,]+, 1, -1,/.test(vb.tr), JSON.stringify(vb));
+    /* SUPERSEDED by v2.82: both arrows are the same drawn mark (iOS drew ↕ as an emoji box); height turns it 90°. */
+    const vb = await page.evaluate(()=>{ const s=document.querySelector('[data-opt-lines=""] svg.arrowmk.up'), w=document.querySelector('[data-opt-cols="0"] svg.arrowmk:not(.up)');
+      return s && w ? { same:s.innerHTML===w.innerHTML, tr:getComputedStyle(s).transform } : null; });
+    ok('Settings: the variable-height button is the width\'s arrow turned 90°', vb && vb.same && /^matrix\([^,]+, 1, -1,/.test(vb.tr), JSON.stringify(vb));
     if(out){ await page.evaluate(()=>document.querySelector('[data-opt-lines=""]').scrollIntoView({block:'center'})); await page.screenshot({ path: out.replace(/\.png$/,'-btn.png') }); }
   } catch(e){ ok('suite ran to the end', false, (e.stack||e.message).slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));
