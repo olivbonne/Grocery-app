@@ -858,7 +858,7 @@ function tileLines(){ try{ const v=localStorage.getItem("ml_tilelines")||""; ret
 function applyTileLines(){ try{ const v=tileLines(), h=document.documentElement; if(v) h.setAttribute("data-tilelines", v); else h.removeAttribute("data-tilelines"); }catch(e){} }
 function setTileLines(v){ v=String(v||""); try{ if(/^([1-8]|sq)$/.test(v)) localStorage.setItem("ml_tilelines", v); else localStorage.removeItem("ml_tilelines"); }catch(e){} applyTileLines(); render(); }
 function tileLinesBtns(attr){ return [1,2,3,4,5,6,7,8].map(n=>`<button class="colbtn ${tileLines()===String(n)?'on':''}" ${attr}="${n}">${n}</button>`).join("")
-  +`<button class="colbtn ${tileLines()===''?'on':''}" ${attr}="" aria-label="${t("Variable height")}">↕</button><button class="colbtn ${tileLines()==='sq'?'on':''}" ${attr}="sq" aria-label="${t("Square")}">□</button>`; }
+  +`<button class="colbtn ${tileLines()===''?'on':''}" ${attr}="" aria-label="${t("Variable height")}"><span class="rot90" aria-hidden="true">↔</span></button><button class="colbtn ${tileLines()==='sq'?'on':''}" ${attr}="sq" aria-label="${t("Square")}">□</button>`; }
 /* v2.79: Settings › Tiles › Preview — the list in miniature as tile display and height combine. Bars, not real tiles. */
 function tilePrevHTML(){
   const large=dispBase()==='large', cols=large?largeCols():4, h=tileLines(), dot=itemEmojiOn();
