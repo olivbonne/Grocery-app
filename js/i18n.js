@@ -348,6 +348,7 @@ export const FR = {
   "Language": "Langue",
   "Layout, colours, bars, headings and tiles": "Mise en page, couleurs, barres, titres et tuiles",
   "Tile display": "Affichage des tuiles",
+  "Tiles across": "Tuiles par ligne",
   "Large tiles": "Grandes tuiles",
   " · variable": " · variable",
   " · list": " · liste",

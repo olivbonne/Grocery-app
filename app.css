@@ -1158,8 +1158,10 @@
      What does not fit: the name gives way first (clamped to the lines left after the amount and the note). */
   html[data-tilelines]:not([data-tilelines="sq"]) .shop .zoomer:not(.linelist):not(.largevar) .pills > .pill[data-pill], html[data-tilelines]:not([data-tilelines="sq"]) .shop .zoomer:not(.linelist):not(.largevar) .pills > .pill[data-reg-rm], html[data-tilelines]:not([data-tilelines="sq"]) .shop .zoomer:not(.linelist):not(.largevar) .pills > .pill[data-reg-add], html[data-tilelines]:not([data-tilelines="sq"]) .shop .zoomer:not(.linelist):not(.largevar) .pills.addgrid > .pill { height:var(--tileh-fixed, auto); min-height:0; overflow:hidden; }
   html[data-tilelines]:not([data-tilelines="sq"]) .checkedbar.shop .zoomer:not(.linelist):not(.largevar) .pills > .pill[data-pill] { height:var(--tileh-cart-fixed, var(--tileh-fixed, auto)); min-height:0; overflow:hidden; }
-  html[data-tilelines="sq"] .shop .zoomer:not(.linelist):not(.largevar) .pills > .pill[data-pill], html[data-tilelines="sq"] .shop .zoomer:not(.linelist):not(.largevar) .pills > .pill[data-reg-rm], html[data-tilelines="sq"] .shop .zoomer:not(.linelist):not(.largevar) .pills > .pill[data-reg-add], html[data-tilelines="sq"] .shop .zoomer:not(.linelist):not(.largevar) .pills.addgrid > .pill { aspect-ratio:1/1; height:auto; min-height:0; overflow:hidden; }
-  html[data-tilelines="sq"] .checkedbar.shop .zoomer:not(.linelist):not(.largevar) .pills > .pill[data-pill] { aspect-ratio:1/1; height:auto; min-height:0; overflow:hidden; }
+  html[data-tilelines="sq"] .shop .zoomer:not(.linelist):not(.largevar) .pills > .pill[data-pill], html[data-tilelines="sq"] .shop .zoomer:not(.linelist):not(.largevar) .pills > .pill[data-reg-rm], html[data-tilelines="sq"] .shop .zoomer:not(.linelist):not(.largevar) .pills > .pill[data-reg-add], html[data-tilelines="sq"] .shop .zoomer:not(.linelist):not(.largevar) .pills.addgrid > .pill { aspect-ratio:1/1; height:auto; min-height:0; overflow:hidden; width:100%; justify-self:stretch; align-self:start; }
+  /* v2.80: square tiles are a column wide, whatever they hold — a box with an aspect ratio is not stretched across its grid
+     column by default, so each was sized to its own text (round "Date", wide "Asparagus") */
+  html[data-tilelines="sq"] .checkedbar.shop .zoomer:not(.linelist):not(.largevar) .pills > .pill[data-pill] { aspect-ratio:1/1; height:auto; min-height:0; overflow:hidden; width:100%; justify-self:stretch; align-self:start; }
   /* the budget: the amount takes a line, the note 1 line (2 from 5 lines), the name what is left; the name never shrinks
      below whole lines (flex would cut it through the middle) */
   html[data-tilelines] .shop .zoomer:not(.linelist):not(.largevar) .pill .pname { flex-shrink:0; }
@@ -1438,6 +1440,7 @@
   .edval { display:inline-flex; align-items:center; gap:6px; max-width:100%; box-sizing:border-box; padding:6px 12px; font-size:15px; font-weight:700;
     border:1.5px solid var(--epillbrd, var(--line)); background:var(--epillbg, var(--card)); color:var(--epilltext, var(--text)); border-radius:var(--epillrad, 999px);
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .edcell[data-open="1"] .edval { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }   /* v2.80: the row whose list is open is outlined in orange */
   .ednote { cursor:default; }
   .ednotein { flex:1; min-width:0; text-align:left; font-weight:600; font-family:inherit; outline:none; }
   .ednotein::placeholder { color:var(--muted2); }
@@ -2100,7 +2103,7 @@
   html body .zoomer.zoomer.zoomer.linelist .pill.pill .pname, html body .shop .zoomer.zoomer.largevar .pill.pill .pname {
     white-space:nowrap; min-height:0; line-height:1.2; }
   html body .zoomer.zoomer.zoomer.linelist .pill.pill .pnote, html body .shop .zoomer.zoomer.largevar .pill.pill .pnote {
-    flex:0 1 auto; width:auto; order:0; white-space:nowrap; text-align:left; color:var(--muted); }
+    flex:0 1 auto; width:auto; order:0; white-space:nowrap; text-align:left; }   /* v2.80: no --muted — the note takes the tile's text colour (.pill .pnote: inherit, .78), as in columns; grey was unreadable on filled tiles */
   html body .zoomer.zoomer.zoomer.linelist .pill.pill .pill-meta, html body .shop .zoomer.zoomer.largevar .pill.pill .pill-meta {
     flex:none; white-space:nowrap; margin-top:0; padding-left:0; justify-content:flex-start; }
   html body .zoomer.zoomer.zoomer.linelist .pill.pill > .pmarks, html body .shop .zoomer.zoomer.largevar .pill.pill > .pmarks {
