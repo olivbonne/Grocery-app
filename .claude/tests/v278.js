@@ -90,7 +90,9 @@ const seed = (extra) => `(() => { if(localStorage.getItem("t_seeded")) return; l
     await mk('');
     await page.locator('#shopMenuBtn, [aria-label="More"]').first().click(); await page.waitForTimeout(400);
     const mb = await page.evaluate(()=>[...document.querySelectorAll('[data-sm-lines]')].map(b=>(b.dataset.smLines||'v')+(b.classList.contains('on')?'*':'')));
-    ok('the Shop ⋯ menu offers 3–8, variable and square, variable marked', mb.join()==='3,4,5,6,7,8,v*,sq', JSON.stringify(mb));
+    /* SUPERSEDED by v2.79: heights 1 and 2 were added before 3. Still protected: every height, variable and square are offered,
+       in order, with the current one (variable) marked. */
+    ok('the Shop ⋯ menu offers 1–8, variable and square, variable marked', mb.join()==='1,2,3,4,5,6,7,8,v*,sq', JSON.stringify(mb));
     await page.locator('[data-sm-lines="5"]').click(); await page.waitForTimeout(500);
     const a5 = await page.evaluate(()=>({ v:localStorage.getItem('ml_tilelines'), a:document.documentElement.getAttribute('data-tilelines'), open:!!document.querySelector('#shopMenuEl'), on:(document.querySelector('[data-sm-lines].on')||{}).dataset }));
     ok('…tapping 5 sets it at once and the menu stays open', a5.v==='5' && a5.a==='5' && a5.open && a5.on && a5.on.smLines==='5', JSON.stringify(a5));

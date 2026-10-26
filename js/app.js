@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.78";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.78";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.78";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.78";
-import { compareStores, worthIt } from "./compare.js?v=2.78";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.78";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.78";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.78";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.78";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.78";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.78";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.78";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.78";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.78";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.79";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.79";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.79";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.79";
+import { compareStores, worthIt } from "./compare.js?v=2.79";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.79";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.79";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.79";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.79";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.79";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.79";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.79";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.79";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.79";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.78";
+const APP_VERSION = "v2.79";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -854,11 +854,22 @@ function applyIcoSize(){ try{ document.documentElement.setAttribute("data-icosiz
    measures one probe tile of that many lines into --tileh-fixed), or "sq" as tall as it is wide. A LOOK, like the icon size,
    so it is deliberately NOT in APP_EXCLUDE. Published on <html> as data-tilelines only when set; the one-line layouts
    (.linelist, .largevar) ignore it in the stylesheet. No const here: applyTheme() runs this at boot. */
-function tileLines(){ try{ const v=localStorage.getItem("ml_tilelines")||""; return /^([3-8]|sq)$/.test(v) ? v : ""; }catch(e){ return ""; } }
+function tileLines(){ try{ const v=localStorage.getItem("ml_tilelines")||""; return /^([1-8]|sq)$/.test(v) ? v : ""; }catch(e){ return ""; } }
 function applyTileLines(){ try{ const v=tileLines(), h=document.documentElement; if(v) h.setAttribute("data-tilelines", v); else h.removeAttribute("data-tilelines"); }catch(e){} }
-function setTileLines(v){ v=String(v||""); try{ if(/^([3-8]|sq)$/.test(v)) localStorage.setItem("ml_tilelines", v); else localStorage.removeItem("ml_tilelines"); }catch(e){} applyTileLines(); render(); }
-function tileLinesBtns(attr){ return [3,4,5,6,7,8].map(n=>`<button class="colbtn ${tileLines()===String(n)?'on':''}" ${attr}="${n}">${n}</button>`).join("")
+function setTileLines(v){ v=String(v||""); try{ if(/^([1-8]|sq)$/.test(v)) localStorage.setItem("ml_tilelines", v); else localStorage.removeItem("ml_tilelines"); }catch(e){} applyTileLines(); render(); }
+function tileLinesBtns(attr){ return [1,2,3,4,5,6,7,8].map(n=>`<button class="colbtn ${tileLines()===String(n)?'on':''}" ${attr}="${n}">${n}</button>`).join("")
   +`<button class="colbtn ${tileLines()===''?'on':''}" ${attr}="" aria-label="${t("Variable height")}">↔</button><button class="colbtn ${tileLines()==='sq'?'on':''}" ${attr}="sq" aria-label="${t("Square")}">□</button>`; }
+/* v2.79: Settings › Tiles › Preview — the list in miniature as tile display and height combine. Bars, not real tiles. */
+function tilePrevHTML(){
+  const large=dispBase()==='large', cols=large?largeCols():4, h=tileLines(), dot=itemEmojiOn();
+  const hl=h==='sq'?t("square"):h?tf("{n} lines",{n:h}):t("variable height");
+  if(large && cols===1) return `<div class="tlprev tlprev-list" role="img" aria-label="${t("1 per row")}"><i></i><i></i><i></i></div><div class="tlprevhint">${t("Height applies to tiles in columns.")}</div>`;
+  if(large && cols===0) return `<div class="tlprev tlprev-var" role="img" aria-label="${t("Variable width")}">${Array.from({length:7},()=>'<u></u>').join("")}</div><div class="tlprevhint">${t("Height applies to tiles in columns.")}</div>`;
+  const vary=[1,3,2,1,2,3];
+  const tiles=Array.from({length:cols*2},(_,k)=>{ const n=h==='sq'?2:h?+h:vary[k%vary.length];
+    return `<span class="tlptile${h==='sq'?' tlpsq':''}">${dot?'<em></em>':''}${Array.from({length:n},()=>'<i></i>').join("")}</span>`; }).join("");
+  return `<div class="tlprev tlprev-grid" role="img" aria-label="${tf("{cols} columns, {height}",{cols,height:hl})}" style="grid-template-columns:repeat(${cols},1fr)">${tiles}</div>`;
+}
 function setIcoSize(v){ try{ localStorage.setItem("ml_icosize", /^(s|m|l|xl)$/.test(v||"") ? v : "s"); }catch(e){} applyIcoSize(); render(); }
 /* v2.08: how heavy the drawn lines are — fine, thin, regular (the v2.04 weight) or bold. A LOOK, like the
    icon size, so it is deliberately NOT in APP_EXCLUDE. */
@@ -4418,7 +4429,7 @@ function syncTileH(){ try{
        its note and amount taken out and its name N lines of "Ag", unclamped. Measured once per layout signature
        (tileLines() is in it); the main list and the cart each get their own. */
     const nl=tileLines(), fv=v+"-fixed";
-    if(/^[3-8]$/.test(nl) && !full_lines(z)){
+    if(/^[1-8]$/.test(nl) && !full_lines(z)){
       if(_tileFix[fv]===undefined || _tileFixSig[fv]!==sig){
         const host=document.createElement("div"); host.className="tileprobe"; host.setAttribute("aria-hidden","true");
         host.style.cssText="position:absolute;left:0;top:0;width:"+Math.max(40, w)+"px;visibility:hidden;pointer-events:none;display:flex;flex-direction:column;align-items:stretch";
@@ -4613,17 +4624,21 @@ function render(){
 /* v2.77 (the household: "every time a selection is made the sheet jumps up and down"). Every render rebuilt the sheet, which
    replayed its slide-up animation, reset its scroll to the top and let it shrink when a list closed — the top edge moved
    each time. Now a sheet that was already open keeps still: no animation, the same scroll, and Edit item (#sheet) never
-   gets shorter than it has been while it stays open. */
-var _sheetMinH = {};
+   gets shorter than it has been while it stays open.
+   v2.79 (the household: "when the unit / category / location is tapped back, the sheet doesn't shrink back"): the floor
+   holds only while the same lists are open — a pick keeps still, closing a list lets the sheet shrink to fit. */
+var _sheetMinH = {}, _sheetMinK = {};
 function sheetsBefore(){ const o = {};
   document.querySelectorAll(".sheet[id]").forEach(s => { o[s.id] = { top:s.scrollTop }; });
   return o; }
 function sheetsAfter(o){ const seen = {};
-  document.querySelectorAll(".sheet[id]").forEach(s => { seen[s.id] = 1; const was = o && o[s.id]; if(!was) { delete _sheetMinH[s.id]; return; }
+  document.querySelectorAll(".sheet[id]").forEach(s => { seen[s.id] = 1; const was = o && o[s.id]; if(!was) { delete _sheetMinH[s.id]; delete _sheetMinK[s.id]; return; }
     s.style.animation = "none";
-    if(s.id === "sheet"){ const h = s.getBoundingClientRect().height; _sheetMinH[s.id] = Math.max(_sheetMinH[s.id] || 0, h); s.style.minHeight = _sheetMinH[s.id] + "px"; }
+    if(s.id === "sheet"){ const k = [...s.querySelectorAll('.edcell[data-open="1"]')].map(c => c.dataset.row).join(",");
+      if(_sheetMinK[s.id] !== k){ delete _sheetMinH[s.id]; s.style.minHeight = ""; _sheetMinK[s.id] = k; }   // v2.79: a list opened or closed — the sheet takes its new height
+      const h = s.getBoundingClientRect().height; _sheetMinH[s.id] = Math.max(_sheetMinH[s.id] || 0, h); s.style.minHeight = _sheetMinH[s.id] + "px"; }
     s.scrollTop = was.top; });
-  for(const k in _sheetMinH) if(!seen[k]) delete _sheetMinH[k]; }
+  for(const k in _sheetMinH) if(!seen[k]) { delete _sheetMinH[k]; delete _sheetMinK[k]; } }
 function renderInner(){
   ensureCats();
   if(!configured){ renderSetupNotice(); window.__mlRendered=true; return; }
@@ -8156,6 +8171,7 @@ function optionsBody(){
         </div>
       </div></div></div>
     ${/* v2.78: tile height, next to the columns */""}<div class="optrow optrow-wide optnl"><span class="optlabel">${t("Tile height")}</span><div class="optwide"><div class="dispcols">${tileLinesBtns("data-opt-lines")}</div></div></div>
+    ${/* v2.79: what tile display and height make together — a picture, not real tiles */""}<div class="optrow optrow-wide optnl"><span class="optlabel">${t("Preview")}</span><div class="optwide">${tilePrevHTML()}</div></div>
     ${rowNL(t("Group by category"), `<div class="seg"><button data-opt-caton="1" class="${catOn?'on':''}">${t("On")}</button><button data-opt-caton="0" class="${!catOn?'on':''}">${t("Off")}</button></div>`)}
     ${catOn ? rowNL(t("Group by subcategory"), `<div class="seg"><button data-opt-subon="1" class="${subOn?'on':''}">${t("On")}</button><button data-opt-subon="0" class="${!subOn?'on':''}">${t("Off")}</button></div>`) : ""}` : ""}
     ${row(t("Item icons"), `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">${iconStyle()==="drawn"?illSVG("bread"):"🍞"}</span>${t("On")}</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>${t("Off")}</button></div>`)}
