@@ -164,8 +164,10 @@ const seed = (o) => { o=o||{}; return `(() => {
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-oneline.png') });
     /* Settings */
     await page.locator('#setNav').click(); await page.waitForTimeout(500);
-    const st = await page.evaluate(()=>({ small:document.querySelectorAll('[data-tiledisp="small"], [data-opt-smallcols]').length, label:/Tile display/.test(document.body.textContent), large:/Large tiles/.test(document.body.textContent) }));
-    ok('Settings: no Small tiles any more, and the one left is called "Tile display"', st.small===0 && st.label && !st.large, JSON.stringify(st));
+    const st = await page.evaluate(()=>({ small:document.querySelectorAll('[data-tiledisp="small"], [data-opt-smallcols]').length, label:/Tiles across/.test(document.body.textContent), large:/Large tiles/.test(document.body.textContent) }));
+    /* SUPERSEDED by v2.80: the row is called "Tiles across" and the box that named it is gone. Still protected: no Small tiles,
+       no Large tiles, one row for how many tiles go across. */
+    ok('Settings: no Small tiles any more, and the one row left is called "Tiles across"', st.small===0 && st.label && !st.large, JSON.stringify(st));
 
     /* 8 ─ Smart add drops the keyboard */
     await page.locator('#cartNav, #cartNavS').first().click(); await page.waitForTimeout(500);

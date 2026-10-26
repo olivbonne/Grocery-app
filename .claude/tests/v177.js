@@ -81,8 +81,7 @@ const SEED = (extra)=>`(() => {
   const lists = ()=>tap('#planNav, #planNavP, #planNavS');
   /* drive the real Tile display control rather than seeding ml_displays (v1.60). */
   const setLarge = async(cols)=>{ await settings();
-    await page.locator('[data-tiledisp="large"]').click(); await page.waitForTimeout(500);
-    await settings();
+    /* SUPERSEDED by v2.80: the "Tile display" box is gone; a column button sets the large display by itself (setLargeCols). */
     await page.locator(`[data-opt-cols="${cols}"]`).click(); await page.waitForTimeout(500);
     await shop(); };
   /* the flags of the tile whose item carries two of them, and the rows they occupy */

@@ -174,3 +174,9 @@ the household asked for is not a lesson.*
     empty space (fixed v2.79). The floor was meant for picks inside an open list, not for closing one. *Guard:* the floor is
     tied to the set of open lists and resets when it changes, and the suite checks that closing the last list brings the
     sheet back to its closed height. When a fix freezes a size, a position or a scroll, write down the event that releases it.
+48. **The tests run Chromium; the household runs Safari.** v2.78's square tiles were one column wide in every test and every
+    size on the iPhone: iOS Safari does not stretch a box with an aspect ratio across its grid column (the spec's default acts
+    as "start" for it), so each square took its own text's width, while Chromium stretched them anyway (fixed v2.80).
+    *Guard:* say the size you mean (`width:100%; justify-self:stretch`) instead of relying on a default the engines disagree
+    on, and when a phone screenshot disagrees with the tests, make the test play the phone's rule (v280.js injects Safari's
+    `justify-self:start` and checks the tiles still fill their columns). There is no WebKit in this container.
