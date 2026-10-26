@@ -78,7 +78,8 @@ const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings"
     ok('…with the search box at the top', v.search && await page.evaluate(()=>{ const s=document.querySelector('.optsearch'), h=document.querySelector('.optpage .optsect');
       return s.getBoundingClientRect().bottom <= h.getBoundingClientRect().top; }), '');
     const tiles = v.secs.find(x=>x.name==='Tiles')||{rows:[]};
-    ok('everyday Tiles holds what a tile shows — display, grouping, icons, Category icons, Icon style', ['Tile display','Group by category','Item icons','Category icons','Icon style'].every(l=>tiles.rows.some(r=>r.startsWith(l))), JSON.stringify(tiles.rows));
+    /* SUPERSEDED by v2.80: the display row is called "Tiles across". Still protected: everyday Tiles holds what a tile shows. */
+    ok('everyday Tiles holds what a tile shows — display, grouping, icons, Category icons, Icon style', ['Tiles across','Group by category','Item icons','Category icons','Icon style'].every(l=>tiles.rows.some(r=>r.startsWith(l))), JSON.stringify(tiles.rows));
     ok('…and none of the tiles\' colours or shape', !tiles.rows.some(r=>/^(Tile appearance|Selected tiles|Unselected tiles|Tile roundness|Tile gap)/.test(r)), JSON.stringify(tiles.rows));
     ok('Appearance ends with "Customise the look"', ((v.secs.find(x=>x.name==='Appearance')||{rows:[]}).rows.slice(-1)[0]||'').startsWith('Customise the look'), JSON.stringify((v.secs[0]||{}).rows));
     await shot('everyday');
