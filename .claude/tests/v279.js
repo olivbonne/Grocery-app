@@ -76,12 +76,11 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     await page.locator('#sheet [data-w-set="edit|cup"]').click(); await page.waitForTimeout(500);
     ok('a pick keeps the list open and the sheet still', await page.locator('#sheet .wgrid').count()===1 && await top('#sheet')===t0, '');
     await page.locator('#ecHead').click(); await page.waitForTimeout(500);
-    const b1 = { u:await box(U), l:await box('#sheet .wgrid'), c:await box(C), w:await box(W), cl:await box('#sheet .edcell[data-row="cat"] .edchips') };
-    ok('both open: Unit\'s list, then Category and Where, then Category\'s list', b1.l && b1.cl && b1.l.b<=b1.c.t && b1.cl.t>=Math.max(b1.c.b,b1.w.b) && Math.abs(b1.c.t-b1.w.t)<4, JSON.stringify(b1));
-    if(out) await page.screenshot({ path: out.replace(/\.png$/,'-both.png'), fullPage:true });
-    await page.locator(U).click(); await page.waitForTimeout(500);
-    const c2 = { q:await box(Q), c:await box(C), w:await box(W), cl:await box('#sheet .edcell[data-row="cat"] .edchips') };
-    ok('Category open alone: its list under Category and Where', c2.cl && c2.cl.t>=Math.max(c2.c.b,c2.w.b) && c2.c.t-c2.q.t===c0.c.t-c0.q.t, JSON.stringify({ c0, c2 }));
+    /* SUPERSEDED by v2.83: only one list is open at a time (the household), so opening Category closes Unit. Still protected:
+       Category's list sits under Category and Where, neither moves, and closing the last list brings the sheet back. */
+    const b1 = { u:await box(U), l:await box('#sheet .wgrid'), q:await box(Q), c:await box(C), w:await box(W), cl:await box('#sheet .edcell[data-row="cat"] .edchips') };
+    ok('opening Category closes Unit; its list sits under Category and Where', !b1.l && b1.cl && b1.cl.t>=Math.max(b1.c.b,b1.w.b) && Math.abs(b1.c.t-b1.w.t)<4 && b1.c.t-b1.q.t===c0.c.t-c0.q.t, JSON.stringify({ c0, b1 }));
+    if(out) await page.screenshot({ path: out.replace(/\.png$/,'-cat.png'), fullPage:true });
     const hc = await sheetH();
     await page.locator('#ecHead').click(); await page.waitForTimeout(500);
     const h3 = await sheetH();

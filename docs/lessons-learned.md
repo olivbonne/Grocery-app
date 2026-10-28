@@ -187,3 +187,8 @@ the household asked for is not a lesson.*
     rule says interface marks are drawn SVGs, not characters (fixed v2.82). *Guard:* when a fix names a rule ("an
     aspect-ratio box in a grid", "a row of buttons"), grep for every place that rule applies before shipping; the v2.82 suite
     plays Safari on the preview, checks every menu button sits inside the menu, and fails on an arrow character in a button.
+50. **A highlight drawn outside a box is cut by any ancestor that hides overflow.** v2.80 outlined the open Edit item row
+    with an outer `box-shadow`, but the row's value sits inside `.editsec-v`, which has `overflow:hidden` for its ellipsis: the
+    ring was clipped and, at 1px, barely visible on the phone (fixed v2.83). *Guard:* draw rings inside the box (`inset`
+    shadow or the border itself), never outside; the v2.83 suite checks the ring is inset and the accent. Before adding an outer
+    effect, look up the element's ancestors for `overflow:hidden`.
