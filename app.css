@@ -1440,7 +1440,7 @@
   .edval { display:inline-flex; align-items:center; gap:6px; max-width:100%; box-sizing:border-box; padding:6px 12px; font-size:15px; font-weight:700;
     border:1.5px solid var(--epillbrd, var(--line)); background:var(--epillbg, var(--card)); color:var(--epilltext, var(--text)); border-radius:var(--epillrad, 999px);
     overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .edcell[data-open="1"] .edval { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }   /* v2.80: the row whose list is open is outlined in orange */
+  .edcell[data-open="1"] .edval { border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); }   /* v2.80: the row whose list is open is outlined in orange; v2.83: the ring is inside the box (2px with the border) — .editsec-v's overflow:hidden clipped the outer one */
   .ednote { cursor:default; }
   .ednotein { flex:1; min-width:0; text-align:left; font-weight:600; font-family:inherit; outline:none; }
   .ednotein::placeholder { color:var(--muted2); }
@@ -2313,6 +2313,11 @@ html .wgrid > .wcount.wcount { grid-column:auto; flex:0 0 auto !important; width
 .wgrid > .wcount:not(.on) .wcount-v { color:var(--muted); }
 .wcount .editsec-l, .wcount > span:first-child { font-weight:700; }
 .wcount .wcount-v { min-width:52px; }
+/* v2.83: a counter that holds a value is filled like a chosen chip, its − and + included; and narrower, so Tbsp fits beside it */
+#sheet .wgrid > .wcount.on .eqty, .addedit .wgrid > .wcount.on .eqty, .smartedit .wgrid > .wcount.on .eqty { background:var(--btn); border-color:var(--btn); color:var(--btn-text); }
+.wgrid > .wcount.on .wcount-v { color:inherit; }
+.wgrid > .wcount .eqty button { width:28px; }
+.wgrid > .wcount .wcount-v { min-width:22px; padding:0 2px; }
 /* v2.76: one font size in the editors (--edfs); the name (.edtitle) stays bigger */
 #sheet[data-look="edit"], .addedit, .smartedit { --edfs:15px; }
 :is(#sheet[data-look="edit"], .addedit, .smartedit) :is(.editsec-l, .edval, .catchip, .flagchip, .eqty, .eqty span, .wcount, .wcount span, .ednotein, .pricemem-c, .addedit-remove, .addedit-done),
@@ -2327,3 +2332,9 @@ html .wgrid > .wcount.wcount { grid-column:auto; flex:0 0 auto !important; width
    0.8 of the name in columns and as big as the name in the one-line layouts. */
 html body .zoomer.zoomer.zoomer.zoomer .pill.pill.pill > :is(.pnote, .pill-meta) { font-size:max(10px, .65em); }   /* never under 10px: 0.65 of the 11.5px name at 5 columns would be 7.5px */
 html body .zoomer.zoomer.zoomer.zoomer .pill.pill.pill > .pill-meta .qty { font-size:inherit; }   /* .qty's own 13px (v1.38) would ignore the ratio */
+/* v2.83: "Around choices" — the space above and below an open list each equals the setting (unset: exactly as before).
+   Grid rows: the row gap is already there, so the list adds the difference; Variable: the spacing is bottom margins (v2.79). */
+html[data-lk-edit-rows][data-lk-edit-l2gap] [data-look="edit"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > :is(.wgrid, .edchips) { margin-top:calc(var(--lk-edit-l2gap) - var(--lk-edit-rgapy, 10px)); margin-bottom:calc(var(--lk-edit-l2gap) - var(--lk-edit-rgapy, 10px)); }
+html[data-lk-edit-rows="v"][data-lk-edit-l2gap] [data-look="edit"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > :is(.wgrid, .edchips) { margin-bottom:var(--lk-edit-l2gap); }
+html[data-lk-smart-rows][data-lk-smart-l2gap] [data-look="smart"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > :is(.wgrid, .edchips) { margin-top:calc(var(--lk-smart-l2gap) - var(--lk-smart-rgapy, 10px)); margin-bottom:calc(var(--lk-smart-l2gap) - var(--lk-smart-rgapy, 10px)); }
+html[data-lk-smart-rows="v"][data-lk-smart-l2gap] [data-look="smart"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > :is(.wgrid, .edchips) { margin-bottom:var(--lk-smart-l2gap); }

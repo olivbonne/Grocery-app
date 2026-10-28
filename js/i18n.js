@@ -589,6 +589,7 @@ export const FR = {
   "Choices": "Choix",
   "Row names": "Noms des rangées",
   "Row gap": "Espacement des rangées",
+  "Around choices": "Autour des choix",
   "Default": "Par défaut",
   "Variable width": "Largeur variable",
   "Smaller text": "Texte plus petit",

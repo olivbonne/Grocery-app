@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.82";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.82";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.82";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.82";
-import { compareStores, worthIt } from "./compare.js?v=2.82";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.82";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.82";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.82";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.82";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.82";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.82";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.82";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.82";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.82";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.83";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.83";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.83";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.83";
+import { compareStores, worthIt } from "./compare.js?v=2.83";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.83";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.83";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.83";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.83";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.83";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.83";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.83";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.83";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.83";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.82";
+const APP_VERSION = "v2.83";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -641,7 +641,9 @@ SHEET_LOOKS.forEach(sh=>{
 /* v2.74: the gap between an editor's rows, Across and Down — only for the sheets with rows (edit, smart); off at the default */
 ["edit","smart"].forEach(sh=>{
   NUMOPT["lk_"+sh+"_rgapx"] = { ls:"ml_lk_"+sh+"_rgapx", vr:"--lk-"+sh+"-rgapx", def:8,  min:0, max:32, step:2, off:8,  label:"Across" };
-  NUMOPT["lk_"+sh+"_rgapy"] = { ls:"ml_lk_"+sh+"_rgapy", vr:"--lk-"+sh+"-rgapy", def:10, min:0, max:32, step:2, off:10, label:"Down" }; });
+  NUMOPT["lk_"+sh+"_rgapy"] = { ls:"ml_lk_"+sh+"_rgapy", vr:"--lk-"+sh+"-rgapy", def:10, min:0, max:32, step:2, off:10, label:"Down" };
+  /* v2.83: the gap above and below an open row's list of choices — off (unset) at 0, so an untouched install writes nothing */
+  NUMOPT["lk_"+sh+"_l2gap"] = { ls:"ml_lk_"+sh+"_l2gap", vr:"--lk-"+sh+"-l2gap", def:0, min:0, max:40, step:2, off:0, label:"Around choices" }; });
 /* v1.55 item 2: two levels of default. NUMOPT[].def is the FACTORY value — what the stylesheet used
    before any of this was settable, and the thing to fall back to when an experiment goes wrong.
    `ml_numdef` is the user's own baseline, saved from whatever is on screen; once it exists, clearing
@@ -757,6 +759,8 @@ function applyTheme(){ _cardHexMemo=null; const t = THEMES[theme] || THEMES.ligh
     /* v2.74: the row gap is set (either number) — so the Default layout takes it only then */
     ["edit","smart"].forEach(sh=>document.documentElement.toggleAttribute("data-lk-"+sh+"-rgap",
       ["rgapx","rgapy"].some(g=>{ const k="lk_"+sh+"_"+g; return numVal(k)!==NUMOPT[k].off; })));
+    /* v2.83: the gap around an open list is set — the rule that uses --lk-<sheet>-l2gap applies only then */
+    ["edit","smart"].forEach(sh=>{ const k="lk_"+sh+"_l2gap"; document.documentElement.toggleAttribute("data-lk-"+sh+"-l2gap", numVal(k)!==NUMOPT[k].off); });
     /* v1.76 item 2: the same rule for the two headings — a chosen heading background must not leave
        its label unreadable, but a chosen label colour always wins, so this only fills in the gap. */
     if(T["--cathdbg"] && !T["--cattext"]) rs.setProperty("--cattext", onAccent(T["--cathdbg"]));
@@ -3877,7 +3881,7 @@ function wireAddEdit(){
   /* v1.62 item 5: preventDefault on pointerdown everywhere in this control — that is the whole point.
      A tap that never moves focus never dismisses the keyboard. */
   document.querySelectorAll("#addSheetBody [data-w-open]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
-    b.onclick=()=>{ const id=b.dataset.wOpen; wOpen = (wOpen===id) ? null : id; refreshAddBody();
+    b.onclick=()=>{ const id=b.dataset.wOpen; wOpen = (wOpen===id) ? null : id; if(wOpen) editCatOpen=false; refreshAddBody();   // v2.83: one list open at a time
       /* v1.64 item 1: the grid is taller than the row it replaced, so bring it into view rather than
          leaving it under the fold of a sheet that is sized to its content. scrollIntoView on a plain
          div moves no focus, so the keyboard is unaffected. */
@@ -3914,7 +3918,7 @@ function wireAddEdit(){
   /* v1.44 item 5: without the preventDefault the section header steals focus from #mainInput and the
      keyboard drops mid-edit — every sibling control already guards against this. */
   document.querySelectorAll("[data-ae-sechead]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
-    b.onclick=()=>{ if(b.dataset.aeSechead==='cat') editCatOpen=!editCatOpen; refreshAddBody(); edShowEnd(document.querySelector("#addSheetBody"), "cat"); }; });
+    b.onclick=()=>{ if(b.dataset.aeSechead==='cat'){ editCatOpen=!editCatOpen; if(editCatOpen) wOpen=null; } refreshAddBody(); edShowEnd(document.querySelector("#addSheetBody"), "cat"); }; });
   /* v2.57 item 9d: the Note section — its header, the field (saved as typed, like the name) and the suggestion chips */
   document.querySelectorAll("[data-ae-note]").forEach(inp=>{
     /* v2.70: typed text becomes tiles at a comma, Enter or leaving the field — in place, no re-render while typing */
@@ -7581,8 +7585,8 @@ function wireSmartSheet(){
     const any=smartItems.some(it=>it.sel!==false);
     smartItems.forEach(it=>{ it.sel = !any; }); render(); };
   app.querySelectorAll("[data-smart-edit]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartEdit; smartEdit = (smartEdit===i ? null : i); smartWOpen=null; smartCOpen=null; render(); }; });
-  app.querySelectorAll("[data-smart-wopen]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartWopen; smartWOpen = (smartWOpen===i ? null : i); render(); edShowEnd(app.querySelector(".smartedit"), "unit"); }; });
-  app.querySelectorAll("[data-smart-copen]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartCopen; smartCOpen = (smartCOpen===i ? null : i); render(); edShowEnd(app.querySelector(".smartedit"), "cat"); }; });
+  app.querySelectorAll("[data-smart-wopen]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartWopen; smartWOpen = (smartWOpen===i ? null : i); if(smartWOpen!==null) smartCOpen=null; render(); edShowEnd(app.querySelector(".smartedit"), "unit"); }; });
+  app.querySelectorAll("[data-smart-copen]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartCopen; smartCOpen = (smartCOpen===i ? null : i); if(smartCOpen!==null) smartWOpen=null; render(); edShowEnd(app.querySelector(".smartedit"), "cat"); }; });
   app.querySelectorAll("[data-smart-q]").forEach(b=>{ b.onclick=()=>{ const [i,d]=b.dataset.smartQ.split("|"); const it=smartItems[+i]; if(it){ it.qty=Math.max(1,Math.min(999,(it.qty||1)+(+d))); render(); } }; });
   app.querySelectorAll("[data-smart-cat]").forEach(b=>{ b.onclick=()=>{ const [i,cid]=b.dataset.smartCat.split("|"); const it=smartItems[+i]; if(it){ if(it.category!==cid) it.sub=""; it.category=cid; it.catPicked=true; render(); } }; });   // v2.77: the list stays open
   app.querySelectorAll("[data-smart-name]").forEach(inp=>{ inp.oninput=()=>{ const it=smartItems[+inp.dataset.smartName]; if(!it) return; it.name=inp.value;
@@ -8229,7 +8233,7 @@ function optionsBody(){
     ${wide(t("Choices"), seg("chcols"))}
     ${hasRows ? rowNL(t("Row names"), `<div class="seg"><button data-lk-names="${lookSheet}|" class="${lkLay(lookSheet,"names")!=="0"?'on':''}">${t("On")}</button><button data-lk-names="${lookSheet}|0" class="${lkLay(lookSheet,"names")==="0"?'on':''}">${t("Off")}</button></div>`) : ""}
     ${hasRows ? `<div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Row gap")}</span><div class="optwide">
-      <div class="numgrid">${numCell("lk_"+lookSheet+"_rgapx")}${numCell("lk_"+lookSheet+"_rgapy")}</div></div></div>` : ""}`; })()}
+      <div class="numgrid">${numCell("lk_"+lookSheet+"_rgapx")}${numCell("lk_"+lookSheet+"_rgapy")}${numCell("lk_"+lookSheet+"_l2gap")}</div></div></div>` : ""}`; })()}
     ${sect("Shopping")}${/* v2.30: was "Sort" — the store, its order, its aisle map, and the sound and screen while you shop (Sound folded in) */""}
     ${rowNL(t("Location"), `<div class="seg"><button data-opt-useloc="1" class="${useLoc?'on':''}">${t("On")}</button><button data-opt-useloc="0" class="${!useLoc?'on':''}">${t("Off")}</button></div>`)}
     <div class="optrow optrow-wide optnl"><span class="optlabel">${t("Store")}</span><div class="optwide">
@@ -8742,7 +8746,7 @@ function wireEditSheet(){
          than the document: the add sheet is mounted outside `app` and uses the same attribute names,
          so an unscoped query here could rebind its buttons to `editing`. */
       document.querySelectorAll("#sheet [data-w-open]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
-        b.onclick=()=>{ wOpen = (wOpen==="edit") ? null : "edit"; render();
+        b.onclick=()=>{ wOpen = (wOpen==="edit") ? null : "edit"; if(wOpen) editCatOpen=editWhereOpen=false; render();   // v2.83: one list open at a time
           /* v1.64 item 1: bring the newly-opened grid into view — same reason as the add panel. */
           edShowEnd(document.querySelector("#sheet"), "unit"); }; });
       document.querySelectorAll("#sheet [data-w-set]").forEach(b=>tapNoScroll(b, ()=>{
@@ -8764,8 +8768,8 @@ function wireEditSheet(){
          item saved by an older build both keep working. */
       editing.starred = (editing.tags||[]).includes("urgent");
       render(); });
-      const ech=app.querySelector("#ecHead"); if(ech) ech.onclick=()=>{ editCatOpen=!editCatOpen; render(); edShowEnd(document.querySelector("#sheet"), "cat"); };
-      const ewh=app.querySelector("#ewHead"); if(ewh) ewh.onclick=()=>{ editWhereOpen=!editWhereOpen; render(); edShowEnd(document.querySelector("#sheet"), "where"); };   // v2.22 R17
+      const ech=app.querySelector("#ecHead"); if(ech) ech.onclick=()=>{ editCatOpen=!editCatOpen; if(editCatOpen){ wOpen=null; editWhereOpen=false; } render(); edShowEnd(document.querySelector("#sheet"), "cat"); };
+      const ewh=app.querySelector("#ewHead"); if(ewh) ewh.onclick=()=>{ editWhereOpen=!editWhereOpen; if(editWhereOpen){ wOpen=null; editCatOpen=false; } render(); edShowEnd(document.querySelector("#sheet"), "where"); };   // v2.22 R17
       /* v2.35: shops toggle on and off — several can be ticked; Anywhere clears them */
       app.querySelectorAll("[data-ew]").forEach(b=>b.onclick=()=>{ const id=b.dataset.ew; if(!id){ editing.where=""; render(); return; }
         const s=new Set(whereIds(editing)); if(s.has(id)) s.delete(id); else s.add(id); editing.where=[...s].join(","); render(); });
