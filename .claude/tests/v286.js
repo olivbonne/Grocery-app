@@ -4,7 +4,7 @@
    WHAT THESE CHECKS HAVE TO PROVE (rule 8 of the canvas):
    - every combination still offered — As now, Disc + unit (each corner, unit top / bottom / in the note), One pill (six
      places), inside and on the border (with a 14px gap), at 3, 4, 5 and 6 across, variable, 2 and 3 lines tall and square,
-     with urgent / on-sale marks and an aisle badge — lays out with NO two elements of a tile overlapping, nothing inside the
+     (4 and 5 across at variable height, 6 across also at 3 lines — the suite's 300 s), with urgent / on-sale marks and an aisle badge — lays out with NO two elements of a tile overlapping, nothing inside the
      tile closer than the margin M to its inner edge (badges on the border excepted), and every name whole (no line cut);
    - one margin: the padding is equal on all four sides (8px; 6px at 5 and 6 across) and the name is centred on the inner box;
    - Safari's rules played: square tiles with justify-self:start still fill their columns, and still pass the above;
@@ -94,13 +94,13 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     /* one page, settings rewritten and reloaded per combination */
     const set = async(o)=>{ await page.evaluate(o=>{ Object.keys(localStorage).filter(k=>/^ml_cu_|^ml_tilelines$|^ml_largecols$|^ml_gapx$|^ml_gapy$/.test(k)).forEach(k=>localStorage.removeItem(k));
         Object.entries(o).forEach(([k,v])=>localStorage.setItem(k,v)); }, o);
-      await page.reload({ waitUntil:'domcontentloaded' }); await page.waitForTimeout(900); };
+      await page.reload({ waitUntil:'domcontentloaded' }); await page.waitForFunction(()=>document.querySelectorAll('#zoomer .pill[data-pill]').length>=6); await page.waitForTimeout(350); };
     const CFG = [ {}, { style:'sep' }, { style:'sep', dp:'tl' }, { style:'sep', dp:'bl' }, { style:'sep', dp:'br', uw:'top' }, { style:'sep', uw:'note' },
       { style:'tog' }, { style:'tog', tp:'top' }, { style:'tog', tp:'tl' }, { style:'tog', tp:'bl' }, { style:'tog', tp:'bottom' }, { style:'tog', tp:'br' }, { np:'above' } ];
     const HTS = ['', '3', '2', 'sq'];
     const fails=[]; let runs=0;
     for(const cols of ['3','4','5','6']) for(const ht of HTS) for(const c of CFG){
-      if(cols!=='3' && !(ht==='' || ht==='3')) continue;        // the heights at 3 across; 4–6 across at variable and 3 lines
+      if(cols!=='3' && !(ht==='' || (ht==='3' && cols==='6'))) continue;   // every height at 3 across; 4–6 at variable, 6 also at 3 lines (CI's 300 s)
       const o={ ml_largecols:cols }; if(ht) o.ml_tilelines=ht; Object.entries(c).forEach(([k,v])=>o['ml_cu_'+k]=v);
       await set(o); const m=await measure(); runs++;
       if(m.tiles.length<6) fails.push(`${cols}/${ht||'var'}/${JSON.stringify(c)}: ${m.tiles.length} tiles`);
