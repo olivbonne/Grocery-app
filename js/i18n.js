@@ -1009,6 +1009,10 @@ export const FR = {
   "Place": "Emplacement",
   "Position": "Position",
   "Where": "Où",
+  // v2.86: the tile rules
+  "On the border needs a tile gap of 13 or more, across and down (Tile gap, above).": "Sur le bord demande un espacement des tuiles de 13 ou plus, horizontal et vertical (Espacement des tuiles, plus haut).",
+  "The unit pill takes the row the count disc is not in.": "L'étiquette d'unité prend la rangée où n'est pas la pastille de quantité.",
+  "At 1 or 2 lines tall, As now shows the amount as one pill.": "À 1 ou 2 lignes de haut, Comme avant affiche la quantité en une seule étiquette.",
 };
 
 /* v2.55: the languages the app speaks. To add one: write its table (same keys as FR — the English text — with that
