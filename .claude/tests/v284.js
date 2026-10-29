@@ -8,7 +8,8 @@
    - with scroll anchoring off (Safari played), three taps on "Around choices" + leave its button at the same height on
      screen; before the fix it moved 68px per tap;
    - the same for a tap on a Layout button (Choices 3) and the Corner + of the Sheets section;
-   - the "Around choices" name shows in full (no clipping across or down).
+   - the "Around choices" name shows in full (no clipping across or down), and no number-cell name breaks inside a word
+     ("Transparency" did with the first fix, which let every name break anywhere at a fixed 52px).
 
    TEST-BUG NOTES CARRIED FORWARD: v2.00 the seed returns early once seeded; v2.10 seed ml_appmig163. */
 const fs = require('fs'), path = require('path');
@@ -67,6 +68,10 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     ok('…and the Corner + above it', c.tops.every(t=>Math.abs(t-c.t0)<=1), JSON.stringify(c));
     const lab = await page.evaluate(()=>{ const s=document.querySelector('[data-opt-num="lk_edit_l2gap"]').closest('.numcell').querySelector('span'); return { t:s.textContent, w:s.scrollWidth<=s.clientWidth+1, h:s.scrollHeight<=s.clientHeight+1, ov:getComputedStyle(s).textOverflow }; });
     ok('"Around choices" shows in full (no clipping, no ellipsis)', lab.t==='Around choices' && lab.w && lab.h && lab.ov!=='ellipsis', JSON.stringify(lab));
+    /* a one-word name never breaks inside the word ("Transpar / ency" with the first fix) */
+    const words = await page.evaluate(()=>[...document.querySelectorAll('.numcell > span')].filter(s=>s.offsetParent).map(s=>{ const r=document.createRange(); r.selectNodeContents(s); const lines=new Set([...r.getClientRects()].map(x=>Math.round(x.top))); return { t:s.textContent, lines:lines.size, words:s.textContent.trim().split(/\s+/).length, clip:s.scrollWidth>s.clientWidth+1 }; }));
+    const broken = words.filter(w=>w.lines>w.words || w.clip);
+    ok('no number-cell name breaks inside a word or is cut off', words.length>5 && broken.length===0, JSON.stringify(broken.length?broken:words.slice(0,6)));
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-layout.png') });
   } catch(e){ ok('suite ran to the end', false, (e.stack||e.message).slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));
