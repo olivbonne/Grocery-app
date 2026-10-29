@@ -1280,11 +1280,11 @@
      no other row's control is. auto-fill keeps the empty track, so Corner sits in column one exactly
      above Across and Left. */
   .numgrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px 10px; width:100%; }
-  .numcell { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; }
+  .numcell { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; flex-wrap:wrap; row-gap:4px; }   /* v2.84: a name never narrower than its longest word; if it and the buttons cannot share the line, the buttons go under it */
   /* v1.58 item 2: one caption width for every stepper cell, so Across / Left / Corner all start at
      the same x and the three rows read as one block instead of three near-misses. */
   /* the caption may shrink and ellipsis rather than push the stepper off the row */
-  .numcell > span { flex:0 1 52px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  .numcell > span { flex:0 1 auto; min-width:min-content; overflow:hidden; overflow-wrap:normal; line-height:1.15;   /* v2.84: wraps between words instead of "…" ("Around choices" was cut off), and takes the room a one-word name needs ("Transparency" broke mid-word with a fixed 52px) */
     font-size:12px; font-weight:700; color:var(--muted); }
   .numcell .seg { flex:0 0 auto; }
   .numcell .seg button { min-width:30px; }
