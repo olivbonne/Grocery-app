@@ -89,7 +89,9 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     const TD = DOC({ items:[it("1","Milk","dairy",{qty:3,note:"Soy, high protein, VitaSoy"}),it("2","Yogurt","dairy"),it("3","Wombok cabbage","vegetable",{qty:6,weight:"900g",note:"Organic, white"}),it("4","Ginger","vegetable")] });
     const TX = 'localStorage.setItem("ml_nosmall","1"); localStorage.setItem("ml_largecols","3"); localStorage.setItem("ml_caton","0");';
     const tiles = ()=>page.evaluate(()=>[...document.querySelectorAll('#zoomer .pill[data-pill]')].map(p=>{ const r=p.getBoundingClientRect(), n=p.querySelector('.pname'), nr=n.getBoundingClientRect(), lh=parseFloat(getComputedStyle(n).lineHeight)||nr.height;
-      const note=p.querySelector('.pnote'), m=p.querySelector('.pill-meta');
+      /* SUPERSEDED by v2.86: at 1 and 2 lines the amount is the one pill (.cupill-t) in its row, not B79's .pill-meta badge;
+         still protects: an amount is shown, clear of the name and the note */
+      const note=p.querySelector('.pnote'), m=p.querySelector('.pill-meta, .cupill-t');
       const vis=e=>e && getComputedStyle(e).display!=='none' && e.getBoundingClientRect().height>0;
       const inside=[...p.children].filter(vis).every(k=>{ const b=k.getBoundingClientRect(); return b.top>=r.top-1 && b.bottom<=r.bottom+1; });
       const mr=vis(m)?m.getBoundingClientRect():null;
@@ -107,7 +109,9 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
         if(out) await page.screenshot({ path: out.replace(/\.png$/,`-h${n}.png`) });
       }
     }
-    ok('1 < 2 < 3 lines', H['1']<H['2'] && H['2']<H['3'], JSON.stringify(H));
+    /* SUPERSEDED by v2.86: at 2 lines the amount takes a badge row (26px), a little taller than the line it takes at 3, so
+       2 may be up to 8px taller than 3; still protects: 1 is shorter than 2, and 2 is not meaningfully taller than 3 */
+    ok('1 < 2, and 2 within a row\'s difference of 3', H['1']<H['2'] && H['2']<=H['3']+8, JSON.stringify(H));
     await page.locator('#shopMenuBtn, [aria-label="More"]').first().click(); await page.waitForTimeout(400);
     const mb = await page.evaluate(()=>[...document.querySelectorAll('[data-sm-lines]')].map(b=>b.dataset.smLines||'v'));
     ok('the ⋯ menu offers 1–8, variable and square', mb.join()==='1,2,3,4,5,6,7,8,v,sq', JSON.stringify(mb));

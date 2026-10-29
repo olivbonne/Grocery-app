@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.85";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.85";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.85";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.85";
-import { compareStores, worthIt } from "./compare.js?v=2.85";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.85";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.85";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.85";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.85";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.85";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.85";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.85";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.85";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.85";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.86";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.86";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.86";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.86";
+import { compareStores, worthIt } from "./compare.js?v=2.86";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.86";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.86";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.86";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.86";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.86";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.86";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.86";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.86";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.86";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.85";
+const APP_VERSION = "v2.86";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -863,7 +863,7 @@ function applyIcoSize(){ try{ document.documentElement.setAttribute("data-icosiz
 function arrowSVG(up){ return `<svg class="arrowmk${up?' up':''}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg>`; }
 function tileLines(){ try{ const v=localStorage.getItem("ml_tilelines")||""; return /^([1-8]|sq)$/.test(v) ? v : ""; }catch(e){ return ""; } }
 function applyTileLines(){ try{ const v=tileLines(), h=document.documentElement; if(v) h.setAttribute("data-tilelines", v); else h.removeAttribute("data-tilelines"); }catch(e){} }
-function setTileLines(v){ v=String(v||""); try{ if(/^([1-8]|sq)$/.test(v)) localStorage.setItem("ml_tilelines", v); else localStorage.removeItem("ml_tilelines"); }catch(e){} applyTileLines(); render(); }
+function setTileLines(v){ v=String(v||""); try{ if(/^([1-8]|sq)$/.test(v)) localStorage.setItem("ml_tilelines", v); else localStorage.removeItem("ml_tilelines"); }catch(e){} applyTileLines(); applyCu(); render(); }
 /* v2.85: the count and the unit on column tiles — "" as now (the "5× 3 lb" line), "sep" a count disc + a unit pill, "tog"
    one pill. LOOK keys (ml_cu_*), so deliberately NOT in APP_EXCLUDE. Published on <html> as data-cu-* only when not the
    default (an untouched install gets no attribute). var: applyTheme() runs applyCu() at boot. */
@@ -872,22 +872,50 @@ var CU_KEYS = { style:["","sep","tog"], np:["","above"], dp:["tr","tl","bl","br"
   uc:["ink","light","accent","cat","grey"], tp:["tr","top","tl","left","bl","bottom","br","right"], te:["inside","border"],
   tc:["accent","ink","cat","light","blue","grey"] };
 function cuGet(k){ const l=CU_KEYS[k]; if(!l) return ""; try{ const v=localStorage.getItem("ml_cu_"+k); return (v!=null && l.includes(v)) ? v : l[0]; }catch(e){ return l[0]; } }
-function applyCu(){ try{ const h=document.documentElement; Object.keys(CU_KEYS).forEach(k=>{ const v=cuGet(k); if(v!==CU_KEYS[k][0]) h.setAttribute("data-cu-"+k, v); else h.removeAttribute("data-cu-"+k); }); }catch(e){} }
-function setCu(k,v){ const l=CU_KEYS[k]; if(!l) return; v=String(v||""); try{ if(l.includes(v) && v!==l[0]) localStorage.setItem("ml_cu_"+k, v); else localStorage.removeItem("ml_cu_"+k); }catch(e){} applyTheme(); render(); }
+function applyCu(){ try{ _cuE = cuCalc(); const h=document.documentElement; Object.keys(CU_KEYS).forEach(k=>{ const v=_cuE[k]; if(v!==CU_KEYS[k][0]) h.setAttribute("data-cu-"+k, v); else h.removeAttribute("data-cu-"+k); });
+  if(_cuE.mk!=="tl") h.setAttribute("data-cu-mk", _cuE.mk); else h.removeAttribute("data-cu-mk"); }catch(e){} }
+function setCu(k,v){ const l=CU_KEYS[k]; if(!l) return; v=String(v||""); try{ if(l.includes(v) && v!==l[0]) localStorage.setItem("ml_cu_"+k, v); else localStorage.removeItem("ml_cu_"+k); }catch(e){}
+  try{ if(k==="dp"){ const u=cuGet("uw"); if(u!=="note" && cuBand(u)===cuBand(cuGet("dp"))){ if(cuBand(cuGet("dp"))==="t") localStorage.removeItem("ml_cu_uw"); else localStorage.setItem("ml_cu_uw","top"); } } }catch(e){}
+  applyTheme(); render(); }
+/* v2.86 (the tile-rules canvas): what the settings ask for, made to fit the rules — the unit pill and the one pill lost the
+   side edges (they landed on the name); "On the border" needs 13px between tiles, or it goes inside; the unit pill never
+   shares a row with the disc (it takes the other row); at heights 1 and 2 "As now" is the one pill; the marks own the first
+   free corner (tl, tr, bl, br), never one in a row whose middle holds a pill. Cached: applyCu() recomputes it. */
+var CU_GAP = 13, _cuE = null;
+function cuBand(p){ return /^(top|tl|tr)$/.test(p) ? "t" : "b"; }
+function cuBorderOK(){ return numVal("gapx")>=CU_GAP && numVal("gapy")>=CU_GAP; }
+function cuCalc(){
+  const e={}; Object.keys(CU_KEYS).forEach(k=>e[k]=cuGet(k));
+  if(!e.style && /^[12]$/.test(tileLines())) e.style="tog";
+  if(e.uw==="left" || e.uw==="right") e.uw="bottom";
+  if(e.tp==="left" || e.tp==="right") e.tp="tr";
+  if(e.style==="sep" && e.uw!=="note" && cuBand(e.uw)===cuBand(e.dp)) e.uw = cuBand(e.dp)==="t" ? "bottom" : "top";
+  if(!cuBorderOK()){ e.de="inside"; e.ue="inside"; e.te="inside"; }
+  const own=new Set(), mid=new Set();
+  if(e.style==="sep"){ own.add(e.dp); if(e.uw!=="note") mid.add(cuBand(e.uw)); }
+  if(e.style==="tog"){ if(e.tp==="top" || e.tp==="bottom") mid.add(cuBand(e.tp)); else own.add(e.tp); }
+  e.mk = ["tl","tr","bl","br"].find(c=>!own.has(c) && !mid.has(cuBand(c))) || "tl";
+  return e;
+}
+function cuEff(){ return _cuE || (_cuE = cuCalc()); }
+/* the classes of one badge: its place, and inside (cu-in + its band cu-t / cu-b, which reserves the row) or on the border */
+function cuAt(p, place, aisle){ const inside = place!=="border" || (aisle && p==="tr");
+  return `cu-p-${p} ${inside ? "cu-in cu-"+cuBand(p) : "cu-bd"}`; }
 /* v2.85: the disc and pills of one tile. null when the style is "as now" (the tile is then exactly today's markup). `meta`
    is today's amount line (inner markup): it is kept as .cu-alt, hidden in column tiles and shown in the one-line layouts
    (.linelist, .largevar), which keep today's amount line whatever the setting — the disc and pills are for column tiles.
-   `nu` is the unit to show in the note (unit "In the note"): display only, never stored. */
-function cuParts(qty, unit, catColor, meta){
-  const st=cuGet("style"); if(!st) return null;
+   `nu` is the unit to show in the note (unit "In the note"): display only, never stored.
+   v2.86: places are classes now (see cuAt) — the EFFECTIVE settings (cuEff); `aisle` = the tile shows an aisle badge. */
+function cuParts(qty, unit, catColor, meta, aisle){
+  const e=cuEff(), st=e.style; if(!st) return null;
   const n=qty||1, u=unit||"", cv=catColor?` style="--cucat:${catColor}"`:"";
   let h="", nu="";
   if(st==="sep"){
-    if(n>1) h+=`<span class="cudisc" aria-label="${tf("Quantity {n}",{n})}"${cv}>${n}</span>`;
-    if(u){ if(cuGet("uw")==="note") nu=u; else h+=`<span class="cupill cupill-u"${cv}>${esc(u)}</span>`; }
+    if(n>1) h+=`<span class="cudisc ${cuAt(e.dp, e.de, aisle)}" aria-label="${tf("Quantity {n}",{n})}"${cv}>${n}</span>`;
+    if(u){ if(e.uw==="note") nu=u; else h+=`<span class="cupill cupill-u ${cuAt(e.uw, e.ue, aisle)}"${cv}>${esc(u)}</span>`; }
   } else {
     const s = (n>1 && u) ? n+" × "+u : n>1 ? String(n) : u;
-    if(s) h+=`<span class="cupill cupill-t"${cv}>${esc(s)}</span>`;
+    if(s) h+=`<span class="cupill cupill-t ${cuAt(e.tp, e.te, aisle)}"${cv}>${esc(s)}</span>`;
   }
   if(meta) h+=`<span class="cu-alt">${meta}</span>`;
   return { h, nu };
@@ -897,6 +925,18 @@ function cuNote(nl, nu){ if(!nu) return nl ? `<span class="pnote">${esc(nl)}</sp
   return `<span class="pnote${nl?'':' cu-only'}"><span class="cu-nu">${esc(nu)}${nl?" · ":""}</span>${esc(nl||"")}</span>`; }
 function tileLinesBtns(attr){ return [1,2,3,4,5,6,7,8].map(n=>`<button class="colbtn ${tileLines()===String(n)?'on':''}" ${attr}="${n}">${n}</button>`).join("")
   +`<button class="colbtn ${tileLines()===''?'on':''}" ${attr}="" aria-label="${t("Variable height")}">${arrowSVG(true)}</button><button class="colbtn ${tileLines()==='sq'?'on':''}" ${attr}="sq" aria-label="${t("Square")}">□</button>`; }
+/* v2.86: Settings › Count and unit opens with three real tiles — pillHTML's own markup inside a 3-across column grid, so
+   the places, bands and margins are exactly the list's. Sample items, never stored; data-pill becomes data-cuprev so
+   nothing that looks for list tiles (taps, syncTileH, suites) finds them, and the preview takes no taps. */
+function cuPrevHTML(){
+  const S=[{ id:"cuprev1", name:"Apples", cat:"fruit", qty:5, weight:"1kg", note:"Pink Lady", tags:["urgent"], starred:true },
+    { id:"cuprev2", name:"Milk", cat:"dairy", qty:2, weight:"2L", tags:[] },
+    { id:"cuprev3", name:"Eggs", cat:"dairy", qty:1, weight:"", note:"Free range", tags:[] }];
+  const tiles=S.map(i=>{ const c=CAT(i.cat)||catList()[0]||{ id:i.cat, color:"var(--muted2)" };
+    return pillHTML(Object.assign({ checked:false }, i), c).replace(/data-pill="/g, 'data-cuprev="'); }).join("");
+  return `<div class="shop cuprev" aria-hidden="true"><div class="zoomer ${styl()} gridmode grid3"><div class="pills">${tiles}</div></div></div>`
+    + `<div class="tlprevhint">${t("Preview — changes as you choose below")}</div>`;
+}
 /* v2.79: Settings › Tiles › Preview — the list in miniature as tile display and height combine. Bars, not real tiles. */
 function tilePrevHTML(){
   const large=dispBase()==='large', cols=large?largeCols():4, h=tileLines(), dot=itemEmojiOn();
@@ -3631,7 +3671,7 @@ function addPillHTML(m){
   const style = full ? fullStyle(cat.color, !!on) : (fillMode()==="empty" ? `border-left:1.5px solid var(--line)` : `border-left:4px solid ${catEdge(cat.color, !!on)}`);
   const qcol = metaCol(cat.color, !!on, full); const qtxt = (full) ? qcol : readableOn(qcol, tileGroundHex(!!on));
   const meta=[(m.qty>1?m.qty+"×":""), m.weight].filter(Boolean).join(" ");
-  const cuA = cuParts(m.qty, m.weight, cat.color, meta?`<span class="qty" style="color:${qtxt}">${esc(meta)}</span>`:"");   // v2.85
+  const cuA = cuParts(m.qty, m.weight, cat.color, meta?`<span class="qty" style="color:${qtxt}">${esc(meta)}</span>`:"", false);   // v2.85
   const metaS = cuA ? cuA.h + (cuA.nu?`<span class="pnote cu-only"><span class="cu-nu">${esc(cuA.nu)}</span></span>`:"") : meta?`<span class="pill-meta"><span class="qty" style="color:${qtxt}">${esc(meta)}</span></span>`:"";
   const em=itemIcon(m.name,m.cat); const emS=em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
   const attr = on ? `data-add-inc="${m.onId}"` : (m.predKey?`data-add-pred="${esc(m.predKey)}"` : m.ba?`data-add-ba="${esc(m.name)}|${m.cat}" data-reg-note="${esc(m.note||"")}"` : `data-add-dict="${esc(m.name)}|${m.cat}"`);
@@ -4441,6 +4481,10 @@ function full_lines(z){ return z.classList.contains("linelist") || z.classList.c
 function tileKey(p){ return (p.classList.contains("done") ? "d" : "") + "|" + p.querySelectorAll(".pemoji,.pmark,.penddot").length + "|" + p.textContent; }
 function syncTileH(){ try{
   const h=document.documentElement;
+  /* v2.86: fixed heights count the bands — a band any column tile in view uses is kept by every tile (the CSS), so it is
+     measured into the probe; set before measuring, and part of the signature */
+  const cuTB=!!document.querySelector(".shop .zoomer.gridmode .pill > .cu-t"), cuBB=!!document.querySelector(".shop .zoomer.gridmode .pill > .cu-b");
+  h.toggleAttribute("data-cu-tb", cuTB); h.toggleAttribute("data-cu-bb", cuBB);
   [["--tileh", document.getElementById("zoomer"), "#zoomer .pill[data-pill], #zoomer .pill[data-reg-rm], #zoomer .pill[data-reg-add]"],
    ["--tileh-cart", document.querySelector("#checkedbar .zoomer"), "#checkedbar .pill[data-pill]"]].forEach(([v, z, sel])=>{
     if(!z || !z.closest(".shop")) return;
@@ -4449,7 +4493,7 @@ function syncTileH(){ try{
     const grid=z.classList.contains("gridmode"), full=grid || z.classList.contains("linelist");
     const w=grid ? tiles[0].offsetWidth : tiles[0].parentElement.clientWidth;
     const sig=[z.className, h.getAttribute("data-icosize"), h.getAttribute("data-theme"), h.getAttribute("data-linew"), h.getAttribute("data-tilebg"),
-      document.body.className, fillMode(), itemEmojiOn(), iconStyle(), w, document.fonts ? document.fonts.status : "", tileLines()].join("|");
+      document.body.className, fillMode(), itemEmojiOn(), iconStyle(), w, document.fonts ? document.fonts.status : "", tileLines(), cuTB, cuBB, h.getAttribute("data-cu-style")].join("|");
     if(_tileSig[v]!==sig || _tileNat[v].size>2000){ _tileSig[v]=sig; _tileNat[v]=new Map(); }   // a new layout, or a long day of edits
     const nat=_tileNat[v], keys=tiles.map(tileKey), miss=new Map();
     keys.forEach((k,i)=>{ if(!nat.has(k) && !miss.has(k)) miss.set(k, tiles[i]); });
@@ -4476,7 +4520,9 @@ function syncTileH(){ try{
         c.querySelectorAll(".pnote,.pill-meta").forEach(e=>e.remove());
         c.style.height="auto"; c.style.minHeight="0"; c.style.aspectRatio="auto";
         const pn=c.querySelector(".pname"); if(pn){ pn.innerHTML=Array.from({length:+nl},()=>"Ag").join("<br>"); pn.style.webkitLineClamp="unset"; pn.style.display="block"; }
-        host.appendChild(c); z.appendChild(host); _tileFix[fv]=c.offsetHeight; _tileFixSig[fv]=sig; host.remove();
+        host.appendChild(c); z.appendChild(host);
+        /* v2.86: the note and the amount are taken out, but a real tile keeps the gap above each (rule 4, G) — count them */
+        _tileFix[fv]=c.offsetHeight + 2*(parseFloat(getComputedStyle(c).rowGap)||0); _tileFixSig[fv]=sig; host.remove();
       }
       if(_tileFix[fv]>0 && h.style.getPropertyValue(fv)!==_tileFix[fv]+"px") h.style.setProperty(fv, _tileFix[fv]+"px");
     }
@@ -4840,16 +4886,17 @@ function pillHTML(i, cat){
     + `${urgent?mk(FLAG_STAR_SVG, full?'#fff':'#E8A91D', 'Urgent'):""}`
     + `${(!checked&&tg.includes("discount"))?mk(FLAG_TAG_SVG,'currentColor',t("If on sale")):""}`
     + `${(!checked&&tg.includes("convenient"))?mk(FLAG_CLOCK_SVG,'currentColor','If convenient'):""}`;
-  const marks = markInner ? `<span class="pmarks">${markInner}</span>` : "";
+  const marks = markInner ? `<span class="pmarks cu-p-${cuEff().mk} cu-in cu-${cuBand(cuEff().mk)}">${markInner}</span>` : "";   // v2.86: the marks own a corner
   // v1.20 unified row anatomy (shared with regPill): emoji · name, then qty/weight pushed to the right.
   // No check circle — tapping the whole row checks it. Selected/on-list uses the Full/Empty tile look.
   const em = itemIcon(i.name, i.cat);
   const emS = em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
   const nl = noteLine(i);   // v2.22 which shop, and the note
-  const cuP = cuParts(i.qty||1, i.weight?showAmt(i.weight):"", cat.color, meta);   // v2.85: null = as now
+  const ai = (_aisleTags && !checked) ? aisleNo(i) : "";   // v2.86: once, for the badge and the places
+  const cuP = cuParts(i.qty||1, i.weight?showAmt(i.weight):"", cat.color, meta, !!ai);   // v2.85: null = as now
   const tail = cuP ? cuP.h + cuNote(nl, cuP.nu) : `${meta?`<span class="pill-meta">${meta}</span>`:""}${nl?`<span class="pnote">${esc(nl)}</span>`:""}`;
   return `<button class="pill ${checked?'done':''} ${urgent?'urgent-dup':''} ${i.id===lastPop?'justpop':''}${(nl||(cuP&&cuP.nu))?' hasnote':''}" data-pill="${i.id}" style="${style}">`
-    +`${(_aisleTags && !checked) ? (()=>{ const a=aisleNo(i); return a ? `<span class="paisle" aria-label="Aisle ${esc(a)}"><i aria-hidden="true">A</i>${esc(a)}</span>` : ""; })() : ""}${emS}${marks}<span class="pname">${esc(cap(tileName(i.name)))}</span>${tail}`
+    +`${ai ? `<span class="paisle" aria-label="Aisle ${esc(ai)}"><i aria-hidden="true">A</i>${esc(ai)}</span>` : ""}${emS}${marks}<span class="pname">${esc(cap(tileName(i.name)))}</span>${tail}`
     +`</button>`;
 }
 function pillRow(items, cat){ return `<div class="pills">${items.map(i=>pillHTML(i,cat)).join("")}</div>`; }
@@ -4904,7 +4951,7 @@ function regPill(entry, cat, it){
   const em = itemIcon(entry.name, cat.id);
   const emS = em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
   const meta = `${q>1?`<span class="qty" style="color:${qtxt}">${q}×</span>`:""}${w?`<span class="qty" style="color:${qtxt}">${esc(w)}</span>`:""}`;
-  const cuR = cuParts(q, w, cat.color, meta);   // v2.85: null = as now
+  const cuR = cuParts(q, w, cat.color, meta, false);   // v2.85: null = as now
   const metaS = cuR ? cuR.h : meta?`<span class="pill-meta">${meta}</span>`:"";
   const name = `<span class="pname">${esc(cap(tileName(entry.name)))}</span>`;   // v2.10: own span so it can be clamped and measured
   /* v2.68: a Regular is its name, category AND note — the tile shows its note, as a list item does, and carries it */
@@ -8258,21 +8305,27 @@ function optionsBody(){
       <div class="numgrid">${numCell("gapx")}${numCell("gapy")}</div></div></div>
     ${/* v2.85: the count and the unit on column tiles — as now, a disc + a unit pill, or one pill; the note above or below the name */""}
     ${sectHR("Count and unit")}
-    ${(()=>{ const segB=(k,list)=>`<div class="seg">${list.map(([v,l])=>`<button data-cu="${k}|${v}" class="${cuGet(k)===(v||CU_KEYS[k][0])?'on':''}">${t(l)}</button>`).join("")}</div>`;
+    ${cuPrevHTML()}
+    ${(()=>{ const segB=(k,list,dis)=>{ const cur=/^(de|ue|te|uw|tp|dp)$/.test(k) ? cuEff()[k] : cuGet(k);   // v2.86: the places show what applies
+        return `<div class="seg">${list.map(([v,l])=>`<button data-cu="${k}|${v}" class="${cur===(v||CU_KEYS[k][0])?'on':''}"${dis&&dis.has(v)?' disabled aria-disabled="true"':''}>${t(l)}</button>`).join("")}</div>`; };
       const CUC={accent:["var(--accent)","Accent"],ink:["var(--ink)","Ink"],cat:["linear-gradient(135deg,#E2502C,#3E8E3E 50%,#2F6FB5)","Category colour"],blue:["var(--cu-blue)","Blue"],green:["var(--cu-green)","Green"],grey:["var(--cu-grey)","Grey"],light:["var(--chip)","Light"]};
       const swB=(k,list)=>rowNL(t("Colour"), `<div class="cuswrow">${list.map(c=>`<button data-cu="${k}|${c}" class="colsw ${cuGet(k)===c?'on':''}" style="background:${CUC[c][0]}" aria-label="${t(CUC[c][1])}" title="${t(CUC[c][1])}"></button>`).join("")}</div>`);
-      const PL=[["border","On the border"],["inside","Inside"]], st=cuGet("style");
+      const PL=[["border","On the border"],["inside","Inside"]], st=cuEff().style;   // v2.86: the sections of what applies (at 1–2 lines "As now" is the one pill)
+      const bOK=cuBorderOK(), PD=bOK ? null : new Set(["border"]); let gapHint=!bOK;
+      const placeRow=k=>{ const r=rowNL(t("Place"), segB(k,PL,PD)) + (gapHint ? `<div class="opthint">${t("On the border needs a tile gap of 13 or more, across and down (Tile gap, above).")}</div>` : ""); gapHint=false; return r; };
       return rowNL(t("Style"), segB("style",[["","As now"],["sep","Disc + unit"],["tog","One pill"]]))
+        + (/^[12]$/.test(tileLines()) ? `<div class="opthint">${t("At 1 or 2 lines tall, As now shows the amount as one pill.")}</div>` : "")
         + rowNL(t("Note"), segB("np",[["","Below the name"],["above","Above the name"]]))
         + (st==="sep" ? subhead("Count disc")
           + rowNL(t("Corner"), segB("dp",[["tl","Top left"],["tr","Top right"],["bl","Bottom left"],["br","Bottom right"]]))
-          + rowNL(t("Place"), segB("de",PL)) + swB("dc",CU_KEYS.dc)
+          + placeRow("de") + swB("dc",CU_KEYS.dc)
           + subhead("Unit")
-          + rowNL(t("Where"), segB("uw",[["note","In the note"],["top","Top"],["right","Right"],["bottom","Bottom"],["left","Left"]]))
-          + (cuGet("uw")!=="note" ? rowNL(t("Place"), segB("ue",PL)) + swB("uc",["light","ink","accent","cat","grey"]) : "") : "")
+          + rowNL(t("Where"), segB("uw",[["note","In the note"],["top","Top"],["bottom","Bottom"]], new Set([cuBand(cuEff().dp)==="t" ? "top" : "bottom"])))
+          + `<div class="opthint">${t("The unit pill takes the row the count disc is not in.")}</div>`
+          + (cuEff().uw!=="note" ? placeRow("ue") + swB("uc",["light","ink","accent","cat","grey"]) : "") : "")
         + (st==="tog" ? subhead("Count × unit pill")
-          + rowNL(t("Position"), segB("tp",[["tr","Top right"],["top","Top"],["tl","Top left"],["left","Left"],["bl","Bottom left"],["bottom","Bottom"],["br","Bottom right"],["right","Right"]]))
-          + rowNL(t("Place"), segB("te",PL)) + swB("tc",CU_KEYS.tc) : ""); })()}
+          + rowNL(t("Position"), segB("tp",[["tr","Top right"],["top","Top"],["tl","Top left"],["bl","Bottom left"],["bottom","Bottom"],["br","Bottom right"]]))
+          + placeRow("te") + swB("tc",CU_KEYS.tc) : ""); })()}
     ${/* v2.63 item D: the Edit item pills — the same three colours as a tile state, and their shape */""}
     ${/* v2.69: one section for every sliding sheet — pick the sheet, then its surface, its pills and their shape */""}
     ${sectHR("Sheets")}

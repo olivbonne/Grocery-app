@@ -201,3 +201,15 @@ the household asked for is not a lesson.*
     cell's name break anywhere at a fixed 52px — and "Transparency" broke mid-word ("Transpar / ency"); caught in a later
     screenshot before release. *Guard:* a fix to a shared style is checked against every element it styles, not the one
     reported: the v2.84 suite now walks every visible number-cell name and fails on a break inside a word or a cut-off name.
+53. **Each option was tested alone; nobody checked the options against each other.** v2.85's suite checked that every disc
+    and pill went where it was told, but not what was already there: a unit pill on a side landed on the name (43×20 px), a
+    disc top-left on the urgent marks, a disc bottom-left on the note, and the margins were 10/6/6+4 px, so the words sat
+    off centre (measured for the tile-rules canvas, fixed v2.86). *Guard:* a layout with places has rules (one margin, one
+    owner per place, the words make room), and the v2.86 suite lays out every combination still offered (layouts × heights ×
+    places × border/inside) and fails on any overlap between two parts of a tile, anything nearer the edge than the margin,
+    or a name that is not whole lines. A new place or option joins that loop.
+54. **A measuring copy must be styled like the real thing.** syncTileH measures a fixed height on a copy of a tile inside a
+    hidden `.tileprobe`, not inside `.pills`; v2.86's new margins were written for `.pills > .pill`, so the copy measured
+    with the old 10 px padding and no badge row, and every fixed-height tile came out about 30 px too short (caught by the
+    v2.86 suite before release). *Guard:* rules that change a tile's size name `:is(.pills, .tileprobe) > .pill`; when a fix
+    changes how big something is, check what measures it.

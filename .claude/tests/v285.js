@@ -67,12 +67,16 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
 
     await mk({ doc:TD, extra:TX });
     let P = await parts();
-    ok('untouched: no data-cu-*, no disc or pill, the amount line as before', (await attrs()).length===0 && P.every(p=>!p.disc&&!p.unit&&!p.tog) && P.find(p=>p.id==='1').meta && /3×/.test(P.find(p=>p.id==='1').meta.t), JSON.stringify(P.map(p=>[p.id,p.meta&&p.meta.t])));
+    /* SUPERSEDED by v2.86: <html> now carries the EFFECTIVE places — at the default 8px gap "On the border" is inside, so
+       data-cu-de / data-cu-ue appear on an untouched install; still protects: no style attribute, no disc or pill, the amount line */
+    ok('untouched: no data-cu-style, no disc or pill, the amount line as before', !(await attrs()).includes('data-cu-style') && P.every(p=>!p.disc&&!p.unit&&!p.tog) && P.find(p=>p.id==='1').meta && /3×/.test(P.find(p=>p.id==='1').meta.t), JSON.stringify(P.map(p=>[p.id,p.meta&&p.meta.t])));
 
     await mk({ doc:TD, extra:TX+cu({ style:'sep' }) });
     P = await parts(); const milk=P.find(p=>p.id==='1'), gin=P.find(p=>p.id==='2'), wom=P.find(p=>p.id==='3');
-    ok('Disc + unit: a disc on counted items only, near the top-right corner, without "×"', milk.disc && milk.disc.t==='3' && wom.disc.t==='6' && !gin.disc && Math.abs(milk.disc.cx-milk.w)<12 && Math.abs(milk.disc.cy)<12, JSON.stringify({ milk, gin:gin.disc }));
-    ok('…the unit pill is centred on the bottom edge; no amount line in column tiles', wom.unit && wom.unit.t==='900g' && Math.abs(wom.unit.cx-wom.w/2)<2 && Math.abs(wom.unit.cy-wom.h)<4 && !wom.meta && !milk.meta, JSON.stringify(wom));
+    /* SUPERSEDED by v2.86: at the default 8px gap the border places go inside (rule 5, 13px needed), at the margin M=8 from
+       the inner edge; still protects: a disc on counted items only, top-right, no "×"; the unit pill centred at the bottom */
+    ok('Disc + unit: a disc on counted items only, inside the top-right corner, without "×"', milk.disc && milk.disc.t==='3' && wom.disc.t==='6' && !gin.disc && milk.disc.rr>=8 && milk.disc.rr<=12 && milk.disc.t0>=8 && milk.disc.t0<=12, JSON.stringify({ milk, gin:gin.disc }));
+    ok('…the unit pill is centred inside the bottom edge; no amount line in column tiles', wom.unit && wom.unit.t==='900g' && Math.abs(wom.unit.cx-wom.w/2)<3 && wom.unit.bb>=8 && wom.unit.bb<=13 && !wom.meta && !milk.meta, JSON.stringify(wom));
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-sep.png') });
 
     await mk({ doc:TD, extra:TX+cu({ style:'sep', dp:'bl', de:'inside' }) });
