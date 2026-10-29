@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.84";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.84";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.84";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.84";
-import { compareStores, worthIt } from "./compare.js?v=2.84";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.84";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.84";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.84";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.84";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.84";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.84";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.84";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.84";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.84";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.85";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.85";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.85";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.85";
+import { compareStores, worthIt } from "./compare.js?v=2.85";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.85";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.85";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.85";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.85";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.85";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.85";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.85";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.85";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.85";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.84";
+const APP_VERSION = "v2.85";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -831,7 +831,7 @@ function applyTheme(){ _cardHexMemo=null; const t = THEMES[theme] || THEMES.ligh
        with the Settings swatches, so it must mean the same thing in both places. */
     (typeof wall!=="undefined" && wall && isTintWall(wall)) ? "luminosity, normal" : "normal");
   if(typeof fill!=="undefined") applyFill();
-  applyIcoSize(); applyLineW(); applyTileLines(); }
+  applyIcoSize(); applyLineW(); applyTileLines(); applyCu(); }
 function setTheme(v){ v = normTheme(v); if(!THEMES[v]) return; theme = v; localStorage.setItem("ml_theme", theme); applyTheme(); render(); }
 function toggleTheme(){ setTheme(theme==="dark" ? "light" : "dark"); }   // kept for back-compat
 /* v1.41 item 2: three looks now — full (solid category colour), accent (transparent + coloured left
@@ -864,6 +864,37 @@ function arrowSVG(up){ return `<svg class="arrowmk${up?' up':''}" width="16" hei
 function tileLines(){ try{ const v=localStorage.getItem("ml_tilelines")||""; return /^([1-8]|sq)$/.test(v) ? v : ""; }catch(e){ return ""; } }
 function applyTileLines(){ try{ const v=tileLines(), h=document.documentElement; if(v) h.setAttribute("data-tilelines", v); else h.removeAttribute("data-tilelines"); }catch(e){} }
 function setTileLines(v){ v=String(v||""); try{ if(/^([1-8]|sq)$/.test(v)) localStorage.setItem("ml_tilelines", v); else localStorage.removeItem("ml_tilelines"); }catch(e){} applyTileLines(); render(); }
+/* v2.85: the count and the unit on column tiles — "" as now (the "5× 3 lb" line), "sep" a count disc + a unit pill, "tog"
+   one pill. LOOK keys (ml_cu_*), so deliberately NOT in APP_EXCLUDE. Published on <html> as data-cu-* only when not the
+   default (an untouched install gets no attribute). var: applyTheme() runs applyCu() at boot. */
+var CU_KEYS = { style:["","sep","tog"], np:["","above"], dp:["tr","tl","bl","br"], de:["border","inside"],
+  dc:["accent","ink","cat","blue","green","grey"], uw:["bottom","top","right","left","note"], ue:["border","inside"],
+  uc:["ink","light","accent","cat","grey"], tp:["tr","top","tl","left","bl","bottom","br","right"], te:["inside","border"],
+  tc:["accent","ink","cat","light","blue","grey"] };
+function cuGet(k){ const l=CU_KEYS[k]; if(!l) return ""; try{ const v=localStorage.getItem("ml_cu_"+k); return (v!=null && l.includes(v)) ? v : l[0]; }catch(e){ return l[0]; } }
+function applyCu(){ try{ const h=document.documentElement; Object.keys(CU_KEYS).forEach(k=>{ const v=cuGet(k); if(v!==CU_KEYS[k][0]) h.setAttribute("data-cu-"+k, v); else h.removeAttribute("data-cu-"+k); }); }catch(e){} }
+function setCu(k,v){ const l=CU_KEYS[k]; if(!l) return; v=String(v||""); try{ if(l.includes(v) && v!==l[0]) localStorage.setItem("ml_cu_"+k, v); else localStorage.removeItem("ml_cu_"+k); }catch(e){} applyTheme(); render(); }
+/* v2.85: the disc and pills of one tile. null when the style is "as now" (the tile is then exactly today's markup). `meta`
+   is today's amount line (inner markup): it is kept as .cu-alt, hidden in column tiles and shown in the one-line layouts
+   (.linelist, .largevar), which keep today's amount line whatever the setting — the disc and pills are for column tiles.
+   `nu` is the unit to show in the note (unit "In the note"): display only, never stored. */
+function cuParts(qty, unit, catColor, meta){
+  const st=cuGet("style"); if(!st) return null;
+  const n=qty||1, u=unit||"", cv=catColor?` style="--cucat:${catColor}"`:"";
+  let h="", nu="";
+  if(st==="sep"){
+    if(n>1) h+=`<span class="cudisc" aria-label="${tf("Quantity {n}",{n})}"${cv}>${n}</span>`;
+    if(u){ if(cuGet("uw")==="note") nu=u; else h+=`<span class="cupill cupill-u"${cv}>${esc(u)}</span>`; }
+  } else {
+    const s = (n>1 && u) ? n+" × "+u : n>1 ? String(n) : u;
+    if(s) h+=`<span class="cupill cupill-t"${cv}>${esc(s)}</span>`;
+  }
+  if(meta) h+=`<span class="cu-alt">${meta}</span>`;
+  return { h, nu };
+}
+/* v2.85: the note span with the unit in front when the unit lives in the note; `.cu-nu` is hidden in the one-line layouts */
+function cuNote(nl, nu){ if(!nu) return nl ? `<span class="pnote">${esc(nl)}</span>` : "";
+  return `<span class="pnote${nl?'':' cu-only'}"><span class="cu-nu">${esc(nu)}${nl?" · ":""}</span>${esc(nl||"")}</span>`; }
 function tileLinesBtns(attr){ return [1,2,3,4,5,6,7,8].map(n=>`<button class="colbtn ${tileLines()===String(n)?'on':''}" ${attr}="${n}">${n}</button>`).join("")
   +`<button class="colbtn ${tileLines()===''?'on':''}" ${attr}="" aria-label="${t("Variable height")}">${arrowSVG(true)}</button><button class="colbtn ${tileLines()==='sq'?'on':''}" ${attr}="sq" aria-label="${t("Square")}">□</button>`; }
 /* v2.79: Settings › Tiles › Preview — the list in miniature as tile display and height combine. Bars, not real tiles. */
@@ -3600,7 +3631,8 @@ function addPillHTML(m){
   const style = full ? fullStyle(cat.color, !!on) : (fillMode()==="empty" ? `border-left:1.5px solid var(--line)` : `border-left:4px solid ${catEdge(cat.color, !!on)}`);
   const qcol = metaCol(cat.color, !!on, full); const qtxt = (full) ? qcol : readableOn(qcol, tileGroundHex(!!on));
   const meta=[(m.qty>1?m.qty+"×":""), m.weight].filter(Boolean).join(" ");
-  const metaS = meta?`<span class="pill-meta"><span class="qty" style="color:${qtxt}">${esc(meta)}</span></span>`:"";
+  const cuA = cuParts(m.qty, m.weight, cat.color, meta?`<span class="qty" style="color:${qtxt}">${esc(meta)}</span>`:"");   // v2.85
+  const metaS = cuA ? cuA.h + (cuA.nu?`<span class="pnote cu-only"><span class="cu-nu">${esc(cuA.nu)}</span></span>`:"") : meta?`<span class="pill-meta"><span class="qty" style="color:${qtxt}">${esc(meta)}</span></span>`:"";
   const em=itemIcon(m.name,m.cat); const emS=em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
   const attr = on ? `data-add-inc="${m.onId}"` : (m.predKey?`data-add-pred="${esc(m.predKey)}"` : m.ba?`data-add-ba="${esc(m.name)}|${m.cat}" data-reg-note="${esc(m.note||"")}"` : `data-add-dict="${esc(m.name)}|${m.cat}"`);
   return `<button class="pill" ${attr} style="${style}">${emS}${esc(cap(m.name))}${metaS}</button>`;
@@ -4814,8 +4846,10 @@ function pillHTML(i, cat){
   const em = itemIcon(i.name, i.cat);
   const emS = em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
   const nl = noteLine(i);   // v2.22 which shop, and the note
-  return `<button class="pill ${checked?'done':''} ${urgent?'urgent-dup':''} ${i.id===lastPop?'justpop':''}${nl?' hasnote':''}" data-pill="${i.id}" style="${style}">`
-    +`${(_aisleTags && !checked) ? (()=>{ const a=aisleNo(i); return a ? `<span class="paisle" aria-label="Aisle ${esc(a)}"><i aria-hidden="true">A</i>${esc(a)}</span>` : ""; })() : ""}${emS}${marks}<span class="pname">${esc(cap(tileName(i.name)))}</span>${meta?`<span class="pill-meta">${meta}</span>`:""}${nl?`<span class="pnote">${esc(nl)}</span>`:""}`
+  const cuP = cuParts(i.qty||1, i.weight?showAmt(i.weight):"", cat.color, meta);   // v2.85: null = as now
+  const tail = cuP ? cuP.h + cuNote(nl, cuP.nu) : `${meta?`<span class="pill-meta">${meta}</span>`:""}${nl?`<span class="pnote">${esc(nl)}</span>`:""}`;
+  return `<button class="pill ${checked?'done':''} ${urgent?'urgent-dup':''} ${i.id===lastPop?'justpop':''}${(nl||(cuP&&cuP.nu))?' hasnote':''}" data-pill="${i.id}" style="${style}">`
+    +`${(_aisleTags && !checked) ? (()=>{ const a=aisleNo(i); return a ? `<span class="paisle" aria-label="Aisle ${esc(a)}"><i aria-hidden="true">A</i>${esc(a)}</span>` : ""; })() : ""}${emS}${marks}<span class="pname">${esc(cap(tileName(i.name)))}</span>${tail}`
     +`</button>`;
 }
 function pillRow(items, cat){ return `<div class="pills">${items.map(i=>pillHTML(i,cat)).join("")}</div>`; }
@@ -4870,11 +4904,12 @@ function regPill(entry, cat, it){
   const em = itemIcon(entry.name, cat.id);
   const emS = em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
   const meta = `${q>1?`<span class="qty" style="color:${qtxt}">${q}×</span>`:""}${w?`<span class="qty" style="color:${qtxt}">${esc(w)}</span>`:""}`;
-  const metaS = meta?`<span class="pill-meta">${meta}</span>`:"";
+  const cuR = cuParts(q, w, cat.color, meta);   // v2.85: null = as now
+  const metaS = cuR ? cuR.h : meta?`<span class="pill-meta">${meta}</span>`:"";
   const name = `<span class="pname">${esc(cap(tileName(entry.name)))}</span>`;   // v2.10: own span so it can be clamped and measured
   /* v2.68: a Regular is its name, category AND note — the tile shows its note, as a list item does, and carries it */
   const nl = noteLine(selected ? it : entry);
-  const noteS = nl ? `<span class="pnote">${esc(nl)}</span>` : "";
+  const noteS = cuR ? cuNote(nl, cuR.nu) : nl ? `<span class="pnote">${esc(nl)}</span>` : "";
   const nAttr = ` data-reg-note="${esc(entry.note||"")}"`;
   if(selected){
     /* v1.57 item 1: only the category-driven parts stay inline. Fill, line and text now come from
@@ -7133,8 +7168,8 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
    search across both. Memory only: the look page is where you are, not a preference, and a search left on would
    make Settings look broken the next time. var, not let: boot-order rule. */
 var setLook = false, optQuery = "", _lookY = 0;
-const LOOK_SECTS = new Set(["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tile colours and shape", "Sheets"]);
-const OPT_COLL_DEFAULT = ["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tile colours and shape", "Sheets"];   // v2.69: "Edit item" became "Sheets"   // v2.63: Edit item joins the look page, folded like the rest
+const LOOK_SECTS = new Set(["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tile colours and shape", "Count and unit", "Sheets"]);   // v2.85: Count and unit
+const OPT_COLL_DEFAULT = ["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tile colours and shape", "Count and unit", "Sheets"];   // v2.69: "Edit item" became "Sheets"   // v2.63: Edit item joins the look page, folded like the rest
 function optColl(){ try{ const raw=localStorage.getItem("ml_optcoll"); if(raw===null) return new Set(OPT_COLL_DEFAULT);
     const a=JSON.parse(raw||"[]"); return new Set(Array.isArray(a)?a:[]); }catch(e){ return new Set(); } }
 /* Calls groupOptions() and NOT render(): folding a section must not rebuild the page and throw away
@@ -7309,6 +7344,7 @@ function wireOptions(){
   /* v2.69: the sheet looks — which sheet the page shows, and every sheet x prop row (the edit pill trio is wired above) */
   /* v2.74: the layout rows — data-lk-<key>="<sheet>|<value>" */
   LK_LAYOUT.forEach(k=>app.querySelectorAll("[data-lk-"+k+"]").forEach(b=>b.onclick=()=>{ const [sh,v]=b.getAttribute("data-lk-"+k).split("|"); setLkLay(sh,k,v||""); }));
+  app.querySelectorAll("[data-cu]").forEach(b=>b.onclick=()=>{ const [k,v]=b.dataset.cu.split("|"); setCu(k,v); });   // v2.85
   app.querySelectorAll("[data-lk-sheet]").forEach(b=>b.onclick=()=>{ if(lookSheet!==b.dataset.lkSheet){ lookSheet=b.dataset.lkSheet; render(); } });
   SHEET_LOOKS.forEach(sh=>SHEET_PROPS.forEach(p=>{ if(sh==="edit" && LK_ALIAS[p]) return; const a="data-"+lkAttr(sh,p);
     app.querySelectorAll("["+a+"]").forEach(b=>b.onclick=()=>setLk(sh,p,b.getAttribute(a))); }));
@@ -8220,6 +8256,23 @@ function optionsBody(){
       <div class="numgrid">${numCell("rad")}</div></div></div>
     <div class="optrow optrow-wide optnl optrow-num"><span class="optlabel">${t("Tile gap")}</span><div class="optwide">
       <div class="numgrid">${numCell("gapx")}${numCell("gapy")}</div></div></div>
+    ${/* v2.85: the count and the unit on column tiles — as now, a disc + a unit pill, or one pill; the note above or below the name */""}
+    ${sectHR("Count and unit")}
+    ${(()=>{ const segB=(k,list)=>`<div class="seg">${list.map(([v,l])=>`<button data-cu="${k}|${v}" class="${cuGet(k)===(v||CU_KEYS[k][0])?'on':''}">${t(l)}</button>`).join("")}</div>`;
+      const CUC={accent:["var(--accent)","Accent"],ink:["var(--ink)","Ink"],cat:["linear-gradient(135deg,#E2502C,#3E8E3E 50%,#2F6FB5)","Category colour"],blue:["var(--cu-blue)","Blue"],green:["var(--cu-green)","Green"],grey:["var(--cu-grey)","Grey"],light:["var(--chip)","Light"]};
+      const swB=(k,list)=>rowNL(t("Colour"), `<div class="cuswrow">${list.map(c=>`<button data-cu="${k}|${c}" class="colsw ${cuGet(k)===c?'on':''}" style="background:${CUC[c][0]}" aria-label="${t(CUC[c][1])}" title="${t(CUC[c][1])}"></button>`).join("")}</div>`);
+      const PL=[["border","On the border"],["inside","Inside"]], st=cuGet("style");
+      return rowNL(t("Style"), segB("style",[["","As now"],["sep","Disc + unit"],["tog","One pill"]]))
+        + rowNL(t("Note"), segB("np",[["","Below the name"],["above","Above the name"]]))
+        + (st==="sep" ? subhead("Count disc")
+          + rowNL(t("Corner"), segB("dp",[["tl","Top left"],["tr","Top right"],["bl","Bottom left"],["br","Bottom right"]]))
+          + rowNL(t("Place"), segB("de",PL)) + swB("dc",CU_KEYS.dc)
+          + subhead("Unit")
+          + rowNL(t("Where"), segB("uw",[["note","In the note"],["top","Top"],["right","Right"],["bottom","Bottom"],["left","Left"]]))
+          + (cuGet("uw")!=="note" ? rowNL(t("Place"), segB("ue",PL)) + swB("uc",["light","ink","accent","cat","grey"]) : "") : "")
+        + (st==="tog" ? subhead("Count × unit pill")
+          + rowNL(t("Position"), segB("tp",[["tr","Top right"],["top","Top"],["tl","Top left"],["left","Left"],["bl","Bottom left"],["bottom","Bottom"],["br","Bottom right"],["right","Right"]]))
+          + rowNL(t("Place"), segB("te",PL)) + swB("tc",CU_KEYS.tc) : ""); })()}
     ${/* v2.63 item D: the Edit item pills — the same three colours as a tile state, and their shape */""}
     ${/* v2.69: one section for every sliding sheet — pick the sheet, then its surface, its pills and their shape */""}
     ${sectHR("Sheets")}

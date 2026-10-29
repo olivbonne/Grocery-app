@@ -197,3 +197,7 @@ the household asked for is not a lesson.*
     Chromium's scroll anchoring silently corrected it (fixed v2.84). *Guard:* a tapped Settings control is put back where it
     was on screen after the redraw (`placeBefore`/`placeAfter`), and tests of anything that redraws under the finger turn
     scroll anchoring off (`overflow-anchor:none`) to play Safari — the same habit as lesson 48: make the test play the phone.
+52. **Loosening a shared rule to fix one case changes every case.** To show "Around choices" in full, v2.84 let every number
+    cell's name break anywhere at a fixed 52px — and "Transparency" broke mid-word ("Transpar / ency"); caught in a later
+    screenshot before release. *Guard:* a fix to a shared style is checked against every element it styles, not the one
+    reported: the v2.84 suite now walks every visible number-cell name and fails on a break inside a word or a cut-off name.

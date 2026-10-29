@@ -10,6 +10,7 @@
   /* v2.16: --muted and --muted2 darkened (lightened on dark themes) so small grey text — counts, dates, section names, hints — reads at 4.5:1 or better on the page and on cards (the app review measured 2.4–2.7:1). */
   :root{
     --ink:#232019; --paper:#F6F2E7; --accent:#D2542B;
+    --cu-blue:#2F6FB5; --cu-green:#3E8E3E; --cu-grey:#6B7280;   /* v2.85: count disc / unit pill colours */
     /* v1.42 item 8: text colour is user-selectable, but --ink is also load-bearing for borders and
        box edges. --text is the READABLE-TEXT half of it; the picker overrides only this. */
     --text:var(--ink);
@@ -2338,3 +2339,75 @@ html[data-lk-edit-rows][data-lk-edit-l2gap] [data-look="edit"] .edrows > .edcell
 html[data-lk-edit-rows="v"][data-lk-edit-l2gap] [data-look="edit"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > :is(.wgrid, .edchips) { margin-bottom:var(--lk-edit-l2gap); }
 html[data-lk-smart-rows][data-lk-smart-l2gap] [data-look="smart"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > :is(.wgrid, .edchips) { margin-top:calc(var(--lk-smart-l2gap) - var(--lk-smart-rgapy, 10px)); margin-bottom:calc(var(--lk-smart-l2gap) - var(--lk-smart-rgapy, 10px)); }
 html[data-lk-smart-rows="v"][data-lk-smart-l2gap] [data-look="smart"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > :is(.wgrid, .edchips) { margin-bottom:var(--lk-smart-l2gap); }
+
+/* B85 v2.85: the count and the unit on column tiles (data-cu-*, set by applyCu only when not the default — an untouched
+   install has none of this in the DOM). .cudisc = the count, .cupill-u = the unit, .cupill-t = "5 × 500g" in one pill.
+   Positions: inside = 6px in from the corner / edge (--cui 6px, --cuk 0); on the border = centred on the corner (±40%) /
+   on the edge line (±50%) (--cui 0, --cuk 1). The one-line layouts keep today's amount line (.cu-alt) instead. */
+html .pill:has(> :is(.cudisc, .cupill)) { position:relative; }
+.cudisc, .cupill { position:absolute; z-index:3; white-space:nowrap; display:inline-flex; align-items:center; justify-content:center; box-sizing:border-box; pointer-events:none; }
+.cudisc { min-width:22px; height:22px; padding:0 6px; border-radius:11px; font-size:12px; font-weight:700; line-height:1; color:#fff; background:var(--cudisc-bg, var(--accent)); }
+.cupill { height:20px; padding:0 8px; border-radius:10px; font-size:11px; font-weight:700; line-height:1; background:var(--cupill-bg); color:var(--cupill-fg); }
+.cupill-u { --cupill-bg:var(--cupill-u-bg, var(--ink)); --cupill-fg:var(--cupill-u-fg, var(--card)); }   /* ink pill: the card colour for text, so it reads in dark mode too (ink is light there) */
+.cupill-t { --cupill-bg:var(--cupill-t-bg, var(--accent)); --cupill-fg:var(--cupill-t-fg, #fff); }
+/* the disc: corner tr (default) · tl · bl · br; on the border (default) or inside */
+.cudisc { --cui:0px; --cuk:1; top:var(--cui); right:var(--cui); bottom:auto; left:auto; transform:translate(calc(var(--cuk) * 40%), calc(var(--cuk) * -40%)); }
+html[data-cu-de="inside"] .cudisc { --cui:6px; --cuk:0; }
+html[data-cu-dp="tl"] .cudisc { right:auto; left:var(--cui); transform:translate(calc(var(--cuk) * -40%), calc(var(--cuk) * -40%)); }
+html[data-cu-dp="bl"] .cudisc { top:auto; bottom:var(--cui); right:auto; left:var(--cui); transform:translate(calc(var(--cuk) * -40%), calc(var(--cuk) * 40%)); }
+html[data-cu-dp="br"] .cudisc { top:auto; bottom:var(--cui); transform:translate(calc(var(--cuk) * 40%), calc(var(--cuk) * 40%)); }
+/* the unit: the middle of the bottom (default) · top · right · left edge; on the border (default) or inside */
+.cupill-u { --cui:0px; --cuk:1; top:auto; right:auto; bottom:var(--cui); left:50%; transform:translate(-50%, calc(var(--cuk) * 50%)); }
+html[data-cu-ue="inside"] .cupill-u { --cui:6px; --cuk:0; }
+html[data-cu-uw="top"] .cupill-u { bottom:auto; top:var(--cui); transform:translate(-50%, calc(var(--cuk) * -50%)); }
+html[data-cu-uw="right"] .cupill-u { bottom:auto; left:auto; top:50%; right:var(--cui); transform:translate(calc(var(--cuk) * 50%), -50%); }
+html[data-cu-uw="left"] .cupill-u { bottom:auto; top:50%; left:var(--cui); transform:translate(calc(var(--cuk) * -50%), -50%); }
+/* the one pill: tr (default) · top · tl · left · bl · bottom · br · right; inside (default) or on the border */
+.cupill-t { --cui:6px; --cuk:0; top:var(--cui); right:var(--cui); bottom:auto; left:auto; transform:translate(calc(var(--cuk) * 40%), calc(var(--cuk) * -40%)); }
+html[data-cu-te="border"] .cupill-t { --cui:0px; --cuk:1; }
+html[data-cu-tp="top"] .cupill-t { right:auto; left:50%; transform:translate(-50%, calc(var(--cuk) * -50%)); }
+html[data-cu-tp="tl"] .cupill-t { right:auto; left:var(--cui); transform:translate(calc(var(--cuk) * -40%), calc(var(--cuk) * -40%)); }
+html[data-cu-tp="left"] .cupill-t { right:auto; left:var(--cui); top:50%; transform:translate(calc(var(--cuk) * -50%), -50%); }
+html[data-cu-tp="bl"] .cupill-t { right:auto; top:auto; left:var(--cui); bottom:var(--cui); transform:translate(calc(var(--cuk) * -40%), calc(var(--cuk) * 40%)); }
+html[data-cu-tp="bottom"] .cupill-t { right:auto; top:auto; left:50%; bottom:var(--cui); transform:translate(-50%, calc(var(--cuk) * 50%)); }
+html[data-cu-tp="br"] .cupill-t { top:auto; bottom:var(--cui); transform:translate(calc(var(--cuk) * 40%), calc(var(--cuk) * 40%)); }
+html[data-cu-tp="right"] .cupill-t { top:50%; transform:translate(calc(var(--cuk) * 50%), -50%); }
+/* colours (light = the chip ground with ink text; cat = the tile's category colour, --cucat on the element) */
+html[data-cu-dc="ink"] .cudisc { --cudisc-bg:var(--ink); color:var(--card); }
+html[data-cu-dc="cat"] .cudisc { --cudisc-bg:var(--cucat, var(--accent)); }
+html[data-cu-dc="blue"] .cudisc { --cudisc-bg:var(--cu-blue); }
+html[data-cu-dc="green"] .cudisc { --cudisc-bg:var(--cu-green); }
+html[data-cu-dc="grey"] .cudisc { --cudisc-bg:var(--cu-grey); }
+html[data-cu-uc="light"] .cupill-u { --cupill-u-bg:var(--chip); --cupill-u-fg:var(--ink); }
+html[data-cu-uc="accent"] .cupill-u { --cupill-u-bg:var(--accent); --cupill-u-fg:#fff; }
+html[data-cu-uc="cat"] .cupill-u { --cupill-u-bg:var(--cucat, var(--ink)); --cupill-u-fg:#fff; }
+html[data-cu-uc="grey"] .cupill-u { --cupill-u-bg:var(--cu-grey); --cupill-u-fg:#fff; }
+html[data-cu-tc="ink"] .cupill-t { --cupill-t-bg:var(--ink); --cupill-t-fg:var(--card); }
+html[data-cu-tc="cat"] .cupill-t { --cupill-t-bg:var(--cucat, var(--accent)); }
+html[data-cu-tc="light"] .cupill-t { --cupill-t-bg:var(--chip); --cupill-t-fg:var(--ink); }
+html[data-cu-tc="blue"] .cupill-t { --cupill-t-bg:var(--cu-blue); }
+html[data-cu-tc="grey"] .cupill-t { --cupill-t-bg:var(--cu-grey); }
+/* today's amount line, kept for the one-line layouts only (it is .cu-alt, not .pill-meta, so B78's :has(.pill-meta) clamps
+   give the name the amount's line back in column tiles); the unit-in-note prefix likewise shows only in column tiles */
+.pill .cu-alt { display:none; }
+html body .zoomer.zoomer.zoomer.linelist .pill.pill .cu-alt, html body .shop .zoomer.zoomer.largevar .pill.pill .cu-alt {
+  display:inline-flex; align-items:center; gap:5px; flex:none; white-space:nowrap; margin-top:0; padding-left:0; justify-content:flex-start; font-size:max(10px, .65em); }
+html body .zoomer.zoomer.zoomer.linelist .pill.pill .cu-alt { margin-left:auto; }
+html body .zoomer.zoomer.zoomer.linelist .pill.pill .cu-alt .qty, html body .shop .zoomer.zoomer.largevar .pill.pill .cu-alt .qty { font-size:inherit; }
+html body .zoomer.zoomer.zoomer.linelist .pill.pill > :is(.cudisc, .cupill), html body .shop .zoomer.zoomer.largevar .pill.pill > :is(.cudisc, .cupill),
+html body .zoomer.zoomer.zoomer.linelist .pill.pill .cu-nu, html body .shop .zoomer.zoomer.largevar .pill.pill .cu-nu,
+html body .zoomer.zoomer.zoomer.linelist .pill.pill .pnote.cu-only, html body .shop .zoomer.zoomer.largevar .pill.pill .pnote.cu-only { display:none; }
+/* on the border must not be clipped (lesson 50): the fixed-height tiles (B78) drop overflow:hidden while a style is chosen —
+   the line clamps already keep the text inside */
+html[data-cu-style][data-tilelines] .shop .zoomer:not(.linelist):not(.largevar) .pills > .pill.pill { overflow:visible; }
+html[data-cu-style][data-tilelines] .checkedbar.shop .zoomer:not(.linelist):not(.largevar) .pills > .pill.pill { overflow:visible; }
+/* and room above the first row when something sits on a tile's top border */
+html[data-cu-style="sep"]:not([data-cu-de="inside"]):not([data-cu-dp="bl"]):not([data-cu-dp="br"]) .zoomer:not(.linelist):not(.largevar) .pills,
+html[data-cu-style="sep"][data-cu-uw="top"]:not([data-cu-ue="inside"]) .zoomer:not(.linelist):not(.largevar) .pills,
+html[data-cu-style="tog"][data-cu-te="border"]:not([data-cu-tp]) .zoomer:not(.linelist):not(.largevar) .pills,
+html[data-cu-style="tog"][data-cu-te="border"]:is([data-cu-tp="top"], [data-cu-tp="tl"]) .zoomer:not(.linelist):not(.largevar) .pills { padding-top:11px; }
+/* the note above the name, in column tiles (the icon and the marks stay first); the one-line layouts keep it after the name */
+html[data-cu-np="above"] body .shop .zoomer:not(.linelist):not(.largevar) .pill.pill > :is(.pemoji, .pmarks) { order:-2; }
+html[data-cu-np="above"] body .shop .zoomer:not(.linelist):not(.largevar) .pill.pill > .pnote { order:-1; }
+/* the colour swatches of the Count and unit settings */
+.cuswrow { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }

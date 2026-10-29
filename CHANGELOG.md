@@ -11,6 +11,7 @@ Convention: bump the number by `0.01` for each batch of changes, add a dated row
 
 | Version | Date | Changes |
 |--------|------------|---------|
+| v2.85 | 2026-10-29 | **Count and unit, your way.** Customise the look › Count and unit: keep the "5× 500g" line as now, or show the count as a coloured disc in a corner and the unit as a pill on an edge (or in the note), or both together in one pill — on the border or inside the tile, in the colours you pick. The note can also go above the item's name. |
 | v2.84 | 2026-10-29 | **Settings stays put.** Tapping + or − (or any button) in Settings no longer makes the page jump on the iPhone: the button you tapped stays under your finger. "Around choices" now shows its full name instead of being cut off. |
 | v2.83 | 2026-10-28 | **Edit item, tidier choices.** The row whose choices are open now has a clear orange ring that is no longer cut off, and only one row's choices open at a time. A g, kg, L or Pack counter with an amount is filled dark like a chosen unit, and the counters are narrower so the units fit on two lines. Customise the look › Sheets › Layout has a new "Around choices" setting for the space above and below the open choices. |
 | v2.82 | 2026-10-26 | **The tile preview and the arrows, fixed on iPhone.** In Settings › Tiles the Preview now shows square tiles properly instead of tiny dots. The width and height arrows are drawn the same way, so the height one no longer shows as a blue emoji, and the Height row in the ⋯ menu now wraps so the square button is no longer cut off. |
