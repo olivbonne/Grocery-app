@@ -41,7 +41,7 @@ const EVERYDAY = ["Appearance","Tiles","Shopping","Smart features","Plan & recip
 /* SUPERSEDED by v2.63: the look page has a sixth section, "Edit item" (the editor's pill colours and shape). Still protected:
    exactly the look sections, in order, folded as an index. */
 /* SUPERSEDED by v2.69: v2.63's "Edit item" look section became "Sheets" (every sliding sheet, chosen at its top). */
-const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings","Tile colours and shape","Sheets"];
+const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings","Tile colours and shape","Count and unit","Sheets"];   // SUPERSEDED by v2.85: "Count and unit" is a look section (still protects: exactly the look sections, folded, in order)
 
 (async () => {
   const [port,out]=process.argv.slice(2);
