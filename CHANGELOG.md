@@ -11,6 +11,7 @@ Convention: bump the number by `0.01` for each batch of changes, add a dated row
 
 | Version | Date | Changes |
 |--------|------------|---------|
+| v2.84 | 2026-10-29 | **Settings stays put.** Tapping + or − (or any button) in Settings no longer makes the page jump on the iPhone: the button you tapped stays under your finger. "Around choices" now shows its full name instead of being cut off. |
 | v2.83 | 2026-10-28 | **Edit item, tidier choices.** The row whose choices are open now has a clear orange ring that is no longer cut off, and only one row's choices open at a time. A g, kg, L or Pack counter with an amount is filled dark like a chosen unit, and the counters are narrower so the units fit on two lines. Customise the look › Sheets › Layout has a new "Around choices" setting for the space above and below the open choices. |
 | v2.82 | 2026-10-26 | **The tile preview and the arrows, fixed on iPhone.** In Settings › Tiles the Preview now shows square tiles properly instead of tiny dots. The width and height arrows are drawn the same way, so the height one no longer shows as a blue emoji, and the Height row in the ⋯ menu now wraps so the square button is no longer cut off. |
 | v2.81 | 2026-10-26 | **Notes in proportion.** The note, the amount and the quantity under an item's name are now about two-thirds of the name's size in every layout, like the reference app you measured (never smaller than 10px, so they stay readable at 5 and 6 columns). The variable-height button is now the same arrow as the width button, turned upright. |

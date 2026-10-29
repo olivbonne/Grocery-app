@@ -192,3 +192,8 @@ the household asked for is not a lesson.*
     ring was clipped and, at 1px, barely visible on the phone (fixed v2.83). *Guard:* draw rings inside the box (`inset`
     shadow or the border itself), never outside; the v2.83 suite checks the ring is inset and the accent. Before adding an outer
     effect, look up the element's ancestors for `overflow:hidden`.
+51. **Chromium keeps your place when a page is rebuilt; iOS Safari does not.** Every Settings control redraws the whole page,
+    and the household saw it "scroll back" after each + or − on the iPhone; in every test the page stayed put, because
+    Chromium's scroll anchoring silently corrected it (fixed v2.84). *Guard:* a tapped Settings control is put back where it
+    was on screen after the redraw (`placeBefore`/`placeAfter`), and tests of anything that redraws under the finger turn
+    scroll anchoring off (`overflow-anchor:none`) to play Safari — the same habit as lesson 48: make the test play the phone.

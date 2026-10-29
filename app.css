@@ -1284,7 +1284,7 @@
   /* v1.58 item 2: one caption width for every stepper cell, so Across / Left / Corner all start at
      the same x and the three rows read as one block instead of three near-misses. */
   /* the caption may shrink and ellipsis rather than push the stepper off the row */
-  .numcell > span { flex:0 1 52px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  .numcell > span { flex:0 1 52px; min-width:0; overflow:hidden; overflow-wrap:break-word; line-height:1.15;   /* v2.84: wraps instead of "…" ("Around choices" was cut off) */
     font-size:12px; font-weight:700; color:var(--muted); }
   .numcell .seg { flex:0 0 auto; }
   .numcell .seg button { min-width:30px; }
