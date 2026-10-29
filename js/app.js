@@ -925,6 +925,18 @@ function cuNote(nl, nu){ if(!nu) return nl ? `<span class="pnote">${esc(nl)}</sp
   return `<span class="pnote${nl?'':' cu-only'}"><span class="cu-nu">${esc(nu)}${nl?" · ":""}</span>${esc(nl||"")}</span>`; }
 function tileLinesBtns(attr){ return [1,2,3,4,5,6,7,8].map(n=>`<button class="colbtn ${tileLines()===String(n)?'on':''}" ${attr}="${n}">${n}</button>`).join("")
   +`<button class="colbtn ${tileLines()===''?'on':''}" ${attr}="" aria-label="${t("Variable height")}">${arrowSVG(true)}</button><button class="colbtn ${tileLines()==='sq'?'on':''}" ${attr}="sq" aria-label="${t("Square")}">□</button>`; }
+/* v2.86: Settings › Count and unit opens with three real tiles — pillHTML's own markup inside a 3-across column grid, so
+   the places, bands and margins are exactly the list's. Sample items, never stored; data-pill becomes data-cuprev so
+   nothing that looks for list tiles (taps, syncTileH, suites) finds them, and the preview takes no taps. */
+function cuPrevHTML(){
+  const S=[{ id:"cuprev1", name:"Apples", cat:"fruit", qty:5, weight:"1kg", note:"Pink Lady", tags:["urgent"], starred:true },
+    { id:"cuprev2", name:"Milk", cat:"dairy", qty:2, weight:"2L", tags:[] },
+    { id:"cuprev3", name:"Eggs", cat:"dairy", qty:1, weight:"", note:"Free range", tags:[] }];
+  const tiles=S.map(i=>{ const c=CAT(i.cat)||catList()[0]||{ id:i.cat, color:"var(--muted2)" };
+    return pillHTML(Object.assign({ checked:false }, i), c).replace(/data-pill="/g, 'data-cuprev="'); }).join("");
+  return `<div class="shop cuprev" aria-hidden="true"><div class="zoomer ${styl()} gridmode grid3"><div class="pills">${tiles}</div></div></div>`
+    + `<div class="tlprevhint">${t("Preview — changes as you choose below")}</div>`;
+}
 /* v2.79: Settings › Tiles › Preview — the list in miniature as tile display and height combine. Bars, not real tiles. */
 function tilePrevHTML(){
   const large=dispBase()==='large', cols=large?largeCols():4, h=tileLines(), dot=itemEmojiOn();
@@ -8293,6 +8305,7 @@ function optionsBody(){
       <div class="numgrid">${numCell("gapx")}${numCell("gapy")}</div></div></div>
     ${/* v2.85: the count and the unit on column tiles — as now, a disc + a unit pill, or one pill; the note above or below the name */""}
     ${sectHR("Count and unit")}
+    ${cuPrevHTML()}
     ${(()=>{ const segB=(k,list,dis)=>{ const cur=/^(de|ue|te|uw|tp|dp)$/.test(k) ? cuEff()[k] : cuGet(k);   // v2.86: the places show what applies
         return `<div class="seg">${list.map(([v,l])=>`<button data-cu="${k}|${v}" class="${cur===(v||CU_KEYS[k][0])?'on':''}"${dis&&dis.has(v)?' disabled aria-disabled="true"':''}>${t(l)}</button>`).join("")}</div>`; };
       const CUC={accent:["var(--accent)","Accent"],ink:["var(--ink)","Ink"],cat:["linear-gradient(135deg,#E2502C,#3E8E3E 50%,#2F6FB5)","Category colour"],blue:["var(--cu-blue)","Blue"],green:["var(--cu-green)","Green"],grey:["var(--cu-grey)","Grey"],light:["var(--chip)","Light"]};

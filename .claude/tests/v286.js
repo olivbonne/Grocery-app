@@ -157,12 +157,18 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
       return { left:!!b('uw|left')||!!b('uw|right')||!!b('tp|left')||!!b('tp|right'), topDis:b('uw|top').disabled, borderDis:b('de|border').disabled,
         hints:[...document.querySelectorAll('.opthint')].map(h=>h.textContent).filter(t=>/13|row the count disc/.test(t)).length }; });
     ok('Settings: no left / right places; Top is disabled while the disc is at the top; On the border is disabled at an 8px gap, with the reasons', !s1.left && s1.topDis && s1.borderDis && s1.hints>=2, JSON.stringify(s1));
+    /* the design's preview: three real tiles at the top of the section, following the same rules (taps off, not list tiles) */
+    const pv = await page.evaluate(()=>{ const q=s=>document.querySelectorAll('.cuprev '+s).length;
+      return { tiles:q('.pill'), disc:q('.cudisc.cu-in'), unit:q('.cupill-u'), listy:q('[data-pill]'), taps:getComputedStyle(document.querySelector('.cuprev')).pointerEvents }; });
+    ok('Settings: a live preview of three real tiles (2 discs, units as pills), not list tiles, no taps', pv.tiles===3 && pv.disc===2 && pv.unit===2 && pv.listy===0 && pv.taps==='none', JSON.stringify(pv));
     await page.locator('[data-cu="dp|bl"]').first().click(); await page.waitForTimeout(400);
     const s2 = await page.evaluate(()=>({ dp:localStorage.getItem('ml_cu_dp'), uw:localStorage.getItem('ml_cu_uw'), on:(document.querySelector('[data-cu="uw|top"]')||{}).className }));
+    const pv2 = await page.evaluate(()=>{ const d=document.querySelector('.cuprev .cudisc'), p=d.closest('.pill'), r=p.getBoundingClientRect(), b=d.getBoundingClientRect(); return { left:b.left-r.left < r.width/2, low:b.top-r.top > r.height/2 }; });
+    ok('Settings: the preview follows the choice at once (the disc moves to the bottom left)', pv2.left && pv2.low, JSON.stringify(pv2));
     ok('Settings: a bottom corner for the disc moves the unit to the top', s2.dp==='bl' && s2.uw==='top' && /\bon\b/.test(s2.on||''), JSON.stringify(s2));
 
     const fr = fs.readFileSync(path.join(ROOT,'js','i18n.js'),'utf8');
-    ok('the new words have their French', ['On the border needs a tile gap of 13 or more, across and down (Tile gap, above).','The unit pill takes the row the count disc is not in.','At 1 or 2 lines tall, As now shows the amount as one pill.'].every(k=>fr.includes(`"${k}"`)));
+    ok('the new words have their French', ['On the border needs a tile gap of 13 or more, across and down (Tile gap, above).','The unit pill takes the row the count disc is not in.','At 1 or 2 lines tall, As now shows the amount as one pill.','Preview — changes as you choose below'].every(k=>fr.includes(`"${k}"`)));
     if(out){ await mk({ doc:TD, extra:BASE+'localStorage.setItem("ml_largecols","3");'+cu({ style:'sep' }) }); await page.screenshot({ path:out }); }
   } catch(e){ ok('suite ran to the end', false, (e.stack||e.message).slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));

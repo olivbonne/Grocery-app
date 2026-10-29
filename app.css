@@ -2443,3 +2443,7 @@ html body .shop .zoomer.gridmode .pill.pill.pill > :is(.pnote, .pill-meta) { lin
 html body .shop .zoomer.gridmode .pill.pill.pill > .pill-meta { flex-wrap:wrap; max-width:100%; column-gap:3px; row-gap:0; }
 html body .shop .zoomer.gridmode .pill.pill.pill > .pill-meta .qty { line-height:inherit; }
 html[data-tilelines] body .shop .zoomer.gridmode .pill.pill.pill > .pill-meta { flex-wrap:nowrap; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:center; }   /* a fixed height budgets it one line */
+/* v2.86: the Count and unit preview — the list's own 3-across tiles, a little smaller, no taps */
+.cuprev { margin:4px 0 2px; padding:14px 12px 16px; border-radius:16px; background:var(--chip); pointer-events:none; }
+html body .cuprev .zoomer.zoomer { transform:none; width:auto; padding:0; margin:0; min-height:0; }   /* not the list's clearance under the last row */
+.cuprev .pills { display:grid; gap:max(0px, var(--tilegapy,8px)) max(0px, var(--tilegapx,8px)); }
