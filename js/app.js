@@ -4519,7 +4519,7 @@ function syncTileH(){ try{
       host.style.cssText="position:absolute;left:0;top:0;width:"+Math.max(40, w)+"px;visibility:hidden;pointer-events:none;display:flex;flex-direction:column;align-items:"+(full?"stretch":"flex-start");
       miss.forEach(p=>{ const c=p.cloneNode(true); c.classList.remove("justpop"); host.appendChild(c); });
       z.appendChild(host);
-      const ks=[...miss.keys()]; [...host.children].forEach((c,i)=>nat.set(ks[i], c.offsetHeight));
+      const ks=[...miss.keys()]; [...host.children].forEach((c,i)=>{ const r=c.getBoundingClientRect(), k=(c.offsetWidth && r.width) ? r.width/c.offsetWidth : 1; nat.set(ks[i], Math.ceil(r.height/k - 0.01)); });   // v2.87: rounded UP — a Fill drawing is a fraction of a pixel tall, and offsetHeight rounded 121.6 down to a floor its row then exceeded
       host.remove();
     }
     const hs=keys.map(k=>nat.get(k)).sort((a,b)=>a-b), base=hs[Math.floor(0.9*(hs.length-1))]||0;

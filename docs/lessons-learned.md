@@ -220,3 +220,8 @@ the household asked for is not a lesson.*
     "6 × 12 pack", "2 × 1 bunch") and fails when any badge or amount line is narrower than its own text (`scrollWidth >
     clientWidth`), and when a tile with a count or a unit shows less than both, in every style, height and width it offers.
     Whenever a size is capped, test the longest real value, not a typical one.
+56. **A size given in % is a fraction of a pixel; a measurement rounded to the nearest pixel can come out short.** Fill's
+    drawing (40% of the tile's width) made tiles 121.6 px tall; `syncTileH` measured them with `offsetHeight`, which rounds to
+    121, and set that as every tile's floor — so some rows were 122 and some 121 (v2.10's and v2.16's "one height" checks,
+    caught by CI before release, v2.87). *Guard:* a floor or a fixed height is measured as `Math.ceil` of the true height
+    (with the zoom's scale taken out), never `offsetHeight`; a new size in % or em runs the "one height per layout" suites.
