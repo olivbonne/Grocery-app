@@ -156,7 +156,9 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     const s1 = await page.evaluate(()=>{ const b=v=>document.querySelector(`[data-cu="${v}"]`);
       return { left:!!b('uw|left')||!!b('uw|right')||!!b('tp|left')||!!b('tp|right'), topDis:b('uw|top').disabled, borderDis:b('de|border').disabled,
         hints:[...document.querySelectorAll('.opthint')].map(h=>h.textContent).filter(t=>/13|row the count disc/.test(t)).length }; });
-    ok('Settings: no left / right places; Top is disabled while the disc is at the top; On the border is disabled at an 8px gap, with the reasons', !s1.left && s1.topDis && s1.borderDis && s1.hints>=2, JSON.stringify(s1));
+    /* SUPERSEDED by v2.87: the unit may share the disc's row (it sits beside the disc), so no unit place is disabled and that
+       hint is gone; still protects: no left / right places, On the border disabled at an 8px gap with its reason */
+    ok('Settings: no left / right places; On the border is disabled at an 8px gap, with the reason', !s1.left && s1.borderDis && s1.hints>=1, JSON.stringify(s1));
     /* the design's preview: three real tiles at the top of the section, following the same rules (taps off, not list tiles) */
     const pv = await page.evaluate(()=>{ const q=s=>document.querySelectorAll('.cuprev '+s).length;
       return { tiles:q('.pill'), disc:q('.cudisc.cu-in'), unit:q('.cupill-u'), listy:q('[data-pill]'), taps:getComputedStyle(document.querySelector('.cuprev')).pointerEvents }; });
@@ -165,10 +167,11 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     const s2 = await page.evaluate(()=>({ dp:localStorage.getItem('ml_cu_dp'), uw:localStorage.getItem('ml_cu_uw'), on:(document.querySelector('[data-cu="uw|top"]')||{}).className }));
     const pv2 = await page.evaluate(()=>{ const d=document.querySelector('.cuprev .cudisc'), p=d.closest('.pill'), r=p.getBoundingClientRect(), b=d.getBoundingClientRect(); return { left:b.left-r.left < r.width/2, low:b.top-r.top > r.height/2 }; });
     ok('Settings: the preview follows the choice at once (the disc moves to the bottom left)', pv2.left && pv2.low, JSON.stringify(pv2));
-    ok('Settings: a bottom corner for the disc moves the unit to the top', s2.dp==='bl' && s2.uw==='top' && /\bon\b/.test(s2.on||''), JSON.stringify(s2));
+    /* SUPERSEDED by v2.87: the disc no longer moves the unit (they pair up in one row); still protects: the disc's corner is stored */
+    ok('Settings: picking a bottom corner stores it, and leaves the unit where it was', s2.dp==='bl' && s2.uw===null, JSON.stringify(s2));
 
     const fr = fs.readFileSync(path.join(ROOT,'js','i18n.js'),'utf8');
-    ok('the new words have their French', ['On the border needs a tile gap of 13 or more, across and down (Tile gap, above).','The unit pill takes the row the count disc is not in.','At 1 or 2 lines tall, As now shows the amount as one pill.','Preview — changes as you choose below'].every(k=>fr.includes(`"${k}"`)));
+    ok('the new words have their French', ['On the border needs a tile gap of 13 or more, across and down (Tile gap, above).',/* SUPERSEDED by v2.87: two hints reworded, checked by v287.js */'Preview — changes as you choose below'].every(k=>fr.includes(`"${k}"`)));
     if(out){ await mk({ doc:TD, extra:BASE+'localStorage.setItem("ml_largecols","3");'+cu({ style:'sep' }) }); await page.screenshot({ path:out }); }
   } catch(e){ ok('suite ran to the end', false, (e.stack||e.message).slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));

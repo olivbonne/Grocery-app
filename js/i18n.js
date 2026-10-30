@@ -1004,6 +1004,17 @@ export const FR = {
   "Green": "Vert",
   "Grey": "Gris",
   "In the note": "Dans la note",
+  "Text below the note": "Texte sous la note",
+  "Amount": "Quantité",
+  "S": "S",
+  "M": "M",
+  "L": "L",
+  "XL": "XL",
+  "Amount: the pills and the disc; L and XL from 3 tiles across or fewer. Written as text, the amount follows the note.": "Quantité : les étiquettes et la pastille ; L et XL à 3 tuiles par rangée ou moins. Écrite en texte, la quantité suit la note.",
+  "At 1 or 2 lines tall, the amount shows as one pill.": "À 1 ou 2 lignes de haut, la quantité s'affiche en une seule étiquette.",
+  "In the count disc's row, the unit sits beside the disc.": "Dans la rangée de la pastille de quantité, l'unité se place à côté de la pastille.",
+  "White": "Blanc",
+  "Fill": "Remplir",
   "Count × unit pill": "Étiquette quantité × unité",
   "Style": "Style",
   "Place": "Emplacement",
@@ -1012,8 +1023,6 @@ export const FR = {
   // v2.86: the tile rules
   "Preview — changes as you choose below": "Aperçu — change selon vos choix ci-dessous",
   "On the border needs a tile gap of 13 or more, across and down (Tile gap, above).": "Sur le bord demande un espacement des tuiles de 13 ou plus, horizontal et vertical (Espacement des tuiles, plus haut).",
-  "The unit pill takes the row the count disc is not in.": "L'étiquette d'unité prend la rangée où n'est pas la pastille de quantité.",
-  "At 1 or 2 lines tall, As now shows the amount as one pill.": "À 1 ou 2 lignes de haut, Comme avant affiche la quantité en une seule étiquette.",
 };
 
 /* v2.55: the languages the app speaks. To add one: write its table (same keys as FR — the English text — with that

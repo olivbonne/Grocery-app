@@ -213,3 +213,15 @@ the household asked for is not a lesson.*
     with the old 10 px padding and no badge row, and every fixed-height tile came out about 30 px too short (caught by the
     v2.86 suite before release). *Guard:* rules that change a tile's size name `:is(.pills, .tileprobe) > .pill`; when a fix
     changes how big something is, check what measures it.
+55. **A cap tested on short text cuts long text.** v2.86 kept every corner badge to half its row so two corners could never
+    meet, and the suite's amounts were all short; on the household's phone "10 × 0.5kg" in a corner lost both ends ("0 × 0.5k"),
+    because the pill centres its text and the cap hid what spilled (fixed v2.87: a corner one pill owns its whole row). The
+    overlap check could not see it — a clipped badge overlaps nothing. *Guard:* the v2.87 suite seeds long amounts ("10 × 0.5kg",
+    "6 × 12 pack", "2 × 1 bunch") and fails when any badge or amount line is narrower than its own text (`scrollWidth >
+    clientWidth`), and when a tile with a count or a unit shows less than both, in every style, height and width it offers.
+    Whenever a size is capped, test the longest real value, not a typical one.
+56. **A size given in % is a fraction of a pixel; a measurement rounded to the nearest pixel can come out short.** Fill's
+    drawing (40% of the tile's width) made tiles 121.6 px tall; `syncTileH` measured them with `offsetHeight`, which rounds to
+    121, and set that as every tile's floor — so some rows were 122 and some 121 (v2.10's and v2.16's "one height" checks,
+    caught by CI before release, v2.87). *Guard:* a floor or a fixed height is measured as `Math.ceil` of the true height
+    (with the zoom's scale taken out), never `offsetHeight`; a new size in % or em runs the "one height per layout" suites.
