@@ -873,7 +873,8 @@ var CU_KEYS = { style:["","note","sep","tog"], np:["","above"], dp:["tr","tl","b
   tc:["accent","ink","cat","light","blue","grey"],
   dx:["auto","white","ink","accent","cat","grey"], dk:["none","white","ink","accent","cat","grey"],
   ux:["auto","white","ink","accent","cat","grey"], uk:["none","white","ink","accent","cat","grey"],
-  tx:["auto","white","ink","accent","cat","grey"], tk:["none","white","ink","accent","cat","grey"] };
+  tx:["auto","white","ink","accent","cat","grey"], tk:["none","white","ink","accent","cat","grey"],
+  nw:["bold","regular"], tw:["regular","bold"], aw:["bold","regular"], ns:["m","s","l","xl"], ts:["m","s","l","xl"], ps:["m","s","l","xl"] };
 function cuGet(k){ const l=CU_KEYS[k]; if(!l) return ""; try{ const v=localStorage.getItem("ml_cu_"+k); return (v!=null && l.includes(v)) ? v : l[0]; }catch(e){ return l[0]; } }
 function applyCu(){ try{ _cuE = cuCalc(); const h=document.documentElement; Object.keys(CU_KEYS).forEach(k=>{ const v=_cuE[k]; if(v!==CU_KEYS[k][0]) h.setAttribute("data-cu-"+k, v); else h.removeAttribute("data-cu-"+k); });
   if(_cuE.mk!=="tl") h.setAttribute("data-cu-mk", _cuE.mk); else h.removeAttribute("data-cu-mk"); }catch(e){} }
@@ -894,9 +895,9 @@ function cuCalc(){
   if(e.tp==="left" || e.tp==="right") e.tp="tr";
   if(e.style==="sep" && e.uw==="note" && tileLines()==="1") e.uw="bottom";   // v2.87: at 1 line the note is hidden, so the unit is a pill
   /* v2.87: the unit may share the disc's row, beside it — at 3 or fewer across; wider, a disc + "1 bunch" does not fit the row
-     (64px at 4 across), so the unit takes the other row as in v2.86 */
+     (64px at 4 across; at 3 across with XL pills, 102px in 99), so the unit takes the other row as in v2.86 */
   let gc=3; try{ gc=gridCols(); }catch(x){}   // applyTheme() runs this at boot, before the display settings exist (CLAUDE.md boot order)
-  e.pair = gc<=3 && e.style==="sep" && e.uw!=="note" && cuBand(e.uw)===cuBand(e.dp);
+  e.pair = (gc<=2 || (gc===3 && e.ps!=="xl")) && e.style==="sep" && e.uw!=="note" && cuBand(e.uw)===cuBand(e.dp);
   if(e.style==="sep" && e.uw!=="note" && !e.pair && cuBand(e.uw)===cuBand(e.dp)) e.uw = cuBand(e.dp)==="t" ? "bottom" : "top";
   if(!cuBorderOK()){ e.de="inside"; e.ue="inside"; e.te="inside"; }
   const own=new Set(), mid=new Set();
@@ -4508,7 +4509,7 @@ function syncTileH(){ try{
     const grid=z.classList.contains("gridmode"), full=grid || z.classList.contains("linelist");
     const w=grid ? tiles[0].offsetWidth : tiles[0].parentElement.clientWidth;
     const sig=[z.className, h.getAttribute("data-icosize"), h.getAttribute("data-theme"), h.getAttribute("data-linew"), h.getAttribute("data-tilebg"),
-      document.body.className, fillMode(), itemEmojiOn(), iconStyle(), w, document.fonts ? document.fonts.status : "", tileLines(), cuTB, cuBB, h.getAttribute("data-cu-style")].join("|");
+      document.body.className, fillMode(), itemEmojiOn(), iconStyle(), w, document.fonts ? document.fonts.status : "", tileLines(), cuTB, cuBB, h.getAttribute("data-cu-style"), ["nw","tw","aw","ns","ts","ps"].map(k=>h.getAttribute("data-cu-"+k)).join(",")].join("|");
     if(_tileSig[v]!==sig || _tileNat[v].size>2000){ _tileSig[v]=sig; _tileNat[v]=new Map(); }   // a new layout, or a long day of edits
     const nat=_tileNat[v], keys=tiles.map(tileKey), miss=new Map();
     keys.forEach((k,i)=>{ if(!nat.has(k) && !miss.has(k)) miss.set(k, tiles[i]); });
@@ -8329,7 +8330,14 @@ function optionsBody(){
       const PL=[["border","On the border"],["inside","Inside"]], st=cuEff().style;   // v2.86: the sections of what applies (at 1–2 lines "Text below the note" is the one pill)
       const bOK=cuBorderOK(), PD=bOK ? null : new Set(["border"]); let gapHint=!bOK;
       const placeRow=k=>{ const r=rowNL(t("Place"), segB(k,PL,PD)) + (gapHint ? `<div class="opthint">${t("On the border needs a tile gap of 13 or more, across and down (Tile gap, above).")}</div>` : ""); gapHint=false; return r; };
-      return rowNL(t("Style"), segB("style",[["","Text below the note"],["note","In the note"],["sep","Disc + unit"],["tog","One pill"]]))
+      const WT=[["regular","Regular"],["bold","Bold"]], SIZES=[["s","S"],["m","M"],["l","L"],["xl","XL"]];   // v2.87b: the weight and size of the name, the note and the amount
+      const twoSeg=(a,b)=>`<div class="custack">${a}${b}</div>`;
+      return subhead("Text")
+        + rowNL(t("Name"), twoSeg(segB("nw",WT), segB("ns",SIZES)))
+        + rowNL(t("Note"), twoSeg(segB("tw",WT), segB("ts",SIZES)))
+        + rowNL(t("Amount"), twoSeg(segB("aw",WT), segB("ps",SIZES)))
+        + `<div class="opthint">${t("Amount: the pills and the disc; L and XL from 3 tiles across or fewer. Written as text, the amount follows the note.")}</div>`
+        + rowNL(t("Style"), segB("style",[["","Text below the note"],["note","In the note"],["sep","Disc + unit"],["tog","One pill"]]))
         + (/^[12]$/.test(tileLines()) ? `<div class="opthint">${t("At 1 or 2 lines tall, the amount shows as one pill.")}</div>` : "")
         + rowNL(t("Note"), segB("np",[["","Below the name"],["above","Above the name"]]))
         + (st==="sep" ? subhead("Count disc")

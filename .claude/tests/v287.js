@@ -4,6 +4,7 @@
    - "As now" became "Text below the note", in the note's colour and weight; a new style "In the note" ("5 × 1kg · Pink Lady");
    - the disc and the unit may share a row: the unit sits beside the disc in the disc's corner (centred, they collide);
    - background, text and border colours for the disc, the unit pill and the one pill;
+   - (v2.87b) the weight (Regular / Bold) and size (S–XL) of the name, the note and the amount, each its own control;
    - Icon size "Fill" (the new default): the drawing is 40% of the tile's inner width, the same on every tile.
 
    WHAT THESE CHECKS HAVE TO PROVE:
@@ -95,7 +96,9 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
 
     /* every style × height × 3 and 4 across: the amount shows, whole; the v2.86 rules hold */
     const CFG = [ {}, { style:'note' }, { style:'sep' }, { style:'sep', uw:'top' }, { style:'sep', dp:'bl' }, { style:'sep', dp:'tl', uw:'top' }, { style:'sep', uw:'note' },
-      { style:'tog' }, { style:'tog', tp:'tl' }, { style:'tog', tp:'bl' }, { style:'tog', tp:'br' }, { style:'tog', tp:'top' }, { style:'tog', tp:'bottom' } ];
+      { style:'tog' }, { style:'tog', tp:'tl' }, { style:'tog', tp:'bl' }, { style:'tog', tp:'br' }, { style:'tog', tp:'top' }, { style:'tog', tp:'bottom' },
+      /* v2.87b: the biggest text everywhere, with the weights swapped */
+      { ns:'xl', ts:'xl', ps:'xl', nw:'regular', tw:'bold', aw:'regular' }, { style:'sep', uw:'top', ns:'xl', ts:'xl', ps:'xl' }, { style:'tog', tp:'tl', ns:'xl', ts:'xl', ps:'xl', tw:'bold' }, { style:'note', ns:'s', ts:'xl' } ];
     const fails=[], cuts=[], miss=[]; let runs=0;
     for(const cols of ['3','4']) for(const ht of ['', '1', '2', '3', 'sq']) for(const c of CFG){
       if(cols==='4' && !(ht==='' || ht==='3')) continue;
@@ -148,6 +151,15 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     const m0 = await measure();
     ok('…and still nothing overlaps', m0.bad.length===0, m0.bad.slice(0,3).join('; '));
 
+    /* v2.87b: weight and size of the name, the note and the amount */
+    const look = async(o)=>{ await set(Object.assign({ ml_largecols:'3' }, cfgO(o)));
+      return page.evaluate(()=>{ const p=document.querySelector('#zoomer .pill[data-pill="3"]'), g=s=>{ const e=p.querySelector(s); if(!e) return null; const c=getComputedStyle(e); return [parseFloat(c.fontSize), +c.fontWeight]; };
+        return { name:g('.pname'), note:g('.pnote'), meta:g('.pill-meta .qty'), pill:g('.cupill'), disc:g('.cudisc') }; }); };
+    const L0=await look({ style:'sep' }), L1=await look({ style:'sep', nw:'regular', aw:'regular', tw:'bold', ns:'xl', ts:'xl', ps:'xl' }), L2=await look({ tw:'bold', ts:'l' }), L3=await look({});
+    ok('weights: name Regular, note Bold, pills and disc Regular — each set by its own control', L1.name[1]<L0.name[1] && L1.note[1]>L0.note[1] && L1.pill[1]<L0.pill[1] && L1.disc[1]<L0.disc[1], JSON.stringify({ L0, L1 }));
+    ok('sizes: XL makes the name, the note and the pills bigger (×1.3)', Math.abs(L1.name[0]/L0.name[0]-1.3)<0.03 && L1.note[0]>L0.note[0] && Math.abs(L1.pill[0]/L0.pill[0]-1.3)<0.03, JSON.stringify({ L0:[L0.name,L0.note,L0.pill], L1:[L1.name,L1.note,L1.pill] }));
+    ok('the amount written as text follows the note\'s weight and size', L2.meta && L2.meta[1]===L2.note[1] && L2.meta[0]===L2.note[0] && L2.note[1]>L3.note[1] && L2.note[0]>L3.note[0], JSON.stringify({ L2, L3 }));
+
     /* Settings */
     await set({ ml_largecols:'3', ml_cu_style:'sep', ml_cu_uw:'top' });
     await page.locator('#setNav').click(); await page.waitForTimeout(500);
@@ -157,7 +169,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
         rows:['dx|white','dk|none','ux|auto','uk|ink'].every(v=>!!b(v)) }; });
     ok('Settings: four styles, renamed; no unit place disabled; Text and Border rows for the disc and the unit', JSON.stringify(s1.styles)===JSON.stringify(['Text below the note','In the note','Disc + unit','One pill']) && s1.uwDis.length===0 && s1.rows, JSON.stringify(s1));
     const fr = fs.readFileSync(path.join(ROOT,'js','i18n.js'),'utf8');
-    ok('the new words have their French', ['Text below the note','In the count disc\'s row, the unit sits beside the disc.','At 1 or 2 lines tall, the amount shows as one pill.','Fill','White'].every(k=>fr.includes(`"${k}"`)));
+    ok('the new words have their French', ['Regular','Bold','Amount: the pills and the disc; L and XL from 3 tiles across or fewer. Written as text, the amount follows the note.','Text below the note','In the count disc\'s row, the unit sits beside the disc.','At 1 or 2 lines tall, the amount shows as one pill.','Fill','White'].every(k=>fr.includes(`"${k}"`)));
     if(out){ await mk({ doc:TD, extra:BASE+'localStorage.setItem("ml_largecols","3"); localStorage.setItem("ml_cu_style","tog");' }); await page.screenshot({ path:out }); }
   } catch(e){ ok('suite ran to the end', false, (e.stack||e.message).slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));

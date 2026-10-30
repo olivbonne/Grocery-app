@@ -2390,7 +2390,7 @@ html[data-cu-np="above"] body .shop .zoomer:not(.linelist):not(.largevar) .pill.
 .cuswrow { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
 /* B86 v2.86: one tile, nine places, one margin (the tile-rules canvas). Column tiles only; the one-line layouts keep theirs.
    --tm the inner margin on all four sides inside the stripe, --tg the gap between the stacked parts, --tb a badge row. */
-.shop .zoomer.gridmode { --tm:8px; --tg:4px; --tb:22px; }
+.shop .zoomer.gridmode { --tm:8px; --tg:4px; --tb:calc(22px * var(--cu-pk)); }
 .shop .zoomer.grid5, .shop .zoomer.grid6 { --tm:6px; }
 html body .shop .zoomer.gridmode :is(.pills, .tileprobe) > .pill.pill { padding:var(--tm); gap:var(--tg); position:relative; }
 /* rule 3: a place used inside keeps its row free of the words */
@@ -2425,9 +2425,9 @@ html body .shop .zoomer.gridmode .pill.pill.pill > .cudisc.cu-in:is(.cu-p-tl,.cu
 html body .shop .zoomer.gridmode .pill.pill:has(> .paisle) > .cu-in.cu-p-tr { top:calc(var(--tm) + 4px); }
 html body .shop .zoomer.gridmode .pill.pill:has(> .paisle):has(> .cu-in.cu-p-tr) { padding-top:calc(var(--tm) + var(--tb) + var(--tg) + 4px); }
 /* 5 and 6 across: smaller badges, so two still fit one row */
-html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .cudisc { min-width:18px; height:18px; padding:0 4px; font-size:10px; }
-html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .cupill { height:16px; padding:0 5px; font-size:10px; }
-html body .shop .zoomer:is(.grid5,.grid6) { --tb:18px; }
+html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .cudisc { min-width:calc(18px * var(--cu-pk)); height:calc(18px * var(--cu-pk)); padding:0 calc(4px * var(--cu-pk)); font-size:calc(10px * var(--cu-pk)); }
+html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .cupill { height:calc(16px * var(--cu-pk)); padding:0 calc(5px * var(--cu-pk)); font-size:calc(10px * var(--cu-pk)); }
+html body .shop .zoomer:is(.grid5,.grid6) { --tb:calc(18px * var(--cu-pk)); }
 /* v2.86: a place the rules rule out (Settings › Count and unit) */
 .seg button:disabled { opacity:.4; }
 /* rule 6 for square: as tall as wide, or taller when its rows of badges need it (an aspect-ratio box with min-height:auto
@@ -2435,8 +2435,8 @@ html body .shop .zoomer:is(.grid5,.grid6) { --tb:18px; }
 html[data-tilelines="sq"] body .shop .zoomer.gridmode :is(.pills, .tileprobe) > .pill.pill:is(:has(> .cu-t), :has(> .cu-b)),
 html[data-tilelines="sq"][data-cu-tb] body .shop .zoomer.gridmode .pills > .pill.pill, html[data-tilelines="sq"][data-cu-bb] body .shop .zoomer.gridmode .pills > .pill.pill { min-height:auto; overflow:visible; align-self:stretch; }
 /* an edge pill never passes the margin: on a narrow tile a long "2 × 1 bunch" ends in "…" (Edit item shows it whole) */
-html body .shop .zoomer.gridmode .pill.pill.pill > .cupill:is(.cu-p-top,.cu-p-bottom) { max-width:calc(100% - 2 * var(--tm)); overflow:hidden; text-overflow:ellipsis; display:block; line-height:20px; text-align:center; }
-html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .cupill:is(.cu-p-top,.cu-p-bottom) { line-height:16px; }
+html body .shop .zoomer.gridmode .pill.pill.pill > .cupill:is(.cu-p-top,.cu-p-bottom) { max-width:calc(100% - 2 * var(--tm)); overflow:hidden; text-overflow:ellipsis; display:block; line-height:calc(20px * var(--cu-pk)); text-align:center; }
+html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .cupill:is(.cu-p-top,.cu-p-bottom) { line-height:calc(16px * var(--cu-pk)); }
 /* the lines under the name: never taller than a line of the name (the fixed heights budget them as one each), and the
    amount wraps between "2×" and "1 bunch" rather than passing the margin on a narrow tile */
 html body .shop .zoomer.gridmode .pill.pill.pill > :is(.pnote, .pill-meta) { line-height:1.2; }
@@ -2448,16 +2448,16 @@ html[data-tilelines] body .shop .zoomer.gridmode .pill.pill.pill > .pill-meta { 
 html body .cuprev .zoomer.zoomer { transform:none; width:auto; padding:0; margin:0; min-height:0; }   /* not the list's clearance under the last row */
 .cuprev .pills { display:grid; gap:max(0px, var(--tilegapy,8px)) max(0px, var(--tilegapx,8px)); }
 /* v2.87 A: the one pill owns its whole row, so a long "10 × 0.5kg" is never cut at both ends */
-html body .shop .zoomer.gridmode .pill.pill.pill > .cupill-t.cu-in:is(.cu-p-tl,.cu-p-tr,.cu-p-bl,.cu-p-br) { max-width:calc(100% - 2 * var(--tm)); display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:20px; text-align:center; }
-html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .cupill-t.cu-in:is(.cu-p-tl,.cu-p-tr,.cu-p-bl,.cu-p-br) { line-height:16px; }
+html body .shop .zoomer.gridmode .pill.pill.pill > .cupill-t.cu-in:is(.cu-p-tl,.cu-p-tr,.cu-p-bl,.cu-p-br) { max-width:calc(100% - 2 * var(--tm)); display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:calc(20px * var(--cu-pk)); text-align:center; }
+html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .cupill-t.cu-in:is(.cu-p-tl,.cu-p-tr,.cu-p-bl,.cu-p-br) { line-height:calc(16px * var(--cu-pk)); }
 /* v2.87 B: "Text below the note" — in column tiles the amount line looks like the note (the .qty spans carry an inline colour) */
 html body .shop .zoomer.gridmode .pill.pill.pill > .pill-meta { opacity:.78; }
-html body .shop .zoomer.gridmode .pill.pill.pill > .pill-meta .qty { color:inherit !important; font-weight:600; }
+html body .shop .zoomer.gridmode .pill.pill.pill > .pill-meta .qty { color:inherit !important; font-weight:500; }
 /* v2.87: the disc and the unit in one row sit side by side from the disc's corner */
 html body .shop .zoomer.gridmode .pill.pill.pill > .cupair { display:flex; align-items:center; gap:var(--tg); max-width:calc(100% - 2 * var(--tm)); height:var(--tb); }
 html body .shop .zoomer.gridmode .pill.pill.pill > .cupair > :is(.cudisc, .cupill) { position:static; transform:none; margin:0; flex:none; }
-html body .shop .zoomer.gridmode .pill.pill.pill > .cupair > .cupill { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; display:block; line-height:20px; }
-html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .cupair > .cupill { line-height:16px; }
+html body .shop .zoomer.gridmode .pill.pill.pill > .cupair > .cupill { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; display:block; line-height:calc(20px * var(--cu-pk)); }
+html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .cupair > .cupill { line-height:calc(16px * var(--cu-pk)); }
 /* v2.87 E: text and border colours of the disc, the unit pill and the one pill (after the background rules, so they win) */
 html[data-cu-dx="white"] .cudisc { color:#fff; }
 html[data-cu-dx="ink"] .cudisc { color:var(--ink); }
@@ -2493,10 +2493,30 @@ html[data-cu-tk="grey"] .cupill-t { box-shadow:inset 0 0 0 1.5px var(--cu-grey);
    the same on every tile; elsewhere Fill is S. */
 html[data-icosize="fill"] body .shop .zoomer.gridmode :is(.pills, .tileprobe) > .pill.pill > .pemoji { width:100%; display:flex; justify-content:center; }
 html[data-icosize="fill"] body .shop .zoomer.gridmode :is(.pills, .tileprobe) > .pill.pill > .pemoji :is(.ill, .cmark) { width:clamp(1.35em, 40%, 80px); height:auto; aspect-ratio:1/1; }   /* one size for every tile: a share of the tile's width (per-tile free room made a tiny coriander beside huge eggs) */
-html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .cupair > .cudisc { min-width:18px; height:18px; padding:0 4px; font-size:10px; }
-html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .cupair > .cupill { height:16px; padding:0 5px; font-size:10px; }
-html body .shop .zoomer.grid4 .pill.pill.pill .cupill { padding:0 5px; }   /* v2.87: "2 × 1 bunch" fits a 4-across tile */
+html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .cupair > .cudisc { min-width:calc(18px * var(--cu-pk)); height:calc(18px * var(--cu-pk)); padding:0 calc(4px * var(--cu-pk)); font-size:calc(10px * var(--cu-pk)); }
+html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .cupair > .cupill { height:calc(16px * var(--cu-pk)); padding:0 calc(5px * var(--cu-pk)); font-size:calc(10px * var(--cu-pk)); }
+html body .shop .zoomer.grid4 .pill.pill.pill .cupill { padding:0 calc(5px * var(--cu-pk)); }   /* v2.87: "2 × 1 bunch" fits a 4-across tile */
 /* v2.87: the marks fit their badge row (their 1.25em of an 18px tile was 22.5px a mark — three ran into the disc) and keep to
    their half of it */
 html body .shop .zoomer.gridmode .pill.pill.pill > .pmarks.cu-in { font-size:12px; max-width:calc(50% - var(--tm) - var(--tg) / 2); overflow:hidden; }
 html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .pmarks.cu-in { font-size:10px; }
+/* v2.87b: the weight and size of the name, the note and the amount (Settings › Count and unit › Text). Column tiles only.
+   --cu-nk the name's size, --cu-tk the note's (a text amount follows it), --cu-pk the disc and the pills' (their row too). */
+:root { --cu-nk:1; --cu-tk:1; --cu-pk:1; }
+html[data-cu-ns="s"] { --cu-nk:.85; } html[data-cu-ns="l"] { --cu-nk:1.15; } html[data-cu-ns="xl"] { --cu-nk:1.3; }
+html[data-cu-ts="s"] { --cu-tk:.85; } html[data-cu-ts="l"] { --cu-tk:1.15; } html[data-cu-ts="xl"] { --cu-tk:1.3; }
+html[data-cu-ps="s"] { --cu-pk:.85; } html[data-cu-ps="l"] { --cu-pk:1.15; } html[data-cu-ps="xl"] { --cu-pk:1.3; }
+html body .shop .zoomer.gridmode .pill.pill.pill > .pname { font-size:calc(1em * var(--cu-nk)); }   /* the note and amount are em of the TILE, so they do not follow */
+html body .shop .zoomer.gridmode .pill.pill.pill.pill > :is(.pnote, .pill-meta) { font-size:max(10px, calc(.65em * var(--cu-tk))); font-weight:500; }   /* after v2.81's .65em, same specificity */
+/* the disc and the pills in column tiles; .pill.pill so the 5/6-across, grid4, pair and edge rules above (all × --cu-pk) still win */
+html body .shop .zoomer.gridmode .pill.pill .cudisc { min-width:calc(22px * var(--cu-pk)); height:calc(22px * var(--cu-pk)); padding:0 calc(6px * var(--cu-pk)); font-size:calc(12px * var(--cu-pk)); }
+html body .shop .zoomer.gridmode .pill.pill .cupill { height:calc(20px * var(--cu-pk)); padding:0 calc(8px * var(--cu-pk)); font-size:calc(11px * var(--cu-pk)); }
+/* weights: name bold (as before) or regular; note regular or bold (the text amount follows); disc and pills bold or regular */
+html[data-cu-nw="regular"] body .shop .zoomer.gridmode .pill.pill.pill > .pname { font-weight:500; }
+html[data-cu-tw="bold"] body .shop .zoomer.gridmode .pill.pill.pill.pill > :is(.pnote, .pill-meta), html[data-cu-tw="bold"] body .shop .zoomer.gridmode .pill.pill.pill > :is(.pnote, .pill-meta) :is(.qty, .cu-nu) { font-weight:750; }
+html[data-cu-aw="regular"] body .shop .zoomer.gridmode .pill.pill.pill :is(.cudisc, .cupill) { font-weight:500; }
+/* the two segments of a Text row stack (two do not fit beside the label at 390px) */
+.custack { display:flex; flex-direction:column; align-items:flex-end; gap:6px; }
+/* v2.87b: bigger pills only where they fit — at 4 to 6 across "2 × 1 bunch" at XL is 82px in a 64px row, so the pill size
+   stays M there (the Settings hint says so) */
+.shop .zoomer:is(.grid4, .grid5, .grid6) { --cu-pk:1; }
