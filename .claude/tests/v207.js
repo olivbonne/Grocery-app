@@ -80,7 +80,8 @@ const SEED = `(() => {
     /* ── A. Icon size ──────────────────────────────────────────────────── */
     const s0 = await tile('Croissant');
     await tap('#setNav, #setNavP, #setNavS');
-    ok('Settings has Icon size, S to XL', (await page.locator('[data-opt-icosize]').count())===4, String(await page.locator('[data-opt-icosize]').count()));
+    /* SUPERSEDED by v2.87: Fill joins S to XL (and is the default); still protects: the Icon size row with its sizes */
+    ok('Settings has Icon size, Fill and S to XL', (await page.locator('[data-opt-icosize]').count())===5, String(await page.locator('[data-opt-icosize]').count()));
     await page.evaluate(()=>document.querySelector('[data-opt-icosize="xl"]').click()); await page.waitForTimeout(500);
     ok('…remembered, and published on the page', await page.evaluate(()=>localStorage.getItem('ml_icosize')+'|'+document.documentElement.dataset.icosize)==='xl|xl', '');
     await load(); await tap('#cartNavP, #cartNav');   // the app reopens on the last page (Settings)

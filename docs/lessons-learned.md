@@ -213,3 +213,10 @@ the household asked for is not a lesson.*
     with the old 10 px padding and no badge row, and every fixed-height tile came out about 30 px too short (caught by the
     v2.86 suite before release). *Guard:* rules that change a tile's size name `:is(.pills, .tileprobe) > .pill`; when a fix
     changes how big something is, check what measures it.
+55. **A cap tested on short text cuts long text.** v2.86 kept every corner badge to half its row so two corners could never
+    meet, and the suite's amounts were all short; on the household's phone "10 × 0.5kg" in a corner lost both ends ("0 × 0.5k"),
+    because the pill centres its text and the cap hid what spilled (fixed v2.87: a corner one pill owns its whole row). The
+    overlap check could not see it — a clipped badge overlaps nothing. *Guard:* the v2.87 suite seeds long amounts ("10 × 0.5kg",
+    "6 × 12 pack", "2 × 1 bunch") and fails when any badge or amount line is narrower than its own text (`scrollWidth >
+    clientWidth`), and when a tile with a count or a unit shows less than both, in every style, height and width it offers.
+    Whenever a size is capped, test the longest real value, not a typical one.

@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.86";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.86";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.86";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.86";
-import { compareStores, worthIt } from "./compare.js?v=2.86";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.86";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.86";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.86";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.86";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.86";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.86";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.86";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.86";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.86";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.87";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.87";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.87";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.87";
+import { compareStores, worthIt } from "./compare.js?v=2.87";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.87";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.87";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.87";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.87";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.87";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.87";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.87";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.87";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.87";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.86";
+const APP_VERSION = "v2.87";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -852,7 +852,7 @@ function setFill(m){ fill=m; localStorage.setItem("ml_fill", m); applyFill(); re
 /* v2.07: how big a tile's icon is drawn — S (today's size), M, L, XL. A LOOK, like tile roundness, so
    appearance slots carry it and it is deliberately NOT in APP_EXCLUDE. Published on <html> like
    data-fill; the stylesheet does the rest. No const here: applyTheme() runs this at boot. */
-function icoSize(){ try{ const v=localStorage.getItem("ml_icosize"); return /^(s|m|l|xl)$/.test(v||"") ? v : "s"; }catch(e){ return "s"; } }
+function icoSize(){ try{ const v=localStorage.getItem("ml_icosize"); return /^(fill|s|m|l|xl)$/.test(v||"") ? v : "fill"; }catch(e){ return "fill"; } }
 function applyIcoSize(){ try{ document.documentElement.setAttribute("data-icosize", icoSize()); }catch(e){} }
 /* v2.78: how tall a tile is — "" variable (the v2.16 floor, the default), "3"…"8" a fixed number of text lines (syncTileH
    measures one probe tile of that many lines into --tileh-fixed), or "sq" as tall as it is wide. A LOOK, like the icon size,
@@ -867,15 +867,17 @@ function setTileLines(v){ v=String(v||""); try{ if(/^([1-8]|sq)$/.test(v)) local
 /* v2.85: the count and the unit on column tiles — "" as now (the "5× 3 lb" line), "sep" a count disc + a unit pill, "tog"
    one pill. LOOK keys (ml_cu_*), so deliberately NOT in APP_EXCLUDE. Published on <html> as data-cu-* only when not the
    default (an untouched install gets no attribute). var: applyTheme() runs applyCu() at boot. */
-var CU_KEYS = { style:["","sep","tog"], np:["","above"], dp:["tr","tl","bl","br"], de:["border","inside"],
+var CU_KEYS = { style:["","note","sep","tog"], np:["","above"], dp:["tr","tl","bl","br"], de:["border","inside"],
   dc:["accent","ink","cat","blue","green","grey"], uw:["bottom","top","right","left","note"], ue:["border","inside"],
   uc:["ink","light","accent","cat","grey"], tp:["tr","top","tl","left","bl","bottom","br","right"], te:["inside","border"],
-  tc:["accent","ink","cat","light","blue","grey"] };
+  tc:["accent","ink","cat","light","blue","grey"],
+  dx:["auto","white","ink","accent","cat","grey"], dk:["none","white","ink","accent","cat","grey"],
+  ux:["auto","white","ink","accent","cat","grey"], uk:["none","white","ink","accent","cat","grey"],
+  tx:["auto","white","ink","accent","cat","grey"], tk:["none","white","ink","accent","cat","grey"] };
 function cuGet(k){ const l=CU_KEYS[k]; if(!l) return ""; try{ const v=localStorage.getItem("ml_cu_"+k); return (v!=null && l.includes(v)) ? v : l[0]; }catch(e){ return l[0]; } }
 function applyCu(){ try{ _cuE = cuCalc(); const h=document.documentElement; Object.keys(CU_KEYS).forEach(k=>{ const v=_cuE[k]; if(v!==CU_KEYS[k][0]) h.setAttribute("data-cu-"+k, v); else h.removeAttribute("data-cu-"+k); });
   if(_cuE.mk!=="tl") h.setAttribute("data-cu-mk", _cuE.mk); else h.removeAttribute("data-cu-mk"); }catch(e){} }
 function setCu(k,v){ const l=CU_KEYS[k]; if(!l) return; v=String(v||""); try{ if(l.includes(v) && v!==l[0]) localStorage.setItem("ml_cu_"+k, v); else localStorage.removeItem("ml_cu_"+k); }catch(e){}
-  try{ if(k==="dp"){ const u=cuGet("uw"); if(u!=="note" && cuBand(u)===cuBand(cuGet("dp"))){ if(cuBand(cuGet("dp"))==="t") localStorage.removeItem("ml_cu_uw"); else localStorage.setItem("ml_cu_uw","top"); } } }catch(e){}
   applyTheme(); render(); }
 /* v2.86 (the tile-rules canvas): what the settings ask for, made to fit the rules — the unit pill and the one pill lost the
    side edges (they landed on the name); "On the border" needs 13px between tiles, or it goes inside; the unit pill never
@@ -887,13 +889,19 @@ function cuBorderOK(){ return numVal("gapx")>=CU_GAP && numVal("gapy")>=CU_GAP; 
 function cuCalc(){
   const e={}; Object.keys(CU_KEYS).forEach(k=>e[k]=cuGet(k));
   if(!e.style && /^[12]$/.test(tileLines())) e.style="tog";
+  if(e.style==="note" && tileLines()==="1") e.style="tog";
   if(e.uw==="left" || e.uw==="right") e.uw="bottom";
   if(e.tp==="left" || e.tp==="right") e.tp="tr";
-  if(e.style==="sep" && e.uw!=="note" && cuBand(e.uw)===cuBand(e.dp)) e.uw = cuBand(e.dp)==="t" ? "bottom" : "top";
+  if(e.style==="sep" && e.uw==="note" && tileLines()==="1") e.uw="bottom";   // v2.87: at 1 line the note is hidden, so the unit is a pill
+  /* v2.87: the unit may share the disc's row, beside it — at 3 or fewer across; wider, a disc + "1 bunch" does not fit the row
+     (64px at 4 across), so the unit takes the other row as in v2.86 */
+  let gc=3; try{ gc=gridCols(); }catch(x){}   // applyTheme() runs this at boot, before the display settings exist (CLAUDE.md boot order)
+  e.pair = gc<=3 && e.style==="sep" && e.uw!=="note" && cuBand(e.uw)===cuBand(e.dp);
+  if(e.style==="sep" && e.uw!=="note" && !e.pair && cuBand(e.uw)===cuBand(e.dp)) e.uw = cuBand(e.dp)==="t" ? "bottom" : "top";
   if(!cuBorderOK()){ e.de="inside"; e.ue="inside"; e.te="inside"; }
   const own=new Set(), mid=new Set();
-  if(e.style==="sep"){ own.add(e.dp); if(e.uw!=="note") mid.add(cuBand(e.uw)); }
-  if(e.style==="tog"){ if(e.tp==="top" || e.tp==="bottom") mid.add(cuBand(e.tp)); else own.add(e.tp); }
+  if(e.style==="sep"){ own.add(e.dp); if(e.pair) mid.add(cuBand(e.dp)); else if(e.uw!=="note") mid.add(cuBand(e.uw)); }
+  if(e.style==="tog"){ mid.add(cuBand(e.tp)); if(e.tp!=="top" && e.tp!=="bottom") own.add(e.tp); }
   e.mk = ["tl","tr","bl","br"].find(c=>!own.has(c) && !mid.has(cuBand(c))) || "tl";
   return e;
 }
@@ -910,7 +918,14 @@ function cuParts(qty, unit, catColor, meta, aisle){
   const e=cuEff(), st=e.style; if(!st) return null;
   const n=qty||1, u=unit||"", cv=catColor?` style="--cucat:${catColor}"`:"";
   let h="", nu="";
-  if(st==="sep"){
+  if(st==="note"){
+    const s = (n>1 && u) ? n+" × "+u : n>1 ? n+"×" : u;
+    nu=s;
+  } else if(st==="sep" && e.pair){
+    const d = n>1 ? `<span class="cudisc" aria-label="${tf("Quantity {n}",{n})}"${cv}>${n}</span>` : "",
+      p = u ? `<span class="cupill cupill-u"${cv}>${esc(u)}</span>` : "";
+    if(d||p) h+=`<span class="cupair ${cuAt(e.dp, "inside", aisle)}">${/r$/.test(e.dp) ? p+d : d+p}</span>`;
+  } else if(st==="sep"){
     if(n>1) h+=`<span class="cudisc ${cuAt(e.dp, e.de, aisle)}" aria-label="${tf("Quantity {n}",{n})}"${cv}>${n}</span>`;
     if(u){ if(e.uw==="note") nu=u; else h+=`<span class="cupill cupill-u ${cuAt(e.uw, e.ue, aisle)}"${cv}>${esc(u)}</span>`; }
   } else {
@@ -948,7 +963,7 @@ function tilePrevHTML(){
     return `<span class="tlptile${h==='sq'?' tlpsq':''}">${dot?'<em></em>':''}${Array.from({length:n},()=>'<i></i>').join("")}</span>`; }).join("");
   return `<div class="tlprev tlprev-grid" role="img" aria-label="${tf("{cols} columns, {height}",{cols,height:hl})}" style="grid-template-columns:repeat(${cols},1fr)">${tiles}</div>`;
 }
-function setIcoSize(v){ try{ localStorage.setItem("ml_icosize", /^(s|m|l|xl)$/.test(v||"") ? v : "s"); }catch(e){} applyIcoSize(); render(); }
+function setIcoSize(v){ try{ localStorage.setItem("ml_icosize", /^(fill|s|m|l|xl)$/.test(v||"") ? v : "fill"); }catch(e){} applyIcoSize(); render(); }
 /* v2.08: how heavy the drawn lines are — fine, thin, regular (the v2.04 weight) or bold. A LOOK, like the
    icon size, so it is deliberately NOT in APP_EXCLUDE. */
 function lineW(){ try{ const v=localStorage.getItem("ml_linew"); return /^(fine|thin|regular|bold)$/.test(v||"") ? v : "regular"; }catch(e){ return "regular"; } }
@@ -4700,6 +4715,7 @@ function pinAddSheet(){
   if(instant){ void as.offsetHeight; as.style.transition = prevTrans; }   // reflow before the transition comes back
 }
 function render(){
+  _cuE=null;   // v2.87: the places depend on the columns too (the disc and the unit pair up only at 3 or fewer across)
   queueMicrotask(syncWakeLock);   // v2.16 keep-screen-on follows every change of page and cart
   prefsSchedule();   // v2.71: every settings change ends in a render — the one central place; it only arms a 4 s timer
   queueMicrotask(()=>{ try{ healStuck(); }catch(e){} });   // v2.29 (a microtask: after the module has finished loading)
@@ -8278,7 +8294,7 @@ function optionsBody(){
     ${rowNL(t("Group by category"), `<div class="seg"><button data-opt-caton="1" class="${catOn?'on':''}">${t("On")}</button><button data-opt-caton="0" class="${!catOn?'on':''}">${t("Off")}</button></div>`)}
     ${catOn ? rowNL(t("Group by subcategory"), `<div class="seg"><button data-opt-subon="1" class="${subOn?'on':''}">${t("On")}</button><button data-opt-subon="0" class="${!subOn?'on':''}">${t("Off")}</button></div>`) : ""}` : ""}
     ${row(t("Item icons"), `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">${iconStyle()==="drawn"?illSVG("bread"):"🍞"}</span>${t("On")}</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>${t("Off")}</button></div>`)}
-    ${itemEmojiOn() ? row(t("Icon size"), `<div class="seg">${[["s","S"],["m","M"],["l","L"],["xl","XL"]].map(([k,l])=>`<button data-opt-icosize="${k}" class="${icoSize()===k?'on':''}" aria-label="${tf("Icon size {x}", { x:l })}">${l}</button>`).join("")}</div>`) : ""}
+    ${itemEmojiOn() ? row(t("Icon size"), `<div class="seg">${[["fill",t("Fill")],["s","S"],["m","M"],["l","L"],["xl","XL"]].map(([k,l])=>`<button data-opt-icosize="${k}" class="${icoSize()===k?'on':''}" aria-label="${tf("Icon size {x}", { x:l })}">${l}</button>`).join("")}</div>`) : ""}
     ${(itemEmojiOn() && /^(l|xl)$/.test(icoSize())) ? `<div class="opthint">${t("At this size each tile shows its name under the icon.")}</div>` : ""}
     ${rowNL(t("Category icons"), `<div class="seg"><button data-opt-catemoji="1" class="${catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">${iconStyle()==="drawn"?catMarkSVG("vegetable"):"🥦"}</span>${t("On")}</button><button data-opt-catemoji="0" class="${!catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>${t("Off")}</button></div>`)}
     ${rowNL(t("Icon style"), `<div class="seg"><button data-opt-iconstyle="drawn" class="${iconStyle()==='drawn'?'on':''}"><span class="tdswatch tdswatch-ico">${catMarkSVG("vegetable")}</span>${t("Drawn")}</button><button data-opt-iconstyle="emoji" class="${iconStyle()==='emoji'?'on':''}">${t("Emoji")}</button></div>`)}
@@ -8308,24 +8324,24 @@ function optionsBody(){
     ${cuPrevHTML()}
     ${(()=>{ const segB=(k,list,dis)=>{ const cur=/^(de|ue|te|uw|tp|dp)$/.test(k) ? cuEff()[k] : cuGet(k);   // v2.86: the places show what applies
         return `<div class="seg">${list.map(([v,l])=>`<button data-cu="${k}|${v}" class="${cur===(v||CU_KEYS[k][0])?'on':''}"${dis&&dis.has(v)?' disabled aria-disabled="true"':''}>${t(l)}</button>`).join("")}</div>`; };
-      const CUC={accent:["var(--accent)","Accent"],ink:["var(--ink)","Ink"],cat:["linear-gradient(135deg,#E2502C,#3E8E3E 50%,#2F6FB5)","Category colour"],blue:["var(--cu-blue)","Blue"],green:["var(--cu-green)","Green"],grey:["var(--cu-grey)","Grey"],light:["var(--chip)","Light"]};
-      const swB=(k,list)=>rowNL(t("Colour"), `<div class="cuswrow">${list.map(c=>`<button data-cu="${k}|${c}" class="colsw ${cuGet(k)===c?'on':''}" style="background:${CUC[c][0]}" aria-label="${t(CUC[c][1])}" title="${t(CUC[c][1])}"></button>`).join("")}</div>`);
-      const PL=[["border","On the border"],["inside","Inside"]], st=cuEff().style;   // v2.86: the sections of what applies (at 1–2 lines "As now" is the one pill)
+      const CUC={accent:["var(--accent)","Accent"],ink:["var(--ink)","Ink"],cat:["linear-gradient(135deg,#E2502C,#3E8E3E 50%,#2F6FB5)","Category colour"],blue:["var(--cu-blue)","Blue"],green:["var(--cu-green)","Green"],grey:["var(--cu-grey)","Grey"],light:["var(--chip)","Light"],auto:["linear-gradient(135deg,#FFFFFF 50%,#21351F 50%)","Auto"],white:["#FFFFFF","White"],none:["transparent","None"]};
+      const swB=(k,list,label)=>rowNL(label||t("Colour"), `<div class="cuswrow">${list.map(c=>`<button data-cu="${k}|${c}" class="colsw ${cuGet(k)===c?'on':''}" style="background:${CUC[c][0]}${c==="none"?";border:1.5px dashed var(--line)":""}" aria-label="${t(CUC[c][1])}" title="${t(CUC[c][1])}"></button>`).join("")}</div>`);
+      const PL=[["border","On the border"],["inside","Inside"]], st=cuEff().style;   // v2.86: the sections of what applies (at 1–2 lines "Text below the note" is the one pill)
       const bOK=cuBorderOK(), PD=bOK ? null : new Set(["border"]); let gapHint=!bOK;
       const placeRow=k=>{ const r=rowNL(t("Place"), segB(k,PL,PD)) + (gapHint ? `<div class="opthint">${t("On the border needs a tile gap of 13 or more, across and down (Tile gap, above).")}</div>` : ""); gapHint=false; return r; };
-      return rowNL(t("Style"), segB("style",[["","As now"],["sep","Disc + unit"],["tog","One pill"]]))
-        + (/^[12]$/.test(tileLines()) ? `<div class="opthint">${t("At 1 or 2 lines tall, As now shows the amount as one pill.")}</div>` : "")
+      return rowNL(t("Style"), segB("style",[["","Text below the note"],["note","In the note"],["sep","Disc + unit"],["tog","One pill"]]))
+        + (/^[12]$/.test(tileLines()) ? `<div class="opthint">${t("At 1 or 2 lines tall, the amount shows as one pill.")}</div>` : "")
         + rowNL(t("Note"), segB("np",[["","Below the name"],["above","Above the name"]]))
         + (st==="sep" ? subhead("Count disc")
           + rowNL(t("Corner"), segB("dp",[["tl","Top left"],["tr","Top right"],["bl","Bottom left"],["br","Bottom right"]]))
-          + placeRow("de") + swB("dc",CU_KEYS.dc)
+          + placeRow("de") + swB("dc",CU_KEYS.dc,t("Background")) + swB("dx",CU_KEYS.dx,t("Text")) + swB("dk",CU_KEYS.dk,t("Border"))
           + subhead("Unit")
-          + rowNL(t("Where"), segB("uw",[["note","In the note"],["top","Top"],["bottom","Bottom"]], new Set([cuBand(cuEff().dp)==="t" ? "top" : "bottom"])))
-          + `<div class="opthint">${t("The unit pill takes the row the count disc is not in.")}</div>`
-          + (cuEff().uw!=="note" ? placeRow("ue") + swB("uc",["light","ink","accent","cat","grey"]) : "") : "")
+          + rowNL(t("Where"), segB("uw",[["note","In the note"],["top","Top"],["bottom","Bottom"]]))
+          + `<div class="opthint">${t("In the count disc's row, the unit sits beside the disc.")}</div>`
+          + (cuEff().uw!=="note" ? (cuEff().pair ? rowNL(t("Place"), segB("ue",PL,new Set(["border","inside"]))) : placeRow("ue")) + swB("uc",["light","ink","accent","cat","grey"],t("Background")) + swB("ux",CU_KEYS.ux,t("Text")) + swB("uk",CU_KEYS.uk,t("Border")) : "") : "")
         + (st==="tog" ? subhead("Count × unit pill")
           + rowNL(t("Position"), segB("tp",[["tr","Top right"],["top","Top"],["tl","Top left"],["bl","Bottom left"],["bottom","Bottom"],["br","Bottom right"]]))
-          + placeRow("te") + swB("tc",CU_KEYS.tc) : ""); })()}
+          + placeRow("te") + swB("tc",CU_KEYS.tc,t("Background")) + swB("tx",CU_KEYS.tx,t("Text")) + swB("tk",CU_KEYS.tk,t("Border")) : ""); })()}
     ${/* v2.63 item D: the Edit item pills — the same three colours as a tile state, and their shape */""}
     ${/* v2.69: one section for every sliding sheet — pick the sheet, then its surface, its pills and their shape */""}
     ${sectHR("Sheets")}
