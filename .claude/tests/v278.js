@@ -77,7 +77,10 @@ const seed = (extra) => `(() => { if(localStorage.getItem("t_seeded")) return; l
     /* square */
     await mk('localStorage.setItem("ml_tilelines","sq");');
     const sq = await tiles();
-    ok('square: each tile is as tall as it is wide', await attr()==='sq' && sq.every(x=>Math.abs(x.h-x.w)<=1), JSON.stringify(sq.map(x=>x.w+'x'+x.h)));
+    /* SUPERSEDED by v2.88: a square tile is as tall as wide OR, when the tallest tile's content needs more, that height — every
+       tile the same (the household's tiles were different sizes with text hanging out); still protects: Square is set, every
+       tile is the same size and never shorter than it is wide */
+    ok('square: every tile the same size, never shorter than wide', await attr()==='sq' && sq.every(x=>x.h>=x.w-1 && x.h===sq[0].h && x.w===sq[0].w), JSON.stringify(sq.map(x=>x.w+'x'+x.h)));
     ok('square: every name shows whole lines and nothing spills out of its tile', sq.every(x=>x.inside && Math.abs(x.lines-Math.round(x.lines))<=0.08 && x.lines>=0.9), JSON.stringify(sq));
     if (out) await page.screenshot({ path: out.replace(/\.png$/,'-square.png') });
 
