@@ -106,7 +106,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
     let s = await sheet();
     ok('Settings › Prices › "What we spend" opens on the latest month, as an estimate', s && /^about \$8\.50 in October 2026 · 1 receipt · \$0\.80 more than September$/.test(s.tot), JSON.stringify(s));
     ok('…with the months to choose from, newest first, this one chosen', s && JSON.stringify(s.months)==='[["2026-10",true],["2026-09",false]]', JSON.stringify(s && s.months));
-    ok('…a row per store and per category', s && JSON.stringify(s.stores)==='[["Asian Richmond1 receipt","$8.50",null]]' && JSON.stringify(s.cats.map(c=>[c[2],c[1]]))==='[["asian","$8.50"]]', JSON.stringify(s));
+    ok('…a row per store and per category', s && JSON.stringify(s.stores)==='[["Asian Richmond1 receipt","$8.50",null]]' && JSON.stringify(s.cats.map(c=>[c[2],c[1]]))==='[["asian","$6.00"],["fresh","$2.50"]]'   /* SUPERSEDED by v2.90: tofu ($2.50) is on the dairy shelf now (dictionary: fresh); still protects: a row per category, adding up the receipt */, JSON.stringify(s));
     ok('…and says the estimate is one', s && /estimated from the price memory/.test(s.hint), s && s.hint);
     await tap('[data-spend-m="2026-09"]');
     s = await sheet();

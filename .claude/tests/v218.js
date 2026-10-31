@@ -123,7 +123,9 @@ const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings"
     ok('a section\'s name shows the whole section ("shopping")', v.names.includes('Shopping') && ((v.secs.find(s=>s.name==='Shopping')||{}).rows||[]).length>=3, JSON.stringify(v.secs.map(s=>s.name+':'+s.rows.length)));
     v = await search('in regulars');
     ok('a subhead shows with all its rows, and no more ("in regulars": the Regulars heading and tile colours)',
-       JSON.stringify(v.names)==='["Category headings","Tile colours and shape"]' && v.secs.every(s=>JSON.stringify(s.rows.slice(1))==='["Text","Background","Border"]'), JSON.stringify(v.secs));
+       /* SUPERSEDED by v2.90: Settings › Shopping › "New items in Regulars" also matches "in regulars"; still protects: the two
+          look subheads show with exactly their rows, and the one other match is that single Shopping row */
+       JSON.stringify(v.names.filter(n=>n!=='Shopping'))==='["Category headings","Tile colours and shape"]' && v.secs.filter(s=>s.name!=='Shopping').every(s=>JSON.stringify(s.rows.slice(1))==='["Text","Background","Border"]') && v.secs.filter(s=>s.name==='Shopping').every(s=>s.rows.length===1 && /^New items in Regulars/.test(s.rows[0])), JSON.stringify(v.secs));
     const cu = (await search('colour')).secs.reduce((n,s)=>n+s.rows.length,0), co = (await search('color')).secs.reduce((n,s)=>n+s.rows.length,0);
     ok('"color" and "colour" find the same rows', cu>0 && cu===co, JSON.stringify({cu,co}));
     v = await search('xyzzy');
