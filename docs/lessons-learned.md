@@ -249,3 +249,8 @@ the household asked for is not a lesson.*
     "normalisers drop unknown fields" rule from CLAUDE.md, in a place that rule did not list. *Guard:* duplicates are grouped by
     name, category and note; the merged item names note, shop and flags; the v2.90 suite merges two identical items and checks
     all three survive. CLAUDE.md's list of field-by-field copies now includes `mergeCluster`.
+61. **A view that shows less than the list shows makes two different things look like one.** The + sheet's result tiles
+    showed name and count but never the note, so two Tofus on the list ("Semi-fried", "Soft") appeared as two identical tiles
+    — the household thought Tofu was duplicated (fixed v2.90: results carry the list item's note, one tile per list item, one
+    "+ another" per name). *Guard:* whatever tells two items apart on the list (name + note since v2.70) is shown wherever those
+    items are offered; the v2.90 suite puts two same-name items in the + sheet and checks both notes show.

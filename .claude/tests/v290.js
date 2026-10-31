@@ -8,6 +8,7 @@
      note field focused; typing "Mango" and Save leaves two Yogurts, "Blueberrie" and "Mango";
    - + sheet: typing "yogurt" shows "+ another Yogurt"; tapping it adds a separate Yogurt and opens its editor with the note
      field focused; typing "Vanilla" there (against v2.58's echoing fake database) keeps the field and saves the note;
+   - (the household's screenshot) in the + sheet two Tofus on the list show their notes, one tile each, one "+ another";
    - the duplicates banner does not offer to merge Yogurt (Blueberrie) and Yogurt (Mango); two Milk "Soy" ARE offered, and
      the merge keeps the note, the shop and the flags (it used to drop them).
 
@@ -100,6 +101,18 @@ const seed = (o) => { o=o||{}; return `(() => {
     await page.evaluate(()=>document.getElementById('mainInput').focus()); await page.waitForTimeout(600);
     const i3 = await items();
     ok('+ sheet: "+ another Yogurt" adds a separate Yogurt and opens it with the note field focused; "Vanilla" is kept', /another/i.test(tt||'') && a3.focused && i3.length===3 && i3.some(x=>/vanilla/i.test(x.note))   /* typed "Vanilla" matches the suggestion "vanilla", whose spelling is kept (v2.70) */, JSON.stringify({ tt, a3, i3 }));
+    /* the household's screenshot: two Tofus on the list read the same in the + sheet → each shows its note, one tile per
+       list item, one "+ another Tofu" */
+    const T = DOC({ items:[ it2("11","Tofu","asian",{ qty:2, note:"Semi-fried" }), it2("12","Tofu","asian",{ qty:2, note:"Soft" }) ],
+      buyAgain:[{ name:"Tofu", cat:"asian", note:"Semi-fried" }, { name:"Tofu", cat:"asian", note:"Soft" }] });
+    await mk({ srv:{ "lists/v101": T }, cache:T, extra:BASE });
+    await page.locator('#shopAddFab').click(); await page.waitForTimeout(600);
+    await page.locator('#mainInput').fill('tofu'); await page.locator('#mainInput').dispatchEvent('input'); await page.waitForTimeout(500);
+    const tf = await page.evaluate(()=>({ on:[...document.querySelectorAll('#addSheetBody [data-add-inc]')].map(b=>({ id:b.dataset.addInc, note:(b.querySelector('.pnote')||{}).textContent||'' })),
+      another:document.querySelectorAll('#addSheetBody [data-add-another]').length }));
+    ok('+ sheet: two Tofus on the list show as two tiles with their notes ("Semi-fried", "Soft"), one "+ another Tofu"', tf.on.length===2 && new Set(tf.on.map(x=>x.id)).size===2 && tf.on.map(x=>x.note).sort().join('|')==='Semi-fried|Soft' && tf.another===1, JSON.stringify(tf));
+    await page.locator('#addSheetBody').evaluate(()=>{}); if(out) await page.screenshot({ path: out.replace(/\.png$/,'-tofu.png') });
+
     /* merging two of the same name AND note keeps the note, the shop and the flags (it dropped all three before v2.90) */
     const M = DOC({ items:[ it2("7","Milk","dairy",{ note:"Soy", where:"cdan", tags:["urgent"] }), it2("8","Milk","dairy",{ note:"Soy", qty:2 }) ] });
     await mk({ srv:{ "lists/v101": M }, cache:M, extra:BASE });

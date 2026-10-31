@@ -3727,7 +3727,12 @@ function addFrag(){ const v=draftMain||""; const i=Math.max(v.lastIndexOf(","), 
 function addMatches(f){
   const onList=(name,cat)=> state.items.find(i=>!i.checked && i.name.toLowerCase()===String(name).toLowerCase() && (cat==null||i.cat===cat));
   const out=[], seen=new Set();
-  const push=(m)=>{ const k=baKey(m); if(seen.has(k)) return; seen.add(k); out.push(m); };   // v2.68: a Regular's note is part of its key
+  const onSeen=new Set();
+  /* v2.68: a Regular's note is part of its key. v2.90 (the household: "Tofu appears twice"): a result on the list shows that
+     item's note, and one list item gives one tile however many sources (a Regular, the dictionary, a prediction) match it */
+  const push=(m)=>{ if(m.onId){ if(onSeen.has(m.onId)) return; onSeen.add(m.onId);
+      const it=state.items.find(i=>i.id===m.onId); if(it && !m.note) m.note=it.note||""; }
+    const k=baKey(m); if(seen.has(k)) return; seen.add(k); out.push(m); };
   predictDue().filter(d=>!f || d.name.toLowerCase().includes(f)).forEach(d=>{ const it=onList(d.name,d.cat);
     push({name:d.name, cat:d.cat, qty:it?(it.qty||1):(d.qty||1), weight:it?(it.weight||""):"", onId:it&&it.id, predKey:it?null:d.key}); });
   state.buyAgain.filter(e=>!f || e.name.toLowerCase().includes(f)).forEach(e=>{ const it=state.items.find(i=>itemIsReg(i,e.name,e.cat,e.note));   // v2.68: and the same note
@@ -3740,7 +3745,7 @@ function addMatches(f){
 // v1.34 item 4: render a match as the app's literal shop pill, following Tile appearance
 // (Full/Empty) exactly like a real unchecked list item — no special "selected" override;
 // the picked item's persistence is shown via the Item Details panel, not the pill itself.
-function addPillHTML(m){
+function addPillHTML(m, firstOfName){
   const cat=CAT(m.cat)||{color:"var(--muted2)"};
   const on=!!m.onId;
   const full=fillMode()==='full';
@@ -3748,11 +3753,11 @@ function addPillHTML(m){
   const qcol = metaCol(cat.color, !!on, full); const qtxt = (full) ? qcol : readableOn(qcol, tileGroundHex(!!on));
   const meta=[(m.qty>1?m.qty+"×":""), m.weight].filter(Boolean).join(" ");
   const cuA = cuParts(m.qty, m.weight, cat.color, meta?`<span class="qty" style="color:${qtxt}">${esc(meta)}</span>`:"", false);   // v2.85
-  const metaS = cuA ? cuA.h + (cuA.nu?`<span class="pnote cu-only"><span class="cu-nu">${esc(cuA.nu)}</span></span>`:"") : meta?`<span class="pill-meta"><span class="qty" style="color:${qtxt}">${esc(meta)}</span></span>`:"";
+  const metaS = cuA ? cuA.h + cuNote(m.note||"", cuA.nu) : (meta?`<span class="pill-meta"><span class="qty" style="color:${qtxt}">${esc(meta)}</span></span>`:"") + (m.note?`<span class="pnote">${esc(m.note)}</span>`:"");   // v2.90: the note too, so two Tofus read apart
   const em=itemIcon(m.name,m.cat); const emS=em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
   const attr = on ? `data-add-inc="${m.onId}"` : (m.predKey?`data-add-pred="${esc(m.predKey)}"` : m.ba?`data-add-ba="${esc(m.name)}|${m.cat}" data-reg-note="${esc(m.note||"")}"` : `data-add-dict="${esc(m.name)}|${m.cat}"`);
-  const another = on ? `<button class="pill addanother" data-add-another="${m.onId}" style="border:1.5px dashed var(--accent);color:var(--accent);background:transparent">+ ${esc(t("another"))} ${esc(cap(m.name))}</button>` : "";   // v2.90
-  return `<button class="pill" ${attr} style="${style}">${emS}${esc(cap(m.name))}${metaS}</button>${another}`;
+  const another = (on && firstOfName!==false) ? `<button class="pill addanother" data-add-another="${m.onId}" style="border:1.5px dashed var(--accent);color:var(--accent);background:transparent">+ ${esc(t("another"))} ${esc(cap(m.name))}</button>` : "";   // v2.90
+  return `<button class="pill${m.note?' hasnote':''}" ${attr} style="${style}">${emS}<span class="pname">${esc(cap(m.name))}</span>${metaS}</button>${another}`;
 }
 // v1.34 item 4: nothing typed → nothing shown (no browsing). Typing shows matches as a
 // single horizontally-scrolling row of the app's literal item pills — same look as the real
@@ -3781,7 +3786,7 @@ function addSheetRows(){
      returned everything — fine when the results were one clipped row, but they wrap now and the
      panel would have to scroll through hundreds of them to reach the search bar. */
   const ms=addMatches(f).slice(0, 36);
-  const cells = typed + ms.map(addPillHTML).join("");
+  const cells = typed + ms.map((m,i)=>addPillHTML(m, ms.findIndex(x=>x.onId && x.name.toLowerCase()===m.name.toLowerCase())===i)).join("");   // v2.90: one "+ another" per name
   /* v1.43 item 4: `largeCols()>1`, not `>0` — large·1 is now the list layout, and emitting
      `gridmode grid1` here turned the single horizontally-scrolling result strip into a one-column
      grid. The list look wants the base shop-pill sizing, exactly as the old "list" mode did. */
