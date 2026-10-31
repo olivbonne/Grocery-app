@@ -104,7 +104,9 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     await mk({ doc:TD, extra:'localStorage.setItem("ml_nosmall","1"); localStorage.setItem("ml_caton","0"); localStorage.setItem("ml_largecols","1");'+cu({ style:'sep' }) });
     P = await parts(); const l1=P.find(p=>p.id==='1');
     const alt = await page.evaluate(()=>{ const a=document.querySelector('#zoomer .pill[data-pill="1"] .cu-alt, #zoomer .pill[data-pill="1"] .pill-meta'); return a && getComputedStyle(a).display!=='none' ? a.textContent.trim() : null; });
-    ok('one-line layout: the amount line stays, no disc', !l1.disc && /3/.test(alt||''), JSON.stringify({ disc:l1.disc, alt }));
+    /* SUPERSEDED by v2.89: the one-line layouts follow the chosen style (the household: "the single line doesn't follow the
+       pill selection") — with Disc + unit the row shows the disc, not the text; still protects: the count "3" shows in the row */
+    ok('one-line layout: the count shows, as the chosen disc', l1.disc && l1.disc.t==='3' && !alt, JSON.stringify({ disc:l1.disc, alt }));
 
     await mk({ doc:TD, extra:TX });
     await page.locator('#setNav').click(); await page.waitForTimeout(500);

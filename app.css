@@ -1458,7 +1458,12 @@
   .ednotesel .catchip.regdropb { box-shadow:-3px 0 0 0 var(--accent); }
   .ednotesel .catchip.regdropa { box-shadow:3px 0 0 0 var(--accent); }
   .ednotesel .catchip .ednotex { margin-left:6px; font-size:15px; line-height:1; opacity:.75; }
-  .ednotechips .catchip .ednotex { display:none; }
+  /* v2.89: an unchosen suggestion's × hides it (per phone); a quieter mark, padded to a 24px target */
+  .ednotechips .catchip .ednotex { display:inline-block; min-width:24px; box-sizing:border-box; margin:-6px -10px -6px 0; padding:6px 8px 6px 6px; text-align:center; font-size:14px; line-height:1; opacity:.5; }
+  .ednotechips .catchip { touch-action:manipulation; }   /* v2.89: a suggestion drags too (hold, then move) */
+  .ednotechips .catchip.regdrag { position:relative; z-index:20; opacity:.9; box-shadow:0 8px 20px rgba(0,0,0,.25); transition:none; }
+  .ednotechips .catchip.regdropb { box-shadow:-3px 0 0 0 var(--accent); }
+  .ednotechips .catchip.regdropa { box-shadow:3px 0 0 0 var(--accent); }
   .ednotefree { display:inline-flex; align-items:center; gap:5px; flex:0 1 140px; min-width:110px; height:36px; box-sizing:border-box;
     padding:0 10px; border:1.5px dashed var(--epillbrd, var(--muted2)); border-radius:var(--epillrad, 999px); color:var(--muted); }
   .ednotefree svg { flex:none; }
@@ -2374,13 +2379,21 @@ html[data-cu-tc="grey"] .cupill-t { --cupill-t-bg:var(--cu-grey); }
 /* today's amount line, kept for the one-line layouts only (it is .cu-alt, not .pill-meta, so B78's :has(.pill-meta) clamps
    give the name the amount's line back in column tiles); the unit-in-note prefix likewise shows only in column tiles */
 .pill .cu-alt { display:none; }
-html body .zoomer.zoomer.zoomer.linelist .pill.pill .cu-alt, html body .shop .zoomer.zoomer.largevar .pill.pill .cu-alt {
+html:not([data-cu-ls]) body .zoomer.zoomer.zoomer.linelist .pill.pill .cu-alt, html:not([data-cu-ls]) body .shop .zoomer.zoomer.largevar .pill.pill .cu-alt {
   display:inline-flex; align-items:center; gap:5px; flex:none; white-space:nowrap; margin-top:0; padding-left:0; justify-content:flex-start; font-size:max(10px, .65em); }
 html body .zoomer.zoomer.zoomer.linelist .pill.pill .cu-alt { margin-left:auto; }
 html body .zoomer.zoomer.zoomer.linelist .pill.pill .cu-alt .qty, html body .shop .zoomer.zoomer.largevar .pill.pill .cu-alt .qty { font-size:inherit; }
-html body .zoomer.zoomer.zoomer.linelist .pill.pill > :is(.cudisc, .cupill, .cupair), html body .shop .zoomer.zoomer.largevar .pill.pill > :is(.cudisc, .cupill, .cupair),
-html body .zoomer.zoomer.zoomer.linelist .pill.pill .cu-nu, html body .shop .zoomer.zoomer.largevar .pill.pill .cu-nu,
-html body .zoomer.zoomer.zoomer.linelist .pill.pill .pnote.cu-only, html body .shop .zoomer.zoomer.largevar .pill.pill .pnote.cu-only { display:none; }
+html:not([data-cu-ls]) body .zoomer.zoomer.zoomer.linelist .pill.pill > :is(.cudisc, .cupill, .cupair), html:not([data-cu-ls]) body .shop .zoomer.zoomer.largevar .pill.pill > :is(.cudisc, .cupill, .cupair),
+html:not([data-cu-ls]) body .zoomer.zoomer.zoomer.linelist .pill.pill .cu-nu, html:not([data-cu-ls]) body .shop .zoomer.zoomer.largevar .pill.pill .cu-nu,
+html:not([data-cu-ls]) body .zoomer.zoomer.zoomer.linelist .pill.pill .pnote.cu-only, html:not([data-cu-ls]) body .shop .zoomer.zoomer.largevar .pill.pill .pnote.cu-only { display:none; }
+/* v2.89 (the household): a chosen count-and-unit style (data-cu-ls, the STORED style) reaches the one-line layouts too — the
+   disc / pills sit inline after the name, before the note; the corner and edge places do not apply in a row */
+html[data-cu-ls] body .zoomer.zoomer.zoomer.linelist .pill.pill > :is(.cudisc, .cupill, .cupair), html[data-cu-ls] body .shop .zoomer.zoomer.largevar .pill.pill > :is(.cudisc, .cupill, .cupair) {
+  position:static; transform:none; margin:0 2px; flex:none; display:inline-flex; vertical-align:middle; }
+html[data-cu-ls] body .zoomer.zoomer.zoomer.linelist .pill.pill > .cupair, html[data-cu-ls] body .shop .zoomer.zoomer.largevar .pill.pill > .cupair { align-items:center; gap:4px; }
+html[data-cu-ls] body .zoomer.zoomer.zoomer.linelist .pill.pill > .cupair > :is(.cudisc, .cupill), html[data-cu-ls] body .shop .zoomer.zoomer.largevar .pill.pill > .cupair > :is(.cudisc, .cupill) { position:static; transform:none; margin:0; flex:none; }
+html[data-cu-ls] body .zoomer.zoomer.zoomer.linelist .pill.pill .cudisc, html[data-cu-ls] body .shop .zoomer.zoomer.largevar .pill.pill .cudisc { min-width:calc(22px * var(--cu-pk)); height:calc(22px * var(--cu-pk)); padding:0 calc(6px * var(--cu-pk)); font-size:calc(12px * var(--cu-pk)); }
+html[data-cu-ls] body .zoomer.zoomer.zoomer.linelist .pill.pill .cupill, html[data-cu-ls] body .shop .zoomer.zoomer.largevar .pill.pill .cupill { height:calc(20px * var(--cu-pk)); padding:0 calc(8px * var(--cu-pk)); font-size:calc(11px * var(--cu-pk)); }
 /* on the border must not be clipped (lesson 50): the fixed-height tiles (B78) drop overflow:hidden while a style is chosen —
    the line clamps already keep the text inside */
 html[data-cu-style][data-tilelines] .shop .zoomer:not(.linelist):not(.largevar) .pills > .pill.pill { overflow:visible; }
@@ -2504,8 +2517,10 @@ html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .cupair > .cupill { 
 html body .shop .zoomer.grid4 .pill.pill.pill .cupill { padding:0 calc(5px * var(--cu-pk)); }   /* v2.87: "2 × 1 bunch" fits a 4-across tile */
 /* v2.87: the marks fit their badge row (their 1.25em of an 18px tile was 22.5px a mark — three ran into the disc) and keep to
    their half of it */
-html body .shop .zoomer.gridmode .pill.pill.pill > .pmarks.cu-in { font-size:12px; max-width:calc(50% - var(--tm) - var(--tg) / 2); overflow:hidden; }
-html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .pmarks.cu-in { font-size:10px; }
+html body .shop .zoomer.gridmode .pill.pill.pill > .pmarks.cu-in { font-size:12px; max-width:calc(100% - 2 * var(--tm)); overflow:visible; }
+/* v2.89: the half-row cap only when another badge shares the marks' row (alone at 4 across, ★ + the tag was clipped) */
+html body .shop .zoomer.gridmode .pill.pill.pill:is(:has(> .cu-t:not(.pmarks)), :has(> .cu-bd:is(.cu-p-tl,.cu-p-tr,.cu-p-top))) > .pmarks.cu-t, html body .shop .zoomer.gridmode .pill.pill.pill:is(:has(> .cu-b:not(.pmarks)), :has(> .cu-bd:is(.cu-p-bl,.cu-p-br,.cu-p-bottom))) > .pmarks.cu-b { max-width:calc(50% - var(--tm) - var(--tg) / 2); overflow:hidden; }
+html body .shop .zoomer:is(.grid4,.grid5,.grid6) .pill.pill.pill > .pmarks.cu-in { font-size:10px; }
 /* v2.87b: the weight and size of the name, the note and the amount (Settings › Count and unit › Text). Column tiles only.
    --cu-nk the name's size, --cu-tk the note's (a text amount follows it), --cu-pk the disc and the pills' (their row too). */
 :root { --cu-nk:1; --cu-tk:1; --cu-pk:1; }
@@ -2526,3 +2541,8 @@ html[data-cu-aw="regular"] body .shop .zoomer.gridmode .pill.pill.pill :is(.cudi
 /* v2.87b: bigger pills only where they fit — at 4 to 6 across "2 × 1 bunch" at XL is 82px in a 64px row, so the pill size
    stays M there (the Settings hint says so) */
 .shop .zoomer:is(.grid4, .grid5, .grid6) { --cu-pk:1; }
+/* v2.89: marks sharing their row with the disc or a pill keep to half of it and are never cut: smaller at 4–6 across, and if
+   still too wide they wrap onto two small lines inside the 22px row (★ over the tag at 6 across) */
+html body .shop .zoomer.gridmode .pill.pill.pill:is(:has(> .cu-t:not(.pmarks)), :has(> .cu-bd:is(.cu-p-tl,.cu-p-tr,.cu-p-top))) > .pmarks.cu-t, html body .shop .zoomer.gridmode .pill.pill.pill:is(:has(> .cu-b:not(.pmarks)), :has(> .cu-bd:is(.cu-p-bl,.cu-p-br,.cu-p-bottom))) > .pmarks.cu-b { flex-wrap:wrap; align-content:center; row-gap:1px; height:var(--tb); }
+html body .shop .zoomer:is(.grid4,.grid5,.grid6) .pill.pill.pill:is(:has(> .cu-t:not(.pmarks)), :has(> .cu-bd:is(.cu-p-tl,.cu-p-tr,.cu-p-top))) > .pmarks.cu-t, html body .shop .zoomer:is(.grid4,.grid5,.grid6) .pill.pill.pill:is(:has(> .cu-b:not(.pmarks)), :has(> .cu-bd:is(.cu-p-bl,.cu-p-br,.cu-p-bottom))) > .pmarks.cu-b { font-size:8px; }
+html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill:is(:has(> .cu-t:not(.pmarks)), :has(> .cu-bd:is(.cu-p-tl,.cu-p-tr,.cu-p-top))) > .pmarks.cu-t, html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill:is(:has(> .cu-b:not(.pmarks)), :has(> .cu-bd:is(.cu-p-bl,.cu-p-br,.cu-p-bottom))) > .pmarks.cu-b { font-size:7px; row-gap:0; }   /* two lines of marks fit the 18px row at 5–6 across */

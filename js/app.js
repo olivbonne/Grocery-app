@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.88";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.88";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.88";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.88";
-import { compareStores, worthIt } from "./compare.js?v=2.88";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.88";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.88";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.88";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.88";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.88";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.88";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.88";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.88";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.88";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.89";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.89";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.89";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.89";
+import { compareStores, worthIt } from "./compare.js?v=2.89";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.89";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.89";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.89";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.89";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.89";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.89";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.89";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.89";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.89";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.88";
+const APP_VERSION = "v2.89";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -85,7 +85,7 @@ function showAmt(w){
 /* A first launch reloads once on its own (the v1.63 slot migration) before sign-in, so the answer is kept for the session. */
 var _prefsFresh = (()=>{ try{ if(sessionStorage.getItem("ml_prefsfresh") === "1") return true;
   const f = !localStorage.getItem("ml_theme") && !localStorage.getItem("ml_appmig163"); if(f) sessionStorage.setItem("ml_prefsfresh", "1"); return f; }catch(e){ return false; } })();
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_jk_)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_notesg$|ml_jk_)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -877,7 +877,9 @@ var CU_KEYS = { style:["","note","sep","tog"], np:["","above"], dp:["tr","tl","b
   nw:["bold","regular"], tw:["regular","bold"], aw:["bold","regular"], ns:["m","s","l","xl"], ts:["m","s","l","xl"], ps:["m","s","l","xl"] };
 function cuGet(k){ const l=CU_KEYS[k]; if(!l) return ""; try{ const v=localStorage.getItem("ml_cu_"+k); return (v!=null && l.includes(v)) ? v : l[0]; }catch(e){ return l[0]; } }
 function applyCu(){ try{ _cuE = cuCalc(); const h=document.documentElement; Object.keys(CU_KEYS).forEach(k=>{ const v=_cuE[k]; if(v!==CU_KEYS[k][0]) h.setAttribute("data-cu-"+k, v); else h.removeAttribute("data-cu-"+k); });
-  if(_cuE.mk!=="tl") h.setAttribute("data-cu-mk", _cuE.mk); else h.removeAttribute("data-cu-mk"); }catch(e){} }
+  if(_cuE.mk!=="tl") h.setAttribute("data-cu-mk", _cuE.mk); else h.removeAttribute("data-cu-mk");
+  /* v2.89: the STORED style, for the one-line layouts (the effective one's 1–2-line switch to the pill is about column heights) */
+  const ls=cuGet("style"); if(ls!=="") h.setAttribute("data-cu-ls", ls); else h.removeAttribute("data-cu-ls"); }catch(e){} }
 function setCu(k,v){ const l=CU_KEYS[k]; if(!l) return; v=String(v||""); try{ if(l.includes(v) && v!==l[0]) localStorage.setItem("ml_cu_"+k, v); else localStorage.removeItem("ml_cu_"+k); }catch(e){}
   applyTheme(); render(); }
 /* v2.86 (the tile-rules canvas): what the settings ask for, made to fit the rules — the unit pill and the one pill lost the
@@ -2035,7 +2037,28 @@ function noteSuggest(name){ const nm=String(name||"").trim().toLowerCase(); if(!
   used.forEach(add);   // v2.68: every part learned from this name's Regulars and items, first
   const stem=Object.keys(NOTE_HINTS).sort((a,b)=>b.length-a.length).find(k=>new RegExp("(^|[^a-z])"+k+"(e?s)?($|[^a-z])").test(nm));
   if(stem) NOTE_HINTS[stem].forEach(add);
-  return out.slice(0,12); }
+  /* v2.89: this phone's own order and hidden suggestions for the name (noteSgGet) */
+  const rec=noteSgGet(nm), hid=new Set(rec.h), ord=rec.o;
+  const kept=out.filter(x=>!hid.has(x.toLowerCase()));
+  const rank=x=>{ const i=ord.indexOf(x.toLowerCase()); return i<0 ? Infinity : i; };
+  const sorted=kept.map((x,i)=>[x,i]).sort((a,b)=>(rank(a[0])-rank(b[0])) || (a[1]-b[1])).map(p=>p[0]);
+  return sorted.slice(0,12); }
+/* v2.89 (the household): the suggested notes' order and the ones removed, per name — kept on THIS phone (localStorage
+   ml_notesg = { "<name lowercased>": { o:[order], h:[hidden] } }, a preference, so in both APP_EXCLUDE regexes). Not shared:
+   a household-wide version would need a new list field and the owner publishing new Firestore rules. */
+function noteSgAll(){ try{ const o=JSON.parse(localStorage.getItem("ml_notesg")||"{}"); return (o && typeof o==="object" && !Array.isArray(o)) ? o : {}; }catch(e){ return {}; } }
+function noteSgGet(name){ const nm=String(name||"").trim().toLowerCase(); const r=noteSgAll()[nm]||{};
+  const arr=a=>Array.isArray(a) ? a.map(x=>String(x).toLowerCase()) : [];
+  return { o:arr(r.o), h:arr(r.h) }; }
+function noteSgSet(name, rec){ const nm=String(name||"").trim().toLowerCase(); if(!nm) return;
+  try{ const all=noteSgAll(); delete all[nm];
+    const o=((rec&&rec.o)||[]).map(x=>String(x).toLowerCase()), h=((rec&&rec.h)||[]).map(x=>String(x).toLowerCase());
+    if(o.length || h.length) all[nm]={ o, h };   // re-added last, so the oldest names are first
+    const ks=Object.keys(all); while(ks.length>300) delete all[ks.shift()];
+    if(Object.keys(all).length) localStorage.setItem("ml_notesg", JSON.stringify(all)); else localStorage.removeItem("ml_notesg"); }catch(e){} }
+/* v2.89: the × of an unchosen suggestion hides it for this name — no re-render, so the field keeps focus */
+function noteSgHide(b, name){ const v=noteChipVal(b).toLowerCase(); const r=noteSgGet(name);
+  if(v && !r.h.includes(v)) r.h.push(v); noteSgSet(name, r); b.remove(); }
 function noteToggle(note, chip){ const ps=noteParts(note), i=ps.findIndex(x=>x.toLowerCase()===chip.toLowerCase());
   if(i>=0) ps.splice(i,1); else ps.push(chip); return ps.join(", ").slice(0,140); }
 /* the Note section, shared by both editors: attr names the data attributes each one wires.
@@ -2069,14 +2092,17 @@ function noteChipTap(b){ const w=b.closest(".ednotewrap"); if(!w) return "";
 /* v2.88 (the household: "let me reorganise which note is shown first"): hold a chosen tile, then move, to drag it among the
    chosen tiles (v2.57's tile drag); release rebuilds the note in the new order and hands it to onNote. A quick tap still
    removes the tile (its own onclick); after a hold or a drag the click that follows is swallowed. */
-function noteChipDrag(b, onNote){
+function noteChipDrag(b, onNote, nameFn){
   let down=null, drag=null;
   b.oncontextmenu=e=>e.preventDefault();
-  b.addEventListener("pointerdown", e=>{ b._noClick=false; if(!b.closest(".ednotesel")) return; pressStart(); down={ x:e.clientX, y:e.clientY }; });
+  b.addEventListener("pointerdown", e=>{ b._noClick=false; if(!b.closest(".ednotesel, .ednotechips")) return; pressStart(); down={ x:e.clientX, y:e.clientY }; });
   b.addEventListener("pointermove", e=>{ if(!down) return; const dx=e.clientX-down.x, dy=e.clientY-down.y;
     if(!drag){ if(!longFired || Math.hypot(dx,dy)<=8) return;
       const w=b.closest(".ednotewrap"), sel=b.closest(".ednotesel");
-      drag=tileDragStart(b, e, sel, ".catchip", els=>{ const free=sel.querySelector(".ednotefree"); els.forEach(el=>sel.insertBefore(el, free)); onNote(noteFromWrap(w)); });
+      if(sel) drag=tileDragStart(b, e, sel, ".catchip", els=>{ const free=sel.querySelector(".ednotefree"); els.forEach(el=>sel.insertBefore(el, free)); onNote(noteFromWrap(w)); });
+      else { const sg=b.closest(".ednotechips");   // v2.89: the suggestions reorder too — their order is saved for the name, the note is unchanged
+        if(sg) drag=tileDragStart(b, e, sg, ".catchip", els=>{ els.forEach(el=>sg.appendChild(el));
+          const nm=nameFn ? nameFn() : ""; const r=noteSgGet(nm); r.o=[...sg.querySelectorAll(".catchip")].map(c=>noteChipVal(c).toLowerCase()); noteSgSet(nm, r); }); }
       if(!drag){ down=null; return; } }
     tileDragMove(drag, e, dx, dy); });
   b.addEventListener("touchmove", e=>{ if(down && longFired) e.preventDefault(); }, { passive:false });
@@ -4042,7 +4068,10 @@ function wireAddEdit(){
     inp.oninput=()=>{ setN(inp.value.indexOf(",")>=0 ? noteCommit(inp, aeChip, true) : noteFromWrap(inp.closest(".ednotewrap"))); };   // v2.68: selected chips + the free text
     inp.onkeydown=e=>{ if(e.key===","||e.key==="Enter"){ e.preventDefault(); setN(noteCommit(inp, aeChip)); } };
     inp.onblur=()=>{ if(!inp.isConnected) return; setN(noteCommit(inp, aeChip)); refreshAddBody(); }; });
-  function aeChip(b){ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ if(b._noClick){ b._noClick=false; return; } const it=cur(); if(it){ it.note=noteChipTap(b); touch(it); } }; noteChipDrag(b, n=>{ const it=cur(); if(it){ it.note=n; touch(it); } }); }
+  function aeChip(b){ b.onpointerdown=e=>e.preventDefault(); b.onclick=e=>{ if(b._noClick){ b._noClick=false; return; } const it=cur(); if(!it) return;
+      if(b.closest(".ednotechips") && e.target.closest(".ednotex")){ noteSgHide(b, it.name); return; }   // v2.89: the × hides the suggestion
+      it.note=noteChipTap(b); touch(it); };
+    noteChipDrag(b, n=>{ const it=cur(); if(it){ it.note=n; touch(it); } }, ()=>{ const it=cur(); return it ? it.name : ""; }); }
   document.querySelectorAll("[data-ae-notechip]").forEach(aeChip);
   document.querySelectorAll("[data-ae-cat]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const [id,cid]=b.dataset.aeCat.split("|"); const it=state.items.find(i=>i.id===id); if(it){ it.cat=cid; it.sub=null; touch(it); refreshAddBody(); } }; });
   document.querySelectorAll("[data-ae-sub]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const p=b.dataset.aeSub.split("|"), id=p[0], sub=p[1]||null; const it=state.items.find(i=>i.id===id); if(it){ it.sub=sub; touch(it); refreshAddBody(); } }; });
@@ -7983,7 +8012,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_jk_)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_notesg$|ml_jk_)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -8947,7 +8976,9 @@ function wireEditSheet(){
       app.querySelectorAll("[data-ew]").forEach(b=>b.onclick=()=>{ const id=b.dataset.ew; if(!id){ editing.where=""; render(); return; }
         const s=new Set(whereIds(editing)); if(s.has(id)) s.delete(id); else s.add(id); editing.where=[...s].join(","); render(); });
       /* v2.70: a chosen tile is removed by a tap; typed text becomes tiles at a comma, Enter or leaving the field */
-      const enChip=b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ if(b._noClick){ b._noClick=false; return; } editing.note=noteChipTap(b); }; noteChipDrag(b, n=>{ editing.note=n; }); };   // v2.65: no re-render — the field keeps focus
+      const enChip=b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=e=>{ if(b._noClick){ b._noClick=false; return; }
+          if(b.closest(".ednotechips") && e.target.closest(".ednotex")){ noteSgHide(b, editing.name); return; }   // v2.89: the × hides the suggestion
+          editing.note=noteChipTap(b); }; noteChipDrag(b, n=>{ editing.note=n; }, ()=>editing ? editing.name : ""); };   // v2.65: no re-render — the field keeps focus
       const enote=app.querySelector("#editNote"); if(enote){
         enote.oninput=()=>{ editing.note = enote.value.indexOf(",")>=0 ? noteCommit(enote, enChip, true) : noteFromWrap(enote.closest(".ednotewrap")); };   // v2.22 R16 · v2.68: selected chips + the free text
         enote.onkeydown=e=>{ if(e.key===","||e.key==="Enter"){ e.preventDefault(); editing.note=noteCommit(enote, enChip); } };
