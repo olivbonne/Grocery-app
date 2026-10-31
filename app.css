@@ -1453,6 +1453,10 @@
      pencil entry. The label stays on the left; the tiles take the rest of the width. */
   .editsec.ednote { flex-wrap:wrap; align-items:center; column-gap:10px; }
   .ednote .ednotesel { flex:1 1 200px; min-width:0; margin-top:0; justify-content:flex-end; }
+  .ednotesel .catchip { touch-action:manipulation; }   /* v2.88: a chosen tag drags (hold, then move) */
+  .ednotesel .catchip.regdrag { position:relative; z-index:20; opacity:.9; box-shadow:0 8px 20px rgba(0,0,0,.25); transition:none; }
+  .ednotesel .catchip.regdropb { box-shadow:-3px 0 0 0 var(--accent); }
+  .ednotesel .catchip.regdropa { box-shadow:3px 0 0 0 var(--accent); }
   .ednotesel .catchip .ednotex { margin-left:6px; font-size:15px; line-height:1; opacity:.75; }
   .ednotechips .catchip .ednotex { display:none; }
   .ednotefree { display:inline-flex; align-items:center; gap:5px; flex:0 1 140px; min-width:110px; height:36px; box-sizing:border-box;

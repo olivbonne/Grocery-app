@@ -13,7 +13,9 @@
      field, no tag made, the writes really echoed; leaving the field then makes "Semi" a tag and the sheet redraws;
    - (1) Square at 3 and 4 across, with badges and notes: every tile the same height, at least as tall as wide, every part of
      every tile inside it;
-   - (2) in Square a list item's two-line note shows both lines, like the same note on its Regular.
+   - (2) in Square a list item's two-line note shows both lines, like the same note on its Regular;
+   - (4, the household's follow-up) a chosen note tag can be held and dragged to reorder — in the + sheet and in Edit item —
+     and the saved note follows the new order; a quick tap still removes a stray tag.
 
    TEST-BUG NOTES CARRIED FORWARD: v2.00 the seed returns early once seeded; v2.10 seed ml_appmig163. The fake database is
    v2.58's (writes echo with fire()). */
@@ -91,6 +93,23 @@ const seed = (o) => { o=o||{}; return `(() => {
     const n2 = await page.evaluate(()=>[...document.querySelectorAll('#addSheetBody .ednotesel .catchip')].map(c=>c.textContent.replace('×','').trim()));
     ok('…leaving the field makes "Semi" a tag (the sheet redraws then)', n2.includes('Semi'), JSON.stringify(n2));
 
+    /* ── 4. the note's tags: hold and drag to reorder; a tap still removes ── */
+    const chips = (root)=>page.evaluate(r=>[...document.querySelectorAll(r+' .ednotesel .catchip')].map(c=>c.textContent.replace('×','').trim()), root);
+    const dragChip = async(root, from, toFirst)=>{ const a=page.locator(root+' .ednotesel .catchip').filter({ hasText:from }).first(), t=page.locator(root+' .ednotesel .catchip').first();
+      const ba=await a.boundingBox(), bt=await t.boundingBox();
+      await page.mouse.move(ba.x+ba.width/2, ba.y+ba.height/2); await page.mouse.down(); await page.waitForTimeout(600);
+      await page.mouse.move(ba.x+ba.width/2-10, ba.y+ba.height/2, { steps:3 }); await page.mouse.move(bt.x+2, bt.y+bt.height/2, { steps:8 }); await page.waitForTimeout(150);
+      await page.mouse.up(); await page.waitForTimeout(500); };
+    await note.click(); await page.keyboard.type('S,'); await page.keyboard.type('Fresh,'); await page.waitForTimeout(300);
+    const c0 = await chips('#addSheetBody');
+    await dragChip('#addSheetBody', 'Fresh');
+    const c1 = await chips('#addSheetBody');
+    const stored1 = await page.evaluate(()=>{ const ks=Object.keys(window.__srv.docs).filter(k=>/items\//.test(k)); const t=ks.map(k=>window.__srv.docs[k]).find(d=>d && /tofu/i.test(d.name)); return t ? t.note : JSON.stringify((window.__srv.docs['lists/v101'].items||[]).find(i=>/tofu/i.test(i.name))||{}); });
+    ok('+ sheet: hold "Fresh" and drag it first — the tags and the saved note follow the new order', JSON.stringify(c0)==='["Semi","S","Fresh"]' && c1[0]==='Fresh' && /^Fresh/.test(String(stored1).replace(/^.*"note":"/,'')), JSON.stringify({ c0, c1, stored1 }));
+    await page.locator('#addSheetBody .ednotesel .catchip').filter({ hasText:/^S×?$/ }).first().click(); await page.waitForTimeout(400);
+    const c2 = await chips('#addSheetBody');
+    ok('…a quick tap on the stray "S" still removes it', !c2.includes('S') && c2.includes('Fresh') && c2.includes('Semi'), JSON.stringify(c2));
+
     /* ── 1 and 2. Square ── */
     const it2=(id,n,c,x)=>Object.assign({id,name:n,cat:c,qty:1,weight:"",checked:false,tags:[],ts:1000}, x||{});
     const SQ = DOC({ items:[ it2("1","Tomatoes","vegetable",{ note:"Small" }), it2("2","Tomatoes big","vegetable",{ qty:4 }), it2("3","Eggs","dairy",{ qty:3, weight:"12 pack" }),
@@ -112,6 +131,16 @@ const seed = (o) => { o=o||{}; return `(() => {
     ok('Square: every tile the same height, at least as tall as wide, nothing hanging out (3 and 4 across, each style)', sq.every(x=>x.same && x.square && !x.spill.length), JSON.stringify(sq));
     ok('Square: a two-line note shows both lines, uncut ("Mango, Protein, Pouch")', clampTwo && clampTwo.yLines===2 && clampTwo.yCut===false, JSON.stringify(clampTwo && { lines:clampTwo.yLines, cut:clampTwo.yCut }));
     const src = fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8'), rp = src.slice(src.indexOf('function regPill('), src.indexOf('function regSortCmp('));
+    /* the same drag in Edit item, opened from the list (hold a tile) */
+    await mk({ srv:{ "lists/v101": SQ }, cache:SQ, extra:'localStorage.setItem("ml_nosmall","1"); localStorage.setItem("ml_caton","0"); localStorage.setItem("ml_largecols","3");' });
+    const tf = page.locator('#zoomer .pill[data-pill="6"]'); const bb = await tf.boundingBox();
+    await page.mouse.move(bb.x+bb.width/2, bb.y+bb.height/2); await page.mouse.down(); await page.waitForTimeout(750); await page.mouse.up(); await page.waitForTimeout(700);
+    const e0 = await chips('#sheet');
+    await dragChip('#sheet', 'Mango');
+    const e1 = await chips('#sheet');
+    await page.locator('#sheet button', { hasText:/^Save$/ }).first().click(); await page.waitForTimeout(600);
+    const e2 = await page.evaluate(()=>{ const c=JSON.parse(localStorage.getItem('ml_cache_v101')||'{}'); const i=(c.items||[]).find(x=>x.id==='6'); return i ? i.note : null; });
+    ok('Edit item: hold "Mango" and drag it first — saved as "Mango, Raspberries"', JSON.stringify(e0)==='["Raspberries","Mango"]' && e1[0]==='Mango' && e2==='Mango, Raspberries', JSON.stringify({ e0, e1, e2 }));
     ok('a Regular with a note carries .hasnote (both tile kinds), so it follows the list\'s note rules', (rp.match(/noteS\?" hasnote":""/g)||[]).length===2, '');
   } catch(e){ ok('suite ran to the end', false, (e.stack||e.message).slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));

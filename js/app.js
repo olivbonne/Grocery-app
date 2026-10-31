@@ -2066,6 +2066,26 @@ function noteChipTap(b){ const w=b.closest(".ednotewrap"); if(!w) return "";
   const dst=w.querySelector(on ? ".ednotesel" : ".ednotechips");
   if(dst){ if(on) dst.insertBefore(b, dst.querySelector(".ednotefree")); else dst.insertBefore(b, dst.firstChild); }
   return noteFromWrap(w); }
+/* v2.88 (the household: "let me reorganise which note is shown first"): hold a chosen tile, then move, to drag it among the
+   chosen tiles (v2.57's tile drag); release rebuilds the note in the new order and hands it to onNote. A quick tap still
+   removes the tile (its own onclick); after a hold or a drag the click that follows is swallowed. */
+function noteChipDrag(b, onNote){
+  let down=null, drag=null;
+  b.oncontextmenu=e=>e.preventDefault();
+  b.addEventListener("pointerdown", e=>{ b._noClick=false; if(!b.closest(".ednotesel")) return; pressStart(); down={ x:e.clientX, y:e.clientY }; });
+  b.addEventListener("pointermove", e=>{ if(!down) return; const dx=e.clientX-down.x, dy=e.clientY-down.y;
+    if(!drag){ if(!longFired || Math.hypot(dx,dy)<=8) return;
+      const w=b.closest(".ednotewrap"), sel=b.closest(".ednotesel");
+      drag=tileDragStart(b, e, sel, ".catchip", els=>{ const free=sel.querySelector(".ednotefree"); els.forEach(el=>sel.insertBefore(el, free)); onNote(noteFromWrap(w)); });
+      if(!drag){ down=null; return; } }
+    tileDragMove(drag, e, dx, dy); });
+  b.addEventListener("touchmove", e=>{ if(down && longFired) e.preventDefault(); }, { passive:false });
+  const end=commit=>{ pressCancel(); const was=down; down=null;
+    if(drag){ const d=drag; drag=null; tileDragEnd(d, commit); b._noClick=true; return; }
+    if(was && longFired) b._noClick=true; };
+  b.addEventListener("pointerup", ()=>end(true));
+  b.addEventListener("pointercancel", ()=>end(false));
+}
 /* v2.70: the entry's text becomes tiles — split on commas; a part matching a suggestion selects it, one already chosen is
    skipped. keep: text after the last comma stays in the entry (typing a comma). wire(b) attaches a new tile's tap. */
 function noteCommit(inp, wire, keep){ const w=inp.closest(".ednotewrap"); if(!w) return "";
@@ -4022,7 +4042,7 @@ function wireAddEdit(){
     inp.oninput=()=>{ setN(inp.value.indexOf(",")>=0 ? noteCommit(inp, aeChip, true) : noteFromWrap(inp.closest(".ednotewrap"))); };   // v2.68: selected chips + the free text
     inp.onkeydown=e=>{ if(e.key===","||e.key==="Enter"){ e.preventDefault(); setN(noteCommit(inp, aeChip)); } };
     inp.onblur=()=>{ if(!inp.isConnected) return; setN(noteCommit(inp, aeChip)); refreshAddBody(); }; });
-  function aeChip(b){ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=cur(); if(it){ it.note=noteChipTap(b); touch(it); } }; }
+  function aeChip(b){ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ if(b._noClick){ b._noClick=false; return; } const it=cur(); if(it){ it.note=noteChipTap(b); touch(it); } }; noteChipDrag(b, n=>{ const it=cur(); if(it){ it.note=n; touch(it); } }); }
   document.querySelectorAll("[data-ae-notechip]").forEach(aeChip);
   document.querySelectorAll("[data-ae-cat]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const [id,cid]=b.dataset.aeCat.split("|"); const it=state.items.find(i=>i.id===id); if(it){ it.cat=cid; it.sub=null; touch(it); refreshAddBody(); } }; });
   document.querySelectorAll("[data-ae-sub]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const p=b.dataset.aeSub.split("|"), id=p[0], sub=p[1]||null; const it=state.items.find(i=>i.id===id); if(it){ it.sub=sub; touch(it); refreshAddBody(); } }; });
@@ -8927,7 +8947,7 @@ function wireEditSheet(){
       app.querySelectorAll("[data-ew]").forEach(b=>b.onclick=()=>{ const id=b.dataset.ew; if(!id){ editing.where=""; render(); return; }
         const s=new Set(whereIds(editing)); if(s.has(id)) s.delete(id); else s.add(id); editing.where=[...s].join(","); render(); });
       /* v2.70: a chosen tile is removed by a tap; typed text becomes tiles at a comma, Enter or leaving the field */
-      const enChip=b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ editing.note=noteChipTap(b); }; };   // v2.65: no re-render — the field keeps focus
+      const enChip=b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ if(b._noClick){ b._noClick=false; return; } editing.note=noteChipTap(b); }; noteChipDrag(b, n=>{ editing.note=n; }); };   // v2.65: no re-render — the field keeps focus
       const enote=app.querySelector("#editNote"); if(enote){
         enote.oninput=()=>{ editing.note = enote.value.indexOf(",")>=0 ? noteCommit(enote, enChip, true) : noteFromWrap(enote.closest(".ednotewrap")); };   // v2.22 R16 · v2.68: selected chips + the free text
         enote.onkeydown=e=>{ if(e.key===","||e.key==="Enter"){ e.preventDefault(); editing.note=noteCommit(enote, enChip); } };
