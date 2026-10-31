@@ -2546,3 +2546,13 @@ html[data-cu-aw="regular"] body .shop .zoomer.gridmode .pill.pill.pill :is(.cudi
 html body .shop .zoomer.gridmode .pill.pill.pill:is(:has(> .cu-t:not(.pmarks)), :has(> .cu-bd:is(.cu-p-tl,.cu-p-tr,.cu-p-top))) > .pmarks.cu-t, html body .shop .zoomer.gridmode .pill.pill.pill:is(:has(> .cu-b:not(.pmarks)), :has(> .cu-bd:is(.cu-p-bl,.cu-p-br,.cu-p-bottom))) > .pmarks.cu-b { flex-wrap:wrap; align-content:center; row-gap:1px; height:var(--tb); }
 html body .shop .zoomer:is(.grid4,.grid5,.grid6) .pill.pill.pill:is(:has(> .cu-t:not(.pmarks)), :has(> .cu-bd:is(.cu-p-tl,.cu-p-tr,.cu-p-top))) > .pmarks.cu-t, html body .shop .zoomer:is(.grid4,.grid5,.grid6) .pill.pill.pill:is(:has(> .cu-b:not(.pmarks)), :has(> .cu-bd:is(.cu-p-bl,.cu-p-br,.cu-p-bottom))) > .pmarks.cu-b { font-size:8px; }
 html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill:is(:has(> .cu-t:not(.pmarks)), :has(> .cu-bd:is(.cu-p-tl,.cu-p-tr,.cu-p-top))) > .pmarks.cu-t, html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill:is(:has(> .cu-b:not(.pmarks)), :has(> .cu-bd:is(.cu-p-bl,.cu-p-br,.cu-p-bottom))) > .pmarks.cu-b { font-size:7px; row-gap:0; }   /* two lines of marks fit the 18px row at 5–6 across */
+/* v2.91 (the household): one item per row — the note sits on the name's line (same baseline), and the count and unit, whatever
+   their style (the text, the pills, the disc), go to the right-hand end of the row. The row lines its items up on a baseline
+   and is centred as one line (a wrapping flex line with align-content:center — baseline alone would pin the text to the top);
+   the note takes the room between name and amount from a zero basis, so the line never wraps, and ends in "…" when long. */
+html body .zoomer.zoomer.zoomer.linelist .pill.pill { flex-wrap:wrap; align-content:center; align-items:baseline; }
+html body .zoomer.zoomer.zoomer.linelist .pill.pill > :is(.pemoji, .pmarks, .cudisc, .cupill, .cupair, .paisle) { align-self:center; }
+html body .zoomer.zoomer.zoomer.linelist .pill.pill > :is(.pill-meta, .cu-alt, .cudisc, .cupill, .cupair) { order:30; }
+html body .zoomer.zoomer.zoomer.linelist .pill.pill > .pnote { flex:1 1 0; min-width:0; }
+html body .zoomer.zoomer.zoomer.linelist .pill.pill:not(:has(> .pnote)) > .pname { margin-right:auto; }
+html body .zoomer.zoomer.zoomer.linelist .pill.pill > :is(.pill-meta, .cu-alt) { margin-left:8px; }

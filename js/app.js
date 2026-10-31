@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.90";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.90";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.90";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.90";
-import { compareStores, worthIt } from "./compare.js?v=2.90";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.90";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.90";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.90";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.90";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.90";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.90";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.90";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.90";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.90";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.91";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.91";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.91";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.91";
+import { compareStores, worthIt } from "./compare.js?v=2.91";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.91";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.91";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.91";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.91";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.91";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.91";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.91";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.91";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.91";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.90";
+const APP_VERSION = "v2.91";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -6101,6 +6101,7 @@ function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRe
     ${/* v2.63 item C: Text size, as in Settings — the menu stays open */""}<div class="smtiles smzoom"><span class="smtlabel">${t("Text size")}</span><div class="smcols"><button class="colbtn" data-sm-zoom="-1" aria-label="${t("Smaller text")}">−</button><span class="smzpct">${Math.round(dens()*100)}%</span><button class="colbtn" data-sm-zoom="1" aria-label="${t("Larger text")}">+</button></div></div>
     ${/* v2.68 (the household): Theme, Group by category and Sort, as in Settings — the menu stays open */""}<div class="smtiles smtext"><span class="smtlabel">${t("Theme")}</span><div class="smcols"><button class="colbtn ${theme==='light'?'on':''}" data-sm-theme="light">${t("Light")}</button><button class="colbtn ${theme==='dark'?'on':''}" data-sm-theme="dark">${t("Dark")}</button></div></div>
     <div class="smtiles smtext"><span class="smtlabel">${t("Group by category")}</span><div class="smcols"><button class="colbtn ${catOn?'on':''}" data-sm-caton="1">${t("On")}</button><button class="colbtn ${!catOn?'on':''}" data-sm-caton="0">${t("Off")}</button></div></div>
+    ${/* v2.91 (the household): Item icons, as in Settings — the menu stays open */""}<div class="smtiles smtext"><span class="smtlabel">${t("Item icons")}</span><div class="smcols"><button class="colbtn ${itemEmojiOn()?'on':''}" data-sm-itememoji="1">${t("On")}</button><button class="colbtn ${!itemEmojiOn()?'on':''}" data-sm-itememoji="0">${t("Off")}</button></div></div>
     ${(()=>{ const cs=(displayFor()==="cat" && (sortModeFor()==="location"||sortModeFor()==="ai")) ? "cat" : sortModeFor();   // as Settings reads it
       const sb=(v,l)=>`<button class="colbtn ${cs===v?'on':''}" data-sm-sort="${v}">${l}</button>`;
       return `<div class="smtiles smtext"><span class="smtlabel">${t("Sort")}</span><div class="smcols">${(displayFor()==="flat" && shopMode && aiSortOK())?sb("ai",t("✨ AI")):""}${displayFor()==="flat"?sb("location",t("Location")):""}${sb("cat",t("Category"))}${sb("alpha",t("A–Z"))}</div></div>`; })()}
@@ -6159,6 +6160,7 @@ function wireShopMenu(){
   /* v2.68: each re-renders with the menu still open (shopMenuOpen is left true) */
   app.querySelectorAll("[data-sm-theme]").forEach(c => c.onclick = () => { if(theme !== c.dataset.smTheme) setTheme(c.dataset.smTheme); });
   app.querySelectorAll("[data-sm-caton]").forEach(c => c.onclick = () => setCatOn(c.dataset.smCaton === "1"));
+  app.querySelectorAll("[data-sm-itememoji]").forEach(c => c.onclick = () => { const want=c.dataset.smItememoji==="1"; if(itemEmojiOn()!==want) setItemEmoji(want); });   // v2.91
   app.querySelectorAll("[data-sm-sort]").forEach(c => c.onclick = () => setSort(c.dataset.smSort));
   /* v2.72: the shop, exactly as Settings' data-opt-store; render() leaves shopMenuOpen true */
   const smPick = v => { if(storeSel !== v){ storeSel = v; localStorage.setItem("ml_store", v); locState = {checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(v === "auto") ensureLocCheck(); } render(); };
