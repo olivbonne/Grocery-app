@@ -225,3 +225,15 @@ the household asked for is not a lesson.*
     121, and set that as every tile's floor — so some rows were 122 and some 121 (v2.10's and v2.16's "one height" checks,
     caught by CI before release, v2.87). *Guard:* a floor or a fixed height is measured as `Math.ceil` of the true height
     (with the zoom's scale taken out), never `offsetHeight`; a new size in % or em runs the "one height per layout" suites.
+57. **The test database never answered; the real one answers every write.** In the + sheet each keystroke in a note saves the
+    item; on the phone Firestore echoes the write straight back, the remote redraw rebuilt the sheet under the field, the
+    keyboard dropped and the typed letter came back as a tag (fixed v2.88). Edit item saves only on Save, so it was fine there,
+    and every suite's stub swallowed writes without firing a listener, so no test could see it. *Guard:* a remote redraw never
+    rebuilds a sheet while one of its fields has focus — it waits for the field to be left (`renderKeepingAdd`); and the v2.88
+    suite types into the field against v2.58's fake database, which echoes every write as Firestore does. A suite of anything
+    that saves while typing uses the echoing stub.
+58. **"Grow when you need to" per tile makes neighbours differ.** v2.86 let a square tile grow only when it had a row of
+    badges, so on the phone tiles with a count were taller than plain ones beside them, and a plain tile whose words did not
+    fit let its note hang below it (fixed v2.88: every square tile takes the tallest tile's content height, or its width).
+    *Guard:* a size that adapts is decided once for the whole view (syncTileH measures; one CSS variable), and the v2.88 suite
+    checks every square tile is the same size with nothing outside it, at 3 and 4 across in every style.

@@ -2430,10 +2430,12 @@ html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .cupill { height:cal
 html body .shop .zoomer:is(.grid5,.grid6) { --tb:calc(18px * var(--cu-pk)); }
 /* v2.86: a place the rules rule out (Settings › Count and unit) */
 .seg button:disabled { opacity:.4; }
-/* rule 6 for square: as tall as wide, or taller when its rows of badges need it (an aspect-ratio box with min-height:auto
-   grows to its content); the row stretches, so a row stays even */
-html[data-tilelines="sq"] body .shop .zoomer.gridmode :is(.pills, .tileprobe) > .pill.pill:is(:has(> .cu-t), :has(> .cu-b)),
-html[data-tilelines="sq"][data-cu-tb] body .shop .zoomer.gridmode .pills > .pill.pill, html[data-tilelines="sq"][data-cu-bb] body .shop .zoomer.gridmode .pills > .pill.pill { min-height:auto; overflow:visible; align-self:stretch; }
+/* v2.88: Square — every tile the same size: as tall as wide, or as tall as the tallest tile's content when that is more
+   (syncTileH measures it into --tileh-sq). An aspect-ratio box takes its min-height when that is larger. */
+html[data-tilelines="sq"] body .shop .zoomer:not(.linelist):not(.largevar) .pills > .pill:is([data-pill], [data-reg-rm], [data-reg-add]), html[data-tilelines="sq"] body .shop .zoomer:not(.linelist):not(.largevar) .pills.addgrid > .pill { min-height:var(--tileh-sq, 0px); }
+html[data-tilelines="sq"] body .checkedbar.shop .zoomer:not(.linelist):not(.largevar) .pills > .pill[data-pill] { min-height:var(--tileh-cart-sq, var(--tileh-sq, 0px)); }
+/* v2.88: Square has no line budget — a note gets two lines, as on the column tiles */
+html[data-tilelines="sq"] body .shop .zoomer:not(.linelist):not(.largevar) .pill.hasnote .pnote { -webkit-line-clamp:2; }
 /* an edge pill never passes the margin: on a narrow tile a long "2 × 1 bunch" ends in "…" (Edit item shows it whole) */
 html body .shop .zoomer.gridmode .pill.pill.pill > .cupill:is(.cu-p-top,.cu-p-bottom) { max-width:calc(100% - 2 * var(--tm)); overflow:hidden; text-overflow:ellipsis; display:block; line-height:calc(20px * var(--cu-pk)); text-align:center; }
 html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .cupill:is(.cu-p-top,.cu-p-bottom) { line-height:calc(16px * var(--cu-pk)); }

@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.87";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.87";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.87";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.87";
-import { compareStores, worthIt } from "./compare.js?v=2.87";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.87";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.87";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.87";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.87";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.87";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.87";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.87";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.87";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.87";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.88";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.88";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.88";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.88";
+import { compareStores, worthIt } from "./compare.js?v=2.88";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.88";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.88";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.88";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.88";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.88";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.88";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.88";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.88";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.88";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.87";
+const APP_VERSION = "v2.88";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -3794,6 +3794,13 @@ function refreshAddBody(){ const sb=document.getElementById("addSheetBody"); if(
    and the Firestore snapshot that echoes our own write back. The second one is why this reproduced
    on a real phone but never in the headless tests, where Firebase is stubbed out. */
 function renderKeepingAdd(){
+  /* v2.88 (the household: "after one letter in the note the keyboard disappears and the letter becomes a tag"): a change from
+     the database — another phone's, or this phone's own write echoed back — never rebuilds a sheet under a field being typed
+     in. The redraw waits until the field is left. */
+  const a=document.activeElement;
+  if(applyingRemote && a && a.matches && a.matches("input, textarea") && a.closest("#addSheetBody, #sheet")){
+    if(!a._redrawDue){ a._redrawDue=true; a.addEventListener("blur", ()=>{ a._redrawDue=false; setTimeout(renderKeepingAdd, 0); }, { once:true }); }
+    return; }
   if(addOpen && document.getElementById("addSheet")){ refreshAddBody(); return; }
   render();
 }
@@ -4524,6 +4531,9 @@ function syncTileH(){ try{
     }
     const hs=keys.map(k=>nat.get(k)).sort((a,b)=>a-b), base=hs[Math.floor(0.9*(hs.length-1))]||0;
     if(base>0 && h.style.getPropertyValue(v)!==base+"px") h.style.setProperty(v, base+"px");
+    /* v2.88: Square — every tile the tallest tile's height (or as wide, whichever is more; CSS takes the larger) */
+    if(tileLines()==="sq"){ const top=hs[hs.length-1]||0; if(top>0 && h.style.getPropertyValue(v+"-sq")!==top+"px") h.style.setProperty(v+"-sq", top+"px"); }
+    else if(h.style.getPropertyValue(v+"-sq")) h.style.removeProperty(v+"-sq");
     /* v2.78: a fixed number of lines — ONE probe tile, a copy of a real tile of this layout (its icon and marks kept),
        its note and amount taken out and its name N lines of "Ag", unclamped. Measured once per layout signature
        (tileLines() is in it); the main list and the cart each get their own. */
@@ -4980,7 +4990,7 @@ function regPill(entry, cat, it){
        CSS so that one rule owns all four sides of the border — see .pill.reg-in / .pill.reg-out. */
     const style = full ? fullStyle(cat.color, true)
       : (fillMode()==="empty" ? "" : `border-left:4px solid ${catEdge(cat.color, true)}`);
-    return `<button class="pill reg-in" data-reg-rm="${it.id}" data-regk="${esc(entry.name)}|${esc(entry.cat)}"${nAttr} style="${style}">${emS}${name}${metaS}${noteS}</button>`;
+    return `<button class="pill reg-in${noteS?" hasnote":""}" data-reg-rm="${it.id}" data-regk="${esc(entry.name)}|${esc(entry.cat)}"${nAttr} style="${style}">${emS}${name}${metaS}${noteS}</button>`;
   }
   /* v1.57 item 1: the unselected regular used to hard-code its own border, background and text
      inline. The Empty-mode rule repaints border-left-color with !important, which beat the inline
@@ -4989,7 +4999,7 @@ function regPill(entry, cat, it){
   const outStyle = fillMode()==="full" ? fullStyle(cat.color, false)
     : fillMode()==="empty" ? ""
     : `border-left:4px solid ${catEdge(cat.color, false)}`;
-  return `<button class="pill reg-out" data-reg-add="${esc(entry.name)}|${cat.id}" data-regk="${esc(entry.name)}|${esc(entry.cat)}"${nAttr} style="${outStyle}">${emS}${name}${metaS}${noteS}</button>`;
+  return `<button class="pill reg-out${noteS?" hasnote":""}" data-reg-add="${esc(entry.name)}|${cat.id}" data-regk="${esc(entry.name)}|${esc(entry.cat)}"${nAttr} style="${outStyle}">${emS}${name}${metaS}${noteS}</button>`;
 }
 /* v2.56 item 5: Regulars a person has dragged into order carry a numeric `pos` and come first, in that order; the rest
    stay A–Z after them — so nothing moves until someone reorders a category. */
