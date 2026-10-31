@@ -237,3 +237,9 @@ the household asked for is not a lesson.*
     fit let its note hang below it (fixed v2.88: every square tile takes the tallest tile's content height, or its width).
     *Guard:* a size that adapts is decided once for the whole view (syncTileH measures; one CSS variable), and the v2.88 suite
     checks every square tile is the same size with nothing outside it, at 3 and 4 across in every style.
+59. **A cap that hides what spills is a cut you cannot see.** v2.87 kept the urgent/on-sale marks to half their badge row with
+    `overflow:hidden`, sized for 3 across; at 4 across ★ + the tag was 32 px in a 31 px half, and the tag lost its edge — even
+    on tiles where nothing else used that row (the household's screenshot, fixed v2.89). It is lesson 55 again, for the marks:
+    the v2.87 "nothing is cut" check covered amounts, not the marks. *Guard:* the marks are capped only when something shares
+    their row, and then shrink and wrap rather than clip; the v2.89 suite checks every mark's box (`scrollWidth`/`scrollHeight`)
+    at 3–6 across in each style. A new badge or mark joins that check the day it is added.
