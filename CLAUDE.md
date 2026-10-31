@@ -110,7 +110,7 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
 - **Normalisers that rebuild an object from a fixed shape drop unknown fields.** `writePlan` and
   `planIngNorm` both did, silently (v1.94 amounts, v1.97 saved plans). Adding a field means adding it
   there too. Items are copied field by field as well: a ticked item becomes a Regular in `moveToBuyAgain` (via `sweep`
-  and `removeEditing`), and a Regular comes back in `addFromRegular` and `restore` — v2.22's `note` and `where` are
+  and `removeEditing`), and a Regular comes back in `addFromRegular` and `restore` (and duplicates merge in `mergeCluster`, v2.90) — v2.22's `note` and `where` are
   named in each. The list document itself is one: `subscribe()` rebuilds `state` field by field, so a new
   top-level field (v2.09 `prices`, v2.16 `aisle`, v2.20 `memb`, v2.23 `templates`, v2.24 `spend`, v2.26 `looks`, v2.27 `aislemap`) must be named there, in the two default
   `state` literals, in `listDoc()` (the v2.15 backups) and in `restoreList()`. Presence is the exception: v2.23 `shopping`

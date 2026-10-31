@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.89";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.89";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.89";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.89";
-import { compareStores, worthIt } from "./compare.js?v=2.89";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.89";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.89";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.89";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.89";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.89";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.89";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.89";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.89";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.89";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.90";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.90";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.90";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.90";
+import { compareStores, worthIt } from "./compare.js?v=2.90";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.90";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.90";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.90";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.90";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.90";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.90";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.90";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.90";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.90";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.89";
+const APP_VERSION = "v2.90";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -85,7 +85,7 @@ function showAmt(w){
 /* A first launch reloads once on its own (the v1.63 slot migration) before sign-in, so the answer is kept for the session. */
 var _prefsFresh = (()=>{ try{ if(sessionStorage.getItem("ml_prefsfresh") === "1") return true;
   const f = !localStorage.getItem("ml_theme") && !localStorage.getItem("ml_appmig163"); if(f) sessionStorage.setItem("ml_prefsfresh", "1"); return f; }catch(e){ return false; } })();
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_notesg$|ml_jk_)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_notesg$|ml_regnow$|ml_jk_)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -1427,7 +1427,8 @@ function _subsetMerge(a,b){ const sa=new Set(a), sb=new Set(b);
 function mergeClusters(){
   const byCat={};
   for(const it of state.items){ if(it.checked) continue; const tok=mergeTokens(it.name); if(!tok.length) continue;
-    (byCat[it.cat]||(byCat[it.cat]=[])).push({it, tok}); }
+    const g=it.cat+"\u0000"+noteKey(it.note);   // v2.90: items with different notes are meant to be separate — never offered for merging
+    (byCat[g]||(byCat[g]=[])).push({it, tok}); }
   const out=[];
   for(const cat in byCat){ const arr=byCat[cat], n=arr.length; if(n<2) continue;
     const parent=arr.map((_,i)=>i);
@@ -1440,7 +1441,8 @@ function mergeClusters(){
       const sig=its.map(i=>i.name.toLowerCase()).sort().join("|");
       if(mergeX[sig]) continue;
       const canon=members.slice().sort((a,b)=> a.tok.length-b.tok.length || a.it.name.length-b.it.name.length)[0].it;
-      out.push({ sig, cat, canon:canon.name, items:its });
+      const nk=noteKey(its[0].note);   // v2.90: a cluster shares one note; a plain cluster keeps its pre-v2.90 sig (stored "Keep separate" stays valid)
+      out.push({ sig: nk ? sig+"#"+nk : sig, cat: its[0].cat, canon:canon.name, items:its });
     }
   }
   return out;
@@ -1448,11 +1450,13 @@ function mergeClusters(){
 function mergeCluster(sig){
   const cl=mergeClusters().find(c=>c.sig===sig); if(!cl) return;
   const prev=snapState();
-  let qty=0, weight="", sub="";
-  for(const it of cl.items){ qty += (it.qty||1); if(!weight && it.weight) weight=it.weight; if(!sub && it.sub) sub=it.sub; }
+  let qty=0, weight="", sub="", note="", where="", tags=[];
+  /* v2.90: the merged item keeps the note (a cluster shares one since v2.90), the shop and the flags — it used to drop all three */
+  for(const it of cl.items){ qty += (it.qty||1); if(!weight && it.weight) weight=it.weight; if(!sub && it.sub) sub=it.sub;
+    if(!note && it.note) note=it.note; if(!where && it.where) where=it.where; (Array.isArray(it.tags)?it.tags:[]).forEach(t=>{ if(!tags.includes(t)) tags.push(t); }); }
   const keepId=cl.items[0].id, ids=new Set(cl.items.map(i=>i.id));
   state.items = state.items.filter(i=>!ids.has(i.id));
-  state.items.push({ id:keepId, name:cap(cl.canon), qty:Math.min(999,qty||1), cat:cl.cat, weight, sub, checked:false, by:me });
+  state.items.push({ id:keepId, name:cap(cl.canon), qty:Math.min(999,qty||1), cat:cl.cat, weight, sub, note, where, tags, checked:false, by:me });
   markDirty(keepId); save(); render();
   showUndo(prev, tf("Merged into {x}", { x:cap(cl.canon) }));
 }
@@ -1493,6 +1497,7 @@ function cartCount(){ return Math.max(0, state.items.filter(i=>i.checked).length
    (Settings › Sound › Keep screen on, on unless switched off). The browser drops the lock whenever the app is
    hidden; it is asked for again when the app comes back. Refused or unsupported: nothing happens. */
 let _wl=null, _wlAsking=false;
+function regNowPref(){ try{ return localStorage.getItem("ml_regnow")!=="0"; }catch(e){ return true; } }   // v2.90 (the household): new items from + become Regulars at once (default on)
 function wakePref(){ try{ return localStorage.getItem("ml_wakelock")!=="0"; }catch(e){ return true; } }
 function wakeWanted(){ try{ return wakePref() && configured && !!me && !optOpen && view!=="plan" && cartCount()>0 && document.visibilityState==="visible"; }catch(e){ return false; } }
 function syncWakeLock(){ try{
@@ -3200,6 +3205,16 @@ function regularFrom(e, orig){ const nm=String(e.name||"").trim(); if(!nm) retur
   state.buyAgain = state.buyAgain.slice(0,BA_CAP);
   if(!old) histLog("regadd", nm);
   return true; }
+/* v2.90 (the household): another item of the same name, with its own note — Save first (the same path), then a fresh one */
+function anotherItem(src){ const nid=uid();
+  const ni={ id:nid, name:src.name, qty:1, cat:src.cat, sub:src.sub||"", weight:"", note:"", tags:[], where:src.where||"", checked:false, by:me };
+  state.items.push(ni); markDirty(nid); histLog("add", ni.name); return ni; }
+function editAnother(){ if(!editing || editing.kind!=="item") return;
+  const src={ name:(editing.name||"").trim(), cat:editing.cat, sub:editing.sub, where:editing.where };
+  saveEverywhere(); if(editing) return;   // Save refused (no name) — stay
+  const ni=anotherItem(src); save();
+  editing={ kind:"item", ...ni }; render();
+  const n=document.getElementById("editNote"); if(n) n.focus(); }
 function saveEverywhere(){ if(!editing) return;
   if(editing.kind==="item"){ if(!(editing.name||"").trim()) return;
     const it=state.items.find(i=>i.id===editing.id); const orig = it ? { name:it.name, cat:it.cat, note:it.note||"" } : null;   // before applyEdit changes it
@@ -3713,7 +3728,12 @@ function addFrag(){ const v=draftMain||""; const i=Math.max(v.lastIndexOf(","), 
 function addMatches(f){
   const onList=(name,cat)=> state.items.find(i=>!i.checked && i.name.toLowerCase()===String(name).toLowerCase() && (cat==null||i.cat===cat));
   const out=[], seen=new Set();
-  const push=(m)=>{ const k=baKey(m); if(seen.has(k)) return; seen.add(k); out.push(m); };   // v2.68: a Regular's note is part of its key
+  const onSeen=new Set();
+  /* v2.68: a Regular's note is part of its key. v2.90 (the household: "Tofu appears twice"): a result on the list shows that
+     item's note, and one list item gives one tile however many sources (a Regular, the dictionary, a prediction) match it */
+  const push=(m)=>{ if(m.onId){ if(onSeen.has(m.onId)) return; onSeen.add(m.onId);
+      const it=state.items.find(i=>i.id===m.onId); if(it && !m.note) m.note=it.note||""; }
+    const k=baKey(m); if(seen.has(k)) return; seen.add(k); out.push(m); };
   predictDue().filter(d=>!f || d.name.toLowerCase().includes(f)).forEach(d=>{ const it=onList(d.name,d.cat);
     push({name:d.name, cat:d.cat, qty:it?(it.qty||1):(d.qty||1), weight:it?(it.weight||""):"", onId:it&&it.id, predKey:it?null:d.key}); });
   state.buyAgain.filter(e=>!f || e.name.toLowerCase().includes(f)).forEach(e=>{ const it=state.items.find(i=>itemIsReg(i,e.name,e.cat,e.note));   // v2.68: and the same note
@@ -3726,7 +3746,7 @@ function addMatches(f){
 // v1.34 item 4: render a match as the app's literal shop pill, following Tile appearance
 // (Full/Empty) exactly like a real unchecked list item — no special "selected" override;
 // the picked item's persistence is shown via the Item Details panel, not the pill itself.
-function addPillHTML(m){
+function addPillHTML(m, firstOfName){
   const cat=CAT(m.cat)||{color:"var(--muted2)"};
   const on=!!m.onId;
   const full=fillMode()==='full';
@@ -3734,10 +3754,11 @@ function addPillHTML(m){
   const qcol = metaCol(cat.color, !!on, full); const qtxt = (full) ? qcol : readableOn(qcol, tileGroundHex(!!on));
   const meta=[(m.qty>1?m.qty+"×":""), m.weight].filter(Boolean).join(" ");
   const cuA = cuParts(m.qty, m.weight, cat.color, meta?`<span class="qty" style="color:${qtxt}">${esc(meta)}</span>`:"", false);   // v2.85
-  const metaS = cuA ? cuA.h + (cuA.nu?`<span class="pnote cu-only"><span class="cu-nu">${esc(cuA.nu)}</span></span>`:"") : meta?`<span class="pill-meta"><span class="qty" style="color:${qtxt}">${esc(meta)}</span></span>`:"";
+  const metaS = cuA ? cuA.h + cuNote(m.note||"", cuA.nu) : (meta?`<span class="pill-meta"><span class="qty" style="color:${qtxt}">${esc(meta)}</span></span>`:"") + (m.note?`<span class="pnote">${esc(m.note)}</span>`:"");   // v2.90: the note too, so two Tofus read apart
   const em=itemIcon(m.name,m.cat); const emS=em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
   const attr = on ? `data-add-inc="${m.onId}"` : (m.predKey?`data-add-pred="${esc(m.predKey)}"` : m.ba?`data-add-ba="${esc(m.name)}|${m.cat}" data-reg-note="${esc(m.note||"")}"` : `data-add-dict="${esc(m.name)}|${m.cat}"`);
-  return `<button class="pill" ${attr} style="${style}">${emS}${esc(cap(m.name))}${metaS}</button>`;
+  const another = (on && firstOfName!==false) ? `<button class="pill addanother" data-add-another="${m.onId}" style="border:1.5px dashed var(--accent);color:var(--accent);background:transparent">+ ${esc(t("another"))} ${esc(cap(m.name))}</button>` : "";   // v2.90
+  return `<button class="pill${m.note?' hasnote':''}" ${attr} style="${style}">${emS}<span class="pname">${esc(cap(m.name))}</span>${metaS}</button>${another}`;
 }
 // v1.34 item 4: nothing typed → nothing shown (no browsing). Typing shows matches as a
 // single horizontally-scrolling row of the app's literal item pills — same look as the real
@@ -3766,7 +3787,7 @@ function addSheetRows(){
      returned everything — fine when the results were one clipped row, but they wrap now and the
      panel would have to scroll through hundreds of them to reach the search bar. */
   const ms=addMatches(f).slice(0, 36);
-  const cells = typed + ms.map(addPillHTML).join("");
+  const cells = typed + ms.map((m,i)=>addPillHTML(m, ms.findIndex(x=>x.onId && x.name.toLowerCase()===m.name.toLowerCase())===i)).join("");   // v2.90: one "+ another" per name
   /* v1.43 item 4: `largeCols()>1`, not `>0` — large·1 is now the list layout, and emitting
      `gridmode grid1` here turned the single horizontally-scrolling result strip into a one-column
      grid. The list look wants the base shop-pill sizing, exactly as the old "list" mode did. */
@@ -3922,6 +3943,14 @@ function wireAddRows(){
     press(b, go, ()=>{ playPlan(true); stageAdds(()=>addEntries(name,cat)); const it=findItem(name,cat); return it&&it.id; }); });
   document.querySelectorAll("[data-add-inc]").forEach(b=>{ const id=b.dataset.addInc;
     press(b, ()=>openAddEdit(id), ()=>id); });   // v1.32 on-list result: tap opens its details, long-press full edit
+  /* v2.90: "+ another <name>" — a new item of the same name (addEntries would fold it into the plain one), its note field focused */
+  document.querySelectorAll("[data-add-another]").forEach(b=>{ const id=b.dataset.addAnother;
+    let nid=null;
+    const mk=()=>{ const src=state.items.find(i=>i.id===id); if(!src) return null; playPlan(true); stageAdds(()=>{ nid=anotherItem(src).id; save(); renderKeepingAdd(); }); return nid; };
+    const go=()=>{ const n=mk(); if(!n) return; openAddEdit(n);
+      /* press() puts focus back on the search bar after a tap — move it to the new item's note just after (same gesture, the keyboard stays up) */
+      queueMicrotask(()=>{ const f=document.querySelector(`[data-ae-note="${n}"]`); if(f) f.focus(); }); };
+    press(b, go, ()=>mk()); });
   document.querySelectorAll("[data-add-pred]").forEach(b=>{ const k=b.dataset.addPred;
     const go=()=>{ stageAdds(()=>predictAdd(k)); const rec=purch[k]; const it=rec&&findItem(rec.name,rec.cat); if(it) openAddEdit(it.id); };
     press(b, go, ()=>{ const rec=purch[k]; if(!rec) return null; stageAdds(()=>predictAdd(k)); const it=findItem(rec.name,rec.cat); return it&&it.id; }); });
@@ -4115,7 +4144,9 @@ function wireAddSheetDrag(){
    closeAddSheet() is Cancel and takes it back off. Everything else about the teardown is shared. */
 function commitAddSheet(){
   /* v2.37 (the household's item 4): opened from a Regulars "+" tile, what was added is kept as a Regular too */
-  if(addFromCat){ const kept=state.items.filter(i=>addStaged.includes(i.id));
+  /* v2.90 (the household: "save an item in Regulars without going to the shop first"): with Settings › Shopping › New items
+     in Regulars on (the default), what the + sheet added is a Regular at once, not only after a shop */
+  if(addFromCat || regNowPref()){ const kept=state.items.filter(i=>addStaged.includes(i.id));
     if(kept.length){ moveToBuyAgain(kept.map(i=>({ name:i.name, cat:i.cat, qty:i.qty, weight:i.weight, sub:i.sub, note:i.note, where:i.where }))); kept.forEach(i=>histLog("regadd", i.name)); save(); } }
   addStaged=[]; addFromCat=null; endAddSheet(); }
 function closeAddSheet(){
@@ -7420,6 +7451,7 @@ function wireOptions(){
   const ozm=app.querySelector("#optZoomMinus"); if(ozm) ozm.onclick=()=>setDensity(dens()-0.1);
   const ozp=app.querySelector("#optZoomPlus"); if(ozp) ozp.onclick=()=>setDensity(dens()+0.1);
   app.querySelectorAll("[data-opt-sound]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optSound==="1"; if(soundOn!==want) toggleSound(); });
+  app.querySelectorAll("[data-opt-regnow]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_regnow", b.dataset.optRegnow); }catch(e){} render(); });   // v2.90
   app.querySelectorAll("[data-opt-wake]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_wakelock", b.dataset.optWake); }catch(e){} render(); });   // v2.16
   app.querySelectorAll("[data-memb-on]").forEach(b=>b.onclick=()=>{ const [k,v]=b.dataset.membOn.split("|"); const m=memb(); m[k].on=(v==="1"); membSave(m); });   // v2.20 the 10% shop
   app.querySelectorAll("[data-opt-sayshop]").forEach(b=>b.onclick=()=>{ const on=b.dataset.optSayshop==="1"; try{ localStorage.setItem("ml_sayshop", on?"1":"0"); }catch(e){}
@@ -8012,7 +8044,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_notesg$|ml_jk_)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_notesg$|ml_regnow$|ml_jk_)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -8456,6 +8488,8 @@ function optionsBody(){
     ${row(t("First-time questions"), `<button class="storechip" id="optOnbReset">${t("Ask again")}</button>`)}<div class="opthint">${t("Your shops, pinning a shop, the aisle map and the how-it-works tip each ask once. This brings back any you answered with Skip or Never.")}</div>
     ${row(t("Keep screen on"), `<div class="seg"><button data-opt-wake="1" class="${wakePref()?'on':''}">${t("On")}</button><button data-opt-wake="0" class="${!wakePref()?'on':''}">${t("Off")}</button></div>`)}
     <div class="opthint">${t("While the cart has something in it, so the phone does not dim and lock mid-aisle.")}</div>
+    ${row(t("New items in Regulars"), `<div class="seg"><button data-opt-regnow="1" class="${regNowPref()?'on':''}">${t("On")}</button><button data-opt-regnow="0" class="${!regNowPref()?'on':''}">${t("Off")}</button></div>`)}
+    <div class="opthint">${t("What you add with + is kept in Regulars straight away, not only after a shop.")}</div>
     ${(view!=="lists") ? `${sect("Smart features")}${/* v2.30: Smart add, restock suggestions, receipts and prices, memberships — the AI-assisted things, in one place */""}${row(t("Smart add"), `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">${t("On")}</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">${t("Off")}</button></div>`)}<div class="opthint">${t("The ✨ button in the add bar. Type or paste a whole list or a recipe — “2 kg chicken, milk and eggs for pancakes” — and it becomes separate items with amounts and categories. What you type is sent to the AI reader; nothing else. Recipes on the Plan page have their own reader and work either way.")}</div>${row(t("Siri & Shortcuts"), `<button class="storechip" id="optSiri">${t("Set up Siri")}</button>`)}<div class="opthint">${t("Add to any of your lists by voice from anywhere, with an iPhone Shortcut. On Android, share any text to Market List.")}</div>` : ""}
     ${(view!=="lists") ? `<div class="optsub">${t("Restock suggestions")}</div>${rowNL(t("Suggest restocks"), `<div class="seg"><button data-pred-on="1" class="${predictCfg.on?'on':''}">${t("On")}</button><button data-pred-on="0" class="${!predictCfg.on?'on':''}">${t("Off")}</button></div>`)}
     ${predictCfg.on ? `${rowNL(t("Remind me"), `<div class="seg"><button data-pred-freq="weekly" class="${predictCfg.freq==='weekly'?'on':''}">${t("Weekly")}</button><button data-pred-freq="monthly" class="${predictCfg.freq==='monthly'?'on':''}">${t("Monthly")}</button></div>`)}
@@ -8712,6 +8746,7 @@ function editSheet(){
     ${(isItem || editing.kind==="ba") ? `<div class="edchips edflags" style="flex-wrap:nowrap">${[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If on sale")}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}
     <div style="display:flex;gap:8px;margin-top:16px">
       <button id="delBtn" style="${btnDelStyle}">${TRASH_SVG(17)}${t("Delete")}</button>
+      ${isItem ? `<button class="ed-another" id="edAnother" style="${btnDelStyle.replace(/#C24A33/g,"var(--line)").replace("color:var(--line)","color:var(--ink)")}" aria-label="${esc(tf("Add another {name}", { name:cap(editing.name||"") }))}">+ ${t("Another")}</button>` : ""}
       <button id="saveBtn" style="${btnSaveStyle}">${t("Save")}</button>
     </div>
   </div></div>`;
@@ -8988,6 +9023,7 @@ function wireEditSheet(){
       const eas=app.querySelector("#esAddSub"); if(eas) eas.onclick=()=>{ if(!editing.cat){ showToast("Pick a category first"); return; } const nm=prompt(t("New subcategory name:"),""); if(nm&&nm.trim()){ const id=makeSub(editing.cat,nm); if(id){ editing.sub=id; render(); } } };
       const del=app.querySelector("#delBtn"); if(del) del.onclick=()=> editing.kind==="item" ? deleteItemEditing() : removeBAfromSheet();
       const sv=app.querySelector("#saveBtn"); if(sv) sv.onclick=()=> saveEverywhere();   // v2.65: one Save — the list and the Regulars
+      const ean=app.querySelector("#edAnother"); if(ean) ean.onclick=()=> editAnother();   // v2.90: Save, then a new item of the same name
     }
   }
 }
