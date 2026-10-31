@@ -44,6 +44,8 @@ export const FR = {
   "Add another shop": "Ajouter un autre magasin",
   "Add another {name}": "Ajouter un autre {name}",
   "Another": "Un autre",
+  "New items in Regulars": "Nouveaux articles dans les habituels",
+  "What you add with + is kept in Regulars straight away, not only after a shop.": "Ce que vous ajoutez avec + est gardé dans les habituels tout de suite, pas seulement après les courses.",
   "another": "un autre",
   "Location is asked next, so the list knows which shop you're in.": "La localisation vous sera ensuite demandée, pour que la liste sache dans quel magasin vous êtes.",
   "Skip": "Passer",

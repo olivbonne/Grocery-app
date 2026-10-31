@@ -9,6 +9,7 @@
    - + sheet: typing "yogurt" shows "+ another Yogurt"; tapping it adds a separate Yogurt and opens its editor with the note
      field focused; typing "Vanilla" there (against v2.58's echoing fake database) keeps the field and saves the note;
    - (the household's screenshot) in the + sheet two Tofus on the list show their notes, one tile each, one "+ another";
+   - tofu added with + goes to Fresh / dairy; what + adds is a Regular at once (and not when the setting is off);
    - the duplicates banner does not offer to merge Yogurt (Blueberrie) and Yogurt (Mango); two Milk "Soy" ARE offered, and
      the merge keeps the note, the shop and the flags (it used to drop them).
 
@@ -120,8 +121,25 @@ const seed = (o) => { o=o||{}; return `(() => {
     if(offered){ await go.click(); await page.waitForTimeout(600); }
     const mm = await page.evaluate(()=>{ const c=JSON.parse(localStorage.getItem('ml_cache_v101')||'{}'); return (c.items||[]).filter(i=>/milk/i.test(i.name)).map(i=>({ qty:i.qty, note:i.note, where:i.where, tags:i.tags })); });
     ok('two Milk "Soy" are offered for merging, and the merge keeps the note, the shop and the flag (qty 3)', offered===1 && mm.length===1 && mm[0].note==='Soy' && mm[0].where==='cdan' && (mm[0].tags||[]).includes('urgent') && mm[0].qty===3, JSON.stringify({ offered, mm }));
+    /* (the household's follow-ups) tofu goes on the dairy shelf; what + adds is a Regular at once (Settings › New items in
+       Regulars, on by default) — and not when that is switched off */
+    const E = DOC({ items:[ it2("21","Bread","bakery") ] });
+    const addViaEnter = async(word)=>{ await page.locator('#shopAddFab').click(); await page.waitForTimeout(600);
+      await page.locator('#mainInput').fill(word); await page.locator('#mainInput').dispatchEvent('input'); await page.waitForTimeout(300);
+      await page.locator('#mainInput').press('Enter'); await page.waitForTimeout(700); };
+    const regs = ()=>page.evaluate(()=>{ const c=JSON.parse(localStorage.getItem('ml_cache_v101')||'{}'); return { items:(c.items||[]).map(i=>i.name.toLowerCase()+':'+i.cat), regs:(c.buyAgain||[]).map(r=>r.name.toLowerCase()) }; });
+    await mk({ srv:{ "lists/v101": E }, cache:E, extra:BASE });
+    await addViaEnter('tofu');
+    const r1 = await regs();
+    ok('tofu added with + lands in Fresh / dairy (not Asian), and is a Regular at once', r1.items.includes('tofu:fresh') && r1.regs.includes('tofu'), JSON.stringify(r1));
+    await mk({ srv:{ "lists/v101": E }, cache:E, extra:BASE+'localStorage.setItem("ml_regnow","0");' });
+    await addViaEnter('dates');
+    const r2 = await regs();
+    ok('…with "New items in Regulars" off, an added item waits for the shop as before', r2.items.some(x=>/^dates:/.test(x)) && !r2.regs.includes('dates'), JSON.stringify(r2));
+    const src0 = fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8');
+    ok('ml_regnow is in both APP_EXCLUDE_BOOT and APP_EXCLUDE', ['APP_EXCLUDE_BOOT','APP_EXCLUDE'].every(n=>{ const m=src0.match(new RegExp('const '+n+' = (/.*/);')); return m && m[1].includes('ml_regnow'); }));
     const fr = fs.readFileSync(path.join(ROOT,'js','i18n.js'),'utf8');
-    ok('the new words have their French', ['Another','another'].every(k=>fr.includes(`"${k}"`)));
+    ok('the new words have their French', ['Another','another','New items in Regulars'].every(k=>fr.includes(`"${k}"`)));
     if(out) await page.screenshot({ path:out });
   } catch(e){ ok('suite ran to the end', false, (e.stack||e.message).slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));
