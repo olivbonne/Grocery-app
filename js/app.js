@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.89";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.89";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.89";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.89";
-import { compareStores, worthIt } from "./compare.js?v=2.89";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.89";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.89";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.89";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.89";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.89";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.89";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.89";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.89";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.89";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.90";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.90";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.90";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.90";
+import { compareStores, worthIt } from "./compare.js?v=2.90";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.90";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.90";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.90";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.90";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.90";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.90";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.90";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.90";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.90";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.89";
+const APP_VERSION = "v2.90";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -1427,7 +1427,8 @@ function _subsetMerge(a,b){ const sa=new Set(a), sb=new Set(b);
 function mergeClusters(){
   const byCat={};
   for(const it of state.items){ if(it.checked) continue; const tok=mergeTokens(it.name); if(!tok.length) continue;
-    (byCat[it.cat]||(byCat[it.cat]=[])).push({it, tok}); }
+    const g=it.cat+"\u0000"+noteKey(it.note);   // v2.90: items with different notes are meant to be separate — never offered for merging
+    (byCat[g]||(byCat[g]=[])).push({it, tok}); }
   const out=[];
   for(const cat in byCat){ const arr=byCat[cat], n=arr.length; if(n<2) continue;
     const parent=arr.map((_,i)=>i);
@@ -1440,7 +1441,8 @@ function mergeClusters(){
       const sig=its.map(i=>i.name.toLowerCase()).sort().join("|");
       if(mergeX[sig]) continue;
       const canon=members.slice().sort((a,b)=> a.tok.length-b.tok.length || a.it.name.length-b.it.name.length)[0].it;
-      out.push({ sig, cat, canon:canon.name, items:its });
+      const nk=noteKey(its[0].note);   // v2.90: a cluster shares one note; a plain cluster keeps its pre-v2.90 sig (stored "Keep separate" stays valid)
+      out.push({ sig: nk ? sig+"#"+nk : sig, cat: its[0].cat, canon:canon.name, items:its });
     }
   }
   return out;
@@ -1448,11 +1450,13 @@ function mergeClusters(){
 function mergeCluster(sig){
   const cl=mergeClusters().find(c=>c.sig===sig); if(!cl) return;
   const prev=snapState();
-  let qty=0, weight="", sub="";
-  for(const it of cl.items){ qty += (it.qty||1); if(!weight && it.weight) weight=it.weight; if(!sub && it.sub) sub=it.sub; }
+  let qty=0, weight="", sub="", note="", where="", tags=[];
+  /* v2.90: the merged item keeps the note (a cluster shares one since v2.90), the shop and the flags — it used to drop all three */
+  for(const it of cl.items){ qty += (it.qty||1); if(!weight && it.weight) weight=it.weight; if(!sub && it.sub) sub=it.sub;
+    if(!note && it.note) note=it.note; if(!where && it.where) where=it.where; (Array.isArray(it.tags)?it.tags:[]).forEach(t=>{ if(!tags.includes(t)) tags.push(t); }); }
   const keepId=cl.items[0].id, ids=new Set(cl.items.map(i=>i.id));
   state.items = state.items.filter(i=>!ids.has(i.id));
-  state.items.push({ id:keepId, name:cap(cl.canon), qty:Math.min(999,qty||1), cat:cl.cat, weight, sub, checked:false, by:me });
+  state.items.push({ id:keepId, name:cap(cl.canon), qty:Math.min(999,qty||1), cat:cl.cat, weight, sub, note, where, tags, checked:false, by:me });
   markDirty(keepId); save(); render();
   showUndo(prev, tf("Merged into {x}", { x:cap(cl.canon) }));
 }
@@ -3200,6 +3204,16 @@ function regularFrom(e, orig){ const nm=String(e.name||"").trim(); if(!nm) retur
   state.buyAgain = state.buyAgain.slice(0,BA_CAP);
   if(!old) histLog("regadd", nm);
   return true; }
+/* v2.90 (the household): another item of the same name, with its own note — Save first (the same path), then a fresh one */
+function anotherItem(src){ const nid=uid();
+  const ni={ id:nid, name:src.name, qty:1, cat:src.cat, sub:src.sub||"", weight:"", note:"", tags:[], where:src.where||"", checked:false, by:me };
+  state.items.push(ni); markDirty(nid); histLog("add", ni.name); return ni; }
+function editAnother(){ if(!editing || editing.kind!=="item") return;
+  const src={ name:(editing.name||"").trim(), cat:editing.cat, sub:editing.sub, where:editing.where };
+  saveEverywhere(); if(editing) return;   // Save refused (no name) — stay
+  const ni=anotherItem(src); save();
+  editing={ kind:"item", ...ni }; render();
+  const n=document.getElementById("editNote"); if(n) n.focus(); }
 function saveEverywhere(){ if(!editing) return;
   if(editing.kind==="item"){ if(!(editing.name||"").trim()) return;
     const it=state.items.find(i=>i.id===editing.id); const orig = it ? { name:it.name, cat:it.cat, note:it.note||"" } : null;   // before applyEdit changes it
@@ -3737,7 +3751,8 @@ function addPillHTML(m){
   const metaS = cuA ? cuA.h + (cuA.nu?`<span class="pnote cu-only"><span class="cu-nu">${esc(cuA.nu)}</span></span>`:"") : meta?`<span class="pill-meta"><span class="qty" style="color:${qtxt}">${esc(meta)}</span></span>`:"";
   const em=itemIcon(m.name,m.cat); const emS=em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
   const attr = on ? `data-add-inc="${m.onId}"` : (m.predKey?`data-add-pred="${esc(m.predKey)}"` : m.ba?`data-add-ba="${esc(m.name)}|${m.cat}" data-reg-note="${esc(m.note||"")}"` : `data-add-dict="${esc(m.name)}|${m.cat}"`);
-  return `<button class="pill" ${attr} style="${style}">${emS}${esc(cap(m.name))}${metaS}</button>`;
+  const another = on ? `<button class="pill addanother" data-add-another="${m.onId}" style="border:1.5px dashed var(--accent);color:var(--accent);background:transparent">+ ${esc(t("another"))} ${esc(cap(m.name))}</button>` : "";   // v2.90
+  return `<button class="pill" ${attr} style="${style}">${emS}${esc(cap(m.name))}${metaS}</button>${another}`;
 }
 // v1.34 item 4: nothing typed → nothing shown (no browsing). Typing shows matches as a
 // single horizontally-scrolling row of the app's literal item pills — same look as the real
@@ -3922,6 +3937,14 @@ function wireAddRows(){
     press(b, go, ()=>{ playPlan(true); stageAdds(()=>addEntries(name,cat)); const it=findItem(name,cat); return it&&it.id; }); });
   document.querySelectorAll("[data-add-inc]").forEach(b=>{ const id=b.dataset.addInc;
     press(b, ()=>openAddEdit(id), ()=>id); });   // v1.32 on-list result: tap opens its details, long-press full edit
+  /* v2.90: "+ another <name>" — a new item of the same name (addEntries would fold it into the plain one), its note field focused */
+  document.querySelectorAll("[data-add-another]").forEach(b=>{ const id=b.dataset.addAnother;
+    let nid=null;
+    const mk=()=>{ const src=state.items.find(i=>i.id===id); if(!src) return null; playPlan(true); stageAdds(()=>{ nid=anotherItem(src).id; save(); renderKeepingAdd(); }); return nid; };
+    const go=()=>{ const n=mk(); if(!n) return; openAddEdit(n);
+      /* press() puts focus back on the search bar after a tap — move it to the new item's note just after (same gesture, the keyboard stays up) */
+      queueMicrotask(()=>{ const f=document.querySelector(`[data-ae-note="${n}"]`); if(f) f.focus(); }); };
+    press(b, go, ()=>mk()); });
   document.querySelectorAll("[data-add-pred]").forEach(b=>{ const k=b.dataset.addPred;
     const go=()=>{ stageAdds(()=>predictAdd(k)); const rec=purch[k]; const it=rec&&findItem(rec.name,rec.cat); if(it) openAddEdit(it.id); };
     press(b, go, ()=>{ const rec=purch[k]; if(!rec) return null; stageAdds(()=>predictAdd(k)); const it=findItem(rec.name,rec.cat); return it&&it.id; }); });
@@ -8712,6 +8735,7 @@ function editSheet(){
     ${(isItem || editing.kind==="ba") ? `<div class="edchips edflags" style="flex-wrap:nowrap">${[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If on sale")}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}
     <div style="display:flex;gap:8px;margin-top:16px">
       <button id="delBtn" style="${btnDelStyle}">${TRASH_SVG(17)}${t("Delete")}</button>
+      ${isItem ? `<button class="ed-another" id="edAnother" style="${btnDelStyle.replace(/#C24A33/g,"var(--line)").replace("color:var(--line)","color:var(--ink)")}" aria-label="${esc(tf("Add another {name}", { name:cap(editing.name||"") }))}">+ ${t("Another")}</button>` : ""}
       <button id="saveBtn" style="${btnSaveStyle}">${t("Save")}</button>
     </div>
   </div></div>`;
@@ -8988,6 +9012,7 @@ function wireEditSheet(){
       const eas=app.querySelector("#esAddSub"); if(eas) eas.onclick=()=>{ if(!editing.cat){ showToast("Pick a category first"); return; } const nm=prompt(t("New subcategory name:"),""); if(nm&&nm.trim()){ const id=makeSub(editing.cat,nm); if(id){ editing.sub=id; render(); } } };
       const del=app.querySelector("#delBtn"); if(del) del.onclick=()=> editing.kind==="item" ? deleteItemEditing() : removeBAfromSheet();
       const sv=app.querySelector("#saveBtn"); if(sv) sv.onclick=()=> saveEverywhere();   // v2.65: one Save — the list and the Regulars
+      const ean=app.querySelector("#edAnother"); if(ean) ean.onclick=()=> editAnother();   // v2.90: Save, then a new item of the same name
     }
   }
 }

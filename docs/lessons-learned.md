@@ -243,3 +243,9 @@ the household asked for is not a lesson.*
     the v2.87 "nothing is cut" check covered amounts, not the marks. *Guard:* the marks are capped only when something shares
     their row, and then shrink and wrap rather than clip; the v2.89 suite checks every mark's box (`scrollWidth`/`scrollHeight`)
     at 3–6 across in each style. A new badge or mark joins that check the day it is added.
+60. **A merge that rebuilds an item field by field drops what it does not name.** The duplicates banner grouped items by
+    name and category only, so two Yogurts with different notes were offered as one; and `mergeCluster` rebuilt the merged
+    item without `note`, `where` or `tags`, so merging lost them (seen in a screenshot of v2.89, fixed v2.90). It is the
+    "normalisers drop unknown fields" rule from CLAUDE.md, in a place that rule did not list. *Guard:* duplicates are grouped by
+    name, category and note; the merged item names note, shop and flags; the v2.90 suite merges two identical items and checks
+    all three survive. CLAUDE.md's list of field-by-field copies now includes `mergeCluster`.
