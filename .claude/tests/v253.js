@@ -73,7 +73,9 @@ const req = (tok, ac) => ({ method:'POST', headers: Object.assign({ 'x-forwarded
        /* SUPERSEDED by v2.54: the rule no longer uses Set.toList() (refused every count in production). Still protects: one key
           changed, an int, exactly one more than before. */
        && /ks\.size\(\) == 1 && \(up\(ks, 'receipt'\)/.test(q) && /function up\(ks, k\) \{ return ks\.hasOnly\(\[k\]\) && request\.resource\.data\[k\] is int && request\.resource\.data\[k\] == was\(k\) \+ 1; \}/.test(q) && !/toList\(\)/.test(q) && /allow delete: if false;/.test(q)
-       && /hasOnly\(\['receipt', 'card', 'aisle', 'parse', 'recipe', 'recipeSearch', 'feedback'\]\)/.test(q), '');
+       /* SUPERSEDED by v2.94: the fridge photo's count joined the keys ('fridge', after 'aisle'). Still protects: only the known
+          counters, nothing else. */
+       && /hasOnly\(\['receipt', 'card', 'aisle', 'fridge', 'parse', 'recipe', 'recipeSearch', 'feedback'\]\)/.test(q), '');
     ok('every field name the server writes is one the rules accept', Object.values({ receipt:1 }) && ['receipt', 'card', 'aisle', 'parse', 'recipe', 'recipeSearch', 'feedback'].every(k => q.includes(`'${k}'`)), '');
     ok('the privacy page and the rules doc say what is counted', /Daily limits/.test(fs.readFileSync(path.join(ROOT, 'privacy.html'), 'utf8')) && /quota\/\{uid\}\/days\/\{day\}/.test(fs.readFileSync(path.join(ROOT, 'docs', 'firestore-rules.md'), 'utf8')), '');
   } catch (e) { console.log = realLog; ok('suite ran to the end', false, e.stack.slice(0, 300)); }
