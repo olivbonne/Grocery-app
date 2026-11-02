@@ -134,10 +134,11 @@ const COLES_ON = { coles:{ on:true, pct:10, cap:50, day:1, used:{} } };
        sh && sh.rows.find(r=>/^Rice/.test(r.t)).on && sh.rows.find(r=>/^Toilet paper/.test(r.t)).on && !sh.rows.find(r=>/^Chicken thigh/.test(r.t)).on
        && /keeps if frozen/.test(sh.rows.find(r=>/^Chicken thigh/.test(r.t)).t) && sh.rows.find(r=>/^Shampoo/.test(r.t)).dis && /no price yet/.test(sh.rows.find(r=>/^Shampoo/.test(r.t)).t), JSON.stringify(sh&&sh.rows));
     ok('…and the total says what it saves', sh && /2 ticked · \$32\.00 · saves \$3\.20/.test(sh.sum), sh&&sh.sum);
-    await page.locator('.tenrow').filter({ has: page.locator('.tr-n', { hasText:/^Rice[^a-z]/i }) }).locator('input').click(); await page.waitForTimeout(300);
+    /* SUPERSEDED by v2.92: the row's second line now starts "usually 1 every 14 days" (was "2× · every 14 days"), so the name match allows it; still protects unticking and ticking a row by hand. */
+    await page.locator('.tenrow').filter({ has: page.locator('.tr-n', { hasText:/^Rice(usually|[^a-z])/i }) }).locator('input').click(); await page.waitForTimeout(300);
     sh = await sheet();
     ok('unticking rice changes the total and the button', sh && /1 ticked · \$12\.00 · saves \$1\.20/.test(sh.sum) && /Add 1 to the list/.test(sh.add), JSON.stringify(sh&&[sh.sum,sh.add]));
-    await page.locator('.tenrow').filter({ has: page.locator('.tr-n', { hasText:/^Rice[^a-z]/i }) }).locator('input').click(); await page.waitForTimeout(300);
+    await page.locator('.tenrow').filter({ has: page.locator('.tr-n', { hasText:/^Rice(usually|[^a-z])/i }) }).locator('input').click(); await page.waitForTimeout(300);
     await tap('#tenAdd');
     const items = (await cache()).items;
     ok('"Add" puts the ticked things on the list — rice ×2 new, toilet paper already there, not doubled',
@@ -155,7 +156,7 @@ const COLES_ON = { coles:{ on:true, pct:10, cap:50, day:1, used:{} } };
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-card.png') });
     await tap('#tenCardHide');
     await page.reload({ waitUntil:'domcontentloaded' }); await page.waitForTimeout(1300);
-    ok('"Not this month" puts it away for the month, across a relaunch', (await card())===null, '');
+    ok('"Later" (SUPERSEDED by v2.92: was "Not this month"; on the 27th the next reminder is 2 days before the end) puts it away, across a relaunch', (await card())===null, '');
     await mk(COLES_ON, { date:[2026,9,27] });
     await tap('#tenCardUsed');
     ok('"Used it" marks October used, for the household', (await card())===null && !!(((await cache()).memb||{}).coles||{}).used['2026-10'], JSON.stringify((await cache()).memb));

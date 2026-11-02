@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.91";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.91";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.91";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal } from "./tenpct.js?v=2.91";
-import { compareStores, worthIt } from "./compare.js?v=2.91";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.91";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.91";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.91";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.91";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.91";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.91";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.91";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.91";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.91";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.92";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.92";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.92";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=2.92";
+import { compareStores, worthIt } from "./compare.js?v=2.92";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.92";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.92";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.92";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.92";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.92";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.92";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.92";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.92";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.92";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.91";
+const APP_VERSION = "v2.92";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -3881,7 +3881,14 @@ function editItemById(id){ const it=state.items.find(i=>i.id===id); if(!it) retu
 // v1.32/v1.34/v1.35: after picking a result, show its full edit-item details inline above the
 // search bar (keyboard stays up). The bar mirrors "Name qty× weight, " and re-syncs on every
 // live edit (syncAddEditInput) so typing after it continues the next fragment.
-function openAddEdit(id){ const it=state.items.find(i=>i.id===id); if(!it) return;
+function openAddEdit(id){
+  /* v2.92: moving on from one pick to another folds the previous one at once; if the one being opened was itself folded
+     away, open the item it folded into */
+  if(addEditId && addEditId!==id){ const was=state.items.find(i=>i.id===id);
+    if(foldStaged() && was && !state.items.some(i=>i.id===id)){ const nk=String(was.name||"").trim().toLowerCase();
+      const into=state.items.find(j=>!j.checked && String(j.name||"").trim().toLowerCase()===nk && j.cat===was.cat && noteKey(j.note)===noteKey(was.note));
+      if(into) id=into.id; } }
+  const it=state.items.find(i=>i.id===id); if(!it) return;
   addLastQuery = addEditId ? addLastQuery : addFrag();   // v1.36 item 9: keep the pills that produced this pick
   addEditId=id;
   const v=draftMain||""; const i=Math.max(v.lastIndexOf(","), v.lastIndexOf("\n"));
@@ -4142,13 +4149,27 @@ function wireAddSheetDrag(){
 // v1.36: one exit path for the add flow — always lands back on the shop page with nothing left over.
 /* v1.44 item 5: two ways out, and they mean opposite things. commitAddSheet() keeps what you added;
    closeAddSheet() is Cancel and takes it back off. Everything else about the teardown is shared. */
+/* v2.92 (the household: "I added Can sardine with the note Tomatoe and got two"): an item added in the + sheet whose name,
+   category and note now match another unticked item is folded into it — its count added there, the new one dropped. Only
+   items added in this sheet (addStaged) are ever dropped; the older one keeps its id, shop, flags and place. */
+function foldStaged(){ let n=0;
+  for(const id of addStaged.slice()){ const it=state.items.find(i=>i.id===id); if(!it || it.checked) continue;
+    const into=state.items.find(j=>j.id!==id && !j.checked && !(addStaged.includes(j.id) && addStaged.indexOf(j.id)>addStaged.indexOf(id))
+      && String(j.name||"").trim().toLowerCase()===String(it.name||"").trim().toLowerCase() && j.cat===it.cat && noteKey(j.note)===noteKey(it.note));
+    if(!into) continue;
+    into.qty=Math.max(1,+into.qty||1)+Math.max(1,+it.qty||1); markDirty(into.id);
+    state.items=state.items.filter(i=>i.id!==id); addStaged=addStaged.filter(x=>x!==id); n++; }
+  if(n) save();
+  return n; }
 function commitAddSheet(){
+  const folded=foldStaged();   // v2.92: first, so a folded duplicate is not kept as a Regular too
   /* v2.37 (the household's item 4): opened from a Regulars "+" tile, what was added is kept as a Regular too */
   /* v2.90 (the household: "save an item in Regulars without going to the shop first"): with Settings › Shopping › New items
      in Regulars on (the default), what the + sheet added is a Regular at once, not only after a shop */
   if(addFromCat || regNowPref()){ const kept=state.items.filter(i=>addStaged.includes(i.id));
     if(kept.length){ moveToBuyAgain(kept.map(i=>({ name:i.name, cat:i.cat, qty:i.qty, weight:i.weight, sub:i.sub, note:i.note, where:i.where }))); kept.forEach(i=>histLog("regadd", i.name)); save(); } }
-  addStaged=[]; addFromCat=null; endAddSheet(); }
+  addStaged=[]; addFromCat=null; endAddSheet();
+  if(folded) showToast(t("Already on the list — added to its count")); }
 function closeAddSheet(){
   addFromCat=null;   // v2.37
   if(addStaged.length){
@@ -5813,17 +5834,20 @@ function rcRead(file){
   planShrinkImage(file, 2000, 0.8)
     .then(img=>{ if(rcpt && rcpt.busy){ rcpt.step="Reading the receipt…"; render(); }
       return apiFetch("/api/receipt", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ image:img }), signal: ctl ? ctl.signal : undefined }); })
-    .then(r=>r.json().catch(()=>({})).then(j=>({ ok:r.ok, j })))
-    .then(({ok,j})=>{ if(!rcpt) return;
-      if(!ok){ const c=j && j.code;
-        rcpt={ err: c==="signin" ? "This phone isn't signed in yet. Check your connection and try again."
+    .then(r=>r.json().catch(()=>({})).then(j=>({ ok:r.ok, j, st:r.status })))
+    .then(({ok,j,st})=>{ if(!rcpt) return;
+      if(!ok){ const c=j && j.code, why=c || ("HTTP " + st);
+        uiTrail("receipt failed: " + why);   // v2.92: so Report a problem carries it
+        rcpt={ why, err: c==="signin" ? "This phone isn't signed in yet. Check your connection and try again."
           : c==="appcheck" ? "The app couldn't prove it's the real app. Close it completely and open it again."
           : c==="not_configured" ? "Receipt reading isn't set up on the server yet."
           : c==="quota" ? "The free reading allowance is used up for today. Try again tomorrow."
           : c==="busy" ? "The reader is busy. Try again in a minute."
           : (c==="bad_image" || c==="too_large") ? "Couldn't use that photo. Try a closer, flatter one."
           : c==="vision_model" ? "Photo reading isn't set up on this account."
-          : "Couldn't read that receipt." }; render(); return; }
+          : c==="model" ? "The receipt reader's model has changed on the server — it needs a new setting."
+          : c==="unreadable" ? "The reader couldn't make sense of that photo. Try again, flat and in good light."
+          : "The reader had a problem. Try again in a minute." }; render(); return; }
       rcptCount();
       const allowed=catList().map(c=>c.id), used=new Set();
       const lines=(Array.isArray(j.items)?j.items:[]).map(x=>{ const known=knownEntry(x.name);
@@ -5834,7 +5858,9 @@ function rcRead(file){
       rcpt={ store:rcStoreFor(j.store), detected:String(j.store||""), date:(/^\d{4}-\d{2}-\d{2}$/.test(j.date||"") ? j.date : dayKey(new Date())), total:+j.total||0, lines, discounts:Array.isArray(j.discounts)?j.discounts:[], place:String(j.place||"").slice(0,40) };
       rcPair();   // v2.31: pair the lines with the cart, in tick order
       render(); })
-    .catch(e=>{ if(rcpt){ rcpt={ err: navigator.onLine===false ? "No connection. Try again when you're online."
+    .catch(e=>{ if(rcpt){ const why = navigator.onLine===false ? "network" : (e && e.name==="AbortError") ? "timeout" : (e && e.name==="TypeError") ? "network" : ((e && e.name) || "error");
+      uiTrail("receipt failed: " + why);
+      rcpt={ why, err: navigator.onLine===false ? "No connection. Try again when you're online."
         : (e && e.name==="AbortError") ? "That took too long. Try again, or with a closer photo."
         : "Couldn't read that receipt." }; render(); } })
     .finally(()=>clearTimeout(timer)); }
@@ -5886,29 +5912,41 @@ function chainPriceOf(chain){ return name => { const a = priceLookup(name); if(!
   const unit = (+r.p || 0) / Math.max(1, +r.q || 1); return unit > 0 ? { unit, sn:r.sn || "" } : null; }; }
 function tenModel(chain){ const c = memb()[chain]; return Object.assign({ chain, pct:c.pct, cap:c.cap }, stockUp({ purch:state.purch || {}, priceOf:chainPriceOf(chain), pct:c.pct, cap:c.cap })); }
 function tenOpen(chain){ const s = tenModel(chain); tenSheet = { chain, rows:s.rows, pct:s.pct, cap:s.cap, base:s.base }; render(); }
-function tenHidden(chain, key){ try{ return (localStorage.getItem("ml_tenhide") || "") === chain + "|" + key; }catch(e){ return false; } }
-function tenHide(chain, key){ try{ localStorage.setItem("ml_tenhide", chain + "|" + key); }catch(e){} render(); }
+/* v2.92 "Later" (was "Not this month"): ml_tenhide holds chain|periodKey|untilMs — the card comes back at untilMs. The old
+   form chain|periodKey still puts it away for that whole period. */
+function tenSnooze(chain, key){ let v = ""; try{ v = localStorage.getItem("ml_tenhide") || ""; }catch(e){ return null; }
+  const a = v.split("|"); if(a[0] !== chain || a[1] !== key) return null;
+  if(a.length < 3) return { until:Infinity };
+  const u = +a[2]; return { until: isFinite(u) ? u : Infinity }; }
+function tenLater(chain, p){ const now = Date.now(), H12 = 12 * 3600000;
+  const cand = [+p.start + 14 * 86400000, +p.end - 7 * 86400000, +p.end - 2 * 86400000];
+  let until = cand.find(x => x - now > H12); if(until === undefined) until = +p.end;
+  try{ localStorage.setItem("ml_tenhide", chain + "|" + p.key + "|" + until); }catch(e){}
+  render();
+  showToast(until === +p.end ? tf("Put away until {m} ends", { m:monthName(p) }) : tf("We'll remind you on {d}", { d:new Date(until).toLocaleDateString(dateLoc(), { day:"numeric", month:"short" }) })); }
 function monthName(p){ return p.start.toLocaleDateString(dateLoc(), { month:"long" }); }
 /* The Shop card: a membership that is on, unused this period, not put away for it — in the last seven days of the
-   period, or whenever you are at one of that chain's stores. */
+   period, or whenever you are at one of that chain's stores, or (v2.92) when a "Later" reminder has come due. */
 function tenCardHTML(){ const m = memb(), st = activeStore(), here = st ? chainOfStore(st.name) : "";
   for(const k of Object.keys(CHAINS)){ const c = m[k]; if(!c.on) continue;
-    const p = periodOf(new Date(), c.day); if(c.used[p.key] || tenHidden(k, p.key) || !(p.daysLeft <= 7 || here === k)) continue;
+    const p = periodOf(new Date(), c.day), z = tenSnooze(k, p.key), due = !!(z && Date.now() >= z.until);
+    if(c.used[p.key] || (z && !due) || !(p.daysLeft <= 7 || here === k || due)) continue;
     const s = tenModel(k), sh = CHAINS[k].short;
     const head = here === k && p.daysLeft > 7 ? tf("You're at {x}: your {p}% is unused", { x:esc(sh), p:c.pct }) : (p.daysLeft === 1 ? tf("Your {x} {p}% is unused — {n} day left", { x:esc(sh), p:c.pct, n:p.daysLeft }) : tf("Your {x} {p}% is unused — {n} days left", { x:esc(sh), p:c.pct, n:p.daysLeft }));
     const body = s.total > 0 ? tf("Stock up on about {a} of things you rebuy and save about {b}.", { a:priceMoney(s.total), b:priceMoney(s.saving) }) : tf("Use it on a big shop before it runs out: up to {a} off.", { a:priceMoney(c.cap) });
     return `<div class="installcard tencard" id="tenCard" role="note" data-chain="${k}" data-period="${p.key}">
       <div class="ic-t">${esc(head)}</div><div class="ic-b">${body}</div>
-      <div class="ic-btns">${s.rows.length ? `<button class="newlist" id="tenCardList">${t("See the list")}</button>` : ""}<button class="optaction" id="tenCardUsed">${t("Used it")}</button><button class="optaction" id="tenCardHide">${t("Not this month")}</button></div>
+      <div class="ic-btns">${s.rows.length ? `<button class="newlist" id="tenCardList">${t("See the list")}</button>` : ""}<button class="optaction" id="tenCardUsed">${t("Used it")}</button><button class="optaction" id="tenCardHide" aria-label="${t("Remind me later this month")}">${t("Later")}</button></div>
     </div>`; }
   return ""; }
 function tenSheetHTML(){ const tn = tenSheet; if(!tn) return ""; const c = memb()[tn.chain], p = periodOf(new Date(), c.day), sum = stockTotal(tn.rows, tn.pct, tn.cap), n = tn.rows.filter(r => r.sel).length;
   const row = (r, i) => `<label class="tenrow${r.sel ? "" : " off"}"><input type="checkbox" data-ten-row="${i}" ${r.sel ? "checked" : ""} ${r.priced ? "" : "disabled"}>
-    <span class="tr-n">${esc(cap(r.name))}<span class="tr-s">${r.qty}×${r.weight ? " " + esc(r.weight) : ""} · ${r.every === 1 ? tf("every {n} day", { n:r.every }) : tf("every {n} days", { n:r.every })}${r.ask ? " · " + t("keeps if frozen") : ""}</span></span>
+    <span class="tr-n">${esc(cap(r.name))}<span class="tr-s">${r.every === 1 ? tf("usually {q} every {n} day", { q:r.usual, n:r.every }) : tf("usually {q} every {n} days", { q:r.usual, n:r.every })}${r.weight ? " · " + esc(r.weight) : ""}${r.ask ? " · " + t("keeps if frozen") : ""}</span></span>
+    <div class="qstep2 tenqty"><button data-ten-qm="${i}|-1" aria-label="${t("Less")}">−</button><span>${r.qty}</span><button data-ten-qm="${i}|1" aria-label="${t("More")}">+</button></div>
     <span class="tr-p">${r.priced ? priceMoney(r.total) : t("no price yet")}</span></label>`;
   return `<div class="sheet-bg" id="tenBg"><div class="sheet" id="tenSheet" role="dialog" aria-labelledby="tenTitle">
     <div class="disp" id="tenTitle" style="font-weight:800;font-size:17px;margin-bottom:4px">${tf("{chain} {pct}% shop", { chain:esc(CHAINS[tn.chain].short), pct:tn.pct })} · ${esc(monthName(p))}</div>
-    <div class="hint" style="text-align:left;margin:0 0 10px">${tf("What you rebuy, enough for a month, priced from your receipts. Ticked until the shop earns the whole discount ({x}).", { x:priceMoney(tn.base) })}</div>
+    <div class="hint" style="text-align:left;margin:0 0 10px">${tf("Things that keep, enough for a month — fresh food is left out, buy it as usual. Change an amount with − and +. Priced from your receipts, ticked until the shop earns the whole discount ({x}).", { x:priceMoney(tn.base) })}</div>
     ${tn.rows.length ? `<div class="tenrows">${tn.rows.map(row).join("")}</div>` : `<div class="hint" style="text-align:left">${t("Nothing to suggest yet: this needs things you have bought at least twice, and their prices from a receipt.")}</div>`}
     <div class="tensum" role="status">${tf("{n} ticked", { n })} · ${priceMoney(sum.total)} · ${tf("saves {x}", { x:priceMoney(sum.saving) })}${sum.saving >= tn.cap ? " " + t("(the most it gives)") : ""}</div>
     <div class="ppedbtns" style="margin-top:10px"><button class="newlist" id="tenAdd" ${n ? "" : "disabled"}>${tf("Add {n} to the list", { n })}</button><button class="optaction" id="tenClose" style="margin-top:0">${t("Close")}</button></div>
@@ -5926,7 +5964,13 @@ function wireTenSheet(){
   const tb = app.querySelector("#tenBg"); if(tb) tb.onclick = e => { if(e.target === tb){ tenSheet = null; render(); } };
   const cl = app.querySelector("#tenCardList"); if(cl) cl.onclick = () => tenOpen(app.querySelector("#tenCard").dataset.chain);
   const cu = app.querySelector("#tenCardUsed"); if(cu) cu.onclick = () => { const m = memb(), k = app.querySelector("#tenCard").dataset.chain; const p = membMark(m, k, true); membSave(m); showToast(tf("{chain} {pct}% marked as used for {m}", { chain:CHAINS[k].short, pct:m[k].pct, m:monthName(p) })); };
-  const ch = app.querySelector("#tenCardHide"); if(ch) ch.onclick = () => { const c = app.querySelector("#tenCard"); tenHide(c.dataset.chain, c.dataset.period); };
+  const ch = app.querySelector("#tenCardHide"); if(ch) ch.onclick = () => { const c = app.querySelector("#tenCard"), k = c.dataset.chain; tenLater(k, periodOf(new Date(), memb()[k].day)); };
+  /* v2.92: a row's amount — the stepper sits in the row's <label>, so its taps must not toggle the checkbox */
+  app.querySelectorAll("[data-ten-qm]").forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation();
+    const [i, d] = b.dataset.tenQm.split("|"), r = tenSheet && tenSheet.rows[+i]; if(!r) return;
+    const sc = app.querySelector(".tenrows"), top = sc ? sc.scrollTop : 0;
+    setRowQty(r, r.qty + (+d)); render();
+    const sc2 = app.querySelector(".tenrows"); if(sc2) sc2.scrollTop = top; });
 }
 /* v2.21 which store is cheaper for this list (plan item 6) — the logic is js/compare.js. The list is what is still to buy;
    prices are the household's own, from receipts, at most 60 days old. A store's chain with an unused 10% this month
@@ -6531,6 +6575,7 @@ function rcptSheet(){
     <div class="rcnote" style="text-align:center">${t("This usually takes 5–20 seconds.")}</div></div></div>`;
   if(rcpt.err || !rcpt.lines) return `<div class="sheet-bg kbpin" id="rcBg"><div class="sheet" id="rcSheet">${head}
     <div style="padding:6px 2px 16px;color:var(--text);font-weight:600;line-height:1.5">${esc(t(rcpt.err||"Couldn't read that receipt."))}</div>
+    ${rcpt.why ? `<div class="hint" style="text-align:left;margin:-8px 2px 12px">${t("Reason:")} ${esc(rcpt.why)}</div>` : ""}
     <button class="optaction" id="rcOk">${t("OK")}</button></div></div>`;
   const keptL=rcpt.lines.filter(L=>L.keep), kept=keptL.length, sumKept=Math.round(keptL.reduce((a,L)=>a+(+L.price||0),0)*100)/100;
   const stores=rcSavedStores();
