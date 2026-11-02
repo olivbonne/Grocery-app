@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.92";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.92";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.92";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=2.92";
-import { compareStores, worthIt } from "./compare.js?v=2.92";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.92";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.92";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.92";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.92";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.92";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.92";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.92";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.92";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.92";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.93";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.93";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.93";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=2.93";
+import { compareStores, worthIt } from "./compare.js?v=2.93";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.93";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.93";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.93";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.93";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.93";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.93";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.93";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.93";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.93";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.92";
+const APP_VERSION = "v2.93";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -3891,16 +3891,26 @@ function openAddEdit(id){
   const it=state.items.find(i=>i.id===id); if(!it) return;
   addLastQuery = addEditId ? addLastQuery : addFrag();   // v1.36 item 9: keep the pills that produced this pick
   addEditId=id;
-  const v=draftMain||""; const i=Math.max(v.lastIndexOf(","), v.lastIndexOf("\n"));
+  /* v2.92b: the bar's mirror of the item already open is not typed text — re-opening must not make it the "prefix" */
+  const v=(addEditId && _addMirror && (draftMain||"").startsWith(_addMirror)) ? (addEditPrefix||"")+(draftMain||"").slice(_addMirror.length) : (draftMain||""); const i=Math.max(v.lastIndexOf(","), v.lastIndexOf("\n"));
   addEditPrefix = i>=0 ? v.slice(0,i+1)+" " : "";
   syncAddEditInput(it);
   refreshAddBody();
   const sb=document.getElementById("addSheetBody"); if(sb) sb.scrollTop=0;   // v1.35 item 1: always open on the top of the panel
   const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }
 // v1.35 item 6: mirror the item's current name/qty/weight in the search bar as it's edited live.
+/* v2.92b (the household: "adding Hooks ×2 also added 'Hooks 2×'; a blue Door also added a plain Door"): the search bar mirrors
+   the open item ("Hooks 2×, ") — text that is ALREADY on the list. Leaving the panel (Save, Remove, the item gone, typing on)
+   used to leave that mirror in the bar as if it were typed, and the return key then added it again. Leaving now keeps only
+   what was really typed before the pick (addEditPrefix) plus anything typed after the mirror. */
+var _addMirror="";   // var: boot-order rule
+function leaveAddEdit(v){ const m=_addMirror; let rest="";
+  if(typeof v==="string" && m){ rest = v.startsWith(m) ? v.slice(m.length) : (v.length > m.length ? v.slice(m.length) : ""); }
+  addEditId=null; _addMirror=""; draftMain=(addEditPrefix||"")+rest.replace(/^\s+/,"");
+  const mi=document.getElementById("mainInput"); if(mi){ mi.value=draftMain; grow(mi); } }
 function syncAddEditInput(it){
   const meta=[(it.qty>1?it.qty+"×":""), it.weight].filter(Boolean).join(" ");
-  draftMain = addEditPrefix + cap(it.name) + (meta?" "+meta:"") + ", ";
+  draftMain = addEditPrefix + cap(it.name) + (meta?" "+meta:"") + ", "; _addMirror = draftMain;
   const mi=document.getElementById("mainInput"); if(mi){ mi.value=draftMain; grow(mi); }
 }
 function findItem(name,cat){ return state.items.find(i=>!i.checked && i.name.toLowerCase()===String(name).toLowerCase() && i.cat===cat); }
@@ -4017,7 +4027,7 @@ function weightChips(id, cur){
 }
 function addEditPanel(){
   const it=state.items.find(i=>i.id===addEditId);
-  if(!it){ addEditId=null; return addSheetRows(); }
+  if(!it){ leaveAddEdit(); return addSheetRows(); }
   if(!_aeOrig || _aeOrig.id!==it.id) _aeOrig={ id:it.id, name:it.name, cat:it.cat };   // v2.65: the key it had when the panel opened, for regularFrom
   aeFold("ae|" + it.id);   // v2.57 item 9a
   const cat=CAT(it.cat)||null;
@@ -4051,7 +4061,7 @@ function addEditPanel(){
 }
 function wireAddEdit(){
   const cur=()=>state.items.find(i=>i.id===addEditId);
-  const touch=it=>{ markDirty(it.id); save(); syncAddEditInput(it); };   // v1.35 item 5/6: persist + re-sync the search bar, keyboard/bar untouched
+  const touch=it=>{ markDirty(it.id); save(); if(addEditId===it.id) syncAddEditInput(it); };   /* v2.92b: not after the panel was left (a note field blurring on Save re-wrote the mirror) */   // v1.35 item 5/6: persist + re-sync the search bar, keyboard/bar untouched
   document.querySelectorAll("[data-ae-minus]").forEach(b=>b.onpointerdown=e=>e.preventDefault());
   document.querySelectorAll("[data-ae-minus]").forEach(b=>b.onclick=()=>{ const it=cur(); if(it){ it.qty=Math.max(1,(it.qty||1)-1); touch(it); refreshAddBody(); } });
   document.querySelectorAll("[data-ae-plus]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=cur(); if(it){ it.qty=(it.qty||1)+1; touch(it); refreshAddBody(); } }; });
@@ -4118,14 +4128,14 @@ function wireAddEdit(){
   document.querySelectorAll("[data-ae-addsub]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const it=state.items.find(i=>i.id===b.dataset.aeAddsub); if(!it) return; const nm=prompt(t("New subcategory name:"),""); if(nm&&nm.trim()){ const sid=makeSub(it.cat,nm); if(sid){ it.sub=sid; touch(it); refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); } } }; });
   document.querySelectorAll("[data-ae-remove]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=()=>{ const id=b.dataset.aeRemove; const it=state.items.find(i=>i.id===id);
     if(it){ baForget(it.name, it.cat, it.note); regDrop(it.name, it.cat, it.note); }   // v1.37 item 6 · v2.68: only the Regular of its note
-    state.items=state.items.filter(i=>i.id!==id); addEditId=null; save(); refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }; });
+    state.items=state.items.filter(i=>i.id!==id); leaveAddEdit(); save(); refreshAddBody(); const mi=document.getElementById("mainInput"); if(mi) mi.focus(); }; });
   // v1.36 item 2: Done finishes the whole add flow and returns to the shop page — it no longer
   // just dismisses the panel back to another search view that needs a second Done.
   // v1.38 item 3: Save closes the panel but STAYS in the add flow — the keyboard never drops and the
   // caret lands after the trailing comma so the next item can be typed straight away.
   const dn=document.querySelector("#addEditDone"); if(dn){ dn.onpointerdown=e=>e.preventDefault(); dn.onclick=()=>{
     { const it=cur(); if(it){ regularFrom(it, (_aeOrig && _aeOrig.id===it.id) ? _aeOrig : it); save(); showToast(tf("Saved — also in Regulars")); } _aeOrig=null; }   // v2.65: one Save — the list and the Regulars
-    addEditId=null; addLastQuery="";
+    leaveAddEdit(); addLastQuery="";
     const mi=document.getElementById("mainInput");
     if(mi){ mi.value=draftMain; grow(mi); mi.focus(); const end=(draftMain||"").length; try{ mi.setSelectionRange(end,end); }catch(e){} }
     refreshAddBody();
@@ -4583,6 +4593,7 @@ function nudgeHeaderCount(){
 function zoomWrapH(z, zw){ return Math.ceil(Math.max(0, z.getBoundingClientRect().bottom - zw.getBoundingClientRect().top)); }
 let _zoomRO=null, _zoomEl=null;
 var _cartWasShown=false;   // v2.12 var, not let: render() can run before this line is reached
+var _tillTopShown=false;   // v2.93 the till panel slides down on its first appearance only (var for the same reason)
 function watchZoomer(z){ if(!z || typeof ResizeObserver==="undefined" || _zoomEl===z) return;
   if(_zoomRO) _zoomRO.disconnect(); _zoomEl=z;
   _zoomRO=new ResizeObserver(()=>{ if(!z.isConnected) return; const zw=z.parentElement; if(zw) zw.style.height=zoomWrapH(z, zw)+"px"; });
@@ -4664,6 +4675,7 @@ function syncZoomHeight(){ syncTileH(); const z=document.getElementById("zoomer"
   /* v2.12: the cart hangs from the header's bottom edge, and the list starts under the cart */
   const cb=document.getElementById("checkedbar");
   if(zw && tf){ const tb=Math.max(0, tf.getBoundingClientRect().bottom); if(cb) cb.style.top = Math.floor(tb) + "px";
+    const ttp=document.getElementById("tillTop"); if(ttp) ttp.style.top = Math.ceil(cb ? Math.floor(tb) + cb.offsetHeight : tb) + "px";   // v2.93 under the header, and under the cart when both show
     zw.style.marginTop = Math.ceil(cb ? Math.floor(tb) + cb.offsetHeight : tb) + "px";
     /* v2.29: a card at the top of the list ("Got the receipt?", the 10% shop…) was covered by the Undo message after Save to
        Regulars. The message drops to just below any card that sits where it would. */
@@ -5269,6 +5281,11 @@ function renderMain(){
     bodyBlocks.push(`<section class="cat elsewhere"><button class="elsebtn" id="elseToggle" aria-expanded="${elseOpen?'true':'false'}"><span>${t("For other shops")}</span> <span class="cnum">${elsewhere.length}${elseOpen?' ▾':' ▸'}</span></button>${inner}</section>`); }
   const listBody = bodyBlocks.join("");
   const cartDrop = done>0 && !_cartWasShown; _cartWasShown = done>0; if(cartDrop) _cartDropping = true;   // v2.12 slides down only when the first item goes in
+  /* v2.93 (the household, parked at v2.72 item 5): the card and the receipt prompts drop down from under the top bar in one
+     fixed panel, instead of sitting at the top of the list where they scrolled away. Not modal; gone when both are. */
+  const tillInner = cardNudgeHTML()+rcptNudgeHTML();
+  const tillTop = tillInner ? `<div class="tilltop${_tillTopShown?'':' drop'}" id="tillTop" role="region" aria-label="${t("At the till")}">${tillInner}</div>` : "";
+  _tillTopShown = !!tillInner;
   const checkedBar = done>0 ? `<div class="checkedbar shop${cartDrop?' drop':''}" id="checkedbar">
       ${/* v2.00 item 1: one row, not two. The label varies because the row already says "N in cart":
            collapsed there is no space and the count would be said twice, so it is just "Finish";
@@ -5299,10 +5316,10 @@ function renderMain(){
         ${locChip()?`<div class="hloc">${locChip()}</div>`:""}
       </header>
     </div>
-    ${checkedBar}
+    ${checkedBar}${tillTop}
     <div class="wrap ${shopMode?'shop':''}" role="main">
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
-      ${lockedHTML()}${newerDataHTML()}${shoppingHTML()}${(()=>{ const c=(lookCardHTML()||prefsCardHTML())+installCardHTML()+cardNudgeHTML()+rcptNudgeHTML(); return c || onbCardHTML(); })()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
+      ${lockedHTML()}${newerDataHTML()}${shoppingHTML()}${(()=>{ const c=(lookCardHTML()||prefsCardHTML())+installCardHTML(); return c || (tillInner ? "" : onbCardHTML()); })()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
           ${/* v2.56 item 4: a drawn empty basket, and two ways to start — say it, or type it */""}
           <div class="empty-basket">${BASKET_SVG}</div>
           <p class="empty-title">${t("Your list is empty")}</p>
@@ -8324,6 +8341,7 @@ function optionsBody(){
       <div class="numbtns"><button id="optNumSave" class="colbtn2">${t("Set as my default")}</button>${
         hasNumDefs()?`<button id="optNumReset" class="colbtn2">${t("Reset to mine")}</button>`:""
       }<button id="optNumFactory" class="colbtn2">${t("Factory default")}</button></div></div></div>
+    <div class="opthint">${t("The space around every page — Plan, Shop and Settings.")}</div>
     ${/* v1.75 item 3: the two page-change controls sit with Text size and the wallpaper — the settings
           that change how the whole app looks and moves rather than one part of it. */""}
     <div class="optrow optrow-wide optnl"><span class="optlabel">${t("Page slides in from")}</span><div class="optwide">
@@ -8807,7 +8825,7 @@ function wireAddBar(){
     addKeepScroll(()=>stageAdds(()=>addEntries(t,null)));
     const m2=document.getElementById("mainInput"); if(m2){ m2.value=""; m2.focus(); } };
   if(mi){ mi.value=draftMain; grow(mi); toggleClear(mi,mc);
-    mi.oninput=()=>{ draftMain=mi.value; grow(mi); toggleClear(mi,mc); if(addEditId) addEditId=null; if(addOpen) refreshAddBody(); };   // v1.32 typing returns from the details panel to search
+    mi.oninput=()=>{ if(addEditId) leaveAddEdit(mi.value); else draftMain=mi.value; grow(mi); toggleClear(mi,mc); if(addOpen) refreshAddBody(); };   // v1.32 typing returns from the details panel to search
     mi.onkeydown=e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault();
       /* v1.40 item 1: the keyboard's blue tick now finishes the whole add flow — commit whatever is
          typed, then land back on the shop page. It used to only commit and leave the sheet open. */
