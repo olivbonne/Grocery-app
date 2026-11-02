@@ -266,3 +266,10 @@ the household asked for is not a lesson.*
     "read receipt doesn't work" a day later could not be diagnosed (v2.92). *Guard:* every failed wait shows its reason code in a
     line the household can quote, and writes it to the screen trail that Report a problem sends; the v2.92 suite checks the
     code appears for a server failure and for a dropped connection.
+64. **Text a screen writes for you is not text you typed.** Since v1.35 the + sheet's search bar mirrors the item open in its
+    panel ("Hooks 2×, "). v2.65's panel Save left that mirror in the bar with the caret after it "so the next item can be
+    typed" — and the return key then added it again, so a household adding Hooks ×2 got "Hooks" and "Hooks 2×", and a blue Door
+    got a plain "Door" too (fixed v2.93). A note field blurring on Save also re-wrote the mirror after the panel had closed.
+    *Guard:* leaving the panel (Save, Remove, the item gone, typing on) keeps only what was really typed (`leaveAddEdit`), the
+    mirror is only re-written while its item is the one open, and the v2.93 suite adds Hooks ×2 and Door "Blue" through the
+    panel's Save and the return key and checks one item each.

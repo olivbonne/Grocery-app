@@ -294,6 +294,15 @@
   .checkedbar.drop { animation:cartdrop .32s cubic-bezier(.2,.7,.2,1); }
   @keyframes cartdrop { from { transform:translateY(-100%); } to { transform:none; } }
   @media (prefers-reduced-motion: reduce) { .checkedbar.drop { animation:none; } }
+  /* v2.93: the card and receipt prompts after a shop, in one panel that drops down from under the header (syncZoomHeight sets
+     top, below the cart when it shows). The top-sheet look; not modal — the page under it still scrolls and taps. */
+  .tilltop { position:fixed; z-index:28; top:0; left:var(--topleft, 0px); right:var(--topright, 0px); margin:0 auto; max-width:var(--topw, 480px);
+    box-sizing:border-box; max-height:min(70vh, 520px); overflow-y:auto; overscroll-behavior:contain; padding:8px var(--padr,14px) 10px var(--padl,14px);
+    background:var(--lksbg, var(--glass-bg, var(--paper))); color:var(--lkstext, inherit); -webkit-backdrop-filter:blur(18px); backdrop-filter:blur(18px);
+    border-bottom:1px solid var(--glass-brd); border-radius:0 0 22px 22px; box-shadow:0 8px 16px -12px rgba(20,30,22,.45); }
+  .tilltop.drop { animation:sheetdown .24s cubic-bezier(.32,.72,.3,1); }
+  .tilltop > .installcard:last-child { margin-bottom:0; }
+  @media (prefers-reduced-motion: reduce) { .tilltop.drop { animation:none; } }
   /* v2.00 item 1: the count and the action share one row. v2.10: the scroll area now opens DOWNWARDS,
      under that row, so the row stays put under the header when the drawer expands. */
   .checkedfoot { flex:none; display:flex; align-items:center; gap:10px; padding:0 var(--padr,14px) 0 var(--padl,14px); }

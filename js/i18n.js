@@ -549,6 +549,8 @@ export const FR = {
   "Start in this slot (now {n})": "Démarrer avec celui-ci (actuellement {n})",
   "Factory default": "Réglages d'origine",
   "Page margins": "Marges de la page",
+  "At the till": "À la caisse",
+  "The space around every page — Plan, Shop and Settings.": "L'espace autour de chaque page — Menus, Courses et Réglages.",
   "Set as my default": "Définir par défaut",
   "Reset to mine": "Revenir aux miens",
   "Page slides in from": "La page arrive par",
