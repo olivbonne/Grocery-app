@@ -1055,6 +1055,23 @@ export const FR = {
   "The photo reader's model has changed on the server — it needs a new setting.": "Le modèle de lecture des photos a changé sur le serveur — il faut un nouveau réglage.",
   "The reader couldn't make sense of that photo. Try again, closer and in good light.": "Le lecteur n'a pas compris cette photo. Réessayez, plus près et bien éclairé.",
   "Couldn't read that photo.": "Impossible de lire cette photo.",
+  // v2.95: Edit this page
+  "Edit this page": "Modifier cette page",
+  "Editing this page": "Modification de la page",
+  "Reset": "Réinitialiser",
+  "Put this page back as it was?": "Remettre cette page comme avant ?",
+  "Put the Shop and Plan pages back as they were?": "Remettre les pages Courses et Menus comme avant ?",
+  "Hide": "Masquer",
+  "Width: {w}": "Largeur : {w}",
+  "Messages": "Messages",
+  "Your list": "Votre liste",
+  "Tip": "Astuce",
+  "Days": "Jours",
+  "Page layout": "Mise en page",
+  "Edit Shop": "Modifier Courses",
+  "Edit Plan": "Modifier Menus",
+  "Reset all": "Tout réinitialiser",
+  "Move, hide and resize the parts of the Shop and Plan pages. Also in each page's ⋯ menu.": "Déplacez, masquez et redimensionnez les parties des pages Courses et Menus. Aussi dans le menu ⋯ de chaque page.",
 };
 
 /* v2.55: the languages the app speaks. To add one: write its table (same keys as FR — the English text — with that

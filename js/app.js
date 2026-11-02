@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.94";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.94";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.94";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=2.94";
-import { compareStores, worthIt } from "./compare.js?v=2.94";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.94";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.94";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.94";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.94";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.94";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.94";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.94";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.94";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.94";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.95";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.95";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.95";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=2.95";
+import { compareStores, worthIt } from "./compare.js?v=2.95";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.95";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.95";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.95";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.95";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.95";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.95";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.95";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.95";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.95";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.94";
+const APP_VERSION = "v2.95";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -4709,6 +4709,7 @@ function syncZoomHeight(){ syncTileH(); const z=document.getElementById("zoomer"
   /* v2.12: the cart hangs from the header's bottom edge, and the list starts under the cart */
   const cb=document.getElementById("checkedbar");
   if(zw && tf){ const tb=Math.max(0, tf.getBoundingClientRect().bottom); if(cb) cb.style.top = Math.floor(tb) + "px";
+    const peb=document.getElementById("pageEditBar"); if(peb) peb.style.top = Math.ceil(cb ? Math.floor(tb) + cb.offsetHeight : tb) + "px";   // v2.95, as the till panel
     const ttp=document.getElementById("tillTop"); if(ttp) ttp.style.top = Math.ceil(cb ? Math.floor(tb) + cb.offsetHeight : tb) + "px";   // v2.93 under the header, and under the cart when both show
     zw.style.marginTop = Math.ceil(cb ? Math.floor(tb) + cb.offsetHeight : tb) + "px";
     /* v2.29: a card at the top of the list ("Got the receipt?", the 10% shop…) was covered by the Undo message after Save to
@@ -5313,7 +5314,11 @@ function renderMain(){
   if(elsewhere.length){ const groups={}; for(const i of elsewhere) (groups[i.where]=groups[i.where]||[]).push(i);
     const inner = elseOpen ? Object.keys(groups).map(w=>`<div class="elsehd">${esc(whereNames(whereIds({ where:w })).join(" or ")||"Another shop")}</div>${pillsMixed(sortList(groups[w]))}`).join("") : "";
     bodyBlocks.push(`<section class="cat elsewhere"><button class="elsebtn" id="elseToggle" aria-expanded="${elseOpen?'true':'false'}"><span>${t("For other shops")}</span> <span class="cnum">${elsewhere.length}${elseOpen?' ▾':' ▸'}</span></button>${inner}</section>`); }
-  const listBody = bodyBlocks.join("");
+  /* v2.95 Edit this page: the urgent and "for other shops" sections are blocks of their own; the rest is the list */
+  const isSec = (b, c) => b.startsWith(`<section class="cat ${c}`);
+  const pbUrgent = bodyBlocks.filter(b => isSec(b, "urgentsec")).join("");
+  const pbElse = bodyBlocks.filter(b => isSec(b, "elsewhere")).join("");
+  const listBody = bodyBlocks.filter(b => !isSec(b, "urgentsec") && !isSec(b, "elsewhere")).join("");
   const cartDrop = done>0 && !_cartWasShown; _cartWasShown = done>0; if(cartDrop) _cartDropping = true;   // v2.12 slides down only when the first item goes in
   /* v2.93 (the household, parked at v2.72 item 5): the card and the receipt prompts drop down from under the top bar in one
      fixed panel, instead of sitting at the top of the list where they scrolled away. Not modal; gone when both are. */
@@ -5353,7 +5358,7 @@ function renderMain(){
     ${checkedBar}${tillTop}
     <div class="wrap ${shopMode?'shop':''}" role="main">
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
-      ${lockedHTML()}${newerDataHTML()}${shoppingHTML()}${(()=>{ const c=(lookCardHTML()||prefsCardHTML())+installCardHTML(); return c || (tillInner ? "" : onbCardHTML()); })()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
+      ${lockedHTML()}${newerDataHTML()}${pageBlocksHTML("shop", { "shop.notes": `${shoppingHTML()}${(()=>{ const c=(lookCardHTML()||prefsCardHTML())+installCardHTML(); return c || (tillInner ? "" : onbCardHTML()); })()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
           ${/* v2.56 item 4: a drawn empty basket, and two ways to start — say it, or type it */""}
           <div class="empty-basket">${BASKET_SVG}</div>
           <p class="empty-title">${t("Your list is empty")}</p>
@@ -5362,10 +5367,8 @@ function renderMain(){
             <button class="pill baadd" id="emptyAdd" aria-label="${t("Add items")}"><span class="baplus" aria-hidden="true">+</span></button>
           </div>
         </div>`:""}
-      ${mergeCardHTML()}
-      ${listBody}
-      ${planningSection()}
-    </div></div>
+      ${mergeCardHTML()}`.trim(), "shop.urgent":pbUrgent, "shop.list":listBody.trim(), "shop.else":pbElse, "shop.regulars":planningSection().trim() })}
+    </div></div>${pageEditBarHTML("shop")}
   </div>
   ${!addOpen?`<div class="addpill-wrap" id="shopAddFabWrap"><button class="addpill" id="shopAddFab" aria-label="${t("Add items")}"><span class="addpill-in"><span class="addpill-plus" aria-hidden="true">+</span><span class="addpill-lbl">${t("Add items")}</span></span></button></div>`:""}${/* v1.36 item 4: search bar shows even on an empty list */""}
   ${bottomNav({planId:"planNav",planActive:false,cartId:"cartNav",cartActive:true,setId:"setNav"})}${userTilesHTML()}  ${finishOpen?finishSheet():""}
@@ -5696,16 +5699,16 @@ function renderPlanTab(){
     </div>
     <div class="wrap" role="main">
     <div class="zoomwrap"><div class="zoomer" id="zoomer">
-      <div class="planweek">
+      ${pageBlocksHTML("plan", { "plan.week": `<div class="planweek">
         <button class="pwarrow" id="pwPrev" aria-label="${t("Previous week")}">‹</button>
         <button class="pwlbl" id="pwNow">${esc(weekLabel(planWeek))}</button>
         <button class="pwarrow" id="pwNext" aria-label="${t("Next week")}">›</button>
         <button class="pwarrow" id="pwMore" aria-haspopup="dialog" aria-label="${t("Save or clear this week")}">⋯</button>
-      </div>
-      ${planWeekCount(planWeek) ? "" : `<div class="planhint" role="note"><p>${t("Plan your dinners here, then add every ingredient to the shopping list in one tap.")}</p><button class="newlist" id="pwHint" data-pd="${esc(hintK)}">${planWeek===0 ? t("Plan today") : t("Plan Monday")}</button></div>`}
-      ${days.join("")}
-      ${planWeekCount(planWeek) ? `<button class="newlist" id="pwToList" style="margin-top:14px">${t("Add this week to the list")}</button>` : ""}
-    </div></div>
+      </div>`,
+      "plan.hint": planWeekCount(planWeek) ? "" : `<div class="planhint" role="note"><p>${t("Plan your dinners here, then add every ingredient to the shopping list in one tap.")}</p><button class="newlist" id="pwHint" data-pd="${esc(hintK)}">${planWeek===0 ? t("Plan today") : t("Plan Monday")}</button></div>`,
+      "plan.days": days.join(""),
+      "plan.tolist": planWeekCount(planWeek) ? `<button class="newlist" id="pwToList" style="margin-top:14px">${t("Add this week to the list")}</button>` : "" })}
+    </div></div>${pageEditBarHTML("plan")}
   </div>
   ${bottomNav({planId:"planNavP",planActive:true,cartId:"cartNavP",cartActive:false,setId:"setNavP"})}${userTilesHTML()}
   ${planMenu?planMenuSheet():""}
@@ -5737,6 +5740,7 @@ function planWeekSheet(){
     <p class="hint" style="text-align:left;margin:0 0 12px">${n?(n===1?t("1 meal planned."):tf("{n} meals planned.", { n })):t("Nothing planned yet — nothing to save.")}</p>
     <button class="optaction" id="pwSave"${n?"":" disabled"}>${SAVE_SVG(16)} ${t("Save this week")}</button>
     <button class="optaction" id="pwClear"${n?"":" disabled"} style="border-color:#C24A33;color:#C24A33">${BROOM_SVG(16)} ${t("Clear this week")}</button>
+    <button class="optaction" id="pwEdit">${PAGE_EDIT_SVG(16)} ${t("Edit this page")}</button>${/* v2.95 */""}
     ${saved.length?`<p class="palabel" style="margin-top:14px">${t("Saved plans")}</p>
       <div class="pills">${saved.map(pl=>`<span class="precwrap"><button class="sugchip" data-pwapply="${esc(pl.id)}">${pl.name?esc(pl.name):t("Plan")}</button><button class="precdel" data-pwdel="${esc(pl.id)}" aria-label="${tf("Delete {x}", { x:pl.name?esc(pl.name):t("Plan") })}">×</button></span>`).join("")}</div>`:""}
   </div></div>`;
@@ -6261,6 +6265,66 @@ function wireAisleMap(){
 /* v2.30 the Shop page's menu (item 17): what you reach for in the shop — read the receipt, which store is cheaper, what we
    spend, this shop's aisle map, send the list, add an occasion — and Report a problem, which the button used to be. */
 var shopMenuOpen = false;   // var: render() reads it at boot
+/* v2.95 Edit this page (the page builder, step 1): Shop and Plan are columns of blocks; in edit mode each can move up or down,
+   hide, and be full, half or a third wide. ml_pagelay = { shop:{ o:[ids], h:[ids], w:{ id:"half"|"third" } }, plan:{…} } is a
+   LOOK, so it is deliberately NOT in APP_EXCLUDE / APP_EXCLUDE_BOOT: the appearance slots and the looks carry it. */
+var pageEdit = "";   // "" | "shop" | "plan" — var: render() reads it at boot
+function pbIds(page){ return ({ shop:["shop.notes","shop.urgent","shop.list","shop.else","shop.regulars"], plan:["plan.week","plan.hint","plan.days","plan.tolist"] })[page] || []; }   // a function: hoisted, safe at boot
+var PB_NAME = { "shop.notes":"Messages", "shop.urgent":"Urgent", "shop.list":"Your list", "shop.else":"For other shops", "shop.regulars":"Regulars",
+  "plan.week":"Week", "plan.hint":"Tip", "plan.days":"Days", "plan.tolist":"Add to list" };
+const PAGE_EDIT_SVG = (s=18) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>`;
+const PB_UP_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>`;
+const PB_DOWN_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
+const PB_EYE_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const PB_EYEOFF_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 20L20 4"/></svg>`;
+function pageLayAll(){ try{ const a = JSON.parse(localStorage.getItem("ml_pagelay") || "{}"); return (a && typeof a === "object" && !Array.isArray(a)) ? a : {}; }catch(e){ return {}; } }
+function pageLay(page){ const ids = pbIds(page), ok = x => ids.includes(x);
+  const r = pageLayAll()[page], rec = (r && typeof r === "object") ? r : {};
+  const o = Array.isArray(rec.o) ? rec.o.filter((x, i, a) => ok(x) && a.indexOf(x) === i) : [];
+  const h = Array.isArray(rec.h) ? rec.h.filter((x, i, a) => ok(x) && a.indexOf(x) === i) : [];
+  const w = {}; if(rec.w && typeof rec.w === "object") for(const k in rec.w){ if(ok(k) && (rec.w[k] === "half" || rec.w[k] === "third")) w[k] = rec.w[k]; }
+  return { o, h, w }; }
+function pageLaySet(page, rec){ const all = pageLayAll();
+  if(rec) all[page] = rec; else delete all[page];
+  try{ if(Object.keys(all).length) localStorage.setItem("ml_pagelay", JSON.stringify(all)); else localStorage.removeItem("ml_pagelay"); }catch(e){} }
+/* the saved order, with any block it does not name (new in a later version) where today's default order puts it */
+function pageOrder(page){ const ids = pbIds(page), out = pageLay(page).o.slice();
+  ids.forEach((id, i) => { if(out.includes(id)) return; let at = 0;
+    for(let j = i - 1; j >= 0; j--){ const p = out.indexOf(ids[j]); if(p >= 0){ at = p + 1; break; } }
+    out.splice(at, 0, id); });
+  return out; }
+/* parts: { id: html }. An empty part is not drawn at all; a hidden one only in edit mode, dimmed. No measuring here. */
+function pageBlocksHTML(page, parts){ const L = pageLay(page), ed = pageEdit === page;
+  const shown = pageOrder(page).filter(id => parts[id] && (ed || !L.h.includes(id)));
+  const WL = { "":"Full", half:"½", third:"⅓" };
+  return `<div class="pblocks${ed ? ' editing' : ''}" data-page="${page}">${shown.map((id, i) => { const hid = L.h.includes(id), w = L.w[id] || "";
+    const tools = ed ? `<span class="pblbl">${t(PB_NAME[id])}</span><span class="pbtools">`
+      + `<button class="pbbtn" data-pbmove="-1" data-pbid="${id}" aria-label="${t("Move up")}"${i === 0 ? " disabled" : ""}>${PB_UP_SVG}</button>`
+      + `<button class="pbbtn" data-pbmove="1" data-pbid="${id}" aria-label="${t("Move down")}"${i === shown.length - 1 ? " disabled" : ""}>${PB_DOWN_SVG}</button>`
+      + `<button class="pbbtn" data-pbhide="${id}" aria-label="${hid ? t("Show") : t("Hide")}">${hid ? PB_EYEOFF_SVG : PB_EYE_SVG}</button>`
+      + `<button class="pbbtn pbw" data-pbwidth="${id}" aria-label="${tf("Width: {w}", { w:t(WL[w]) })}">${t(WL[w])}</button></span>` : "";
+    return `<div class="pblock${w ? ' w-' + w : ''}${hid ? ' pbhidden' : ''}" data-pb="${id}">${tools}<div class="pbin">${parts[id]}</div></div>`; }).join("")}</div>`; }
+function pageEditBarHTML(page){ if(pageEdit !== page) return "";
+  return `<div class="pagedit" id="pageEditBar" role="region" aria-label="${t("Editing this page")}"><span class="pagedit-t">${t("Editing this page")}</span>`
+    + `<button class="colbtn2" id="peReset">${t("Reset")}</button><button class="colbtn2 on" id="peDone">${t("Done")}</button></div>`; }
+function wirePageEdit(){
+  const pe = app.querySelector("#pwEdit"); if(pe) pe.onclick = () => { planWeekOpen = false; pageEdit = "plan"; render(); };
+  const box = app.querySelector(".pblocks.editing");
+  if(box){ const page = box.dataset.page;
+    const cur = () => { const L = pageLay(page); return { o:pageOrder(page), h:L.h, w:L.w }; };
+    box.querySelectorAll("[data-pbmove]").forEach(b => b.onclick = () => { const id = b.dataset.pbid, d = +b.dataset.pbmove, L = cur();
+      const vis = [...box.querySelectorAll(".pblock")].map(x => x.dataset.pb), k = vis.indexOf(id), other = vis[k + d];
+      if(!other) return; const a = L.o.indexOf(id), c = L.o.indexOf(other); L.o[a] = other; L.o[c] = id; pageLaySet(page, L); render(); });
+    box.querySelectorAll("[data-pbhide]").forEach(b => b.onclick = () => { const id = b.dataset.pbhide, L = cur();
+      L.h = L.h.includes(id) ? L.h.filter(x => x !== id) : L.h.concat(id); pageLaySet(page, L); render(); });
+    box.querySelectorAll("[data-pbwidth]").forEach(b => b.onclick = () => { const id = b.dataset.pbwidth, L = cur();
+      const nx = { "":"half", half:"third", third:"" }[L.w[id] || ""]; if(nx) L.w[id] = nx; else delete L.w[id]; pageLaySet(page, L); render(); }); }
+  const dn = app.querySelector("#peDone"); if(dn) dn.onclick = () => { pageEdit = ""; render(); };
+  const rs = app.querySelector("#peReset"); if(rs) rs.onclick = () => { if(!confirm(t("Put this page back as it was?"))) return; pageLaySet(pageEdit, null); render(); };
+  const es = app.querySelector("#optEditShop"); if(es) es.onclick = () => { pageEdit = "shop"; gotoPage(1); };
+  const ep = app.querySelector("#optEditPlan"); if(ep) ep.onclick = () => { pageEdit = "plan"; gotoPage(0); };
+  const ra = app.querySelector("#optPageReset"); if(ra) ra.onclick = () => { if(!confirm(t("Put the Shop and Plan pages back as they were?"))) return; try{ localStorage.removeItem("ml_pagelay"); }catch(e){} render(); };
+}
 var smStoreAdding = false;   // v2.72: the menu's "＋ New shop" row is showing. var: render() reads it at boot
 function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRealStore(st.id));
   const item = (id, icon, label) => `<button class="smitem" id="${id}" role="menuitem">${icon}<span>${label}</span></button>`;
@@ -6284,6 +6348,7 @@ function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRe
     ${real ? item("smAisle", PIN_SVG(18), tf("Aisle map for {x}", { x:esc(st.name) })) : ""}
     ${item("smSend", SHARE_SVG(18), t("Send what's to buy"))}
     ${item("smOcc", SAVE_SVG(18), t("Occasions — BBQ, camping…"))}
+    ${item("smEditPage", PAGE_EDIT_SVG(18), t("Edit this page"))}${/* v2.95 */""}
     <div class="smsep"></div>
     ${item("smReport", REPORT_SVG(18), t("Report a problem"))}
   </div></div>`; }
@@ -6326,6 +6391,7 @@ function wireShopMenu(){
   on("smOcc", () => { occSheet = { mode:"add" }; render(); });
   on("smCard", () => { const c = cardHere().c || cardsGet()[0]; cardShow = c ? { id:c.id } : { add:true }; render(); });   // v2.35: the shop you are at, else the first; none yet → straight to adding one
   on("smReport", () => { rpt = { kind:"broken", text:"", diag:true }; render(); });
+  on("smEditPage", () => { pageEdit = "shop"; render(); });   // v2.95
   app.querySelectorAll("[data-sm-cols]").forEach(c => c.onclick = () => setLargeCols(+c.dataset.smCols));
   app.querySelectorAll("[data-sm-lines]").forEach(c => c.onclick = () => setTileLines(c.dataset.smLines));   // v2.78: the menu stays open, like Tiles
   app.querySelectorAll("[data-sm-zoom]").forEach(c => c.onclick = () => setDensity(dens() + 0.1 * (+c.dataset.smZoom)));   // v2.63: as #optZoomMinus/#optZoomPlus; setDensity re-renders, the menu stays open
@@ -7244,7 +7310,7 @@ function wirePlanTab(){ wireSiri(); wireVoice();   // v2.62: the Siri / no-list 
   const st=app.querySelector("#setNavP"); if(st) st.onclick=()=>{ settingsFrom=0; gotoPage(2); };
   wireListsSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireFridge(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireFridge(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePageEdit(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();
   wireUserTiles();
 }
 /* v1.90: a recipe page shared into the app. Android hands it over directly through the manifest's
@@ -7455,7 +7521,7 @@ function wirePlanPage(){
   const qbc=app.querySelector("#qbannerClose"); if(qbc) qbc.onclick=()=>{ quickEdit=null; render(); };
   const qbr=app.querySelector("#qbannerRemove"); if(qbr) qbr.onclick=()=>{ const it=state.items.find(i=>i.id===quickEdit); const nm=it?cap(it.name):""; const id=quickEdit; quickEdit=null; planRemove(id); if(nm) showToast(nm+" moved to Regulars"); };
   wireSmartSheet();
-  wireRcptSheet(); wireFridge(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireFridge(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePageEdit(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>gotoPage(0);
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireUserTiles();
@@ -7477,7 +7543,7 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
     if(i){ i.value=""; i.parentElement.classList.remove("has"); i.focus(); } filterOptions(); };
   wireOptions();
   wireEditSheet();
-  wireRcptSheet(); wireFridge(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
+  wireRcptSheet(); wireFridge(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePageEdit(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 /* v1.77 item 3: which sections are folded. Keyed by the section's own name rather than its index, so
@@ -8453,6 +8519,8 @@ function optionsBody(){
         hasNumDefs()?`<button id="optNumReset" class="colbtn2">${t("Reset to mine")}</button>`:""
       }<button id="optNumFactory" class="colbtn2">${t("Factory default")}</button></div></div></div>
     <div class="opthint">${t("The space around every page — Plan, Shop and Settings.")}</div>
+    <div class="optrow"><span class="optlabel">${t("Page layout")}</span><div class="numbtns"><button id="optEditShop" class="colbtn2">${t("Edit Shop")}</button><button id="optEditPlan" class="colbtn2">${t("Edit Plan")}</button><button id="optPageReset" class="colbtn2">${t("Reset all")}</button></div></div>
+    <div class="opthint">${t("Move, hide and resize the parts of the Shop and Plan pages. Also in each page's ⋯ menu.")}</div>
     ${/* v1.75 item 3: the two page-change controls sit with Text size and the wallpaper — the settings
           that change how the whole app looks and moves rather than one part of it. */""}
     <div class="optrow optrow-wide optnl"><span class="optlabel">${t("Page slides in from")}</span><div class="optwide">
@@ -8958,7 +9026,7 @@ function wire(){
   const et=app.querySelector("#elseToggle"); if(et) et.onclick=()=>{ elseOpen=!elseOpen; render(); };   // v2.22 R17
   wireAddSheet();
   wireSmartSheet(); wireVoice(); wireSiri();
-  wireRcptSheet(); wireFridge(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireFridge(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePageEdit(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();
   { const cb=app.querySelector("#checkedbar.drop"); if(_cartDropping){ const done=()=>{ _cartDropping=false; };
       if(cb && !matchMedia("(prefers-reduced-motion: reduce)").matches){ cb.addEventListener("animationend", done, { once:true }); setTimeout(done, 700); } else done(); } }
   const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ if(_cartDropping) return;   /* v2.72: a stray tap from the tick that moved the list */
@@ -9211,6 +9279,7 @@ function wireEditSheet(){
 function curPageIdx(){ return optOpen ? 2 : (view==="plan" ? 0 : 1); }
 function applyPage(idx){
   catEntry=null; quickEdit=null;
+  if(pageEdit && pageEdit !== (idx===0 ? "plan" : idx===1 ? "shop" : "")) pageEdit = "";   // v2.95 leaving the page leaves edit mode
   if(idx===2){ optOpen=true; return; }
   optOpen=false;
   if(idx===0){ view="plan"; } else { view="detail"; shopMode=true; }

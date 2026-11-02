@@ -303,6 +303,26 @@
   .tilltop.drop { animation:sheetdown .24s cubic-bezier(.32,.72,.3,1); }
   .tilltop > .installcard:last-child { margin-bottom:0; }
   @media (prefers-reduced-motion: reduce) { .tilltop.drop { animation:none; } }
+  /* v2.95 Edit this page: Shop and Plan are columns of blocks, full, half or a third wide (narrower ones sit side by side).
+     The gap across is the tiles' own (--tilegapx), never below 0. In edit mode each block is outlined and its content cannot
+     be tapped; a toolbar sits on its top-right corner and the bar under the header (placed by syncZoomHeight, as the till panel). */
+  .pblocks { --pbgap:max(0px, var(--tilegapx,8px)); display:flex; flex-wrap:wrap; gap:0 var(--pbgap); align-items:flex-start; }
+  .pblock { flex:0 0 100%; min-width:0; }
+  .pblock.w-half { flex-basis:calc(50% - var(--pbgap)/2); }
+  .pblock.w-third { flex-basis:calc(33.333% - var(--pbgap)*2/3); }
+  .pblocks.editing { padding-top:58px; }
+  .pblocks.editing .pblock { position:relative; outline:2px dashed var(--accent); outline-offset:-2px; border-radius:12px; padding:44px 6px 6px; margin-bottom:10px; box-sizing:border-box; }
+  .pblocks.editing .pbin { pointer-events:none; user-select:none; -webkit-user-select:none; }
+  .pblocks.editing .pbhidden .pbin { opacity:.35; }
+  .pblbl { position:absolute; top:10px; left:10px; font-size:13px; font-weight:800; color:var(--accent); max-width:40%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .pbtools { position:absolute; top:4px; right:4px; display:flex; gap:2px; pointer-events:auto; }
+  .pbbtn { min-width:36px; height:36px; padding:0 6px; border:none; border-radius:10px; background:var(--chip); color:var(--text); font:inherit; font-weight:800; font-size:14px; display:inline-flex; align-items:center; justify-content:center; }
+  .pbbtn:disabled { opacity:.35; }
+  .pagedit { position:fixed; z-index:28; top:0; left:var(--topleft, 0px); right:var(--topright, 0px); margin:0 auto; max-width:var(--topw, 480px);
+    box-sizing:border-box; display:flex; align-items:center; gap:8px; padding:8px var(--padr,14px) 10px var(--padl,14px);
+    background:var(--lksbg, var(--glass-bg, var(--paper))); color:var(--lkstext, inherit); -webkit-backdrop-filter:blur(18px); backdrop-filter:blur(18px);
+    border-bottom:1px solid var(--glass-brd); border-radius:0 0 22px 22px; box-shadow:0 8px 16px -12px rgba(20,30,22,.45); }
+  .pagedit-t { flex:1; font-weight:800; font-size:15px; }
   /* v2.00 item 1: the count and the action share one row. v2.10: the scroll area now opens DOWNWARDS,
      under that row, so the row stays put under the header when the drawer expands. */
   .checkedfoot { flex:none; display:flex; align-items:center; gap:10px; padding:0 var(--padr,14px) 0 var(--padl,14px); }
@@ -2569,3 +2589,20 @@ html body .zoomer.zoomer.zoomer.linelist .pill.pill > :is(.pill-meta, .cu-alt, .
 html body .zoomer.zoomer.zoomer.linelist .pill.pill > .pnote { flex:1 1 0; min-width:0; }
 html body .zoomer.zoomer.zoomer.linelist .pill.pill:not(:has(> .pnote)) > .pname { margin-right:auto; }
 html body .zoomer.zoomer.zoomer.linelist .pill.pill > :is(.pill-meta, .cu-alt) { margin-left:8px; }
+
+/* v2.95b: a half- or third-width block shows proportionally fewer tile columns (rounded up), not the page's count in a third of
+   the room. Smaller tiles (--sc) take two columns in a half block and one in a third. */
+.shop .zoomer.grid1 .pblock.w-half .pills { grid-template-columns:repeat(1, minmax(0,1fr)); }
+.shop .zoomer.grid1 .pblock.w-third .pills { grid-template-columns:repeat(1, minmax(0,1fr)); }
+.shop .zoomer.grid2 .pblock.w-half .pills { grid-template-columns:repeat(1, minmax(0,1fr)); }
+.shop .zoomer.grid2 .pblock.w-third .pills { grid-template-columns:repeat(1, minmax(0,1fr)); }
+.shop .zoomer.grid3 .pblock.w-half .pills { grid-template-columns:repeat(2, minmax(0,1fr)); }
+.shop .zoomer.grid3 .pblock.w-third .pills { grid-template-columns:repeat(1, minmax(0,1fr)); }
+.shop .zoomer.grid4 .pblock.w-half .pills { grid-template-columns:repeat(2, minmax(0,1fr)); }
+.shop .zoomer.grid4 .pblock.w-third .pills { grid-template-columns:repeat(2, minmax(0,1fr)); }
+.shop .zoomer.grid5 .pblock.w-half .pills { grid-template-columns:repeat(3, minmax(0,1fr)); }
+.shop .zoomer.grid5 .pblock.w-third .pills { grid-template-columns:repeat(2, minmax(0,1fr)); }
+.shop .zoomer.grid6 .pblock.w-half .pills { grid-template-columns:repeat(3, minmax(0,1fr)); }
+.shop .zoomer.grid6 .pblock.w-third .pills { grid-template-columns:repeat(2, minmax(0,1fr)); }
+.shop .zoomer.smalltile.gridmode .pblock.w-half .pills { grid-template-columns:repeat(min(2, var(--sc,3)), minmax(0,1fr)); }
+.shop .zoomer.smalltile.gridmode .pblock.w-third .pills { grid-template-columns:1fr; }
