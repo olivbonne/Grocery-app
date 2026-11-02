@@ -12,10 +12,10 @@ for byte. Later phases move cohesive parts of `js/app.js` into modules of their 
 live household sync, Vercel serves `main` as static files. Used as an iPhone home-screen app, portrait-only,
 max-width 480px.
 
-Seven serverless functions in `api/` (CommonJS, Vercel, `maxDuration` 60s in `vercel.json`):
+Eight serverless functions in `api/` (CommonJS, Vercel, `maxDuration` 60s in `vercel.json`):
 `parse.js` (Smart add), `recipe.js` (recipe from text, a link, a TikTok or a photo),
 `recipe-search.js`, `receipt.js` (a receipt photo → items and prices, v2.09; it never logs the photo
-or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and what it lists; built from receipt.js, the same no-logging rule), `card.js` (v2.35, a photo of a membership card → its name and number, only when the phone cannot read the barcode itself; the same no-logging rule, and never the number) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, or a `[feedback]` log line). Their shared helper is `lib/guard.js` (v2.39). Their keys and settings are env vars — see `docs/ai-setup.md`.
+or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and what it lists; built from receipt.js, the same no-logging rule), `card.js` (v2.35, a photo of a membership card → its name and number, only when the phone cannot read the barcode itself; the same no-logging rule, and never the number) `fridge.js` (v2.94, a photo of the fridge or pantry → the products it shows, matched to the list; the same no-logging rule) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, or a `[feedback]` log line). Their shared helper is `lib/guard.js` (v2.39). Their keys and settings are env vars — see `docs/ai-setup.md`.
 
 ## Conventions
 - **Versioning:** bump the version by 0.01 per batch of app changes with `node .claude/tools/bump.js N.NN`
@@ -95,7 +95,7 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   `<div class="opthint">` right after its row: `infoBubbles()` folds it behind an (i) on the row's label — write new ones that way. The search (`filterOptions`) only toggles classes — never `render()` from it,
   or the field loses focus and the keyboard drops. A suite that drives a look control opens that page first.
 - **Device features go through `js/platform.js` (v2.43)** — file pickers, location, wake lock, share, barcode, speech. A future native app replaces that file's insides; never call `navigator.*` device APIs or build a file `<input>` directly in js/app.js.
-- **The database goes through `js/store.js` (v2.55).** Since v2.58 a split list's items live in lists/{code}/items/{id} (store.js `col`/`listenAll`/`putMany`); `save()` writes only the items that changed and the list record only when it changed; `maybeMigrate()` moves a v2 list once, parts last.
+- **The database goes through `js/store.js` (v2.55).** Since v2.58 a split list's items live in lists/{code}/items/{id} (store.js `col`/`listenAll`/`putMany`); `save()` writes only the items that changed and the list record only when it changed; `maybeMigrate()` moves a v2 list once, parts last. Since v2.94 the list record's frozen copies of moved parts are emptied once every one of them is confirmed on the server (`maybeClearFrozen`, after a local backup).
 - **Two category sets (v2.33).** Lists made before v2.33 keep the nine (`DEFAULT_CATS`); a list made since (`_freshList`)
   starts with the thirteen plus Others (`CATS13`, in the order a shop is walked). The dictionary, the AI readers and receipts
   still speak the nine: every place an item is ADDED goes through `newCat(cat, name)`, which on a thirteen-list puts it where
@@ -155,7 +155,7 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   target, refuses an inline module or `<style>` back in `index.html`, and checks `api/*.js` too. (Until v2.18
   it extracted the inline module to the LAST `</script>` — the module holds one inside a template literal.)
 - **Per-version suites live in `.claude/tests/`** — one browser suite per version, plus
-  `api-recipe.js`, `api-recipe-search.js`, `api-receipt.js`, `api-aisle.js`, `api-card.js` and `api-feedback.js`, which test the serverless functions directly with no
+  `api-recipe.js`, `api-recipe-search.js`, `api-receipt.js`, `api-aisle.js`, `api-card.js`, `api-fridge.js` and `api-feedback.js`, which test the serverless functions directly with no
   network. See `.claude/tests/README.md` for how to run them and what a check has to prove. Never
   leave a suite in the scratchpad: it is not durable, and every suite up to v1.76 was lost that way.
 - Behaviour: the `/verify-app` skill serves the repo, launches headless Chromium

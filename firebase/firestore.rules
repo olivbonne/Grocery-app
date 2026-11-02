@@ -175,12 +175,12 @@ service cloud.firestore {
       function up(ks, k) { return ks.hasOnly([k]) && request.resource.data[k] is int && request.resource.data[k] == was(k) + 1; }
       function plusOne() {
         let ks = request.resource.data.diff(resource == null ? {} : resource.data).affectedKeys();
-        return ks.size() == 1 && (up(ks, 'receipt') || up(ks, 'card') || up(ks, 'aisle') || up(ks, 'parse')
+        return ks.size() == 1 && (up(ks, 'receipt') || up(ks, 'card') || up(ks, 'aisle') || up(ks, 'fridge') || up(ks, 'parse')
           || up(ks, 'recipe') || up(ks, 'recipeSearch') || up(ks, 'feedback'));
       }
       allow read: if mine();
       allow create, update: if mine() && day.matches('^20[0-9]{2}-[0-9]{2}-[0-9]{2}$')
-                            && request.resource.data.keys().hasOnly(['receipt', 'card', 'aisle', 'parse', 'recipe', 'recipeSearch', 'feedback'])
+                            && request.resource.data.keys().hasOnly(['receipt', 'card', 'aisle', 'fridge', 'parse', 'recipe', 'recipeSearch', 'feedback'])
                             && plusOne();
       allow delete: if false;
     }

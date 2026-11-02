@@ -1041,6 +1041,20 @@ export const FR = {
   // v2.86: the tile rules
   "Preview — changes as you choose below": "Aperçu — change selon vos choix ci-dessous",
   "On the border needs a tile gap of 13 or more, across and down (Tile gap, above).": "Sur le bord demande un espacement des tuiles de 13 ou plus, horizontal et vertical (Espacement des tuiles, plus haut).",
+  // v2.94: What's in the fridge?
+  "What's in the fridge?": "Qu'y a-t-il dans le frigo ?",
+  "In the photo": "Sur la photo",
+  "Looking at the photo…": "Analyse de la photo…",
+  "On your list — you have these": "Sur votre liste — vous les avez déjà",
+  "Also seen": "Vu aussi",
+  "Nothing recognised. Try a closer photo, in good light.": "Rien de reconnu. Essayez une photo plus proche, bien éclairée.",
+  "Take {n} off the list": "Retirer {n} de la liste",
+  "Took {n} off the list — you have them": "{n} retiré(s) de la liste — vous les avez",
+  "Photo reading isn't set up on the server yet.": "La lecture des photos n'est pas encore configurée sur le serveur.",
+  "Couldn't use that photo. Try a closer one.": "Impossible d'utiliser cette photo. Essayez-en une plus proche.",
+  "The photo reader's model has changed on the server — it needs a new setting.": "Le modèle de lecture des photos a changé sur le serveur — il faut un nouveau réglage.",
+  "The reader couldn't make sense of that photo. Try again, closer and in good light.": "Le lecteur n'a pas compris cette photo. Réessayez, plus près et bien éclairé.",
+  "Couldn't read that photo.": "Impossible de lire cette photo.",
 };
 
 /* v2.55: the languages the app speaks. To add one: write its table (same keys as FR — the English text — with that

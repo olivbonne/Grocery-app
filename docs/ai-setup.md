@@ -170,6 +170,14 @@ lower-case words for what the sign lists. It is built from `api/receipt.js`: the
 to set up. It never logs the photo or what it read. A photo that is not a sign comes back as `{ aisle:"", items:[] }`.
 In the app it fills Settings › Sort › Aisle map, one line per sign, at most 60 signs a day per phone.
 
+## What's in the fridge? (v2.94)
+
+`POST /api/fridge` with `{ image }` (a `data:` URL of a photo of a fridge, freezer or pantry shelf) returns
+`{ items: [{ name, brand, size, qty, category }] }` — the grocery products clearly visible, at most 60. It is built from
+`api/aisle.js`: the same key, the same vision model (`GEMINI_MODEL` on Gemini, `GROQ_VISION_MODEL` on Groq), the same
+retries, time budget and error codes. Nothing new to set up. It never logs the photo or what it read. In the app the matches
+to the list are confirmed before anything changes, at most 30 photos a day per phone (`QUOTA_FRIDGE` to change it).
+
 ## Report a problem (v2.13)
 
 `POST /api/feedback` with `{ kind, text, diag }` — `kind` is `broken`, `looks`, `idea`, `complaint`, or
