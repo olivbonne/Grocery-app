@@ -254,3 +254,15 @@ the household asked for is not a lesson.*
     — the household thought Tofu was duplicated (fixed v2.90: results carry the list item's note, one tile per list item, one
     "+ another" per name). *Guard:* whatever tells two items apart on the list (name + note since v2.70) is shown wherever those
     items are offered; the v2.90 suite puts two same-name items in the + sheet and checks both notes show.
+62. **Making two things easy to tell apart means checking when they become the same again.** v2.70 kept items of one name
+    apart by their note, and v2.90 made "another one of the same" one tap — but an item added in the + sheet whose note was then
+    typed to match an item already on the list stayed a separate item, so the household got two "Can sardine · Tomatoe" (and a
+    plain one when the note was never typed) (fixed v2.92: when the sheet commits, an added item that matches name, category and
+    note folds into the one already there). *Guard:* whenever an item's identity (name + category + note) can change after it
+    is created, the place that commits it checks for a twin; the v2.92 suite types a note that matches an existing item and
+    checks one item with the summed count is left.
+63. **A failure message that hides its reason cannot be fixed from a report.** Seven different server codes (a retired model,
+    an unreadable reply, an upstream error…) all read "Couldn't read that receipt.", and the server's own log keeps one hour, so
+    "read receipt doesn't work" a day later could not be diagnosed (v2.92). *Guard:* every failed wait shows its reason code in a
+    line the household can quote, and writes it to the screen trail that Report a problem sends; the v2.92 suite checks the
+    code appears for a server failure and for a dropped connection.

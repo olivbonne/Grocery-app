@@ -812,7 +812,11 @@
   .tenrow input { width:20px; height:20px; flex:none; accent-color:var(--accent); }
   .tenrow .tr-n { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
   .tenrow .tr-s { font-size:11.5px; font-weight:600; color:var(--muted2); }
-  .tenrow .tr-p { flex:none; font-variant-numeric:tabular-nums; }
+  .tenrow .tr-p { flex:none; min-width:58px; text-align:right; font-variant-numeric:tabular-nums; }
+  /* v2.92 a row's amount: a compact stepper that never wraps, the price right-aligned after it */
+  .tenrow .tenqty { flex:none; border-radius:9px; }
+  .tenrow .tenqty button { width:30px; height:32px; font-size:17px; }
+  .tenrow .tenqty span { min-width:24px; font-size:14px; }
   .tensum { margin-top:10px; font-size:13px; font-weight:800; color:var(--text); }
   .membstat { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:2px 2px 8px; font-size:13px; font-weight:700; color:var(--muted2); }
   /* v2.21 which store is cheaper: the headline, then one row per store */

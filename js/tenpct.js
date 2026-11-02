@@ -25,8 +25,11 @@ export function chainOfStore(name){ const n = String(name || ""); for(const k of
    into their item's price by the receipt reader, so a percentage here is a whole-shop discount). */
 export function discountSeen(discounts, chain){ const c = CHAINS[chain]; if(!c || !Array.isArray(discounts)) return false;
   return discounts.some(x => x && (c.discount.test(String(x.raw || "")) || /\b\d{1,2}(\.\d)?\s*%/.test(String(x.raw || "")))); }
-/* Will not keep for a month: left out. Keeps if frozen: listed, unticked, your call. */
-export const KEEP_OUT = ["fruit", "vegetable", "fresh"];
+/* Fresh food is bought as usual, not stocked up: left out (v2.92 adds the thirteen-category lists' fresh shelves — dairy,
+   bakery, deli: yogurt, eggs, bread). Keeps if frozen: listed, unticked, your call. */
+export const KEEP_OUT = ["fruit", "vegetable", "fresh", "dairy", "bakery", "deli"];
+/* v2.92: a row's amount, changed in the sheet — the total follows (the rule lives here once) */
+export function setRowQty(row, q){ row.qty = clamp(Math.round(q), 1, 99); row.total = Math.round(row.unit * row.qty * 100) / 100; return row; }
 export const ASK = ["meat"];
 /* The period's stock-up list: everything the household rebuys on a rhythm (two or more purchases, a median gap of 1.5
    to 120 days), enough for one period (horizonDays), priced per unit from what they paid — at that chain when known.
@@ -40,10 +43,15 @@ export function stockUp({ purch, priceOf, pct, cap, horizonDays }){
     const g = []; for(let i = 1; i < r.ts.length; i++) g.push(r.ts[i] - r.ts[i - 1]);
     g.sort((a, b) => a - b); const med = g.length % 2 ? g[(g.length - 1) / 2] : (g[g.length / 2 - 1] + g[g.length / 2]) / 2;
     const days = med / DAY; if(!(days >= 1.5 && days <= 120)) continue;
-    const qty = Math.max(1, Math.round(horizonDays / days)) * Math.max(1, Math.round(+r.qty || 1));
+    const usual = Math.max(1, Math.round(+r.qty || 1)), qty = Math.max(1, Math.round(horizonDays / days)) * usual;
     const pr = priceOf ? priceOf(r.name) : null, unit = (pr && pr.unit > 0) ? pr.unit : 0;
-    rows.push({ key, name:r.name, cat:r.cat, weight:r.weight || "", qty, every:Math.max(1, Math.round(days)), unit,
-      total:Math.round(unit * qty * 100) / 100, sn:pr ? (pr.sn || "") : "", priced:unit > 0, ask:ASK.includes(r.cat), sel:false }); }
+    const row = { key, name:r.name, cat:r.cat, weight:r.weight || "", qty, usual, every:Math.max(1, Math.round(days)), unit,
+      total:0, sn:pr ? (pr.sn || "") : "", priced:unit > 0, ask:ASK.includes(r.cat), sel:false };
+    setRowQty(row, qty);   // the total, by the one rule (and the 1–99 bound)
+    /* v2.92: rows of the same name are one row — the larger month's worth (ties: the priced one, then the first) */
+    const nk = String(r.name || "").trim().toLowerCase(), at = rows.findIndex(x => String(x.name || "").trim().toLowerCase() === nk);
+    if(at < 0) rows.push(row);
+    else if(row.qty > rows[at].qty || (row.qty === rows[at].qty && row.priced && !rows[at].priced)) rows[at] = row; }
   rows.sort((a, b) => (b.priced - a.priced) || (a.ask - b.ask) || (a.every - b.every) || (b.total - a.total) || a.name.localeCompare(b.name));
   let total = 0;
   for(const x of rows){ if(!x.priced || x.ask) continue; if(total >= base) break; x.sel = true; total += x.total; }
