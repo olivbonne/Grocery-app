@@ -6,24 +6,24 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.93";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.93";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.93";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=2.93";
-import { compareStores, worthIt } from "./compare.js?v=2.93";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.93";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.93";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.93";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.93";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.93";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.93";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.93";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.93";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.93";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.94";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.94";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.94";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=2.94";
+import { compareStores, worthIt } from "./compare.js?v=2.94";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.94";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.94";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.94";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.94";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.94";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.94";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.94";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.94";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.94";   /* v2.45 (architecture review S17): the app in French as well as English */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.93";
+const APP_VERSION = "v2.94";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
@@ -2311,7 +2311,7 @@ function subscribe(){
   if(unsubItems){ try{ unsubItems(); }catch(e){} unsubItems=null; }
   Object.values(unsubParts).forEach(f => { try{ f(); }catch(e){} }); unsubParts = {};   // v2.75
   _remoteItems=new Map(); _frozenItems=null; _frozenTomb=null; _lastDocSig=""; docPend=false; itemsPend=false; _itemsSeen=false;
-  _remoteParts = {}; _partsSeen = {}; _frozenParts = {}; _partPend = {};
+  _remoteParts = {}; _partsSeen = {}; _frozenParts = {}; _partPend = {}; _srvSeen = {};
   if(!db) return;
   listRef = ref("lists", listCode);
   unsub = listen(listRef, snap => {
@@ -2348,7 +2348,7 @@ function subscribe(){
       if((state.predictReset||0) > _predReset) applyPredictReset(state.predictReset);   // household-wide predictions reset propagated via the synced epoch
       // converge: if our merged view holds Buy-again / restock history the server was missing, write it back once
       if((!moved("regulars") && baSig(mg.list, mg.tomb) !== baSig(d.buyAgain||[], d.baTomb||{})) || purchSig(state.purch||{}) !== purchSig(d.purch||{}) || (!split && itemsSig(mi.items, mi.tomb) !== itemsSig(d.items||[], d.itemTomb||{}))) save();
-      if(split){ startItems(); MOVED_PARTS.forEach(n => { if(moved(n)) startPart(n); }); maybeMigrateParts(d, snap); } else maybeMigrate(d, snap); }
+      if(split){ startItems(); MOVED_PARTS.forEach(n => { if(moved(n)) startPart(n); }); maybeMigrateParts(d, snap); maybeClearFrozen(); } else maybeMigrate(d, snap); }
     else if(snap.exists() && snap.metadata.hasPendingWrites){ /* keep local optimistic state */ }
     if(!syncing && !fromCache) dirtyIds.clear();   // v2.51: after the merge, which reads it
     ensureCats();
@@ -2385,14 +2385,14 @@ function startItems(){
     snap.docs.forEach(doc => { const x = doc.data() || {};
       if(x.gone){ remoteTomb[doc.id] = +x.gone; _remoteItems.set(doc.id, { gone:+x.gone }); }
       else { remote.push(x); _remoteItems.set(doc.id, { sig:itemSig(x), ts:+x.ts||0 }); } });
-    if(!snap.metadata.hasPendingWrites){ _itemsSeen = true;
+    if(!snap.metadata.hasPendingWrites){ _itemsSeen = true; if(!snap.metadata.fromCache) _srvSeen.items = true;   // v2.94: the server itself answered
       /* in a split list every phone is v3-aware and an item is never deleted without a tombstone, so an item only this
          phone has is an unsent add — keep it */
       const mi = mergeItems(remote, remoteTomb, state.items||[], state.itemTomb||{}, () => true);
       state.items = mi.items; state.itemTomb = mi.tomb; resetItemSigs();
       const differs = mi.items.some(it => { const r = _remoteItems.get(String(it.id)); return !r || r.gone || r.sig !== _isig(it) || r.ts !== (+it.ts||0); })
         || Object.keys(mi.tomb||{}).some(id => { const r = _remoteItems.get(id); return !r || !r.gone; });
-      if(differs) save(); }
+      if(differs) save(); maybeClearFrozen(); }
     if(!itemsPend && !snap.metadata.fromCache) dirtyIds.clear();
     ensureCats();
     try { localStorage.setItem(LS.cache, JSON.stringify(state)); } catch(e){}
@@ -2462,9 +2462,10 @@ function startPart(n){
     const m = new Map(), recs = [];
     snap.docs.forEach(doc => { const x = doc.data() || {}; m.set(doc.id, _psig(x)); recs.push(x); });
     _remoteParts[n] = m;
-    if(!snap.metadata.hasPendingWrites){ _partsSeen[n] = true;
+    if(!snap.metadata.hasPendingWrites){ _partsSeen[n] = true; if(!snap.metadata.fromCache) _srvSeen[n] = true;
       partMerge(n, recs);
-      if(partWrites(n, code).length) save(); }   // this phone holds something the server lacks
+      if(partWrites(n, code).length) save();   // this phone holds something the server lacks
+      maybeClearFrozen(); }
     try { localStorage.setItem(LS.cache, JSON.stringify(state)); } catch(e){}
     applyingRemote = true; renderKeepingAdd(); applyingRemote = false;
   }, err => { console.error(err); }, { includeMetadataChanges:true });
@@ -2489,6 +2490,38 @@ function maybeMigrateParts(d, snap){
     if(todo.includes("spend")) _frozenParts.spend = (Array.isArray(state.spend) ? state.spend : []).map(e => Object.assign({}, e));
     _lastDocSig = ""; todo.forEach(startPart); return save(); })
   .catch(e => { console.warn("[split] parts not moved yet", e && (e.code||e.message)); _migratingParts = ""; });
+}
+/* v2.94 (S8 step 4): empty the list record's frozen copies of the moved parts, once every entry in them is confirmed on the
+   server as a record of its own (this phone has had a server snapshot of the items and of each part). A local backup first.
+   Idempotent: the next snapshot brings empty arrays, so there is nothing left to clear; a second phone writes the same. */
+var _clearingFrozen = "";
+/* v2.94: which listeners have had an answer from the SERVER (not this phone's cache) since the list opened — the old copies are
+   only cleared against what the server is known to hold. var: boot-order rule */
+var _srvSeen = {};
+function maybeClearFrozen(){
+  if(!_srvSeen.items || MOVED_PARTS.some(n => !_srvSeen[n])) return;
+  if(!canSplit() || _newerData || !configured || !listRef || _clearingFrozen === listCode) return;
+  if(!splitOn() || !MOVED_PARTS.every(partOn) || (+state.mv||0) !== 4) return;
+  if(!_itemsSeen || !MOVED_PARTS.every(n => _partsSeen[n])) return;
+  const fz = _frozenParts, rg = fz.regulars || {}, fi = _frozenItems || [], ft = _frozenTomb || {};
+  const fb = rg.buyAgain || [], fbt = rg.baTomb || {}, fp = fz.prices || {}, fs = Array.isArray(fz.spend) ? fz.spend : [];
+  if(!fi.length && !Object.keys(ft).length && !fb.length && !Object.keys(fbt).length && !Object.keys(fp).length && !fs.length) return;
+  const why = (() => {
+    const ids = fi.map(it => String(it && it.id)).concat(Object.keys(ft)).filter(okItemId);
+    if(ids.some(id => !_remoteItems.has(id))) return "an item is not on the server yet";
+    const has = (n, id) => !!(_remoteParts[n] && _remoteParts[n].has(id));
+    if(fb.some(e => e && !has("regulars", docId(baKey(e)))) || Object.keys(fbt).some(k => !has("regulars", docId(k)))) return "a Regular is not on the server yet";
+    if(Object.entries(fp).some(([k, r]) => k && Array.isArray(r) && !has("prices", docId(k)))) return "a price is not on the server yet";
+    if(fs.some(e => e && e.t && !has("spend", docId(String(e.t))))) return "a spending entry is not on the server yet";
+    return ""; })();
+  if(why){ console.warn("[split] old copies kept: " + why); return; }
+  _clearingFrozen = listCode;
+  forceSnapshot();
+  _frozenItems = []; _frozenTomb = {};
+  _frozenParts.regulars = { buyAgain:[], baTomb:{} }; _frozenParts.prices = {}; _frozenParts.spend = [];
+  _lastDocSig = "";   // the signature zeroes the moved fields, so emptying them alone would not count as a change
+  save();
+  console.info("[split] old copies cleared");
 }
 /* the signature as the record holds it: its id is always a string (a local id may be a number) */
 function _isig(it){ return itemSig(Object.assign({}, it, { id:String(it.id) })); }
@@ -3644,6 +3677,7 @@ const FLAG_ICON = { urgent:FLAG_STAR_SVG, discount:FLAG_TAG_SVG, convenient:FLAG
 const ICO = (d,sz) => `<svg width="${sz}" height="${sz}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const LINK_SVG   = sz => ICO('<path d="M10 13.5a4 4 0 006 .5l2.5-2.5a4.2 4.2 0 00-6-6L11 7"/><path d="M14 10.5a4 4 0 00-6-.5L5.5 12.5a4.2 4.2 0 006 6L13 17"/>', sz);
 const CAMERA_SVG = sz => ICO('<path d="M3 8.5h3.2l1.6-2.4h8.4l1.6 2.4H21v11H3z"/><circle cx="12" cy="13.6" r="3.4"/>', sz);
+const FRIDGE_SVG = sz => ICO('<rect x="5.5" y="2.5" width="13" height="7.5" rx="2"/><rect x="5.5" y="10" width="13" height="11.5" rx="2"/><path d="M9 5.5v2M9 13v3.5"/>', sz);   // v2.94 "What's in the fridge?"
 const PASTE_SVG  = sz => ICO('<path d="M9 4.5H7a2 2 0 00-2 2V19a2 2 0 002 2h10a2 2 0 002-2V6.5a2 2 0 00-2-2h-2"/><rect x="9" y="2.8" width="6" height="3.6" rx="1.2"/>', sz);
 const GLOBE_SVG  = sz => ICO('<circle cx="12" cy="12" r="8.6"/><path d="M3.6 12h16.8"/><path d="M12 3.4a13 13 0 010 17.2a13 13 0 010-17.2z"/>', sz);
 const HOME_SVG    = sz => ICO('<path d="M4 11.5L12 4l8 7.5"/><path d="M6.5 9.5V20h11V9.5"/><path d="M10 20v-5.5h4V20"/>', sz);
@@ -5339,7 +5373,7 @@ function renderMain(){
   ${fabMoveOpen?fabMoveSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
-  ${voiceOpen?voiceSheet():""}${micHelpOpen?micHelpHTML():""}${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${dictOpen?dictSheetHTML():""}${noListOpen?noListSheetHTML():""}
+  ${voiceOpen?voiceSheet():""}${micHelpOpen?micHelpHTML():""}${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${fridge?fridgeSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${dictOpen?dictSheetHTML():""}${noListOpen?noListSheetHTML():""}
   ${editing?editSheet():(_editFoldKey="")}
   ${toast?`<div class="toast" id="toast"><span>${esc(t(toast))}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(t(toastAction.label))}</button>`:""}</div>`:""}`;
 }
@@ -5678,7 +5712,7 @@ function renderPlanTab(){
   ${planWeekOpen?planWeekSheet():""}
   ${planAdd?planAddSheet():""}
   ${planPick?planPickSheet():""}
-  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${dictOpen?dictSheetHTML():""}${noListOpen?noListSheetHTML():""}
+  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${fridge?fridgeSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${dictOpen?dictSheetHTML():""}${noListOpen?noListSheetHTML():""}
   ${listsOpen?listsSheet():""}
   ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
@@ -5881,6 +5915,81 @@ function rcRead(file){
         : (e && e.name==="AbortError") ? "That took too long. Try again, or with a closer photo."
         : "Couldn't read that receipt." }; render(); } })
     .finally(()=>clearTimeout(timer)); }
+/* v2.94 "What's in the fridge?" (docs/parked.md "What is already at home", option A): one photo, the products the AI sees,
+   matched to the list's unticked items, confirmed before anything changes. Taking them off is a removal, never a purchase
+   (CLAUDE.md "A tick is not a purchase"): no sweep, no Regular, no history of buying. The server counts the day's photos. */
+var fridge = null;   // { busy, step } | { err, why } | { rows:[{id,name,note,seen,on}], also:[string] }. var: render() reads it at boot
+function fridgePick(){ pickFile({ accept:"image/*", capture:"environment" }).then(file=>{ if(file) fridgeRead(file); }); }
+function fridgeSeen(x){ const bs=[x.brand, x.size].map(v=>String(v||"").trim()).filter(Boolean).join(" ");
+  return [bs, (+x.qty||1)>1 ? (+x.qty)+"×" : ""].filter(Boolean).join(" · "); }
+function fridgeRead(file){
+  fridge={ busy:true, step:"Preparing the photo…" }; render();
+  const ctl=(typeof AbortController!=="undefined") ? new AbortController() : null;
+  const timer=setTimeout(()=>{ if(ctl) ctl.abort(); }, 75000);
+  planShrinkImage(file, 1600, 0.8)
+    .then(img=>{ if(fridge && fridge.busy){ fridge.step="Looking at the photo…"; render(); }
+      return apiFetch("/api/fridge", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ image:img }), signal: ctl ? ctl.signal : undefined }); })
+    .then(r=>r.json().catch(()=>({})).then(j=>({ ok:r.ok, j, st:r.status })))
+    .then(({ok,j,st})=>{ if(!fridge) return;
+      if(!ok){ const c=j && j.code, why=c || ("HTTP " + st);
+        uiTrail("fridge failed: " + why);   // v2.92: so Report a problem carries it
+        fridge={ why, err: c==="signin" ? "This phone isn't signed in yet. Check your connection and try again."
+          : c==="appcheck" ? "The app couldn't prove it's the real app. Close it completely and open it again."
+          : c==="not_configured" ? "Photo reading isn't set up on the server yet."
+          : c==="quota" ? "The free reading allowance is used up for today. Try again tomorrow."
+          : c==="busy" ? "The reader is busy. Try again in a minute."
+          : (c==="bad_image" || c==="too_large") ? "Couldn't use that photo. Try a closer one."
+          : c==="vision_model" ? "Photo reading isn't set up on this account."
+          : c==="model" ? "The photo reader's model has changed on the server — it needs a new setting."
+          : c==="unreadable" ? "The reader couldn't make sense of that photo. Try again, closer and in good light."
+          : "The reader had a problem. Try again in a minute." }; render(); return; }
+      const used=new Set(), rows=[], also=[];
+      (Array.isArray(j.items)?j.items:[]).forEach(x=>{ const nm=String((x && x.name)||"").trim(); if(!nm) return;
+        const m=rcMatchItem(nm, used);
+        if(m){ used.add(m.id); rows.push({ id:m.id, name:m.name, note:m.note||"", seen:[nm, fridgeSeen(x)].filter(Boolean).join(" · "), on:true }); }
+        else also.push([nm, fridgeSeen(x)].filter(Boolean).join(" · ")); });
+      fridge={ rows, also }; render(); })
+    .catch(e=>{ if(fridge){ const why = navigator.onLine===false ? "network" : (e && e.name==="AbortError") ? "timeout" : (e && e.name==="TypeError") ? "network" : ((e && e.name) || "error");
+      uiTrail("fridge failed: " + why);
+      fridge={ why, err: navigator.onLine===false ? "No connection. Try again when you're online."
+        : (e && e.name==="AbortError") ? "That took too long. Try again, or with a closer photo."
+        : "Couldn't read that photo." }; render(); } })
+    .finally(()=>clearTimeout(timer)); }
+function fridgeSheet(){
+  const head=`<div class="disp" style="font-weight:800;font-size:17px;margin-bottom:4px">${FRIDGE_SVG(18)} ${t("In the photo")}</div>`;
+  if(fridge.busy) return `<div class="sheet-bg kbpin" id="frBg"><div class="sheet" id="fridgeSheet">${head}
+    <div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>${esc(t(fridge.step||"Looking at the photo…"))}</div>
+    <div class="rcnote" style="text-align:center">${t("This usually takes 5–20 seconds.")}</div></div></div>`;
+  if(fridge.err || !fridge.rows) return `<div class="sheet-bg kbpin" id="frBg"><div class="sheet" id="fridgeSheet">${head}
+    <div style="padding:6px 2px 16px;color:var(--text);font-weight:600;line-height:1.5">${esc(t(fridge.err||"Couldn't read that photo."))}</div>
+    ${fridge.why ? `<div class="hint" style="text-align:left;margin:-8px 2px 12px">${t("Reason:")} ${esc(fridge.why)}</div>` : ""}
+    <button class="optaction" id="frOk">${t("OK")}</button></div></div>`;
+  const n=fridge.rows.filter(R=>R.on).length;
+  const none=!fridge.rows.length && !fridge.also.length;
+  return `<div class="sheet-bg kbpin" id="frBg"><div class="sheet" id="fridgeSheet">
+  ${head}
+  ${none ? `<div style="padding:6px 2px 16px;color:var(--text);font-weight:600;line-height:1.5">${t("Nothing recognised. Try a closer photo, in good light.")}</div>` : ""}
+  ${fridge.rows.length ? `<p class="palabel">${t("On your list — you have these")}</p>
+  <div class="rclines">${fridge.rows.map((R,i)=>`<div class="rcrow${R.on?"":" off"}">
+     <button class="smartcheck ${R.on?"on":""}" data-frkeep="${i}" role="checkbox" aria-checked="${R.on?"true":"false"}" aria-label="${esc(R.name)}">✓</button>
+     <div class="rcmid"><b>${esc(R.name)}</b>${R.note?` · ${esc(R.note)}`:""}<span class="rcraw">${esc(R.seen)}</span></div></div>`).join("")}</div>` : ""}
+  ${fridge.also.length ? `<p class="palabel">${t("Also seen")}</p>
+  <div class="frseen" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">${fridge.also.map(a=>`<span class="basub" style="margin-left:0;font-size:12px">${esc(a)}</span>`).join("")}</div>` : ""}
+  <div class="ppedbtns"><button class="optaction" id="frClose">${t("Close")}</button><button class="newlist" id="frTake" ${n?"":"disabled"}>${tf("Take {n} off the list", { n })}</button></div>
+</div></div>`; }
+function fridgeTake(){ if(!fridge || !fridge.rows) return;
+  const ids=new Set(fridge.rows.filter(R=>R.on).map(R=>R.id)); let n=0;
+  /* a removal like an item's Delete: off the list only — no sweep, no Regular, no purchase recorded */
+  (state.items||[]).forEach(i=>{ if(ids.has(i.id) && !i.checked){ histLog("rm", i.name); n++; } });
+  state.items=(state.items||[]).filter(i=>!(ids.has(i.id) && !i.checked));
+  fridge=null; if(n) save(); render();
+  if(n) showToast(tf("Took {n} off the list — you have them", { n })); }
+function wireFridge(){
+  const close=()=>{ fridge=null; render(); };
+  const bg=app.querySelector("#frBg"); if(bg) bg.onclick=e=>{ if(e.target===bg) close(); };
+  ["#frOk","#frClose"].forEach(id=>{ const b=app.querySelector(id); if(b) b.onclick=close; });
+  const tk=app.querySelector("#frTake"); if(tk) tk.onclick=fridgeTake;
+  app.querySelectorAll("[data-frkeep]").forEach(b=>{ b.onclick=()=>{ const R=fridge && fridge.rows && fridge.rows[+b.dataset.frkeep]; if(R){ R.on=!R.on; render(); } }; }); }
 /* v2.72: a line's unit price — per kilo / litre from its weight (the printed one preferred when it agrees), else the
    reader's printed one, else per item: price / qty. */
 function rcUnit(L){ const pr=+L.price||0, w=priceAmt(L.weight), rp=String(L.per||""), ru=+L.unit||0;
@@ -6169,6 +6278,7 @@ function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRe
     <div class="smsep"></div>
     ${item("smCard", CARD_SVG(18), cardsGet().length ? t("Show my card") : t("Add a membership card"))}
     ${item("smRcpt", CAMERA_SVG(18), t("Read a receipt"))}
+    ${item("smFridge", FRIDGE_SVG(18), t("What's in the fridge?"))}
     ${item("smCompare", CART_SVG, t("Which store is cheaper"))}
     ${item("smSpend", FLAG_TAG_SVG, t("What we spend"))}
     ${real ? item("smAisle", PIN_SVG(18), tf("Aisle map for {x}", { x:esc(st.name) })) : ""}
@@ -6208,6 +6318,7 @@ function wireShopMenu(){
   const bg = app.querySelector("#smBg"); if(bg) bg.onclick = e => { if(e.target === bg){ close(); render(); } };
   const on = (id, fn) => { const e = app.querySelector("#" + id); if(e) e.onclick = () => { close(); fn(); }; };
   on("smRcpt", () => { render(); rcPick(); });
+  on("smFridge", () => { render(); fridgePick(); });
   on("smCompare", () => { cmpOpen = true; render(); });
   on("smSpend", () => { spendOpen = true; spendM = ""; render(); });
   on("smAisle", () => { const st = activeStore(); amOpen = st ? st.id : ""; amDraft = null; amRead = null; render(); });
@@ -7133,7 +7244,7 @@ function wirePlanTab(){ wireSiri(); wireVoice();   // v2.62: the Siri / no-list 
   const st=app.querySelector("#setNavP"); if(st) st.onclick=()=>{ settingsFrom=0; gotoPage(2); };
   wireListsSheet();
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireFridge(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();
   wireUserTiles();
 }
 /* v1.90: a recipe page shared into the app. Android hands it over directly through the manifest's
@@ -7281,7 +7392,7 @@ function renderPlanPage(){
   </div>
   ${planQBannerHTML()}
   ${(quickEdit==null && !addOpen)?`<div class="addpill-wrap" id="addPillWrap"><button class="addpill" id="addPill">${SEARCH_SVG}<span>${t("Add items…")}</span></button></div>`:""}
-  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${dictOpen?dictSheetHTML():""}${noListOpen?noListSheetHTML():""}
+  ${bottomNav({planId:"planNavX",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav"})}${userTilesHTML()}  ${smartOpen?smartSheet():""}${rcpt?rcptSheet():""}${fridge?fridgeSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${dictOpen?dictSheetHTML():""}${noListOpen?noListSheetHTML():""}
   ${editing?editSheet():(_editFoldKey="")}
   ${toast?`<div class="toast" id="toast"><span>${esc(t(toast))}</span>${toastAction?`<button id="undoBtn" class="undobtn">${esc(t(toastAction.label))}</button>`:""}</div>`:""}`;
 }
@@ -7344,7 +7455,7 @@ function wirePlanPage(){
   const qbc=app.querySelector("#qbannerClose"); if(qbc) qbc.onclick=()=>{ quickEdit=null; render(); };
   const qbr=app.querySelector("#qbannerRemove"); if(qbr) qbr.onclick=()=>{ const it=state.items.find(i=>i.id===quickEdit); const nm=it?cap(it.name):""; const id=quickEdit; quickEdit=null; planRemove(id); if(nm) showToast(nm+" moved to Regulars"); };
   wireSmartSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireFridge(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();
   const pbk=app.querySelector("#planBack"); if(pbk) pbk.onclick=()=>gotoPage(0);
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; render(); };
   wireUserTiles();
@@ -7366,7 +7477,7 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
     if(i){ i.value=""; i.parentElement.classList.remove("has"); i.focus(); } filterOptions(); };
   wireOptions();
   wireEditSheet();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
+  wireRcptSheet(); wireFridge(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();   // v2.09: Settings has no smart sheet, so the receipt sheet is wired here on its own
   const ub=app.querySelector("#undoBtn"); if(ub) ub.onclick=()=>{ if(toastAction) toastAction.fn(); };
 }
 /* v1.77 item 3: which sections are folded. Keyed by the section's own name rather than its index, so
@@ -8675,7 +8786,7 @@ function renderSettingsPage(){
     ${bottomNav({planId:"planNavS",planActive:false,cartId:"cartNav",cartActive:false,setId:"setNav",setActive:true})}${userTilesHTML()}
     ${diagOpen?diagSheet():""}
     ${listsOpen?listsSheet():""}
-    ${rcpt?rcptSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${dictOpen?dictSheetHTML():""}${noListOpen?noListSheetHTML():""}
+    ${rcpt?rcptSheet():""}${fridge?fridgeSheet():""}${tenSheet?tenSheetHTML():""}${cmpOpen?cmpSheetHTML():""}${occSheet?occSheetHTML():""}${spendOpen?spendSheetHTML():""}${amOpen?amSheetHTML():""}${shopMenuOpen?shopMenuHTML():""}${priceDiagOpen?priceDiagHTML():""}${cardEdit?cardEditHTML():""}${cardShow?cardShowHTML():""}${stuckOpen?stuckHTML():""}${locDiagOpen?locDiagHTML():""}${rpt?rptSheet():""}${rst?rstSheet():""}${siriOpen?siriSheetHTML():""}${dictOpen?dictSheetHTML():""}${noListOpen?noListSheetHTML():""}
     ${listActOpen?listActSheet():""}
   ${newListOpen?newListSheet():""}
     ${editing?editSheet():(_editFoldKey="")}
@@ -8847,7 +8958,7 @@ function wire(){
   const et=app.querySelector("#elseToggle"); if(et) et.onclick=()=>{ elseOpen=!elseOpen; render(); };   // v2.22 R17
   wireAddSheet();
   wireSmartSheet(); wireVoice(); wireSiri();
-  wireRcptSheet(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();
+  wireRcptSheet(); wireFridge(); wireTenSheet(); wireCmp(); wireOcc(); wireSpend(); wireLook(); wireAisleMap(); wireShopMenu(); wirePriceDiag(); wireCards(); wireStuck(); wireBaNew(); wireLocDiag(); wireRptSheet(); wireRstSheet();
   { const cb=app.querySelector("#checkedbar.drop"); if(_cartDropping){ const done=()=>{ _cartDropping=false; };
       if(cb && !matchMedia("(prefers-reduced-motion: reduce)").matches){ cb.addEventListener("animationend", done, { once:true }); setTimeout(done, 700); } else done(); } }
   const chh=app.querySelector("#checkedHead"); if(chh) chh.onclick=()=>{ if(_cartDropping) return;   /* v2.72: a stray tap from the tick that moved the list */

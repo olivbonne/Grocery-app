@@ -57,6 +57,10 @@ it is opened — nothing breaks. To check, open the Sandbox list on a phone on v
 spending), then in the console look at Firestore › `lists` › `<code>`: `regulars`, `prices` and `spend` collections appear
 under it, and the list record shows `parts` `["items","regulars","prices","spend"]` and `v` `4`.
 
+## v2.94 — the fridge photo's daily count
+The v2.94 rules add `fridge` to the counters `quota/{uid}/days/{day}` may hold ("What's in the fridge?", `/api/fridge`). Until
+they are published that count is refused and fails open — the server logs "quota store unavailable" and lets the call through.
+
 ## Publishing (about five minutes)
 1. Open the [Firebase console](https://console.firebase.google.com/) → the Market List project → **Firestore Database** → **Rules**.
 2. **Copy what is there now** into a note first, so you can put it back.
