@@ -318,6 +318,33 @@
   .pbtools { position:absolute; top:4px; right:4px; display:flex; gap:2px; pointer-events:auto; }
   .pbbtn { min-width:36px; height:36px; padding:0 6px; border:none; border-radius:10px; background:var(--chip); color:var(--text); font:inherit; font-weight:800; font-size:14px; display:inline-flex; align-items:center; justify-content:center; }
   .pbbtn:disabled { opacity:.35; }
+  /* v2.98 block settings: each block's own Pictures (off), Text (left/centre/right) and Position (top/middle/bottom).
+     Pictures off hides the item pictures (.pemoji, which also carries the v2.96 .pphoto) in that block only. Text and Position
+     beat the tile layout rules by specificity (html body + repeated classes, as the v2.58 one-line rules). Position is for
+     column tiles only (gridmode); the one-line layouts (.linelist, .largevar) move their row's text with justify-content. */
+  .pbset { pointer-events:auto; display:flex; flex-direction:column; gap:6px; margin:0 0 8px; padding:8px; border-radius:10px; background:var(--card); }
+  .pbsrow { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .pbslbl { font-size:13px; font-weight:800; }
+  .pbbtn.on { background:var(--accent); color:var(--on-accent); }
+  /* v2.98b: the page (.zoomer) holds the blocks, so the block is the descendant — and the tile rules are strong, so these match
+     their weight (.pill ×4) */
+  html body .pblock.pb-noimg .pill .pemoji, html body .pblock.pb-noimg .pill .pphoto { display:none !important; }
+  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-ta-left .pill.pill.pill.pill { align-items:flex-start; text-align:left; }
+  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-ta-center .pill.pill.pill.pill { align-items:center; text-align:center; }
+  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-ta-right .pill.pill.pill.pill { align-items:flex-end; text-align:right; }
+  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-ta-left .pill.pill.pill.pill > :is(.pname, .pnote) { text-align:left; align-self:flex-start; }
+  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-ta-center .pill.pill.pill.pill > :is(.pname, .pnote) { text-align:center; align-self:center; }
+  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-ta-right .pill.pill.pill.pill > :is(.pname, .pnote) { text-align:right; align-self:flex-end; }
+  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-ta-left .pill.pill.pill.pill .pill-meta { justify-content:flex-start; }
+  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-ta-center .pill.pill.pill.pill .pill-meta { justify-content:center; }
+  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-ta-right .pill.pill.pill.pill .pill-meta { justify-content:flex-end; }
+  html body .zoomer.zoomer.zoomer:is(.linelist,.largevar) .pblock.pb-ta-center .pill.pill.pill.pill { justify-content:center; }
+  html body .zoomer.zoomer.zoomer:is(.linelist,.largevar) .pblock.pb-ta-right .pill.pill.pill.pill { justify-content:flex-end; }
+  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-tv-top .pill.pill.pill.pill { justify-content:flex-start; }
+  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-tv-middle .pill.pill.pill.pill { justify-content:center; }
+  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-tv-bottom .pill.pill.pill.pill { justify-content:flex-end; }
+  /* text blocks (Messages and the Plan blocks): the block's own content */
+  .pblock.pb-ta-left > .pbin { text-align:left; } .pblock.pb-ta-center > .pbin { text-align:center; } .pblock.pb-ta-right > .pbin { text-align:right; }
   .pagedit { position:fixed; z-index:28; top:0; left:var(--topleft, 0px); right:var(--topright, 0px); margin:0 auto; max-width:var(--topw, 480px);
     box-sizing:border-box; display:flex; align-items:center; gap:8px; padding:8px var(--padr,14px) 10px var(--padl,14px);
     background:var(--lksbg, var(--glass-bg, var(--paper))); color:var(--lkstext, inherit); -webkit-backdrop-filter:blur(18px); backdrop-filter:blur(18px);
