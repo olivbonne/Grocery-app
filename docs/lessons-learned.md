@@ -281,3 +281,10 @@ the household asked for is not a lesson.*
     category, the switch marks old keys gone, and a one-tap "Sort them" retires the leftovers). *Guard:* anything that changes a
     keyed field calls the matching forget (`baForget`) first; a tile's data attributes carry stored values, never display ones; the
     v2.96 suite deletes an old-category Regular from its tile and sorts a list with leftover copies.
+66. **A redraw on a timer must not land under someone typing.** v2.88 stopped database echoes from rebuilding a sheet while a
+    field had focus, but the message "Saved — also in Regulars" redrew the whole page when it went away 1.7 s later — and "+
+    Another" puts the keyboard in the new item's note at exactly that moment, so the keyboard dropped and the letters typed went
+    (the household's screenshots, fixed v2.97). A photo or a shared price arriving did the same. *Guard:* every redraw nobody
+    asked for goes through `softRender()`, which waits for the field to be left; a message shown or hidden while someone types
+    is added to and taken out of the page directly. The v2.97 suite types across the message's end and checks the same field
+    keeps focus and every letter.
