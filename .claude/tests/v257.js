@@ -121,12 +121,12 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
          capitals, everything folded — and the flags are in the sheet, after the quantity now. */
       return { flagsFirst: !!(flags && qty && (qty.compareDocumentPosition(flags) & Node.DOCUMENT_POSITION_FOLLOWING)),
         labels: labs.map(l=>l.textContent.trim()), sizes:[...new Set(labs.map(l=>getComputedStyle(l).fontSize))], upper: labs.some(l=>getComputedStyle(l).textTransform==='uppercase'),
-        folded: ![...sh.querySelectorAll('.catchip')].some(c=>c.offsetParent!==null) }; });   // v2.65: note chips are in the page but hidden until the note has focus
+        folded: ![...sh.querySelectorAll('.catchip')].some(c=>c.offsetParent!==null && !c.closest('[data-row="photo"]')) }; });   /* SUPERSEDED by v2.96: the Photo row's buttons (Take / Choose) are always shown; still protects: every other chip folded */   // v2.65: note chips are in the page but hidden until the note has focus
     /* SUPERSEDED by v2.63: Quantity and Measure are rows now, above Note (was: Note first). Still protected: flags first,
        one label size, no capitals, everything folded. */
     /* SUPERSEDED by v2.71: Note first, right under the name, and "Measure" is called "Unit". Still protected: the order of the
        three rows, one label size, no capitals, everything folded. */
-    ok('9 · Edit item: flags below the quantity (v2.70); Note, Quantity, Unit, Category… (v2.71) one size, no capitals; everything folded', ed && ed.flagsFirst && ed.labels.slice(0,3).join()==='Note,Quantity,Unit' && ed.sizes.length===1 && !ed.upper && ed.folded, JSON.stringify(ed));
+    ok('9 · Edit item: flags below the quantity (v2.70); Note, Quantity, Unit, Category… (v2.71) one size, no capitals; everything folded', ed && ed.flagsFirst && ed.labels.filter(l=>l!=='Photo').slice(0,3).join()==='Note,Quantity,Unit'   /* SUPERSEDED by v2.96: a Photo row follows the Note; still protects: Note, Quantity, Unit in that order */ && ed.sizes.length===1 && !ed.upper && ed.folded, JSON.stringify(ed));
     /* SUPERSEDED by v2.65: the note is always a field (no fold); its suggestions show while it has focus. Still protected:
        a field, and this item's suggestions. */
     await page.locator('#sheet #editNote').click(); await page.waitForTimeout(400);
