@@ -273,3 +273,11 @@ the household asked for is not a lesson.*
     *Guard:* leaving the panel (Save, Remove, the item gone, typing on) keeps only what was really typed (`leaveAddEdit`), the
     mirror is only re-written while its item is the one open, and the v2.93 suite adds Hooks ×2 and Door "Blue" through the
     panel's Save and the return key and checks one item each.
+65. **A record keyed by what it contains must be retired under its old key when that changes.** A Regular's key is its name,
+    category and note. v2.57's "Use the new categories" moved each Regular to its new category — a new key — without marking the
+    old key gone, so once Regulars became records of their own (v2.75) the old record stayed on the server and came back as a
+    second copy in a category the list no longer has: 79 of them under Others. None could be deleted: the tile carried the
+    category it was SHOWN under ("others"), so Delete looked for a key that did not exist (fixed v2.96: the tile carries the stored
+    category, the switch marks old keys gone, and a one-tap "Sort them" retires the leftovers). *Guard:* anything that changes a
+    keyed field calls the matching forget (`baForget`) first; a tile's data attributes carry stored values, never display ones; the
+    v2.96 suite deletes an old-category Regular from its tile and sorts a list with leftover copies.

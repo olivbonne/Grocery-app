@@ -6,25 +6,103 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.95";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.95";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.95";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=2.95";
-import { compareStores, worthIt } from "./compare.js?v=2.95";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.95";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.95";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.95";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.95";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.95";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.95";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.95";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.95";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.95";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.96";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.96";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.96";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=2.96";
+import { compareStores, worthIt } from "./compare.js?v=2.96";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.96";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.96";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.96";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.96";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.96";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.96";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.96";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.96";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.96";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=2.96";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.95";
+const APP_VERSION = "v2.96";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
+
+/* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
+/* A small photo on an item, kept as its own record lists/{code}/photos/{pid}; the item and the Regular carry only ph. Everything
+   photo-specific is here and in js/photos.js. TO REMOVE (e.g. when the App Store app stores photos its own way): delete this
+   block, the photos.js import, js/photos.js and its sw.js PRECACHE entry, the .pphoto / .edphoto / #photoView rules in app.css,
+   and replace each hook below by "" (each is harmless with PHOTOS_ON = false, so turning it off first is safe):
+     - tile builder:  `photoTile(i) ||` before the item tile's emS; regPill: `photoTile(selected && it && it.ph ? it : entry) ||`
+     - Edit item sheet: `${photoSecHTML(editing)}` after the Note cell; `photoWire(app);` in the sheet's wiring
+     - field copies of `ph` (an inert string when this is off): moveToBuyAgain, sweep, addFromRegular, restore, applyEdit,
+       regularFrom, saveEverywhere, saveBA, removeEditing, commitAddSheet, planRemove, mergeCluster */
+const PHOTOS_ON = true;
+var photoCache = new Map();   // pid → { d } | "gone" | "loading". var: a render at boot may reach it
+var _photoOff = new Map(), _photoRenderT = null, photoBusy = null;   // photoBusy: { id, err, why } while the Edit item sheet saves one
+function photoRender(){ clearTimeout(_photoRenderT); _photoRenderT = setTimeout(()=>render(), 50); }   // debounced, as sharedFetch: never one render per photo
+function photoGet(pid){ if(!PHOTOS_ON || !pid || typeof pid !== "string") return null;
+  const c = photoCache.get(pid); if(c) return c;
+  if(!storeReady() || !listCode) return null;
+  photoCache.set(pid, "loading");
+  const tm = setTimeout(()=>{ if(photoCache.get(pid) === "loading"){ photoCache.delete(pid); const off=_photoOff.get(pid); _photoOff.delete(pid); try{ if(off) off(); }catch(e){} } }, 15000);   // the wait ends; a later render asks again
+  try{ _photoOff.set(pid, listen(ref("lists", listCode, "photos", pid), s=>{ clearTimeout(tm);
+      const d = (s && s.exists && s.exists()) ? (s.data() || {}) : null;
+      photoCache.set(pid, (d && !d.gone && typeof d.d === "string") ? { d:d.d } : "gone"); photoRender(); },
+    ()=>{ clearTimeout(tm); photoCache.set(pid, "gone"); photoRender(); })); }
+  catch(e){ clearTimeout(tm); photoCache.set(pid, "gone"); }
+  return photoCache.get(pid); }
+function photoHTML(pid, cls){ const c = photoGet(pid); if(!c || typeof c !== "object") return "";
+  return `<img class="${cls||""}" src="${esc(c.d)}" alt="${t("Photo")}">`; }
+/* the tile's drawing or emoji, replaced by the photo once it has arrived. Item icons Off (v2.91) hides photos too. The box is fixed in CSS. */
+function photoTile(it){ if(!PHOTOS_ON || !it || !it.ph || !itemEmojiOn()) return "";
+  const h = photoHTML(it.ph, "pphoto-img"); return h ? `<span class="pemoji pphoto" aria-hidden="true">${h}</span>` : ""; }
+function photoDims(d){ return new Promise(res=>{ const im = new Image(); im.onload=()=>res({ w:im.naturalWidth, h:im.naturalHeight }); im.onerror=()=>res({ w:0, h:0 }); im.src = d; }); }
+function photoErrWords(e){ const c = String((e && (e.code || e.message)) || ""); return /permission/i.test(c) ? "denied" : c.slice(0, 80); }
+async function photoTake(item, fromCamera){ if(!PHOTOS_ON || !item) return;
+  const file = await pickFile({ accept:"image/*", capture: fromCamera ? "environment" : undefined }); if(!file) return;
+  const id = item.id; photoBusy = { id, err:"", why:"" }; render();
+  try{
+    let d = await planShrinkImage(file, PHOTO_MAX_PX, PHOTO_QUALITY);
+    if(!photoOk(d)) d = await planShrinkImage(file, 360, PHOTO_QUALITY);   // once, smaller
+    if(!photoOk(d)) throw Object.assign(new Error("too big"), { code:"too-big" });
+    const { w, h } = await photoDims(d);
+    const pid = newPhotoId(n=>crypto.getRandomValues(new Uint8Array(n)));
+    const r = ref("lists", listCode, "photos", pid); if(!r) throw new Error("offline");
+    await Promise.race([ put(r, photoRecord(d, w, h, me || "", Date.now())), new Promise((_, rej)=>setTimeout(()=>rej(new Error("timeout")), 20000)) ]);
+    photoCache.set(pid, { d });
+    const it = state.items.find(i=>i.id===id);
+    if(it){ const old = it.ph; it.ph = pid; markDirty(id); if(old && old !== pid) put(ref("lists", listCode, "photos", old), photoGone(Date.now())).catch(()=>{}); }
+    if(editing && editing.id === id) editing.ph = pid;
+    photoBusy = null; save(); render();
+  }catch(e){ const w = photoErrWords(e);
+    photoBusy = { id, err: w === "denied" ? t("Photos need the updated database rules — see Settings › Help.") : (w === "too-big" ? t("That photo is too big, even made smaller.") : t("Couldn't save the photo.")), why: (w === "denied" || w === "too-big") ? "" : w };
+    render(); } }
+function photoRemove(item){ if(!PHOTOS_ON || !item || !item.ph) return; const pid = item.ph;
+  try{ const r = ref("lists", listCode, "photos", pid); if(r) put(r, photoGone(Date.now())).catch(()=>{}); }catch(e){}
+  photoCache.set(pid, "gone");
+  const it = state.items.find(i=>i.id===item.id); if(it){ delete it.ph; markDirty(it.id); }
+  if(editing && editing.id === item.id) delete editing.ph;
+  photoBusy = null; save(); render(); }
+function photoView(pid){ const c = photoGet(pid); if(!c || typeof c !== "object") return;
+  const old = document.getElementById("photoView"); if(old) old.remove();
+  const v = document.createElement("div"); v.id = "photoView"; v.setAttribute("role", "dialog"); v.setAttribute("aria-label", t("Photo"));
+  v.innerHTML = `<button class="pv-x" aria-label="${t("Close")}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><img src="${esc(c.d)}" alt="${t("Photo")}">`;
+  v.onclick = ()=>v.remove(); document.body.appendChild(v); }
+/* the Edit item sheet's Photo row (list items only; a Regular keeps the photo its item had) */
+function photoSecHTML(ed){ if(!PHOTOS_ON || !ed || ed.kind !== "item") return "";
+  const b = photoBusy && photoBusy.id === ed.id ? photoBusy : null;
+  const st = b && !b.err ? `<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>${t("Saving the photo…")}</div>`
+    : b && b.err ? `<div class="hint" role="status" style="text-align:left;margin:6px 2px 0">${esc(b.err)}${b.why ? ` ${t("Reason:")} ${esc(b.why)}` : ""}</div>` : "";
+  const th = ed.ph ? photoHTML(ed.ph, "edphoto-img") : "";
+  const btns = ed.ph
+    ? `${th ? `<button class="edphoto-th" data-ph-view aria-label="${t("Photo")}">${th}</button>` : ""}<button class="catchip" data-ph-take="1">${t("Replace")}</button><button class="catchip" data-ph-rm>${t("Remove")}</button>`
+    : `<button class="catchip" data-ph-take="1">${CAMERA_SVG(15)} ${t("Take a photo")}</button><button class="catchip" data-ph-take="0">${t("Choose a photo")}</button>`;
+  return `<div class="edcell" data-row="photo"><div class="editsec edrow"><span class="editsec-l">${t("Photo")}</span><span class="edphoto">${btns}</span></div>${st}</div>`; }
+function photoWire(root){ if(!PHOTOS_ON || !root || !editing || editing.kind !== "item") return;
+  root.querySelectorAll("[data-ph-take]").forEach(b=>b.onclick=()=>photoTake(editing, b.dataset.phTake === "1"));
+  root.querySelectorAll("[data-ph-rm]").forEach(b=>b.onclick=()=>photoRemove(editing));
+  root.querySelectorAll("[data-ph-view]").forEach(b=>b.onclick=()=>photoView(editing.ph)); }
+/* ═══ END PHOTOS ═══ */
 window.__mlPageName = ()=>{ try{ return ["plan","shop","settings"][curPageIdx()]||""; }catch(e){ return ""; } };
 const APP_BUILD_DATE = (()=>{ try{ const d=new Date(document.lastModified); if(isNaN(d.getTime())) return "";
   const p=n=>String(n).padStart(2,"0");
@@ -1450,13 +1528,13 @@ function mergeClusters(){
 function mergeCluster(sig){
   const cl=mergeClusters().find(c=>c.sig===sig); if(!cl) return;
   const prev=snapState();
-  let qty=0, weight="", sub="", note="", where="", tags=[];
+  let qty=0, weight="", sub="", note="", where="", tags=[], ph="";   // v2.96 PHOTOS hook: ph
   /* v2.90: the merged item keeps the note (a cluster shares one since v2.90), the shop and the flags — it used to drop all three */
   for(const it of cl.items){ qty += (it.qty||1); if(!weight && it.weight) weight=it.weight; if(!sub && it.sub) sub=it.sub;
-    if(!note && it.note) note=it.note; if(!where && it.where) where=it.where; (Array.isArray(it.tags)?it.tags:[]).forEach(t=>{ if(!tags.includes(t)) tags.push(t); }); }
+    if(!note && it.note) note=it.note; if(!where && it.where) where=it.where; if(!ph && it.ph) ph=it.ph; (Array.isArray(it.tags)?it.tags:[]).forEach(t=>{ if(!tags.includes(t)) tags.push(t); }); }
   const keepId=cl.items[0].id, ids=new Set(cl.items.map(i=>i.id));
   state.items = state.items.filter(i=>!ids.has(i.id));
-  state.items.push({ id:keepId, name:cap(cl.canon), qty:Math.min(999,qty||1), cat:cl.cat, weight, sub, note, where, tags, checked:false, by:me });
+  state.items.push({ id:keepId, name:cap(cl.canon), qty:Math.min(999,qty||1), cat:cl.cat, weight, sub, note, where, tags, ...(ph?{ph}:{}), checked:false, by:me });
   markDirty(keepId); save(); render();
   showUndo(prev, tf("Merged into {x}", { x:cap(cl.canon) }));
 }
@@ -3180,6 +3258,7 @@ function moveToBuyAgain(entries){
     delete state.baTomb[k];
     const ne={name:e.name,cat:e.cat,qty:e.qty||1,weight:e.weight||"",sub:e.sub||"",note:e.note||"",where:e.where||"",ts:Date.now()};
     if(regTags(old).length) ne.tags=regTags(old);   // v2.76: the Regular's own flags stay; the trip's flags do not become the Regular's
+    if(e.ph) ne.ph=e.ph;   // v2.96 PHOTOS hook: the photo travels with the item
     if(old && typeof old.pos==="number") ne.pos=old.pos;
     state.buyAgain.unshift(ne); }
   state.buyAgain = state.buyAgain.slice(0,BA_CAP);
@@ -3191,7 +3270,7 @@ function sweep(msg){ const checked=state.items.filter(i=>i.checked); if(!checked
   if(shopMode) checked.slice().sort((a,b)=>(a.checkedAt||0)-(b.checkedAt||0)).forEach(i=>aiRecordCheck(i.cat, i.name));
   lastCartSet(checked);   // v2.31: what was ticked, in tick order, for the receipt read afterwards to be matched against
   recordPurchase(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||""})));   // B4 log purchase cadence
-  moveToBuyAgain(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||"",note:i.note||"",where:i.where||""})));
+  moveToBuyAgain(checked.map(i=>({name:i.name,cat:i.cat,qty:i.qty||1,weight:i.weight||"",sub:i.sub||"",note:i.note||"",where:i.where||"",...(i.ph?{ph:i.ph}:{})})));   // v2.96 PHOTOS hook: ph
   for(const i of checked){ histLog("buy", i.name); histLog("regadd", i.name); }
   state.items = state.items.filter(i=>!i.checked);
   cardNudgeSet();   // v2.32 (item 13): the card, or an offer to add one, at the top of the page — above "Got the receipt?"
@@ -3201,13 +3280,13 @@ function sweep(msg){ const checked=state.items.filter(i=>i.checked); if(!checked
 function addFromRegular(name,cat,note){ playPlan(true);
   const entry = regFind(name,cat,note) || {name,cat,qty:1,note:note||""};
   const ex = state.items.find(i=>itemIsReg(i,name,cat,note));
-  if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",note:entry.note||"",where:entry.where||"",tags:regTags(entry),checked:false,by:me}); histLog("add", entry.name); }
+  if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",note:entry.note||"",where:entry.where||"",tags:regTags(entry),...(entry.ph?{ph:entry.ph}:{}),checked:false,by:me}); histLog("add", entry.name); }   // v2.96 PHOTOS hook: ph
   save(); renderKeepingAdd();
 }
 function restore(name,cat,note){ playPlan(true);
   const entry = regFind(name,cat,note) || {name,cat,qty:1,note:note||""};
   const ex = state.items.find(i=>itemIsReg(i,name,cat,note));
-  if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",note:entry.note||"",where:entry.where||"",tags:regTags(entry),checked:false,by:me}); histLog("add", entry.name); }
+  if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",note:entry.note||"",where:entry.where||"",tags:regTags(entry),...(entry.ph?{ph:entry.ph}:{}),checked:false,by:me}); histLog("add", entry.name); }   // v2.96 PHOTOS hook: ph
   histLog("regrm", entry.name);
   regDrop(name,cat,note);
   save(); render();
@@ -3219,7 +3298,8 @@ function saveEdit(){ if(!editing||!editing.name.trim()) return;
 function applyEdit(){   // v2.65: saveEdit's field updates, without closing (saveEverywhere uses it too)
   const it=state.items.find(i=>i.id===editing.id);
   if(it){ if(it.cat!==editing.cat) delete it.pos;   // v2.57 item 10a: a dragged place belongs to its category
-    it.name=editing.name.trim(); it.qty=Math.max(1,editing.qty||1); it.cat=editing.cat; it.sub=editing.sub||null; it.starred=!!editing.starred; it.weight=editing.weight||""; it.tags=Array.isArray(editing.tags)?editing.tags:[]; it.note=String(editing.note||"").trim().slice(0,140); it.where=editing.where||""; } }
+    it.name=editing.name.trim(); it.qty=Math.max(1,editing.qty||1); it.cat=editing.cat; it.sub=editing.sub||null; it.starred=!!editing.starred; it.weight=editing.weight||""; it.tags=Array.isArray(editing.tags)?editing.tags:[]; it.note=String(editing.note||"").trim().slice(0,140); it.where=editing.where||"";
+    if(editing.ph) it.ph=editing.ph; else delete it.ph; } }   // v2.96 PHOTOS hook: editing is a copy of the item, so it carries ph
 /* v2.65 (the household): one Save. An item on the list is saved there AND as a Regular; a Regular is saved as a Regular
    AND, when it is on the list (an unticked item of the same name and category), on the list too. */
 function regularFrom(e, orig){ const nm=String(e.name||"").trim(); if(!nm) return false;
@@ -3234,12 +3314,13 @@ function regularFrom(e, orig){ const nm=String(e.name||"").trim(); if(!nm) retur
   const ne={ name:nm, cat:e.cat, qty:Math.max(1,e.qty||1), weight:e.weight||"", sub:e.sub||"", note:String(e.note||"").trim().slice(0,140), where:e.where||"", ts:Date.now() };
   if(old && old.cat===e.cat && typeof old.pos==="number") ne.pos=old.pos;   // v2.56: a Regular keeps its place in the same category
   if(regTags(old).length) ne.tags=regTags(old);   // v2.76: the Regular keeps its own flags (a list item's flags are for this trip)
+  { const ph = e.ph!==undefined ? e.ph : (old && old.ph); if(ph) ne.ph=ph; }   // v2.96 PHOTOS hook: the item's photo, else the Regular's own
   if(old) state.buyAgain.splice(Math.min(idx, state.buyAgain.length), 0, ne); else state.buyAgain.unshift(ne);
   state.buyAgain = state.buyAgain.slice(0,BA_CAP);
   if(!old) histLog("regadd", nm);
   return true; }
 /* v2.90 (the household): another item of the same name, with its own note — Save first (the same path), then a fresh one */
-function anotherItem(src){ const nid=uid();
+function anotherItem(src){ const nid=uid();   // v2.96: deliberately WITHOUT the photo (no ph) — another item of the same name starts with none
   const ni={ id:nid, name:src.name, qty:1, cat:src.cat, sub:src.sub||"", weight:"", note:"", tags:[], where:src.where||"", checked:false, by:me };
   state.items.push(ni); markDirty(nid); histLog("add", ni.name); return ni; }
 function editAnother(){ if(!editing || editing.kind!=="item") return;
@@ -3252,7 +3333,7 @@ function saveEverywhere(){ if(!editing) return;
   if(editing.kind==="item"){ if(!(editing.name||"").trim()) return;
     const it=state.items.find(i=>i.id===editing.id); const orig = it ? { name:it.name, cat:it.cat, note:it.note||"" } : null;   // before applyEdit changes it
     applyEdit();
-    regularFrom({ name:editing.name, cat:editing.cat, qty:editing.qty, weight:editing.weight, sub:editing.sub, note:editing.note, where:editing.where }, orig);
+    regularFrom({ name:editing.name, cat:editing.cat, qty:editing.qty, weight:editing.weight, sub:editing.sub, note:editing.note, where:editing.where, ph:editing.ph||"" }, orig);   // v2.96 PHOTOS hook: ph ("" = none)
     editing=null; save(); render(); showToast(tf("Saved — also in Regulars")); return; }
   const nm=(editing.name||"").trim(); if(!nm) return;
   const li=state.items.find(i=>itemIsReg(i, editing.origName, editing.origCat, editing.origNote));   // v2.68: and the same note
@@ -3262,7 +3343,7 @@ function saveEverywhere(){ if(!editing) return;
     if(editing.where!==undefined) li.where=editing.where||"";
     markDirty(li.id); }
   saveBA(); }
-function removeEditing(){ moveToBuyAgain([{name:editing.name,cat:editing.cat,qty:editing.qty||1,weight:editing.weight||"",sub:editing.sub||"",note:editing.note||"",where:editing.where||""}]);
+function removeEditing(){ moveToBuyAgain([{name:editing.name,cat:editing.cat,qty:editing.qty||1,weight:editing.weight||"",sub:editing.sub||"",note:editing.note||"",where:editing.where||"",...(editing.ph?{ph:editing.ph}:{})}]);   // v2.96 PHOTOS hook: ph
   histLog("rm", editing.name); histLog("regadd", editing.name);
   state.items = state.items.filter(i=>i.id!==editing.id); editing=null; save(); render(); }
 function deleteItemEditing(){ const prev=snapState(); const nm=editing.name; const ct=editing.cat; const _it0=state.items.find(i=>i.id===editing.id); const nt=_it0?(_it0.note||""):(editing.note||"");
@@ -3287,6 +3368,7 @@ function saveBA(){ const nm=(editing.name||"").trim(); if(!nm) return; const cat
     if(_nt) ne.note=_nt;   // v2.57 item 9d: the Note section edits a Regular's note too
     { const w = editing.where!==undefined ? editing.where : ((_old && _old.where) || ""); if(w) ne.where=w; }   // v2.56: the fixed-shape trap; v2.76: Where to buy is edited here too
     { const tg = regTags(editing.tags!==undefined ? editing : _old); if(tg.length) ne.tags=tg; }   // v2.76: the Regular's own flags
+    if(_old && _old.ph) ne.ph=_old.ph;   // v2.96 PHOTOS hook: editing a Regular keeps its photo
     if(_old && _old.cat===cat && typeof _old.pos==="number") ne.pos=_old.pos;
     state.buyAgain.unshift(ne); }
   editing=null; save(); render(); }
@@ -3534,10 +3616,27 @@ function switchToCats13(){
   state.categories = fresh;
   const now = Date.now(), nine = new Set(DEFAULT_CATS.map(d=>d.id));
   (state.items||[]).forEach(i=>{ if(i && nine.has(i.cat)){ const c=newCat(i.cat, i.name); if(c!==i.cat){ i.cat=c; i.ts=now; markDirty(i.id); } } });
-  (state.buyAgain||[]).forEach(b=>{ if(b && nine.has(b.cat)){ const c=newCat(b.cat, b.name); if(c!==b.cat){ b.cat=c; b.ts=now; } } });
+  /* v2.96: a Regular's key includes its category, so moving it re-keys it — the old key is marked gone (baForget), or its record
+     on the server comes back as a second copy in a category the list no longer has (the household's 79 under Others) */
+  (state.buyAgain||[]).forEach(b=>{ if(b && nine.has(b.cat)){ const c=newCat(b.cat, b.name); if(c!==b.cat){ baForget(b.name, b.cat, b.note); b.cat=c; b.ts=now; } } });
   ensureCats(); save(); render();
   showToast(t("This list now uses the new categories"));
 }
+/* v2.96 (the household: "79 items in Others and I can't delete any of them"): Regulars whose category this list does not have
+   (left over from the move to the thirteen categories) are shown under Others. On the household's tap: each goes where the shop
+   shelves it (newCat); one that already exists there (same name and note) is a leftover copy and is removed. A backup first. */
+function oldRegulars(){ const ids=new Set(catList().map(c=>c.id)); return (state.buyAgain||[]).filter(b=>b && !ids.has(b.cat)); }
+function sortOldRegulars(){ const old=oldRegulars(); if(!old.length) return;
+  forceSnapshot();
+  const ids=new Set(catList().map(c=>c.id)), now=Date.now(); let dup=0, moved=0;
+  for(const b of old){ let nc=newCat(b.cat, b.name); if(!ids.has(nc)) nc=catShown(nc);
+    const twin=state.buyAgain.find(x=>x!==b && String(x.name||"").toLowerCase()===String(b.name||"").toLowerCase() && x.cat===nc && noteKey(x.note)===noteKey(b.note));
+    baForget(b.name, b.cat, b.note);
+    if(twin){ if(!twin.where && b.where) twin.where=b.where; if(!twin.ph && b.ph) twin.ph=b.ph;
+      state.buyAgain=state.buyAgain.filter(x=>x!==b); dup++; }
+    else { b.cat=nc; b.ts=now; moved++; } }
+  save(); render();
+  showToast(tf("Sorted: {d} leftover copies removed, {m} moved to their category", { d:dup, m:moved })); }
 function backupFileName(){ const now=new Date(), p=n=>String(n).padStart(2,"0");
   const base=String(state.name||"list").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"list";
   return `${base}-backup-${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())}.json`; }
@@ -4211,7 +4310,7 @@ function commitAddSheet(){
   /* v2.90 (the household: "save an item in Regulars without going to the shop first"): with Settings › Shopping › New items
      in Regulars on (the default), what the + sheet added is a Regular at once, not only after a shop */
   if(addFromCat || regNowPref()){ const kept=state.items.filter(i=>addStaged.includes(i.id));
-    if(kept.length){ moveToBuyAgain(kept.map(i=>({ name:i.name, cat:i.cat, qty:i.qty, weight:i.weight, sub:i.sub, note:i.note, where:i.where }))); kept.forEach(i=>histLog("regadd", i.name)); save(); } }
+    if(kept.length){ moveToBuyAgain(kept.map(i=>({ name:i.name, cat:i.cat, qty:i.qty, weight:i.weight, sub:i.sub, note:i.note, where:i.where, ...(i.ph?{ph:i.ph}:{}) })));   /* v2.96 PHOTOS hook: ph */ kept.forEach(i=>histLog("regadd", i.name)); save(); } }
   addStaged=[]; addFromCat=null; endAddSheet();
   if(folded) showToast(t("Already on the list — added to its count")); }
 function closeAddSheet(){
@@ -5065,7 +5164,7 @@ function pillHTML(i, cat){
   // v1.20 unified row anatomy (shared with regPill): emoji · name, then qty/weight pushed to the right.
   // No check circle — tapping the whole row checks it. Selected/on-list uses the Full/Empty tile look.
   const em = itemIcon(i.name, i.cat);
-  const emS = em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
+  const emS = photoTile(i) || (em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"");   // v2.96 PHOTOS hook
   const nl = noteLine(i);   // v2.22 which shop, and the note
   const ai = (_aisleTags && !checked) ? aisleNo(i) : "";   // v2.86: once, for the badge and the places
   const cuP = cuParts(i.qty||1, i.weight?showAmt(i.weight):"", cat.color, meta, !!ai);   // v2.85: null = as now
@@ -5124,7 +5223,7 @@ function regPill(entry, cat, it){
   const full = selected && fillMode()==="full";
   const qcol = metaCol(cat.color, selected, full); const qtxt = (full) ? qcol : readableOn(qcol, tileGroundHex(selected));
   const em = itemIcon(entry.name, cat.id);
-  const emS = em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"";
+  const emS = photoTile(selected && it && it.ph ? it : entry) || (em?`<span class="pemoji" aria-hidden="true" style="color:${qcol}">${em}</span>`:"");   // v2.96 PHOTOS hook
   const meta = `${q>1?`<span class="qty" style="color:${qtxt}">${q}×</span>`:""}${w?`<span class="qty" style="color:${qtxt}">${esc(w)}</span>`:""}`;
   const cuR = cuParts(q, w, cat.color, meta, false);   // v2.85: null = as now
   const metaS = cuR ? cuR.h : meta?`<span class="pill-meta">${meta}</span>`:"";
@@ -5147,7 +5246,7 @@ function regPill(entry, cat, it){
   const outStyle = fillMode()==="full" ? fullStyle(cat.color, false)
     : fillMode()==="empty" ? ""
     : `border-left:4px solid ${catEdge(cat.color, false)}`;
-  return `<button class="pill reg-out${noteS?" hasnote":""}" data-reg-add="${esc(entry.name)}|${cat.id}" data-regk="${esc(entry.name)}|${esc(entry.cat)}"${nAttr} style="${outStyle}">${emS}${name}${metaS}${noteS}</button>`;
+  return `<button class="pill reg-out${noteS?" hasnote":""}" data-reg-add="${esc(entry.name)}|${esc(entry.cat)}" data-regk="${esc(entry.name)}|${esc(entry.cat)}"${nAttr} style="${outStyle}">${emS}${name}${metaS}${noteS}</button>`;
 }
 /* v2.56 item 5: Regulars a person has dragged into order carry a numeric `pos` and come first, in that order; the rest
    stay A–Z after them — so nothing moves until someone reorders a category. */
@@ -5166,7 +5265,9 @@ function planningSection(){
     const pills = ccol ? "" : `<div class="pills" style="margin-top:6px">${regs.map(e=>{
       const it = state.items.find(i=>!i.checked && i.name.toLowerCase()===e.name.toLowerCase() && catShown(i.cat)===cat.id && noteKey(i.note)===noteKey(e.note));   // show selected ones too · v2.68: of the same note
       return regPill(e,cat,it); }).join("")}${addT}</div>`;
-    return `<div class="regcat"><button class="regcatlbl" data-regc="${cat.id}"><span>${esc(catLabel(cat))}</span><span class="regcnum">${regs.length}${ccol?' ▸':' ▾'}</span></button>${pills}</div>`;
+    const oldN = (cat.id===catShown("\u0000")) ? oldRegulars().length : 0;   // v2.96: the group old categories fall into
+    const sortL = oldN ? `<div class="regsort" role="note"><span>${tf("{n} of these are from the old categories.", { n:oldN })}</span><button class="colbtn2" data-reg-sortold>${t("Sort them")}</button></div>` : "";
+    return `<div class="regcat"><button class="regcatlbl" data-regc="${cat.id}"><span>${esc(catLabel(cat))}</span><span class="regcnum">${regs.length}${ccol?' ▸':' ▾'}</span></button>${sortL}${pills}</div>`;
   }).filter(Boolean).join("");
   if(!groups) return "";   // v2.34: never empty now — every category has its row
   const open = collapse.regAll !== false;   // v1.24 shown by default (categories visible)
@@ -7466,7 +7567,7 @@ function planRemove(id){ const it=state.items.find(i=>i.id===id); if(!it) return
   state.baTomb = state.baTomb || {};
   if(!state.buyAgain.some(b=>baKey(b)===baKey(it))){   // v2.68: the note is part of a Regular's key
     delete state.baTomb[baKey(it)];
-    state.buyAgain.push({name:it.name,cat:it.cat,qty:it.qty||1,weight:it.weight||"",sub:it.sub||"",note:it.note||"",where:it.where||"",ts:Date.now()}); histLog("regadd", it.name); }
+    state.buyAgain.push({name:it.name,cat:it.cat,qty:it.qty||1,weight:it.weight||"",sub:it.sub||"",note:it.note||"",where:it.where||"",...(it.ph?{ph:it.ph}:{}),ts:Date.now()}); histLog("regadd", it.name); }   // v2.96 PHOTOS hook: ph
   histLog("rm", it.name);
   state.items = state.items.filter(i=>i.id!==id); save(); render(); }
 function wirePlanPage(){
@@ -8978,6 +9079,7 @@ function editSheet(){
     <div class="edtitlerow"><input id="editName" class="edtitle" value="${esc(editing.name)}" aria-label="${t("Item name")}" />${priceLine(editing.name, { compact:true, note:editing.note||"" })}</div>
     <div class="edrows">${/* v2.74: the rows, each with its open choices, in a cell — Customise the look › Sheets › Layout lays them out */""}
     <div class="edcell" data-row="note">${noteSecHTML(editing.note||"", editing.name, { input:'id="editNote"', chip:"data-en-chip" })}</div>
+    ${photoSecHTML(editing)}${/* v2.96 PHOTOS hook */""}
     <div class="edcell" data-row="qty"><div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button id="qMinus" aria-label="${t("Less")}">−</button><span>${editing.qty||1}</span><button id="qPlus" aria-label="${t("More")}">+</button></span></div></div>
     <div class="edcell" data-row="unit"${wOpen==="edit"?' data-open="1"':''}><button class="editsec" data-w-open="edit" aria-expanded="${wOpen==="edit"}" aria-label="${t("Unit")}"><span class="editsec-l">${t("Unit")}</span><span class="editsec-v"><span class="edval">${esc(editing.weight||t("Unit"))} <span class="editsec-ch">${wOpen==="edit"?'▾':'▸'}</span></span></span></button>
     ${weightChips("edit", editing.weight)}</div>
@@ -9168,6 +9270,7 @@ function wire(){
        Regular only, as long as it is not on the list (v2.42 added it first, then edited the list item) */
     regPress(b, ()=>{ addFromRegular(name,cat,note); }, ()=>{ const en=regFind(name,cat,note)||{};
       quickEdit=null; editing={kind:"ba", name, cat, qty:en.qty||1, weight:en.weight||"", sub:en.sub||"", note:en.note||"", where:en.where||"", tags:regTags(en), origName:name, origCat:cat, origNote:en.note||""}; render(); return null; }); });
+  { const so=app.querySelector("[data-reg-sortold]"); if(so) so.onclick=sortOldRegulars; }   // v2.96
   app.querySelectorAll("[data-reg-rm]").forEach(b=>{ const id=b.dataset.regRm;
     regPress(b, ()=>removeFromList(id), ()=>id); });
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; listsOpen=false; render(); };
@@ -9268,6 +9371,7 @@ function wireEditSheet(){
       const del=app.querySelector("#delBtn"); if(del) del.onclick=()=> editing.kind==="item" ? deleteItemEditing() : removeBAfromSheet();
       const sv=app.querySelector("#saveBtn"); if(sv) sv.onclick=()=> saveEverywhere();   // v2.65: one Save — the list and the Regulars
       const ean=app.querySelector("#edAnother"); if(ean) ean.onclick=()=> editAnother();   // v2.90: Save, then a new item of the same name
+      photoWire(app);   // v2.96 PHOTOS hook
     }
   }
 }

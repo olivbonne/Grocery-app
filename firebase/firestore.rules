@@ -96,6 +96,17 @@ service cloud.firestore {
         allow create, update: if (!hasAccess(code) || memberOf(code)) && spendOk(request.resource.data);
         allow delete: if false;
       }
+      // v2.96: a small photo on an item (Option B), one record each, never deleted (a removal is { gone }).
+      match /photos/{pid} {
+        function photoOk(d) {
+          return d.keys().hasOnly(['d', 'w', 'h', 't', 'by', 'gone']) && pid.size() <= 20
+            && (!('d' in d) || (d.d is string && d.d.size() <= 160000 && d.d.matches('^data:image/jpeg;base64,.*')))
+            && (!('gone' in d) || d.gone is int);
+        }
+        allow get, list: if !hasAccess(code) || memberOf(code);
+        allow create, update: if (!hasAccess(code) || memberOf(code)) && photoOk(request.resource.data);
+        allow delete: if false;
+      }
     }
 
     match /access/{code} {

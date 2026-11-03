@@ -1691,6 +1691,15 @@
   .cdraw { display:inline-flex; align-items:center; justify-content:center; }
   .cdraw .cmark { width:100%; height:100%; }
   .pemoji .ill, .pemoji .cmark { width:1.35em; height:1.35em; }
+  /* v2.96 PHOTOS (removable with js/photos.js): the photo takes the drawing's own box, fixed, so a tile never changes size when it loads */
+  .pemoji.pphoto .pphoto-img { width:1.35em; height:1.35em; display:block; object-fit:cover; border-radius:22%; }
+  .edcell[data-row="photo"] .edphoto { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:6px; }
+  .edcell[data-row="photo"] .edphoto .catchip { display:inline-flex; align-items:center; gap:5px; }
+  .edphoto-th { padding:0; border:none; background:none; line-height:0; }
+  .edphoto-img { width:80px; height:80px; object-fit:cover; border-radius:12px; display:block; }
+  #photoView { position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.88); display:flex; align-items:center; justify-content:center; }
+  #photoView img { max-width:100%; max-height:100%; object-fit:contain; }
+  #photoView .pv-x { position:absolute; top:calc(12px + env(safe-area-inset-top)); right:12px; width:40px; height:40px; border-radius:50%; border:none; background:rgba(255,255,255,.18); color:#fff; font-size:20px; }
   .pemoji:has(svg), .pcem:has(svg) { display:inline-flex; align-items:center; }
   .pill { --illbg:var(--tilebg, var(--card)); }
   .pill.done { --illbg:var(--done-bg); }
@@ -2230,6 +2239,7 @@ html[data-lk-edit-rows] [data-look="edit"] .edrows .edval, html[data-lk-edit-row
 /* v2.76: an open cell's head keeps its place; only its choices take the next line, full width (v2.74 spanned the whole cell) */
 html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-row="note"] { grid-column:1/-1; }
 html[data-lk-edit-rows="v"] [data-look="edit"] .edrows > .edcell[data-row="note"] { flex-basis:100%; }
+html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-row="photo"] { grid-column:1/-1; flex-basis:100%; }   /* v2.96 PHOTOS: full width, as the note */
 html[data-lk-edit-rows]:not([data-lk-edit-rows="v"]) [data-look="edit"] .edrows { grid-auto-flow:row dense; }
 html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) { display:contents; }
 html[data-lk-edit-rows] [data-look="edit"] .edrows > .edcell[data-open="1"]:not([data-row="note"]) > .editsec { min-width:0; }
@@ -2544,7 +2554,7 @@ html[data-cu-tk="grey"] .cupill-t { box-shadow:inset 0 0 0 1.5px var(--cu-grey);
 /* v2.87: Icon size "Fill" — in the column tiles the drawing is 40% of the tile's inner width (never under S, at most 80px),
    the same on every tile; elsewhere Fill is S. */
 html[data-icosize="fill"] body .shop .zoomer.gridmode :is(.pills, .tileprobe) > .pill.pill > .pemoji { width:100%; display:flex; justify-content:center; }
-html[data-icosize="fill"] body .shop .zoomer.gridmode :is(.pills, .tileprobe) > .pill.pill > .pemoji :is(.ill, .cmark) { width:clamp(1.35em, 40%, 80px); height:auto; aspect-ratio:1/1; }   /* one size for every tile: a share of the tile's width (per-tile free room made a tiny coriander beside huge eggs) */
+html[data-icosize="fill"] body .shop .zoomer.gridmode :is(.pills, .tileprobe) > .pill.pill > .pemoji :is(.ill, .cmark, .pphoto-img) { width:clamp(1.35em, 40%, 80px); height:auto; aspect-ratio:1/1; }   /* one size for every tile: a share of the tile's width (per-tile free room made a tiny coriander beside huge eggs) */
 html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .cupair > .cudisc { min-width:calc(18px * var(--cu-pk)); height:calc(18px * var(--cu-pk)); padding:0 calc(4px * var(--cu-pk)); font-size:calc(10px * var(--cu-pk)); }
 html body .shop .zoomer:is(.grid5,.grid6) .pill.pill.pill > .cupair > .cupill { height:calc(16px * var(--cu-pk)); padding:0 calc(5px * var(--cu-pk)); font-size:calc(10px * var(--cu-pk)); }
 html body .shop .zoomer.grid4 .pill.pill.pill .cupill { padding:0 calc(5px * var(--cu-pk)); }   /* v2.87: "2 × 1 bunch" fits a 4-across tile */
@@ -2606,3 +2616,7 @@ html body .zoomer.zoomer.zoomer.linelist .pill.pill > :is(.pill-meta, .cu-alt) {
 .shop .zoomer.grid6 .pblock.w-third .pills { grid-template-columns:repeat(2, minmax(0,1fr)); }
 .shop .zoomer.smalltile.gridmode .pblock.w-half .pills { grid-template-columns:repeat(min(2, var(--sc,3)), minmax(0,1fr)); }
 .shop .zoomer.smalltile.gridmode .pblock.w-third .pills { grid-template-columns:1fr; }
+
+/* v2.96: the Others group says when it holds Regulars from the old categories, with a button to sort them */
+.regsort { display:flex; align-items:center; gap:10px; justify-content:space-between; margin:6px 2px 2px; font-size:13px; font-weight:600; color:var(--muted2); }
+.regsort .colbtn2 { flex:none; }
