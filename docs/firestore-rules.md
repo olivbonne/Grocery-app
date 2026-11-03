@@ -61,6 +61,13 @@ under it, and the list record shows `parts` `["items","regulars","prices","spend
 The v2.94 rules add `fridge` to the counters `quota/{uid}/days/{day}` may hold ("What's in the fridge?", `/api/fridge`). Until
 they are published that count is refused and fails open — the server logs "quota store unavailable" and lets the call through.
 
+## v2.96 — photos on items
+The v2.96 rules add `lists/{code}/photos/{pid}`: a small photo on an item (about 480 pixels, a JPEG of at most 160,000
+characters), one record each, read and written by the list's people, never deleted — a removed photo is the record `{gone}`.
+**Publish them to turn photos on.** Until they are published, saving a photo is refused and the app says so in the Edit item
+sheet ("Photos need the updated database rules — see Settings › Help."); nothing else changes. The whole feature is built to be
+removed (see `js/photos.js`).
+
 ## Publishing (about five minutes)
 1. Open the [Firebase console](https://console.firebase.google.com/) → the Market List project → **Firestore Database** → **Rules**.
 2. **Copy what is there now** into a note first, so you can put it back.

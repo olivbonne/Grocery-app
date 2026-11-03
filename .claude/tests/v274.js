@@ -54,7 +54,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     const u = await page.evaluate(()=>({ attrs:[...document.documentElement.attributes].map(a=>a.name).filter(n=>/^data-lk-edit-(rows|chcols|names|rgap)/.test(n)), disp:getComputedStyle(document.querySelector('#sheet .edrows')).display,
       cells:[...document.querySelectorAll('#sheet .edcell')].map(c=>c.dataset.row), sug:(()=>{ const s=document.querySelector('#sheet .ednotechips'); return s ? getComputedStyle(s).display : 'none'; })() }));
     ok('untouched, Edit item is laid out as before: no layout attribute, the rows a plain block', u.attrs.length===0 && u.disp==='block', JSON.stringify(u));
-    ok('…its rows are cells: note, quantity, unit, category, where to buy', JSON.stringify(u.cells)==='["note","qty","unit","cat","where"]', JSON.stringify(u.cells));
+    ok('…its rows are cells: note, quantity, unit, category, where to buy', JSON.stringify(u.cells)==='["note","photo","qty","unit","cat","where"]'   /* SUPERSEDED by v2.96: the Photo row is a cell after the note; still protects: every row is a cell, in this order */, JSON.stringify(u.cells));
 
     /* 2. the look page */
     await page.keyboard.press('Escape'); await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil:'domcontentloaded' }); await page.waitForTimeout(1200);

@@ -1060,6 +1060,9 @@ export const FR = {
   "Editing this page": "Modification de la page",
   "Reset": "Réinitialiser",
   "Put this page back as it was?": "Remettre cette page comme avant ?",
+  "{n} of these are from the old categories.": "{n} viennent des anciennes catégories.",
+  "Sort them": "Les ranger",
+  "Sorted: {d} leftover copies removed, {m} moved to their category": "Rangé : {d} doublons supprimés, {m} déplacés dans leur catégorie",
   "Put the Shop and Plan pages back as they were?": "Remettre les pages Courses et Menus comme avant ?",
   "Hide": "Masquer",
   "Width: {w}": "Largeur : {w}",
@@ -1072,6 +1075,14 @@ export const FR = {
   "Edit Plan": "Modifier Menus",
   "Reset all": "Tout réinitialiser",
   "Move, hide and resize the parts of the Shop and Plan pages. Also in each page's ⋯ menu.": "Déplacez, masquez et redimensionnez les parties des pages Courses et Menus. Aussi dans le menu ⋯ de chaque page.",
+  /* v2.96: photos on items ("Photo", "Remove", "Close" and "Reason:" are above) */
+  "Take a photo": "Prendre une photo",
+  "Choose a photo": "Choisir une photo",
+  "Replace": "Remplacer",
+  "Saving the photo…": "Enregistrement de la photo…",
+  "Photos need the updated database rules — see Settings › Help.": "Les photos demandent les nouvelles règles de la base de données — voir Réglages › Aide.",
+  "Couldn't save the photo.": "Impossible d'enregistrer la photo.",
+  "That photo is too big, even made smaller.": "Cette photo est trop lourde, même réduite.",
 };
 
 /* v2.55: the languages the app speaks. To add one: write its table (same keys as FR — the English text — with that
