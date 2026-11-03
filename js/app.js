@@ -6,25 +6,25 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.97";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.97";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.97";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=2.97";
-import { compareStores, worthIt } from "./compare.js?v=2.97";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.97";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.97";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.97";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.97";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.97";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.97";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.97";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.97";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.97";   /* v2.45 (architecture review S17): the app in French as well as English */
-import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=2.97";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.98";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.98";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.98";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=2.98";
+import { compareStores, worthIt } from "./compare.js?v=2.98";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.98";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.98";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.98";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.98";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.98";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.98";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.98";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.98";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.98";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=2.98";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.97";
+const APP_VERSION = "v2.98";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 
 /* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
@@ -6389,6 +6389,11 @@ const PAGE_EDIT_SVG = (s=18) => `<svg width="${s}" height="${s}" viewBox="0 0 24
 const PB_UP_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>`;
 const PB_DOWN_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
 const PB_EYE_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
+/* v2.98 each block's own settings: a drawn sliders mark opens a panel inside the block */
+const PB_SET_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2.2" fill="var(--chip)"/><circle cx="15" cy="12" r="2.2" fill="var(--chip)"/><circle cx="7" cy="18" r="2.2" fill="var(--chip)"/></svg>`;
+var pbSetOpen = "";   // "" | a block id — var: render() reads it at boot
+function pbTile(id){ return ["shop.list","shop.urgent","shop.else","shop.regulars"].includes(id); }
+const PB_TA = ["left","center","right"], PB_TV = ["top","middle","bottom"];
 const PB_EYEOFF_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 20L20 4"/></svg>`;
 function pageLayAll(){ try{ const a = JSON.parse(localStorage.getItem("ml_pagelay") || "{}"); return (a && typeof a === "object" && !Array.isArray(a)) ? a : {}; }catch(e){ return {}; } }
 function pageLay(page){ const ids = pbIds(page), ok = x => ids.includes(x);
@@ -6396,7 +6401,11 @@ function pageLay(page){ const ids = pbIds(page), ok = x => ids.includes(x);
   const o = Array.isArray(rec.o) ? rec.o.filter((x, i, a) => ok(x) && a.indexOf(x) === i) : [];
   const h = Array.isArray(rec.h) ? rec.h.filter((x, i, a) => ok(x) && a.indexOf(x) === i) : [];
   const w = {}; if(rec.w && typeof rec.w === "object") for(const k in rec.w){ if(ok(k) && (rec.w[k] === "half" || rec.w[k] === "third")) w[k] = rec.w[k]; }
-  return { o, h, w }; }
+  /* v2.98: s = { id:{ img:"off", ta, tv } }, only non-default values; pictures and position only on tile blocks */
+  const s = {}; if(rec.s && typeof rec.s === "object") for(const k in rec.s){ const v = rec.s[k]; if(!ok(k) || !v || typeof v !== "object") continue;
+    const e = {}; if(pbTile(k) && v.img === "off") e.img = "off"; if(PB_TA.includes(v.ta)) e.ta = v.ta; if(pbTile(k) && PB_TV.includes(v.tv)) e.tv = v.tv;
+    if(Object.keys(e).length) s[k] = e; }
+  return { o, h, w, s }; }
 function pageLaySet(page, rec){ const all = pageLayAll();
   if(rec) all[page] = rec; else delete all[page];
   try{ if(Object.keys(all).length) localStorage.setItem("ml_pagelay", JSON.stringify(all)); else localStorage.removeItem("ml_pagelay"); }catch(e){} }
@@ -6411,12 +6420,25 @@ function pageBlocksHTML(page, parts){ const L = pageLay(page), ed = pageEdit ===
   const shown = pageOrder(page).filter(id => parts[id] && (ed || !L.h.includes(id)));
   const WL = { "":"Full", half:"½", third:"⅓" };
   return `<div class="pblocks${ed ? ' editing' : ''}" data-page="${page}">${shown.map((id, i) => { const hid = L.h.includes(id), w = L.w[id] || "";
+    const S = L.s[id] || {}, so = ed && pbSetOpen === id;
     const tools = ed ? `<span class="pblbl">${t(PB_NAME[id])}</span><span class="pbtools">`
       + `<button class="pbbtn" data-pbmove="-1" data-pbid="${id}" aria-label="${t("Move up")}"${i === 0 ? " disabled" : ""}>${PB_UP_SVG}</button>`
       + `<button class="pbbtn" data-pbmove="1" data-pbid="${id}" aria-label="${t("Move down")}"${i === shown.length - 1 ? " disabled" : ""}>${PB_DOWN_SVG}</button>`
       + `<button class="pbbtn" data-pbhide="${id}" aria-label="${hid ? t("Show") : t("Hide")}">${hid ? PB_EYEOFF_SVG : PB_EYE_SVG}</button>`
-      + `<button class="pbbtn pbw" data-pbwidth="${id}" aria-label="${tf("Width: {w}", { w:t(WL[w]) })}">${t(WL[w])}</button></span>` : "";
-    return `<div class="pblock${w ? ' w-' + w : ''}${hid ? ' pbhidden' : ''}" data-pb="${id}">${tools}<div class="pbin">${parts[id]}</div></div>`; }).join("")}</div>`; }
+      + `<button class="pbbtn pbw" data-pbwidth="${id}" aria-label="${tf("Width: {w}", { w:t(WL[w]) })}">${t(WL[w])}</button>`
+      + `<button class="pbbtn${so ? ' on' : ''}" data-pbset="${id}" aria-label="${tf("Settings for {x}", { x:t(PB_NAME[id]) })}" aria-expanded="${so}">${PB_SET_SVG}</button></span>`
+      + (so ? pbSetHTML(id, S) : "") : "";
+    const cls = (S.img === "off" ? " pb-noimg" : "") + (S.ta ? " pb-ta-" + S.ta : "") + (S.tv ? " pb-tv-" + S.tv : "");
+    return `<div class="pblock${w ? ' w-' + w : ''}${hid ? ' pbhidden' : ''}${cls}" data-pb="${id}">${tools}<div class="pbin">${parts[id]}</div></div>`; }).join("")}</div>`; }
+/* v2.98: the block's settings panel (edit mode). Defaults show as chosen: Pictures On, Text as the layout draws it, Position Middle. */
+function pbSetHTML(id, S){ const tile = pbTile(id), col = tile && gridCols() > 0;
+  const seg = (k, cur, opts) => `<div class="seg">${opts.map(([v, l]) => `<button data-pbs="${k}" data-pbsid="${id}" data-pbsv="${v}" class="${cur === v ? 'on' : ''}">${t(l)}</button>`).join("")}</div>`;
+  const row = (l, c) => `<div class="pbsrow"><span class="pbslbl">${t(l)}</span>${c}</div>`;
+  return `<div class="pbset">`
+    + (tile ? row("Pictures", seg("img", S.img === "off" ? "off" : "on", [["on","On"],["off","Off"]])) : "")
+    + row("Text", seg("ta", S.ta || (col ? "center" : "left"), [["left","Left"],["center","Centre"],["right","Right"]]))
+    + (tile ? row("Position", seg("tv", S.tv || "middle", [["top","Top"],["middle","Middle"],["bottom","Bottom"]])) : "")
+    + `</div>`; }
 function pageEditBarHTML(page){ if(pageEdit !== page) return "";
   return `<div class="pagedit" id="pageEditBar" role="region" aria-label="${t("Editing this page")}"><span class="pagedit-t">${t("Editing this page")}</span>`
     + `<button class="colbtn2" id="peReset">${t("Reset")}</button><button class="colbtn2 on" id="peDone">${t("Done")}</button></div>`; }
@@ -6424,15 +6446,23 @@ function wirePageEdit(){
   const pe = app.querySelector("#pwEdit"); if(pe) pe.onclick = () => { planWeekOpen = false; pageEdit = "plan"; render(); };
   const box = app.querySelector(".pblocks.editing");
   if(box){ const page = box.dataset.page;
-    const cur = () => { const L = pageLay(page); return { o:pageOrder(page), h:L.h, w:L.w }; };
+    const cur = () => { const L = pageLay(page); return { o:pageOrder(page), h:L.h, w:L.w, s:L.s }; };
     box.querySelectorAll("[data-pbmove]").forEach(b => b.onclick = () => { const id = b.dataset.pbid, d = +b.dataset.pbmove, L = cur();
       const vis = [...box.querySelectorAll(".pblock")].map(x => x.dataset.pb), k = vis.indexOf(id), other = vis[k + d];
       if(!other) return; const a = L.o.indexOf(id), c = L.o.indexOf(other); L.o[a] = other; L.o[c] = id; pageLaySet(page, L); render(); });
     box.querySelectorAll("[data-pbhide]").forEach(b => b.onclick = () => { const id = b.dataset.pbhide, L = cur();
       L.h = L.h.includes(id) ? L.h.filter(x => x !== id) : L.h.concat(id); pageLaySet(page, L); render(); });
     box.querySelectorAll("[data-pbwidth]").forEach(b => b.onclick = () => { const id = b.dataset.pbwidth, L = cur();
-      const nx = { "":"half", half:"third", third:"" }[L.w[id] || ""]; if(nx) L.w[id] = nx; else delete L.w[id]; pageLaySet(page, L); render(); }); }
-  const dn = app.querySelector("#peDone"); if(dn) dn.onclick = () => { pageEdit = ""; render(); };
+      const nx = { "":"half", half:"third", third:"" }[L.w[id] || ""]; if(nx) L.w[id] = nx; else delete L.w[id]; pageLaySet(page, L); render(); });
+    box.querySelectorAll("[data-pbset]").forEach(b => b.onclick = () => { const id = b.dataset.pbset; pbSetOpen = pbSetOpen === id ? "" : id; render(); });
+    /* v2.98: a default value is stored as nothing */
+    box.querySelectorAll("[data-pbs]").forEach(b => b.onclick = () => { const id = b.dataset.pbsid, k = b.dataset.pbs, v = b.dataset.pbsv, L = cur();
+      const e = Object.assign({}, L.s[id]), col = pbTile(id) && gridCols() > 0;
+      const dflt = { img:"on", ta:(col ? "center" : "left"), tv:"middle" }[k];
+      if(v === dflt) delete e[k]; else e[k] = v;
+      if(Object.keys(e).length) L.s[id] = e; else delete L.s[id];
+      pageLaySet(page, L); render(); }); }
+  const dn = app.querySelector("#peDone"); if(dn) dn.onclick = () => { pageEdit = ""; pbSetOpen = ""; render(); };
   const rs = app.querySelector("#peReset"); if(rs) rs.onclick = () => { if(!confirm(t("Put this page back as it was?"))) return; pageLaySet(pageEdit, null); render(); };
   const es = app.querySelector("#optEditShop"); if(es) es.onclick = () => { pageEdit = "shop"; gotoPage(1); };
   const ep = app.querySelector("#optEditPlan"); if(ep) ep.onclick = () => { pageEdit = "plan"; gotoPage(0); };
