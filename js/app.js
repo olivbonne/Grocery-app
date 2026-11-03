@@ -6,25 +6,25 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.96";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.96";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.96";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=2.96";
-import { compareStores, worthIt } from "./compare.js?v=2.96";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.96";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.96";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.96";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.96";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.96";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.96";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.96";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.96";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.96";   /* v2.45 (architecture review S17): the app in French as well as English */
-import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=2.96";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.97";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.97";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.97";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=2.97";
+import { compareStores, worthIt } from "./compare.js?v=2.97";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.97";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.97";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.97";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.97";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.97";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.97";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.97";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.97";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.97";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=2.97";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.96";
+const APP_VERSION = "v2.97";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 
 /* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
@@ -39,7 +39,7 @@ window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top 
 const PHOTOS_ON = true;
 var photoCache = new Map();   // pid → { d } | "gone" | "loading". var: a render at boot may reach it
 var _photoOff = new Map(), _photoRenderT = null, photoBusy = null;   // photoBusy: { id, err, why } while the Edit item sheet saves one
-function photoRender(){ clearTimeout(_photoRenderT); _photoRenderT = setTimeout(()=>render(), 50); }   // debounced, as sharedFetch: never one render per photo
+function photoRender(){ clearTimeout(_photoRenderT); _photoRenderT = setTimeout(()=>softRender(), 50); }   /* v2.97: never under someone typing */   // debounced, as sharedFetch: never one render per photo
 function photoGet(pid){ if(!PHOTOS_ON || !pid || typeof pid !== "string") return null;
   const c = photoCache.get(pid); if(c) return c;
   if(!storeReady() || !listCode) return null;
@@ -3059,6 +3059,14 @@ async function save(){
   catch(e){ console.error(e);
     if(Date.now()-__saveWarned > 5000){ __saveWarned = Date.now(); showToast("⚠︎ Not syncing — check Firestore rules"); } }
 }
+/* v2.97 (the household: "+ Another — the keyboard opens, then disappears and the note is lost"): a redraw that nobody asked for
+   (a message going away, a photo or a shared price arriving) never replaces a field someone is typing in — it waits until the
+   field is left. render() rebuilds the page, so a focused input is swapped for a new one: the keyboard drops and what was typed
+   since the last save goes. */
+function typingNow(){ const a=document.activeElement; return !!(a && a.matches && a.matches('input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=color]), textarea') && a.isConnected); }
+function softRender(){ if(!typingNow()){ render(); return; }
+  const a=document.activeElement; if(a._softDue) return; a._softDue=true;
+  a.addEventListener("blur", ()=>{ a._softDue=false; setTimeout(()=>{ if(!typingNow()) render(); else softRender(); }, 0); }, { once:true }); }
 function showToast(msg){
   msg=t(msg);   // v2.45 a fixed message has its French in js/i18n.js; one built with values stays English
   toast=msg; toastAction=null;
@@ -3082,7 +3090,11 @@ function showToast(msg){
     _toastT=setTimeout(()=>{ toast=null; const e=document.getElementById("toast"); if(e && e.parentNode) e.parentNode.removeChild(e); },1700);
     return;
   }
-  render(); clearTimeout(_toastT); _toastT=setTimeout(()=>{ toast=null; render(); },1700);
+  /* v2.97: while someone types, the message is put in and taken out of the page directly — never a full redraw */
+  if(typingNow()){ let e=document.getElementById("toast"); if(!e){ e=document.createElement("div"); e.className="toast"; e.id="toast"; (app||document.body).appendChild(e); }
+    e.innerHTML=`<span>${esc(msg)}</span>`; clearTimeout(_toastT);
+    _toastT=setTimeout(()=>{ toast=null; const x=document.getElementById("toast"); if(x && typingNow()) x.remove(); else softRender(); },1700); return; }
+  render(); clearTimeout(_toastT); _toastT=setTimeout(()=>{ toast=null; if(typingNow()){ const x=document.getElementById("toast"); if(x) x.remove(); } else render(); },1700);
 }
 function snapState(){ return JSON.parse(JSON.stringify(state)); }
 function syncChip(){
@@ -6225,7 +6237,7 @@ function sharedFetch(keys){ if(!db) return; const now=Date.now(); let started=0;
     sharedCache[k]={ med:(c && c.med) || null, t:now }; started++; _sharedPending++;
     let off=null, done=false;
     const finish=(med)=>{ if(done) return; done=true; try{ if(off) off(); }catch(e){} sharedCache[k]={ med, t:Date.now() };
-      if(--_sharedPending<=0){ _sharedPending=0; clearTimeout(_sharedRenderT); _sharedRenderT=setTimeout(()=>render(), 50); } };
+      if(--_sharedPending<=0){ _sharedPending=0; clearTimeout(_sharedRenderT); _sharedRenderT=setTimeout(()=>softRender(), 50); } };   // v2.97
     try{ off=listen(ref("shared", k), s=>finish(s && s.exists && s.exists() ? sharedMedian((s.data()||{}).by, Date.now()) : null), ()=>finish(null)); }catch(e){ finish(null); }
     setTimeout(()=>finish(null), 15000); } }
 function cmpModel(){ const items = state.items.filter(i => !i.checked);
