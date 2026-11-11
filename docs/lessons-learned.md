@@ -288,3 +288,10 @@ the household asked for is not a lesson.*
     asked for goes through `softRender()`, which waits for the field to be left; a message shown or hidden while someone types
     is added to and taken out of the page directly. The v2.97 suite types across the message's end and checks the same field
     keeps focus and every letter.
+67. **Tightening who may read needs the unlock path tested end to end.** v2.99 lets only a list's people open it; a list with
+    no access record is then refused, and the phone that creates the record must ask for the list again. Two paths did not:
+    creating the record never re-subscribed, and when the record was created by the sign-in handler before the refusal came
+    back, the "already one of its people" branch did not either — the list would have stayed locked until the next launch
+    (found before release, by the executor's review and the suite). *Guard:* any rule that can refuse a read gets a suite whose
+    fake database enforces that rule, and it checks the list ends open from every starting state (sign-in at launch, sign-in
+    late, a new list) — `.claude/tests/v299.js`.

@@ -6,7 +6,9 @@ rules_version = '2';
 //  - lists are never deleted through the app (Settings › Your data empties one instead);
 //  - an account's own record (users/{uid}) is read and written only by that signed-in person (v2.40); since v2.71 it may
 //    also hold a copy of that person's settings (prefs: { at, json }, the keys as one string of at most 40,000 characters) — never list data;
-//  - who may open a list is kept in access/{code} (v2.44): once that exists, only its people can open the list;
+//  - who may open a list is kept in access/{code} (v2.44); since v2.99 only its people can open the list — a list with no
+//    access record can no longer be read: the first signed-in phone to hold its code creates the record (open for 30 days)
+//    and is then let in;
 //  - shared shelf prices (shared/{key}, v2.47): read by any signed-in phone; each email account writes only its own entry;
 //  - nothing outside lists/, access/, users/ and shared/ can be read or written.
 // The app only ever does: get/listen to lists/{code}, and set it whole (create or update); since v2.58 it also
@@ -19,14 +21,14 @@ service cloud.firestore {
 
     // v2.44 (architecture review A2, members by account): who may open a list is kept beside it, in access/{code}:
     //   { acl: {uid: true|false}, names: {uid: name}, joinKey, openUntil (ms), joinProof: {uid: key} }.
-    // A list with no access record yet (made before v2.44, until one of its phones opens it) stays as before: its code is
-    // the key. Once the record exists, only its people can open the list. A new person joins with the key from a share
+    // v2.99: a list with no access record can no longer be read or written (memberOf is false without one); the first
+    // signed-in phone to hold its code creates the record (open for 30 days) and is then let in. Only its people open the list. A new person joins with the key from a share
     // link — or, for the first 30 days (openUntil), with the code alone, so the household's own phones move over without
     // a new link. A person removed is set to false; "New link" changes the key, so an old link stops working.
     function accessPath(code) { return /databases/$(database)/documents/access/$(code); }
     function hasAccess(code) { return exists(accessPath(code)); }
     function memberOf(code) {
-      return request.auth != null && get(accessPath(code)).data.acl.get(request.auth.uid, false) == true;
+      return request.auth != null && hasAccess(code) && get(accessPath(code)).data.acl.get(request.auth.uid, false) == true;
     }
 
     match /lists/{code} {
@@ -44,10 +46,10 @@ service cloud.firestore {
           && d.get('parts', []) is list && d.get('parts', []).size() <= 8
           && d.get('clr', {}) is map && d.get('clr', {}).size() <= 8;   // v2.75: when prices / spending were last cleared (records older are ignored)
       }
-      allow get: if !hasAccess(code) || memberOf(code);
+      allow get: if memberOf(code);
       allow list: if false;
       allow create: if code.size() <= 64 && people(request.resource.data) <= 4 && listOk(request.resource.data);
-      allow update: if (!hasAccess(code) || memberOf(code))
+      allow update: if memberOf(code)
                     && listOk(request.resource.data)
                     && (people(request.resource.data) <= 4
                         || people(request.resource.data) <= people(resource.data))
@@ -63,10 +65,17 @@ service cloud.firestore {
         function itemOk(d) {
           return d.keys().size() <= 40 && d.get('id', '') == id && id.size() <= 64
             && d.get('name', '') is string && d.get('name', '').size() <= 200
-            && d.get('gone', 0) is int && d.get('ts', 0) is number;
+            && d.get('gone', 0) is int && d.get('ts', 0) is number
+            // v2.99: kinds and sizes of the text fields (not a whitelist: old items may carry old fields)
+            && d.get('note', '') is string && d.get('note', '').size() <= 1000
+            && d.get('weight', '') is string && d.get('weight', '').size() <= 100
+            && d.get('where', '') is string && d.get('where', '').size() <= 1000
+            && d.get('cat', '') is string && d.get('cat', '').size() <= 100
+            && d.get('ph', '') is string && d.get('ph', '').size() <= 20
+            && d.get('tags', []) is list && d.get('tags', []).size() <= 20;
         }
-        allow get, list: if !hasAccess(code) || memberOf(code);
-        allow create, update: if (!hasAccess(code) || memberOf(code)) && itemOk(request.resource.data);
+        allow get, list: if memberOf(code);
+        allow create, update: if memberOf(code) && itemOk(request.resource.data);
         allow delete: if false;
       }
 
@@ -76,24 +85,31 @@ service cloud.firestore {
         function regOk(d) {
           return d.keys().size() <= 30 && d.get('k', '') is string && d.get('k', '').size() <= 500
             && (!('name' in d) || (d.name is string && d.name.size() <= 200))
-            && (!('gone' in d) || d.gone is int);
+            && (!('gone' in d) || d.gone is int)
+            // v2.99: kinds and sizes, as on items
+            && d.get('note', '') is string && d.get('note', '').size() <= 1000
+            && d.get('weight', '') is string && d.get('weight', '').size() <= 100
+            && d.get('where', '') is string && d.get('where', '').size() <= 1000
+            && d.get('cat', '') is string && d.get('cat', '').size() <= 100
+            && d.get('ph', '') is string && d.get('ph', '').size() <= 20
+            && d.get('tags', []) is list && d.get('tags', []).size() <= 20;
         }
-        allow get, list: if !hasAccess(code) || memberOf(code);
-        allow create, update: if (!hasAccess(code) || memberOf(code)) && regOk(request.resource.data);
+        allow get, list: if memberOf(code);
+        allow create, update: if memberOf(code) && regOk(request.resource.data);
         allow delete: if false;
       }
       match /prices/{pid} {
         // { k: the price key, recs: its records }
         function priceOk(d) { return d.keys().hasOnly(['k', 'recs']) && d.get('recs', []) is list && d.get('recs', []).size() <= 30; }
-        allow get, list: if !hasAccess(code) || memberOf(code);
-        allow create, update: if (!hasAccess(code) || memberOf(code)) && priceOk(request.resource.data);
+        allow get, list: if memberOf(code);
+        allow create, update: if memberOf(code) && priceOk(request.resource.data);
         allow delete: if false;
       }
       match /spend/{sid} {
         // one receipt's entry, as the app keeps it
         function spendOk(d) { return d.keys().size() <= 20; }
-        allow get, list: if !hasAccess(code) || memberOf(code);
-        allow create, update: if (!hasAccess(code) || memberOf(code)) && spendOk(request.resource.data);
+        allow get, list: if memberOf(code);
+        allow create, update: if memberOf(code) && spendOk(request.resource.data);
         allow delete: if false;
       }
       // v2.96: a small photo on an item (Option B), one record each, never deleted (a removal is { gone }).
@@ -103,8 +119,18 @@ service cloud.firestore {
             && (!('d' in d) || (d.d is string && d.d.size() <= 160000 && d.d.matches('^data:image/jpeg;base64,.*')))
             && (!('gone' in d) || d.gone is int);
         }
-        allow get, list: if !hasAccess(code) || memberOf(code);
-        allow create, update: if (!hasAccess(code) || memberOf(code)) && photoOk(request.resource.data);
+        allow get, list: if memberOf(code);
+        allow create, update: if memberOf(code) && photoOk(request.resource.data);
+        allow delete: if false;
+      }
+      // v2.99: a weekly backup of the list, four rotating slots (w0…w3), written and read by the list's people only.
+      match /backups/{slot} {
+        function backupOk(d) {
+          return d.keys().hasOnly(['at', 'v', 'by', 'json', 'left']) && slot.matches('^w[0-3]$')
+            && d.at is int && d.json is string && d.json.size() <= 900000;
+        }
+        allow get, list: if memberOf(code);
+        allow create, update: if memberOf(code) && backupOk(request.resource.data);
         allow delete: if false;
       }
     }
