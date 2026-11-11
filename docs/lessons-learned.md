@@ -295,3 +295,7 @@ the household asked for is not a lesson.*
     (found before release, by the executor's review and the suite). *Guard:* any rule that can refuse a read gets a suite whose
     fake database enforces that rule, and it checks the list ends open from every starting state (sign-in at launch, sign-in
     late, a new list) — `.claude/tests/v299.js`.
+68. **"Latest" in the test machines' setup is a moving part.** The CI ran on `ubuntu-latest`; in November 2026 that became
+    Ubuntu 26.04, where the pinned Playwright 1.56.1 has no browser to install, so every browser job failed in its first minute
+    on a pull request that had not touched the tests (v2.99). *Guard:* the runner image is pinned (`ubuntu-24.04`) next to the
+    pinned Playwright version; they move together, on purpose, in a pull request of their own.
