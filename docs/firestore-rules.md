@@ -100,6 +100,12 @@ The SAME publish also turns on photos on items (v2.96) and the fridge photo's da
    - `delete` on `/lists/<your code>` as your uid → **denied**
    - `get` on `/access/<your code>` as your uid → **allowed**
    - `get` on `/users/abc123` with the uid set to `abc123` → **allowed**; with uid `xyz789` → **denied**
+   - `create` on `/lists/test123` with data `{"members":["A","B"]}` → **allowed** (a new list is written before its access record)
+   - `update` on `/lists/<your code>` as your uid with data `{"members":["A","B","C","D","E"]}` → **denied** (at most four people)
+   - (v2.44) `update` on `/access/<your code>` as a new uid `B`, adding only `acl.B = true` and `joinProof.B` = the record's
+     `joinKey` → **allowed**; the same with a wrong key once `openUntil` has passed → **denied**
+   - (v2.47) `create` on `/shared/coles__milk` as an email user (provider `password`, uid say `abc123`) with data
+     `{"by":{"abc123":{"p":2.5,"d":<now in ms>}}}` → **allowed**; the same as an anonymous user (provider `anonymous`) → **denied**
    - `get` on `/anything/else` → **denied**
 5. If all of them come out as above, **Publish**. Then open the app on a phone, tick something, and check that it
    appears on another phone. If anything misbehaves, paste back the rules you copied in step 2 and publish.
