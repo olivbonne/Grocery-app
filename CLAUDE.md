@@ -102,6 +102,9 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   the shop shelves it (its aisle type first). A category the person picked by hand is never changed, and nothing stored is
   ever re-categorised. The one exception (v2.57): Settings › Lists & sharing › "Use the new categories" (`switchToCats13`) moves
   one list to the thirteen when the household asks, after writing a backup.
+- **Every item reaches the list through `putItem()` (v3.00)** — never push an item literal; "already on the list" is
+  `itemTwin()` (name + note). The modes: "more" typed/Smart add, "max" occasions/10% shop, "keep" Regulars.
+- **A pick inside Edit item calls `renderSheet()`, not `render()` (v3.00)** — only Save, Delete, + Another and closing redraw the page.
 - **An item's `where` may name several shops (v2.35)** — their ids joined by commas, so it stays a string everywhere it is
   copied. Read it with `whereIds(i)`, never `i.where === id`.
 - **Views group items with `catShown(i.cat)`, never `i.cat === cat.id`** (v2.17). An item whose category is gone
