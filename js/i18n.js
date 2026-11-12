@@ -186,6 +186,8 @@ export const FR = {
   "Install": "Installer",
   "Got it": "Compris",
   "Not now": "Plus tard",
+  "1 more message": "1 autre message",
+  "{n} more messages": "{n} autres messages",
   "Copied the list — paste it into any app": "Liste copiée — collez-la dans n’importe quelle app",
   "Could not share on this device": "Partage impossible sur cet appareil",
   "Add {n} items": "Ajouter {n} articles",
