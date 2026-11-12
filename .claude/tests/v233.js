@@ -99,7 +99,10 @@ const seed = (o) => { o=o||{}; return `(() => {
     await tap('#listSwitch'); await tap('#newList'); await page.locator('#newListName').fill('Picky'); await tap('#newListCreate');
     await page.waitForTimeout(400);
     const code2 = await page.evaluate(()=>localStorage.getItem('ml_lastlist'));
-    ok('(guard) newCat never overrides a category picked by hand', /cat:override \? cat : newCat\(cat, e\.name\)/.test(fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8')), code2);
+    /* SUPERSEDED by v3.00: the item literal in addEntries is gone — every add goes through putItem(), which skips newCat when
+       the caller says the category is the person's own (catFixed). Still protects: a category picked by hand is never changed. */
+    { const src=fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8');
+      ok('(guard) newCat never overrides a category picked by hand', /catFixed:!!override/.test(src) && /cat: o\.catFixed \? e\.cat : newCat\(/.test(src), code2); }
     ok('an existing list keeps its nine, and new items get the nine as before', c.ids.join(',')==='meat,fruit,vegetable,fresh,bulk,health,asian,alcohol,others'
        && c.items['Bread']==='fresh' && c.items['Ham']!=='deli', JSON.stringify(c));
   } catch(e){ ok('suite ran to the end', false, e.message.slice(0,300)); }
