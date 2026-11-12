@@ -6,25 +6,25 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.00";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.00";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.00";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.00";
-import { compareStores, worthIt } from "./compare.js?v=3.00";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.00";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.00";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.00";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.00";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.00";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.00";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.00";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.00";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.00";   /* v2.45 (architecture review S17): the app in French as well as English */
-import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.00";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.01";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.01";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.01";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.01";
+import { compareStores, worthIt } from "./compare.js?v=3.01";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.01";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.01";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.01";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.01";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.01";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.01";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.01";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.01";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.01";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.01";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v3.00";
+const APP_VERSION = "v3.01";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 
 /* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
@@ -35,7 +35,7 @@ window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top 
      - tile builder:  `photoTile(i) ||` before the item tile's emS; regPill: `photoTile(selected && it && it.ph ? it : entry) ||`
      - Edit item sheet: `${photoSecHTML(editing)}` after the Note cell; `photoWire(app);` in the sheet's wiring
      - field copies of `ph` (an inert string when this is off): moveToBuyAgain, sweep, addFromRegular, restore, applyEdit,
-       regularFrom, saveEverywhere, saveBA, removeEditing, commitAddSheet, planRemove, mergeCluster */
+       regularFrom, saveEverywhere, saveBA, removeEditing, commitAddSheet, planRemove, mergeCluster, restoreEditingToList */
 const PHOTOS_ON = true;
 var photoCache = new Map();   // pid → { d } | "gone" | "loading". var: a render at boot may reach it
 var _photoOff = new Map(), _photoRenderT = null, photoBusy = null;   // photoBusy: { id, err, why } while the Edit item sheet saves one
@@ -1462,8 +1462,8 @@ function predictActive(){
   if(predictSeen[period] && predictSeen[period].hidden) return null; // whole batch dismissed this period
   const due=predictDue(); return due.length ? due : null;
 }
-function predictAdd(key){ const rec=purch[key]; if(!rec) return;   // v3.00: through putItem ("keep", the same name in rec.cat)
-  { const r=putItem({name:rec.name, qty:rec.qty, cat:rec.cat, weight:rec.weight, sub:rec.sub}, {anyNote:true, sameCat:true}); if(r && r.added) playPlan(true); }
+function predictAdd(key){ const rec=purch[key]; if(!rec) return;   // v3.00: through putItem; v3.01: the same name in any category (rec.cat is the nine-set id)
+  { const r=putItem({name:rec.name, qty:rec.qty, cat:rec.cat, weight:rec.weight, sub:rec.sub}, {anyNote:true}); if(r && r.added) playPlan(true); }
   save(); predictDismiss(key);
 }
 function predictDismiss(key){ const period=predictPeriod();
@@ -1539,6 +1539,13 @@ function mergeCluster(sig){
 }
 function mergeDismiss(sig){ mergeX[sig]=1; try{ localStorage.setItem("ml_merge_x", JSON.stringify(mergeX)); }catch(e){} render(); }
 function mergeHideAll(){ for(const c of mergeClusters()) mergeX[c.sig]=1; try{ localStorage.setItem("ml_merge_x", JSON.stringify(mergeX)); }catch(e){} render(); }
+/* v3.01 (U2): the messages above the list show one at a time — the first that applies, in this order — with a line under it
+   saying how many more there are; tapping it shows the next. Session only (not stored). */
+var _noticeAt = 0;   // var: render reads it at boot
+const NEXT_SVG = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';   // v3.01 a right chevron
+function noticeStackHTML(cards){ const c=cards.filter(Boolean); if(c.length<2) return c.join("");
+  const i=((_noticeAt % c.length)+c.length) % c.length, more=c.length-1;
+  return c[i] + `<button class="noticemore" id="noticeNext">${more===1 ? t("1 more message") : tf("{n} more messages", { n:more })} <span aria-hidden="true">${NEXT_SVG}</span></button>`; }
 function mergeCardHTML(){
   const cls=mergeClusters(); if(!cls.length) return "";
   const rows=cls.slice(0,2).map(c=>`<div class="mergerow">
@@ -3414,9 +3421,10 @@ function removeBAfromSheet(){ baForget(editing.origName, editing.origCat, editin
   regDrop(editing.origName, editing.origCat, editing.origNote);
   editing=null; save(); render(); }
 function restoreEditingToList(){ const nm=(editing.name||"").trim()||editing.origName; const cat=editing.cat; const qty=Math.max(1,editing.qty||1);
+  const _reg = regFind(editing.origName, editing.origCat, editing.origNote);   // v2.96 PHOTOS hook: editing has no ph, the stored Regular does
   regDrop(editing.origName, editing.origCat, editing.origNote);
   const ex=itemTwin(nm, cat, editing.note, {sameCat:true});
-  if(!ex) putItem({name:nm, qty, cat, weight:editing.weight, sub:editing.sub, note:editing.note, where:editing.where, tags:regTags(editing)}, {fresh:true, catFixed:true});   // v3.00: note, where and the Regular's flags come too
+  if(!ex) putItem({name:nm, qty, cat, weight:editing.weight, sub:editing.sub, note:editing.note, where:editing.where, tags:regTags(editing), ph:_reg && _reg.ph}, {fresh:true, catFixed:true});   // v2.96 PHOTOS hook   // v3.00: note, where and the Regular's flags come too
   editing=null; save(); render(); }
 
 /* category edit */
@@ -3948,7 +3956,7 @@ function itemEmoji(name, cat){ if(!itemEmojiOn()) return "";
 function addFrag(){ const v=draftMain||""; const i=Math.max(v.lastIndexOf(","), v.lastIndexOf("\n")); return v.slice(i+1).trim(); }
 // v1.31 item 2: gather search matches (due → regulars → catalogue), deduped, for literal shop-pill rendering.
 function addMatches(f){
-  const onList=(name,cat)=> state.items.find(i=>!i.checked && i.name.toLowerCase()===String(name).toLowerCase() && (cat==null||i.cat===cat));
+  const onList=(name,cat)=> state.items.find(i=>!i.checked && i.name.toLowerCase()===String(name).toLowerCase() && (cat==null||i.cat===cat||i.cat===newCat(cat, name)));   // v3.01: a thirteen-list shelves it under newCat
   const out=[], seen=new Set();
   const onSeen=new Set();
   /* v2.68: a Regular's note is part of its key. v2.90 (the household: "Tofu appears twice"): a result on the list shows that
@@ -5567,7 +5575,7 @@ function renderMain(){
     ${checkedBar}${tillTop}
     <div class="wrap ${shopMode?'shop':''}" role="main">
     <div class="zoomwrap"><div class="zoomer ${styl()}${lineList()?' linelist':''}${gridCols()?(' gridmode grid'+gridCols()):''}${(dispBase()==='large'&&largeCols()===0)?' largevar':''}" id="zoomer" style="transform:scale(${dens()});transform-origin:top left;width:calc(100% / ${dens()})">
-      ${lockedHTML()}${newerDataHTML()}${pageBlocksHTML("shop", { "shop.notes": `${shoppingHTML()}${(()=>{ const c=(lookCardHTML()||prefsCardHTML())+installCardHTML(); return c || (tillInner ? "" : onbCardHTML()); })()}${tenCardHTML()}${cmpCardHTML()}${(state.items.length===0)?`<div class="empty">
+      ${lockedHTML()}${newerDataHTML()}${pageBlocksHTML("shop", { "shop.notes": `${shoppingHTML()}${(()=>{ const lp=lookCardHTML()||prefsCardHTML(), ins=installCardHTML(); return noticeStackHTML([tenCardHTML(), cmpCardHTML(), mergeCardHTML(), lp, ins, (lp+ins) ? "" : (tillInner ? "" : onbCardHTML())]); })()}${(state.items.length===0)?`<div class="empty">
           ${/* v2.56 item 4: a drawn empty basket, and two ways to start — say it, or type it */""}
           <div class="empty-basket">${BASKET_SVG}</div>
           <p class="empty-title">${t("Your list is empty")}</p>
@@ -5575,8 +5583,7 @@ function renderMain(){
             <button class="pill baadd" id="emptyMic" aria-label="${t("Say what you need")}">${MIC_SVG(26)}</button>
             <button class="pill baadd" id="emptyAdd" aria-label="${t("Add items")}"><span class="baplus" aria-hidden="true">+</span></button>
           </div>
-        </div>`:""}
-      ${mergeCardHTML()}`.trim(), "shop.urgent":pbUrgent, "shop.list":listBody.trim(), "shop.else":pbElse, "shop.regulars":planningSection().trim() })}
+        </div>`:""}`.trim(), "shop.urgent":pbUrgent, "shop.list":listBody.trim(), "shop.else":pbElse, "shop.regulars":planningSection().trim() })}
     </div></div>${pageEditBarHTML("shop")}
   </div>
   ${!addOpen?`<div class="addpill-wrap" id="shopAddFabWrap"><button class="addpill" id="shopAddFab" aria-label="${t("Add items")}"><span class="addpill-in"><span class="addpill-plus" aria-hidden="true">+</span><span class="addpill-lbl">${t("Add items")}</span></span></button></div>`:""}${/* v1.36 item 4: search bar shows even on an empty list */""}
@@ -9363,6 +9370,7 @@ function wire(){
   const lsw=app.querySelector("#listSwitch"); if(lsw) lsw.onclick=()=>{ listsOpen=true; render(); };   // v1.81 title opens the switcher
   const nrl=app.querySelector("#newerReload"); if(nrl) nrl.onclick=()=>location.reload();   // v2.49 S9 newer-data card
   const icd=app.querySelector("#installDone"); if(icd) icd.onclick=installDismiss;   // v2.15 install card
+  const nxn=app.querySelector("#noticeNext"); if(nxn) nxn.onclick=()=>{ _noticeAt++; render(); };   // v3.01 (U2) the next message
   const rng=app.querySelector("#rcNudgeGo"); if(rng) rng.onclick=()=>{ rcptNudgeClear(); rcPick(); };   // v2.17 the receipt at the till
   onbWire();   // v2.48 first-time cards
   const rnn=app.querySelector("#rcNudgeNo"); if(rnn) rnn.onclick=()=>{ rcptNudgeClear(); render(); };

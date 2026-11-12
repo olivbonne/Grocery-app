@@ -306,3 +306,11 @@ the household asked for is not a lesson.*
     suite, written to play the phone, passed. *Guard:* only an input or textarea being typed in (`typingNow()`) is kept; the
     v3.00 suite taps a flag with a real click, twice, and checks it changes each time. When a test plays the phone's rule, it
     also plays the computer's.
+70. **Look for a thing under the name you stored it by.** A restock suggestion checked "is it already on the list?" with the
+    category from the purchase history (one of the old nine), but stored the new item under the category the list shelves it
+    in (`newCat`). On a list with the new categories the two differ, so accepting the same suggestion again added a second
+    copy, and the + sheet showed the item as not on the list (found by the executor while unifying the add flow, fixed
+    v3.01). The same release found a Regular's photo dropped when it was put back on the list from its own sheet — the
+    "field by field" rule again, in a copy that read from the edit form instead of the stored Regular. *Guard:* "already on
+    the list" is `itemTwin()` (name + note), never a comparison of categories from two different sets; the v3.01 suite checks
+    both in the source. When a value is transformed on the way in, every lookup uses the transformed value or ignores it.

@@ -837,6 +837,7 @@
   .rpterr { margin:8px 2px 2px; color:#C24A33; font-weight:700; font-size:13.5px; line-height:1.4; }
   .rpterr .linkbtn { border:none; background:none; padding:0; color:var(--text); text-decoration:underline; font:inherit; font-weight:800; }
   /* v2.15 the install card, and Settings › Other's backups */
+  .noticemore { display:flex; gap:6px; justify-content:center; align-items:center; width:100%; background:transparent; border:none; color:var(--muted); font-size:13px; font-weight:600; padding:6px 4px 10px; text-align:center; }   /* v3.01 (U2) */
   .installcard { margin:2px 0 12px; padding:12px 14px; border-radius:14px; background:var(--card); border:1.5px solid var(--line); color:var(--text); }
   .installcard .ic-t { font-weight:800; font-size:15px; margin-bottom:4px; }
   .installcard .ic-b { font-size:13.5px; line-height:1.45; }
