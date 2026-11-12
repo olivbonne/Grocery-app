@@ -86,23 +86,27 @@ The SAME publish also turns on photos on items (v2.96) and the fridge photo's da
 1. Open the [Firebase console](https://console.firebase.google.com/) → the Market List project → **Firestore Database** → **Rules**.
 2. **Copy what is there now** into a note first, so you can put it back.
 3. Paste the whole of `firebase/firestore.rules` over it. Do not publish yet.
-4. Open the **Rules Playground** (on the same page) and try these. Use your own list's code from its share link
-   (the part after `?list=`):
-   - `get` on `/lists/<your code>` → **allowed**
+4. Open the **Rules Playground** (on the same page) and try these. You need two things from **Firestore Database → Data**:
+   your list's code (the document name under `access`, also the part after `?list=` in a share link) and your phone's uid
+   (one of the names under that document's `acl` field). Turn **Authenticated** on for every test.
+   SUPERSEDED by v2.99: the earlier tests here read a list without signing in, or by a code with no access record;
+   both are now denied, which is the point of v2.99.
+   - `get` on `/lists/<your code>` authenticated as **your uid** → **allowed**
+   - `get` on `/lists/<your code>/items/x` as **your uid** → **allowed** (it may say "not found" — that still means allowed)
+   - `get` on `/lists/<your code>` as a made-up uid (say `xyz789`) → **denied**
+   - `get` on `/lists/<your code>` with **Authenticated off** → **denied**
+   - `get` on `/lists/<a code that does not exist, say nope123>` as your uid → **denied**
    - `list` on `/lists` → **denied**
-   - `create` on `/lists/test123` with data `{"members":["A","B"]}` → **allowed**
-   - `update` on `/lists/<your code>` with data `{"members":["A","B","C","D","E"]}` → **denied** (if the list has four or fewer people now)
-   - `delete` on `/lists/<your code>` → **denied**
+   - `delete` on `/lists/<your code>` as your uid → **denied**
+   - `get` on `/access/<your code>` as your uid → **allowed**
+   - `get` on `/users/abc123` with the uid set to `abc123` → **allowed**; with uid `xyz789` → **denied**
+   - `create` on `/lists/test123` with data `{"members":["A","B"]}` → **allowed** (a new list is written before its access record)
+   - `update` on `/lists/<your code>` as your uid with data `{"members":["A","B","C","D","E"]}` → **denied** (at most four people)
+   - (v2.44) `update` on `/access/<your code>` as a new uid `B`, adding only `acl.B = true` and `joinProof.B` = the record's
+     `joinKey` → **allowed**; the same with a wrong key once `openUntil` has passed → **denied**
+   - (v2.47) `create` on `/shared/coles__milk` as an email user (provider `password`, uid say `abc123`) with data
+     `{"by":{"abc123":{"p":2.5,"d":<now in ms>}}}` → **allowed**; the same as an anonymous user (provider `anonymous`) → **denied**
    - `get` on `/anything/else` → **denied**
-   - `get` on `/users/abc123` with **Authenticated** on and the uid set to `abc123` → **allowed** (v2.40)
-   - `get` on `/users/abc123` with **Authenticated** on and a different uid (say `xyz789`) → **denied**
-   - (v2.44) `get` on `/lists/<a code with no access record>` → **allowed**
-   - (v2.44) for a list whose `access/<code>` lists uid `A`: `get` on `/lists/<code>` authenticated as `A` → **allowed**, as `B` → **denied**
-   - (v2.44) `update` on `/access/<code>` as `B`, adding only `acl.B = true` and `joinProof.B` = the record's `joinKey` → **allowed**;
-     the same with a wrong key once `openUntil` has passed → **denied**
-   - (v2.47) `create` on `/shared/coles__milk` authenticated as an email user (provider `password`, uid say `abc123`) with data
-     `{"by":{"abc123":{"p":2.5,"d":<now in ms>}}}` → **allowed**
-   - (v2.47) the same as an anonymous user (provider `anonymous`) → **denied**
 5. If all of them come out as above, **Publish**. Then open the app on a phone, tick something, and check that it
    appears on another phone. If anything misbehaves, paste back the rules you copied in step 2 and publish.
 
