@@ -5096,7 +5096,7 @@ function patchKeepFocus(oldEl, newEl){
   for(const a of [...oldEl.attributes]) if(!newEl.hasAttribute(a.name) && a.name!=="style") oldEl.removeAttribute(a.name);
   for(const a of [...newEl.attributes]) if(a.name!=="style" || oldEl.id!=="sheet") { if(oldEl.getAttribute(a.name)!==a.value) oldEl.setAttribute(a.name, a.value); }
   const act=document.activeElement, oc=[...oldEl.children], nc=[...newEl.children];
-  const fi = (act && act!==oldEl && oldEl.contains(act)) ? oc.findIndex(c=>c===act || c.contains(act)) : -1;
+  const fi = (typingNow() && act!==oldEl && oldEl.contains(act)) ? oc.findIndex(c=>c===act || c.contains(act)) : -1;   // only a field being typed in is kept — a button that was just tapped is redrawn like the rest
   if(fi<0 || oc.length!==nc.length || oc[fi].tagName!==nc[fi].tagName){ oldEl.replaceChildren(...newEl.childNodes); return; }   // nothing to protect (or the shape changed)
   nc.forEach((n,i)=>{ if(i===fi){ if(oc[i]!==act) patchKeepFocus(oc[i], n); } else oc[i].replaceWith(n); }); }
 function renderSheet(){ const sh=document.getElementById("sheet");

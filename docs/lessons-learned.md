@@ -299,3 +299,10 @@ the household asked for is not a lesson.*
     Ubuntu 26.04, where the pinned Playwright 1.56.1 has no browser to install, so every browser job failed in its first minute
     on a pull request that had not touched the tests (v2.99). *Guard:* the runner image is pinned (`ubuntu-24.04`) next to the
     pinned Playwright version; they move together, on purpose, in a pull request of their own.
+69. **"Keep what has the focus" must mean a field being typed in, not whatever was tapped last.** v3.00's Edit item redraws
+    its sheet in place and leaves the focused element alone, to keep the keyboard. In Chromium (and on a computer) a tapped
+    button takes the focus, so the shop just ticked was "kept" exactly as it was — unticked — while the row's summary said it
+    was chosen (caught by v2.35's suite in CI before release). On the iPhone a button does not take the focus, so the first
+    suite, written to play the phone, passed. *Guard:* only an input or textarea being typed in (`typingNow()`) is kept; the
+    v3.00 suite taps a flag with a real click, twice, and checks it changes each time. When a test plays the phone's rule, it
+    also plays the computer's.

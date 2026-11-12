@@ -92,6 +92,12 @@ const seed = (o) => { o=o||{}; return `(() => {
     await page.evaluate(()=>document.getElementById('ecHead').click()); await page.waitForTimeout(300);
     const h2 = await page.evaluate(()=>({ open:!!document.querySelector('#sheet .edcell[data-open="1"]'), sameTile:document.querySelector('#zoomer .pill[data-pill="2"]')===window.__tile, sameSheet:document.getElementById('sheet')===window.__sheet }));
     ok('…opening Category opens its list without rebuilding the page or the sheet element', h2.open && h2.sameTile && h2.sameSheet, JSON.stringify(h2));
+    /* a tapped button takes the focus in the test browser (and on a computer): it must be redrawn, not kept as it was */
+    await page.locator('#sheet [data-flag]').first().click(); await page.waitForTimeout(250);
+    const fl = await page.evaluate(()=>{ const b=document.querySelector('#sheet [data-flag]'); return { cls:b.className, pressed:b.getAttribute('aria-pressed'), style:b.getAttribute('style')||'' }; });
+    await page.locator('#sheet [data-flag]').first().click(); await page.waitForTimeout(250);
+    const fl2 = await page.evaluate(()=>{ const b=document.querySelector('#sheet [data-flag]'); return { cls:b.className, pressed:b.getAttribute('aria-pressed'), style:b.getAttribute('style')||'' }; });
+    ok('…a flag that was tapped (and so has the focus) shows its new state, on and off again', JSON.stringify(fl)!==JSON.stringify(fl2), JSON.stringify({ fl, fl2 }));
     await page.locator('#saveBtn').click(); await page.waitForTimeout(800);
     const c1 = (await raw()).find(i=>i.id==="1");
     ok('…Save stores the count (2) and the note (Dry + Sweet)', c1 && c1.qty===2 && /dry/i.test(c1.note) && /sweet/i.test(c1.note), JSON.stringify(c1));
