@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   quick:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest became 26.04 (Nov 2026), where Playwright 1.56.1 cannot install its browser
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
 
   browser:
     needs: quick
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest became 26.04 (Nov 2026), where Playwright 1.56.1 cannot install its browser
     timeout-minutes: 45
     strategy:
       fail-fast: false

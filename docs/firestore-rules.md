@@ -68,6 +68,20 @@ characters), one record each, read and written by the list's people, never delet
 sheet ("Photos need the updated database rules — see Settings › Help."); nothing else changes. The whole feature is built to be
 removed (see `js/photos.js`).
 
+## v2.99 — members only, sizes, weekly backups
+- **Members only.** Every read and write of `lists/{code}` and its records (items, regulars, prices, spend, photos) now needs the
+  phone to be on the list's `access/{code}` record. A list with no access record can no longer be read by its code alone: the
+  first signed-in phone to hold the code creates the record (open for 30 days, so the household's other phones join by
+  themselves) and is then let in. Creating a list is unchanged (it is written before its access record).
+- **Sizes and kinds.** An item's and a Regular's `note`, `weight`, `where`, `cat` and `ph` must be text of a sane length, and
+  `tags` a short list. Not a list of allowed fields — old items may carry fields from old app versions.
+- **Weekly backups.** `lists/{code}/backups/w0…w3`: one backup a week, four kept in turn, read and written by the list's people
+  only, never deleted. Restore one from Settings › Your data.
+
+The SAME publish also turns on photos on items (v2.96) and the fridge photo's daily count (v2.94), if not yet published.
+
+**Caution:** after publishing, open the app on each phone once while online, so each one is on its list's access record.
+
 ## Publishing (about five minutes)
 1. Open the [Firebase console](https://console.firebase.google.com/) → the Market List project → **Firestore Database** → **Rules**.
 2. **Copy what is there now** into a note first, so you can put it back.

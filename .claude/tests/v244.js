@@ -160,7 +160,7 @@ const LINK = 'https://grocery-list-88109.firebaseapp.com/__/auth/action?apiKey=k
     const src = fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8');
     ok('the join key is in both appearance-slot exclusion lists', (src.match(/const APP_EXCLUDE(?:_BOOT)? = \/\^\(([^)]*)\)\//g)||[]).filter(x=>/ml_jk_/.test(x)).length===2, '');
     const rules = fs.readFileSync(path.join(ROOT,'firebase','firestore.rules'),'utf8');
-    ok('the rules keep the access record, and a new one must start open for 20 days or more', /match \/access\/\{code\}/.test(rules) && /20 \* 24 \* 3600 \* 1000/.test(rules) && /allow get: if !hasAccess\(code\) \|\| memberOf\(code\)/.test(rules), '');
+    ok('the rules keep the access record, and a new one must start open for 20 days or more', /match \/access\/\{code\}/.test(rules) && /20 \* 24 \* 3600 \* 1000/.test(rules) && /allow get: if memberOf\(code\);/.test(rules) /* SUPERSEDED by v2.99: a list is read by its people only (the "no access record yet" door is closed); still protects: the access record and its 20-day open start */, '');
     ok('the privacy page says what the access record keeps', /who is on each list/i.test(fs.readFileSync(path.join(ROOT,'privacy.html'),'utf8')), '');
   } catch(e){ ok('suite ran to the end', false, e.message.slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));

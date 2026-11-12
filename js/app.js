@@ -6,25 +6,25 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.98";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.98";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.98";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=2.98";
-import { compareStores, worthIt } from "./compare.js?v=2.98";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.98";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.98";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.98";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.98";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.98";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.98";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.98";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.98";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.98";   /* v2.45 (architecture review S17): the app in French as well as English */
-import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=2.98";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.99";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.99";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.99";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=2.99";
+import { compareStores, worthIt } from "./compare.js?v=2.99";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.99";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.99";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.99";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.99";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.99";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.99";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.99";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.99";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.99";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=2.99";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.98";
+const APP_VERSION = "v2.99";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 
 /* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
@@ -163,7 +163,7 @@ function showAmt(w){
 /* A first launch reloads once on its own (the v1.63 slot migration) before sign-in, so the answer is kept for the session. */
 var _prefsFresh = (()=>{ try{ if(sessionStorage.getItem("ml_prefsfresh") === "1") return true;
   const f = !localStorage.getItem("ml_theme") && !localStorage.getItem("ml_appmig163"); if(f) sessionStorage.setItem("ml_prefsfresh", "1"); return f; }catch(e){ return false; } })();
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_notesg$|ml_regnow$|ml_jk_)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_notesg$|ml_regnow$|ml_jk_|ml_srvbak_)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -2634,10 +2634,13 @@ function accessCheck(){ const u=_auth && _auth.currentUser, ref=accessRef(); if(
     if(!s || !s.exists || !s.exists()){
       const jk=newKey();
       Promise.resolve().then(()=>put(ref, { acl:{[uid]:true}, names:{[uid]:me||""}, joinKey:jk, openUntil:Date.now()+30*864e5 }))
-        .then(()=>{ try{ localStorage.setItem("ml_jk_"+code, jk); }catch(e){} _accessFor=""; accessCheck(); }).catch(()=>{});
+        .then(()=>{ try{ localStorage.setItem("ml_jk_"+code, jk); }catch(e){} if(code!==listCode) return; accessDenied=""; _accessFor=""; accessCheck(); subscribe(); }).catch(()=>{});   // v2.99: a list with no record is refused until it exists — read it again now, as join() does
       return; }
     const d=s.data()||{};
     if(d.acl && d.acl[uid]===true){ accessDenied="";
+      /* v2.99: this phone IS on the list — if the list's own read was refused meanwhile (the record did not exist yet when it
+         was asked for), ask again now; otherwise the list stays "locked" until the next launch */
+      if(listDenied){ listDenied=false; subscribe(); }
       if(d.joinKey){ try{ localStorage.setItem("ml_jk_"+code, d.joinKey); }catch(e){} }
       accessInfo={ names:d.names||{}, acl:d.acl||{}, openUntil:d.openUntil||0, joinKey:d.joinKey||"" };
       if(me && (d.names||{})[uid]!==me) put(ref, { names:{[uid]:me} }, true).catch(()=>{});
@@ -2968,8 +2971,8 @@ try{ if("serviceWorker" in navigator && !isNativeApp() && (!navigator.webdriver 
 try{ if(navigator.storage && navigator.storage.persisted) navigator.storage.persisted().then(p=>{ if(!p && navigator.storage.persist) return navigator.storage.persist(); }).catch(()=>{}); }catch(e){}
 /* v2.15: one backup of the list a day, the last 7, on this phone (Settings › Other). Taken a few seconds after
    start-up, so the household's newest copy has arrived, and whenever the app goes to the background. */
-setTimeout(()=>maybeSnapshot(), 5000);
-document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden") maybeSnapshot(); });
+setTimeout(()=>{ maybeSnapshot(); maybeServerBackup(); }, 5000);
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden"){ maybeSnapshot(); maybeServerBackup(); } });
 if(typeof window!=="undefined"){
   window.addEventListener("online",  ()=>{ netOnline=true;  render(); });
   window.addEventListener("offline", ()=>{ netOnline=false; render(); });
@@ -3607,6 +3610,57 @@ function maybeSnapshot(){ if(_forgetting) return; try{
   for(;;){ try{ localStorage.setItem(snapKey(listCode), JSON.stringify(next)); break; }
     catch(e){ if(next.length<=1) break; next=next.slice(0,-1); } }   // over the storage quota: drop the oldest until it fits
 }catch(e){} }
+/* v2.99 (H1): a weekly backup kept beside the list in the database — lists/{code}/backups/w0…w3, the ISO week's number mod 4,
+   so the last four weeks. Written once a week per phone (ml_srvbak_<code> holds the week, data not a look: in both
+   APP_EXCLUDE regexes). Too big: spending, then prices, then purchase history are left out, and `left` says so. A refused
+   write (rules not yet published) is only logged; it is tried again next time. Restore: Settings › Your data. */
+const SRVBAK_MAX = 880000;
+function isoWeek(d){ const t=new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())), wd=t.getUTCDay()||7;
+  t.setUTCDate(t.getUTCDate()+4-wd); const y=t.getUTCFullYear(), n=Math.ceil(((t-Date.UTC(y,0,1))/864e5+1)/7);
+  return { key:y+"-W"+String(n).padStart(2,"0"), n }; }
+var _srvBakBusy = "";   // var: boot-order rule
+function maybeServerBackup(){ if(_forgetting) return; try{
+  if(!configured || !listRef || !listCode || !state || _newerData || !(_auth && _auth.currentUser)) return;
+  const has=(state.items||[]).length || (state.buyAgain||[]).length || ((state.plan&&state.plan.recipes)||[]).length;
+  if(!has) return;
+  const code=listCode, wk=isoWeek(new Date()), lk="ml_srvbak_"+code;
+  let done=""; try{ done=localStorage.getItem(lk)||""; }catch(e){}
+  if(done===wk.key || _srvBakBusy===code) return;
+  const doc=JSON.parse(JSON.stringify(listDoc(state))), left=[];
+  let json=JSON.stringify(doc);
+  for(const [k, empty] of [["spend", []], ["prices", {}], ["purch", {}]]){ if(json.length<=SRVBAK_MAX) break;
+    doc[k]=empty; left.push(k); json=JSON.stringify(doc); }
+  if(json.length>SRVBAK_MAX){ console.warn("[backup] not saved", "too-big"); return; }
+  const r=ref("lists", code, "backups", "w"+(wk.n % 4)); if(!r) return;
+  _srvBakBusy=code;
+  Promise.resolve().then(()=>put(r, { at:Date.now(), v:APP_VERSION, by:me||"", json, left }))
+    .then(()=>{ _srvBakBusy=""; try{ localStorage.setItem(lk, wk.key); }catch(e){} if(srvBak && srvBak.code===code) srvBak=null; })
+    .catch(e=>{ _srvBakBusy=""; console.warn("[backup] not saved", (e && (e.code||e.message)) || "error"); });
+}catch(e){} }
+/* the restore side: the four slots, read once when Settings › Your data shows the backups (a visible wait, 10 s at most) */
+var srvBak = null;   // { code, busy, list:[…], err } — var: boot-order rule
+function srvBakFetch(){ const code=listCode, c=(configured && db) ? col("lists", code, "backups") : null;
+  if(!c){ srvBak={ code, err:"Couldn't look in the database." }; return; }
+  srvBak={ code, busy:true };
+  let off=null, done=false;
+  const end=v=>{ if(done) return; done=true; try{ if(off) off(); }catch(e){} if(srvBak && srvBak.code===code){ srvBak=Object.assign({ code }, v); render(); } };
+  try{ off=listenAll(c, snap=>{ const list=[];
+      snap.docs.forEach(d=>{ const x=d.data()||{}; if(typeof x.json==="string" && x.at) list.push({ at:+x.at, v:String(x.v||""), by:String(x.by||""), json:x.json, left:Array.isArray(x.left)?x.left:[] }); });
+      list.sort((a,b)=>b.at-a.at); end({ list }); },
+    ()=>end({ err:"Couldn't look in the database." })); }
+  catch(e){ end({ err:"Couldn't look in the database." }); return; }
+  setTimeout(()=>end({ err:"Couldn't look in the database." }), 10000); }
+function srvBakHTML(){ if(!configured) return "";
+  if(!srvBak || srvBak.code!==listCode){ setTimeout(()=>{ if(!srvBak || srvBak.code!==listCode){ srvBakFetch(); render(); } }, 0); return ""; }
+  const hd=`<div class="snaphd">${t("Kept in the database (weekly)")}</div>`;
+  if(srvBak.busy) return hd+`<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>${t("Looking for backups in the database…")}</div>`;
+  if(srvBak.err) return hd+`<div class="rpterr" role="alert">${esc(t(srvBak.err))}</div>`;
+  const a=srvBak.list||[];
+  if(!a.length) return hd+`<div class="snapnote">${t("No backup in the database yet — one is kept each week.")}</div>`;
+  return hd+a.map((s,i)=>{ const d=new Date(s.at).toLocaleDateString(dateLoc(),{weekday:"short",day:"numeric",month:"short"});
+    const bits=[esc(d)]; if(s.by) bits.push(esc(tf("by {x}", { x:s.by }))); if(s.v) bits.push(esc(s.v));
+    if(s.left.length) bits.push(esc(tf("without {x}", { x:s.left.join(", ") })));
+    return `<div class="snaprow"><span>${bits.join(" · ")}</span><button class="storechip" data-srvrestore="${i}">${t("Restore")}</button></div>`; }).join(""); }
 /* v2.57 item 4: move this list to the thirteen categories, asked for by the household, per list, from Settings › Lists & sharing.
    This is the ONE deliberate exception to "nothing stored is ever re-categorised" (v2.33): the person asks for it, for this list,
    and a backup is written first (even if one was taken today). Categories the household made stay, before Others. */
@@ -8033,6 +8087,10 @@ function wireOptions(){
   const orf=app.querySelector("#optRestoreFile"); if(orf) orf.onclick=restorePick;
   app.querySelectorAll("[data-snaprestore]").forEach(b=>b.onclick=()=>{ const s=snapList(listCode)[+b.dataset.snaprestore]; if(!s) return;
     rst={ list:s.list, label:tf("The backup from {x}", { x:new Date(s.at).toLocaleDateString(dateLoc(),{weekday:"long",day:"numeric",month:"long"}) }) }; render(); });
+  app.querySelectorAll("[data-srvrestore]").forEach(b=>b.onclick=()=>{ const s=srvBak && srvBak.code===listCode && (srvBak.list||[])[+b.dataset.srvrestore]; if(!s) return;   // v2.99: a weekly backup from the database
+    let L=null; try{ L=JSON.parse(s.json); }catch(e){}
+    if(!L || typeof L!=="object"){ showToast("That backup can't be read."); return; }
+    rst={ list:L, label:tf("The backup from {x}", { x:new Date(s.at).toLocaleDateString(dateLoc(),{weekday:"long",day:"numeric",month:"long"}) }) }; render(); });
   const osl=app.querySelector("#optSendList"); if(osl) osl.onclick=shareListText;   // v2.13: was the Shop page's top-right button
   const oc13=app.querySelector("#optCats13"); if(oc13) oc13.onclick=()=>{ if(confirm(t("Move this list to the new categories? A backup is kept in Settings › Backups."))) switchToCats13(); };   // v2.57 item 4
   const orp=app.querySelector("#optReport"); if(orp) orp.onclick=()=>{ rpt={ kind:"broken", text:"", diag:true }; render(); };
@@ -8428,7 +8486,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_notesg$|ml_regnow$|ml_jk_)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_notesg$|ml_regnow$|ml_jk_|ml_srvbak_)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -8928,7 +8986,7 @@ function optionsBody(){
     <button class="optaction" id="optBackup" style="margin-top:10px">${t("Back up this list to a file")}</button>
     <button class="optaction" id="optRestoreFile" style="margin-top:10px">${t("Restore from a backup file")}</button>
     ${catList().some(c=>c.id==="pantry") ? "" : `${row(t("Use the new categories"), `<button class="storechip" id="optCats13">${t("Use the new categories")}</button>`)}<div class="opthint">${t("Moves this list to the thirteen categories, in the order a shop is walked (Bakery, Deli, Dairy, Pantry, Frozen…). Items and Regulars move to where shops shelve them; categories you made stay. A backup is taken first.")}</div>`}
-    ${snapsHTML()}
+    ${snapsHTML()}${srvBakHTML()}
     ${sectHR("History")}
     ${(()=>{
       /* v1.51: the picker only appears with more than one list — a single-list user does not need to
