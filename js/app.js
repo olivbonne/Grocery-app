@@ -6,25 +6,25 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=2.99";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=2.99";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=2.99";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=2.99";
-import { compareStores, worthIt } from "./compare.js?v=2.99";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=2.99";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=2.99";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=2.99";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=2.99";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=2.99";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=2.99";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=2.99";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=2.99";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=2.99";   /* v2.45 (architecture review S17): the app in French as well as English */
-import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=2.99";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.00";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.00";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.00";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.00";
+import { compareStores, worthIt } from "./compare.js?v=3.00";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.00";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.00";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.00";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.00";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.00";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.00";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.00";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.00";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.00";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.00";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v2.99";
+const APP_VERSION = "v3.00";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 
 /* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
@@ -1462,9 +1462,8 @@ function predictActive(){
   if(predictSeen[period] && predictSeen[period].hidden) return null; // whole batch dismissed this period
   const due=predictDue(); return due.length ? due : null;
 }
-function predictAdd(key){ const rec=purch[key]; if(!rec) return;
-  if(!state.items.some(i=>!i.checked && (i.name||"").toLowerCase()===rec.name.toLowerCase() && i.cat===rec.cat)){
-    state.items.push({id:uid(),name:rec.name,qty:rec.qty||1,cat:newCat(rec.cat, rec.name),weight:rec.weight||"",sub:rec.sub||"",checked:false,by:me}); playPlan(true); }
+function predictAdd(key){ const rec=purch[key]; if(!rec) return;   // v3.00: through putItem ("keep", the same name in rec.cat)
+  { const r=putItem({name:rec.name, qty:rec.qty, cat:rec.cat, weight:rec.weight, sub:rec.sub}, {anyNote:true, sameCat:true}); if(r && r.added) playPlan(true); }
   save(); predictDismiss(key);
 }
 function predictDismiss(key){ const period=predictPeriod();
@@ -2248,9 +2247,7 @@ function occSave(name){ const nm=String(name||"").trim().slice(0,40); if(!nm) re
   t.unshift({ id:uid(), name:nm, at:Date.now(), items }); state.templates=t.slice(0,30);
   occSheet=null; save(); render(); showToast(tf("Saved “{x}”", { x:nm }) + " · " + (items.length===1 ? tf("{n} item", { n:1 }) : tf("{n} items", { n:items.length }))); }
 function occAdd(id){ const t=(state.templates||[]).find(x=>x.id===id); if(!t) return; let n=0; const prev=snapState();   // a whole occasion at once, so it can be undone
-  for(const x of t.items){ const ex=state.items.find(i=>!i.checked && String(i.name||"").toLowerCase()===String(x.name).toLowerCase());
-    if(ex){ ex.qty=Math.max(+ex.qty||1, +x.qty||1); markDirty(ex.id); }
-    else { state.items.push({ id:uid(), name:x.name, qty:x.qty||1, cat:newCat(x.cat, x.name), weight:x.weight||"", sub:"", note:x.note||"", where:x.where||"", checked:false, by:me }); n++; } }
+  for(const x of t.items){ const r=putItem({...x}, {qty:"max", quiet:true}); if(r && r.added) n++; }   // v3.00: the add flow, "max"
   occSheet=null; save(); render(); showUndo(prev, tf("Added {n} from “{x}”", { n, x:t.name }) + (n<t.items.length ? " · " + tf("{n} already on the list", { n:t.items.length-n }) : "")); }
 function occDelete(id){ const prev=snapState(); const t=(state.templates||[]).find(x=>x.id===id); if(!t) return;
   state.templates=(state.templates||[]).filter(x=>x.id!==id); save(); render(); showUndo(prev, tf("“{x}” deleted", { x:t.name })); }   // the toast is escaped where it is drawn
@@ -3127,17 +3124,44 @@ function addEntries(text, override){
   const parsed = parseInput(text); if(!parsed.length) return;
   for(const e of parsed){
     const cat = override || e.cat;
-    const ex = state.items.find(i=>!i.checked && i.name.toLowerCase()===e.name.toLowerCase() && !noteKey(i.note));   // v2.70: never fold a plain name into one with a note
-    if(ex){ if(e.qty>1) ex.qty=(ex.qty||1)+e.qty; if(e.weight) ex.weight=e.weight; markDirty(ex.id); continue; }
-    const nid=uid();
+    const ex = itemTwin(e.name, cat, "");   // v2.70: never fold a plain name into one with a note
+    if(ex){ if(e.qty>1) ex.qty=(ex.qty||1)+e.qty; if(e.weight) ex.weight=e.weight; markDirty(ex.id); continue; }   // the TYPED weight only, not the dictionary's
     const known = knownEntry(e.name);
     const wt = e.weight || (known&&known.weight) || "";
-    if(cat){ state.items.push({id:nid,name:e.name,qty:e.qty,cat:override ? cat : newCat(cat, e.name),sub:(known&&known.cat===cat&&known.sub)||"",weight:wt,checked:false,by:me}); histLog("add", e.name); }
-    else { const g=(known&&known.cat)||guessCat(e.name); state.items.push({id:nid,name:e.name,qty:e.qty,cat:newCat(g||"others", e.name),sub:(known&&known.sub)||"",weight:wt,checked:false,by:me}); histLog("add", e.name); }
-    markDirty(nid);
+    if(cat) putItem({name:e.name, qty:e.qty, cat, sub:(known&&known.cat===cat&&known.sub)||"", weight:wt}, {fresh:true, catFixed:!!override});
+    else { const g=(known&&known.cat)||guessCat(e.name); putItem({name:e.name, qty:e.qty, cat:g||"others", sub:(known&&known.sub)||"", weight:wt}, {fresh:true}); }
   }
   save(); renderKeepingAdd();
 }
+/* ---- THE ADD FLOW (v3.00) ----
+   Every item reaches the list through putItem(); itemTwin() is "already on the list". The rules:
+   (1) an item is its name + note (v2.70) — "Milk" and "Milk · lactose free" are two;
+   (2) a twin on the list is never duplicated — typed and Smart add add to its count when a count above 1 was given ("more"),
+       occasions and the 10% shop take the larger count ("max"), Regulars and predictions leave it as it is ("keep");
+   (3) a new item always carries name, qty, cat, sub, weight, note, where (+ tags, ph when given);
+   (4) its category goes through newCat() unless it is the person's own pick or a stored one (catFixed);
+   (5) every add is marked dirty and logged in the history (bulk adds with their own message are quiet). */
+function itemTwin(name, cat, note, o){ o=o||{};   // the unticked item this one would be a second copy of
+  const n=String(name||"").trim().toLowerCase(), nk=noteKey(note);
+  const same=state.items.filter(i=>!i.checked && String(i.name||"").trim().toLowerCase()===n && (!o.sameCat || i.cat===cat));
+  return same.find(i=>noteKey(i.note)===nk && i.cat===cat) || same.find(i=>noteKey(i.note)===nk) || (o.anyNote ? same[0] : null) || null; }
+function putItem(e, o){ o=o||{};
+  const name=String(e.name||"").trim(); if(!name) return null;
+  const note=String(e.note||"").trim().slice(0,140), qty=Math.max(1, +e.qty||1);
+  const twin = o.fresh ? null : itemTwin(name, e.cat, note, o);
+  if(twin){
+    if(o.qty==="max") twin.qty=Math.max(+twin.qty||1, qty);
+    else if(o.qty==="more"){ if(qty>1) twin.qty=(+twin.qty||1)+qty; }
+    /* "keep" (the default): the one on the list is left as it is */
+    if(o.qty==="more" && e.weight) twin.weight=e.weight;
+    if(o.qty==="more" && e.sub) twin.sub=e.sub;
+    markDirty(twin.id); return { item:twin, added:false }; }
+  const it={ id:uid(), name, qty, cat: o.catFixed ? e.cat : newCat(e.cat||"others", name), sub:e.sub||"", weight:e.weight||"",
+    note, where:e.where||"", checked:false, by:me };
+  const tg=Array.isArray(e.tags) ? e.tags.slice() : []; if(tg.length || o.tags) it.tags=tg;
+  if(e.ph) it.ph=e.ph;   // v2.96 PHOTOS hook
+  state.items.push(it); markDirty(it.id); if(!o.quiet) histLog("add", name);
+  return { item:it, added:true }; }
 /* v2.72: when the first tick makes the cart bar appear, the list drops and a quick second tap at the same spot lands
    on the cart's head and unfolds it. The head ignores a tap while the bar is still sliding in (its .drop animation,
    ≈0.3 s) — only then does the list move; a tap on a cart already there is always taken. Tied to the animation, not a
@@ -3295,13 +3319,13 @@ function sweep(msg){ const checked=state.items.filter(i=>i.checked); if(!checked
 function addFromRegular(name,cat,note){ playPlan(true);
   const entry = regFind(name,cat,note) || {name,cat,qty:1,note:note||""};
   const ex = state.items.find(i=>itemIsReg(i,name,cat,note));
-  if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",note:entry.note||"",where:entry.where||"",tags:regTags(entry),...(entry.ph?{ph:entry.ph}:{}),checked:false,by:me}); histLog("add", entry.name); }   // v2.96 PHOTOS hook: ph
+  if(!ex) putItem({name:entry.name, qty:entry.qty, cat:entry.cat, weight:entry.weight, sub:entry.sub, note:entry.note, where:entry.where, tags:regTags(entry), ph:entry.ph}, {fresh:true, catFixed:true, tags:true});   // v2.96 PHOTOS hook: ph; v3.00: the add flow
   save(); renderKeepingAdd();
 }
 function restore(name,cat,note){ playPlan(true);
   const entry = regFind(name,cat,note) || {name,cat,qty:1,note:note||""};
   const ex = state.items.find(i=>itemIsReg(i,name,cat,note));
-  if(!ex){ state.items.push({id:uid(),name:entry.name,qty:entry.qty||1,cat:entry.cat,weight:entry.weight||"",sub:entry.sub||"",note:entry.note||"",where:entry.where||"",tags:regTags(entry),...(entry.ph?{ph:entry.ph}:{}),checked:false,by:me}); histLog("add", entry.name); }   // v2.96 PHOTOS hook: ph
+  if(!ex) putItem({name:entry.name, qty:entry.qty, cat:entry.cat, weight:entry.weight, sub:entry.sub, note:entry.note, where:entry.where, tags:regTags(entry), ph:entry.ph}, {fresh:true, catFixed:true, tags:true});   // v2.96 PHOTOS hook: ph; v3.00: the add flow
   histLog("regrm", entry.name);
   regDrop(name,cat,note);
   save(); render();
@@ -3335,9 +3359,8 @@ function regularFrom(e, orig){ const nm=String(e.name||"").trim(); if(!nm) retur
   if(!old) histLog("regadd", nm);
   return true; }
 /* v2.90 (the household): another item of the same name, with its own note — Save first (the same path), then a fresh one */
-function anotherItem(src){ const nid=uid();   // v2.96: deliberately WITHOUT the photo (no ph) — another item of the same name starts with none
-  const ni={ id:nid, name:src.name, qty:1, cat:src.cat, sub:src.sub||"", weight:"", note:"", tags:[], where:src.where||"", checked:false, by:me };
-  state.items.push(ni); markDirty(nid); histLog("add", ni.name); return ni; }
+function anotherItem(src){   // v2.96: deliberately WITHOUT the photo (no ph) — another item of the same name starts with none
+  return putItem({name:src.name, qty:1, cat:src.cat, sub:src.sub, where:src.where, tags:[]}, {fresh:true, catFixed:true, tags:true}).item; }
 function editAnother(){ if(!editing || editing.kind!=="item") return;
   const src={ name:(editing.name||"").trim(), cat:editing.cat, sub:editing.sub, where:editing.where };
   saveEverywhere(); if(editing) return;   // Save refused (no name) — stay
@@ -3392,8 +3415,8 @@ function removeBAfromSheet(){ baForget(editing.origName, editing.origCat, editin
   editing=null; save(); render(); }
 function restoreEditingToList(){ const nm=(editing.name||"").trim()||editing.origName; const cat=editing.cat; const qty=Math.max(1,editing.qty||1);
   regDrop(editing.origName, editing.origCat, editing.origNote);
-  const ex=state.items.find(i=>!i.checked && i.name.toLowerCase()===nm.toLowerCase() && i.cat===cat);
-  if(!ex) state.items.push({id:uid(),name:nm,qty,cat,weight:editing.weight||"",sub:editing.sub||"",checked:false,by:me});
+  const ex=itemTwin(nm, cat, editing.note, {sameCat:true});
+  if(!ex) putItem({name:nm, qty, cat, weight:editing.weight, sub:editing.sub, note:editing.note, where:editing.where, tags:regTags(editing)}, {fresh:true, catFixed:true});   // v3.00: note, where and the Regular's flags come too
   editing=null; save(); render(); }
 
 /* category edit */
@@ -5066,6 +5089,25 @@ function placeAfter(k){ if(!k) return; const el = document.querySelector(k.sel);
    v2.79 (the household: "when the unit / category / location is tapped back, the sheet doesn't shrink back"): the floor
    holds only while the same lists are open — a pick keeps still, closing a list lets the sheet shrink to fit. */
 var _sheetMinH = {}, _sheetMinK = {};
+/* v3.00 (H4): Edit item redraws itself, not the page behind it. The sheet's own nodes stay (#sheetBg, #sheet — so no slide-in,
+   the same scroll); inside, everything is replaced EXCEPT the chain of elements down to a field someone is typing in, whose
+   attributes are refreshed and whose other children are replaced. So a tap on + while the note has the keyboard keeps it. */
+function patchKeepFocus(oldEl, newEl){
+  for(const a of [...oldEl.attributes]) if(!newEl.hasAttribute(a.name) && a.name!=="style") oldEl.removeAttribute(a.name);
+  for(const a of [...newEl.attributes]) if(a.name!=="style" || oldEl.id!=="sheet") { if(oldEl.getAttribute(a.name)!==a.value) oldEl.setAttribute(a.name, a.value); }
+  const act=document.activeElement, oc=[...oldEl.children], nc=[...newEl.children];
+  const fi = (act && act!==oldEl && oldEl.contains(act)) ? oc.findIndex(c=>c===act || c.contains(act)) : -1;
+  if(fi<0 || oc.length!==nc.length || oc[fi].tagName!==nc[fi].tagName){ oldEl.replaceChildren(...newEl.childNodes); return; }   // nothing to protect (or the shape changed)
+  nc.forEach((n,i)=>{ if(i===fi){ if(oc[i]!==act) patchKeepFocus(oc[i], n); } else oc[i].replaceWith(n); }); }
+function renderSheet(){ const sh=document.getElementById("sheet");
+  if(!editing || !sh || !(editing.kind==="item" || editing.kind==="ba")){ render(); return; }   // the kinds editSheet() draws for a list item and a Regular
+  const still=sheetsBefore(); const box=document.createElement("div");
+  /* the note being typed stays in its field, so the chips are drawn without it — or its letters would show twice */
+  const a=document.activeElement, typing = a && a.classList && a.classList.contains("ednotein") && sh.contains(a), full=editing.note;
+  if(typing){ const w=a.closest(".ednotewrap"); editing.note=[...w.querySelectorAll(".ednotesel .catchip")].map(noteChipVal).join(", "); }
+  try{ box.innerHTML=editSheet(); } finally { if(typing) editing.note=full; }
+  const nsh=box.querySelector("#sheet"); if(!nsh){ render(); return; }
+  try{ patchKeepFocus(sh, nsh); wireEditSheet(); } finally { sheetsAfter(still); } }
 function sheetsBefore(){ const o = {};
   document.querySelectorAll(".sheet[id]").forEach(s => { o[s.id] = { top:s.scrollTop }; });
   return o; }
@@ -6250,9 +6292,7 @@ function tenSheetHTML(){ const tn = tenSheet; if(!tn) return ""; const c = memb(
   </div></div>`; }
 function tenAddToList(){ const tn = tenSheet; if(!tn) return; let n = 0;
   for(const r of tn.rows){ if(!r.sel) continue; n++;
-    const it = state.items.find(i => !i.checked && String(i.name || "").toLowerCase() === String(r.name).toLowerCase());
-    if(it){ it.qty = Math.max(+it.qty || 1, r.qty); markDirty(it.id); }
-    else state.items.push({ id:uid(), name:r.name, qty:r.qty, cat:newCat(r.cat, r.name), weight:r.weight || "", sub:"", checked:false, by:me }); }
+    putItem({ name:r.name, qty:r.qty, cat:r.cat, weight:r.weight }, { qty:"max", anyNote:true, quiet:true }); }   // v3.00: the add flow
   tenSheet = null; save(); render(); showToast(tf("Added {n} for the {chain} {pct}% shop", { n, chain:CHAINS[tn.chain].short, pct:tn.pct })); }
 function wireTenSheet(){
   app.querySelectorAll("[data-ten-row]").forEach(b => b.onchange = () => { const r = tenSheet && tenSheet.rows[+b.dataset.tenRow]; if(r){ r.sel = b.checked; render(); } });
@@ -8321,13 +8361,11 @@ function commitSmartItems(){
   for(const it of smartItems){
     if(it.sel===false) continue;
     /* v2.70: the same item with a different note is a separate item — merge only when name AND note match */
-    const ex=state.items.find(i=>!i.checked && i.name.toLowerCase()===it.name.toLowerCase() && noteKey(i.note)===noteKey(it.note));
-    if(ex){ if(it.qty>1) ex.qty=(ex.qty||1)+it.qty; if(it.weight) ex.weight=it.weight; if(it.sub) ex.sub=it.sub; markDirty(ex.id); continue; }
-    const nid=uid();
+    const ex=itemTwin(it.name, it.category, it.note);
+    if(ex){ if(it.qty>1) ex.qty=(ex.qty||1)+it.qty; if(it.weight) ex.weight=it.weight; if(it.sub) ex.sub=it.sub; markDirty(ex.id); continue; }   // the AI's own sub only, not the dictionary's
     const known=knownEntry(it.name);
     const sub=it.sub || ((known&&known.cat===it.category&&known.sub)||"");
-    state.items.push({id:nid,name:it.name,qty:it.qty,cat:it.catPicked ? it.category : newCat(it.category, it.name),sub,weight:it.weight||"",note:it.note||"",checked:false,by:me});
-    markDirty(nid);
+    putItem({name:it.name, qty:it.qty, cat:it.category, sub, weight:it.weight, note:it.note}, {fresh:true, catFixed:!!it.catPicked});   // v3.00: the add flow (now logged)
   }
   const mi=document.getElementById("mainInput"); if(mi) mi.value="";
   draftMain="";
@@ -9430,17 +9468,17 @@ function wireEditSheet(){
          than the document: the add sheet is mounted outside `app` and uses the same attribute names,
          so an unscoped query here could rebind its buttons to `editing`. */
       document.querySelectorAll("#sheet [data-w-open]").forEach(b=>{ b.onpointerdown=e=>e.preventDefault();
-        b.onclick=()=>{ wOpen = (wOpen==="edit") ? null : "edit"; if(wOpen) editCatOpen=editWhereOpen=false; render();   // v2.83: one list open at a time
+        b.onclick=()=>{ wOpen = (wOpen==="edit") ? null : "edit"; if(wOpen) editCatOpen=editWhereOpen=false; renderSheet();   // v2.83: one list open at a time
           /* v1.64 item 1: bring the newly-opened grid into view — same reason as the add panel. */
           edShowEnd(document.querySelector("#sheet"), "unit"); }; });
       document.querySelectorAll("#sheet [data-w-set]").forEach(b=>tapNoScroll(b, ()=>{
-        const w=b.dataset.wSet.split("|")[1]||""; editing.weight=w; render(); }));   // v2.77: the list stays open
+        const w=b.dataset.wSet.split("|")[1]||""; editing.weight=w; renderSheet(); }));   // v2.77: the list stays open
       document.querySelectorAll("#sheet [data-wstep]").forEach(b=>tapNoScroll(b, ()=>{   // v2.76: the counters keep the Unit row open
-        const p=b.dataset.wstep.split("|"); editing.weight=wStep(editing.weight,p[1],+p[2]); render(); }));
-      const qm=app.querySelector("#qMinus"); if(qm) qm.onclick=()=>{ editing.qty=Math.max(1,(editing.qty||1)-1); render(); };
-      const qp=app.querySelector("#qPlus"); if(qp) qp.onclick=()=>{ editing.qty=(editing.qty||1)+1; render(); };
-      app.querySelectorAll("[data-ec]").forEach(b=>b.onclick=()=>{ editing.cat=b.dataset.ec; editing.sub=null; render(); });
-      app.querySelectorAll("[data-es]").forEach(b=>b.onclick=()=>{ editing.sub=b.dataset.es||null; render(); });
+        const p=b.dataset.wstep.split("|"); editing.weight=wStep(editing.weight,p[1],+p[2]); renderSheet(); }));
+      const qm=app.querySelector("#qMinus"); if(qm) qm.onclick=()=>{ editing.qty=Math.max(1,(editing.qty||1)-1); renderSheet(); };
+      const qp=app.querySelector("#qPlus"); if(qp) qp.onclick=()=>{ editing.qty=(editing.qty||1)+1; renderSheet(); };
+      app.querySelectorAll("[data-ec]").forEach(b=>b.onclick=()=>{ editing.cat=b.dataset.ec; editing.sub=null; renderSheet(); });
+      app.querySelectorAll("[data-es]").forEach(b=>b.onclick=()=>{ editing.sub=b.dataset.es||null; renderSheet(); });
       app.querySelectorAll("[data-flag]").forEach(b=>b.onclick=()=>{ const k=b.dataset.flag; const t=Array.isArray(editing.tags)?editing.tags.slice():[]; const i=t.indexOf(k); if(i<0)t.push(k); else t.splice(i,1); editing.tags=t;
       /* v1.62 item 2: "get this now" and "only if you happen to pass it" are opposite instructions —
          an item cannot be both. Selecting one clears the other rather than refusing the tap, so the
@@ -9451,23 +9489,23 @@ function wireEditSheet(){
          one, and it keeps `starred` in step so the existing "urgent floats to the top" sort and any
          item saved by an older build both keep working. */
       editing.starred = (editing.tags||[]).includes("urgent");
-      render(); });
-      const ech=app.querySelector("#ecHead"); if(ech) ech.onclick=()=>{ editCatOpen=!editCatOpen; if(editCatOpen){ wOpen=null; editWhereOpen=false; } render(); edShowEnd(document.querySelector("#sheet"), "cat"); };
-      const ewh=app.querySelector("#ewHead"); if(ewh) ewh.onclick=()=>{ editWhereOpen=!editWhereOpen; if(editWhereOpen){ wOpen=null; editCatOpen=false; } render(); edShowEnd(document.querySelector("#sheet"), "where"); };   // v2.22 R17
+      renderSheet(); });
+      const ech=app.querySelector("#ecHead"); if(ech) ech.onclick=()=>{ editCatOpen=!editCatOpen; if(editCatOpen){ wOpen=null; editWhereOpen=false; } renderSheet(); edShowEnd(document.querySelector("#sheet"), "cat"); };
+      const ewh=app.querySelector("#ewHead"); if(ewh) ewh.onclick=()=>{ editWhereOpen=!editWhereOpen; if(editWhereOpen){ wOpen=null; editCatOpen=false; } renderSheet(); edShowEnd(document.querySelector("#sheet"), "where"); };   // v2.22 R17
       /* v2.35: shops toggle on and off — several can be ticked; Anywhere clears them */
-      app.querySelectorAll("[data-ew]").forEach(b=>b.onclick=()=>{ const id=b.dataset.ew; if(!id){ editing.where=""; render(); return; }
-        const s=new Set(whereIds(editing)); if(s.has(id)) s.delete(id); else s.add(id); editing.where=[...s].join(","); render(); });
+      app.querySelectorAll("[data-ew]").forEach(b=>b.onclick=()=>{ const id=b.dataset.ew; if(!id){ editing.where=""; renderSheet(); return; }
+        const s=new Set(whereIds(editing)); if(s.has(id)) s.delete(id); else s.add(id); editing.where=[...s].join(","); renderSheet(); });
       /* v2.70: a chosen tile is removed by a tap; typed text becomes tiles at a comma, Enter or leaving the field */
       const enChip=b=>{ b.onpointerdown=e=>e.preventDefault(); b.onclick=e=>{ if(b._noClick){ b._noClick=false; return; }
           if(b.closest(".ednotechips") && e.target.closest(".ednotex")){ noteSgHide(b, editing.name); return; }   // v2.89: the × hides the suggestion
-          editing.note=noteChipTap(b); }; noteChipDrag(b, n=>{ editing.note=n; }, ()=>editing ? editing.name : ""); };   // v2.65: no re-render — the field keeps focus
+          editing.note=noteChipTap(b); }; if(!b._w3){ b._w3=1; noteChipDrag(b, n=>{ editing.note=n; }, ()=>editing ? editing.name : ""); } };   // v3.00: addEventListener — once per node (renderSheet keeps the focused chain)   // v2.65: no re-render — the field keeps focus
       const enote=app.querySelector("#editNote"); if(enote){
         enote.oninput=()=>{ editing.note = enote.value.indexOf(",")>=0 ? noteCommit(enote, enChip, true) : noteFromWrap(enote.closest(".ednotewrap")); };   // v2.22 R16 · v2.68: selected chips + the free text
         enote.onkeydown=e=>{ if(e.key===","||e.key==="Enter"){ e.preventDefault(); editing.note=noteCommit(enote, enChip); } };
         enote.onblur=()=>{ if(enote.isConnected) editing.note=noteCommit(enote, enChip); }; }
       app.querySelectorAll("[data-en-chip]").forEach(enChip);
-      const eac=app.querySelector("#ecAddCat"); if(eac) eac.onclick=()=>{ const nm=prompt(t("New category name:"),""); if(nm&&nm.trim()){ const id=makeCategory(nm); if(id){ editing.cat=id; editing.sub=null; render(); } } };
-      const eas=app.querySelector("#esAddSub"); if(eas) eas.onclick=()=>{ if(!editing.cat){ showToast("Pick a category first"); return; } const nm=prompt(t("New subcategory name:"),""); if(nm&&nm.trim()){ const id=makeSub(editing.cat,nm); if(id){ editing.sub=id; render(); } } };
+      const eac=app.querySelector("#ecAddCat"); if(eac) eac.onclick=()=>{ const nm=prompt(t("New category name:"),""); if(nm&&nm.trim()){ const id=makeCategory(nm); if(id){ editing.cat=id; editing.sub=null; render(); } } };   // v3.00: render(), not renderSheet() — a new category shows on the page behind
+      const eas=app.querySelector("#esAddSub"); if(eas) eas.onclick=()=>{ if(!editing.cat){ showToast("Pick a category first"); return; } const nm=prompt(t("New subcategory name:"),""); if(nm&&nm.trim()){ const id=makeSub(editing.cat,nm); if(id){ editing.sub=id; renderSheet(); } } };   // v3.00: a new empty sub is not shown behind the sheet
       const del=app.querySelector("#delBtn"); if(del) del.onclick=()=> editing.kind==="item" ? deleteItemEditing() : removeBAfromSheet();
       const sv=app.querySelector("#saveBtn"); if(sv) sv.onclick=()=> saveEverywhere();   // v2.65: one Save — the list and the Regulars
       const ean=app.querySelector("#edAnother"); if(ean) ean.onclick=()=> editAnother();   // v2.90: Save, then a new item of the same name
