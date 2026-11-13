@@ -26,6 +26,10 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
 - **CSS** (in `app.css` since v2.19): design tokens live in `:root` (light), `body.dark`/`html.dark` (dark) and
   `html[data-theme="ink"|"noir"]` — change colours there, not inline. The bars' frosted glass is a
   designed, user-customisable system (`--glass-bg`, per-bar `--navbar-bg` etc.); leave it alone.
+  **v3.06: the stylesheet is in layers** — `@layer app, blocks;`. `app` holds everything in its original order; a rule that
+  must win over the tiles goes in a LATER layer with plain selectors (never repeat a class to win, never add `!important`
+  there — an `!important` in an earlier layer beats a later one). Any stylesheet refactor is proved with
+  `.claude/tools/cssdiff.js`: `snap` the base tree and the changed tree, then `diff` — zero differences is the bar.
 - **Brand (preserve):** forest ink `#21351F`, sage paper `#F2F6EE`, burnt-orange accent `#E2502C`,
   Outfit variable font (self-hosted `outfit-*.woff2` — no Google Fonts links; every asset lives in
   the repo so the PWA works offline). Since v2.15 that includes the Firebase SDK
