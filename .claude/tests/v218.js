@@ -81,13 +81,15 @@ const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings"
     /* SUPERSEDED by v2.80: the display row is called "Tiles across". Still protected: everyday Tiles holds what a tile shows. */
     ok('everyday Tiles holds what a tile shows — display, grouping, icons, Category icons, Icon style', ['Tiles across','Group by category','Item icons','Category icons','Icon style'].every(l=>tiles.rows.some(r=>r.startsWith(l))), JSON.stringify(tiles.rows));
     ok('…and none of the tiles\' colours or shape', !tiles.rows.some(r=>/^(Tile appearance|Selected tiles|Unselected tiles|Tile roundness|Tile gap)/.test(r)), JSON.stringify(tiles.rows));
-    ok('Appearance ends with "Customise the look"', ((v.secs.find(x=>x.name==='Appearance')||{rows:[]}).rows.slice(-1)[0]||'').startsWith('Customise the look'), JSON.stringify((v.secs[0]||{}).rows));
+    /* SUPERSEDED by v3.02: the page behind this button is renamed "Advanced look" (the household's wording). Every check below
+       still protects what it did: the button closes Appearance, opens its own page with a back button, and the search reaches it. */
+    ok('Appearance ends with "Advanced look"', ((v.secs.find(x=>x.name==='Appearance')||{rows:[]}).rows.slice(-1)[0]||'').startsWith('Advanced look'), JSON.stringify((v.secs[0]||{}).rows));
     await shot('everyday');
 
     /* ── layer 2: the look page ─────────────────────────────────────── */
     await tap('#optLook');
     v = await view();
-    ok('"Customise the look" opens its own page, titled so, with ‹ back', v.title==='Customise the look' && v.back, JSON.stringify({t:v.title,b:v.back}));
+    ok('"Advanced look" opens its own page, titled so, with ‹ back', v.title==='Advanced look' && v.back, JSON.stringify({t:v.title,b:v.back}));
     ok('…showing exactly the look sections, and no search box', JSON.stringify(v.names)===JSON.stringify(LOOK) && !v.search, JSON.stringify(v.names));
     const heads = v.secs.find(x=>x.name==='Category headings')||{rows:[]};
     ok('Category headings is colours only now', !heads.rows.some(r=>/^(Category icons|Icon style)/.test(r)) && heads.rows.length>=6, JSON.stringify(heads.rows));
@@ -96,7 +98,7 @@ const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings"
     await tap('[data-opt-num="rad"][data-opt-delta="1"]');
     const rad1 = await page.evaluate(()=>{ const b=document.querySelector('[data-opt-num="rad"][data-opt-delta="1"]'); return b ? b.parentElement.querySelector('.numval').textContent : null; });
     v = await view();
-    ok('a look control still works there (Tile roundness +), and the page stays the look page', rad0!==null && rad1!==rad0 && v.title==='Customise the look', JSON.stringify({rad0,rad1,t:v.title}));
+    ok('a look control still works there (Tile roundness +), and the page stays the look page', rad0!==null && rad1!==rad0 && v.title==='Advanced look', JSON.stringify({rad0,rad1,t:v.title}));
     await tap('#lookBack');
     v = await view();
     ok('‹ goes back to Settings', v.title==='Settings' && JSON.stringify(v.names)===JSON.stringify(EVERYDAY), JSON.stringify({t:v.title,n:v.names}));
@@ -116,7 +118,7 @@ const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings"
     v = await search('wallpaper');
     ok('"wallpaper" leaves the Wallpaper row under Appearance, and nothing else', JSON.stringify(v.names)==='["Appearance"]' && v.secs[0].rows.length>=1 && v.secs[0].rows.every(r=>/^Wallpaper/.test(r)), JSON.stringify(v.secs));
     v = await search('roundness');
-    ok('the search reaches the look page: "roundness" finds Tile roundness, its section marked "Customise the look"',
+    ok('the search reaches the look page: "roundness" finds Tile roundness, its section marked "Advanced look"',
        /* SUPERSEDED by v2.63: "roundness" also finds Edit item's Roundness. Still protected: Tile roundness is found, tagged. */
        v.names[0]==='Tile colours and shape' && v.secs[0].tag && JSON.stringify(v.secs[0].rows)==='["Shape","Tile roundness"]' && v.names.every(n=>["Tile colours and shape","Sheets"].includes(n))   /* v2.69: Edit item → Sheets */, JSON.stringify(v.secs));
     v = await search('shopping');   // v2.30: Sort is Shopping
