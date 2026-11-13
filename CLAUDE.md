@@ -87,9 +87,10 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
 - **A tick is not a purchase (v2.29).** Ticking only moves an item to the cart. What a shop teaches — the AI walking
   order, purchase history, the "bought" history line — is recorded at the finish (`sweep`, which auto-finish also
   calls), from what is still ticked, in tick order. Never learn from a tick itself: a wrong tap, untapped, must leave no trace.
-- **Settings has two layers (v2.18).** Sections named in `LOOK_SECTS` show only on the "Customise the look" page
+- **Settings has two layers (v2.18).** Sections named in `LOOK_SECTS` show only on the "Advanced look" page (called "Customise the look" until v3.02)
   (`#optLook` opens it, `#lookBack` or the Settings tab returns); everything else is everyday Settings. A new section
-  is everyday unless it is added there. Since v2.30 everyday Settings is grouped by what it is for — Appearance, Tiles,
+  is everyday unless it is added there. v3.02: `QUICK_LOOKS` (List, Simple, Comfortable, Compact) set only tiles across, item icons and icon
+  size — in Settings › Appearance and the ⋯ menu (`applyQuickLook`). Since v2.30 everyday Settings is grouped by what it is for — Appearance, Tiles,
   Shopping, Smart features (AI and receipt features, with `.optsub` subheads), Plan & recipes, People, Lists & sharing, History,
   Help, Your data; a new row joins one of these, not a new section. Since v2.32 an explanation under a setting is written as
   `<div class="opthint">` right after its row: `infoBubbles()` folds it behind an (i) on the row's label — write new ones that way. The search (`filterOptions`) only toggles classes — never `render()` from it,

@@ -6,25 +6,25 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.01";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.01";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.01";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.01";
-import { compareStores, worthIt } from "./compare.js?v=3.01";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.01";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.01";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.01";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.01";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.01";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.01";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.01";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.01";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.01";   /* v2.45 (architecture review S17): the app in French as well as English */
-import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.01";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.02";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.02";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.02";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.02";
+import { compareStores, worthIt } from "./compare.js?v=3.02";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.02";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.02";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.02";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.02";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.02";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.02";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.02";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.02";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.02";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.02";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v3.01";
+const APP_VERSION = "v3.02";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 
 /* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
@@ -1797,6 +1797,24 @@ function catEmojiOn(){ return _emojiCat===null ? true : _emojiCat==="1"; }
 function itemEmojiOn(){ return _emojiItem===null ? true : _emojiItem==="1"; }
 function setCatEmoji(on){ _emojiCat = on?"1":"0"; localStorage.setItem("ml_emoji_cat", _emojiCat); render(); }
 function setItemEmoji(on){ _emojiItem = on?"1":"0"; localStorage.setItem("ml_emoji_item", _emojiItem); render(); }
+/* v3.02 (U1, the household's four): a quick look sets tiles across, item icons and icon size — nothing else. */
+const QUICK_LOOKS = [
+  { id:"list",    label:"List",        cols:1, icons:false },
+  { id:"simple",  label:"Simple",      cols:2, icons:false },
+  { id:"comfy",   label:"Comfortable", cols:3, icons:true,  ico:"big" },    // "big": keeps the size chosen, unless it is S → L
+  { id:"compact", label:"Compact",     cols:4, icons:true,  ico:"s" } ];
+function quickLookNow(){ const c=largeCols(), on=itemEmojiOn(), s=icoSize();   // which one the settings match now, or ""
+  const q=QUICK_LOOKS.find(q=>q.cols===c && q.icons===on && (!q.icons || (q.ico==="s" ? s==="s" : s!=="s")));
+  return (q && dispBase()==="large") ? q.id : ""; }
+function applyQuickLook(id){ const q=QUICK_LOOKS.find(x=>x.id===id); if(!q || quickLookNow()===id) return;
+  const was={ cols:localStorage.getItem("ml_largecols"), disp:JSON.stringify(displays), emo:localStorage.getItem("ml_emoji_item"), ico:localStorage.getItem("ml_icosize") };
+  const put=(k,v)=>{ try{ if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){} };
+  const set=(cols,emo,ico,disp)=>{ put("ml_largecols",cols); put("ml_emoji_item",emo); put("ml_icosize",ico);
+    displays=disp; put("ml_displays", JSON.stringify(displays)); _emojiItem=emo; applyIcoSize(); };
+  const d=Object.assign({}, displays); d[optMode()]="large";
+  set(String(q.cols), q.icons?"1":"0", !q.icons ? was.ico : (q.ico==="s" ? "s" : (icoSize()==="s" ? "l" : was.ico)), d);
+  toast=tf("Look: {x}", { x:t(q.label) }); toastAction={ label:"Undo", fn:()=>{ set(was.cols, was.emo, was.ico, JSON.parse(was.disp)); toast=null; toastAction=null; clearTimeout(_toastT); render(); } };
+  render(); clearTimeout(_toastT); _toastT=setTimeout(()=>{ toast=null; toastAction=null; softRender(); }, 5000); }
 // Smart add (AI ✨) on/off — global; ON keeps the ✨ button by the add box, OFF hides it.
 let _smart = localStorage.getItem("ml_smart");
 function smartOn(){ return _smart===null ? true : _smart==="1"; }
@@ -6574,6 +6592,7 @@ function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRe
   const item = (id, icon, label) => `<button class="smitem" id="${id}" role="menuitem">${icon}<span>${label}</span></button>`;
   return `<div class="smbg" id="smBg"><div class="smenu" id="shopMenuEl" role="menu" aria-label="${t("More")}">
     ${/* v2.72: choose the shop here, as Settings › Shopping › Store does — the menu stays open */""}<div class="smtiles smtext"><span class="smtlabel">${t("Store")}</span><div class="smcols smstores">${[{id:"auto",name:t("Auto-detect")},{id:"home",name:t("Home")},...STORES.filter(s=>!storeOverride(s.id).hidden).map(s=>storeById(s.id)),...(state.stores||[]).filter(s=>!storeOverride(s.id).hidden),{id:"other",name:t("Other")}].filter(Boolean).map(s=>`<button class="colbtn ${storeSel===s.id?'on':''}" data-sm-store="${esc(s.id)}">${esc(s.name)}</button>`).join("")}<button class="colbtn smadd" data-sm-storeadd>${t("＋ New shop")}</button></div>${smStoreAdding?`<div class="smaddrow"><input id="smStoreName" placeholder="${t("Shop name")}" aria-label="${t("Shop name")}" autocomplete="off" /><button class="colbtn" id="smStoreAddGo" style="width:auto;padding:0 12px">${t("Add")}</button></div>`:""}</div>
+    ${/* v3.02 (U1): the four quick looks, as in Settings › Appearance — the menu stays open */""}<div class="smtiles smtext"><span class="smtlabel">${t("Look")}</span><div class="smcols">${QUICK_LOOKS.map(q=>`<button class="colbtn ${quickLookNow()===q.id?'on':''}" data-sm-look="${q.id}">${t(q.label)}</button>`).join("")}</div></div>
     <div class="smtiles"><span class="smtlabel">${t("Tiles")}</span><div class="smcols">${[1,2,3,4,5,6].map(n=>`<button class="colbtn ${largeCols()===n?'on':''}" data-sm-cols="${n}">${n}</button>`).join("")}<button class="colbtn ${largeCols()===0?'on':''}" data-sm-cols="0" aria-label="${t("Variable width — tiles size to the word")}">${arrowSVG()}</button></div></div>
     ${/* v2.78: tile height, under Tiles — the menu stays open */""}<div class="smtiles"><span class="smtlabel">${t("Height")}</span><div class="smcols">${tileLinesBtns("data-sm-lines")}</div></div>
     ${/* v2.63 item C: Text size, as in Settings — the menu stays open */""}<div class="smtiles smzoom"><span class="smtlabel">${t("Text size")}</span><div class="smcols"><button class="colbtn" data-sm-zoom="-1" aria-label="${t("Smaller text")}">−</button><span class="smzpct">${Math.round(dens()*100)}%</span><button class="colbtn" data-sm-zoom="1" aria-label="${t("Larger text")}">+</button></div></div>
@@ -6637,6 +6656,7 @@ function wireShopMenu(){
   on("smReport", () => { rpt = { kind:"broken", text:"", diag:true }; render(); });
   on("smEditPage", () => { pageEdit = "shop"; render(); });   // v2.95
   app.querySelectorAll("[data-sm-cols]").forEach(c => c.onclick = () => setLargeCols(+c.dataset.smCols));
+  app.querySelectorAll("[data-sm-look]").forEach(c => c.onclick = () => applyQuickLook(c.dataset.smLook));   // v3.02: the menu stays open, like Tiles
   app.querySelectorAll("[data-sm-lines]").forEach(c => c.onclick = () => setTileLines(c.dataset.smLines));   // v2.78: the menu stays open, like Tiles
   app.querySelectorAll("[data-sm-zoom]").forEach(c => c.onclick = () => setDensity(dens() + 0.1 * (+c.dataset.smZoom)));   // v2.63: as #optZoomMinus/#optZoomPlus; setDensity re-renders, the menu stays open
   /* v2.68: each re-renders with the menu still open (shopMenuOpen is left true) */
@@ -7859,7 +7879,7 @@ function groupOptions(){
     h.classList.toggle("layerfirst", layer==="look" ? firstLook : firstMain);
     if(layer==="look") firstLook=false; else firstMain=false;
     if(layer==="look" && !h.querySelector(".optlayertag")){ const c=h.querySelector(".optcaret");
-      const tag=document.createElement("span"); tag.className="optlayertag"; tag.textContent=t("Customise the look");
+      const tag=document.createElement("span"); tag.className="optlayertag"; tag.textContent=t("Advanced look");
       if(c) h.insertBefore(tag, c); else h.appendChild(tag); }
     const shut=coll.has(name);
     body.classList.toggle("coll", shut);
@@ -8101,6 +8121,7 @@ function wireOptions(){
   app.querySelectorAll("[data-opt-catemoji]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optCatemoji==="1"; if(catEmojiOn()!==want) setCatEmoji(want); });
   app.querySelectorAll("[data-opt-iconstyle]").forEach(b=>b.onclick=()=>{ if(iconStyle()!==b.dataset.optIconstyle) setIconStyle(b.dataset.optIconstyle); });
   app.querySelectorAll("[data-opt-itememoji]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optItememoji==="1"; if(itemEmojiOn()!==want) setItemEmoji(want); });
+  app.querySelectorAll("[data-opt-qlook]").forEach(b=>b.onclick=()=>applyQuickLook(b.dataset.optQlook));   // v3.02 (U1)
   app.querySelectorAll("[data-opt-icosize]").forEach(b=>b.onclick=()=>{ if(icoSize()!==b.dataset.optIcosize) setIcoSize(b.dataset.optIcosize); });
   app.querySelectorAll("[data-opt-linew]").forEach(b=>b.onclick=()=>{ if(lineW()!==b.dataset.optLinew) setLineW(b.dataset.optLinew); });
   app.querySelectorAll("[data-opt-useloc]").forEach(b=>b.onclick=()=>{ const want=b.dataset.optUseloc==="1"; if(useLoc!==want){ useLoc=want; localStorage.setItem("ml_useloc", want?"1":"0"); locState={checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(want) ensureLocCheck(); render(); } });
@@ -8689,6 +8710,8 @@ function optionsBody(){
           — by "Language" and "Langue" whichever language is showing. */""}
     <div class="optrow optnl optlangtop" data-layer="main" data-find="Language Langue"><span class="optlabel">${t("Language")}</span><span class="optctrl"><div class="seg">${LANGS.map(l=>`<button data-opt-lang="${l.code}" lang="${l.code}" class="${appLang===l.code?'on':''}">${l.name}</button>`).join("")}</div></span></div>
     ${sect("Appearance")}
+    ${rowNL(t("Quick look"), '<div class="seg segfull seg4">' + QUICK_LOOKS.map(q => `<button data-opt-qlook="${q.id}" class="${quickLookNow()===q.id?'on':''}">${t(q.label)}</button>`).join("") + '</div>')}
+    <div class="opthint">${t("Sets how many tiles sit across and whether items show their icon: List (1, no icons), Simple (2, no icons), Comfortable (3, large icons), Compact (4, small icons). Notes always show. Colours and everything else stay as they are — Advanced look has every detail.")}</div>
     ${rowNL(t("Theme"), `<div class="seg segfull" style="flex-wrap:wrap">${
       [{k:"light",label:"Light",bg:"#F6F2E7",br:"#DAD3C0",dot:"#D2542B"},
        {k:"dark", label:"Dark", bg:"#141C18",br:"#33433B",dot:"#E2502C"}]
@@ -8729,7 +8752,7 @@ function optionsBody(){
     ${/* v2.00 item 2: the appearance slots, the margin steppers and the page-transition controls
           are real preferences, but they are not what someone opens Settings to find — and they sat
           in front of Sort and Smart add. Their own section, folded by default. */""}
-    <button class="optaction optlookbtn" id="optLook"><span class="olb-t"><span>${t("Customise the look")}</span><span class="olb-s">${t("Layout, colours, bars, headings and tiles")}</span></span><span class="olb-c" aria-hidden="true">›</span></button>
+    <button class="optaction optlookbtn" id="optLook"><span class="olb-t"><span>${t("Advanced look")}</span><span class="olb-s">${t("Layout, colours, bars, headings and tiles")}</span></span><span class="olb-c" aria-hidden="true">›</span></button>
     ${sectHR("Layout & motion")}
     ${me ? `<button class="optaction" id="optLookSend" style="margin:2px 0 6px">${/* v2.26 */""}${t("Send this look to my other phones")}</button>
     <div style="margin:0 2px 12px;font-size:12.5px;color:var(--muted2);font-weight:600">${tf("Open the list on your other phone as {me} and it offers this look, once. Only the look travels — not your list or settings.", { me:esc(me) })}</div>` : ""}
@@ -9086,7 +9109,7 @@ function renderSettingsPage(){
     <div class="topfix" id="topfix">
       <header>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-          ${setLook ? `<button class="backbtn" id="lookBack" aria-label="${t("Back to Settings")}">‹</button><span class="title disp" role="heading" aria-level="1">${t("Customise the look")}</span>`
+          ${setLook ? `<button class="backbtn" id="lookBack" aria-label="${t("Back to Settings")}">‹</button><span class="title disp" role="heading" aria-level="1">${t("Advanced look")}</span>`
                     : `<span class="title disp" role="heading" aria-level="1">${t("Settings")}</span>`}
         </div>
         <div style="display:flex;align-items:center;gap:8px">${syncChip()}</div>

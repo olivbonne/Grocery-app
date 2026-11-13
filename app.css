@@ -251,6 +251,10 @@
   .seg.seg-wrap button { padding:8px 9px; min-width:0; }
   .seg.segfull { display:flex; width:100%; }
   .seg.segfull button { flex:1 1 0; min-width:0; padding:9px 6px; }
+  /* v3.02 (U1): the four quick-look words take a line of their own under the label, so none is cut at 390px */
+  .optrow:has(.seg4) { flex-wrap:wrap; row-gap:8px; }
+  .optrow:has(.seg4) > .optctrl { flex:1 0 100%; width:100%; }
+  .seg.seg4 button { font-size:13px; padding:10px 2px; white-space:nowrap; }
   /* v1.75 item 3: five words across 362px is tighter than this segment has had to be — "Instant" and
      "Normal" were clipped mid-word at the shipped 13px. Only the five-way segments shrink; every
      other .segfull keeps its size. */
