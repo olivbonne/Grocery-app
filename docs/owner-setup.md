@@ -120,10 +120,15 @@ Hobby plan's API (tried 21 Oct 2026).
 1. *(Optional)* **Upstash** — create a free Redis database at upstash.com (whether the free tier still exists could not be checked
    from here). Copy its REST URL and token into Vercel env `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` and
    redeploy. The limits per phone per day are in `lib/guard.js`; change one with `QUOTA_RECEIPT`, `QUOTA_PARSE` etc.
-2. **Vercel Firewall** — add a rate-limit rule on `/api/` (for example 30 requests per minute per IP). The names of the
-   menus could not be checked from here.
+2. **Vercel Firewall** — this cannot be set through the API on this plan (tried 21 Oct and 13 Nov 2026), so it is a
+   dashboard step: **Vercel › the project › Firewall › add a rule** — name "AI functions rate limit"; **IF** Request Path
+   starts with `/api/`; **THEN** Rate Limit, fixed window, 60 seconds, 30 requests, keyed by IP address; action when over:
+   **Deny (429)**. Whether the Hobby plan includes a rate-limit rule could not be checked from here. Since v3.07 the server
+   itself also bounds the daily count when it cannot be read (an in-memory count per instance — a floor, not this rule).
 3. **Google Cloud console** → **APIs & Services › Credentials** → the browser key → **Application restrictions:
    Websites** → add the app's domain (and `localhost` only if you test locally).
+4. **A budget alert on the Google AI (Gemini) account** — Google AI Studio / Cloud console › **Billing › Budgets & alerts**:
+   a monthly budget with an email at 50% and 100%. The menu names could not be checked from here.
 
 ---
 

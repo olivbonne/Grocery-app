@@ -97,6 +97,13 @@ const req = (tok, ip) => ({ method: 'POST', headers: Object.assign({ 'x-forwarde
     upstash = { n: 0, fail: true }; logs.length = 0;
     g = await G.guard(req(good), 'receipt');
     ok('a counter that fails lets the call through, and says so in the log', !g.block && logs.some((l) => /quota store unavailable/.test(l)), logs.join('|'));
+    /* v3.07: a failed counter is still bounded — the instance counts in memory and refuses past the same daily limit (receipt: 15) */
+    let last = null, passed = 1; for (let i = 0; i < 20; i++) { last = await G.guard(req(good), 'receipt'); if (!last.block) passed++; }
+    ok('…but only up to the daily limit: with the counter still failing, the 16th receipt call of the day is refused (429 quota)', passed === 15 && last.block && last.status === 429 && last.code === 'quota' && logs.some((l) => /fallback count/.test(l)), JSON.stringify({ passed, last }));
+    ok('…and the log never says who', !logs.some((l) => /198\.51|u:[A-Za-z0-9]{6,}/.test(l)), logs.slice(-2).join('|'));
+    G._reset(); g = await G.guard(req(good), 'receipt');
+    ok('…a fresh instance starts its fallback count again', !g.block, JSON.stringify(g));
+    upstash = { n: 0, fail: false }; G._reset();
 
     const all = logs.concat(results.map((r) => r[2])).join('\n');
     ok('no log line holds a token, an address, the uid or the Upstash token', !/eyJ|203\.0\.113|198\.51\.100|uid-abc123|up-secret/.test(logs.join('\n')), logs.join('|').slice(0, 200));
