@@ -103,7 +103,9 @@ const seed = `(() => { if(localStorage.getItem("t_seeded")) return; localStorage
     ok('…and an /api call carries its token', /"x-firebase-appcheck":"ac-token"/.test(api1), api1.slice(0,200));
 
     const vj = fs.readFileSync(path.join(ROOT,'vercel.json'),'utf8');
-    const csp = (vj.match(/"Content-Security-Policy", "value": "default-src[^"]*"/g)||[]);
+    /* SUPERSEDED by v3.07: the privacy and concept pages now have full policies too (default-src 'none'), so "both full
+       policies" means the app's two — the ones that start from 'self'. Still protects: reCAPTCHA and App Check get through. */
+    const csp = (vj.match(/"Content-Security-Policy", "value": "default-src 'self'[^"]*"/g)||[]);
     ok('the CSP lets reCAPTCHA and App Check through (both full policies), and frames only reCAPTCHA', csp.length===2 && csp.every(c=>/script-src[^;]*https:\/\/www\.google\.com\/recaptcha\//.test(c) && /connect-src[^;]*https:\/\/content-firebaseappcheck\.googleapis\.com/.test(c) && /frame-src https:\/\/www\.google\.com\/recaptcha\//.test(c)), '');
     const vf = fs.readFileSync(path.join(ROOT,'vendor','firebasejs','10.12.2','firebase-app-check.js'),'utf8');
     ok('the App Check SDK is vendored (importing the local firebase-app.js) and precached', /from"\.\/firebase-app\.js"/.test(vf) && !/gstatic\.com\/firebasejs\/10\.12\.2\/firebase-app\.js/.test(vf) && /firebase-app-check\.js/.test(fs.readFileSync(path.join(ROOT,'sw.js'),'utf8')), '');

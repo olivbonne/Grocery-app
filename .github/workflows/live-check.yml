@@ -1,0 +1,33 @@
+# Is the released app really live? (v3.07, plan item D1)
+# After every push to main — a merge deploys via Vercel — this waits for the deploy and then checks that the live site
+# serves THIS commit's version, whole (page, module, stylesheet, worker, every precached file), keeps its security
+# header, and refuses an AI call that has no sign-in. Once a day it runs again, so an outage is noticed.
+# It touches nothing of the household's: no list, no account, no key. A failure emails the repository's owner.
+# What to do when it fails: docs/rollback.md.
+name: live-check
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 19 * * *"   # daily, 19:17 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: live-check
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: The live site serves this commit
+        run: node .claude/tools/live-check.js https://grocery-app-2-sage.vercel.app --wait=420
