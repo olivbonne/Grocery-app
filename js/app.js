@@ -6,26 +6,29 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.04";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.04";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.04";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.04";
-import { compareStores, worthIt } from "./compare.js?v=3.04";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.04";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.04";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.04";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.04";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.04";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.04";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.04";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.04";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.04";   /* v2.45 (architecture review S17): the app in French as well as English */
-import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.04";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
-import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.04";   /* v3.04: the cards' logic (architecture review L17) */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.05";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.05";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.05";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.05";
+import { compareStores, worthIt } from "./compare.js?v=3.05";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.05";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.05";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.05";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.05";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.05";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.05";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.05";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.05";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.05";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.05";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.05";   /* v3.04: the cards' logic (architecture review L17) */
+import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.05";   /* v3.05 (H2): previews use their own database */
 
-/* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
-const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v3.04";
+/* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here.
+   v3.05: a Vercel preview gets the preview project (js/env.js). */
+const IS_PREVIEW = (()=>{ try{ return isPreviewHost(location.hostname); }catch(e){ return false; } })();
+const firebaseConfig = firebaseConfigFor(IS_PREVIEW ? location.hostname : "", window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" });
+const APP_VERSION = "v3.05";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 
 /* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
@@ -2710,7 +2713,8 @@ var _auth = null, _authErr = "";   // var: Settings reads them at any time
    is Google's script, loaded from google.com only then — privacy.html says so. */
 const APPCHECK_SITE_KEY = "6LcX4vwtAAAAACbmrxOgibD3Gv8wOrIrUc-icGU9";   // v2.52, Fraud Defense
 var _appCheck = null, _appCheckMod = null;
-function appCheckKey(){ try{ if(navigator.webdriver) return String(window.__appCheckKey || ""); }catch(e){} return APPCHECK_SITE_KEY; }   // under automation only a test's own key: no suite ever loads Google's real script
+/* v3.05: a preview gets no App Check (its project has none), so the AI functions refuse a preview — the server verifies the live project only. Intended. */
+function appCheckKey(){ if(IS_PREVIEW) return ""; try{ if(navigator.webdriver) return String(window.__appCheckKey || ""); }catch(e){} return APPCHECK_SITE_KEY; }   // under automation only a test's own key: no suite ever loads Google's real script
 /* v2.54: returns when App Check is in place (or at most 2.5 s, or at once without a key), so the database and sign-in are
    started AFTER it — v2.52 started them alongside, and the first requests of every launch went out unverified (seen in
    Firebase › App Check: 6 of 39 in an hour), which enforcement would have refused. */
@@ -5586,7 +5590,7 @@ function renderMain(){
           </div>
           ${open>0?`<span class="hcount hcount-mid">${tf("{n} to buy", { n:open })}</span>`:""}
           <div style="display:flex;align-items:center;gap:8px">
-            ${syncChip()}<span class="smwrap"><button class="iconbtn hshare" id="shopMenu" aria-label="${t("More")}" aria-haspopup="true" aria-expanded="${shopMenuOpen?"true":"false"}" title="${t("More")}">${MENU_SVG(19)}</button><span class="appver" id="appVer">${esc(APP_VERSION)}</span></span>${/* v2.72 (the household): the version under the ⋯ */""}
+            ${syncChip()}<span class="smwrap"><button class="iconbtn hshare" id="shopMenu" aria-label="${t("More")}" aria-haspopup="true" aria-expanded="${shopMenuOpen?"true":"false"}" title="${t("More")}">${MENU_SVG(19)}</button><span class="appver${IS_PREVIEW?" appver-pv":""}" id="appVer">${esc(IS_PREVIEW ? APP_VERSION + " · " + t("Preview data") : APP_VERSION)}</span></span>${/* v2.72 (the household): the version under the ⋯ */""}
           </div>
         </div>
         ${locChip()?`<div class="hloc">${locChip()}</div>`:""}
@@ -9105,7 +9109,7 @@ function optionsBody(){
     <button class="optaction" id="optEmpty" style="margin-top:10px">${t("Empty this list for everyone")}</button>
     <button class="optaction" id="optForget" style="margin-top:10px">${t("Forget everything on this phone")}</button>
     <div style="margin:6px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">${t("Leaving takes your name off this list and this phone forgets it; the others keep it. Emptying clears what is in the list for everyone — items, Regulars, the plan, prices, spending, occasions and what the app has learned. Forgetting clears every list, name, setting and backup on this phone; the shared lists stay for their people.")}</div>
-    <div id="verFoot" style="text-align:center;margin-top:12px;font-size:12.5px;color:var(--muted2);font-weight:600" title="Build: ${APP_BUILD_DATE} · hold for diagnostics">${APP_VERSION}</div>`;
+    <div id="verFoot" style="text-align:center;margin-top:12px;font-size:12.5px;color:var(--muted2);font-weight:600" title="Build: ${APP_BUILD_DATE} · hold for diagnostics">${esc(IS_PREVIEW ? APP_VERSION + " · " + t("Preview data") : APP_VERSION)}</div>`;
 }
 function renderSettingsPage(){
   app.innerHTML = `

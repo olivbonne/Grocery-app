@@ -76,6 +76,7 @@ export const FR = {
   "Variable height": "Hauteur variable",
   "Square": "Carrée",
   "Preview": "Aperçu",
+  "Preview data": "Données d’essai",
   "Height applies to tiles in columns.": "La hauteur s’applique aux tuiles en colonnes.",
   "square": "carrées",
   "{n} lines": "{n} lignes",
