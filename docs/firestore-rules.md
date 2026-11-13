@@ -82,6 +82,10 @@ The SAME publish also turns on photos on items (v2.96) and the fridge photo's da
 
 **Caution:** after publishing, open the app on each phone once while online, so each one is on its list's access record.
 
+## Two projects (v3.05)
+Vercel previews use their own, empty project, `market-list-preview-fcccf`; the live site uses `grocery-list-88109`. After a
+rules change, publish `firebase/firestore.rules` to BOTH projects — the live one first, then the preview one.
+
 ## Publishing (about five minutes)
 1. Open the [Firebase console](https://console.firebase.google.com/) → the Market List project → **Firestore Database** → **Rules**.
 2. **Copy what is there now** into a note first, so you can put it back.

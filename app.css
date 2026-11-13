@@ -944,6 +944,7 @@
   .smwrap { position:relative; display:inline-flex; }
   .appver { position:absolute; top:100%; left:50%; transform:translateX(-50%); margin-top:1px; font-size:10.5px; font-weight:700;
     color:var(--muted2); white-space:nowrap; pointer-events:none; letter-spacing:.02em; }
+  .appver.appver-pv { left:auto; right:0; transform:none; color:var(--accent); }   /* v3.05: the preview marker is longer than the button — it ends at the button's right edge, inside the screen */
   .smitem { display:flex; align-items:center; gap:12px; width:100%; min-height:46px; padding:8px 12px; border:none; border-radius:11px;
     background:transparent; color:var(--text); font:inherit; font-size:15.5px; font-weight:700; text-align:left; }
   .smitem:active { background:var(--chip); }
