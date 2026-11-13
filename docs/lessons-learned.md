@@ -314,3 +314,9 @@ the household asked for is not a lesson.*
     "field by field" rule again, in a copy that read from the edit form instead of the stored Regular. *Guard:* "already on
     the list" is `itemTwin()` (name + note), never a comparison of categories from two different sets; the v3.01 suite checks
     both in the source. When a value is transformed on the way in, every lookup uses the transformed value or ignores it.
+
+71. **A limit applied by cutting the list drops the newest thing without a word.** Cards were capped by `slice(0, CARD_MAX)` on
+    save, so a card added beyond the limit through the swipe or the + dot — which did not check the limit — vanished after Save
+    with no message (noticed by the executor while building v3.03's grid, fixed v3.04). *Guard:* a limit is checked where the
+    thing is added and refused with a message (`cardRoom`), never enforced by trimming; the v3.04 suite saves a 21st card and
+    checks the message and that the twenty are intact.

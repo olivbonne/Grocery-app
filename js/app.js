@@ -6,25 +6,26 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.03";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.03";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.03";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.03";
-import { compareStores, worthIt } from "./compare.js?v=3.03";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.03";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.03";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.03";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.03";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.03";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.03";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.03";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.03";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.03";   /* v2.45 (architecture review S17): the app in French as well as English */
-import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.03";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.04";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.04";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.04";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.04";
+import { compareStores, worthIt } from "./compare.js?v=3.04";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.04";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.04";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.04";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.04";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.04";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.04";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.04";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.04";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.04";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.04";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.04";   /* v3.04: the cards' logic (architecture review L17) */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v3.03";
+const APP_VERSION = "v3.04";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 
 /* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
@@ -6653,7 +6654,7 @@ function wireShopMenu(){
   on("smAisle", () => { const st = activeStore(); amOpen = st ? st.id : ""; amDraft = null; amRead = null; render(); });
   on("smSend", () => { render(); shareListText(); });
   on("smOcc", () => { occSheet = { mode:"add" }; render(); });
-  on("smCard", () => { const here = cardHere().c, all = cardsGet(); cardShow = here ? { id:here.id } : all.length>1 ? { grid:true } : all.length ? { id:all[0].id } : { add:true }; render(); });   // v2.35: the shop you are at; v3.03: else one card → it, two or more → My cards; none yet → straight to adding one
+  on("smCard", () => { cardShow = cardOpenTarget(cardHere().c, cardsGet()); render(); });   // v2.35: the shop you are at; v3.03: else one card → it, two or more → My cards; none yet → straight to adding one
   on("smReport", () => { rpt = { kind:"broken", text:"", diag:true }; render(); });
   on("smEditPage", () => { pageEdit = "shop"; render(); });   // v2.95
   app.querySelectorAll("[data-sm-cols]").forEach(c => c.onclick = () => setLargeCols(+c.dataset.smCols));
@@ -6747,29 +6748,10 @@ function rcCartSummary(){ const cart=rcpt.cart, took=new Set(rcpt.lines.filter(L
     ${miss.length?`<div class="rcmiss">${t("Ticked but not on the receipt:")} ${miss.map(c=>esc(c.name)).join(", ")}</div>`:""}</div>`; }
 /* v2.31 (the household's item 5): membership cards for the till — a name, the shop it is for, its number (drawn as a
    Code 128 barcode, js/till.js) and, if added, a photo of the card. On this phone only (ml_cards): never synced, never sent. */
-const CARD_MAX = 20;   // v3.03: was 6
 var cardEdit = null, cardShow = null;   // the add/edit sheet / the card on screen { id, view }. var: render() reads them at boot
-function cardsGet(){ try{ const a=JSON.parse(localStorage.getItem("ml_cards")||"[]"); return Array.isArray(a) ? a.filter(c=>c && c.id && c.name) : []; }catch(e){ return []; } }
+function cardsGet(){ try{ return cardsParse(localStorage.getItem("ml_cards")); }catch(e){ return []; } }
 function cardsPut(a){ try{ localStorage.setItem("ml_cards", JSON.stringify(a.slice(0, CARD_MAX))); return true; }catch(e){ return false; } }
-/* v2.35 (the household's items 5, 6): the card's shop is worked out from its name or number, not asked — "Flybuys" or a
-   number starting 6008 is Coles, "Everyday Rewards" is Woolworths. (The 6008 prefix is from the household's own card; other
-   prefixes could not be checked from here.) A card whose shop cannot be told never comes up by itself. */
-function cardChainOf(name, num){ const n=String(name||"").toLowerCase(), d=String(num||"");
-  if(/flybuys|fly buys|coles/.test(n) || /^6008/.test(d)) return "coles";
-  if(/everyday|rewards|woolworths|woolies/.test(n)) return "woolworths";
-  return ""; }
-function cardChain(c){ return (c && (c.chain || cardChainOf(c.name, c.num))) || ""; }
-/* v2.56 item 8: a card can be for any shop. First a card the household tied to this shop (`stores`, its ids), then the chain
-   as before, then a shared word between the card's name and the shop's ("My Dan's" / "Dan Murphy's Box Hill" → "dan"). */
-const CARD_NAME_STOP = new Set(["my","the","card","club","member","members","rewards","plus","australia","store","shop"]);
-function cardWords(x){ return String(x||"").toLowerCase().replace(/['’]s\b/g,"").replace(/['’]/g,"").split(/[^a-z0-9]+/)
-  .filter(w=>w.length>=3 && !CARD_NAME_STOP.has(w)); }
-function cardFor(store){ if(!store) return null; const all=cardsGet();
-  const tied=all.find(c=>Array.isArray(c.stores) && c.stores.includes(store.id)); if(tied) return tied;
-  const k=chainOfStore(store.name); const byChain = k ? all.find(c=>cardChain(c)===k) : null; if(byChain) return byChain;
-  const sw=new Set(cardWords(store.name)); if(!sw.size) return null;
-  return all.find(c=>cardWords(c.name).some(w=>sw.has(w))) || null; }
-function cardNumFmt(n){ return String(n||"").replace(/\s+/g,"").replace(/(.{4})(?=.)/g,"$1 "); }
+function cardFor(store){ return cardForStore(cardsGet(), store, chainOfStore); }   // v2.56 item 8 / v3.04: the logic is js/cards.js
 /* v2.34 (the household's items 1–3): the card comes down from the TOP of the screen — a phone is scanned by its top end —
    with the barcode first. It opens on the card for the shop you are at (or the one asked for), and a swipe left or right
    moves to the others, for when the location is missing or wrong. Since v2.37 it is marked by a band in the
@@ -7000,7 +6982,9 @@ function wireCards(){
       if(num && !code128SVG(num)){ e.err="That number has characters a barcode can't carry. Check it, or add a photo instead."; render(); return; }
       const c={ id:e.id || ("c"+Date.now().toString(36)), name:e.name.trim().slice(0,40), chain:cardChainOf(e.name, num) || e.chain || "", num, photo:e.photo||"" };   // v2.35: worked out, not asked
       if(Array.isArray(e.stores) && e.stores.length) c.stores=e.stores.slice();   // v2.56 item 8: the shops it is for
-      const a=cardsGet(), i=a.findIndex(x=>x.id===c.id); if(i>=0) a[i]=c; else a.push(c);
+      const a=cardsGet(), i=a.findIndex(x=>x.id===c.id);
+      if(i<0 && !cardRoom(a)){ e.err=tf("Up to {n} cards", { n:CARD_MAX }); render(); return; }   // v3.04: refused with a word, never trimmed away by cardsPut
+      if(i>=0) a[i]=c; else a.push(c);
       if(!cardsPut(a)){ e.err="This phone's storage is full — try without the photo."; render(); return; }
       if(c.stores) noCardDrop(c.stores);   // v2.72: a card for a shop undoes its "No card at this shop"
       if(e.inline){ cardEdit=null; cardShow={ id:c.id }; render(); return; }   // v2.37 (item 1): show the new card with its band
@@ -7013,8 +6997,8 @@ function wireCards(){
     app.querySelectorAll("[data-card-pick]").forEach(b=>b.onclick=()=>{ if(cardEdit && cardEdit.inline) cardEdit=null; cardShow={ id:b.dataset.cardPick }; render(); });
     const ca=app.querySelector("#cardAll"); if(ca) ca.onclick=()=>{ cardShow={ grid:true }; render(); };   // v3.03: My cards
     const ge=app.querySelector("#cardGridEdit"); if(ge) ge.onclick=()=>{ cardShow.edit=!cardShow.edit; render(); };
-    app.querySelectorAll("[data-card-mv]").forEach(b=>b.onclick=()=>{ const [id, d]=b.dataset.cardMv.split("|"), a=cardsGet(), i=a.findIndex(x=>x.id===id), j=i+(+d);
-      if(i<0 || j<0 || j>=a.length) return; [a[i], a[j]]=[a[j], a[i]];
+    app.querySelectorAll("[data-card-mv]").forEach(b=>b.onclick=()=>{ const [id, d]=b.dataset.cardMv.split("|"), all=cardsGet(), a=cardMove(all, id, +d);
+      if(a.every((x,k)=>x===all[k])) return;
       if(!cardsPut(a)){ showToast("This phone's storage is full"); return; } render(); });   // v3.03: the stored order is the order everywhere
     /* v2.34 a swipe left or right moves between the cards */
     const sw=app.querySelector("#cardSwipe"); if(sw){ let x0=null;
