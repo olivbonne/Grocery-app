@@ -6,25 +6,25 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.02";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.02";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.02";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.02";
-import { compareStores, worthIt } from "./compare.js?v=3.02";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.02";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.02";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.02";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.02";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.02";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.02";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.02";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.02";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.02";   /* v2.45 (architecture review S17): the app in French as well as English */
-import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.02";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.03";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.03";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.03";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.03";
+import { compareStores, worthIt } from "./compare.js?v=3.03";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.03";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.03";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.03";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.03";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.03";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.03";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.03";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.03";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.03";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.03";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here. */
 const firebaseConfig = window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" };
-const APP_VERSION = "v3.02";
+const APP_VERSION = "v3.03";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 
 /* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
@@ -1543,6 +1543,7 @@ function mergeHideAll(){ for(const c of mergeClusters()) mergeX[c.sig]=1; try{ l
    saying how many more there are; tapping it shows the next. Session only (not stored). */
 var _noticeAt = 0;   // var: render reads it at boot
 const NEXT_SVG = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>';   // v3.01 a right chevron
+const PREV_SVG = NEXT_SVG.replace('d="M9 5l7 7-7 7"', 'd="M15 5l-7 7 7 7"');   // v3.03 its mirror, a left chevron
 function noticeStackHTML(cards){ const c=cards.filter(Boolean); if(c.length<2) return c.join("");
   const i=((_noticeAt % c.length)+c.length) % c.length, more=c.length-1;
   return c[i] + `<button class="noticemore" id="noticeNext">${more===1 ? t("1 more message") : tf("{n} more messages", { n:more })} <span aria-hidden="true">${NEXT_SVG}</span></button>`; }
@@ -6652,7 +6653,7 @@ function wireShopMenu(){
   on("smAisle", () => { const st = activeStore(); amOpen = st ? st.id : ""; amDraft = null; amRead = null; render(); });
   on("smSend", () => { render(); shareListText(); });
   on("smOcc", () => { occSheet = { mode:"add" }; render(); });
-  on("smCard", () => { const c = cardHere().c || cardsGet()[0]; cardShow = c ? { id:c.id } : { add:true }; render(); });   // v2.35: the shop you are at, else the first; none yet → straight to adding one
+  on("smCard", () => { const here = cardHere().c, all = cardsGet(); cardShow = here ? { id:here.id } : all.length>1 ? { grid:true } : all.length ? { id:all[0].id } : { add:true }; render(); });   // v2.35: the shop you are at; v3.03: else one card → it, two or more → My cards; none yet → straight to adding one
   on("smReport", () => { rpt = { kind:"broken", text:"", diag:true }; render(); });
   on("smEditPage", () => { pageEdit = "shop"; render(); });   // v2.95
   app.querySelectorAll("[data-sm-cols]").forEach(c => c.onclick = () => setLargeCols(+c.dataset.smCols));
@@ -6746,7 +6747,7 @@ function rcCartSummary(){ const cart=rcpt.cart, took=new Set(rcpt.lines.filter(L
     ${miss.length?`<div class="rcmiss">${t("Ticked but not on the receipt:")} ${miss.map(c=>esc(c.name)).join(", ")}</div>`:""}</div>`; }
 /* v2.31 (the household's item 5): membership cards for the till — a name, the shop it is for, its number (drawn as a
    Code 128 barcode, js/till.js) and, if added, a photo of the card. On this phone only (ml_cards): never synced, never sent. */
-const CARD_MAX = 6;
+const CARD_MAX = 20;   // v3.03: was 6
 var cardEdit = null, cardShow = null;   // the add/edit sheet / the card on screen { id, view }. var: render() reads them at boot
 function cardsGet(){ try{ const a=JSON.parse(localStorage.getItem("ml_cards")||"[]"); return Array.isArray(a) ? a.filter(c=>c && c.id && c.name) : []; }catch(e){ return []; } }
 function cardsPut(a){ try{ localStorage.setItem("ml_cards", JSON.stringify(a.slice(0, CARD_MAX))); return true; }catch(e){ return false; } }
@@ -6778,7 +6779,17 @@ function cardNumFmt(n){ return String(n||"").replace(/\s+/g,"").replace(/(.{4})(
    name and number (on the phone when it can read the barcode itself, else the AI reader, api/card.js) for you to check;
    or type it in. */
 function cardViewPref(){ try{ return localStorage.getItem("ml_cardview")==="photo" ? "photo" : "code"; }catch(e){ return "code"; } }
-function cardShowHTML(){ const all=cardsGet(); let ix=cardShow.add ? all.length : all.findIndex(x=>x.id===cardShow.id); if(ix<0) ix=0;
+function cardShowHTML(){ const all=cardsGet();
+  if(cardShow.grid && !all.length) cardShow={ add:true };   // v3.03: a grid with no cards left → the add panel
+  if(cardShow.grid){   // v3.03: My cards — two columns of tiles; in Edit, move earlier / later and edit
+    return `<div class="sheet-bg sheettop" id="cardBg"><div class="sheet" id="cardSheet" data-look="card" role="dialog" aria-labelledby="cardTitle">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div class="disp" id="cardTitle">${t("My cards")}</div>${all.length>1 ? `<button class="optaction" id="cardGridEdit" aria-pressed="${!!cardShow.edit}" style="margin-top:0;width:auto">${cardShow.edit ? t("Done") : t("Edit")}</button>` : ""}</div>
+      <div class="cardgrid" role="list">${all.map((c,k)=>{ const br=cardBrand(c.name, cardChain(c));
+        return `<div class="cardtile" role="listitem" style="background:${br.bg};color:${br.fg}"><button class="cardtile-open" data-card-pick="${esc(c.id)}" ${cardShow.edit?'tabindex="-1" aria-hidden="true" disabled':''}><span class="cardtile-n">${esc(c.name)}</span></button>${cardShow.edit ? `<span class="cardtile-tools">${k>0?`<button data-card-mv="${esc(c.id)}|-1" aria-label="${tf("Move {x} earlier", { x:esc(c.name) })}">${PREV_SVG}</button>`:""}${k<all.length-1?`<button data-card-mv="${esc(c.id)}|1" aria-label="${tf("Move {x} later", { x:esc(c.name) })}">${NEXT_SVG}</button>`:""}<button data-card-edit="${esc(c.id)}" aria-label="${tf("Edit {x}", { x:esc(c.name) })}">${PENCIL_SVG(16)}</button></span>` : ""}</div>`; }).join("")}${all.length<CARD_MAX ? `<button class="cardtile cardtile-add" data-card-addpanel="1">+ ${t("Add card")}</button>` : ""}</div>
+      <div class="hint" style="margin-top:2px">${t("Kept on this phone only — never shared with the list or sent anywhere.")}</div>
+      <div style="display:flex;gap:8px;margin-top:10px"><button class="optaction" id="cardClose" style="margin-top:0">${t("Done")}</button></div>
+    </div></div>`; }
+  let ix=cardShow.add ? all.length : all.findIndex(x=>x.id===cardShow.id); if(ix<0) ix=0;
   const dots = `<div class="carddots" role="tablist" aria-label="${ix<all.length ? tf("Card {a} of {b}", { a:ix+1, b:all.length }) : t("Add a card")}"><button class="carddot carddot-add${ix===all.length?" on":""}" role="tab" aria-selected="${ix===all.length}" data-card-addpanel="1" aria-label="${t("Add a card")}">+</button>${all.map((x,k)=>`<button class="carddot${k===ix?" on":""}" role="tab" aria-selected="${k===ix}" data-card-pick="${esc(x.id)}" aria-label="${esc(x.name)}"></button>`).join("")}</div>`;   /* v2.37 (the household's item 2): the + dot on the left of the first */
   if(ix>=all.length){ const rd=cardRead;
     /* v2.37 (the household's item 1): Type it in shows the name and number in the same drop-down.
@@ -6803,7 +6814,7 @@ function cardShowHTML(){ const all=cardsGet(); let ix=cardShow.add ? all.length 
     ${dots}
     <div class="hint" style="margin-top:2px">${all.length>1 ? t("Swipe the card for your other cards, or to add one") : t("Swipe the card to add one")}</div>
     <div class="hint" style="margin-top:8px">${t("Turn the brightness up if the scanner struggles.")}${bc && !c.photo ? t(" If it won't scan, add a photo of the card.") : ""}</div>
-    <div style="display:flex;gap:8px;margin-top:10px"><button class="optaction" id="cardClose" style="margin-top:0">${t("Done")}</button></div>
+    <div style="display:flex;gap:8px;margin-top:10px">${all.length>1 ? `<button class="optaction" id="cardAll" style="margin-top:0;flex:1">${t("All cards")}</button>` : ""}<button class="optaction" id="cardEditThis" data-card-edit="${esc(c.id)}" style="margin-top:0;flex:1">${t("Edit")}</button><button class="optaction" id="cardClose" style="margin-top:0;flex:1">${t("Done")}</button></div>
   </div></div>`; }
 var cardRead = null;   // v2.35 { busy, step } | { err } while a card's photo is read. var: render() reads it at boot
 function cardScan(capture){ pickFile({ accept:"image/*", capture:capture?"environment":"" }).then(file=>{ if(file) cardReadPhoto(file); }); }   // attached to the page, for iOS (js/platform.js)
@@ -6969,18 +6980,20 @@ function wireCards(){
     app.querySelectorAll("[data-opt-cardask]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_cardask", b.dataset.optCardask); }catch(e){} render(); }); }
   const keep=()=>{ const n=app.querySelector("#ceName"), u=app.querySelector("#ceNum"); if(cardEdit){ if(n) cardEdit.name=n.value; if(u) cardEdit.num=u.value; } };
   app.querySelectorAll("[data-card-add]").forEach(b=>b.onclick=()=>{ if(cardsGet().length>=CARD_MAX){ showToast(tf("Up to {n} cards", { n:CARD_MAX })); return; } cardShow={ add:true }; render(); });   // v2.35: the same add panel as the card sheet's
-  app.querySelectorAll("[data-card-edit]").forEach(b=>b.onclick=()=>{ const c=cardsGet().find(x=>x.id===b.dataset.cardEdit); if(c){ cardEdit=Object.assign({ photo:"" }, c); render(); } });
+  app.querySelectorAll("[data-card-edit]").forEach(b=>b.onclick=()=>{ const c=cardsGet().find(x=>x.id===b.dataset.cardEdit); if(c){ cardEdit=Object.assign({ photo:"" }, c); if(cardShow){ cardEdit._back=cardShow; cardShow=null; } render(); } });   // v3.03: from the card sheet, it comes back there after
   app.querySelectorAll("[data-card-open]").forEach(b=>b.onclick=()=>{ cardShow={ id:b.dataset.cardOpen }; render(); });
+  { const og=app.querySelector("#optCardsGrid"); if(og) og.onclick=()=>{ cardShow={ grid:true }; render(); }; }   // v3.03: Settings › Show all cards
   if(cardEdit){
     ["#ceName","#ceNum"].forEach(s=>{ const f=app.querySelector(s); if(f) f.oninput=keep; });   // no re-render while typing
     const ph=app.querySelector("#cePhoto"); if(ph) ph.onclick=()=>{ keep(); cardPick(); };
     app.querySelectorAll("[data-ce-store]").forEach(b=>b.onclick=()=>{ keep(); const id=b.dataset.ceStore, cur=Array.isArray(cardEdit.stores)?cardEdit.stores:[];   // v2.56 item 8
       cardEdit.stores = cur.includes(id) ? cur.filter(x=>x!==id) : [...cur, id]; render(); });
     const np=app.querySelector("#ceNoPhoto"); if(np) np.onclick=()=>{ keep(); cardEdit.photo=""; render(); };
-    const close=()=>{ cardEdit=null; render(); };   // v2.37: cardShow is untouched, so an inline Cancel stays on the add panel
+    const close=()=>{ const back=cardEdit && cardEdit._back; cardEdit=null; if(back) cardShow=back; render(); };   // v2.37: cardShow is untouched, so an inline Cancel stays on the add panel; v3.03: an edit opened from the card sheet goes back there
     const cc=app.querySelector("#ceCancel"); if(cc) cc.onclick=close;
     const bg=app.querySelector("#ceBg"); if(bg) bg.onclick=e=>{ if(e.target===bg && !cardEdit.busy) close(); };
-    const dl=app.querySelector("#ceDel"); if(dl) dl.onclick=()=>{ cardsPut(cardsGet().filter(x=>x.id!==cardEdit.id)); close(); };
+    const dl=app.querySelector("#ceDel"); if(dl) dl.onclick=()=>{ const back=cardEdit._back; cardsPut(cardsGet().filter(x=>x.id!==cardEdit.id)); cardEdit=null;
+      if(back) cardShow = cardsGet().length ? { grid:true } : null; render(); };   // v3.03: after a Delete from the card sheet, My cards
     const sv=app.querySelector("#ceSave"); if(sv) sv.onclick=()=>{ keep(); const e=cardEdit, num=String(e.num||"").replace(/\s+/g,"");
       if(!e.name.trim()){ e.err="Give the card a name."; render(); return; }
       if(!num && !e.photo){ e.err="Add the card's number, or a photo of it."; render(); return; }
@@ -6998,6 +7011,11 @@ function wireCards(){
     const d=app.querySelector("#cardClose"); if(d) d.onclick=close;
     const bg=app.querySelector("#cardBg"); if(bg) bg.onclick=e=>{ if(e.target===bg) close(); };
     app.querySelectorAll("[data-card-pick]").forEach(b=>b.onclick=()=>{ if(cardEdit && cardEdit.inline) cardEdit=null; cardShow={ id:b.dataset.cardPick }; render(); });
+    const ca=app.querySelector("#cardAll"); if(ca) ca.onclick=()=>{ cardShow={ grid:true }; render(); };   // v3.03: My cards
+    const ge=app.querySelector("#cardGridEdit"); if(ge) ge.onclick=()=>{ cardShow.edit=!cardShow.edit; render(); };
+    app.querySelectorAll("[data-card-mv]").forEach(b=>b.onclick=()=>{ const [id, d]=b.dataset.cardMv.split("|"), a=cardsGet(), i=a.findIndex(x=>x.id===id), j=i+(+d);
+      if(i<0 || j<0 || j>=a.length) return; [a[i], a[j]]=[a[j], a[i]];
+      if(!cardsPut(a)){ showToast("This phone's storage is full"); return; } render(); });   // v3.03: the stored order is the order everywhere
     /* v2.34 a swipe left or right moves between the cards */
     const sw=app.querySelector("#cardSwipe"); if(sw){ let x0=null;
       /* v2.35: the add panel is one more place along; v2.37 (item 2): the add panel is first, before the first card. Barcode/Photo is kept from card to card */
@@ -9032,6 +9050,7 @@ function optionsBody(){
       <div style="margin:6px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">${t("Each takes 10% off one shop a month, up to $50, as of October 2026 — set the rules to what your membership says. A receipt that shows the member discount marks the month as used.")}</div>
       <div class="optsub">${t("Cards at the till")}</div>${/* v2.31 item 5: kept on this phone only */""}
       ${cardsGet().map(c=>row(esc(c.name), `<div class="seg"><button data-card-open="${esc(c.id)}">${t("Show")}</button><button data-card-edit="${esc(c.id)}">${t("Edit")}</button></div>`)).join("")}
+      ${cardsGet().length>1 ? `<button class="optaction" id="optCardsGrid">${t("Show all cards")}</button>` : ""}${/* v3.03 */""}
       <button class="optaction" data-card-add="1">${CARD_SVG(16)} ${t("Add a membership card")}</button>
       ${row(t("Ask for a card after a shop"), `<div class="seg"><button data-opt-cardask="1" class="${cardAskOn()?'on':''}">${t("On")}</button><button data-opt-cardask="0" class="${!cardAskOn()?'on':''}">${t("Off")}</button></div>`)}
       <div class="snapnote">${t("On this phone only. A card comes up when you finish a shop at its store, and from the Shop page's menu.")}</div>` : ""}

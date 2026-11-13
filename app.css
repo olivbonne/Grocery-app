@@ -1006,6 +1006,15 @@
   .rcguess{display:block;font-size:11.5px;font-weight:700;color:var(--accent);margin-top:2px}
   /* v2.31 a membership card at the till: black on white whatever the theme — a scanner needs it (the one place colours are not tokens) */
   .cardface{background:#fff;border-radius:14px;padding:14px 10px 10px;text-align:center}
+  /* v3.03: My cards — two columns of tiles in the programme's colour, the name in the tile */
+  .cardgrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:10px 0 8px; }
+  .cardtile { position:relative; border-radius:14px; min-height:84px; display:flex; align-items:stretch; overflow:hidden; }
+  .cardtile-open { flex:1; border:0; background:transparent; color:inherit; font:inherit; padding:12px 10px; display:flex; align-items:center; justify-content:center; text-align:center; cursor:pointer; }
+  .cardtile-n { font-weight:800; font-size:17px; line-height:1.15; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .cardtile-tools { position:absolute; left:0; right:0; bottom:0; display:flex; justify-content:space-between; gap:4px; padding:4px; background:rgba(0,0,0,.28); }
+  .cardtile-tools button { border:0; background:rgba(255,255,255,.9); color:#21351F; width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; }
+  .cardtile-add { border:1.5px dashed var(--accent); background:transparent; color:var(--accent); font-weight:800; font-size:15px; justify-content:center; align-items:center; cursor:pointer; }
+  .cardtile:has(.cardtile-tools) .cardtile-open { padding-bottom:46px; }
   /* v2.37 (item 3, option A): the programme's colour and name above the barcode */
   .cardband{display:flex;align-items:center;margin:-14px -10px 12px;padding:11px 14px;border-radius:14px 14px 0 0;text-align:left}
   .cardband-n{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800;font-size:19px;letter-spacing:.2px}
