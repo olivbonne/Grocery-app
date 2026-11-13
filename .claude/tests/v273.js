@@ -84,7 +84,11 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
 
     /* 3. the focus ring */
     await mk({ doc:DOC({ items:[it("1","Yogurt","dairy",{ qty:3 })] }) });
-    const ring = await page.evaluate(()=>{ const s=[...document.styleSheets].flatMap(x=>{ try{ return [...x.cssRules]; }catch(e){ return []; } }).find(r=>r.selectorText==='.edtitle:focus-visible'); return s ? s.style.outlineOffset : null; });
+    /* SUPERSEDED by v3.06: the stylesheet's rules sit inside @layer blocks now, so the rule is looked for at any depth, not only
+       at the top level. Still protects: the name field's focus ring is drawn inside the field. */
+    const ring = await page.evaluate(()=>{ const all=[]; const walk=rs=>{ for(const r of rs){ all.push(r); if(r.cssRules) walk(r.cssRules); } };
+      for(const x of document.styleSheets){ try{ walk(x.cssRules); }catch(e){} }
+      const s=all.find(r=>r.selectorText==='.edtitle:focus-visible'); return s ? s.style.outlineOffset : null; });
     ok('the name field\'s focus ring is drawn inside it, so the sheet cannot clip it', ring==='-2px', ring);
   } catch(e){ ok('suite ran to the end', false, (e.stack||e.message).slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));
