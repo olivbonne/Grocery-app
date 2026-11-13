@@ -1,5 +1,16 @@
 /* Market List styles. v2.19: moved out of index.html byte for byte; loaded as /app.css?v=<version>.
    It sits at the root because its url()s (the Outfit fonts, img/) are relative to this file. */
+/* v3.06 — LAYERS. Until now every rule fought every other by the weight of its selector, so a rule that had to win was written
+   with its classes repeated (.pill.pill.pill.pill) — and when one was mis-weighted nothing applied (v2.98). Layers end that:
+   a later layer wins over an earlier one whatever the selectors weigh.
+     app     — everything the app has always had, in its original order (inside this layer nothing changes: the same weights,
+               the same order, so the same result).
+     blocks  — what a page block's own settings ask for (Edit this page): wins over the app's tile rules with plain selectors.
+   New override rules go in a later layer with plain selectors — never repeat a class to win. Note: an !important rule in an
+   EARLIER layer beats one in a later layer, so !important rules stay in `app`. Checked by .claude/tools/cssdiff.js (every
+   element's computed style on 32 screens, before against after: zero differences). */
+@layer app, blocks;
+@layer app {
   /* Outfit variable font, self-hosted so type loads offline (home-screen PWA) and without a third-party request */
   @font-face{ font-family:'Outfit'; font-style:normal; font-weight:400 800; font-display:swap;
     src:url('outfit-latin.woff2') format('woff2');
@@ -333,20 +344,7 @@
   /* v2.98b: the page (.zoomer) holds the blocks, so the block is the descendant — and the tile rules are strong, so these match
      their weight (.pill ×4) */
   html body .pblock.pb-noimg .pill .pemoji, html body .pblock.pb-noimg .pill .pphoto { display:none !important; }
-  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-ta-left .pill.pill.pill.pill { align-items:flex-start; text-align:left; }
-  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-ta-center .pill.pill.pill.pill { align-items:center; text-align:center; }
-  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-ta-right .pill.pill.pill.pill { align-items:flex-end; text-align:right; }
-  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-ta-left .pill.pill.pill.pill > :is(.pname, .pnote) { text-align:left; align-self:flex-start; }
-  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-ta-center .pill.pill.pill.pill > :is(.pname, .pnote) { text-align:center; align-self:center; }
-  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-ta-right .pill.pill.pill.pill > :is(.pname, .pnote) { text-align:right; align-self:flex-end; }
-  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-ta-left .pill.pill.pill.pill .pill-meta { justify-content:flex-start; }
-  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-ta-center .pill.pill.pill.pill .pill-meta { justify-content:center; }
-  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-ta-right .pill.pill.pill.pill .pill-meta { justify-content:flex-end; }
-  html body .zoomer.zoomer.zoomer:is(.linelist,.largevar) .pblock.pb-ta-center .pill.pill.pill.pill { justify-content:center; }
-  html body .zoomer.zoomer.zoomer:is(.linelist,.largevar) .pblock.pb-ta-right .pill.pill.pill.pill { justify-content:flex-end; }
-  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-tv-top .pill.pill.pill.pill { justify-content:flex-start; }
-  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-tv-middle .pill.pill.pill.pill { justify-content:center; }
-  html body .zoomer.zoomer.zoomer.gridmode .pblock.pb-tv-bottom .pill.pill.pill.pill { justify-content:flex-end; }
+  /* v3.06: the block's text alignment and vertical place moved to the `blocks` layer at the end of this file, with plain selectors */
   /* text blocks (Messages and the Plan blocks): the block's own content */
   .pblock.pb-ta-left > .pbin { text-align:left; } .pblock.pb-ta-center > .pbin { text-align:center; } .pblock.pb-ta-right > .pbin { text-align:right; }
   .pagedit { position:fixed; z-index:28; top:0; left:var(--topleft, 0px); right:var(--topright, 0px); margin:0 auto; max-width:var(--topw, 480px);
@@ -2662,3 +2660,21 @@ html body .zoomer.zoomer.zoomer.linelist .pill.pill > :is(.pill-meta, .cu-alt) {
 /* v2.96: the Others group says when it holds Regulars from the old categories, with a button to sort them */
 .regsort { display:flex; align-items:center; gap:10px; justify-content:space-between; margin:6px 2px 2px; font-size:13px; font-weight:600; color:var(--muted2); }
 .regsort .colbtn2 { flex:none; }
+}   /* end @layer app */
+@layer blocks {
+  /* Edit this page › a block's text alignment and vertical place (v2.98), over the tiles' own layout rules */
+  .zoomer.gridmode .pblock.pb-ta-left .pill { align-items:flex-start; text-align:left; }
+  .zoomer.gridmode .pblock.pb-ta-center .pill { align-items:center; text-align:center; }
+  .zoomer.gridmode .pblock.pb-ta-right .pill { align-items:flex-end; text-align:right; }
+  .zoomer.gridmode .pblock.pb-ta-left .pill > :is(.pname, .pnote) { text-align:left; align-self:flex-start; }
+  .zoomer.gridmode .pblock.pb-ta-center .pill > :is(.pname, .pnote) { text-align:center; align-self:center; }
+  .zoomer.gridmode .pblock.pb-ta-right .pill > :is(.pname, .pnote) { text-align:right; align-self:flex-end; }
+  .zoomer.gridmode .pblock.pb-ta-left .pill .pill-meta { justify-content:flex-start; }
+  .zoomer.gridmode .pblock.pb-ta-center .pill .pill-meta { justify-content:center; }
+  .zoomer.gridmode .pblock.pb-ta-right .pill .pill-meta { justify-content:flex-end; }
+  .zoomer:is(.linelist,.largevar) .pblock.pb-ta-center .pill { justify-content:center; }
+  .zoomer:is(.linelist,.largevar) .pblock.pb-ta-right .pill { justify-content:flex-end; }
+  .zoomer.gridmode .pblock.pb-tv-top .pill { justify-content:flex-start; }
+  .zoomer.gridmode .pblock.pb-tv-middle .pill { justify-content:center; }
+  .zoomer.gridmode .pblock.pb-tv-bottom .pill { justify-content:flex-end; }
+}
