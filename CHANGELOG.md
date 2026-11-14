@@ -11,6 +11,7 @@ Convention: bump the number by `0.01` for each batch of changes, add a dated row
 
 | Version | Date | Changes |
 |--------|------------|---------|
+| v3.15 | 2026-11-14 | **The 10% shop, What we spend and Occasions answer a tap without redrawing the whole screen.** Ticking a row or changing an amount in the 10% shop, picking another month in What we spend, and going to "save the list" in Occasions now change only that sheet. |
 | v3.14 | 2026-11-14 | **Smart add's review, the card editor and the receipt check feel quicker and steadier.** A tap inside them (a quantity, a category, a shop, ticking a line) now changes only that sheet instead of redrawing the whole screen behind it, so what you are typing keeps the keyboard. Edit item already worked this way. |
 | v3.13 | 2026-11-14 | **Move your cards by dragging.** In My cards, hold a card for a moment and slide it to where you want it; the new order is used everywhere. A quick tap still shows the card, and the arrows under Edit still work. |
 | v3.12 | 2026-11-14 | **Tiles in a block with pictures turned off are no longer too tall.** When you turned pictures off for your list in Edit this page, the tiles kept the empty space the picture used to take. They are now as compact as with item icons off in Settings. |

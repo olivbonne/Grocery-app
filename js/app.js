@@ -6,29 +6,29 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.14";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.14";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.14";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.14";
-import { compareStores, worthIt } from "./compare.js?v=3.14";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.14";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.14";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.14";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.14";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.14";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.14";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.14";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.14";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.14";   /* v2.45 (architecture review S17): the app in French as well as English */
-import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.14";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
-import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.14";   /* v3.04: the cards' logic (architecture review L17) */
-import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.14";   /* v3.05 (H2): previews use their own database */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.15";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.15";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.15";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.15";
+import { compareStores, worthIt } from "./compare.js?v=3.15";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.15";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.15";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.15";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.15";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.15";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.15";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.15";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.15";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.15";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.15";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.15";   /* v3.04: the cards' logic (architecture review L17) */
+import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.15";   /* v3.05 (H2): previews use their own database */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here.
    v3.05: a Vercel preview gets the preview project (js/env.js). */
 const IS_PREVIEW = (()=>{ try{ return isPreviewHost(location.hostname); }catch(e){ return false; } })();
 const firebaseConfig = firebaseConfigFor(IS_PREVIEW ? location.hostname : "", window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" });
-const APP_VERSION = "v3.14";
+const APP_VERSION = "v3.15";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 
 /* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
@@ -2301,7 +2301,7 @@ function wireOcc(){
   const go=app.querySelector("#occSaveGo"); if(go) go.onclick=()=>occSave((app.querySelector("#occName")||{}).value);
   app.querySelectorAll("[data-occadd]").forEach(b=>b.onclick=()=>occAdd(b.dataset.occadd));
   app.querySelectorAll("[data-occdel]").forEach(b=>b.onclick=()=>occDelete(b.dataset.occdel));
-  const ts2=app.querySelector("#occToSave"); if(ts2) ts2.onclick=()=>{ occSheet={mode:"save", name:""}; render(); };   // v2.32
+  const ts2=app.querySelector("#occToSave"); if(ts2) ts2.onclick=()=>{ occSheet={mode:"save", name:""}; renderOnly("occSheet", occSheetHTML, wireOcc); };   // v3.15 (H4): the sheet changes mode in place   // v2.32
   const c=app.querySelector("#occClose"); if(c) c.onclick=()=>{ occSheet=null; render(); };
   const bg=app.querySelector("#occBg"); if(bg) bg.onclick=e=>{ if(e.target===bg){ occSheet=null; render(); } };
 }
@@ -5154,6 +5154,7 @@ function renderOnly(id, draw, wire){ const el=document.getElementById(id); if(!e
   try{ patchKeepFocus(el, n); wire(); } finally { sheetsAfter(still); } }
 function renderSmart(){ renderOnly("smartSheetEl", smartSheet, wireSmartSheet); }
 function renderCardEdit(){ renderOnly("ceSheet", cardEditHTML, wireCards); }
+function renderTen(){ renderOnly("tenSheet", tenSheetHTML, wireTenSheet); }   // v3.15 (H4): the 10% shop
 function renderRcpt(){ renderOnly("rcSheet", rcptSheet, wireRcptSheet); }
 function sheetsBefore(){ const o = {};
   document.querySelectorAll(".sheet[id]").forEach(s => { o[s.id] = { top:s.scrollTop }; });
@@ -6341,7 +6342,7 @@ function tenAddToList(){ const tn = tenSheet; if(!tn) return; let n = 0;
     putItem({ name:r.name, qty:r.qty, cat:r.cat, weight:r.weight }, { qty:"max", anyNote:true, quiet:true }); }   // v3.00: the add flow
   tenSheet = null; save(); render(); showToast(tf("Added {n} for the {chain} {pct}% shop", { n, chain:CHAINS[tn.chain].short, pct:tn.pct })); }
 function wireTenSheet(){
-  app.querySelectorAll("[data-ten-row]").forEach(b => b.onchange = () => { const r = tenSheet && tenSheet.rows[+b.dataset.tenRow]; if(r){ r.sel = b.checked; render(); } });
+  app.querySelectorAll("[data-ten-row]").forEach(b => b.onchange = () => { const r = tenSheet && tenSheet.rows[+b.dataset.tenRow]; if(r){ r.sel = b.checked; renderTen(); } });   // v3.15 (H4): only the sheet
   const ta = app.querySelector("#tenAdd"); if(ta) ta.onclick = tenAddToList;
   const tc = app.querySelector("#tenClose"); if(tc) tc.onclick = () => { tenSheet = null; render(); };
   const tb = app.querySelector("#tenBg"); if(tb) tb.onclick = e => { if(e.target === tb){ tenSheet = null; render(); } };
@@ -6352,7 +6353,7 @@ function wireTenSheet(){
   app.querySelectorAll("[data-ten-qm]").forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation();
     const [i, d] = b.dataset.tenQm.split("|"), r = tenSheet && tenSheet.rows[+i]; if(!r) return;
     const sc = app.querySelector(".tenrows"), top = sc ? sc.scrollTop : 0;
-    setRowQty(r, r.qty + (+d)); render();
+    setRowQty(r, r.qty + (+d)); renderTen();   // v3.15 (H4)
     const sc2 = app.querySelector(".tenrows"); if(sc2) sc2.scrollTop = top; });
 }
 /* v2.21 which store is cheaper for this list (plan item 6) — the logic is js/compare.js. The list is what is still to buy;
@@ -6449,7 +6450,7 @@ function spendSheetHTML(){ const all = spendAll(), months = spendMonths(all).sli
   </div></div>`; }
 function wireSpend(){
   const o = app.querySelector("#optSpend"); if(o) o.onclick = () => { spendOpen = true; spendM = ""; render(); };
-  app.querySelectorAll("[data-spend-m]").forEach(b => b.onclick = () => { spendM = b.dataset.spendM; render(); });
+  app.querySelectorAll("[data-spend-m]").forEach(b => b.onclick = () => { spendM = b.dataset.spendM; renderOnly("spendSheet", spendSheetHTML, wireSpend); });   // v3.15 (H4)
   const c = app.querySelector("#spendClose"); if(c) c.onclick = () => { spendOpen = false; render(); };
   const bg = app.querySelector("#spendBg"); if(bg) bg.onclick = e => { if(e.target === bg){ spendOpen = false; render(); } };
 }
