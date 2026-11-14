@@ -43,7 +43,7 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   stored copy and refresh in the background; `/api/*`, non-GETs and anything cross-origin are never
   touched. A broken worker can strand phones on an old copy, so its header holds a **kill switch** —
   paste it over the file and deploy. Changing the SDK means a new versioned `vendor/` folder, never
-  editing files in place (they are served `immutable`).
+  editing files in place (they are served `immutable`). **v3.20: staged releases** — the phone marked as tester (Settings › Help) takes a new version at once, every other phone keeps its page for 24 h (the new files are precached meanwhile); `<meta name="ml-release" content="now">` in index.html's head skips the hold for an urgent fix, and the app sends "release" when a newer app's data arrives.
 - **Emoji are for CONTENT; interface chrome gets drawn marks.** Emoji are the visual language for
   categories and items (🥩 🥦 🍌) — keep them. Buttons, toggles and status marks are inline SVGs in
   `currentColor` (`SEARCH_SVG`, `GLOBE_SVG`, the flag marks…), because they are the only saturated
