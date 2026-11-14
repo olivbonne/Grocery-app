@@ -20,6 +20,7 @@
 // browser, and never embedded in any static asset. See docs/ai-setup.md.
 
 const { guard, cors } = require('../lib/guard.js');
+const { reportFailure } = require('../lib/report');
 const MAX_INPUT_CHARS = 8000;   // recipes are longer than a grocery jot
 const MAX_IMAGE_CHARS = 3500000; // ~2.6MB of image; Vercel caps the request body around 4.5MB
 const MAX_PAGE_BYTES = 1500000; // stop reading a fetched page after this much
@@ -400,6 +401,7 @@ function looseJson(s) {
 
 function fail(res, status, code, error) {
   res.status(status).json({ error: error || 'Parse failed', code });
+  return reportFailure('recipe', status, code);   // v3.11 (H3): a 5xx is written down where it lasts (lib/report.js)
 }
 
 module.exports = async (req, res) => {

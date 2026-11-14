@@ -192,6 +192,9 @@ Where it goes:
 - **A GitHub issue**, when both `FEEDBACK_GITHUB_TOKEN` and `FEEDBACK_REPO` (`owner/name`, e.g.
   `olivbonne/Grocery-app`) are set. Use a fine-grained token limited to that one repository with
   **Issues: Read and write** and nothing else. Issues are labelled `from-app` and the kind.
+  Since v3.11 the same token also writes **server-failure issues** (`lib/report.js`): a 5xx from an AI function becomes one
+  issue per function and error code, label `server-failure`, with a "Happened again" comment for each repeat. It needs no
+  more than the Issues: Read and write it already has. `SERVER_REPORTS` (optional) — set it to `off` to switch this off.
 - **Otherwise the Vercel runtime log**, as one line starting `[feedback]`. Search the logs for that word.
   If GitHub was configured but failed, the log path still catches it, and an error line names the status.
 

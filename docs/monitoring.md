@@ -13,6 +13,10 @@ from where this was written; they move from time to time.
 - Without a GitHub token (`FEEDBACK_GITHUB_TOKEN`, `FEEDBACK_REPO`) both land in the Vercel logs as `[feedback]` lines.
 
 ## When something breaks on the server
+- **GitHub › Issues, label `server-failure`** (v3.11) — each server failure (5xx) is one issue per function and error
+  code, title `[Server] <function>: <code> · sig:<function>/<code>`; each repeat is a "Happened again" comment (at most one per
+  30 minutes per server instance). It holds the function, the code, the status, the time, the region and the deployment —
+  nothing the phone sent. `SERVER_REPORTS=off` in Vercel switches it off; without the GitHub token it does nothing.
 - **Vercel › the project › Observability (or Logs).** Every server function — Smart add, recipes, receipts, aisle signs,
   cards, Report a problem — logs the reason for each failure (`quota`, `busy`, `bad_image`, `not_configured`…), never the
   photo, the text it read or a card number.

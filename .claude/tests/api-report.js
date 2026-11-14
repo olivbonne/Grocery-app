@@ -8,7 +8,7 @@
    - a 5xx opens ONE issue, label `server-failure`, title `[Server] <fn>: <code> · sig:<fn>/<code>`, whose body holds the
      function, the code, the status, the time, the region and the deployment — and nothing the caller could put there;
    - a repeat on this instance within 30 minutes writes nothing; after that it comments on the open issue (no second issue);
-   - a 4xx, the code `unreadable`, SERVER_REPORTS=off, a missing token or repo, and an unsafe function name write nothing;
+   - a 4xx, the codes for a photo or a link the person sent (`unreadable`, `fetch_failed`, `no_caption`, `not_a_page`), SERVER_REPORTS=off, a missing token or repo, and an unsafe function name write nothing;
    - a code that is not plain lowercase becomes `other` (no free text in a title);
    - GitHub failing or hanging never throws and ends within the timeout, and the log line never holds the token;
    - every AI function routes its failures through reportFailure, feedback does not, and a 5xx answer is sent BEFORE the
@@ -58,6 +58,7 @@ const fresh = () => { R._reset(); calls = []; issues = []; mode = 'ok'; logs.len
     const none = async (label, fn, st, code, o) => { env(Object.assign({}, ON, o || {})); fresh(); const w = await R.reportFailure(fn, st, code); ok(label, w === false && calls.length === 0, calls.length); };
     await none('a 4xx (a caller\'s mistake) is never reported', 'receipt', 400, 'bad_request');
     await none('"could not read this photo" (unreadable) is never reported', 'receipt', 502, 'unreadable');
+    for (const c of ['fetch_failed', 'no_caption', 'not_a_page']) await none('a link the person sent that cannot be read (' + c + ') is never reported', 'recipe', 502, c);
     await none('SERVER_REPORTS=off switches it off', 'receipt', 502, 'quota', { SERVER_REPORTS: 'off' });
     await none('no token: nothing', 'receipt', 502, 'quota', { FEEDBACK_GITHUB_TOKEN: '' });
     await none('no repository: nothing', 'receipt', 502, 'quota', { FEEDBACK_REPO: '' });

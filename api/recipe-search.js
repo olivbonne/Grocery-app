@@ -20,6 +20,7 @@
 // embedded in any static asset. See docs/ai-setup.md.
 
 const { guard, cors } = require('../lib/guard.js');
+const { reportFailure } = require('../lib/report');
 const MAX_Q = 120;
 const MAX_RESULTS = 8;
 const FETCH_TIMEOUT_MS = 7000;
@@ -190,6 +191,7 @@ function publicUrl(raw) {
 
 function fail(res, status, code, error) {
   res.status(status).json({ error: error || 'Search failed', code });
+  return reportFailure('recipe_search', status, code);   // v3.11 (H3): a 5xx is written down where it lasts (lib/report.js)
 }
 
 const TAVILY_URL = 'https://api.tavily.com/search';
