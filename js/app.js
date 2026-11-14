@@ -6,29 +6,29 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.07";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.07";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.07";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.07";
-import { compareStores, worthIt } from "./compare.js?v=3.07";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.07";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.07";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.07";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.07";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.07";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.07";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.07";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.07";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.07";   /* v2.45 (architecture review S17): the app in French as well as English */
-import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.07";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
-import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.07";   /* v3.04: the cards' logic (architecture review L17) */
-import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.07";   /* v3.05 (H2): previews use their own database */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.08";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.08";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.08";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.08";
+import { compareStores, worthIt } from "./compare.js?v=3.08";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.08";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.08";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.08";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.08";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.08";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.08";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.08";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.08";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.08";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.08";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.08";   /* v3.04: the cards' logic (architecture review L17) */
+import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.08";   /* v3.05 (H2): previews use their own database */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here.
    v3.05: a Vercel preview gets the preview project (js/env.js). */
 const IS_PREVIEW = (()=>{ try{ return isPreviewHost(location.hostname); }catch(e){ return false; } })();
 const firebaseConfig = firebaseConfigFor(IS_PREVIEW ? location.hostname : "", window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" });
-const APP_VERSION = "v3.07";
+const APP_VERSION = "v3.08";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 
 /* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
@@ -6503,6 +6503,7 @@ function wireAisleMap(){
 /* v2.30 the Shop page's menu (item 17): what you reach for in the shop — read the receipt, which store is cheaper, what we
    spend, this shop's aisle map, send the list, add an occasion — and Report a problem, which the button used to be. */
 var shopMenuOpen = false;   // var: render() reads it at boot
+var smMoreOpen = false;   // v3.08: the display options under "More display options" — open for this session only
 /* v2.95 Edit this page (the page builder, step 1): Shop and Plan are columns of blocks; in edit mode each can move up or down,
    hide, and be full, half or a third wide. ml_pagelay = { shop:{ o:[ids], h:[ids], w:{ id:"half"|"third" } }, plan:{…} } is a
    LOOK, so it is deliberately NOT in APP_EXCLUDE / APP_EXCLUDE_BOOT: the appearance slots and the looks carry it. */
@@ -6598,7 +6599,16 @@ function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRe
   const item = (id, icon, label) => `<button class="smitem" id="${id}" role="menuitem">${icon}<span>${label}</span></button>`;
   return `<div class="smbg" id="smBg"><div class="smenu" id="shopMenuEl" role="menu" aria-label="${t("More")}">
     ${/* v2.72: choose the shop here, as Settings › Shopping › Store does — the menu stays open */""}<div class="smtiles smtext"><span class="smtlabel">${t("Store")}</span><div class="smcols smstores">${[{id:"auto",name:t("Auto-detect")},{id:"home",name:t("Home")},...STORES.filter(s=>!storeOverride(s.id).hidden).map(s=>storeById(s.id)),...(state.stores||[]).filter(s=>!storeOverride(s.id).hidden),{id:"other",name:t("Other")}].filter(Boolean).map(s=>`<button class="colbtn ${storeSel===s.id?'on':''}" data-sm-store="${esc(s.id)}">${esc(s.name)}</button>`).join("")}<button class="colbtn smadd" data-sm-storeadd>${t("＋ New shop")}</button></div>${smStoreAdding?`<div class="smaddrow"><input id="smStoreName" placeholder="${t("Shop name")}" aria-label="${t("Shop name")}" autocomplete="off" /><button class="colbtn" id="smStoreAddGo" style="width:auto;padding:0 12px">${t("Add")}</button></div>`:""}</div>
+    <div class="smgroup">${t("At the shop")}</div>
+    ${item("smCard", CARD_SVG(18), cardsGet().length ? t("Show my card") : t("Add a membership card"))}
+    ${item("smRcpt", CAMERA_SVG(18), t("Read a receipt"))}
+    ${item("smCompare", CART_SVG, t("Which store is cheaper"))}
+    ${real ? item("smAisle", PIN_SVG(18), tf("Aisle map for {x}", { x:esc(st.name) })) : ""}
+    ${item("smFridge", FRIDGE_SVG(18), t("What's in the fridge?"))}
+    <div class="smgroup">${t("Display")}</div>
     ${/* v3.02 (U1): the four quick looks, as in Settings › Appearance — the menu stays open */""}<div class="smtiles smtext"><span class="smtlabel">${t("Look")}</span><div class="smcols">${QUICK_LOOKS.map(q=>`<button class="colbtn ${quickLookNow()===q.id?'on':''}" data-sm-look="${q.id}">${t(q.label)}</button>`).join("")}</div></div>
+    ${/* v3.08 (U3): the rest of the display options fold under one button — open for this session only */""}<button class="smmore" id="smMore" aria-expanded="${smMoreOpen}" aria-controls="smMoreBox">${t(smMoreOpen ? "Fewer display options" : "More display options")} <span aria-hidden="true" class="smmore-c${smMoreOpen?' open':''}">${CHEV_SVG}</span></button>
+    ${smMoreOpen ? `<div id="smMoreBox">
     <div class="smtiles"><span class="smtlabel">${t("Tiles")}</span><div class="smcols">${[1,2,3,4,5,6].map(n=>`<button class="colbtn ${largeCols()===n?'on':''}" data-sm-cols="${n}">${n}</button>`).join("")}<button class="colbtn ${largeCols()===0?'on':''}" data-sm-cols="0" aria-label="${t("Variable width — tiles size to the word")}">${arrowSVG()}</button></div></div>
     ${/* v2.78: tile height, under Tiles — the menu stays open */""}<div class="smtiles"><span class="smtlabel">${t("Height")}</span><div class="smcols">${tileLinesBtns("data-sm-lines")}</div></div>
     ${/* v2.63 item C: Text size, as in Settings — the menu stays open */""}<div class="smtiles smzoom"><span class="smtlabel">${t("Text size")}</span><div class="smcols"><button class="colbtn" data-sm-zoom="-1" aria-label="${t("Smaller text")}">−</button><span class="smzpct">${Math.round(dens()*100)}%</span><button class="colbtn" data-sm-zoom="1" aria-label="${t("Larger text")}">+</button></div></div>
@@ -6608,15 +6618,11 @@ function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRe
     ${(()=>{ const cs=(displayFor()==="cat" && (sortModeFor()==="location"||sortModeFor()==="ai")) ? "cat" : sortModeFor();   // as Settings reads it
       const sb=(v,l)=>`<button class="colbtn ${cs===v?'on':''}" data-sm-sort="${v}">${l}</button>`;
       return `<div class="smtiles smtext"><span class="smtlabel">${t("Sort")}</span><div class="smcols">${(displayFor()==="flat" && shopMode && aiSortOK())?sb("ai",t("✨ AI")):""}${displayFor()==="flat"?sb("location",t("Location")):""}${sb("cat",t("Category"))}${sb("alpha",t("A–Z"))}</div></div>`; })()}
-    <div class="smsep"></div>
-    ${item("smCard", CARD_SVG(18), cardsGet().length ? t("Show my card") : t("Add a membership card"))}
-    ${item("smRcpt", CAMERA_SVG(18), t("Read a receipt"))}
-    ${item("smFridge", FRIDGE_SVG(18), t("What's in the fridge?"))}
-    ${item("smCompare", CART_SVG, t("Which store is cheaper"))}
-    ${item("smSpend", FLAG_TAG_SVG, t("What we spend"))}
-    ${real ? item("smAisle", PIN_SVG(18), tf("Aisle map for {x}", { x:esc(st.name) })) : ""}
+    </div>` : ""}
+    <div class="smgroup">${t("Your list")}</div>
     ${item("smSend", SHARE_SVG(18), t("Send what's to buy"))}
     ${item("smOcc", SAVE_SVG(18), t("Occasions — BBQ, camping…"))}
+    ${item("smSpend", FLAG_TAG_SVG, t("What we spend"))}
     ${item("smEditPage", PAGE_EDIT_SVG(18), t("Edit this page"))}${/* v2.95 */""}
     <div class="smsep"></div>
     ${item("smReport", REPORT_SVG(18), t("Report a problem"))}
@@ -6661,6 +6667,9 @@ function wireShopMenu(){
   on("smCard", () => { cardShow = cardOpenTarget(cardHere().c, cardsGet()); render(); });   // v2.35: the shop you are at; v3.03: else one card → it, two or more → My cards; none yet → straight to adding one
   on("smReport", () => { rpt = { kind:"broken", text:"", diag:true }; render(); });
   on("smEditPage", () => { pageEdit = "shop"; render(); });   // v2.95
+  const mo = app.querySelector("#smMore"); if(mo) mo.onclick = () => { smMoreOpen = !smMoreOpen; render();   // v3.08: the menu stays open
+    if(smMoreOpen){ const m = app.querySelector("#shopMenuEl"), bx = app.querySelector("#smMoreBox");
+      if(m && bx){ const mr = m.getBoundingClientRect(), br = bx.getBoundingClientRect(); if(br.bottom > mr.bottom) m.scrollTop += Math.min(br.bottom - mr.bottom, br.top - mr.top); } } };
   app.querySelectorAll("[data-sm-cols]").forEach(c => c.onclick = () => setLargeCols(+c.dataset.smCols));
   app.querySelectorAll("[data-sm-look]").forEach(c => c.onclick = () => applyQuickLook(c.dataset.smLook));   // v3.02: the menu stays open, like Tiles
   app.querySelectorAll("[data-sm-lines]").forEach(c => c.onclick = () => setTileLines(c.dataset.smLines));   // v2.78: the menu stays open, like Tiles

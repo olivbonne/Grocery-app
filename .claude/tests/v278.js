@@ -91,7 +91,7 @@ const seed = (extra) => `(() => { if(localStorage.getItem("t_seeded")) return; l
 
     /* the ⋯ menu */
     await mk('');
-    await page.locator('#shopMenuBtn, [aria-label="More"]').first().click(); await page.waitForTimeout(400);
+    await page.locator('#shopMenuBtn, [aria-label="More"]').first().click(); await page.waitForTimeout(400); await page.evaluate(()=>{ const b=document.getElementById('smMore'); if(b && b.getAttribute('aria-expanded')!=='true') b.click(); }); await page.waitForTimeout(400);   /* SUPERSEDED by v3.08: the display options sit under "More display options" — opened first; still protects the same controls */
     const mb = await page.evaluate(()=>[...document.querySelectorAll('[data-sm-lines]')].map(b=>(b.dataset.smLines||'v')+(b.classList.contains('on')?'*':'')));
     /* SUPERSEDED by v2.79: heights 1 and 2 were added before 3. Still protected: every height, variable and square are offered,
        in order, with the current one (variable) marked. */

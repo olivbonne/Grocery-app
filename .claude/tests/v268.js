@@ -97,7 +97,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     ok('no "✨ AI order · …" line above the Shop list', !/AI order ·/.test(await page.evaluate(()=>document.body.innerText)), '');
 
     /* D. the Shop menu */
-    await page.locator('#shopMenu').click(); await page.waitForTimeout(400);
+    await page.locator('#shopMenu').click(); await page.waitForTimeout(400); await page.evaluate(()=>{ const b=document.getElementById('smMore'); if(b && b.getAttribute('aria-expanded')!=='true') b.click(); }); await page.waitForTimeout(400);   /* SUPERSEDED by v3.08: the display options sit under "More display options" — opened first; still protects the same controls */
     const m0 = await page.evaluate(()=>({ theme:document.querySelectorAll('[data-sm-theme]').length, cat:document.querySelectorAll('[data-sm-caton]').length, sort:[...document.querySelectorAll('[data-sm-sort]')].map(b=>b.dataset.smSort) }));
     ok('the ⋯ menu has Theme, Group by category and Sort', m0.theme===2 && m0.cat===2 && m0.sort.includes('cat') && m0.sort.includes('alpha'), JSON.stringify(m0));
     await page.locator('[data-sm-theme="dark"]').click(); await page.waitForTimeout(300);
