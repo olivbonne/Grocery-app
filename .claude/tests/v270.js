@@ -15,6 +15,7 @@ const fs = require('fs'), path = require('path');
 const { chromium } = require(require.resolve('playwright', { paths: [__dirname, '/opt/node22/lib/node_modules', '/tmp'] }));
 const ROOT = path.resolve(__dirname, '..', '..');
 const results=[]; const ok=(n,c,x)=>results.push([n,!!c,x===undefined?'':String(x)]);
+const OPEN_MORE = async(page)=>{ if(!page) return; await page.evaluate(()=>{ const m=document.querySelector('#edMore'); if(m && m.getAttribute('aria-expanded')!=='true') m.click(); }); await page.waitForTimeout(400); };   /* SUPERSEDED by v3.10 (U5): the photo, Where to buy and the flags sit under Edit item's "More" — every hold that opens Edit item opens it too. Still protects everything this suite checked in them. */
 const FSTUB = `export const initializeApp=()=>({});export const getFirestore=()=>({});
 export const initializeFirestore=()=>({});export const persistentLocalCache=()=>({});
 export const persistentMultipleTabManager=()=>({});export const doc=()=>({});
@@ -66,7 +67,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
 
     /* 2. Edit item */
     await mk({ docs:{ v101:DOC({ items:[it("1","Yogurt","fresh")], prices:{ yogurt:[{ p:4.5, sn:"Coles", d:"2026-10-20", t:Date.now()-86400000, q:1 }] } }) } }, '');
-    await hold(page.locator('.pill[data-pill="1"]').first());
+    await hold(page.locator('.pill[data-pill="1"]').first()); await OPEN_MORE(page);
     const ed = await page.evaluate(()=>{ const s=document.querySelector('#sheet'); const del=s.querySelector('#delBtn'), sv=s.querySelector('#saveBtn'), fl=s.querySelector('.flagchip');
       const where=[...s.querySelectorAll('.editsec-l')].find(l=>/Where to buy/.test(l.textContent));
       return { bin:!!del.querySelector('svg'), rads:[del,sv,fl].map(e=>getComputedStyle(e).borderTopLeftRadius), price:(s.querySelector('.edtitlerow .pricemem-c')||{}).textContent||'',

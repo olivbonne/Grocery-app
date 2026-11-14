@@ -19,6 +19,7 @@ const fs = require('fs'), path = require('path');
 const { chromium } = require(require.resolve('playwright', { paths: [__dirname, '/opt/node22/lib/node_modules', '/tmp'] }));
 const ROOT = path.resolve(__dirname, '..', '..');
 const results=[]; const ok=(n,c,x)=>results.push([n,!!c,x===undefined?'':String(x)]);
+const OPEN_MORE = async(page)=>{ if(!page) return; await page.evaluate(()=>{ const m=document.querySelector('#edMore'); if(m && m.getAttribute('aria-expanded')!=='true') m.click(); }); await page.waitForTimeout(400); };   /* SUPERSEDED by v3.10 (U5): the photo, Where to buy and the flags sit under Edit item's "More" — every hold that opens Edit item opens it too. Still protects everything this suite checked in them. */
 const FSTUB = `export const initializeApp=()=>({});export const getFirestore=()=>({});
 export const initializeFirestore=()=>({});export const persistentLocalCache=()=>({});
 export const persistentMultipleTabManager=()=>({});export const doc=()=>({});
@@ -57,7 +58,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     const top = (sel)=>page.evaluate(s=>{ const e=document.querySelector(s); return e ? Math.round(e.getBoundingClientRect().top) : null; }, sel);
 
     await mk({ doc:D(), extra:LAY+'localStorage.setItem("ml_lk_edit_l2gap","24");' });
-    await hold(page.locator('.pill[data-pill="1"]').first());
+    await hold(page.locator('.pill[data-pill="1"]').first()); await OPEN_MORE(page);
     await page.locator('#sheet [data-w-open]').click(); await page.waitForTimeout(500);
     await page.locator('#sheet [data-wstep="edit|g|1"], #sheet [data-wstep^="edit|g|+"]').first().click(); await page.waitForTimeout(400);
     const acc = await page.evaluate(()=>{ const d=document.createElement('i'); d.style.color='var(--accent)'; document.body.appendChild(d); const c=getComputedStyle(d).color; d.remove(); return c; });
@@ -83,7 +84,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     ok('one list at a time: Category closes Unit, Where closes Category, Unit closes Where', o1.cat&&!o1.unit&&!o1.where && o2.where&&!o2.cat&&!o2.unit && o3.unit&&!o3.where&&!o3.cat, JSON.stringify({ o1, o2, o3 }));
     /* unset: the gap is the row gap, as before */
     await mk({ doc:D(), extra:LAY });
-    await hold(page.locator('.pill[data-pill="1"]').first());
+    await hold(page.locator('.pill[data-pill="1"]').first()); await OPEN_MORE(page);
     await page.locator('#sheet [data-w-open]').click(); await page.waitForTimeout(500);
     const d0 = await page.evaluate(()=>{ const r=e=>e.getBoundingClientRect(), g=document.querySelector('#sheet .wgrid'); const line=Math.max(r(document.querySelector('#sheet [data-w-open]')).bottom, r(document.querySelector('#sheet .edcell[data-row="qty"] .eqty')).bottom); return { above:Math.round(r(g).top-line), below:Math.round(r(document.querySelector('#ecHead')).top-r(g).bottom), attr:document.documentElement.getAttribute('data-lk-edit-l2gap') }; });
     ok('unset: no attribute, and the spacing is exactly v2.82\'s (12px above the list, 10px below)', d0.attr===null && d0.above===12 && d0.below===10, JSON.stringify(d0));

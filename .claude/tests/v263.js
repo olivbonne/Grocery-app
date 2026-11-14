@@ -14,6 +14,7 @@ const fs = require('fs'), path = require('path');
 const { chromium } = require(require.resolve('playwright', { paths: [__dirname, '/opt/node22/lib/node_modules', '/tmp'] }));
 const ROOT = path.resolve(__dirname, '..', '..');
 const results=[]; const ok=(n,c,x)=>results.push([n,!!c,x===undefined?'':String(x)]);
+const OPEN_MORE = async(page)=>{ if(!page) return; await page.evaluate(()=>{ const m=document.querySelector('#edMore'); if(m && m.getAttribute('aria-expanded')!=='true') m.click(); }); await page.waitForTimeout(400); };   /* SUPERSEDED by v3.10 (U5): the photo, Where to buy and the flags sit under Edit item's "More" — every hold that opens Edit item opens it too. Still protects everything this suite checked in them. */
 const FSTUB = `export const initializeApp=()=>({});export const getFirestore=()=>({});
 export const initializeFirestore=()=>({});export const persistentLocalCache=()=>({});
 export const persistentMultipleTabManager=()=>({});export const doc=()=>({});
@@ -84,7 +85,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
 
     /* Edit item */
     await mk({ docs:D() }, '');
-    await hold(page.locator('.pill', { hasText:'Beef steak' }).first());
+    await hold(page.locator('.pill', { hasText:'Beef steak' }).first()); await OPEN_MORE(page);
     const ed = await page.evaluate(()=>{ const s=document.querySelector('#sheet'); if(!s) return null; const t=s.innerText;
       const ti=s.querySelector('input#editName'); const first=s.querySelector('input,button');
       return { title: ti && ti.value, titleFirst: first===ti, conv:/If convenient/.test(t), sub:/Subcategory/.test(t), qty:/Quantity/.test(t) && !!s.querySelector('.edrow .eqty #qPlus'), measure:!!s.querySelector('button.editsec[data-w-open]'),
@@ -107,7 +108,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
 
     /* the look section */
     await mk({ docs:D(), extra:'localStorage.setItem("ml_epillbg","#FFE08A"); localStorage.setItem("ml_eprad","4");' }, '');
-    await hold(page.locator('.pill', { hasText:'Beef steak' }).first());
+    await hold(page.locator('.pill', { hasText:'Beef steak' }).first()); await OPEN_MORE(page);
     const lk = await page.evaluate(()=>{ const u=document.querySelector('#sheet .flagchip'); const c=getComputedStyle(u); return { bg:c.backgroundColor, r:c.borderTopLeftRadius }; });
     ok('Customise the look › Edit item: its background and roundness reach the pills', lk.bg==='rgb(255, 224, 138)' && lk.r==='4px', JSON.stringify(lk));
     const src = fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8');

@@ -14,6 +14,7 @@ const fs = require('fs'), path = require('path');
 const { chromium } = require(require.resolve('playwright', { paths: [__dirname, '/opt/node22/lib/node_modules', '/tmp'] }));
 const ROOT = path.resolve(__dirname, '..', '..');
 const results=[]; const ok=(n,c,x)=>results.push([n,!!c,x===undefined?'':String(x)]);
+const OPEN_MORE = async(page)=>{ if(!page) return; await page.evaluate(()=>{ const m=document.querySelector('#edMore'); if(m && m.getAttribute('aria-expanded')!=='true') m.click(); }); await page.waitForTimeout(400); };   /* SUPERSEDED by v3.10 (U5): Where to buy sits under Edit item's "More" — every hold that opens Edit item opens it too. Still protects everything this suite checked. */
 const FSTUB = `export const initializeApp=()=>({});export const getFirestore=()=>({});
 export const initializeFirestore=()=>({});export const persistentLocalCache=()=>({});
 export const persistentMultipleTabManager=()=>({});export const doc=()=>({});
@@ -55,7 +56,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
 
     /* the sheet */
     await mk({ docs:{ v101:DOC({ items:[it("1","Yogurt","fresh")], buyAgain:[] }) } }, '');
-    await hold(page.locator('.pill', { hasText:'Yogurt' }).first());
+    await hold(page.locator('.pill', { hasText:'Yogurt' }).first()); await OPEN_MORE(page);
     const sh = await page.evaluate(()=>{ const s=document.querySelector('#sheet'); const rows={};
       s.querySelectorAll('.editsec').forEach(r=>{ const l=r.querySelector('.editsec-l'); if(l) rows[l.textContent.trim()] = { tile:!!r.querySelector('.edval'), text:(r.querySelector('.edval')||{}).textContent||'', arrowIn:!!r.querySelector('.edval .editsec-ch') }; });
       const note=s.querySelector('input#editNote');
@@ -90,7 +91,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
 
     /* renaming moves the Regular, it does not duplicate it */
     await mk({ docs:{ v101:DOC({ items:[it("1","Tea","others",{where:"s1"})], buyAgain:[{name:"Tea",cat:"others",qty:1,where:"s1"}] }) } }, '');
-    await hold(page.locator('.pill', { hasText:'Tea' }).first());
+    await hold(page.locator('.pill', { hasText:'Tea' }).first()); await OPEN_MORE(page);
     await page.locator('#editName').fill('Green tea'); await page.locator('#saveBtn').click(); await page.waitForTimeout(500);
     c = await cache();
     ok('renaming an item renames its Regular (no duplicate), keeping where to buy', c.buyAgain.length===1 && c.buyAgain[0].name==='Green tea' && c.buyAgain[0].where==='s1', JSON.stringify(c.buyAgain));
@@ -98,12 +99,12 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     /* a Regular on the list, edited from Regulars */
     await mk({ docs:{ v101:DOC({ items:[it("1","Rice","bulk",{qty:1})], buyAgain:[{name:"Rice",cat:"bulk",qty:1},{name:"Oats",cat:"bulk",qty:1}] }) } }, '');
     await page.locator('[data-regc="bulk"]').first().click(); await page.waitForTimeout(500);
-    await hold(page.locator('.pill.reg-in, .pill.reg-out', { hasText:'Rice' }).first());
+    await hold(page.locator('.pill.reg-in, .pill.reg-out', { hasText:'Rice' }).first()); await OPEN_MORE(page);
     const isReg = await page.locator('#sheet #editName').count();
     if(isReg){ await page.locator('#qPlus').click(); await page.waitForTimeout(200); await page.locator('#saveBtn').click(); await page.waitForTimeout(500); }
     c = await cache();
     ok('Save on a Regular that is on the list updates the list item too', isReg && c.items.find(i=>i.name==='Rice').qty===2 && c.buyAgain.find(r=>r.name==='Rice').qty===2, JSON.stringify({ items:c.items, regs:c.buyAgain }));
-    await hold(page.locator('.pill.reg-in, .pill.reg-out', { hasText:'Oats' }).first());
+    await hold(page.locator('.pill.reg-in, .pill.reg-out', { hasText:'Oats' }).first()); await OPEN_MORE(page);
     if(await page.locator('#sheet #editName').count()){ await page.locator('#qPlus').click(); await page.waitForTimeout(200); await page.locator('#saveBtn').click(); await page.waitForTimeout(500); }
     c = await cache();
     ok('…and on a Regular not on the list, only the Regular', c.buyAgain.find(r=>r.name==='Oats').qty===2 && !c.items.some(i=>i.name==='Oats'), JSON.stringify({ regs:c.buyAgain, items:c.items.map(i=>i.name) }));

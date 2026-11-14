@@ -17,6 +17,7 @@ const { chromium } = require(require.resolve('playwright', { paths: [__dirname, 
 const ROOT = path.resolve(__dirname, '..', '..');
 const NEWER_V = +fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8').match(/const LIST_V = (\d+);/)[1] + 1;   // v2.78 (lesson 44): "a newer app" is always one past the app's own version, never a literal
 const results=[]; const ok=(n,c,x)=>results.push([n,!!c,x===undefined?'':String(x)]);
+const OPEN_MORE = async(page)=>{ if(!page) return; await page.evaluate(()=>{ const m=document.querySelector('#edMore'); if(m && m.getAttribute('aria-expanded')!=='true') m.click(); }); await page.waitForTimeout(400); };   /* SUPERSEDED by v3.10 (U5): the photo row sits under Edit item's "More" — every open of Edit item opens it too. Still protects everything this suite checked. */
 const FSTUB = `const S = window.__srv || (window.__srv = { docs:{}, subs:[], writes:[], refuse:false });
 S.subs = [];
 const J = v => v===undefined ? undefined : JSON.parse(JSON.stringify(v));
@@ -112,7 +113,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     const holdOpen = async(id)=>{ const t=page.locator(`#zoomer .pill[data-pill="${id}"]`); await t.evaluate(e=>e.scrollIntoView({ block:'center' })); await page.waitForTimeout(300); const b=await t.boundingBox();
       await page.mouse.move(b.x+b.width/2, b.y+b.height/2); await page.mouse.down(); await page.waitForTimeout(750); await page.mouse.up(); await page.waitForTimeout(700); };
     await mk({ srv:{ "lists/v101": PD }, cache:PD, extra:BASE });
-    await holdOpen("1");
+    await holdOpen("1"); await OPEN_MORE(page);
     const row = await page.evaluate(()=>{ const s=document.querySelector('#sheet'); return s ? [...s.querySelectorAll('button')].map(b=>b.textContent.trim()).filter(t=>/photo/i.test(t)) : null; });
     const chooser = page.locator('#sheet button', { hasText:/Choose a photo/ });
     const [fc] = await Promise.all([page.waitForEvent('filechooser'), chooser.click()]);
@@ -125,7 +126,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     ok('Edit item has a Photo row (Take / Choose); a chosen photo is saved as its own jpeg record and the item names it',
       row && row.some(t=>/Take a photo/.test(t)) && row.some(t=>/Choose a photo/.test(t)) && ph.recs.length===1 && ph.recs[0].d==='data:image/jpeg;base64,' && ph.recs[0].n<=150000 && ph.ph && ph.recs[0].k.endsWith('/'+ph.ph), JSON.stringify({ row, ph }));
     ok('…the tile shows the photo in place of the drawing (only that tile)', tile.img && !tile.other, JSON.stringify(tile));
-    await holdOpen("1");
+    await holdOpen("1"); await OPEN_MORE(page);
     await page.locator('#sheet button', { hasText:/^Remove$/ }).first().click(); await page.waitForTimeout(800);
     await page.locator('#sheet button', { hasText:/^Save$/ }).first().click().catch(()=>{}); await page.waitForTimeout(800);
     const rm = await page.evaluate(()=>{ const S=window.__srv, k=Object.keys(S.docs).filter(k=>/\/photos\//.test(k)); const c=JSON.parse(localStorage.getItem('ml_cache_v101')||'{}');
@@ -136,7 +137,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     await page.evaluate(()=>{ const S=window.__srv; const orig=S.docs; });
     await page.route('**/nothing', r=>r.abort());
     const refusedMsg = await (async()=>{ await page.evaluate(()=>{ window.__srv.refusePhotos=true; });
-      await holdOpen("2");
+      await holdOpen("2"); await OPEN_MORE(page);
       const [fc2] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#sheet button', { hasText:/Choose a photo/ }).click()]);
       await fc2.setFiles({ name:'p.png', mimeType:'image/png', buffer:PNG }); await page.waitForTimeout(1500);
       return page.evaluate(()=>(document.querySelector('#sheet')||{}).textContent||''); })();

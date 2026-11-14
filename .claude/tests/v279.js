@@ -20,6 +20,7 @@ const fs = require('fs'), path = require('path');
 const { chromium } = require(require.resolve('playwright', { paths: [__dirname, '/opt/node22/lib/node_modules', '/tmp'] }));
 const ROOT = path.resolve(__dirname, '..', '..');
 const results=[]; const ok=(n,c,x)=>results.push([n,!!c,x===undefined?'':String(x)]);
+const OPEN_MORE = async(page)=>{ if(!page) return; await page.evaluate(()=>{ const m=document.querySelector('#edMore'); if(m && m.getAttribute('aria-expanded')!=='true') m.click(); }); await page.waitForTimeout(400); };   /* SUPERSEDED by v3.10 (U5): the photo, Where to buy and the flags sit under Edit item's "More" — every hold that opens Edit item opens it too. Still protects everything this suite checked in them. */
 const FSTUB = `export const initializeApp=()=>({});export const getFirestore=()=>({});
 export const initializeFirestore=()=>({});export const persistentLocalCache=()=>({});
 export const persistentMultipleTabManager=()=>({});export const doc=()=>({});
@@ -58,7 +59,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     const top = (sel)=>page.evaluate(s=>{ const e=document.querySelector(s); return e ? Math.round(e.getBoundingClientRect().top) : null; }, sel);
 
     await mk({ doc:D(), extra:LAY });
-    await hold(page.locator('.pill[data-pill="1"]').first());
+    await hold(page.locator('.pill[data-pill="1"]').first()); await OPEN_MORE(page);
     /* measured from the sheet's top: the sheet grows upward when a list opens */
     const box = (sel)=>page.evaluate(s=>{ const e=document.querySelector(s); if(!e) return null; const r=e.getBoundingClientRect(), o=document.querySelector('#sheet').getBoundingClientRect().top; return { t:Math.round(r.top-o), b:Math.round(r.bottom-o) }; }, sel);
     const Q='#sheet .edcell[data-row="qty"] .eqty', U='#sheet [data-w-open]', C='#ecHead', W='#ewHead';

@@ -187,6 +187,11 @@ export const FR = {
   "Install": "Installer",
   "Got it": "Compris",
   "Not now": "Plus tard",
+  /* v3.10: the duplicates card and the ⋯ menu's Store row */
+  "Possible duplicates": "Doublons possibles",
+  "Merge": "Fusionner",
+  "Keep separate": "Garder séparés",
+  "Change": "Changer",
   "1 more message": "1 autre message",
   "{n} more messages": "{n} autres messages",
   "Copied the list — paste it into any app": "Liste copiée — collez-la dans n’importe quelle app",

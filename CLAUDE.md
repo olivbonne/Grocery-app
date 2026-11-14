@@ -114,6 +114,8 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
 - **Every item reaches the list through `putItem()` (v3.00)** — never push an item literal; "already on the list" is
   `itemTwin()` (name + note). The modes: "more" typed/Smart add, "max" occasions/10% shop, "keep" Regulars.
 - **A pick inside Edit item calls `renderSheet()`, not `render()` (v3.00)** — only Save, Delete, + Another and closing redraw the page.
+  v3.10 (U5): its photo, Where to buy and flags are drawn only under **More** (`editMoreOpen`, folded for each new item) —
+  a suite that uses them clicks `#edMore` first; the ⋯ menu's Store row is folded to the chosen shop until `#smStoreChange`.
 - **An item's `where` may name several shops (v2.35)** — their ids joined by commas, so it stays a string everywhere it is
   copied. Read it with `whereIds(i)`, never `i.where === id`.
 - **Views group items with `catShown(i.cat)`, never `i.cat === cat.id`** (v2.17). An item whose category is gone

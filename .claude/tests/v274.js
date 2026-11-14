@@ -13,6 +13,7 @@ const fs = require('fs'), path = require('path');
 const { chromium } = require(require.resolve('playwright', { paths: [__dirname, '/opt/node22/lib/node_modules', '/tmp'] }));
 const ROOT = path.resolve(__dirname, '..', '..');
 const results=[]; const ok=(n,c,x)=>results.push([n,!!c,x===undefined?'':String(x)]);
+const OPEN_MORE = async(page)=>{ if(!page) return; await page.evaluate(()=>{ const m=document.querySelector('#edMore'); if(m && m.getAttribute('aria-expanded')!=='true') m.click(); }); await page.waitForTimeout(400); };   /* SUPERSEDED by v3.10 (U5): the photo, Where to buy and the flags sit under Edit item's "More" — every hold that opens Edit item opens it too. Still protects everything this suite checked in them. */
 const FSTUB = `export const initializeApp=()=>({});export const getFirestore=()=>({});
 export const initializeFirestore=()=>({});export const persistentLocalCache=()=>({});
 export const persistentMultipleTabManager=()=>({});export const doc=()=>({});
@@ -50,11 +51,11 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
 
     /* 1. untouched */
     await mk({ doc:D() });
-    await hold(page.locator('.pill[data-pill="1"]').first());
+    await hold(page.locator('.pill[data-pill="1"]').first()); await OPEN_MORE(page);
     const u = await page.evaluate(()=>({ attrs:[...document.documentElement.attributes].map(a=>a.name).filter(n=>/^data-lk-edit-(rows|chcols|names|rgap)/.test(n)), disp:getComputedStyle(document.querySelector('#sheet .edrows')).display,
       cells:[...document.querySelectorAll('#sheet .edcell')].map(c=>c.dataset.row), sug:(()=>{ const s=document.querySelector('#sheet .ednotechips'); return s ? getComputedStyle(s).display : 'none'; })() }));
     ok('untouched, Edit item is laid out as before: no layout attribute, the rows a plain block', u.attrs.length===0 && u.disp==='block', JSON.stringify(u));
-    ok('…its rows are cells: note, quantity, unit, category, where to buy', JSON.stringify(u.cells)==='["note","photo","qty","unit","cat","where"]'   /* SUPERSEDED by v2.96: the Photo row is a cell after the note; still protects: every row is a cell, in this order */, JSON.stringify(u.cells));
+    ok('…its rows are cells: note, quantity, unit, category, where to buy', JSON.stringify(u.cells)==='["note","qty","unit","cat","more","photo","where"]'   /* SUPERSEDED by v3.10: More after Category, the photo and Where to buy under it (opened) */   /* SUPERSEDED by v2.96: the Photo row is a cell after the note; still protects: every row is a cell, in this order */, JSON.stringify(u.cells));
 
     /* 2. the look page */
     await page.keyboard.press('Escape'); await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil:'domcontentloaded' }); await page.waitForTimeout(1200);
@@ -69,7 +70,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
 
     /* 3. rows 2, names off, choices 3 */
     await mk({ doc:D(), extra:'localStorage.setItem("ml_lk_edit_rows","2"); localStorage.setItem("ml_lk_edit_names","0"); localStorage.setItem("ml_lk_edit_chcols","3");' });
-    await hold(page.locator('.pill[data-pill="1"]').first());
+    await hold(page.locator('.pill[data-pill="1"]').first()); await OPEN_MORE(page);
     let g = await page.evaluate(()=>{ const r=s=>document.querySelector('#sheet .edcell[data-row="'+s+'"]').getBoundingClientRect();
       return { cat:r('cat'), where:r('where'), lab:[...document.querySelectorAll('#sheet .edrows .editsec-l')].filter(l=>l.offsetParent!==null).length }; });
     ok('Rows 2: Category and Where to buy sit side by side', Math.abs(g.cat.top-g.where.top)<2 && g.where.left>g.cat.right-1, JSON.stringify(g));

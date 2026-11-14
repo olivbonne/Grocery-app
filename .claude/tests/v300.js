@@ -93,6 +93,8 @@ const seed = (o) => { o=o||{}; return `(() => {
     const h2 = await page.evaluate(()=>({ open:!!document.querySelector('#sheet .edcell[data-open="1"]'), sameTile:document.querySelector('#zoomer .pill[data-pill="2"]')===window.__tile, sameSheet:document.getElementById('sheet')===window.__sheet }));
     ok('…opening Category opens its list without rebuilding the page or the sheet element', h2.open && h2.sameTile && h2.sameSheet, JSON.stringify(h2));
     /* a tapped button takes the focus in the test browser (and on a computer): it must be redrawn, not kept as it was */
+    /* SUPERSEDED by v3.10 (U5): the flags sit under Edit item's More — open it (in place, renderSheet) first. Still protects the flag redraw. */
+    await page.evaluate(()=>{ const m=document.querySelector('#edMore'); if(m && m.getAttribute('aria-expanded')!=='true') m.click(); }); await page.waitForTimeout(400);
     await page.locator('#sheet [data-flag]').first().click(); await page.waitForTimeout(250);
     const fl = await page.evaluate(()=>{ const b=document.querySelector('#sheet [data-flag]'); return { cls:b.className, pressed:b.getAttribute('aria-pressed'), style:b.getAttribute('style')||'' }; });
     await page.locator('#sheet [data-flag]').first().click(); await page.waitForTimeout(250);

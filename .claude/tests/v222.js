@@ -89,6 +89,8 @@ const seed = (store, extra) => `(() => {
     /* SUPERSEDED by v2.57: the note is a folded section like Category (the household's item 11) — open it first.
        Still protects: the editor has a note box and "Where to buy: Anywhere". */
     if(await page.locator('#enHead').count()){ await page.locator('#enHead').click(); await page.waitForTimeout(400); }
+    /* SUPERSEDED by v3.10 (U5): Where to buy sits under More — open it first. Still protects the same. */
+    await page.evaluate(()=>{ const m=document.querySelector('#edMore'); if(m && m.getAttribute('aria-expanded')!=='true') m.click(); }); await page.waitForTimeout(400);
     ok('a long press opens the editor, with a note box and "Where to buy: Anywhere"', await page.locator('#editNote').count()===1
        && /Where to buy\s*Anywhere/.test(await page.evaluate(()=>(document.querySelector('#ewHead')||{}).textContent||'')), '');
     await page.locator('#editNote').fill('2L full cream');

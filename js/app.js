@@ -6,29 +6,29 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.09";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.09";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.09";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.09";
-import { compareStores, worthIt } from "./compare.js?v=3.09";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.09";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.09";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.09";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.09";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.09";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.09";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.09";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.09";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.09";   /* v2.45 (architecture review S17): the app in French as well as English */
-import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.09";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
-import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.09";   /* v3.04: the cards' logic (architecture review L17) */
-import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.09";   /* v3.05 (H2): previews use their own database */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.10";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.10";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.10";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.10";
+import { compareStores, worthIt } from "./compare.js?v=3.10";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.10";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.10";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.10";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.10";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.10";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.10";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.10";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.10";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.10";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.10";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.10";   /* v3.04: the cards' logic (architecture review L17) */
+import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.10";   /* v3.05 (H2): previews use their own database */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here.
    v3.05: a Vercel preview gets the preview project (js/env.js). */
 const IS_PREVIEW = (()=>{ try{ return isPreviewHost(location.hostname); }catch(e){ return false; } })();
 const firebaseConfig = firebaseConfigFor(IS_PREVIEW ? location.hostname : "", window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" });
-const APP_VERSION = "v3.09";
+const APP_VERSION = "v3.10";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 
 /* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
@@ -1555,10 +1555,10 @@ function mergeCardHTML(){
   const cls=mergeClusters(); if(!cls.length) return "";
   const rows=cls.slice(0,2).map(c=>`<div class="mergerow">
       <div class="mergerow-txt"><span class="mergerow-names">${esc(c.items.map(i=>cap(i.name)).join(", "))}</span><span class="mergerow-into">→ ${esc(cap(c.canon))}</span></div>
-      <div class="mergerow-btns"><button class="merge-go" data-merge-go="${esc(c.sig)}">Merge</button><button class="merge-x" data-merge-x="${esc(c.sig)}" aria-label="Keep separate">×</button></div>
+      <div class="mergerow-btns"><button class="merge-go" data-merge-go="${esc(c.sig)}">${t("Merge")}</button><button class="merge-x" data-merge-x="${esc(c.sig)}" aria-label="${t("Keep separate")}">×</button></div>
     </div>`).join("");
   return `<div class="predict mergecard">
-    <div class="predict-top"><span class="predict-ttl">🔀 Possible duplicates</span><button class="predict-why" data-merge-hide>Not now</button></div>
+    <div class="predict-top"><span class="predict-ttl">🔀 ${t("Possible duplicates")}</span><button class="predict-why" data-merge-hide>${t("Not now")}</button></div>
     <div class="mergelist">${rows}</div>
   </div>`;
 }
@@ -2136,9 +2136,10 @@ purch = state.purch;
 if(shopMode && !(state.items||[]).length){ shopMode=false; }   // nothing to shop — open on Plan
 let toast=null, toastAction=null, undoSnap=null, _toastT=null, catEntry=null, editing=null, configured=false;
 let editCatOpen=false, editSubOpen=false;   // v1.26 collapsible Category / Subcategory sections in the edit sheet
+var editMoreOpen = false;   // v3.10 (U5): Edit item's "More" (photo, where to buy, flags) — open for this item only
 var editNoteOpen=false, _editFoldKey="", _aeFoldKey="";   // v2.57 item 9: the Note section; which edit was last shown folded. var: boot-order rule
 /* v2.57 item 9a: an edit always opens folded — when the edit shown is not the one shown last, every section closes */
-function editFold(key){ if(key!==_editFoldKey){ _editFoldKey=key; editCatOpen=editSubOpen=editWhereOpen=editNoteOpen=false; } }
+function editFold(key){ if(key!==_editFoldKey){ _editFoldKey=key; editCatOpen=editSubOpen=editWhereOpen=editNoteOpen=false; editMoreOpen=false; } }
 function aeFold(key){ if(key!==_aeFoldKey){ _aeFoldKey=key; editCatOpen=editSubOpen=editWhereOpen=editNoteOpen=false; } }
 /* v2.57 item 9d: note suggestions — notes used before for this name (items and Regulars), then NOTE_HINTS for its stem */
 function noteParts(n){ return String(n||"").split(/\s*,\s*/).map(x=>x.trim()).filter(Boolean); }
@@ -5146,7 +5147,7 @@ function sheetsBefore(){ const o = {};
 function sheetsAfter(o){ const seen = {};
   document.querySelectorAll(".sheet[id]").forEach(s => { seen[s.id] = 1; const was = o && o[s.id]; if(!was) { delete _sheetMinH[s.id]; delete _sheetMinK[s.id]; return; }
     s.style.animation = "none";
-    if(s.id === "sheet"){ const k = [...s.querySelectorAll('.edcell[data-open="1"]')].map(c => c.dataset.row).join(",");
+    if(s.id === "sheet"){ const k = [...s.querySelectorAll('.edcell[data-open="1"]')].map(c => c.dataset.row).join(",") + (s.querySelector('#edMore[aria-expanded="true"]') ? "|more" : "");   // v3.10: More opening or closing re-measures too
       if(_sheetMinK[s.id] !== k){ delete _sheetMinH[s.id]; s.style.minHeight = ""; _sheetMinK[s.id] = k; }   // v2.79: a list opened or closed — the sheet takes its new height
       const h = s.getBoundingClientRect().height; _sheetMinH[s.id] = Math.max(_sheetMinH[s.id] || 0, h); s.style.minHeight = _sheetMinH[s.id] + "px"; }
     s.scrollTop = was.top; });
@@ -6595,10 +6596,12 @@ function wirePageEdit(){
   const ra = app.querySelector("#optPageReset"); if(ra) ra.onclick = () => { if(!confirm(t("Put the Shop and Plan pages back as they were?"))) return; try{ localStorage.removeItem("ml_pagelay"); }catch(e){} render(); };
 }
 var smStoreAdding = false;   // v2.72: the menu's "＋ New shop" row is showing. var: render() reads it at boot
+var smStoreOpen = false;   // v3.10: the Store row shows every shop only after "Change"; folded again after a pick
 function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRealStore(st.id));
+  const shops = [{id:"auto",name:t("Auto-detect")},{id:"home",name:t("Home")},...STORES.filter(s=>!storeOverride(s.id).hidden).map(s=>storeById(s.id)),...(state.stores||[]).filter(s=>!storeOverride(s.id).hidden),{id:"other",name:t("Other")}].filter(Boolean), cur = shops.find(s => s.id === storeSel);   // v3.10
   const item = (id, icon, label) => `<button class="smitem" id="${id}" role="menuitem">${icon}<span>${label}</span></button>`;
   return `<div class="smbg" id="smBg"><div class="smenu" id="shopMenuEl" role="menu" aria-label="${t("More")}">
-    ${/* v2.72: choose the shop here, as Settings › Shopping › Store does — the menu stays open */""}<div class="smtiles smtext"><span class="smtlabel">${t("Store")}</span><div class="smcols smstores">${[{id:"auto",name:t("Auto-detect")},{id:"home",name:t("Home")},...STORES.filter(s=>!storeOverride(s.id).hidden).map(s=>storeById(s.id)),...(state.stores||[]).filter(s=>!storeOverride(s.id).hidden),{id:"other",name:t("Other")}].filter(Boolean).map(s=>`<button class="colbtn ${storeSel===s.id?'on':''}" data-sm-store="${esc(s.id)}">${esc(s.name)}</button>`).join("")}<button class="colbtn smadd" data-sm-storeadd>${t("＋ New shop")}</button></div>${smStoreAdding?`<div class="smaddrow"><input id="smStoreName" placeholder="${t("Shop name")}" aria-label="${t("Shop name")}" autocomplete="off" /><button class="colbtn" id="smStoreAddGo" style="width:auto;padding:0 12px">${t("Add")}</button></div>`:""}</div>
+    ${/* v2.72: choose the shop here, as Settings › Shopping › Store does — the menu stays open */""}<div class="smtiles smtext"><span class="smtlabel">${t("Store")}</span>${(!smStoreOpen && !smStoreAdding) ? `<div class="smcols smstores"><button class="colbtn on" data-sm-storecur aria-expanded="false">${esc(cur ? cur.name : t("Auto-detect"))}</button><button class="colbtn smchange" id="smStoreChange" aria-expanded="false">${t("Change")}</button></div>` : `<div class="smcols smstores">${shops.map(s=>`<button class="colbtn ${storeSel===s.id?'on':''}" data-sm-store="${esc(s.id)}">${esc(s.name)}</button>`).join("")}<button class="colbtn smadd" data-sm-storeadd>${t("＋ New shop")}</button></div>`}${smStoreAdding?`<div class="smaddrow"><input id="smStoreName" placeholder="${t("Shop name")}" aria-label="${t("Shop name")}" autocomplete="off" /><button class="colbtn" id="smStoreAddGo" style="width:auto;padding:0 12px">${t("Add")}</button></div>`:""}</div>
     <div class="smgroup">${t("At the shop")}</div>
     ${item("smCard", CARD_SVG(18), cardsGet().length ? t("Show my card") : t("Add a membership card"))}
     ${item("smRcpt", CAMERA_SVG(18), t("Read a receipt"))}
@@ -6653,7 +6656,7 @@ function wirePriceDiag(){
   const bg = app.querySelector("#pdBg"); if(bg) bg.onclick = e => { if(e.target === bg){ priceDiagOpen = false; render(); } };
 }
 function wireShopMenu(){
-  const b = app.querySelector("#shopMenu"); if(b) b.onclick = () => { shopMenuOpen = !shopMenuOpen; render(); };
+  const b = app.querySelector("#shopMenu"); if(b) b.onclick = () => { shopMenuOpen = !shopMenuOpen; if(shopMenuOpen) smStoreOpen = false; render(); };
   const close = () => { shopMenuOpen = false; };
   const bg = app.querySelector("#smBg"); if(bg) bg.onclick = e => { if(e.target === bg){ close(); render(); } };
   const on = (id, fn) => { const e = app.querySelector("#" + id); if(e) e.onclick = () => { close(); fn(); }; };
@@ -6680,7 +6683,8 @@ function wireShopMenu(){
   app.querySelectorAll("[data-sm-itememoji]").forEach(c => c.onclick = () => { const want=c.dataset.smItememoji==="1"; if(itemEmojiOn()!==want) setItemEmoji(want); });   // v2.91
   app.querySelectorAll("[data-sm-sort]").forEach(c => c.onclick = () => setSort(c.dataset.smSort));
   /* v2.72: the shop, exactly as Settings' data-opt-store; render() leaves shopMenuOpen true */
-  const smPick = v => { if(storeSel !== v){ storeSel = v; localStorage.setItem("ml_store", v); locState = {checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(v === "auto") ensureLocCheck(); } render(); };
+  const smPick = v => { if(storeSel !== v){ storeSel = v; localStorage.setItem("ml_store", v); locState = {checked:false,busy:false,ts:0,err:0,nearId:null,dist:Infinity}; if(v === "auto") ensureLocCheck(); } smStoreOpen = false; render(); };
+  app.querySelectorAll("#smStoreChange, [data-sm-storecur]").forEach(c => c.onclick = () => { smStoreOpen = true; render(); });   // v3.10
   app.querySelectorAll("[data-sm-store]").forEach(c => c.onclick = () => smPick(c.dataset.smStore));
   { const box = app.querySelector(".smstores"), on = box && box.querySelector(".on"); if(on) box.scrollTop = Math.max(0, on.offsetTop - box.offsetTop - 4); }   // the chosen shop is in view
   app.querySelectorAll("[data-sm-storeadd]").forEach(c => c.onclick = () => { smStoreAdding = !smStoreAdding; render(); const f = app.querySelector("#smStoreName"); if(f) f.focus(); });
@@ -9256,6 +9260,7 @@ function editSheet(){
   const btnDelStyle = "display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;box-sizing:border-box;padding:0 14px;border-radius:var(--epillrad, 999px);border:1.5px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:var(--edfs, 15px)";
   const btnSaveStyle = "flex:1;height:44px;box-sizing:border-box;padding:0 14px;border-radius:var(--epillrad, 999px);border:1.5px solid var(--btn);background:var(--btn);color:#fff;font-weight:800;font-size:var(--edfs, 15px)";
   const selCat = CAT(editing.cat);
+  const moreSum = [ whereNames(whereIds({ where:editing.where||"" })).join(", "), (editing.tags||[]).includes("urgent") ? t("Urgent") : "", (editing.tags||[]).includes("discount") ? t("If on sale") : "", (isItem && editing.ph) ? t("Photo") : "" ].filter(Boolean).join(" · ");   // v3.10 (U5): what is set under More
   return `<div class="sheet-bg kbpin" id="sheetBg"><div class="sheet" id="sheet" data-look="edit">
     ${/* v2.63 item D: the title IS the name field; then flags, Quantity, Measure, price, Note, Category, Where to buy (no Subcategory) */""}
     ${/* v2.70: the last price sits in the title row; the flags move down to just above the buttons */""}
@@ -9263,17 +9268,18 @@ function editSheet(){
     <div class="edtitlerow"><input id="editName" class="edtitle" value="${esc(editing.name)}" aria-label="${t("Item name")}" />${priceLine(editing.name, { compact:true, note:editing.note||"" })}</div>
     <div class="edrows">${/* v2.74: the rows, each with its open choices, in a cell — Customise the look › Sheets › Layout lays them out */""}
     <div class="edcell" data-row="note">${noteSecHTML(editing.note||"", editing.name, { input:'id="editNote"', chip:"data-en-chip" })}</div>
-    ${photoSecHTML(editing)}${/* v2.96 PHOTOS hook */""}
     <div class="edcell" data-row="qty"><div class="editsec edrow"><span class="editsec-l">${t("Quantity")}</span><span class="eqty"><button id="qMinus" aria-label="${t("Less")}">−</button><span>${editing.qty||1}</span><button id="qPlus" aria-label="${t("More")}">+</button></span></div></div>
     <div class="edcell" data-row="unit"${wOpen==="edit"?' data-open="1"':''}><button class="editsec" data-w-open="edit" aria-expanded="${wOpen==="edit"}" aria-label="${t("Unit")}"><span class="editsec-l">${t("Unit")}</span><span class="editsec-v"><span class="edval">${esc(editing.weight||t("Unit"))} <span class="editsec-ch">${wOpen==="edit"?'▾':'▸'}</span></span></span></button>
     ${weightChips("edit", editing.weight)}</div>
     <div class="edcell" data-row="cat"${editCatOpen?' data-open="1"':''}><button class="editsec" id="ecHead" aria-label="${t("Category")}"><span class="editsec-l">${t("Category")}</span><span class="editsec-v"><span class="edval">${selCat?`${catIcon(selCat,14)} ${esc(catLabel(selCat))}`:'—'} <span class="editsec-ch">${editCatOpen?'▾':'▸'}</span></span></span></button>
     ${editCatOpen ? `<div class="edchips">${chipsHTML(editing.cat)}<button class="catchip" id="ecAddCat" style="border-style:dashed;font-weight:800">${t("＋ New")}</button></div>` : ""}</div>
-    ${(isItem || editing.kind==="ba") ? (()=>{ const ws=rcSavedStores(), w=editing.where||"", wl=whereIds({ where:w }), cur=whereNames(wl).join(", ");
+    ${(isItem || editing.kind==="ba") ? `<div class="edcell" data-row="more"><button class="editsec edmore" id="edMore" aria-expanded="${editMoreOpen}" aria-label="${t("More")}"><span class="editsec-l">${t("More")}</span><span class="editsec-v"><span class="edval">${esc(moreSum)} <span class="editsec-ch">${editMoreOpen?'▾':'▸'}</span></span></span></button></div>` : ""}
+    ${(isItem || editing.kind==="ba") && editMoreOpen ? `${photoSecHTML(editing)}${/* v2.96 PHOTOS hook */""}` : ""}
+    ${(isItem || editing.kind==="ba") && editMoreOpen ? (()=>{ const ws=rcSavedStores(), w=editing.where||"", wl=whereIds({ where:w }), cur=whereNames(wl).join(", ");
       return `<div class="edcell" data-row="where"${editWhereOpen?' data-open="1"':''}><button class="editsec" id="ewHead" aria-label="${t("Where to buy")}"><span class="editsec-l">${t("Where to buy")}</span><span class="editsec-v"><span class="edval">${esc(cur||t("Anywhere"))} <span class="editsec-ch">${editWhereOpen?'▾':'▸'}</span></span></span></button>
       ${editWhereOpen ? `<div class="edchips"><button class="catchip" data-ew="" style="${!w?'background:var(--btn);border-color:var(--btn);color:#fff':''}">${t("Anywhere")}</button>${ws.map(s=>`<button class="catchip" data-ew="${esc(s.id)}" style="${wl.includes(s.id)?'background:var(--btn);border-color:var(--btn);color:#fff':''}" aria-pressed="${wl.includes(s.id)}">${esc(s.name)}</button>`).join("")}</div>` : ""}</div>`; })() : ""}
     </div>
-    ${(isItem || editing.kind==="ba") ? `<div class="edchips edflags" style="flex-wrap:nowrap">${[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If on sale")}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}
+    ${(isItem || editing.kind==="ba") && editMoreOpen ? `<div class="edchips edflags" style="flex-wrap:nowrap">${[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If on sale")}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}
     <div style="display:flex;gap:8px;margin-top:16px">
       <button id="delBtn" style="${btnDelStyle}">${TRASH_SVG(17)}${t("Delete")}</button>
       ${isItem ? `<button class="ed-another" id="edAnother" style="${btnDelStyle.replace(/#C24A33/g,"var(--line)").replace("color:var(--line)","color:var(--ink)")}" aria-label="${esc(tf("Add another {name}", { name:cap(editing.name||"") }))}">+ ${t("Another")}</button>` : ""}
@@ -9537,6 +9543,7 @@ function wireEditSheet(){
          item saved by an older build both keep working. */
       editing.starred = (editing.tags||[]).includes("urgent");
       renderSheet(); });
+      const emo=app.querySelector("#edMore"); if(emo) emo.onclick=()=>{ editMoreOpen=!editMoreOpen; if(!editMoreOpen){ editWhereOpen=false; } renderSheet(); };   // v3.10 (U5)
       const ech=app.querySelector("#ecHead"); if(ech) ech.onclick=()=>{ editCatOpen=!editCatOpen; if(editCatOpen){ wOpen=null; editWhereOpen=false; } renderSheet(); edShowEnd(document.querySelector("#sheet"), "cat"); };
       const ewh=app.querySelector("#ewHead"); if(ewh) ewh.onclick=()=>{ editWhereOpen=!editWhereOpen; if(editWhereOpen){ wOpen=null; editCatOpen=false; } renderSheet(); edShowEnd(document.querySelector("#sheet"), "where"); };   // v2.22 R17
       /* v2.35: shops toggle on and off — several can be ticked; Anywhere clears them */

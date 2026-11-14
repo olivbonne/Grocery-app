@@ -17,6 +17,7 @@ const fs = require('fs'), path = require('path');
 const { chromium } = require(require.resolve('playwright', { paths: [__dirname, '/opt/node22/lib/node_modules', '/tmp'] }));
 const ROOT = path.resolve(__dirname, '..', '..');
 const results=[]; const ok=(n,c,x)=>results.push([n,!!c,x===undefined?'':String(x)]);
+const OPEN_MORE = async(page)=>{ if(!page) return; await page.evaluate(()=>{ const m=document.querySelector('#edMore'); if(m && m.getAttribute('aria-expanded')!=='true') m.click(); }); await page.waitForTimeout(400); };   /* SUPERSEDED by v3.10 (U5): the photo, Where to buy and the flags sit under Edit item's "More" — every hold that opens Edit item opens it too. Still protects everything this suite checked in them. */
 const FSTUB = `export const initializeApp=()=>({});export const getFirestore=()=>({});
 export const initializeFirestore=()=>({});export const persistentLocalCache=()=>({});
 export const persistentMultipleTabManager=()=>({});export const doc=()=>({});
@@ -114,7 +115,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
 
     /* 9 ─ the Edit item sheet */
     await mk({ docs:{ v101:DOC({ items:[it("1","Yogurt","dairy",{ note:"" }), it("2","Milk","dairy")] }) } });
-    await hold('[data-pill="1"]');
+    await hold('[data-pill="1"]'); await OPEN_MORE(page);
     const ed = await page.evaluate(()=>{ const sh=document.querySelector('#sheet'); if(!sh) return null;
       const flags=sh.querySelector('[data-flag]'), qty=sh.querySelector('#qMinus'), labs=[...sh.querySelectorAll('.editsec-l')];
       /* SUPERSEDED by v2.70: the flags moved to just above Delete / Save (the household). Still protected: one label size, no
@@ -141,7 +142,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     /* 10a ─ dragging an item on the Shop page */
     await mk({ docs:{ v101:DOC({ items:[it("1","Apples","fruit"), it("2","Bananas","fruit"), it("3","Cherries","fruit")] }) } });
     const ca = await center('[data-pill="1"]');
-    await hold('[data-pill="3"]', ca);
+    await hold('[data-pill="3"]', ca); await OPEN_MORE(page);
     const its = ((await cache())||{}).items||[];
     const ord = its.filter(i=>typeof i.pos==='number').sort((a,b)=>a.pos-b.pos).map(i=>i.name);
     ok('10 · hold and drag an item: Cherries moves first in Fruit, kept as pos with a fresh stamp', ord[0]==='Cherries' && its.find(i=>i.name==='Cherries').ts>0, JSON.stringify(ord));
@@ -160,7 +161,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     await shot('listopts');
     await page.locator('[data-list-more="v202"]').click(); await page.waitForTimeout(300);
     const top = await center('[data-list="v101"]');
-    await hold('[data-list="v303"]', top);
+    await hold('[data-list="v303"]', top); await OPEN_MORE(page);
     const order = await page.evaluate(()=>JSON.parse(localStorage.getItem('ml_lists')).map(l=>l.code));
     ok('12 · hold and drag a list to move it (Party to the top)', order[0]==='v303', JSON.stringify(order));
 

@@ -89,9 +89,15 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     /* 6. ⋯ › Store */
     await mk({ doc:DOC() });
     await menu();
+    /* SUPERSEDED by v3.10: the Store row is folded to the chosen shop and Change — open it to pick, and a pick folds it again
+       (the chosen shop then shows as the row's one button). Still protects: the pick is stored, the menu stays open, the
+       chosen shop is the one shown as chosen; "＋ New shop" (behind Change) still adds and picks a shop. */
+    await page.locator('#smStoreChange').click(); await page.waitForTimeout(300);
     await page.locator('[data-sm-store="cdan"]').click(); await page.waitForTimeout(400);
-    const m1 = await page.evaluate(()=>({ sel:localStorage.getItem('ml_store'), open:!!document.querySelector('#shopMenuEl'), on:!!document.querySelector('[data-sm-store="cdan"].on') }));
+    const m1 = await page.evaluate(()=>{ const c=document.querySelector('[data-sm-storecur]'), d=[...document.querySelectorAll('.smstores [data-sm-store]')];
+      return { sel:localStorage.getItem('ml_store'), open:!!document.querySelector('#shopMenuEl'), on: !!(c && /Dandenong|cdan/i.test(c.textContent)) || !!document.querySelector('[data-sm-store="cdan"].on'), cur:c && c.textContent }; });
     ok('⋯ › Store picks a shop, and the menu stays open', m1.sel==='cdan' && m1.open && m1.on, JSON.stringify(m1));
+    await page.locator('#smStoreChange').click(); await page.waitForTimeout(300);
     await page.locator('[data-sm-storeadd]').click(); await page.waitForTimeout(300);
     await page.locator('#smStoreName').fill('Corner deli'); await page.locator('#smStoreName').press('Enter'); await page.waitForTimeout(500);
     c = await cache(); const deli=(c.stores||[]).find(s=>s.name==='Corner deli');

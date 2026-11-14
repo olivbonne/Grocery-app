@@ -18,6 +18,7 @@ const fs = require('fs'), path = require('path');
 const { chromium } = require(require.resolve('playwright', { paths: [__dirname, '/opt/node22/lib/node_modules', '/tmp'] }));
 const ROOT = path.resolve(__dirname, '..', '..');
 const results=[]; const ok=(n,c,x)=>results.push([n,!!c,x===undefined?'':String(x)]);
+const OPEN_MORE = async(page)=>{ if(!page) return; await page.evaluate(()=>{ const m=document.querySelector('#edMore'); if(m && m.getAttribute('aria-expanded')!=='true') m.click(); }); await page.waitForTimeout(400); };   /* SUPERSEDED by v3.10 (U5): the photo, Where to buy and the flags sit under Edit item's "More" — every hold that opens Edit item opens it too. Still protects everything this suite checked in them. */
 const FSTUB = `export const initializeApp=()=>({});export const getFirestore=()=>({});
 export const initializeFirestore=()=>({});export const persistentLocalCache=()=>({});
 export const persistentMultipleTabManager=()=>({});export const doc=()=>({});
@@ -56,7 +57,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
 
     /* 1. the Unit choices */
     await mk({ doc:D() });
-    await hold(page.locator('.pill[data-pill="1"]').first());
+    await hold(page.locator('.pill[data-pill="1"]').first()); await OPEN_MORE(page);
     await page.locator('#sheet [data-w-open]').click(); await page.waitForTimeout(400);
     const ch = await page.evaluate(()=>({ chips:[...document.querySelectorAll('#sheet .wgrid [data-w-set]')].map(b=>b.textContent.trim()), counters:[...document.querySelectorAll('#sheet .wcount')].map(r=>r.querySelector('.wcount-v').textContent.trim()) }));   // SUPERSEDED by v2.77: no separate label — an empty counter reads its unit, in the order g, kg, L, Pack
     ok('the Unit choices are Unit, cup, tsp, Tbsp, then counters for Pack, g, kg and L', JSON.stringify(ch.chips)==='["Unit","cup","tsp","Tbsp"]' && JSON.stringify(ch.counters)==='["500g","kg","L","Pack"]', JSON.stringify(ch));
@@ -79,7 +80,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     ok('…and Save keeps "1L"', await page.evaluate(()=>JSON.parse(localStorage.getItem('ml_cache_v101')).items[0].weight)==='1L', '');
 
     /* 2. the flag's name, the font sizes */
-    await hold(page.locator('.pill[data-pill="1"]').first());
+    await hold(page.locator('.pill[data-pill="1"]').first()); await OPEN_MORE(page);
     const fs1 = await page.evaluate(()=>{ const s=document.querySelector('#sheet'), f=e=>e?getComputedStyle(e).fontSize:null;
       return { flags:[...s.querySelectorAll('.flagchip')].map(b=>b.textContent.trim()), title:f(s.querySelector('.edtitle')),
         rest:[...new Set([f(s.querySelector('.editsec-l')), f(s.querySelector('.edval')), f(s.querySelector('.flagchip')), f(s.querySelector('#saveBtn')), f(s.querySelector('#delBtn')), f(s.querySelector('.eqty span'))])] }; });
@@ -88,14 +89,14 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
 
     /* 3. rows 2: an opened Unit stays put; variable: flags fit their text */
     await mk({ doc:D(), extra:'localStorage.setItem("ml_lk_edit_rows","2");' });
-    await hold(page.locator('.pill[data-pill="1"]').first());
+    await hold(page.locator('.pill[data-pill="1"]').first()); await OPEN_MORE(page);
     await page.locator('#sheet [data-w-open]').click(); await page.waitForTimeout(400);
     const g = await page.evaluate(()=>{ const r=s=>document.querySelector('#sheet .edcell[data-row="'+s+'"]'), q=r('qty').getBoundingClientRect(), u=document.querySelector('#sheet [data-w-open]').getBoundingClientRect(), w=document.querySelector('#sheet .wgrid').getBoundingClientRect(), e=document.querySelector('#sheet .edrows').getBoundingClientRect();
       return { sameLine:Math.abs(q.top-u.top)<3, beside:u.left>q.right-1, below:w.top>=u.bottom-1, full:Math.abs(w.width-e.width)<3 }; });
     ok('Rows 2: opening Unit leaves it beside Quantity; its choices go below, full width', g.sameLine && g.beside && g.below && g.full, JSON.stringify(g));
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-rows2.png') });
     await mk({ doc:D(), extra:'localStorage.setItem("ml_lk_edit_rows","v");' });
-    await hold(page.locator('.pill[data-pill="1"]').first());
+    await hold(page.locator('.pill[data-pill="1"]').first()); await OPEN_MORE(page);
     const fl = await page.evaluate(()=>[...document.querySelectorAll('#sheet .flagchip')].map(b=>({ w:b.getBoundingClientRect().width, sw:b.scrollWidth })));
     const rowW = await page.evaluate(()=>document.querySelector('#sheet .edflags').getBoundingClientRect().width);
     ok('Rows variable: Urgent and If on sale are as wide as their text', fl.length===2 && fl.every(f=>f.w < rowW*0.45), JSON.stringify({ fl, rowW }));
@@ -103,7 +104,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     /* 4. a Regular not on the list */
     await mk({ doc:D({ buyAgain:[{ name:"Rice", cat:"bulk", qty:1, weight:"", ts:1 }], stores:[{ id:"cdan", name:"Dandenong market", aisles:[] }] }) });
     await page.locator('[data-regc="bulk"]').click(); await page.waitForTimeout(400);
-    await hold(page.locator('.pill[data-reg-add^="Rice|"]').first());
+    await hold(page.locator('.pill[data-reg-add^="Rice|"]').first()); await OPEN_MORE(page);
     const rg = await page.evaluate(()=>{ const s=document.querySelector('#sheet'); return s ? { where:!!s.querySelector('#ewHead'), flags:[...s.querySelectorAll('.flagchip')].map(b=>b.textContent.trim()) } : null; });
     ok('a Regular not on the list: Edit item has Where to buy, Urgent and If on sale', rg && rg.where && rg.flags.includes('Urgent') && rg.flags.includes('If on sale'), JSON.stringify(rg));
     await page.locator('#sheet .flagchip', { hasText:'Urgent' }).click(); await page.waitForTimeout(300);
@@ -127,6 +128,8 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     const many = Array.from({length:16},(_,i)=>({ id:'c'+i, name:'Shop number '+(i+1), aisles:[] }));
     await mk({ doc:D({ stores:many }) });
     await page.locator('#shopMenu').click(); await page.waitForTimeout(400);
+    /* SUPERSEDED by v3.10: the Store row is folded to the chosen shop and Change — open it. Still protects: every shop shows, unclipped. */
+    await page.locator('#smStoreChange').click(); await page.waitForTimeout(300);
     const sm = await page.evaluate(()=>{ const b=document.querySelector('.smstores'); return { clip:b.scrollHeight>b.clientHeight+1, n:b.querySelectorAll('[data-sm-store]').length }; });
     ok('the Shop ⋯ menu shows every shop (no clipped box)', !sm.clip && sm.n>=19, JSON.stringify(sm));
   } catch(e){ ok('suite ran to the end', false, (e.stack||e.message).slice(0,300)); }
