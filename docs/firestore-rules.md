@@ -32,6 +32,22 @@ New lists also get stronger codes from v2.25 on: 128 random bits (25 characters)
 generator, instead of 8 characters from `Math.random()`. Existing lists keep their codes. To move the household's
 list to a strong code, make a new list and use Settings › Restore from a backup file, or copy items across.
 
+## v3.19 — shelf prices (the price feed)
+
+Two changes. The list record may hold two new fields, `feedPins` (the products pinned in Edit item › More › Shelf prices:
+a map, at most 500 entries) and `feedAt` (when the prices were last fetched: a whole number); and the daily count gains a
+`prices` counter (`/api/prices`, at most +1 a call like the others). **Publish them to BOTH projects — the live one first,
+then `market-list-preview-fcccf` — BEFORE switching Shelf prices on** (Settings › Smart features). A list that never pins
+writes neither field, so nothing changes until then; but until the rules are published, the phone that pins a product or
+runs the weekly refresh has its list write refused and shows "Not syncing — check Firestore rules" (the other phones carry
+on), and the server's `prices` count is refused (the call still goes through, held to the in-memory fallback count).
+
+Two Rules Playground tests before publishing:
+1. Simulation type **update**, location `/lists/<a list you are on>`, Authenticated as a member, with the document's
+   current fields plus `feedAt: 1` → **allowed**.
+2. Simulation type **update**, location `/quota/abc/days/2026-11-20`, Authenticated, Firebase UID `abc`, data `{ prices: 1 }`
+   → **allowed**.
+
 ## v3.18 — an account can delete its own record
 
 Settings › Your data › Delete my account now deletes the person's `users/{uid}` record (until v3.17 it was overwritten

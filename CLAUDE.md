@@ -12,10 +12,10 @@ for byte. Later phases move cohesive parts of `js/app.js` into modules of their 
 live household sync, Vercel serves `main` as static files. Used as an iPhone home-screen app, portrait-only,
 max-width 480px.
 
-Eight serverless functions in `api/` (CommonJS, Vercel, `maxDuration` 60s in `vercel.json`):
+Nine serverless functions in `api/` (CommonJS, Vercel, `maxDuration` 60s in `vercel.json`):
 `parse.js` (Smart add), `recipe.js` (recipe from text, a link, a TikTok or a photo),
 `recipe-search.js`, `receipt.js` (a receipt photo → items and prices, v2.09; it never logs the photo
-or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and what it lists; built from receipt.js, the same no-logging rule), `card.js` (v2.35, a photo of a membership card → its name and number, only when the phone cannot read the barcode itself; the same no-logging rule, and never the number) `fridge.js` (v2.94, a photo of the fridge or pantry → the products it shows, matched to the list; the same no-logging rule) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, or a `[feedback]` log line). Their shared helper is `lib/guard.js` (v2.39) and `lib/report.js` (v3.11 — a 5xx becomes one GitHub issue per function and error code, never what was sent). Their keys and settings are env vars — see `docs/ai-setup.md`.
+or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and what it lists; built from receipt.js, the same no-logging rule), `card.js` (v2.35, a photo of a membership card → its name and number, only when the phone cannot read the barcode itself; the same no-logging rule, and never the number) `fridge.js` (v2.94, a photo of the fridge or pantry → the products it shows, matched to the list; the same no-logging rule) `prices.js` (v3.19, shelf prices from Coles / Woolworths / ALDI through Apify — the actors and their input are env vars, the reply read tolerantly; never logs the search or the products) and `feedback.js` (Report a problem, v2.13 → a GitHub issue, or a `[feedback]` log line). Their shared helper is `lib/guard.js` (v2.39) and `lib/report.js` (v3.11 — a 5xx becomes one GitHub issue per function and error code, never what was sent). Their keys and settings are env vars — see `docs/ai-setup.md`.
 
 ## Conventions
 - **Versioning:** bump the version by 0.01 per batch of app changes with `node .claude/tools/bump.js N.NN`
@@ -132,7 +132,8 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   top-level field (v2.09 `prices`, v2.16 `aisle`, v2.20 `memb`, v2.23 `templates`, v2.24 `spend`, v2.26 `looks`, v2.27 `aislemap`) must be named there, in the two default
   `state` literals, in `listDoc()` (the v2.15 backups) and in `restoreList()`. Presence is the exception: v2.23 `shopping`
   (who is at a shop now) is synced, so it is in the literals and `subscribe()`, but never backed up or restored. v2.58 `parts` (which parts of the list live as records of their own) is named in `subscribe()` and both literals, and
-  deliberately NOT in `listDoc()` or `restoreList()`.
+  deliberately NOT in `listDoc()` or `restoreList()`. v3.19 `feedPins` / `feedAt` (shelf prices) are in `listDoc()` ONLY when set (the v2.75 `clr`
+  precedent): a new list-record field must also be in the rules' `listOk()`, and until the owner publishes them a phone that writes it is refused.
 
 ## Workflow
 - Develop on the branch the session is given, push, and open a PR into `main`.

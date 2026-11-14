@@ -6,29 +6,29 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit, del } from "./store.js?v=3.18";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.18";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.18";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.18";
-import { compareStores, worthIt } from "./compare.js?v=3.18";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.18";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.18";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.18";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.18";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.18";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.18";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.18";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.18";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.18";   /* v2.45 (architecture review S17): the app in French as well as English */
-import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.18";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
-import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.18";   /* v3.04: the cards' logic (architecture review L17) */
-import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.18";   /* v3.05 (H2): previews use their own database */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit, del } from "./store.js?v=3.19";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.19";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.19";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.19";
+import { compareStores, worthIt } from "./compare.js?v=3.19";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.19";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.19";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.19";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.19";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.19";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.19";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.19";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.19";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.19";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.19";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.19";   /* v3.04: the cards' logic (architecture review L17) */
+import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.19";   /* v3.05 (H2): previews use their own database */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here.
    v3.05: a Vercel preview gets the preview project (js/env.js). */
 const IS_PREVIEW = (()=>{ try{ return isPreviewHost(location.hostname); }catch(e){ return false; } })();
 const firebaseConfig = firebaseConfigFor(IS_PREVIEW ? location.hostname : "", window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" });
-const APP_VERSION = "v3.18";
+const APP_VERSION = "v3.19";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 
 /* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
@@ -167,7 +167,7 @@ function showAmt(w){
 /* A first launch reloads once on its own (the v1.63 slot migration) before sign-in, so the answer is kept for the session. */
 var _prefsFresh = (()=>{ try{ if(sessionStorage.getItem("ml_prefsfresh") === "1") return true;
   const f = !localStorage.getItem("ml_theme") && !localStorage.getItem("ml_appmig163"); if(f) sessionStorage.setItem("ml_prefsfresh", "1"); return f; }catch(e){ return false; } })();
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_notesg$|ml_regnow$|ml_jk_|ml_srvbak_)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_notesg$|ml_regnow$|ml_feed$|ml_jk_|ml_srvbak_)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -2086,7 +2086,7 @@ function switchList(code){ const wasPlan = (view==="plan"); listsOpen=false; if(
   reloadLearn();
   try{ collapse = JSON.parse(localStorage.getItem(LS.collapse) || '{"cats":[],"ba":false}'); }catch(e){ collapse={cats:[],ba:false}; }
   collapse.checked = false;   // v2.10: the cart always opens folded; a tap unfolds it for the session
-  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[], looks:{}, aislemap:{}, itemTomb:{}, parts:[], clr:{}, mv:0 };
+  state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:(getLists().find(l=>l.code===code)||{}).name||"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[], looks:{}, aislemap:{}, itemTomb:{}, parts:[], clr:{}, feedPins:{}, feedAt:0, mv:0 };
   try{ const c=JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state=c; dropTube(); aiAdopt(); } }catch(e){}
   resetItemSigs();
   if(!state.purch || typeof state.purch!=="object") state.purch={};
@@ -2126,7 +2126,7 @@ function playPlan(add){ if(!soundOn) return;
   } catch(e){} }
 let lastPop=null;
 
-let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[], looks:{}, aislemap:{}, itemTomb:{}, parts:[], clr:{}, mv:0 };
+let state = { items:[], buyAgain:[], baTomb:{}, stores:[], storeMeta:{}, members:[], categories:null, name:"", baMeta:{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:0, purch:{}, plan:{days:{},recipes:[]}, prices:{}, aisle:{}, memb:{}, shopping:{}, templates:[], spend:[], looks:{}, aislemap:{}, itemTomb:{}, parts:[], clr:{}, feedPins:{}, feedAt:0, mv:0 };
 rememberList(listCode);
 try { const c = JSON.parse(localStorage.getItem(LS.cache) || "null"); if(c){ state = c; dropTube(); aiAdopt(); } } catch(e){}
 resetItemSigs();
@@ -2443,7 +2443,7 @@ function subscribe(){
          an older app may have removed it without a tombstone. */
       const trust = rv >= 2 && (+state.mv || 0) >= 2;
       const mi = split ? { items:state.items||[], tomb:state.itemTomb||{} } : mergeItems(d.items||[], d.itemTomb||{}, state.items||[], state.itemTomb||{}, id => trust || dirtyIds.has(id));
-      state = { items:mi.items, itemTomb:mi.tomb, mv:rv, parts: Array.isArray(d.parts) ? d.parts : [], clr:(d.clr && typeof d.clr==="object") ? d.clr : {}, buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]}, prices: moved("prices") ? (state.prices||{}) : (d.prices||{}), aisle: d.aisle||{}, memb: d.memb||{}, shopping: d.shopping||{}, templates: Array.isArray(d.templates)?d.templates:[], spend: moved("spend") ? (Array.isArray(state.spend)?state.spend:[]) : (Array.isArray(d.spend)?d.spend:[]), looks: (d.looks && typeof d.looks==="object") ? d.looks : {}, aislemap: (d.aislemap && typeof d.aislemap==="object") ? d.aislemap : {} };
+      state = { items:mi.items, itemTomb:mi.tomb, mv:rv, parts: Array.isArray(d.parts) ? d.parts : [], clr:(d.clr && typeof d.clr==="object") ? d.clr : {}, buyAgain:mg.list, baTomb:mg.tomb, stores:d.stores||[], storeMeta:d.storeMeta||{}, members:d.members||[], categories:d.categories||null, name:d.name||"", baMeta:d.baMeta||{label:"Buy again",emoji:"↩",img:"",pos:99}, predictReset:d.predictReset||0, purch:mgPurch, plan: d.plan || {days:{},recipes:[]}, prices: moved("prices") ? (state.prices||{}) : (d.prices||{}), aisle: d.aisle||{}, memb: d.memb||{}, shopping: d.shopping||{}, templates: Array.isArray(d.templates)?d.templates:[], spend: moved("spend") ? (Array.isArray(state.spend)?state.spend:[]) : (Array.isArray(d.spend)?d.spend:[]), looks: (d.looks && typeof d.looks==="object") ? d.looks : {}, aislemap: (d.aislemap && typeof d.aislemap==="object") ? d.aislemap : {}, feedPins: (d.feedPins && typeof d.feedPins==="object") ? d.feedPins : {}, feedAt: +d.feedAt||0 };   // v3.19 feedPins / feedAt: shelf prices
       resetItemSigs();
       /* v2.75: another phone cleared prices / spending (state.clr): drop what this phone still holds from before it */
       if(partOn("prices")) partMerge("prices", []); if(partOn("spend")) partMerge("spend", []);
@@ -2455,6 +2455,7 @@ function subscribe(){
       // converge: if our merged view holds Buy-again / restock history the server was missing, write it back once
       if((!moved("regulars") && baSig(mg.list, mg.tomb) !== baSig(d.buyAgain||[], d.baTomb||{})) || purchSig(state.purch||{}) !== purchSig(d.purch||{}) || (!split && itemsSig(mi.items, mi.tomb) !== itemsSig(d.items||[], d.itemTomb||{}))) save();
       if(split){ startItems(); MOVED_PARTS.forEach(n => { if(moved(n)) startPart(n); }); maybeMigrateParts(d, snap); maybeClearFrozen(); } else maybeMigrate(d, snap); }
+      if(snap.exists() && !snap.metadata.hasPendingWrites && !fromCache) feedRefreshSoon();   // v3.19: once per launch, after the list loaded from the server
     else if(snap.exists() && snap.metadata.hasPendingWrites){ /* keep local optimistic state */ }
     if(!syncing && !fromCache) dirtyIds.clear();   // v2.51: after the merge, which reads it
     ensureCats();
@@ -3317,7 +3318,8 @@ function priceLastT(a){ return (a && a.length) ? (a[a.length-1].t||0) : 0; }
 function priceRecord(name, rec){ const k=priceKey(name); if(!k) return;
   if(!state.prices || typeof state.prices!=="object") state.prices={};
   /* the same receipt read twice is one record, not two */
-  const a=(state.prices[k]||[]).filter(x=>!(x.d===rec.d && x.sn===rec.sn && Math.abs((+x.p||0)-rec.p)<0.005));
+  const a=(state.prices[k]||[]).filter(x=>!(x.d===rec.d && x.sn===rec.sn && Math.abs((+x.p||0)-rec.p)<0.005)
+    && !(rec.f && x.f && x.s===rec.s));   // v3.19: a shelf price replaces that chain's last one, so the weekly feed never pushes receipts out of the 12
   a.push(rec); state.prices[k]=a.slice(-PRICE_PER_ITEM);
   const ks=Object.keys(state.prices);
   if(ks.length>PRICE_ITEMS && !partOn("prices")){   // v2.75: the cap kept ONE record small; as records of their own, no key is evicted
@@ -3372,6 +3374,77 @@ function priceLine(name, o){ const a=priceLookup(name); if(!a || !a.length) retu
   const seen={}, others=[]; seen[last.sn||""]=1;
   for(let i=a.length-2;i>=0 && others.length<2;i--){ const x=a[i]; if(seen[x.sn||""]) continue; seen[x.sn||""]=1; others.push(x); }
   return `<div class="pricemem">Last paid <b>${priceUnitTxt(last)}</b>${last.sn?` at ${esc(last.sn)}`:""} · ${esc(priceDay(last.d))}${others.map(x=>`<span class="pricemem-o">${priceMoney(x.p)}${x.sn?` at ${esc(x.sn)}`:""} · ${esc(priceDay(x.d))}</span>`).join("")}</div>`; }
+/* v3.19 shelf prices (docs/price-feed.md): pinned supermarket products, priced once a week through /api/prices (Apify).
+   state.feedPins: priceKey(name) → { coles?, woolworths?, aldi? } each { id, name, size }; state.feedAt: the last refresh.
+   The Edit item draft lives on editing._feed (applyEdit and saveBA copy fields by name, so it never reaches an item) and is
+   written to state.feedPins only on Save. */
+const FEED_CHAINS = ["coles", "woolworths", "aldi"], CHAIN_LABEL = { coles:"Coles", woolworths:"Woolworths", aldi:"ALDI" };
+const FEED_WEEK = 7*24*3600*1000;
+var _feedTried = false;   // var: once per launch
+function feedPinsFor(name){ const k=priceKey(name); return (k && state.feedPins && state.feedPins[k]) || null; }
+function feedDraft(){ if(!editing._feed) editing._feed = { pins:Object.assign({}, feedPinsFor(editing.name)||{}), open:false, res:{}, dirty:false }; return editing._feed; }
+function feedErr(c){ return c==="not_configured" ? t("Shelf prices are not set up yet (see docs/price-feed.md).")
+  : (c==="feed_key" || c==="feed_credit" || c==="feed_actor" || c==="feed_shape") ? t("The price service did not answer as expected — tell the person who set it up.")
+  : c==="timeout" ? t("The price service took too long. Try again.")
+  : c==="quota" ? t("The free reading allowance is used up for today. Try again tomorrow.")
+  : t("Couldn't reach the price service."); }
+function feedSecHTML(){ if(!feedOn() || !editing) return ""; const f=feedDraft();
+  const val = FEED_CHAINS.filter(c=>f.pins[c]).map(c=>CHAIN_LABEL[c]).join(" · ") || t("None");
+  const ON = "background:var(--btn);border-color:var(--btn);color:#fff";
+  const chip = (c, p, key, on) => `<button class="catchip" data-feed-pick="${c}|${key}" aria-pressed="${on}" style="${on?ON:''}">${esc(p.name||p.id)}${p.size?` · ${esc(p.size)}`:""}${p.price?` · ${priceMoney(p.price)}`:""}</button>`;
+  return `<div class="edcell" data-row="feed"${f.open?' data-open="1"':''}><button class="editsec" id="efHead" aria-expanded="${f.open}" aria-label="${t("Shelf prices")}"><span class="editsec-l">${t("Shelf prices")}</span><span class="editsec-v"><span class="edval">${esc(val)} <span class="editsec-ch">${f.open?'▾':'▸'}</span></span></span></button>
+    ${f.open ? FEED_CHAINS.map(c=>{ const r=f.res[c]||{}, pin=f.pins[c], prods=r.products||[];
+      const pinChip = (pin && !prods.some(p=>p.id===pin.id)) ? chip(c, pin, "pin", true) : "";
+      return `<div class="feedgrp" data-feed-chain="${c}"><div class="optsub">${esc(CHAIN_LABEL[c])}</div>
+      <div class="edchips">${pinChip}${prods.map((p,i)=>chip(c, p, i, !!(pin && pin.id===p.id))).join("")}<button class="catchip" data-feed-search="${c}" style="border-style:dashed;font-weight:800"${r.busy?" disabled":""}>${t("Search")}</button></div>
+      ${r.busy ? `<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>${esc(tf("Searching {x}…", { x:CHAIN_LABEL[c] }))}</div>`
+        : r.err ? `<div class="rcbusy" role="status" aria-live="polite">${esc(r.err)}</div>`
+        : (r.products && !prods.length) ? `<div class="rcbusy" role="status" aria-live="polite">${t("Nothing found.")}</div>` : ""}</div>`; }).join("") : ""}</div>`; }
+function feedSearch(c){ const f=editing && editing._feed; if(!f) return; const q=String(editing.name||"").trim().slice(0,60); if(!q) return;
+  f.res[c] = { busy:true }; renderSheet();
+  const ctl=(typeof AbortController!=="undefined") ? new AbortController() : null;
+  const timer=setTimeout(()=>{ if(ctl) ctl.abort(); }, 55000);
+  const done = r => { clearTimeout(timer); if(!editing || editing._feed!==f) return; f.res[c]=r; renderSheet(); };
+  apiFetch("/api/prices", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ mode:"search", chain:c, q }), signal: ctl ? ctl.signal : undefined })
+    .then(r=>r.json().catch(()=>({})).then(j=>({ ok:r.ok, j })))
+    .then(({ok,j})=>{ if(!ok){ uiTrail("prices search failed: " + ((j && j.code) || "http")); done({ err:feedErr(j && j.code) }); return; }
+      done({ products:(Array.isArray(j.products)?j.products:[]).slice(0,8) }); })
+    .catch(e=>{ done({ err:feedErr(e && e.name==="AbortError" ? "timeout" : "") }); }); }
+function feedPick(c, key){ const f=editing && editing._feed; if(!f) return; const r=f.res[c]||{};
+  const p = key==="pin" ? f.pins[c] : (r.products||[])[+key]; if(!p) return;
+  if(f.pins[c] && f.pins[c].id===p.id) delete f.pins[c]; else f.pins[c] = { id:String(p.id), name:String(p.name||"").slice(0,120), size:String(p.size||"").slice(0,40) };
+  f.dirty = true; renderSheet(); }
+/* on Save: the draft goes to the list under the item's (possibly new) name */
+function feedCommit(oldName){ const f=editing && editing._feed; if(!f || !f.dirty) return;
+  const k=priceKey(editing.name); if(!k) return;
+  const m=Object.assign({}, state.feedPins||{}), ok=priceKey(oldName||"");
+  if(ok && ok!==k) delete m[ok];
+  const pins={}; FEED_CHAINS.forEach(c=>{ if(f.pins[c]) pins[c]=f.pins[c]; });
+  if(Object.keys(pins).length) m[k]=pins; else delete m[k];
+  state.feedPins = m; }
+/* the weekly refresh: once per launch, after the list loaded; one phone does it (feedAt is saved FIRST) */
+function feedRefreshSoon(){ if(_feedTried) return; _feedTried = true; setTimeout(()=>feedRefreshMaybe(), 4000); }
+function feedRefreshMaybe(tries){ if(!feedOn()) return;
+  const P=state.feedPins||{}, pins=[], who={};
+  Object.keys(P).forEach(k=>{ FEED_CHAINS.forEach(c=>{ const p=P[k] && P[k][c]; if(p && p.id){ pins.push({ chain:c, id:p.id }); (who[c+"|"+p.id] = who[c+"|"+p.id] || []).push(k); } }); });
+  if(!pins.length) return;
+  if(Date.now() - (+state.feedAt||0) <= FEED_WEEK) return;
+  /* a list whose prices are records of their own: wait until they have arrived, so the merge does not lose them */
+  if(partOn("prices") && !_partsSeen.prices){ if((tries||0) < 10) setTimeout(()=>feedRefreshMaybe((tries||0)+1), 3000); return; }
+  state.feedAt = Date.now(); save();
+  const today = dayKey(new Date()), chunks=[];
+  for(let i=0;i<pins.length;i+=60) chunks.push(pins.slice(i, i+60));
+  let got = 0;
+  /* a failure is logged and feedAt kept: the next try is in a week. Resetting it on a feed_* error would make every launch
+     of every phone call a feed that is broken until the owner fixes its settings — and each call is counted and costs. */
+  chunks.reduce((pr, ch)=>pr.then(()=>{ const ctl=(typeof AbortController!=="undefined") ? new AbortController() : null; const timer=setTimeout(()=>{ if(ctl) ctl.abort(); }, 55000);
+    return apiFetch("/api/prices", { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ mode:"refresh", pins:ch }), signal: ctl ? ctl.signal : undefined })
+      .then(r=>r.json().catch(()=>({})).then(j=>({ ok:r.ok, j })))
+      .then(({ok,j})=>{ clearTimeout(timer); if(!ok){ console.warn("[feed] refresh failed: " + ((j && j.code) || "http")); uiTrail("prices refresh failed: " + ((j && j.code) || "http")); return; }
+        (Array.isArray(j.prices)?j.prices:[]).forEach(x=>{ const p=+x.price; if(!(p>0) || !CHAIN_LABEL[x.chain]) return;
+          (who[x.chain+"|"+x.id]||[]).forEach(k=>{ priceRecord(k, { p, q:1, s:"feed-"+x.chain, sn:CHAIN_LABEL[x.chain]+" online", d:today, w:String(x.size||""), t:Date.now(), f:1 }); got++; }); }); })
+      .catch(e=>{ clearTimeout(timer); console.warn("[feed] refresh failed: " + (e && e.name==="AbortError" ? "timeout" : "network")); }); }), Promise.resolve())
+    .then(()=>{ if(got){ save(); softRender(); } }); }
 /* a receipt line ticks off the list item it names — same whole-word rule, unchecked items only */
 function rcMatchItem(name, used){ const k=priceKey(name); if(!k) return null;
   return state.items.find(i=>!i.checked && !(used && used.has(i.id)) && (()=>{ const ik=priceKey(i.name); return ik && (ik===k || (ik.length>=3 && priceWordsIn(ik,k)) || (k.length>=3 && priceWordsIn(k,ik))); })()) || null; }
@@ -3456,6 +3529,7 @@ function editAnother(){ if(!editing || editing.kind!=="item") return;
 function saveEverywhere(){ if(!editing) return;
   if(editing.kind==="item"){ if(!(editing.name||"").trim()) return;
     const it=state.items.find(i=>i.id===editing.id); const orig = it ? { name:it.name, cat:it.cat, note:it.note||"" } : null;   // before applyEdit changes it
+    feedCommit(it ? it.name : editing.name);   // v3.19: the pins chosen in Shelf prices
     applyEdit();
     regularFrom({ name:editing.name, cat:editing.cat, qty:editing.qty, weight:editing.weight, sub:editing.sub, note:editing.note, where:editing.where, ph:editing.ph||"" }, orig);   // v2.96 PHOTOS hook: ph ("" = none)
     editing=null; save(); render(); showToast(tf("Saved — also in Regulars")); return; }
@@ -3466,6 +3540,7 @@ function saveEverywhere(){ if(!editing) return;
     if(editing.note!==undefined) li.note=String(editing.note||"").trim().slice(0,140);
     if(editing.where!==undefined) li.where=editing.where||"";
     markDirty(li.id); }
+  feedCommit(editing.origName);   // v3.19
   saveBA(); }
 function removeEditing(){ moveToBuyAgain([{name:editing.name,cat:editing.cat,qty:editing.qty||1,weight:editing.weight||"",sub:editing.sub||"",note:editing.note||"",where:editing.where||"",...(editing.ph?{ph:editing.ph}:{})}]);   // v2.96 PHOTOS hook: ph
   histLog("rm", editing.name); histLog("regadd", editing.name);
@@ -3709,7 +3784,9 @@ async function exportListText(){
    would be undone by the next phone that syncs. Undo is offered straight after. The list code is never written
    into a backup — it is the key to the list. */
 const SNAP_KEEP = 7;
-function listDoc(s){ return Object.assign((s.clr && typeof s.clr==="object" && Object.keys(s.clr).length) ? { clr:s.clr } : {}, { items:s.items||[], buyAgain:s.buyAgain||[], baTomb:s.baTomb||{}, stores:s.stores||[], storeMeta:s.storeMeta||{},
+function listDoc(s){ return Object.assign((s.clr && typeof s.clr==="object" && Object.keys(s.clr).length) ? { clr:s.clr } : {},
+  (s.feedPins && typeof s.feedPins==="object" && Object.keys(s.feedPins).length) ? { feedPins:s.feedPins } : {}, (+s.feedAt>0) ? { feedAt:Math.round(+s.feedAt) } : {},   // v3.19: only when set (the clr precedent), so a list that never pins writes what it wrote before
+  { items:s.items||[], buyAgain:s.buyAgain||[], baTomb:s.baTomb||{}, stores:s.stores||[], storeMeta:s.storeMeta||{},
   members:s.members||[], categories:s.categories===undefined?null:s.categories, name:s.name||"", baMeta:s.baMeta||null, predictReset:s.predictReset||0,
   purch:s.purch||{}, plan:s.plan||{days:{},recipes:[]}, prices:s.prices||{}, aisle:s.aisle||{}, memb:s.memb||{}, templates:Array.isArray(s.templates)?s.templates:[], spend:Array.isArray(s.spend)?s.spend:[], looks:(s.looks && typeof s.looks==="object") ? s.looks : {}, aislemap:(s.aislemap && typeof s.aislemap==="object") ? s.aislemap : {} }); }   // v2.23: occasions are kept; who is shopping is presence, not data — never backed up
 function snapKey(code){ return "ml_snap_"+code; }
@@ -3843,7 +3920,7 @@ function restoreList(list, label){
   const P=(list.plan && typeof list.plan==="object") ? list.plan : null;
   state.items = Array.isArray(list.items) ? list.items : [];
   if(P) state.plan = { days:P.days||{}, recipes:P.recipes||[], saved:Array.isArray(P.saved)?P.saved:[] };
-  if(list.prices && typeof list.prices==="object") state.prices = list.prices; if(list.memb && typeof list.memb==="object") state.memb = list.memb; if(Array.isArray(list.templates)) state.templates = list.templates; if(Array.isArray(list.spend)) state.spend = list.spend; if(list.looks && typeof list.looks==="object") state.looks = list.looks; if(list.aislemap && typeof list.aislemap==="object") state.aislemap = list.aislemap;
+  if(list.prices && typeof list.prices==="object") state.prices = list.prices; if(list.memb && typeof list.memb==="object") state.memb = list.memb; if(Array.isArray(list.templates)) state.templates = list.templates; if(Array.isArray(list.spend)) state.spend = list.spend; if(list.looks && typeof list.looks==="object") state.looks = list.looks; if(list.aislemap && typeof list.aislemap==="object") state.aislemap = list.aislemap; if(list.feedPins && typeof list.feedPins==="object") state.feedPins = list.feedPins; if(+list.feedAt>0) state.feedAt = +list.feedAt;   // v3.19
   if(Array.isArray(list.stores)) state.stores = list.stores;
   if(list.storeMeta && typeof list.storeMeta==="object") state.storeMeta = list.storeMeta;
   if(list.categories!==undefined) state.categories = list.categories;
@@ -6423,6 +6500,8 @@ function wireTenSheet(){
 var cmpOpen = false;   // the comparison sheet. var: render() reads it at boot
 /* v2.47 shared shelf prices (opt-in, plan item 5) — the logic is js/shared.js. Households who turn it on pool their unit
    prices at the national chains; "Which store is cheaper" fills its gaps with the median of at least two households. */
+/* v3.19 shelf prices (docs/price-feed.md): a preference, default off — ml_feed is in APP_EXCLUDE_BOOT and APP_EXCLUDE */
+function feedOn(){ try{ return localStorage.getItem("ml_feed")==="1"; }catch(e){ return false; } }
 function sharePxOn(){ try{ return localStorage.getItem("ml_sharepx")==="1"; }catch(e){ return false; } }
 function shareEmailAcct(){ const u=_auth && _auth.currentUser; return !!(u && !u.isAnonymous); }
 function sharedContribute(r){ if(!r || !r.lines || !sharePxOn() || !shareEmailAcct() || !db) return;
@@ -6484,7 +6563,9 @@ function wireCmp(){
    people on it, like the prices it comes from. */
 var spendOpen = false, spendM = "";   // the sheet, and the month it shows ("" = the latest). var: render() reads them at boot
 function spendAll(){ const log = Array.isArray(state.spend) ? state.spend : [];
-  return log.concat(spendFromPrices(state.prices, log, k => (knownEntry(k) || {}).cat || guessCat(k) || "others")); }
+  /* v3.19: a shelf price from the feed (f:1) is not a purchase — never counted as spending */
+  const P = {}; for(const [k, recs] of Object.entries(state.prices || {})){ const a = Array.isArray(recs) ? recs.filter(r => !(r && r.f)) : []; if(a.length) P[k] = a; }
+  return log.concat(spendFromPrices(P, log, k => (knownEntry(k) || {}).cat || guessCat(k) || "others")); }
 function spendMonthName(m, year){ const [y, mo] = String(m).split("-").map(Number);
   return new Date(y, mo - 1, 1).toLocaleDateString(dateLoc(), year ? { month:"long", year:"numeric" } : { month:"long" }); }
 function spendSheetHTML(){ const all = spendAll(), months = spendMonths(all).slice(0, 12);
@@ -8109,6 +8190,7 @@ function wireOptions(){
     if(histOpen.has(k)) histOpen.delete(k); else histOpen.add(k); render(); });
   const hc=app.querySelector("#optHistClear"); if(hc) hc.onclick=()=>{ histClear(histView||listCode); render(); };
   const orc=app.querySelector("#optRcpt"); if(orc) orc.onclick=()=>rcPick();   // v2.09
+  app.querySelectorAll("[data-opt-feed]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_feed", b.dataset.optFeed); }catch(e){} render(); if(feedOn()) feedRefreshMaybe(); });   // v3.19
   app.querySelectorAll("[data-opt-sharepx]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_sharepx", b.dataset.optSharepx); }catch(e){} render(); });   // v2.47
   app.querySelectorAll("[data-opt-rcptask]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_rcptask", b.dataset.optRcptask); }catch(e){} render(); });   // v2.17
   const opc=app.querySelector("#optPriceClear"); if(opc) opc.onclick=()=>{ if(confirm("Forget every remembered price, and what you spent, in this list?")){ const now=Date.now(); state.prices={}; state.spend=[]; state.clr=Object.assign({}, state.clr, { prices:now, spend:now }); save(); render(); } };
@@ -8715,7 +8797,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_notesg$|ml_regnow$|ml_jk_|ml_srvbak_)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_notesg$|ml_regnow$|ml_feed$|ml_jk_|ml_srvbak_)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -9177,6 +9259,7 @@ function optionsBody(){
       ${row(t("Ask after a shop"), `<div class="seg"><button data-opt-rcptask="1" class="${rcptAskOn()?'on':''}">${t("On")}</button><button data-opt-rcptask="0" class="${!rcptAskOn()?'on':''}">${t("Off")}</button></div>`)}
       ${row(t("Share prices with other households"), `<div class="seg"><button data-opt-sharepx="1" class="${sharePxOn()?'on':''}">${t("On")}</button><button data-opt-sharepx="0" class="${!sharePxOn()?'on':''}">${t("Off")}</button></div>`)}<div class="opthint">${t("Off unless you turn it on. When on, the prices you confirm from receipts at Coles, Woolworths and ALDI are pooled with other households that also turned it on — the chain, the item, the price and the day, never your list, your shop or your card — and “Which store is cheaper” fills its gaps with the middle price from at least two households. Sharing yours needs your email in Your account; seeing others' does not.")}</div>
       ${(sharePxOn() && !shareEmailAcct()) ? `<div style="margin:0 2px 8px;font-size:12.5px;color:var(--muted2);font-weight:600">${t("Add your email in Your account to share yours — you can already see others'.")}</div>` : ""}
+      ${row(t("Shelf prices from the supermarkets' websites"), `<div class="seg"><button data-opt-feed="1" class="${feedOn()?'on':''}">${t("On")}</button><button data-opt-feed="0" class="${!feedOn()?'on':''}">${t("Off")}</button></div>`)}<div class="opthint">${/* v3.19 */""}${t("Once a week the app asks a price service (Apify) for the shelf prices of the products you pinned in Edit item › More › Shelf prices. Product names and ids are sent, nothing about you. Household use only — the supermarkets' terms do not allow scraping.")}</div>
       <button class="optaction" id="optCompare">${/* v2.21 */""}${t("Which store is cheaper for this list")}</button>
       <button class="optaction" id="optSpend">${/* v2.24 */""}${t("What we spend")}</button>
       <div style="margin:6px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">${(()=>{ const pc=Object.keys(state.prices||{}).length; return pc ? (pc===1 ? tf("{n} item with a remembered price. Kept in this list, shared only with the people on it.", { n:pc }) : tf("{n} items with a remembered price. Kept in this list, shared only with the people on it.", { n:pc })) : t("Read a receipt after a shop and the app remembers what you paid at each store. Free."); })()}</div>
@@ -9424,6 +9507,7 @@ function editSheet(){
     ${(isItem || editing.kind==="ba") && editMoreOpen ? (()=>{ const ws=rcSavedStores(), w=editing.where||"", wl=whereIds({ where:w }), cur=whereNames(wl).join(", ");
       return `<div class="edcell" data-row="where"${editWhereOpen?' data-open="1"':''}><button class="editsec" id="ewHead" aria-label="${t("Where to buy")}"><span class="editsec-l">${t("Where to buy")}</span><span class="editsec-v"><span class="edval">${esc(cur||t("Anywhere"))} <span class="editsec-ch">${editWhereOpen?'▾':'▸'}</span></span></span></button>
       ${editWhereOpen ? `<div class="edchips"><button class="catchip" data-ew="" style="${!w?'background:var(--btn);border-color:var(--btn);color:#fff':''}">${t("Anywhere")}</button>${ws.map(s=>`<button class="catchip" data-ew="${esc(s.id)}" style="${wl.includes(s.id)?'background:var(--btn);border-color:var(--btn);color:#fff':''}" aria-pressed="${wl.includes(s.id)}">${esc(s.name)}</button>`).join("")}</div>` : ""}</div>`; })() : ""}
+    ${(isItem || editing.kind==="ba") && editMoreOpen ? feedSecHTML() : ""}${/* v3.19 shelf prices */""}
     </div>
     ${(isItem || editing.kind==="ba") && editMoreOpen ? `<div class="edchips edflags" style="flex-wrap:nowrap">${[{k:"urgent",label:t("Urgent")},{k:"discount",label:t("If on sale")}].map(f=>{ const on=(editing.tags||[]).includes(f.k); return `<button class="flagchip${on?' on':''}" data-flag="${f.k}"><span aria-hidden="true">${FLAG_ICON[f.k]}</span>${f.label}</button>`; }).join("")}</div>` : ""}
     <div style="display:flex;gap:8px;margin-top:16px">
@@ -9690,6 +9774,9 @@ function wireEditSheet(){
          item saved by an older build both keep working. */
       editing.starred = (editing.tags||[]).includes("urgent");
       renderSheet(); });
+      { const efh=app.querySelector("#efHead"); if(efh) efh.onclick=()=>{ const f=feedDraft(); f.open=!f.open; renderSheet(); };   // v3.19
+        app.querySelectorAll("[data-feed-search]").forEach(b=>b.onclick=()=>feedSearch(b.dataset.feedSearch));
+        app.querySelectorAll("[data-feed-pick]").forEach(b=>b.onclick=()=>{ const [c,k]=b.dataset.feedPick.split("|"); feedPick(c, k); }); }
       const emo=app.querySelector("#edMore"); if(emo) emo.onclick=()=>{ editMoreOpen=!editMoreOpen; if(!editMoreOpen){ editWhereOpen=false; } renderSheet(); };   // v3.10 (U5)
       const ech=app.querySelector("#ecHead"); if(ech) ech.onclick=()=>{ editCatOpen=!editCatOpen; if(editCatOpen){ wOpen=null; editWhereOpen=false; } renderSheet(); edShowEnd(document.querySelector("#sheet"), "cat"); };
       const ewh=app.querySelector("#ewHead"); if(ewh) ewh.onclick=()=>{ editWhereOpen=!editWhereOpen; if(editWhereOpen){ wOpen=null; editCatOpen=false; } renderSheet(); edShowEnd(document.querySelector("#sheet"), "where"); };   // v2.22 R17
