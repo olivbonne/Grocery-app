@@ -6,29 +6,29 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.13";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.13";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.13";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.13";
-import { compareStores, worthIt } from "./compare.js?v=3.13";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.13";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.13";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.13";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.13";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.13";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.13";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.13";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.13";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.13";   /* v2.45 (architecture review S17): the app in French as well as English */
-import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.13";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
-import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.13";   /* v3.04: the cards' logic (architecture review L17) */
-import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.13";   /* v3.05 (H2): previews use their own database */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.14";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.14";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.14";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.14";
+import { compareStores, worthIt } from "./compare.js?v=3.14";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.14";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.14";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.14";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.14";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.14";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.14";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.14";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.14";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.14";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.14";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.14";   /* v3.04: the cards' logic (architecture review L17) */
+import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.14";   /* v3.05 (H2): previews use their own database */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here.
    v3.05: a Vercel preview gets the preview project (js/env.js). */
 const IS_PREVIEW = (()=>{ try{ return isPreviewHost(location.hostname); }catch(e){ return false; } })();
 const firebaseConfig = firebaseConfigFor(IS_PREVIEW ? location.hostname : "", window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" });
-const APP_VERSION = "v3.13";
+const APP_VERSION = "v3.14";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 
 /* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
@@ -5130,7 +5130,7 @@ var _sheetMinH = {}, _sheetMinK = {};
    attributes are refreshed and whose other children are replaced. So a tap on + while the note has the keyboard keeps it. */
 function patchKeepFocus(oldEl, newEl){
   for(const a of [...oldEl.attributes]) if(!newEl.hasAttribute(a.name) && a.name!=="style") oldEl.removeAttribute(a.name);
-  for(const a of [...newEl.attributes]) if(a.name!=="style" || oldEl.id!=="sheet") { if(oldEl.getAttribute(a.name)!==a.value) oldEl.setAttribute(a.name, a.value); }
+  for(const a of [...newEl.attributes]) if(a.name!=="style" || !oldEl.classList.contains("sheet")) { if(oldEl.getAttribute(a.name)!==a.value) oldEl.setAttribute(a.name, a.value); }
   const act=document.activeElement, oc=[...oldEl.children], nc=[...newEl.children];
   const fi = (typingNow() && act!==oldEl && oldEl.contains(act)) ? oc.findIndex(c=>c===act || c.contains(act)) : -1;   // only a field being typed in is kept — a button that was just tapped is redrawn like the rest
   if(fi<0 || oc.length!==nc.length || oc[fi].tagName!==nc[fi].tagName){ oldEl.replaceChildren(...newEl.childNodes); return; }   // nothing to protect (or the shape changed)
@@ -5144,6 +5144,17 @@ function renderSheet(){ const sh=document.getElementById("sheet");
   try{ box.innerHTML=editSheet(); } finally { if(typing) editing.note=full; }
   const nsh=box.querySelector("#sheet"); if(!nsh){ render(); return; }
   try{ patchKeepFocus(sh, nsh); wireEditSheet(); } finally { sheetsAfter(still); } }
+/* v3.14 (H4): any sheet redraws only itself — renderSheet's in-place patch, for a sheet given by its root id, the function that
+   draws it and the function that wires it. The page behind is untouched; a field being typed in keeps its keyboard. When the
+   sheet is not on screen (closed, or drawn by something else) it falls back to a full render(). Only for a tap whose change is
+   drawn INSIDE that sheet — opening or closing a sheet, or anything the page shows (counts, tiles), still uses render(). */
+function renderOnly(id, draw, wire){ const el=document.getElementById(id); if(!el){ render(); return; }
+  const still=sheetsBefore(); const box=document.createElement("div"); box.innerHTML=draw();
+  const n=box.querySelector("#"+id); if(!n){ render(); return; }
+  try{ patchKeepFocus(el, n); wire(); } finally { sheetsAfter(still); } }
+function renderSmart(){ renderOnly("smartSheetEl", smartSheet, wireSmartSheet); }
+function renderCardEdit(){ renderOnly("ceSheet", cardEditHTML, wireCards); }
+function renderRcpt(){ renderOnly("rcSheet", rcptSheet, wireRcptSheet); }
 function sheetsBefore(){ const o = {};
   document.querySelectorAll(".sheet[id]").forEach(s => { o[s.id] = { top:s.scrollTop }; });
   return o; }
@@ -6989,8 +7000,8 @@ function wireCards(){
     ["#ceName","#ceNum"].forEach(s=>{ const f=app.querySelector(s); if(f) f.oninput=keep; });   // no re-render while typing
     const ph=app.querySelector("#cePhoto"); if(ph) ph.onclick=()=>{ keep(); cardPick(); };
     app.querySelectorAll("[data-ce-store]").forEach(b=>b.onclick=()=>{ keep(); const id=b.dataset.ceStore, cur=Array.isArray(cardEdit.stores)?cardEdit.stores:[];   // v2.56 item 8
-      cardEdit.stores = cur.includes(id) ? cur.filter(x=>x!==id) : [...cur, id]; render(); });
-    const np=app.querySelector("#ceNoPhoto"); if(np) np.onclick=()=>{ keep(); cardEdit.photo=""; render(); };
+      cardEdit.stores = cur.includes(id) ? cur.filter(x=>x!==id) : [...cur, id]; renderCardEdit(); });
+    const np=app.querySelector("#ceNoPhoto"); if(np) np.onclick=()=>{ keep(); cardEdit.photo=""; renderCardEdit(); };
     const close=()=>{ const back=cardEdit && cardEdit._back; cardEdit=null; if(back) cardShow=back; render(); };   // v2.37: cardShow is untouched, so an inline Cancel stays on the add panel; v3.03: an edit opened from the card sheet goes back there
     const cc=app.querySelector("#ceCancel"); if(cc) cc.onclick=close;
     const bg=app.querySelector("#ceBg"); if(bg) bg.onclick=e=>{ if(e.target===bg && !cardEdit.busy) close(); };
@@ -7019,7 +7030,7 @@ function wireCards(){
     /* v3.13: hold a card in the grid, then move, to drag it to a new place (v2.57's tile drag, as for Regulars); release stores
        the new order — the order everywhere (the dots, the swipe, "first match" for a shop). A quick tap still shows the card;
        in edit mode the earlier / later buttons still work. */
-    app.querySelectorAll(".cardgrid .cardtile[data-card-id]").forEach(tile=>{ let down=null, drag=null;
+    app.querySelectorAll(".cardgrid .cardtile[data-card-id]").forEach(tile=>{ if(tile._w) return; tile._w=1; let down=null, drag=null;   // v3.14: wired once (renderCardEdit re-runs wireCards)
       tile.oncontextmenu=e=>e.preventDefault();
       tile.addEventListener("pointerdown", e=>{ tile._noClick=false; if(e.target.closest(".cardtile-tools")) return; pressStart(); down={ x:e.clientX, y:e.clientY }; });
       tile.addEventListener("pointermove", e=>{ if(!down) return; const dx=e.clientX-down.x, dy=e.clientY-down.y;
@@ -7041,7 +7052,7 @@ function wireCards(){
       if(a.every((x,k)=>x===all[k])) return;
       if(!cardsPut(a)){ showToast("This phone's storage is full"); return; } render(); });   // v3.03: the stored order is the order everywhere
     /* v2.34 a swipe left or right moves between the cards */
-    const sw=app.querySelector("#cardSwipe"); if(sw){ let x0=null;
+    const sw=app.querySelector("#cardSwipe"); if(sw && !sw._w){ sw._w=1; let x0=null;   // v3.14: wired once
       /* v2.35: the add panel is one more place along; v2.37 (item 2): the add panel is first, before the first card. Barcode/Photo is kept from card to card */
       const go=d=>{ const all=cardsGet(), n=all.length+1; let p=cardShow.add ? 0 : all.findIndex(x=>x.id===cardShow.id)+1; if(p<=0 && !cardShow.add) p=1;
         p=(p+d+n)%n; cardShow = p===0 ? { add:true, view:cardShow.view } : { id:all[p-1].id, view:cardShow.view }; cardRead=null; render(); };
@@ -7102,10 +7113,10 @@ function wireRcptSheet(){
   const cc=app.querySelector("#rcCancel"); if(cc) cc.onclick=close;
   if(!rcpt || !rcpt.lines) return;
   app.querySelectorAll("[data-rcstore]").forEach(b=>{ b.onclick=()=>{ const id=b.dataset.rcstore;
-    if(!id){ rcpt.store={ id:"", name:rcpt.detected }; render(); return; }
-    const s=rcSavedStores().find(x=>x.id===id); if(s){ rcpt.store={ id:s.id, name:s.name }; render(); } }; });
+    if(!id){ rcpt.store={ id:"", name:rcpt.detected }; renderRcpt(); return; }
+    const s=rcSavedStores().find(x=>x.id===id); if(s){ rcpt.store={ id:s.id, name:s.name }; renderRcpt(); } }; });
   const dt=app.querySelector("#rcDate"); if(dt) dt.onchange=()=>{ if(/^\d{4}-\d{2}-\d{2}$/.test(dt.value)) rcpt.date=dt.value; };   // no re-render
-  app.querySelectorAll("[data-rckeep]").forEach(b=>{ b.onclick=()=>{ const L=rcpt.lines[+b.dataset.rckeep]; if(L){ L.keep=!L.keep; render(); } }; });
+  app.querySelectorAll("[data-rckeep]").forEach(b=>{ b.onclick=()=>{ const L=rcpt.lines[+b.dataset.rckeep]; if(L){ L.keep=!L.keep; renderRcpt(); } }; });
   app.querySelectorAll("[data-rcname]").forEach(inp=>{ inp.oninput=()=>{ const L=rcpt.lines[+inp.dataset.rcname]; if(L) L.name=inp.value; }; });   // no re-render: keep focus while typing (v1.45)
   /* v2.31: choosing which ticked item a line is — one item per line, so a line that had it gives it up */
   app.querySelectorAll("[data-rccart]").forEach(s=>{ s.onchange=()=>{ const L=rcpt.lines[+s.dataset.rccart]; if(!L) return;
@@ -7115,7 +7126,7 @@ function wireRcptSheet(){
     if(k!==null){ const others=rcpt.lines.filter(M=>M!==L && M.cart===k), capK=Math.max(1, Math.floor(+rcpt.cart[k].qty||1));
       others.slice(0, Math.max(0, others.length-capK+1)).forEach(M=>{ M.cart=null; M.how=""; M.name=M.read||M.name; if(M.readNote!==undefined) M.note=M.readNote; }); }
     if(L.readNote===undefined) L.readNote=L.note||"";
-    L.cart=k; L.how=k===null ? "" : "you"; L.name=k===null ? (L.read||L.name) : rcpt.cart[k].name; L.note=k===null ? L.readNote : (rcpt.cart[k].note||""); render(); }; });
+    L.cart=k; L.how=k===null ? "" : "you"; L.name=k===null ? (L.read||L.name) : rcpt.cart[k].name; L.note=k===null ? L.readNote : (rcpt.cart[k].note||""); renderRcpt(); }; });
   const sv=app.querySelector("#rcSaveBtn"); if(sv) sv.onclick=rcSave;
 }
 /* Every failure the server can name gets a sentence that says what to do about it. A generic
@@ -8315,7 +8326,7 @@ function recipeScale(delta){
   const t=Math.max(1,Math.min(99,(smartServings.target||smartServings.src)+delta));
   smartServings.target=t;
   applyServingsScale();
-  render();
+  renderSmart();
 }
 /* v2.01: the scaling itself, without a render — the plan's review sheet applies an entry's servings
    once on the way in. Weights scale too (scaleAmt keeps the unit). */
@@ -8336,21 +8347,21 @@ function wireSmartSheet(){
   app.querySelectorAll("[data-recipe-serv]").forEach(b=>{ b.onclick=()=>recipeScale(+b.dataset.recipeServ); });
   /* v1.85: selection, not removal — unchecking a row is the same intent and can be changed back. */
   app.querySelectorAll("[data-smart-sel]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartSel;
-    if(!smartItems[i]) return; smartItems[i].sel = (smartItems[i].sel===false); render(); }; });
+    if(!smartItems[i]) return; smartItems[i].sel = (smartItems[i].sel===false); renderSmart(); }; });
   const sAll=app.querySelector("#smartToggleAll"); if(sAll) sAll.onclick=()=>{
     const any=smartItems.some(it=>it.sel!==false);
-    smartItems.forEach(it=>{ it.sel = !any; }); render(); };
-  app.querySelectorAll("[data-smart-edit]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartEdit; smartEdit = (smartEdit===i ? null : i); smartWOpen=null; smartCOpen=null; render(); }; });
-  app.querySelectorAll("[data-smart-wopen]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartWopen; smartWOpen = (smartWOpen===i ? null : i); if(smartWOpen!==null) smartCOpen=null; render(); edShowEnd(app.querySelector(".smartedit"), "unit"); }; });
-  app.querySelectorAll("[data-smart-copen]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartCopen; smartCOpen = (smartCOpen===i ? null : i); if(smartCOpen!==null) smartWOpen=null; render(); edShowEnd(app.querySelector(".smartedit"), "cat"); }; });
-  app.querySelectorAll("[data-smart-q]").forEach(b=>{ b.onclick=()=>{ const [i,d]=b.dataset.smartQ.split("|"); const it=smartItems[+i]; if(it){ it.qty=Math.max(1,Math.min(999,(it.qty||1)+(+d))); render(); } }; });
-  app.querySelectorAll("[data-smart-cat]").forEach(b=>{ b.onclick=()=>{ const [i,cid]=b.dataset.smartCat.split("|"); const it=smartItems[+i]; if(it){ if(it.category!==cid) it.sub=""; it.category=cid; it.catPicked=true; render(); } }; });   // v2.77: the list stays open
+    smartItems.forEach(it=>{ it.sel = !any; }); renderSmart(); };
+  app.querySelectorAll("[data-smart-edit]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartEdit; smartEdit = (smartEdit===i ? null : i); smartWOpen=null; smartCOpen=null; renderSmart(); }; });
+  app.querySelectorAll("[data-smart-wopen]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartWopen; smartWOpen = (smartWOpen===i ? null : i); if(smartWOpen!==null) smartCOpen=null; renderSmart(); edShowEnd(app.querySelector(".smartedit"), "unit"); }; });
+  app.querySelectorAll("[data-smart-copen]").forEach(b=>{ b.onclick=()=>{ const i=+b.dataset.smartCopen; smartCOpen = (smartCOpen===i ? null : i); if(smartCOpen!==null) smartWOpen=null; renderSmart(); edShowEnd(app.querySelector(".smartedit"), "cat"); }; });
+  app.querySelectorAll("[data-smart-q]").forEach(b=>{ b.onclick=()=>{ const [i,d]=b.dataset.smartQ.split("|"); const it=smartItems[+i]; if(it){ it.qty=Math.max(1,Math.min(999,(it.qty||1)+(+d))); renderSmart(); } }; });
+  app.querySelectorAll("[data-smart-cat]").forEach(b=>{ b.onclick=()=>{ const [i,cid]=b.dataset.smartCat.split("|"); const it=smartItems[+i]; if(it){ if(it.category!==cid) it.sub=""; it.category=cid; it.catPicked=true; renderSmart(); } }; });   // v2.77: the list stays open
   app.querySelectorAll("[data-smart-name]").forEach(inp=>{ inp.oninput=()=>{ const it=smartItems[+inp.dataset.smartName]; if(!it) return; it.name=inp.value;
     const nm=inp.closest(".smartchip")&&inp.closest(".smartchip").querySelector(".smartchip-name");   // the head follows the name, still without a render
     if(nm) nm.innerHTML=`${(it.qty>1)?`<b>${it.qty}× </b>`:""}${it.weight?`<b>${esc(showAmt(it.weight))} </b>`:""}${esc(cap(it.name))}`; }; });   // no re-render: keep focus while typing
   app.querySelectorAll("[data-smart-addcat]").forEach(b=>{ b.onclick=()=>{ const it=smartItems[+b.dataset.smartAddcat]; if(!it) return; const nm=prompt(t("New category name:"),""); if(nm&&nm.trim()){ const id=makeCategory(nm); if(id){ it.category=id; it.sub=""; it.catPicked=true; smartCOpen=null; render(); } } }; });
-  app.querySelectorAll("[data-smart-wstep]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartWstep.split("|"); const it=smartItems[+p[0]]; if(it){ it.weight=wStep(it.weight,p[1],+p[2]); render(); } }; });   // v2.76: smartWOpen stays
-  app.querySelectorAll("[data-smart-wt]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartWt.split("|"); const i=+p[0], w=p[1]||""; const it=smartItems[i]; if(it){ it.weight = (it.weight===w ? "" : w); render(); } }; });   // v2.77: the list stays open
+  app.querySelectorAll("[data-smart-wstep]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartWstep.split("|"); const it=smartItems[+p[0]]; if(it){ it.weight=wStep(it.weight,p[1],+p[2]); renderSmart(); } }; });   // v2.76: smartWOpen stays
+  app.querySelectorAll("[data-smart-wt]").forEach(b=>{ b.onclick=()=>{ const p=b.dataset.smartWt.split("|"); const i=+p[0], w=p[1]||""; const it=smartItems[i]; if(it){ it.weight = (it.weight===w ? "" : w); renderSmart(); } }; });   // v2.77: the list stays open
   app.querySelectorAll("[data-smartsort]").forEach(b=>b.onclick=()=>{ setIngSort(b.dataset.smartsort); render(); });   // v2.08
 }
 function smartSheet(){
