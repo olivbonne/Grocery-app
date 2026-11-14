@@ -11,6 +11,7 @@ Convention: bump the number by `0.01` for each batch of changes, add a dated row
 
 | Version | Date | Changes |
 |--------|------------|---------|
+| v3.17 | 2026-11-14 | **Undo for your last few actions.** Finishing a shop, a merge, an occasion, a Smart add batch, a receipt, the 10% shop and taking something off the list can now be undone — from the message that appears, or later from the ⋯ menu, which keeps your last five this session. An undo puts back only what that action changed: anything changed since (on this phone or another) is left as it is, and the message says so. |
 | v3.16 | 2026-11-14 | **Card photos no longer fill up the phone's small app storage.** Photos of your membership cards now live in the phone's larger storage, so several photos can't stop the app from saving other things. Your existing photos move by themselves the next time the app opens, and still stay only on this phone. |
 | v3.15 | 2026-11-14 | **The 10% shop, What we spend and Occasions answer a tap without redrawing the whole screen.** Ticking a row or changing an amount in the 10% shop, picking another month in What we spend, and going to "save the list" in Occasions now change only that sheet. |
 | v3.14 | 2026-11-14 | **Smart add's review, the card editor and the receipt check feel quicker and steadier.** A tap inside them (a quantity, a category, a shop, ticking a line) now changes only that sheet instead of redrawing the whole screen behind it, so what you are typing keeps the keyboard. Edit item already worked this way. |

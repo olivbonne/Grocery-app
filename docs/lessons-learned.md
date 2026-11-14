@@ -337,3 +337,8 @@ the household asked for is not a lesson.*
     building v2.98, fixed v3.12). *Guard:* whatever changes a tile's natural height either reaches the probe (the copy has the
     pictures removed, `tileNoImg`) and is part of the memo key and the layout signature; the v3.12 suite compares a
     pictures-off block with Item icons off, at free and fixed heights, and fails on the unfixed app.
+
+74. **Text escaped twice shows its escape.** Two Undo toasts built their text as `esc(name) + " deleted"`, and the toast is
+    escaped again where it is drawn — so "Salt & pepper" read "Salt &amp; pepper" (noticed by the executor while building
+    v3.17's undo, fixed there; the English-only text also missed its French). *Guard:* a message is built raw with `tf()` and
+    escaped once, where it is drawn; the v3.17 suite deletes "Salt & pepper" and reads the toast.
