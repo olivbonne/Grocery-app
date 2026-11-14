@@ -178,6 +178,25 @@ In the app it fills Settings › Sort › Aisle map, one line per sign, at most 
 retries, time budget and error codes. Nothing new to set up. It never logs the photo or what it read. In the app the matches
 to the list are confirmed before anything changes, at most 30 photos a day per phone (`QUOTA_FRIDGE` to change it).
 
+## Shelf prices (v3.19)
+
+`POST /api/prices` (`api/prices.js`) asks [Apify](https://apify.com), a paid scraping service, for Coles, Woolworths and ALDI
+shelf prices — the plan and its caveats are in `docs/price-feed.md` (household use only: the supermarkets' terms do not allow
+scraping). Off until a person switches Settings › Smart features › "Shelf prices from the supermarkets' websites" on.
+
+| Variable | What it is |
+|---|---|
+| `APIFY_TOKEN` | the Apify API token — **secret**; sent to Apify only as an `Authorization` header, never in a URL, never logged |
+| `APIFY_ACTOR_COLES`, `APIFY_ACTOR_WOOLWORTHS`, `APIFY_ACTOR_ALDI` | each chain's actor id (`user/name` or `user~name`); a chain without one answers `not_configured` |
+| `APIFY_INPUT_COLES`, `APIFY_INPUT_WOOLWORTHS`, `APIFY_INPUT_ALDI` | optional: the actor's input as JSON, with `"{q}"` for the search word and `{ids}` for the product ids (a JSON array) |
+| `QUOTA_PRICES` | optional: the daily limit per phone (default 40) |
+
+The default inputs — search `{"searchTerms":["{q}"],"maxItems":8}`, refresh `{"productIds":{ids}}` — are **guesses that
+could not be checked** (Apify cannot be reached from the development environment). If an actor wants other names, set its
+`APIFY_INPUT_*`. Error codes: `not_configured`, `feed_key` (token refused), `feed_credit` (out of credit), `feed_actor` (no
+such actor), `feed_shape` (rows came back but none had an id and a price — the output mapping is wrong), `timeout`,
+`upstream`; each 5xx becomes a server-failure issue (v3.11).
+
 ## Report a problem (v2.13)
 
 `POST /api/feedback` with `{ kind, text, diag }` — `kind` is `broken`, `looks`, `idea`, `complaint`, or

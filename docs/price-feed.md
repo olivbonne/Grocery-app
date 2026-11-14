@@ -38,3 +38,13 @@ could not find, by error code, in the server-failure issues (v3.11).
    different input than the default, `APIFY_INPUT_*`. Redeploy.
 3. Publish the Firestore rules (the daily count gains `prices`), to both projects, live first.
 4. Pin a few products and check the next day that their prices show.
+
+## What is built (v3.19)
+- `api/prices.js` — `mode:"search"` (one chain, up to 8 products) and `mode:"refresh"` (up to 60 pins); guard first, daily limit
+  `prices: 40`; the token only in an `Authorization` header; output read tolerantly; error codes in `docs/ai-setup.md`.
+- The list's `feedPins` and `feedAt` (written to the record only once set; the rules allow them from v3.19 — publish first).
+- Edit item › More › Shelf prices: search each chain, tap a product to pin it (again to unpin); saved with Save.
+- The weekly refresh (`feedRefreshMaybe`, once per launch): `feedAt` is saved first, so one phone does it; each price becomes a
+  price record `s:"feed-<chain>"`, `sn:"Coles online"` etc., `f:1`. A failed refresh waits a week (a broken feed is not
+  retried on every launch of every phone). Feed prices are left out of What we spend (they are not purchases).
+- Settings › Smart features › Receipts and prices › "Shelf prices from the supermarkets' websites" (`ml_feed`, off).

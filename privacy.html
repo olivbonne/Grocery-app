@@ -87,6 +87,7 @@
     <li><b>Reading a receipt</b> — the photo goes to Gemini or Groq to be read. The app's server never keeps or logs the
         photo or what it read; the prices you confirm are saved in your list.</li>
     <li><b>Shared prices</b> (only if you turn it on, v2.47) — the prices you confirm from receipts at Coles, Woolworths and ALDI: the chain, the item's name, the unit price and the day, stored in Firebase under your account's random id so you can update your own. Other households that turned it on can read them; they see the price and that id, never your email, list, shop, suburb or card.</li>
+    <li><b>Shelf prices</b> (from v3.19, off unless switched on) — once a week, and when you search in Edit item › More › Shelf prices, the names and ids of the products you pinned (or the item's name you search for) and the supermarket chain (Coles, Woolworths or ALDI) go to the app's server, and from there to Apify, a scraping service, which visits the supermarkets' websites and sends back the products and their prices. Nothing about you — no list, name, email, shop or card. The prices are kept in your list like a receipt's. Household use only: the supermarkets' terms do not allow scraping.</li>
     <li><b>Report a problem</b> — what you write, and, if you leave "Include app details" ticked, the app's version, the
         page, your layout, icon and theme settings, screen size and browser. It becomes an issue in the developer's
         GitHub repository (or a line in the server's log).</li>
