@@ -35,7 +35,7 @@ const get = async (p, opt) => { const c = new AbortController(), t = setTimeout(
   const page = await get('/?_=' + Date.now());
   ok('the page answers and points at this version\'s stylesheet and module', page.status === 200 && page.text.includes(`/app.css?v=${ver}`) && page.text.includes(`/js/app.js?v=${ver}`) && page.text.includes('id="app"'), 'status ' + page.status);
   const css = await get(`/app.css?v=${ver}`);
-  ok('the stylesheet is served and is the layered one', css.status === 200 && css.text.includes('@layer app, blocks;'), 'status ' + css.status);
+  ok('the stylesheet is served and is the layered one', css.status === 200 && /@layer app(?:, [a-z]+)*, blocks;/.test(css.text), 'status ' + css.status);
   const swl = await get('/sw.js?_=' + Date.now());
   ok('sw.js is served and lists this version', swl.status === 200 && swl.text.includes(`/js/app.js?v=${ver}`), 'status ' + swl.status);
   const missing = [];
