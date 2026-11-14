@@ -70,7 +70,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
       ok(`square, ${cols} columns, icons off: every tile a column wide and as tall as wide`, sq.t.length===6 && sq.t.every(([w,h])=>Math.abs(w-sq.col)<=1 && Math.abs(h-w)<=1), JSON.stringify(sq));
       if(out && cols==='3') await page.screenshot({ path: out.replace(/\.png$/,'-square.png') });
     }
-    await page.locator('#shopMenuBtn, [aria-label="More"]').first().click(); await page.waitForTimeout(400);
+    await page.locator('#shopMenuBtn, [aria-label="More"]').first().click(); await page.waitForTimeout(400); await page.evaluate(()=>{ const b=document.getElementById('smMore'); if(b && b.getAttribute('aria-expanded')!=='true') b.click(); }); await page.waitForTimeout(400);   /* SUPERSEDED by v3.08: the display options sit under "More display options" — opened first; still protects the same controls */
     /* SUPERSEDED by v2.81: the ↕ glyph looked unlike the ↔ beside it; the button is the width's ↔ turned 90°. Still protected:
        the variable-height button is visibly vertical. */
     /* SUPERSEDED by v2.82: the arrow is a drawn mark (iOS drew the characters as emoji), turned upright for height. */

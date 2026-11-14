@@ -96,7 +96,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     await mk({ srv:{ "lists/v101": D }, cache:D, extra:BASE+'localStorage.setItem("ml_largecols","3");' });
     const ico = ()=>page.evaluate(()=>document.querySelectorAll('#zoomer .pill[data-pill] .pemoji').length);
     const i0 = await ico();
-    await page.locator('#shopMenuBtn, [aria-label="More"]').first().click(); await page.waitForTimeout(400);
+    await page.locator('#shopMenuBtn, [aria-label="More"]').first().click(); await page.waitForTimeout(400); await page.evaluate(()=>{ const b=document.getElementById('smMore'); if(b && b.getAttribute('aria-expanded')!=='true') b.click(); }); await page.waitForTimeout(400);   /* SUPERSEDED by v3.08: the display options sit under "More display options" — opened first; still protects the same controls */
     await page.locator('[data-sm-itememoji="0"]').click(); await page.waitForTimeout(400);
     const i1 = await ico(), open1 = await page.locator('[data-sm-itememoji]').count();
     const stored = await page.evaluate(()=>localStorage.getItem('ml_emoji_item'));

@@ -102,7 +102,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     await tap('#shopMenu');
     const m = await page.evaluate(()=>[...document.querySelectorAll('.smenu .smitem')].map(b=>b.id));
     ok('…it lists read a receipt, cheaper store, spending, this shop\'s aisle map, send, occasion and Report a problem (last)',
-       JSON.stringify(m)==='["smCard","smRcpt","smFridge","smCompare","smSpend","smAisle","smSend","smOcc","smEditPage","smReport"]', JSON.stringify(m));   // SUPERSEDED by v2.35: the card item is always there ("Add a membership card" when none). Still protects: the menu's items and Report last · SUPERSEDED by v2.94: "What's in the fridge?" (smFridge) follows Read a receipt · SUPERSEDED by v2.95: "Edit this page" (smEditPage) follows Occasions
+       JSON.stringify(m)==='["smCard","smRcpt","smCompare","smAisle","smFridge","smSend","smOcc","smSpend","smEditPage","smReport"]', JSON.stringify(m));   // SUPERSEDED by v3.08: grouped — At the shop (card, receipt, cheaper store, aisle map, fridge), then Your list (send, occasions, spending, edit this page). Still protects: every item is there and Report is last · SUPERSEDED by v2.35: the card item is always there ("Add a membership card" when none). Still protects: the menu's items and Report last · SUPERSEDED by v2.94: "What's in the fridge?" (smFridge) follows Read a receipt · SUPERSEDED by v2.95: "Edit this page" (smEditPage) follows Occasions
     await shot('menu');
     await page.mouse.click(20, 820); await page.waitForTimeout(400);
     ok('…a tap outside closes it', await page.evaluate(()=>!document.querySelector('.smenu')), '');

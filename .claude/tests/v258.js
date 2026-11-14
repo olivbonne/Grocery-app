@@ -151,7 +151,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     let o1 = await one();
     ok('variable: every tile is one line (drawing, name, note or amount side by side)', o1.length===3 && o1.every(x=>x.sameLine && x.h<64), JSON.stringify(o1));
     /* the ⋯ menu */
-    await page.locator('#shopMenuBtn, [aria-label="More"]').first().click(); await page.waitForTimeout(400);
+    await page.locator('#shopMenuBtn, [aria-label="More"]').first().click(); await page.waitForTimeout(400); await page.evaluate(()=>{ const b=document.getElementById('smMore'); if(b && b.getAttribute('aria-expanded')!=='true') b.click(); }); await page.waitForTimeout(400);   /* SUPERSEDED by v3.08: the display options sit under "More display options" — opened first; still protects the same controls */
     const mb = await page.evaluate(()=>[...document.querySelectorAll('[data-sm-cols]')].map(b=>b.dataset.smCols+(b.classList.contains('on')?'*':'')));
     ok('the Shop ⋯ menu offers 1–6 and variable, with the current one marked', mb.join()==='1,2,3,4,5,6,0*', JSON.stringify(mb));
     await page.locator('[data-sm-cols="1"]').click(); await page.waitForTimeout(500);

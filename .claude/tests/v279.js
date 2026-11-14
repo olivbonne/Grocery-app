@@ -112,7 +112,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     /* SUPERSEDED by v2.86: at 2 lines the amount takes a badge row (26px), a little taller than the line it takes at 3, so
        2 may be up to 8px taller than 3; still protects: 1 is shorter than 2, and 2 is not meaningfully taller than 3 */
     ok('1 < 2, and 2 within a row\'s difference of 3', H['1']<H['2'] && H['2']<=H['3']+8, JSON.stringify(H));
-    await page.locator('#shopMenuBtn, [aria-label="More"]').first().click(); await page.waitForTimeout(400);
+    await page.locator('#shopMenuBtn, [aria-label="More"]').first().click(); await page.waitForTimeout(400); await page.evaluate(()=>{ const b=document.getElementById('smMore'); if(b && b.getAttribute('aria-expanded')!=='true') b.click(); }); await page.waitForTimeout(400);   /* SUPERSEDED by v3.08: the display options sit under "More display options" — opened first; still protects the same controls */
     const mb = await page.evaluate(()=>[...document.querySelectorAll('[data-sm-lines]')].map(b=>b.dataset.smLines||'v'));
     ok('the ⋯ menu offers 1–8, variable and square', mb.join()==='1,2,3,4,5,6,7,8,v,sq', JSON.stringify(mb));
     /* the preview in Settings: as many mini tiles per row as columns, as many bars as lines */
