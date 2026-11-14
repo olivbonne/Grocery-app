@@ -327,4 +327,6 @@ the household asked for is not a lesson.*
     border rules were never compared, and zero differences proved nothing about them (found by the v3.09 suite, whose border
     check failed). *Guard:* a fixture uses values from the app's own list (`CU_KEYS`) and its preconditions (gaps for a border
     place), the suite of a refactor checks one screen of each kind really shows what it asks for (v309: a disc ON the border),
-    and the comparison counts what it saw (115 border badges in v3.09's record).
+    and the comparison counts what it saw (115 border badges in v3.09's record). The same batch's CI found the other half of the
+    lesson: the v3.07 live check pinned the exact line `@layer app, blocks;`, so the deliberate change failed it — before
+    changing a line, grep for it in `.claude/tools/` as well as `.claude/tests/`, and check the shape, not the exact text.
