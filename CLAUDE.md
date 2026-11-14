@@ -34,6 +34,9 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   selector in `:where()` (all weigh zero), so THE LATER RULE WINS there: a new rule goes after what it must beat.
   `.claude/tools/layermove.py` moves a range of `app` rules there in an order that keeps the old winners (dry run first:
   it lists rules left in `app` that would start losing), and cssdiff plus a canary prove it.
+  **v3.21:** the one-line rules moved to the START of `tiles` (`.claude/tools/tilesprepend.py` — first in the layer, so every
+  tiles rule still beats them); 15 weighting rules stay in `app` (the v2.66 grid rules' closure is 764 rules, 15 `!important`),
+  and `v321.js` fails if that number grows.
 - **Brand (preserve):** forest ink `#21351F`, sage paper `#F2F6EE`, burnt-orange accent `#E2502C`,
   Outfit variable font (self-hosted `outfit-*.woff2` — no Google Fonts links; every asset lives in
   the repo so the PWA works offline). Since v2.15 that includes the Firebase SDK

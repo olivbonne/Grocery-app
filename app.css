@@ -1798,6 +1798,9 @@
      lines lift it more; the icon never changes size. The lines under the name are smaller than the name, and the note wraps
      to a second line instead of being cut. Supersedes v2.12's three fixed bands (name in a two-line band, amount pinned to
      the bottom) for these grids; the one-line modes (1 per row, variable) are untouched. */
+  /* v3.21: these four stay in @layer app on purpose: what beats them today (the tile-height rules, v2.81's note size, the
+     square tiles) beats them through 764 rules, 15 of them !important — moving them would change the screen. v321.js counts
+     the weighting rules left here (15), so the number only goes down. */
   .shop .zoomer.gridmode:not(.smalltile) .pill.pill:has(> .pemoji) { justify-content:center; }
   .shop .zoomer.gridmode:not(.smalltile) .pill.pill:has(> .pemoji) .pname { min-height:0; }
   .shop .zoomer.gridmode:not(.smalltile) .pill.pill:has(> .pemoji) .pill-meta { margin-top:0; font-size:.8em; line-height:1.25; }
@@ -2200,31 +2203,6 @@
   .smcols .colbtn { flex:none; width:34px; height:34px; padding:0; border-radius:10px; border:1.5px solid var(--line);
     background:transparent; color:var(--text); font:inherit; font-size:14px; font-weight:700; }
   .smcols .colbtn.on { background:var(--accent); border-color:var(--accent); color:var(--on-accent, #fff); }
-  /* v2.58 one line in 1-per-row (.linelist) and variable (.largevar): icon, name, note, quantity and marks on ONE line.
-     Overrides the column rules of v1.39 / v2.12 and the icon-size and .hasnote rules by specificity (html body + repeated
-     classes), without deleting them — the grid modes still use those. Cart ticks and Regulars are the same .pill. */
-  html body .zoomer.zoomer.zoomer.linelist .pill.pill, html body .shop .zoomer.zoomer.largevar .pill.pill {
-    flex-direction:row; align-items:center; flex-wrap:nowrap; gap:8px; min-height:44px; height:auto;
-    justify-content:flex-start; text-align:left; position:relative; }
-  html body .zoomer.zoomer.zoomer.linelist .pill.pill .pemoji, html body .shop .zoomer.zoomer.largevar .pill.pill .pemoji {
-    flex:none; margin:0; }   /* the icon-size setting (S–XL) still scales the drawing; it stays on the name's line */
-  html body .zoomer.zoomer.zoomer.linelist .pill.pill .pname, html body .shop .zoomer.zoomer.largevar .pill.pill .pname {
-    white-space:nowrap; min-height:0; line-height:1.2; }
-  html body .zoomer.zoomer.zoomer.linelist .pill.pill .pnote, html body .shop .zoomer.zoomer.largevar .pill.pill .pnote {
-    flex:0 1 auto; width:auto; order:0; white-space:nowrap; text-align:left; }   /* v2.80: no --muted — the note takes the tile's text colour (.pill .pnote: inherit, .78), as in columns; grey was unreadable on filled tiles */
-  html body .zoomer.zoomer.zoomer.linelist .pill.pill .pill-meta, html body .shop .zoomer.zoomer.largevar .pill.pill .pill-meta {
-    flex:none; white-space:nowrap; margin-top:0; padding-left:0; justify-content:flex-start; }
-  html body .zoomer.zoomer.zoomer.linelist .pill.pill > .pmarks, html body .shop .zoomer.zoomer.largevar .pill.pill > .pmarks {
-    position:static; flex:none; }
-  /* 1-per-row: the quantity is pushed right; the name and note shrink with an ellipsis, so the row never wraps */
-  html body .zoomer.zoomer.zoomer.linelist .pill.pill .pill-meta { margin-left:auto; }
-  html body .zoomer.zoomer.zoomer.linelist .pill.pill .pname, html body .zoomer.zoomer.zoomer.linelist .pill.pill .pnote {
-    min-width:0; overflow:hidden; text-overflow:ellipsis; }
-  html body .zoomer.zoomer.zoomer.linelist .pill.pill .pname { flex:0 1 auto; }
-  /* variable: the tile is as wide as its content; the name ellipsises only when one tile is wider than the screen */
-  html body .shop .zoomer.zoomer.largevar .pill.pill { flex:none; max-width:100%; padding:6px 12px; }
-  html body .shop .zoomer.zoomer.largevar .pill.pill .pill-meta { margin-left:0; }
-  html body .shop .zoomer.zoomer.largevar .pill.pill .pname { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; }
 
 /* v2.59 the microphone help card */
 .michint { color:var(--muted); font-size:14px; line-height:1.45; }
@@ -2575,6 +2553,31 @@ html[data-cu-ps="s"] { --cu-pk:.85; } html[data-cu-ps="l"] { --cu-pk:1.15; } htm
    that keeps each winner of the old weights after the rules it beat. A new rule here goes after what it must beat;
    never add a class or !important to win (an !important here would LOSE to one in @layer app). */
 @layer tiles {
+ /* v2.58 one line in 1-per-row (.linelist) and variable (.largevar): icon, name, note, quantity and marks on ONE line.
+     Overrides the column rules of v1.39 / v2.12 and the icon-size and .hasnote rules by specificity (html body + repeated
+     classes), without deleting them — the grid modes still use those. Cart ticks and Regulars are the same .pill. */
+:where(.zoomer.linelist .pill, .shop .zoomer.largevar .pill) {
+    flex-direction:row; align-items:center; flex-wrap:nowrap; gap:8px; min-height:44px; height:auto;
+    justify-content:flex-start; text-align:left; position:relative; }
+:where(.zoomer.linelist .pill .pemoji, .shop .zoomer.largevar .pill .pemoji) {
+    flex:none; margin:0; } /* the icon-size setting (S–XL) still scales the drawing; it stays on the name's line */
+:where(.zoomer.linelist .pill .pname, .shop .zoomer.largevar .pill .pname) {
+    white-space:nowrap; min-height:0; line-height:1.2; }
+:where(.zoomer.linelist .pill .pnote, .shop .zoomer.largevar .pill .pnote) {
+    flex:0 1 auto; width:auto; order:0; white-space:nowrap; text-align:left; } /* v2.80: no --muted — the note takes the tile's text colour (.pill .pnote: inherit, .78), as in columns; grey was unreadable on filled tiles */
+:where(.zoomer.linelist .pill .pill-meta, .shop .zoomer.largevar .pill .pill-meta) {
+    flex:none; white-space:nowrap; margin-top:0; padding-left:0; justify-content:flex-start; }
+:where(.zoomer.linelist .pill > .pmarks, .shop .zoomer.largevar .pill > .pmarks) {
+    position:static; flex:none; }
+/* 1-per-row: the quantity is pushed right; the name and note shrink with an ellipsis, so the row never wraps */
+:where(.zoomer.linelist .pill .pill-meta) { margin-left:auto; }
+:where(.zoomer.linelist .pill .pname, .zoomer.linelist .pill .pnote) {
+    min-width:0; overflow:hidden; text-overflow:ellipsis; }
+:where(.zoomer.linelist .pill .pname) { flex:0 1 auto; }
+/* variable: the tile is as wide as its content; the name ellipsises only when one tile is wider than the screen */
+:where(.shop .zoomer.largevar .pill) { flex:none; max-width:100%; padding:6px 12px; }
+:where(.shop .zoomer.largevar .pill .pill-meta) { margin-left:0; }
+:where(.shop .zoomer.largevar .pill .pname) { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; }
 :where(html:not([data-cu-ls]) .zoomer.linelist .pill .cu-alt, html:not([data-cu-ls]) .shop .zoomer.largevar .pill .cu-alt) {
   display:inline-flex; align-items:center; gap:5px; flex:none; white-space:nowrap; margin-top:0; padding-left:0; justify-content:flex-start; font-size:max(10px, .65em); }
 :where(.zoomer.linelist .pill .cu-alt) { margin-left:auto; }
