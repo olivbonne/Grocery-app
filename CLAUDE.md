@@ -116,6 +116,9 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
 - **A pick inside Edit item calls `renderSheet()`, not `render()` (v3.00)** — only Save, Delete, + Another and closing redraw the page.
   v3.10 (U5): its photo, Where to buy and flags are drawn only under **More** (`editMoreOpen`, folded for each new item) —
   a suite that uses them clicks `#edMore` first; the ⋯ menu's Store row is folded to the chosen shop until `#smStoreChange`.
+  v3.14: any sheet can redraw only itself with `renderOnly(id, draw, wire)` — `renderSmart()`, `renderCardEdit()`, `renderRcpt()`;
+  a tap whose change shows only inside the sheet uses them, opening/closing or anything the page shows uses `render()`. A wire
+  function that uses `addEventListener` guards each element (`_w`), since it can run again on the same nodes.
 - **An item's `where` may name several shops (v2.35)** — their ids joined by commas, so it stays a string everywhere it is
   copied. Read it with `whereIds(i)`, never `i.where === id`.
 - **Views group items with `catShown(i.cat)`, never `i.cat === cat.id`** (v2.17). An item whose category is gone

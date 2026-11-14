@@ -93,7 +93,20 @@ const seed = (o) => { o=o||{}; return `(() => {
     await page.locator('#smartConfirm').click(); await page.waitForTimeout(900);
     const st = await page.evaluate(() => (JSON.parse(localStorage.getItem('ml_cache_v101')||'{}').items||[]).map(i => i.name + '|' + i.qty + '|' + i.cat));
     ok('what was picked is what Confirm adds (Apples red ×2 in vegetables, Leeks, no Rice)', st.some(x => /^apples red\|2\|vegetable$/i.test(x)) && st.some(x => /^leeks\|1\|/i.test(x)) && !st.some(x => /^rice\|/i.test(x)), JSON.stringify(st));
-    /*CARDS-AND-RECEIPT*/
+    /* the card editor: a shop chip tapped while the name is being typed */
+    const CARDS = [ { id:"c1", name:"Flybuys", chain:"coles", num:"6008123412341234", photo:"" }, { id:"c2", name:"Library", chain:"", num:"A1234567", photo:"" } ];
+    const DS = DOC({ items:[ it("1","Milk","dairy") ], stores:[{ id:"cdan", name:"Dandenong market", aisles:[] }, { id:"crich", name:"Richmond shop", aisles:[] }] });
+    await mk({ srv:{ "lists/v101": DS }, cache:DS, extra:BASE + `localStorage.setItem("ml_cards", ${JSON.stringify(JSON.stringify(CARDS))});` });
+    await page.locator('#shopMenu').click(); await page.waitForTimeout(400); await page.locator('#smCard').click(); await page.waitForTimeout(500);
+    await page.locator('#cardGridEdit').click(); await page.waitForTimeout(300); await page.locator('#cardSheet [data-card-edit="c2"]').click(); await page.waitForTimeout(500);
+    const chips = await page.locator('#ceSheet [data-ce-store]').count();
+    await page.evaluate(() => { window.__ce = document.getElementById('ceSheet'); window.__tile = document.querySelector('#zoomer .pill[data-pill="1"]'); });
+    await page.locator('#ceName').click(); await page.keyboard.press('End'); await page.keyboard.type(' card');
+    await page.evaluate(() => document.querySelector('#ceSheet [data-ce-store]').click()); await page.waitForTimeout(300);
+    const ce = await page.evaluate(() => ({ sheet: window.__ce === document.getElementById('ceSheet'), page: !!window.__tile && window.__tile === document.querySelector('#zoomer .pill[data-pill="1"]'),
+      act: document.activeElement && document.activeElement.id, val: (document.getElementById('ceName')||{}).value, on: (document.querySelector('#ceSheet [data-ce-store]')||{getAttribute:()=>null}).getAttribute('aria-pressed') }));
+    ok('card editor: a shop chip tapped while typing the name patches the sheet in place, keeps the field, its focus and text', chips>=2 && ce.sheet && ce.page && ce.act==='ceName' && ce.val==='Library card' && ce.on==='true', JSON.stringify({ chips, ce }));
+    /* receipt check: covered by the receipt suites (v209 onwards) — the four taps that now patch in place are exercised there */
   } catch(e){ ok('suite ran to the end', false, (e.stack||e.message).slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));
   if(browser) await browser.close();
