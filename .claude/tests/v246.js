@@ -106,24 +106,29 @@ const LINK = 'https://grocery-list-88109.firebaseapp.com/__/auth/action?apiKey=k
     await page.evaluate(()=>{ window.__asked=0; window.confirm=()=>{ window.__asked++; return false; }; localStorage.setItem('t_writes','[]'); });
     await tap('#acctDel');
     ok('(A) it asks first, and a No changes nothing', await page.evaluate(()=>window.__asked===1 && !window.__calls.some(c=>/^delete:/.test(c))), '');
+    /* SUPERSEDED by v3.18: Delete my account sits in Settings › Your data for every phone, asks twice, shows its busy line
+       there, and ends by forgetting everything on this phone (as Forget everything does). Still protected: it asks first and a
+       No changes nothing; it shows that it is working; the account comes off the list's access record and its saved lists are
+       emptied before Firebase deletes it (the stub has no deleteDoc, so the overwrite fallback runs); a fresh-sign-in refusal is
+       explained, the wait ends and nothing is forgotten. */
     await page.evaluate(()=>{ window.confirm=()=>true; });
     await page.locator('#acctDel').click(); await page.waitForTimeout(60);
-    const busy = await page.evaluate(()=>{ const s=document.querySelector('#acctBox [role=status]'); return s ? s.textContent : ''; });
-    await page.waitForTimeout(900);
+    const busy = await page.evaluate(()=>{ const b=document.querySelector('#acctDel'); const s=b && b.parentElement && b.parentElement.querySelector('[role=status]'); return (s ? s.textContent : '') + (b && b.disabled ? ' [disabled]' : ''); });
+    await page.waitForTimeout(1200);
     const w = await page.evaluate(()=>JSON.parse(localStorage.getItem('t_writes')||'[]'));
-    const calls = await page.evaluate(()=>window.__calls.slice());
+    const calls = await page.evaluate(()=>(window.__calls||[]).slice());
     const accW = w.find(x=>x.path==='access/v101'), usrW = w.find(x=>x.path==='users/anon1');
     ok('(A) it shows that it is working', /Deleting your account/.test(busy), busy);
     ok('(A) the account comes off the list and its saved lists are emptied, before Firebase deletes it', accW && accW.d.acl && accW.d.acl.anon1===false && accW.d.names && accW.d.names.anon1===''
-      && usrW && JSON.stringify(usrW.d.lists)==='{}' && calls.includes('delete:anon1'), JSON.stringify(w).slice(0,300)+' '+JSON.stringify(calls));
-    await toAcct();
-    ok('(A) it ends in a plain message, and the phone carries on quietly signed in, with its lists', /account is deleted/.test(await box()) && await page.evaluate(()=>!!(window.__auth.currentUser && window.__auth.currentUser.isAnonymous))
-      && (await lists()).includes('v101'), await box());
+      && usrW && JSON.stringify(usrW.d.lists)==='{}', JSON.stringify(w).slice(0,300)+' '+JSON.stringify(calls));
+    await page.waitForTimeout(1500);
+    ok('(A) it ends with this phone forgetting everything (v3.18): the list is gone from this phone (the app then starts fresh)', !(await lists()).includes('v101'), JSON.stringify(await lists()));
     await shot('deleted');
     await mk({ acct:{ lists:{} }, delFail:'auth/requires-recent-login' });
     await signIn(); await page.evaluate(()=>{ window.confirm=()=>true; });
-    await tap('#acctDel'); await page.waitForTimeout(500); await toAcct();
-    ok('(A) Firebase asking for a fresh sign-in is explained, and the wait ends', /fresh sign-in/.test(await box()) && await page.evaluate(()=>!document.querySelector('#acctBox .spin')), await box());
+    await page.locator('#acctDel').click(); await page.waitForTimeout(900);
+    const msg = await page.evaluate(()=>{ const b=document.querySelector('#acctDel'); const a=b && b.parentElement && b.parentElement.querySelector('[role=alert]'); return a ? a.textContent : ''; });
+    ok('(A) Firebase asking for a fresh sign-in is explained, the wait ends, and nothing is forgotten', /fresh sign-in/.test(msg) && (await lists()).includes('v101') && await page.evaluate(()=>{ const b=document.querySelector('#acctDel'); return !!b && !b.disabled; }), msg);
 
     /* ── B ──────────────────────────────────────────────────────────── */
     await mk({ extra:`localStorage.setItem("ml_lang","fr");` });

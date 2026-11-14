@@ -57,7 +57,7 @@
        a daily backup for a week, what it has learned for its predictions, the membership cards you add (their numbers and photos) (the photos in the phone's IndexedDB storage, v3.16), the last shop's ticked items (kept two days, to match its receipt against), a log of the times the screen got stuck (sent only if you report it), and small counters (receipts read today).</p>
   </div>
   <div class="card">
-    <p><b>With your account, if you add your email:</b> Firebase (Google) keeps your email, and your password only in scrambled form (the app never stores it), to sign you in and to send a sign-in or password-reset email when you ask for one. Your account keeps which lists are yours — their codes and names, and the time you left one — so a new phone can get them back. Never the lists' contents. Signed in with your email, your settings (the look, language and preferences — no list data) are also kept in your account, so a new phone gets them back too (since v2.71). Signing out leaves it; to delete the account, use Settings › Your data › Your account › Delete my account: your email, password and saved lists go, and your name comes off the lists it was on.</p>
+    <p><b>With your account, if you add your email:</b> Firebase (Google) keeps your email, and your password only in scrambled form (the app never stores it), to sign you in and to send a sign-in or password-reset email when you ask for one. Your account keeps which lists are yours — their codes and names, and the time you left one — so a new phone can get them back. Never the lists' contents. Signed in with your email, your settings (the look, language and preferences — no list data) are also kept in your account, so a new phone gets them back too (since v2.71). Signing out leaves it; to delete the account, use Settings › Your data › Delete my account (see Deleting, below).</p>
   </div>
 
   <h2>What leaves the app, and only when you use it</h2>
@@ -128,6 +128,12 @@
         learned are cleared for everyone on it. Its name, people, categories and stores stay.</li>
     <li><b>Forget everything on this phone</b> — every list, name, setting and backup kept here. The shared lists stay
         for their people.</li>
+    <li><b>Delete my account</b> (from v3.18) — everything "Forget everything on this phone" does, and also: your name comes
+        off the list you have open (a list only you are on is emptied); every list this phone knows marks your account as
+        no longer on it; your account's saved lists and settings on the server are deleted; and your sign-in (the quiet
+        one, or your email and password) is deleted. What stays: lists shared with others, for them; on each list's access
+        record, this phone's random id, marked as off; the daily counts of the AI features (numbers only, under that random
+        id); and any shared shelf prices you sent (a unit price and a date under that id).</li>
   </ul>
   <p class="muted">"Clear prices and spending" in Settings › Prices clears just those. A problem report already sent
      can be removed by the developer — ask through Report a problem.</p>

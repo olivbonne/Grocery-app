@@ -181,6 +181,8 @@ service cloud.firestore {
                    && request.resource.data.get('prefs', {}).keys().hasOnly(['at', 'json'])
                    && request.resource.data.get('prefs', {}).get('json', '') is string
                    && request.resource.data.get('prefs', {}).get('json', '').size() <= 40000;
+      // v3.18: Delete my account removes the record (allow write's request.resource checks refuse a delete)
+      allow delete: if request.auth != null && request.auth.uid == uid;
     }
 
     // v2.47: shared shelf prices (opt-in). One record per chain and item; each email account writes only its own

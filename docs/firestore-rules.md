@@ -32,6 +32,17 @@ New lists also get stronger codes from v2.25 on: 128 random bits (25 characters)
 generator, instead of 8 characters from `Math.random()`. Existing lists keep their codes. To move the household's
 list to a strong code, make a new list and use Settings › Restore from a backup file, or copy items across.
 
+## v3.18 — an account can delete its own record
+
+Settings › Your data › Delete my account now deletes the person's `users/{uid}` record (until v3.17 it was overwritten
+empty and left behind). The rules add one line to `users/{uid}`: `allow delete` for that signed-in person only. **Publish
+them to BOTH projects — the live one first, then `market-list-preview-fcccf`.** Until they are published the delete is
+refused and the app falls back to overwriting the record empty, as before; nothing else changes.
+
+Two Rules Playground tests (Firestore › Rules › Rules Playground) before publishing:
+1. Simulation type **delete**, location `/users/abc`, Authenticated, Firebase UID `abc` → **allowed**.
+2. Simulation type **delete**, location `/users/abc`, Authenticated, Firebase UID `xyz` → **denied**.
+
 ## v2.71 — settings remembered by the account
 
 An email account's record (`users/{uid}`) may now also hold `prefs: { at, json }` — a copy of that person's settings (the
