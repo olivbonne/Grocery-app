@@ -6,29 +6,29 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.11";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.11";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.11";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.11";
-import { compareStores, worthIt } from "./compare.js?v=3.11";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.11";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.11";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.11";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.11";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.11";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.11";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.11";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.11";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.11";   /* v2.45 (architecture review S17): the app in French as well as English */
-import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.11";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
-import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.11";   /* v3.04: the cards' logic (architecture review L17) */
-import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.11";   /* v3.05 (H2): previews use their own database */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.12";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.12";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.12";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.12";
+import { compareStores, worthIt } from "./compare.js?v=3.12";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.12";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.12";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.12";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.12";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.12";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.12";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.12";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.12";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.12";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.12";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.12";   /* v3.04: the cards' logic (architecture review L17) */
+import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.12";   /* v3.05 (H2): previews use their own database */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here.
    v3.05: a Vercel preview gets the preview project (js/env.js). */
 const IS_PREVIEW = (()=>{ try{ return isPreviewHost(location.hostname); }catch(e){ return false; } })();
 const firebaseConfig = firebaseConfigFor(IS_PREVIEW ? location.hostname : "", window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" });
-const APP_VERSION = "v3.11";
+const APP_VERSION = "v3.12";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 
 /* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
@@ -4868,7 +4868,10 @@ function watchZoomer(z){ if(!z || typeof ResizeObserver==="undefined" || _zoomEl
    categories came out at different heights.) The cart is its own group, as it was in v2.11. */
 const _tileSig = {}, _tileNat = {}, _tileFix = {}, _tileFixSig = {};
 function full_lines(z){ return z.classList.contains("linelist") || z.classList.contains("largevar"); }   // v2.78: the one-line layouts ignore the height setting
-function tileKey(p){ return (p.classList.contains("done") ? "d" : "") + "|" + p.querySelectorAll(".pemoji,.pmark,.penddot").length + "|" + p.textContent; }
+/* v3.12: a tile in a block whose pictures are off (Edit this page › the block's settings) is measured without them — the probe
+   sits outside the block, where the block's `.pb-noimg` rule does not reach — and is remembered apart ("n") */
+function tileNoImg(p){ return !!p.closest(".pblock.pb-noimg"); }
+function tileKey(p){ return (p.classList.contains("done") ? "d" : "") + (tileNoImg(p) ? "n" : "") + "|" + p.querySelectorAll(".pemoji,.pmark,.penddot").length + "|" + p.textContent; }
 function syncTileH(){ try{
   const h=document.documentElement;
   /* v2.86: fixed heights count the bands — a band any column tile in view uses is kept by every tile (the CSS), so it is
@@ -4883,7 +4886,7 @@ function syncTileH(){ try{
     const grid=z.classList.contains("gridmode"), full=grid || z.classList.contains("linelist");
     const w=grid ? tiles[0].offsetWidth : tiles[0].parentElement.clientWidth;
     const sig=[z.className, h.getAttribute("data-icosize"), h.getAttribute("data-theme"), h.getAttribute("data-linew"), h.getAttribute("data-tilebg"),
-      document.body.className, fillMode(), itemEmojiOn(), iconStyle(), w, document.fonts ? document.fonts.status : "", tileLines(), cuTB, cuBB, h.getAttribute("data-cu-style"), ["nw","tw","aw","ns","ts","ps"].map(k=>h.getAttribute("data-cu-"+k)).join(",")].join("|");
+      document.body.className, fillMode(), itemEmojiOn(), iconStyle(), w, document.fonts ? document.fonts.status : "", tileLines(), cuTB, cuBB, h.getAttribute("data-cu-style"), ["nw","tw","aw","ns","ts","ps"].map(k=>h.getAttribute("data-cu-"+k)).join(","), (tiles[0] && tileNoImg(tiles[0])) ? "noimg" : ""].join("|");   // v3.12: a block's pictures off changes the fixed height
     if(_tileSig[v]!==sig || _tileNat[v].size>2000){ _tileSig[v]=sig; _tileNat[v]=new Map(); }   // a new layout, or a long day of edits
     const nat=_tileNat[v], keys=tiles.map(tileKey), miss=new Map();
     keys.forEach((k,i)=>{ if(!nat.has(k) && !miss.has(k)) miss.set(k, tiles[i]); });
@@ -4891,7 +4894,7 @@ function syncTileH(){ try{
       // grid tiles are the column's width; free-width tiles take their own width, up to the row's
       const host=document.createElement("div"); host.className="tileprobe"; host.setAttribute("aria-hidden","true");
       host.style.cssText="position:absolute;left:0;top:0;width:"+Math.max(40, w)+"px;visibility:hidden;pointer-events:none;display:flex;flex-direction:column;align-items:"+(full?"stretch":"flex-start");
-      miss.forEach(p=>{ const c=p.cloneNode(true); c.classList.remove("justpop"); host.appendChild(c); });
+      miss.forEach(p=>{ const c=p.cloneNode(true); c.classList.remove("justpop"); if(tileNoImg(p)) c.querySelectorAll(".pemoji, .pphoto").forEach(e=>e.remove()); host.appendChild(c); });
       z.appendChild(host);
       const ks=[...miss.keys()]; [...host.children].forEach((c,i)=>{ const r=c.getBoundingClientRect(), k=(c.offsetWidth && r.width) ? r.width/c.offsetWidth : 1; nat.set(ks[i], Math.ceil(r.height/k - 0.01)); });   // v2.87: rounded UP — a Fill drawing is a fraction of a pixel tall, and offsetHeight rounded 121.6 down to a floor its row then exceeded
       host.remove();
@@ -4909,7 +4912,7 @@ function syncTileH(){ try{
       if(_tileFix[fv]===undefined || _tileFixSig[fv]!==sig){
         const host=document.createElement("div"); host.className="tileprobe"; host.setAttribute("aria-hidden","true");
         host.style.cssText="position:absolute;left:0;top:0;width:"+Math.max(40, w)+"px;visibility:hidden;pointer-events:none;display:flex;flex-direction:column;align-items:stretch";
-        const c=tiles[0].cloneNode(true); c.classList.remove("justpop","hasnote");
+        const c=tiles[0].cloneNode(true); c.classList.remove("justpop","hasnote"); if(tileNoImg(tiles[0])) c.querySelectorAll(".pemoji, .pphoto").forEach(e=>e.remove());   // v3.12
         c.querySelectorAll(".pnote,.pill-meta").forEach(e=>e.remove());
         c.style.height="auto"; c.style.minHeight="0"; c.style.aspectRatio="auto";
         const pn=c.querySelector(".pname"); if(pn){ pn.innerHTML=Array.from({length:+nl},()=>"Ag").join("<br>"); pn.style.webkitLineClamp="unset"; pn.style.display="block"; }
