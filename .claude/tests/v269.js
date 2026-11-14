@@ -13,6 +13,7 @@ const fs = require('fs'), path = require('path');
 const { chromium } = require(require.resolve('playwright', { paths: [__dirname, '/opt/node22/lib/node_modules', '/tmp'] }));
 const ROOT = path.resolve(__dirname, '..', '..');
 const results=[]; const ok=(n,c,x)=>results.push([n,!!c,x===undefined?'':String(x)]);
+const OPEN_MORE = async(page)=>{ if(!page) return; await page.evaluate(()=>{ const m=document.querySelector('#edMore'); if(m && m.getAttribute('aria-expanded')!=='true') m.click(); }); await page.waitForTimeout(400); };   /* SUPERSEDED by v3.10 (U5): the photo, Where to buy and the flags sit under Edit item's "More" — every hold that opens Edit item opens it too. Still protects everything this suite checked in them. */
 const FSTUB = `export const initializeApp=()=>({});export const getFirestore=()=>({});
 export const initializeFirestore=()=>({});export const persistentLocalCache=()=>({});
 export const persistentMultipleTabManager=()=>({});export const doc=()=>({});
@@ -66,13 +67,13 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     /* untouched: the same as before */
     await mk('');
     const base = { edit:null };
-    await hold(page.locator('.pill[data-pill="1"]').first());
+    await hold(page.locator('.pill[data-pill="1"]').first()); await OPEN_MORE(page);
     base.edit = await bgOf('#sheet');
     const baseChip = await bgOf('#sheet .flagchip');
 
     /* set colours for other sheets — Edit item must not change */
     await mk('localStorage.setItem("ml_lk_smart_pbg","#FFE08A"); localStorage.setItem("ml_lk_card_bg","#123456"); localStorage.setItem("ml_lk_other_bg","#2A6041");');
-    await hold(page.locator('.pill[data-pill="1"]').first());
+    await hold(page.locator('.pill[data-pill="1"]').first()); await OPEN_MORE(page);
     ok('a colour set for other sheets does not touch the Edit item sheet', (await bgOf('#sheet'))===base.edit && (await bgOf('#sheet .flagchip'))===baseChip, JSON.stringify({ base, now:await bgOf('#sheet') }));
     await page.evaluate(()=>{ const b=document.querySelector('#sheetBg'); if(b) b.click(); }); await page.waitForTimeout(300);
     /* Other sheets: the lists sheet */
@@ -94,7 +95,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
 
     /* Edit item's v2.63 keys still apply */
     await mk('localStorage.setItem("ml_epillbg","#FFE08A");');
-    await hold(page.locator('.pill[data-pill="1"]').first());
+    await hold(page.locator('.pill[data-pill="1"]').first()); await OPEN_MORE(page);
     ok('Edit item\'s existing button colour (v2.63 setting) still applies', (await bgOf('#sheet .flagchip'))==='rgb(255, 224, 138)', String(await bgOf('#sheet .flagchip')));
   } catch(e){ ok('suite ran to the end', false, (e.stack||e.message).slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));

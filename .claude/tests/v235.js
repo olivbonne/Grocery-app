@@ -148,6 +148,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     const nl = await page.evaluate(()=>(document.querySelector('#zoomer .pill[data-pill="w1"] .pnote')||{}).textContent||'');
     ok('(2) …and its tile names both shops', /Asian Richmond or Coles Traders/.test(nl), nl);
     const p2 = pill('w2'); await p2.dispatchEvent('pointerdown'); await page.waitForTimeout(650); await p2.dispatchEvent('pointerup'); await page.waitForTimeout(500);
+    /* SUPERSEDED by v3.10 (U5): Where to buy sits under More — open it first. */ await page.evaluate(()=>{ const m=document.querySelector('#edMore'); if(m && m.getAttribute('aria-expanded')!=='true') m.click(); }); await page.waitForTimeout(400);
     await tap('#ewHead'); await tap('[data-ew="dand"]'); await tap('[data-ew="rich"]');
     const ew = await page.evaluate(()=>({ on:[...document.querySelectorAll('[data-ew][aria-pressed="true"]')].map(b=>b.dataset.ew), v:(document.querySelector('#ewHead .editsec-v')||{}).textContent||'' }));
     ok('(2) Edit item ticks several shops', JSON.stringify(ew.on)==='["dand","rich"]' && /Coles Dandenong, Coles Vic Garden/.test(ew.v), JSON.stringify(ew));
