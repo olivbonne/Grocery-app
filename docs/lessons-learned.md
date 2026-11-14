@@ -330,3 +330,10 @@ the household asked for is not a lesson.*
     and the comparison counts what it saw (115 border badges in v3.09's record). The same batch's CI found the other half of the
     lesson: the v3.07 live check pinned the exact line `@layer app, blocks;`, so the deliberate change failed it — before
     changing a line, grep for it in `.claude/tools/` as well as `.claude/tests/`, and check the shape, not the exact text.
+
+73. **A measurement taken outside its context measures something else.** syncTileH measures copies of tiles in a hidden
+    probe attached to the list container — outside the page block — so v2.98's per-block "pictures off" (a CSS rule on
+    `.pblock.pb-noimg`) never reached the copies, and tiles kept the height of a picture they no longer showed (noticed while
+    building v2.98, fixed v3.12). *Guard:* whatever changes a tile's natural height either reaches the probe (the copy has the
+    pictures removed, `tileNoImg`) and is part of the memo key and the layout signature; the v3.12 suite compares a
+    pictures-off block with Item icons off, at free and fixed heights, and fails on the unfixed app.
