@@ -2134,7 +2134,7 @@ if(!state.purch || typeof state.purch!=="object") state.purch={};
 state.purch = purchMerge(state.purch, purch);   // fold any legacy per-device history into the shared copy
 purch = state.purch;
 if(shopMode && !(state.items||[]).length){ shopMode=false; }   // nothing to shop — open on Plan
-let toast=null, toastAction=null, undoSnap=null, _toastT=null, catEntry=null, editing=null, configured=false;
+let toast=null, toastAction=null, _toastT=null, catEntry=null, editing=null, configured=false;
 let editCatOpen=false, editSubOpen=false;   // v1.26 collapsible Category / Subcategory sections in the edit sheet
 var editMoreOpen = false;   // v3.10 (U5): Edit item's "More" (photo, where to buy, flags) — open for this item only
 var editNoteOpen=false, _editFoldKey="", _aeFoldKey="";   // v2.57 item 9: the Note section; which edit was last shown folded. var: boot-order rule
@@ -3144,11 +3144,50 @@ function syncChip(){
 function locChip(){ const s=activeStore(); if(!s || !s.name) return "";
   return `<span class="locchip">${s.id==="home"?HOME_SVG(14):PIN_SVG(14)} ${esc(storeName(s))}</span>`; }
 function showUndo(prev, msg){
-  undoSnap = prev; toast = msg;
-  toastAction = { label:"Undo", fn:()=>{ if(undoSnap){ state = undoSnap; undoSnap=null; } toast=null; toastAction=null; clearTimeout(_toastT); save(); render(); } };
+  /* v3.17: the action is recorded in the undo log; Undo puts back only what it changed, and only where nothing changed since */
+  const entry = undoRecord(prev, t(String(msg||"").replace(/<[^>]*>/g, "")));
+  toast = msg;
+  toastAction = { label:"Undo", fn:()=>{ toast=null; toastAction=null; clearTimeout(_toastT); undoApply(entry); } };
   render(); clearTimeout(_toastT);
-  _toastT = setTimeout(()=>{ toast=null; toastAction=null; undoSnap=null; render(); }, 5000);
+  _toastT = setTimeout(()=>{ toast=null; toastAction=null; render(); }, 5000);
 }
+/* v3.17: the last few undoable actions. Session only — never stored or synced, so it is gone when the app is closed. */
+var undoLog = [];   // v3.17: [{ id, label, at, before, after }] newest last, at most 5 — session only
+const UNDO_KEYED = { items: i => String(i && i.id), buyAgain: e => baKey(e), templates: x => String(x && x.id) };
+const UNDO_MAPS = ["itemTomb", "baTomb"];
+const UNDO_SKIP = new Set(["shopping", "parts"]);   // presence and the storage layout are never undone
+function undoRecord(prev, label){ const entry = { id:uid(), label:String(label||""), at:Date.now(), before:prev, after:snapState() };
+  undoLog.push(entry); while(undoLog.length > 5) undoLog.shift(); return entry; }
+function undoApply(entry){ const k = undoLog.indexOf(entry); if(k < 0 || !entry) return;
+  undoLog.splice(k, 1);
+  const B = entry.before || {}, A = entry.after || {}, J = v => JSON.stringify(v === undefined ? null : v);
+  let skipped = 0;
+  for(const f of Object.keys(UNDO_KEYED)){ const key = UNDO_KEYED[f];
+    const bm = new Map((B[f]||[]).map((x,i)=>[key(x), { x, i }])), am = new Map((A[f]||[]).map(x=>[key(x), x]));
+    if(J(B[f]) === J(A[f])) continue;
+    let cur = (state[f]||[]).slice();
+    for(const id of new Set([...bm.keys(), ...am.keys()])){
+      const b = bm.get(id), a = am.get(id), ci = cur.findIndex(x=>key(x)===id), now = ci >= 0 ? cur[ci] : undefined;
+      if(J(b && b.x) === J(a)) continue;   // the action did not touch it
+      if(J(now) !== J(a)){ skipped++; continue; }   // changed since: left as it is
+      if(b){ const v = JSON.parse(JSON.stringify(b.x)); if(ci >= 0) cur[ci] = v; else cur.splice(Math.min(b.i, cur.length), 0, v); }
+      else cur.splice(ci, 1);
+      if(f === "items") markDirty(id); }
+    state[f] = cur; }
+  for(const f of UNDO_MAPS){ const bo = B[f]||{}, ao = A[f]||{}; if(J(bo) === J(ao)) continue;
+    const cur = Object.assign({}, state[f]||{});
+    for(const id of new Set([...Object.keys(bo), ...Object.keys(ao)])){ if(J(bo[id]) === J(ao[id])) continue;
+      if(J(cur[id]) !== J(ao[id])) continue;   // a tombstone changed since: left, not counted
+      if(id in bo) cur[id] = bo[id]; else delete cur[id]; }
+    state[f] = cur; }
+  for(const f of new Set([...Object.keys(B), ...Object.keys(A)])){ if(UNDO_KEYED[f] || UNDO_MAPS.includes(f) || UNDO_SKIP.has(f)) continue;
+    if(J(B[f]) === J(A[f])) continue;
+    if(J(state[f]) !== J(A[f])) continue;   // changed since: left as it is (not counted — the message counts things a person sees: items, Regulars, occasions)
+    if(f in B) state[f] = JSON.parse(JSON.stringify(B[f])); else delete state[f]; }
+  save(); render();
+  showToast(tf("Undone: {x}", { x:entry.label }) + (skipped ? " · " + tf("{n} changed since, left as they are", { n:skipped }) : "")); }
+function undoAgo(at){ const m = Math.floor((Date.now() - at) / 60000);
+  return m < 1 ? t("just now") : m < 60 ? tf("{n} min ago", { n:m }) : tf("{n} h ago", { n:Math.floor(m/60) }); }
 
 /* ---- actions ---- */
 function addEntries(text, override){
@@ -3420,7 +3459,7 @@ function deleteItemEditing(){ const prev=snapState(); const nm=editing.name; con
   state.items = state.items.filter(i=>i.id!==editing.id);
   baForget(nm, ct, nt); regDrop(nm, ct, nt);   // v1.37 item 6: Delete also drops it from Regulars ("Buy again" is the keep-it button)
   histLog("del", nm); histLog("regrm", nm);
-  editing=null; save(); render(); showUndo(prev, esc(nm)+" deleted"); }
+  editing=null; save(); render(); showUndo(prev, tf("{x} deleted", { x:nm })); }   // v3.17: raw — the toast is escaped where it is drawn (was esc()+…: "&" showed as "&amp;")
 
 /* buy-again edit */
 /* v2.76 (the household): a Regular keeps its own Urgent / If on sale (tags), set in its Edit item and carried onto the list
@@ -3472,7 +3511,7 @@ function removeCat(id){ const cs=catList(); if(cs.length<=1){ showToast("Keep at
   state.items.forEach(it=>{ if(it.cat===id){ it.cat=target; it.sub=null; } });
   state.buyAgain.forEach(e=>{ if(e.cat===id) e.cat=target; });
   state.categories = cs.filter(c=>c.id!==id);
-  editing=null; save(); render(); showUndo(prev, esc(nm)+" removed"); }
+  editing=null; save(); render(); showUndo(prev, tf("{x} removed", { x:nm })); }   // v3.17: as above
 const NEW_CAT_COLORS=["#B5402B","#C98A06","#3E7C3A","#2E6FA3","#6B5CA5","#2E8C7F","#C73B5B","#8A5A2B","#5B6770","#7A6A3A","#4A6FA5"];
 const PALETTE=["#B5402B","#E05A2B","#C98A06","#E0A800","#3E7C3A","#5BA84F","#2E8C7F","#2E6FA3","#4A6FA5","#6B5CA5","#9C3E8C","#C73B5B","#8A5A2B","#5B6770","#3A3A3A"];
 function addCategory(){ editing={ kind:"newcat", label:"", emoji:"🛒", img:"", subs:[], iconManual:false, color: NEW_CAT_COLORS[catList().length % NEW_CAT_COLORS.length] }; render(); }
@@ -3925,6 +3964,7 @@ const CARD_SVG    = sz => ICO('<rect x="3" y="5.5" width="18" height="13" rx="2.
 const SHARE_SVG   = sz => ICO('<path d="M12 3.5v11"/><path d="M8 7.2l4-3.7 4 3.7"/><path d="M8.5 10.5H6.5a1.5 1.5 0 0 0-1.5 1.5v7a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5h-2"/>', sz);
 const NOTE_SVG   = sz => ICO('<circle cx="8" cy="17.5" r="3"/><path d="M11 17.5V4.6l8-1.6v11"/><circle cx="16" cy="14" r="3"/>', sz);
 const SAVE_SVG   = sz => ICO('<path d="M12 3.6v10.2"/><path d="M8 10l4 4 4-4"/><path d="M4.5 16v3.4h15V16"/>', sz);
+const UNDO_SVG   = sz => ICO('<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 010 11H11"/>', sz);   // v3.17 a counter-clockwise arrow, Undo in the ⋯ menu
 const BROOM_SVG  = sz => ICO('<circle cx="12" cy="12" r="8.6"/><path d="M9 9l6 6M15 9l-6 6"/>', sz);
 const DICT_HIDE = new Set(["strawberr","blueberr","raspberr","berry","brocollini","choysum","chili","yogurt"]);   // matching stems / dupes, not for display
 /* v1.12 per-item emoji — first keyword match wins (multi-word/specific terms first), else the
@@ -6259,6 +6299,7 @@ function rcUnit(L){ const pr=+L.price||0, w=priceAmt(L.weight), rp=String(L.per|
   return { u:Math.round(pr/Math.max(1, +L.qty||1)*100)/100, per:"each" }; }
 function rcUnitTxt(L){ const x=rcUnit(L); return x.per==="each" ? tf("{x} each", { x:priceMoney(x.u) }) : priceMoney(x.u)+(x.per==="kg"?"/kg":"/L"); }
 function rcSave(){ if(!rcpt || !rcpt.lines) return;
+  const prev=snapState();   // v3.17: undoable
   /* v2.72: a shop the receipt names that the list does not have joins the list's shops — unpinned (the receipt may be
      read at home), and without changing which shop is selected */
   if(rcpt.store && rcpt.store.id==="" && String(rcpt.store.name||"").trim()){ const nm=String(rcpt.store.name).trim();
@@ -6281,7 +6322,7 @@ function rcSave(){ if(!rcpt || !rcpt.lines) return;
       lines:rcpt.lines.filter(L => L.keep && String(L.name || "").trim() && isFinite(L.price)).map(L => ({ price:+L.price, cat:L.cat })), discounts:rcpt.discounts });
     if(se.tot > 0) state.spend = spendLog(state.spend, se, SPEND_MAX); }
   sharedContribute(rcpt);   // v2.47: after the prices are saved
-  rcptNudgeClear(); lastCartClear(); save(); rcpt=null; render(); showToast((n===1 ? tf("Saved 1 price", {}) : tf("Saved {n} prices", { n })) + (m ? " · " + tf("ticked off {n}", { n:m }) : "") + tenMsg); }
+  rcptNudgeClear(); lastCartClear(); save(); rcpt=null; render(); showUndo(prev, (n===1 ? tf("Saved 1 price", {}) : tf("Saved {n} prices", { n })) + (m ? " · " + tf("ticked off {n}", { n:m }) : "") + tenMsg); }
 /* v2.20 the 10% shop (plan item 3). The logic is js/tenpct.js; this is the app's side: the household's memberships and
    "used" marks live in the list (state.memb, shared by every phone), the Shop card, the stock-up sheet, the receipt hook. */
 var tenSheet = null;   // { chain, rows, pct, cap, base } while the stock-up sheet is open. var: render() reads it at boot
@@ -6338,10 +6379,10 @@ function tenSheetHTML(){ const tn = tenSheet; if(!tn) return ""; const c = memb(
     <div class="tensum" role="status">${tf("{n} ticked", { n })} · ${priceMoney(sum.total)} · ${tf("saves {x}", { x:priceMoney(sum.saving) })}${sum.saving >= tn.cap ? " " + t("(the most it gives)") : ""}</div>
     <div class="ppedbtns" style="margin-top:10px"><button class="newlist" id="tenAdd" ${n ? "" : "disabled"}>${tf("Add {n} to the list", { n })}</button><button class="optaction" id="tenClose" style="margin-top:0">${t("Close")}</button></div>
   </div></div>`; }
-function tenAddToList(){ const tn = tenSheet; if(!tn) return; let n = 0;
+function tenAddToList(){ const tn = tenSheet; if(!tn) return; let n = 0; const prev = snapState();   // v3.17: undoable
   for(const r of tn.rows){ if(!r.sel) continue; n++;
     putItem({ name:r.name, qty:r.qty, cat:r.cat, weight:r.weight }, { qty:"max", anyNote:true, quiet:true }); }   // v3.00: the add flow
-  tenSheet = null; save(); render(); showToast(tf("Added {n} for the {chain} {pct}% shop", { n, chain:CHAINS[tn.chain].short, pct:tn.pct })); }
+  tenSheet = null; save(); render(); showUndo(prev, tf("Added {n} for the {chain} {pct}% shop", { n, chain:CHAINS[tn.chain].short, pct:tn.pct })); }
 function wireTenSheet(){
   app.querySelectorAll("[data-ten-row]").forEach(b => b.onchange = () => { const r = tenSheet && tenSheet.rows[+b.dataset.tenRow]; if(r){ r.sel = b.checked; renderTen(); } });   // v3.15 (H4): only the sheet
   const ta = app.querySelector("#tenAdd"); if(ta) ta.onclick = tenAddToList;
@@ -6639,6 +6680,7 @@ function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRe
       return `<div class="smtiles smtext"><span class="smtlabel">${t("Sort")}</span><div class="smcols">${(displayFor()==="flat" && shopMode && aiSortOK())?sb("ai",t("✨ AI")):""}${displayFor()==="flat"?sb("location",t("Location")):""}${sb("cat",t("Category"))}${sb("alpha",t("A–Z"))}</div></div>`; })()}
     </div>` : ""}
     <div class="smgroup">${t("Your list")}</div>
+    ${undoLog.slice(-3).reverse().map(u=>`<button class="smitem" data-undo="${esc(u.id)}" role="menuitem">${UNDO_SVG(18)}<span>${t("Undo")}: ${esc(u.label)} <span class="smtime">${undoAgo(u.at)}</span></span></button>`).join("")}${/* v3.17 */""}
     ${item("smSend", SHARE_SVG(18), t("Send what's to buy"))}
     ${item("smOcc", SAVE_SVG(18), t("Occasions — BBQ, camping…"))}
     ${item("smSpend", FLAG_TAG_SVG, t("What we spend"))}
@@ -6686,6 +6728,7 @@ function wireShopMenu(){
   on("smCard", () => { cardShow = cardOpenTarget(cardHere().c, cardsGet()); render(); });   // v2.35: the shop you are at; v3.03: else one card → it, two or more → My cards; none yet → straight to adding one
   on("smReport", () => { rpt = { kind:"broken", text:"", diag:true }; render(); });
   on("smEditPage", () => { pageEdit = "shop"; render(); });   // v2.95
+  app.querySelectorAll("[data-undo]").forEach(c => c.onclick = () => { const e = undoLog.find(u => u.id === c.dataset.undo); close(); if(e) undoApply(e); else render(); });   // v3.17
   const mo = app.querySelector("#smMore"); if(mo) mo.onclick = () => { smMoreOpen = !smMoreOpen; render();   // v3.08: the menu stays open
     if(smMoreOpen){ const m = app.querySelector("#shopMenuEl"), bx = app.querySelector("#smMoreBox");
       if(m && bx){ const mr = m.getBoundingClientRect(), br = bx.getBoundingClientRect(); if(br.bottom > mr.bottom) m.scrollTop += Math.min(br.bottom - mr.bottom, br.top - mr.top); } } };
@@ -8484,8 +8527,10 @@ function smartSheet(){
   </div></div>`;
 }
 function commitSmartItems(){
+  const prev=snapState(); let nAdd=0;   // v3.17: undoable
   for(const it of smartItems){
     if(it.sel===false) continue;
+    nAdd++;
     /* v2.70: the same item with a different note is a separate item — merge only when name AND note match */
     const ex=itemTwin(it.name, it.category, it.note);
     if(ex){ if(it.qty>1) ex.qty=(ex.qty||1)+it.qty; if(it.weight) ex.weight=it.weight; if(it.sub) ex.sub=it.sub; markDirty(ex.id); continue; }   // the AI's own sub only, not the dictionary's
@@ -8497,6 +8542,7 @@ function commitSmartItems(){
   draftMain="";
   smartOpen=false; smartItems=[]; smartError=""; smartEdit=null; smartWOpen=null; smartCOpen=null; smartServings=null; smartTitle=""; smartFromPhoto=false;
   save(); render();
+  if(nAdd) showUndo(prev, tf("Added {n} with Smart add", { n:nAdd }));
 }
 /* B8 hidden AI diagnostics — long-press the version number to inspect the
    on-device learning (read-only): categorisation/sort tester, learned shop
@@ -9542,7 +9588,8 @@ function wire(){
       quickEdit=null; editing={kind:"ba", name, cat, qty:en.qty||1, weight:en.weight||"", sub:en.sub||"", note:en.note||"", where:en.where||"", tags:regTags(en), origName:name, origCat:cat, origNote:en.note||""}; render(); return null; }); });
   { const so=app.querySelector("[data-reg-sortold]"); if(so) so.onclick=sortOldRegulars; }   // v2.96
   app.querySelectorAll("[data-reg-rm]").forEach(b=>{ const id=b.dataset.regRm;
-    regPress(b, ()=>removeFromList(id), ()=>id); });
+    regPress(b, ()=>{ const it=state.items.find(i=>i.id===id); const prev=snapState(); removeFromList(id);   // v3.17: undoable
+      if(it && !state.items.some(i=>i.id===id)) showUndo(prev, tf("“{x}” taken off the list", { x:it.name })); }, ()=>id); });
   const ot=app.querySelector("#optBtnTop"); if(ot) ot.onclick=()=>{ optOpen=true; listsOpen=false; render(); };
   app.querySelectorAll("[data-example]").forEach(b=>b.onclick=()=>{ addEntries(b.dataset.example, null); });
   /* v2.56 item 4: the empty list's two tiles. openAdd mounts the sheet synchronously, so #mainInput exists for startMic,
@@ -9724,13 +9771,11 @@ function addFromOutside(text, source){
     localStorage.setItem("ml_lastoutside", JSON.stringify({ h, t:Date.now() })); }catch(e){}
   if(source==="shortcut") text = text.replace(/\s+(and|et|then|puis)\s+/gi, ", ");
   if(siriSmartOn() && smartOn()){ smartAddText(text); return; }
-  const before = addStaged.slice(); addStaged = [];
+  const before = addStaged.slice(); addStaged = []; const prev = snapState();   // v3.17
   stageAdds(()=>addEntries(text, null));
   const ids = addStaged.slice(); addStaged = before;
   const n = ids.length; if(!n){ render(); return; }
-  toast = source==="shortcut" ? (getLists().length>1 ? tf("Added {n} to {list}", { n, list: state.name||"Groceries" }) : tf("Added {n} from Siri", { n })) : tf("Added {n} from a share", { n });
-  toastAction = { label:"Undo", fn:()=>{ const drop=new Set(ids); state.items = state.items.filter(i=>!drop.has(i.id)); toast=null; toastAction=null; clearTimeout(_toastT); save(); render(); } };
-  render(); clearTimeout(_toastT); _toastT=setTimeout(()=>{ toast=null; toastAction=null; render(); }, 5000);
+  showUndo(prev, source==="shortcut" ? (getLists().length>1 ? tf("Added {n} to {list}", { n, list: state.name||"Groceries" }) : tf("Added {n} from Siri", { n })) : tf("Added {n} from a share", { n }));   // v3.17: through the undo log
 }
 var siriOpen=false;   // v2.60 the "Add with Siri" sheet. var: render reads it at boot
 var noListOpen=false;   // v2.62 a shortcut's words reached a browser that knows no list. var: render reads it at boot
