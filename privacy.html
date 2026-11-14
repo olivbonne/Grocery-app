@@ -90,6 +90,9 @@
     <li><b>Report a problem</b> — what you write, and, if you leave "Include app details" ticked, the app's version, the
         page, your layout, icon and theme settings, screen size and browser. It becomes an issue in the developer's
         GitHub repository (or a line in the server's log).</li>
+    <li><b>When the app's server fails</b> (from v3.11) — the server writes down which feature failed, an error code and the
+        time, as an issue in the developer's GitHub repository, so a problem can be looked at after the server's one-hour log is
+        gone. Nothing you sent, nothing it read, and nothing that says which phone it was.</li>
     <li><b>Crash reports</b> — when the app breaks, it sends the error's first lines, the version, the page, the screen
         size and the browser: at most three a day, never the list, never its code.</li>
     <li><b>A quiet account</b> (from v2.39, once it is switched on) — each phone signs in to Firebase (Google) with an anonymous account: a random id, no name, no email. The phone sends it with the features above so the server can tell one phone from another. It is not linked to you unless you add your email (below). "Forget everything on this phone" leaves a quiet account behind unused, and signs an email account out of this phone (the account keeps which lists are yours).</li>

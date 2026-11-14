@@ -9,6 +9,7 @@
 // browser, and never embedded in any static asset. See docs/ai-setup.md.
 
 const { guard, cors } = require('../lib/guard.js');
+const { reportFailure } = require('../lib/report');
 const MAX_INPUT_CHARS = 2000;
 const MODEL_BUDGET_MS = 30000;   // the function itself is capped at 60s (vercel.json)
 
@@ -165,6 +166,11 @@ function clampItem(x) {
   return { name, qty, category, note };
 }
 
+function fail(res, status, code, error) {
+  res.status(status).json({ error: error || 'Parse failed', code });
+  return reportFailure('parse', status, code);   // v3.11 (H3): a 5xx is written down where it lasts (lib/report.js)
+}
+
 module.exports = async (req, res) => {
   if (cors(req, res)) return;   // v2.49 S13: the app shells' preflight — see lib/guard.js
   try {
@@ -178,8 +184,7 @@ module.exports = async (req, res) => {
     const ai = aiProvider();
     if (!ai) {
       // Never leak the reason beyond "not configured".
-      res.status(500).json({ error: 'Server not configured' });
-      return;
+      return fail(res, 500, 'not_configured', 'Server not configured');
     }
 
     // Body may already be parsed (Vercel does this for JSON) or a raw string.
@@ -220,18 +225,15 @@ module.exports = async (req, res) => {
     if (attempt && attempt.netFail) {
       /* v1.93: a 502 with nothing in the log is a bug that costs an afternoon. Every bail says why. */
       console.error(ai.name + ' network failure reaching the model');
-      res.status(502).json({ error: 'Parse failed', code: 'upstream' });
-      return;
+      return fail(res, 502, 'upstream', 'Parse failed');
     }
     if (!attempt || !attempt.ok) {
       // Don't surface upstream status/body to the client — the detail goes to the log only.
       const code = classifyUpstream(attempt.status, attempt.detail);
       if (code === 'model') {
-        res.status(502).json({ error: 'The recipe reader\'s model is no longer available', code: 'model' });
-        return;
+        return fail(res, 502, 'model', 'The recipe reader\'s model is no longer available');
       }
-      res.status(502).json({ error: 'Parse failed', code });
-      return;
+      return fail(res, 502, code, 'Parse failed');
     }
     const upstream = attempt.ok;
 
@@ -241,23 +243,20 @@ module.exports = async (req, res) => {
     } catch (e) {
       /* v1.93: a 502 with nothing in the log is a bug that costs an afternoon. Every bail says why. */
       console.error(ai.name + ' reply was not JSON');
-      res.status(502).json({ error: 'Parse failed', code: 'upstream' });
-      return;
+      return fail(res, 502, 'upstream', 'Parse failed');
     }
 
     const reply = data && data.choices && data.choices[0]
       && data.choices[0].message && data.choices[0].message.content;
     if (typeof reply !== 'string') {
       console.error(ai.name + ' reply was not a string ' + String(reply).slice(0, 200));
-      res.status(502).json({ error: 'Parse failed', code: 'upstream' });
-      return;
+      return fail(res, 502, 'upstream', 'Parse failed');
     }
 
     const parsed = looseJson(reply);
     if (!parsed) {
       console.error(ai.name + ' unreadable ' + String(reply).slice(0, 200));
-      res.status(502).json({ error: 'Parse failed', code: 'unreadable' });
-      return;
+      return fail(res, 502, 'unreadable', 'Parse failed');
     }
 
     // JSON mode returns an object; accept {items:[...]} or a bare array just in case.
@@ -266,8 +265,7 @@ module.exports = async (req, res) => {
       : (parsed && Array.isArray(parsed.items) ? parsed.items : null);
     if (!rawItems) {
       console.error(ai.name + ' unreadable, no items ' + String(reply).slice(0, 200));
-      res.status(502).json({ error: 'Parse failed', code: 'unreadable' });
-      return;
+      return fail(res, 502, 'unreadable', 'Parse failed');
     }
 
     const items = rawItems.map(clampItem).filter(Boolean);
@@ -276,6 +274,6 @@ module.exports = async (req, res) => {
     // Catch-all: never let an unexpected error leak details or the key.
     /* v1.93: a 502 with nothing in the log is a bug that costs an afternoon. Every bail says why. */
     console.error('parse unexpected ' + String(e && e.message).slice(0, 200));
-    res.status(502).json({ error: 'Parse failed', code: 'unexpected' });
+    return fail(res, 502, 'unexpected', 'Parse failed');
   }
 };

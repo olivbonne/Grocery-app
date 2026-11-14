@@ -14,6 +14,7 @@
 // only the reason for a failure and the reply's length.
 
 const { guard, cors } = require('../lib/guard.js');
+const { reportFailure } = require('../lib/report');
 const MAX_IMAGE_CHARS = 3500000; // ~2.6MB of image; Vercel caps the request body around 4.5MB
 const MODEL_BUDGET_MS = 30000;  // room for a retry or two inside the 60s function cap
 
@@ -141,6 +142,7 @@ function looseJson(s) {
 
 function fail(res, status, code, error) {
   res.status(status).json({ error: error || 'Parse failed', code });
+  return reportFailure('card', status, code);   // v3.11 (H3): a 5xx is written down where it lasts (lib/report.js)
 }
 
 module.exports = async (req, res) => {
