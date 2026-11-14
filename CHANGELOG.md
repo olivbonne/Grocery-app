@@ -11,6 +11,7 @@ Convention: bump the number by `0.01` for each batch of changes, add a dated row
 
 | Version | Date | Changes |
 |--------|------------|---------|
+| v3.13 | 2026-11-14 | **Move your cards by dragging.** In My cards, hold a card for a moment and slide it to where you want it; the new order is used everywhere. A quick tap still shows the card, and the arrows under Edit still work. |
 | v3.12 | 2026-11-14 | **Tiles in a block with pictures turned off are no longer too tall.** When you turned pictures off for your list in Edit this page, the tiles kept the empty space the picture used to take. They are now as compact as with item icons off in Settings. |
 | v3.11 | 2026-11-14 | **When one of the smart features fails on the server** (Smart add, recipes, receipts, the fridge, aisle signs, cards), it is now written down where it lasts, so it can be looked into the next day. It records only which feature failed, why and when — nothing you sent and nothing that says which phone. Nothing changes on your screen. |
 | v3.10 | 2026-11-14 | **Edit item is shorter.** It shows the name, note, quantity, unit and category first; the photo, where to buy and the Urgent / If on sale flags are under **More**, which tells you what is set inside (for example "Coles · Urgent"). In the ⋯ menu the Store row now shows only your shop and **Change**, so the menu is shorter. The duplicates message now speaks French too. |
