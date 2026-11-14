@@ -9,7 +9,7 @@
    with each text alignment and vertical place; Settings and Advanced look; Plan; Edit item; the + sheet; the ⋯ menu; My cards. */
 const fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '..', '..');
-const PROPS = ['display','position','top','right','bottom','left','width','height','margin','padding','border','border-radius','box-sizing','flex','flex-direction','flex-wrap','align-items','align-self','justify-content','justify-self','gap','grid-template-columns','order','overflow','color','background-color','background-image','opacity','font-family','font-size','font-weight','line-height','letter-spacing','text-align','text-transform','white-space','text-overflow','overflow-wrap','transform','z-index','box-shadow','visibility','pointer-events','backdrop-filter','-webkit-line-clamp','aspect-ratio','max-width','max-height','min-width','min-height','fill','stroke'];
+const PROPS = ['display','position','top','right','bottom','left','width','height','margin','padding','border','border-radius','box-sizing','flex','flex-direction','flex-wrap','align-items','align-self','justify-content','justify-self','gap','grid-template-columns','order','overflow','color','background-color','background-image','opacity','font-family','font-size','font-weight','line-height','letter-spacing','text-align','text-transform','white-space','text-overflow','overflow-wrap','transform','z-index','box-shadow','visibility','pointer-events','backdrop-filter','-webkit-line-clamp','aspect-ratio','max-width','max-height','min-width','min-height','fill','stroke','align-content','vertical-align'];
 const [mode, a, b] = process.argv.slice(2);
 if(mode === 'diff'){ const A = JSON.parse(fs.readFileSync(a,'utf8')), B = JSON.parse(fs.readFileSync(b,'utf8')); let n = 0;
   for(const k of new Set([...Object.keys(A), ...Object.keys(B)])){ const x = A[k], y = B[k];
@@ -63,7 +63,19 @@ const SNAP = `(PROPS) => { const out = []; const walk = (el, p) => { const cs = 
   await run('shop-smallicons', { ml_largecols:"4", ml_icosize:"s" }, false);
   await run('shop-noicons', { ml_largecols:"2", ml_emoji_item:"0" }, false);
   for(const h of ["3","sq"]) await run(`shop-height-${h}`, { ml_largecols:"3", ml_tilelines:h }, false);
-  for(const st of ["tog","note","disc"]) await run(`shop-cu-${st}`, { ml_largecols:"3", ml_cu_style:st }, false);
+  for(const st of ["tog","note","sep"]) await run(`shop-cu-${st}`, { ml_largecols:"3", ml_cu_style:st }, false);
+  /* v3.09: every place a count disc, a unit pill or the one pill can take, on column tiles and in the one-line layouts. A place
+     on the border needs gaps of at least CU_GAP (13) between tiles, or the app draws it inside (cuBorderOK) — so BG. */
+  const BG = { ml_gapx:"14", ml_gapy:"14" };
+  for(const dp of ["tl","tr","bl","br"]) for(const de of ["border","inside"]) await run(`cu-sep-${dp}-${de}`, Object.assign({ ml_largecols:"3", ml_cu_style:"sep", ml_cu_dp:dp, ml_cu_de:de }, de === "border" ? BG : {}), false);
+  for(const uw of ["top","right","left","note"]) for(const ue of ["border","inside"]) await run(`cu-sep-u${uw}-${ue}`, Object.assign({ ml_largecols:"3", ml_cu_style:"sep", ml_cu_uw:uw, ml_cu_ue:ue }, ue === "border" ? BG : {}), false);
+  for(const tp of ["tr","top","tl","left","bl","bottom","br","right"]) for(const te of ["inside","border"]) await run(`cu-tog-${tp}-${te}`, Object.assign({ ml_largecols:"3", ml_cu_style:"tog", ml_cu_tp:tp, ml_cu_te:te }, te === "border" ? BG : {}), false);
+  for(const cols of ["5","6","2"]) for(const st of ["sep","tog"]) await run(`cu-c${cols}-${st}`, { ml_largecols:cols, ml_cu_style:st }, false);
+  for(const cols of ["4","5","6"]) await run(`cu-c${cols}-border`, Object.assign({ ml_largecols:cols, ml_cu_style:"sep", ml_cu_dp:"tl", ml_cu_uw:"top", ml_cu_ue:"border" }, BG), false);
+  for(const cols of ["1","0"]) for(const st of ["","sep","tog","note"]) await run(`cu-line${cols}-${st || "none"}`, Object.assign({ ml_largecols:cols, ml_displays:JSON.stringify({ shop:"large" }) }, st ? { ml_cu_style:st } : {}), false);
+  for(const h of ["2","3","sq"]) for(const st of ["sep","tog"]) await run(`cu-h${h}-${st}`, Object.assign({ ml_largecols:"3", ml_tilelines:h, ml_cu_style:st, ml_cu_tp:"top", ml_cu_dp:"bl", ml_cu_de:"border", ml_cu_te:"border" }, BG), false);
+  await run('cu-note-above', { ml_largecols:"3", ml_cu_style:"note", ml_cu_np:"above" }, false);
+  await run('cu-sep-above-c5', { ml_largecols:"5", ml_cu_style:"sep", ml_cu_np:"above", ml_cu_uw:"top" }, false);
   for(const ta of ["left","center","right"]) for(const tv of ["top","middle","bottom"]){ if(ta !== "center" && tv !== "middle") continue;
     await run(`pb-${ta}-${tv}`, { ml_largecols:"3", ml_pagelay:JSON.stringify({ shop:{ s:{ "shop.list":{ ta, tv } } } }) }, false); }
   await run('pb-noimg-list', { ml_largecols:"1", ml_pagelay:JSON.stringify({ shop:{ s:{ "shop.list":{ img:"off", ta:"right" } } } }) }, false);

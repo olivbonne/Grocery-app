@@ -320,3 +320,11 @@ the household asked for is not a lesson.*
     with no message (noticed by the executor while building v3.03's grid, fixed v3.04). *Guard:* a limit is checked where the
     thing is added and refused with a message (`cardRoom`), never enforced by trimming; the v3.04 suite saves a 21st card and
     checks the message and that the twenty are intact.
+
+72. **A comparison that is asked for a setting the app ignores compares the default and still says "no difference".** The
+    v3.06 style comparison asked for the count-and-unit style "disc" (the value is "sep"), and its "border" screens had tile
+    gaps under the 13px a border place needs (`cuBorderOK`), so the app drew the default and inside places — the moved
+    border rules were never compared, and zero differences proved nothing about them (found by the v3.09 suite, whose border
+    check failed). *Guard:* a fixture uses values from the app's own list (`CU_KEYS`) and its preconditions (gaps for a border
+    place), the suite of a refactor checks one screen of each kind really shows what it asks for (v309: a disc ON the border),
+    and the comparison counts what it saw (115 border badges in v3.09's record).

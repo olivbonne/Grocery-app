@@ -69,7 +69,10 @@ const seed = (o) => { o=o||{}; return `(() => {
       if(o.date) await page.addInitScript(FAKE(...o.date)); await page.addInitScript(seed(o)); await page.goto(`http://127.0.0.1:${port}/index.html?list=v101`, { waitUntil:'domcontentloaded' }); await page.waitForTimeout(1800); };
     const css = fs.readFileSync(path.join(ROOT,'app.css'),'utf8'), bare = css.replace(/\/\*[\s\S]*?\*\//g,'');
     const iApp = bare.indexOf('@layer app {'), iBlk = bare.indexOf('@layer blocks {');
-    ok('app.css declares the layers in order, and nothing but that line sits outside a layer', /@layer app, blocks;/.test(bare) && iApp>0 && iBlk>iApp && bare.slice(0,iApp).replace('@layer app, blocks;','').trim()==='' , bare.slice(0,iApp).trim().slice(0,80));
+    /* SUPERSEDED by v3.09: the order line is now `@layer app, tiles, blocks;` (v309.js checks the tiles layer). Still protected
+       here: app comes first, blocks last, and nothing but that one line sits outside a layer. */
+    const ORDER = (bare.match(/@layer app(?:, [a-z]+)*, blocks;/) || [''])[0];
+    ok('app.css declares the layers in order, and nothing but that line sits outside a layer', !!ORDER && iApp>0 && iBlk>iApp && bare.slice(0,iApp).replace(ORDER,'').trim()==='' , bare.slice(0,iApp).trim().slice(0,80));
     const depthAt = i => { let d=0; for(let k=0;k<i;k++){ if(bare[k]==='{')d++; else if(bare[k]==='}')d--; } return d; };
     ok('the app layer closes just before the blocks layer, and the file ends when blocks closes', depthAt(iBlk)===0 && depthAt(bare.length)===0 && /\}\s*$/.test(bare));
     const blk = bare.slice(iBlk);
@@ -84,7 +87,8 @@ const seed = (o) => { o=o||{}; return `(() => {
     await mk({ srv:{ "lists/v101": D }, cache:D, extra:BASE }); const t0 = await tile();
     await mk({ srv:{ "lists/v101": D }, cache:D, extra:lay({ ta:"left", tv:"bottom" }) }); const tl = await tile();
     await mk({ srv:{ "lists/v101": D }, cache:D, extra:lay({ ta:"right", tv:"top" }) }); const tr = await tile();
-    ok('the browser builds the layers app, blocks', t0.layers==='app,blocks', t0.layers);
+    /* SUPERSEDED by v3.09: a tiles layer sits between the two. Still protected: the browser builds app first and blocks last. */
+    ok('the browser builds the layers app, …, blocks', /^app,(?:[a-z]+,)*blocks$/.test(t0.layers), t0.layers);
     ok('a block with no setting keeps the tiles\' own centre', t0.ai==='center' && t0.nameTa==='center', JSON.stringify(t0));
     ok('Edit this page › left + bottom reaches the tiles through the blocks layer', tl.ai==='flex-start' && tl.nameTa==='left' && tl.jc==='flex-end', JSON.stringify(tl));
     ok('…and right + top', tr.ai==='flex-end' && tr.nameTa==='right' && tr.jc==='flex-start', JSON.stringify(tr));

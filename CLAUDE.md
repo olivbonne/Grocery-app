@@ -30,6 +30,10 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
   must win over the tiles goes in a LATER layer with plain selectors (never repeat a class to win, never add `!important`
   there — an `!important` in an earlier layer beats a later one). Any stylesheet refactor is proved with
   `.claude/tools/cssdiff.js`: `snap` the base tree and the changed tree, then `diff` — zero differences is the bar.
+  **v3.09: `@layer app, tiles, blocks;`** — `tiles` holds the count and unit, the badge places and the one-item row, every
+  selector in `:where()` (all weigh zero), so THE LATER RULE WINS there: a new rule goes after what it must beat.
+  `.claude/tools/layermove.py` moves a range of `app` rules there in an order that keeps the old winners (dry run first:
+  it lists rules left in `app` that would start losing), and cssdiff plus a canary prove it.
 - **Brand (preserve):** forest ink `#21351F`, sage paper `#F2F6EE`, burnt-orange accent `#E2502C`,
   Outfit variable font (self-hosted `outfit-*.woff2` — no Google Fonts links; every asset lives in
   the repo so the PWA works offline). Since v2.15 that includes the Firebase SDK
