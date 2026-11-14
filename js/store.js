@@ -18,6 +18,7 @@ export function put(r, data, merge){
   if(!r) return Promise.reject(new Error("store not ready"));
   return merge ? _fs.setDoc(r, data, { merge:true }) : _fs.setDoc(r, data); }
 export function has(name){ return !!(_fs && typeof _fs[name] === "function"); }
+export function del(r){ return (r && has("deleteDoc")) ? _fs.deleteDoc(r) : Promise.reject(new Error("no deleteDoc")); }   // v3.18: deleting a record (the account's, users/{uid})
 export function canSplit(){ return storeReady() && typeof _fs.collection === "function"; }
 export function col(...path){ return canSplit() ? _fs.collection(_db, ...path) : null; }
 export function listenAll(c, onSnap, onErr, opts){

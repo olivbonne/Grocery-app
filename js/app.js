@@ -6,29 +6,29 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.17";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.17";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.17";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.17";
-import { compareStores, worthIt } from "./compare.js?v=3.17";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.17";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.17";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.17";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.17";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.17";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.17";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.17";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.17";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.17";   /* v2.45 (architecture review S17): the app in French as well as English */
-import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.17";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
-import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.17";   /* v3.04: the cards' logic (architecture review L17) */
-import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.17";   /* v3.05 (H2): previews use their own database */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit, del } from "./store.js?v=3.18";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.18";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.18";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.18";
+import { compareStores, worthIt } from "./compare.js?v=3.18";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.18";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.18";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.18";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.18";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.18";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.18";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.18";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.18";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.18";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.18";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.18";   /* v3.04: the cards' logic (architecture review L17) */
+import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.18";   /* v3.05 (H2): previews use their own database */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here.
    v3.05: a Vercel preview gets the preview project (js/env.js). */
 const IS_PREVIEW = (()=>{ try{ return isPreviewHost(location.hostname); }catch(e){ return false; } })();
 const firebaseConfig = firebaseConfigFor(IS_PREVIEW ? location.hostname : "", window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" });
-const APP_VERSION = "v3.17";
+const APP_VERSION = "v3.18";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 
 /* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
@@ -2856,21 +2856,37 @@ async function acctComplete(url){ if(!_authM || !_auth) return;
   catch(e){ acct={ sent, err:acctErr(e) }; render(); } }
 function acctSignOut(){ if(!_authM || !_auth) return; if(!confirm("Sign out on this phone? Its lists stay on it; your account keeps them too.")) return;
   _authM.signOut(_auth).catch(()=>{}).then(()=>{ acct=null; _acctSyncedUid=""; render(); }); }   // onAuthStateChanged then signs the phone in quietly again
-/* v2.46 (the household's item A; an App Store rule, S16): the account can be deleted from inside the app. In order: this
-   account comes off every list this phone knows (its access entry set to false, its name cleared), its saved lists are
-   emptied, then Firebase deletes the account itself. The lists stay — on this phone and for everyone on them — and the
-   phone carries on quietly signed in, rejoining them with the keys it keeps. An empty users/{uid} record is left behind
-   (no codes, no names): deleting records needs an import the test stubs do not have — a shortcut, logged in Do later. */
+/* v2.46 (the household's item A; an App Store rule, S16): the account can be deleted from inside the app. v3.18: for every
+   account (the quiet anonymous one too), one button in Settings › Your data. In order, each failure collected and the rest
+   carrying on: the OPEN list loses this person (emptied when they are its only member); this account comes off every list
+   this phone knows — its access entry set to false and its name cleared (deleteField is not available through js/store.js, so
+   the record keeps the uid with false, which grants nothing); an email account's users/{uid} record is deleted (overwritten
+   empty if that is refused); then Firebase deletes the sign-in. Only once that worked does the phone forget everything.
+   Not done: other lists' members (only the open list is in state) and shared shelf prices (the app keeps no record of its keys). */
 async function acctDelete(){ const u=_auth && _auth.currentUser;
-  if(!u || u.isAnonymous || !_authM || typeof _authM.deleteUser!=="function") return;
-  if(!confirm(t("Delete your account? Your email and password are removed, and your account forgets which lists are yours. The lists themselves stay, on this phone and for everyone on them."))) return;
-  acct={ busy:true, step:t("Deleting your account…") }; render();
-  try{
-    for(const l of getLists()){ try{ await acctWait(put(ref("access",l.code), { acl:{[u.uid]:false}, names:{[u.uid]:""} }, true)); }catch(e){} }
-    try{ await acctWait(put(ref("users",u.uid), { lists:{}, gone:{}, updated:Date.now() })); }catch(e){}
-    await acctWait(_authM.deleteUser(u));
-    acct={ deleted:true }; _acctSyncedUid=""; _accessFor=""; render(); }
-  catch(e){ acct={ err: /requires-recent-login/.test(String(e && e.code)) ? t("For safety, Firebase wants a fresh sign-in first: sign out, sign in again, then delete the account.") : acctErr(e) }; render(); } }
+  if(!u || !_authM || typeof _authM.deleteUser!=="function") return;
+  if(!confirm(t("Delete your account? Your name comes off every list on this phone, a list only you are on is emptied, your sign-in and saved settings on the server are deleted, and this phone forgets everything. Lists shared with others stay for them."))) return;
+  if(!confirm(t("Sure? This cannot be undone."))) return;
+  /* v3.18: an email sign-in older than a few minutes would be refused at the LAST step (deleteUser) after the lists were already
+     changed — so ask for the fresh sign-in first, before anything is touched */
+  if(!u.isAnonymous){ const at=Date.parse((u.metadata && u.metadata.lastSignInTime) || "") || 0;
+    if(at && Date.now() - at > 4*60*1000){   /* unknown time: deleteUser itself says so (requires-recent-login, step d) */ acct={ del:true, err:t("For safety, Firebase wants a fresh sign-in first: sign out, sign in again, then delete the account.") }; render(); return; } }
+  const step=s=>{ acct={ busy:true, del:true, step:t(s) }; render(); };
+  const fails=[];
+  step("Deleting your account…");
+  try{ const mem=state.members||[], others=mem.filter(m=>m!==me);
+    if(me && mem.length && !others.length) emptyListNow(true);   // emptied only when this person is its ONLY member (never a list with no members recorded)
+    else if(me && mem.includes(me)){ state.members=others; shoppingClear(); await saveSoon(2500); } }catch(e){ fails.push("list"); }
+  step("Deleting your account… taking your name off your lists");
+  for(const l of getLists()){ try{ await acctWait(put(ref("access",l.code), { acl:{[u.uid]:false}, names:{[u.uid]:""} }, true)); }catch(e){ fails.push("access"); } }
+  if(!u.isAnonymous){ step("Deleting your account… deleting its saved settings");
+    try{ await acctWait(del(ref("users",u.uid))); }
+    catch(e){ try{ await acctWait(put(ref("users",u.uid), { lists:{}, gone:{}, updated:Date.now() })); }catch(e2){ fails.push("users"); } } }
+  step("Deleting your account… deleting your sign-in");
+  try{ await acctWait(_authM.deleteUser(u)); }
+  catch(e){ acct={ del:true, err: /requires-recent-login/.test(String(e && e.code)) ? t("For safety, Firebase wants a fresh sign-in first: sign out, sign in again, then delete the account.") : t("Your account could not be deleted right now. Check your connection and try again.") }; render(); return; }
+  acct={ deleted:true }; _acctSyncedUid=""; _accessFor="";
+  await forgetPhoneNow(); }
 var _acctSyncedUid = "";
 function acctRef(){ const u=_auth && _auth.currentUser; return (u && !u.isAnonymous && db) ? ref("users", u.uid) : null; }
 /* merge both ways: lists the account has and this phone does not are added here; lists this phone has are added to the
@@ -2942,7 +2958,7 @@ function prefsCardHTML(){ const P = _prefsOffer; if(!P || P.at <= prefsSeen() ||
 function acctDenied(e){ if(/permission/i.test(String((e && (e.code||e.message)) || ""))) { _acctNote="Your lists can't be saved to your account yet: the app's owner still has to publish the new database rules."; render(); } }
 function acctHTML(){ if(!configured) return "";
   const em=acctEmail(), a=acct||{};
-  const status = a.busy ? `<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>${esc(t(a.step||"Working…"))}</div>`
+  const status = a.del ? "" : a.busy ? `<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>${esc(t(a.step||"Working…"))}</div>`
     : a.err ? `<div class="rpterr" role="alert">${esc(t(a.err))}</div>` : "";
   if(em) return `<div class="acctbox" id="acctBox"><div class="accthd">${t("Your account")}</div>
     <div class="acctline">${tf("Signed in as <b>{e}</b>. Your lists are saved to your account: sign in with this email on another phone to get them back.", { e:esc(em) })}</div>
@@ -2953,8 +2969,7 @@ function acctHTML(){ if(!configured) return "";
     <input id="acctNewPw" class="cefield acctfield" type="password" autocomplete="new-password" placeholder="${t("New password — at least 6 characters")}" />
     <button class="optaction" id="acctSetPw" style="margin-top:8px" ${a.busy?"disabled":""}>${t("Save password")}</button>
     ${status}
-    <button class="optaction" id="acctOut" style="margin-top:8px">${t("Sign out on this phone")}</button>
-    <button class="acctlink" id="acctDel">${t("Delete my account")}</button></div>`;
+    <button class="optaction" id="acctOut" style="margin-top:8px">${t("Sign out on this phone")}</button></div>`;
   return `<div class="acctbox" id="acctBox"><div class="accthd">${t("Your account")}</div>
     <div class="acctline">${esc(t(authNote()))}</div>
     <div class="acctline">${t("Add your email and a password so a new phone gets your lists back: sign in there with the same two.")}</div>
@@ -3638,13 +3653,17 @@ async function leaveList(){ if(!me) return;
 function emptyList(){
   if(!confirm(`Empty “${state.name || "this list"}” for everyone? Items, Regulars, the plan, prices, spending, occasions and what the app has learned all go. The name, people, categories and stores stay.`)) return;
   if(!confirm("Sure? Everyone on the list loses it. Only this phone's daily backups could bring it back.")) return;
+  emptyListNow(); }
+function emptyListNow(quiet){   // v3.18: the emptying itself, also used by Delete my account (quiet: no redraw or toast)
   const now = Date.now();
   state.baTomb = state.baTomb || {}; (state.buyAgain || []).forEach(e => { state.baTomb[baKey(e)] = now; }); state.buyAgain = [];
   state.items = []; state.plan = { days:{}, recipes:[] }; state.prices = {}; state.spend = []; state.clr = Object.assign({}, state.clr, { prices:now, spend:now });   /* v2.75: moved prices/spending are records — every phone drops the ones from before now. clr is written only once set, so an app on the old rules (which refuse a field they do not know) keeps saving until it is used */ state.templates = []; state.memb = {}; state.shopping = {}; state.aisle = {};
   applyPredictReset(now); state.predictReset = now;
-  save(); render(); showToast("The list is empty"); }
+  save(); if(quiet) return; render(); showToast("The list is empty"); }
 async function forgetPhone(){
   if(!confirm("Forget everything on this phone? Every list, your name, your settings and the backups kept here go. The shared lists stay for the people on them — open a share link to come back.")) return;
+  await forgetPhoneNow(); }
+async function forgetPhoneNow(){   // v3.18: the clearing, also the last step of Delete my account
   _forgetting = true;
   try{ if(_authM && _auth && _auth.currentUser && !_auth.currentUser.isAnonymous) _authM.signOut(_auth); }catch(e){}   // v2.40: signed out, but the account keeps its lists (none marked gone)
   try{ for(const k of Object.keys(localStorage)) if(k.startsWith("ml_")) localStorage.removeItem(k); }catch(e){}
@@ -9246,7 +9265,9 @@ function optionsBody(){
     ${(me && (state.members||[]).includes(me)) ? `<button class="optaction" id="optLeave" style="margin-top:10px">${t("Leave this list")}</button>` : ""}
     <button class="optaction" id="optEmpty" style="margin-top:10px">${t("Empty this list for everyone")}</button>
     <button class="optaction" id="optForget" style="margin-top:10px">${t("Forget everything on this phone")}</button>
-    <div style="margin:6px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">${t("Leaving takes your name off this list and this phone forgets it; the others keep it. Emptying clears what is in the list for everyone — items, Regulars, the plan, prices, spending, occasions and what the app has learned. Forgetting clears every list, name, setting and backup on this phone; the shared lists stay for their people.")}</div>
+    <button class="optaction" id="acctDel" style="margin-top:10px" ${(acct&&acct.busy)?"disabled":""}>${t("Delete my account")}</button>
+    ${(acct && acct.del && acct.busy) ? `<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>${esc(acct.step||"")}</div>` : (acct && acct.del && acct.err) ? `<div class="rpterr" role="alert">${esc(acct.err)}</div>` : ""}
+    <div style="margin:6px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">${t("Leaving takes your name off this list and this phone forgets it; the others keep it. Emptying clears what is in the list for everyone — items, Regulars, the plan, prices, spending, occasions and what the app has learned. Forgetting clears every list, name, setting and backup on this phone; the shared lists stay for their people.")} ${t("Deleting your account does all that, takes your name off every list on this phone (a list only you are on is emptied) and deletes your sign-in and its saved settings on the server.")}</div>
     <div id="verFoot" style="text-align:center;margin-top:12px;font-size:12.5px;color:var(--muted2);font-weight:600" title="Build: ${APP_BUILD_DATE} · hold for diagnostics">${esc(IS_PREVIEW ? APP_VERSION + " · " + t("Preview data") : APP_VERSION)}</div>`;
 }
 function renderSettingsPage(){
