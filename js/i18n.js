@@ -1144,6 +1144,14 @@ export const FR = {
   "Photos need the updated database rules — see Settings › Help.": "Les photos demandent les nouvelles règles de la base de données — voir Réglages › Aide.",
   "Couldn't save the photo.": "Impossible d'enregistrer la photo.",
   "That photo is too big, even made smaller.": "Cette photo est trop lourde, même réduite.",
+  // v3.20 staged releases
+  "New versions first (tester)": "Nouvelles versions en premier (testeur)",
+  "This phone gets each new version as soon as it is out; the household's other phones get it a day later, so a problem shows here first.": "Ce téléphone reçoit chaque nouvelle version dès sa sortie ; les autres téléphones du foyer la reçoivent un jour plus tard, pour qu’un problème apparaisse ici d’abord.",
+  "Version {v} is waiting — it arrives {when}.": "La version {v} attend — elle arrive {when}.",
+  "tomorrow": "demain",
+  "in {n} h": "dans {n} h",
+  "Get it now": "L’installer maintenant",
+  "Updating…": "Mise à jour…",
 };
 
 /* v2.55: the languages the app speaks. To add one: write its table (same keys as FR — the English text — with that

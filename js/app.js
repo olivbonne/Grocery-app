@@ -6,29 +6,29 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit, del } from "./store.js?v=3.19";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.19";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.19";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.19";
-import { compareStores, worthIt } from "./compare.js?v=3.19";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.19";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.19";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.19";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.19";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.19";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.19";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.19";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.19";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.19";   /* v2.45 (architecture review S17): the app in French as well as English */
-import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.19";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
-import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.19";   /* v3.04: the cards' logic (architecture review L17) */
-import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.19";   /* v3.05 (H2): previews use their own database */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit, del } from "./store.js?v=3.20";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.20";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.20";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.20";
+import { compareStores, worthIt } from "./compare.js?v=3.20";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.20";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.20";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.20";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.20";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.20";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.20";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.20";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.20";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.20";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.20";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.20";   /* v3.04: the cards' logic (architecture review L17) */
+import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.20";   /* v3.05 (H2): previews use their own database */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here.
    v3.05: a Vercel preview gets the preview project (js/env.js). */
 const IS_PREVIEW = (()=>{ try{ return isPreviewHost(location.hostname); }catch(e){ return false; } })();
 const firebaseConfig = firebaseConfigFor(IS_PREVIEW ? location.hostname : "", window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" });
-const APP_VERSION = "v3.19";
+const APP_VERSION = "v3.20";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 
 /* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
@@ -167,7 +167,7 @@ function showAmt(w){
 /* A first launch reloads once on its own (the v1.63 slot migration) before sign-in, so the answer is kept for the session. */
 var _prefsFresh = (()=>{ try{ if(sessionStorage.getItem("ml_prefsfresh") === "1") return true;
   const f = !localStorage.getItem("ml_theme") && !localStorage.getItem("ml_appmig163"); if(f) sessionStorage.setItem("ml_prefsfresh", "1"); return f; }catch(e){ return false; } })();
-const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_notesg$|ml_regnow$|ml_feed$|ml_jk_|ml_srvbak_)/;
+const APP_EXCLUDE_BOOT = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_notesg$|ml_regnow$|ml_feed$|ml_tester$|ml_jk_|ml_srvbak_)/;
 (function applyStartSlot(){
   try{
     /* v1.63 item 3: "when the user starts", not "on every load". Applying a look reloads the page to
@@ -2425,7 +2425,7 @@ function subscribe(){
     fromCache = snap.metadata.fromCache;
     if(snap.exists() && !snap.metadata.hasPendingWrites){ const d = snap.data();
       _newerData = (+d.v||0) > LIST_V;
-      if(_newerData){ render(); return; }   // v2.49 S9: a newer app's data — leave state alone, show the update card
+      if(_newerData){ swMsg({ t:"release" }); render(); return; }   // v3.20: a newer app wrote this list — this phone must not wait a day   // v2.49 S9: a newer app's data — leave state alone, show the update card
       /* v2.58: a split list — the items listener owns state.items/itemTomb; the record's old array is kept frozen (the backup) */
       const split = Array.isArray(d.parts) && d.parts.includes("items") && canSplit();
       if(split){ _frozenItems = d.items||[]; _frozenTomb = d.itemTomb||{}; }
@@ -3005,11 +3005,28 @@ try {
     } catch(e){ console.error(e); } });
   }
 } catch(e){ console.error(e); }
+/* v3.20 staged releases (sw.js header): the tester phone gets a new version at once, the others a day later.
+   ml_tester is a preference — in APP_EXCLUDE_BOOT and APP_EXCLUDE. The worker is reached here, beside its registration
+   (platform.js does not wrap it). swMsg resolves to the reply, or null with no worker, on a timeout or an error. */
+function testerOn(){ try{ return localStorage.getItem("ml_tester")==="1"; }catch(e){ return false; } }
+function swMsg(msg, ms=2000){ return new Promise(res=>{ try{
+  const sw = navigator.serviceWorker && navigator.serviceWorker.controller; if(!sw) return res(null);
+  const ch = new MessageChannel(); const to = setTimeout(()=>res(null), ms);
+  ch.port1.onmessage = e=>{ clearTimeout(to); res(e.data || null); };
+  sw.postMessage(msg, [ch.port2]); }catch(e){ res(null); } }); }
+var _swStat = null, _swStatAt = 0, _swGetBusy = false;   // var: optionsBody reads them
+function swStatusMaybe(){ if(Date.now() - _swStatAt < 60000) return; _swStatAt = Date.now();   // asked once when Settings opens, never in a loop
+  swMsg({ t:"status" }).then(r=>{ const was = JSON.stringify(_swStat); _swStat = r; if(JSON.stringify(r) !== was) render(); }); }
+function swPendHTML(){ const p = _swStat && _swStat.pend; if(!p || !p.ver) return "";
+  const left = (+p.since||0) + (+_swStat.holdMs||86400000) - Date.now(), n = Math.max(1, Math.ceil(left/3600000));
+  const when = left > 12*3600000 ? t("tomorrow") : tf("in {n} h", { n });
+  return `<div class="hint" role="status" style="text-align:left;margin:8px 0 0">${/* not .opthint: infoBubbles would fold it behind the tester row's (i) */""}${tf("Version {v} is waiting — it arrives {when}.", { v:esc(p.ver), when })}</div><button class="optaction" id="optSwGet" style="margin-top:6px" ${_swGetBusy?"disabled":""}>${_swGetBusy ? `<span class="spin" aria-hidden="true"></span><span role="status">${t("Updating…")}</span>` : t("Get it now")}</button>`; }
 /* v2.15: the service worker (sw.js) keeps the app, its fonts, its icons and the Firebase SDK on the phone, so it
    opens with no signal once iOS has closed it. Not under test automation unless a suite asks for it (ml_swtest):
    Playwright 1.56 cannot stub a worker's own requests, so a worker there would load the real Firebase SDK. */
 try{ if("serviceWorker" in navigator && !isNativeApp() && (!navigator.webdriver || localStorage.getItem("ml_swtest")==="1")){
   const regSW=()=>{ navigator.serviceWorker.register("/sw.js").catch(()=>{}); };
+  navigator.serviceWorker.ready.then(()=>swMsg({ t:"cfg", tester:testerOn() })).catch(()=>{});   // v3.20 staged releases
   if(document.readyState==="complete") regSW(); else window.addEventListener("load", regSW); } }catch(e){}
 /* v2.15: ask the browser to keep this app's data. Safari can clear a website's stored data after weeks without
    use; installed home-screen apps are exempt, and this asks for the same treatment where it is offered. */
@@ -8190,6 +8207,8 @@ function wireOptions(){
     if(histOpen.has(k)) histOpen.delete(k); else histOpen.add(k); render(); });
   const hc=app.querySelector("#optHistClear"); if(hc) hc.onclick=()=>{ histClear(histView||listCode); render(); };
   const orc=app.querySelector("#optRcpt"); if(orc) orc.onclick=()=>rcPick();   // v2.09
+  app.querySelectorAll("[data-opt-tester]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_tester", b.dataset.optTester); }catch(e){} swMsg({ t:"cfg", tester:testerOn() }); render(); });   // v3.20
+  { const g=app.querySelector("#optSwGet"); if(g) g.onclick=()=>{ if(_swGetBusy) return; _swGetBusy=true; render(); swMsg({ t:"release" }).then(()=>location.reload()); }; }
   app.querySelectorAll("[data-opt-feed]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_feed", b.dataset.optFeed); }catch(e){} render(); if(feedOn()) feedRefreshMaybe(); });   // v3.19
   app.querySelectorAll("[data-opt-sharepx]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_sharepx", b.dataset.optSharepx); }catch(e){} render(); });   // v2.47
   app.querySelectorAll("[data-opt-rcptask]").forEach(b=>b.onclick=()=>{ try{ localStorage.setItem("ml_rcptask", b.dataset.optRcptask); }catch(e){} render(); });   // v2.17
@@ -8797,7 +8816,7 @@ const APP_SLOTS = 9;
    ml_lastview) are listed because applyStoredAppearance DELETES everything it does not exclude, and
    since v1.63 that clear runs at every launch: a look must never take your history, your stores or
    your learned route with it. Keep this in step with APP_EXCLUDE_BOOT at the top of the module. */
-const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_notesg$|ml_regnow$|ml_feed$|ml_jk_|ml_srvbak_)/;
+const APP_EXCLUDE = /^(ml_cache_|ml_collapse_|ml_hist_|ml_ai|ml_predict|ml_purch|ml_store|ml_atstore|ml_merge_|ml_lists$|ml_lastlist$|ml_lastview[23]?$|ml_me$|ml_shop$|ml_kbh$|ml_app|ml_numdef$|ml_units$|ml_optcoll$|ml_mealslots$|ml_recopen$|ml_recsort$|ml_ingsort$|ml_rcptday$|ml_rptday$|ml_crashday$|ml_installhint$|ml_snap_|ml_wakelock$|ml_rcptnudge$|ml_rcptask$|ml_tenhide$|ml_cmphide$|ml_sayshop$|ml_lookseen$|ml_aisleday$|ml_cards$|ml_lastcart$|ml_cardnudge$|ml_cardask$|ml_stucklog$|ml_cardview$|ml_signinemail$|ml_lang$|ml_sharepx$|ml_onb$|ml_gonelists$|ml_micdenied$|ml_nosmall$|ml_lastoutside$|ml_siriSmart$|ml_prefsseen$|ml_nocard$|ml_notesg$|ml_regnow$|ml_feed$|ml_tester$|ml_jk_|ml_srvbak_)/;
 function appearanceSnapshot(){ const o={};
   for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
     if(k && k.indexOf("ml_")===0 && !APP_EXCLUDE.test(k)) o[k]=localStorage.getItem(k); }
@@ -9340,6 +9359,8 @@ function optionsBody(){
     <button class="optaction" id="optDiag" style="margin-top:10px">${FLASK_SVG(16)} ${t("AI diagnostics")}</button>
     <button class="optaction" id="optPriceDiag" style="margin-top:10px">${FLAG_TAG_SVG} ${t("Price diagnostics")}</button>
     <button class="optaction" id="optLocDiag" style="margin-top:10px">${PIN_SVG(16)} ${t("Location diagnostics")}</button>
+    ${row(t("New versions first (tester)"), `<div class="seg"><button data-opt-tester="1" class="${testerOn()?'on':''}">${t("On")}</button><button data-opt-tester="0" class="${!testerOn()?'on':''}">${t("Off")}</button></div>`)}<div class="opthint">${/* v3.20 */""}${t("This phone gets each new version as soon as it is out; the household's other phones get it a day later, so a problem shows here first.")}</div>
+    ${(swStatusMaybe(), swPendHTML())}
     ${row(t("Connection check"), `<span class="optdiag" id="optConnDiag">${connDiagHTML()}</span>`)}<div class="opthint">${t("If saving is slow, a screenshot of this helps find why.")}</div>
     ${stuckLog().length ? `<button class="optaction" id="optStuck" style="margin-top:10px">${tf("Screen log · {n}", { n:stuckLog().length })}</button>` : ""}
     ${sectHR("Your data")}
@@ -9643,7 +9664,7 @@ function wire(){
   const aiAp=app.querySelector("[data-ai-apply]"); if(aiAp) aiAp.onclick=aiApplyProposal;   // B7 accept the proposed aisle order
   const aiKp=app.querySelector("[data-ai-keep]"); if(aiKp) aiKp.onclick=aiDismissProposal;   // B7 revert / keep current
   const lsw=app.querySelector("#listSwitch"); if(lsw) lsw.onclick=()=>{ listsOpen=true; render(); };   // v1.81 title opens the switcher
-  const nrl=app.querySelector("#newerReload"); if(nrl) nrl.onclick=()=>location.reload();   // v2.49 S9 newer-data card
+  const nrl=app.querySelector("#newerReload"); if(nrl) nrl.onclick=()=>swMsg({ t:"release" }).then(()=>location.reload());   // v2.49 S9 newer-data card
   const icd=app.querySelector("#installDone"); if(icd) icd.onclick=installDismiss;   // v2.15 install card
   const nxn=app.querySelector("#noticeNext"); if(nxn) nxn.onclick=()=>{ _noticeAt++; render(); };   // v3.01 (U2) the next message
   const rng=app.querySelector("#rcNudgeGo"); if(rng) rng.onclick=()=>{ rcptNudgeClear(); rcPick(); };   // v2.17 the receipt at the till
