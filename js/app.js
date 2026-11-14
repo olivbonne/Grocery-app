@@ -6,29 +6,29 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.15";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.15";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.15";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.15";
-import { compareStores, worthIt } from "./compare.js?v=3.15";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.15";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.15";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.15";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.15";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.15";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.15";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.15";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.15";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.15";   /* v2.45 (architecture review S17): the app in French as well as English */
-import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.15";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
-import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.15";   /* v3.04: the cards' logic (architecture review L17) */
-import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.15";   /* v3.05 (H2): previews use their own database */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit } from "./store.js?v=3.16";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.16";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.16";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.16";
+import { compareStores, worthIt } from "./compare.js?v=3.16";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.16";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.16";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.16";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.16";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.16";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.16";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.16";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.16";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.16";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.16";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.16";   /* v3.04: the cards' logic (architecture review L17) */
+import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.16";   /* v3.05 (H2): previews use their own database */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here.
    v3.05: a Vercel preview gets the preview project (js/env.js). */
 const IS_PREVIEW = (()=>{ try{ return isPreviewHost(location.hostname); }catch(e){ return false; } })();
 const firebaseConfig = firebaseConfigFor(IS_PREVIEW ? location.hostname : "", window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" });
-const APP_VERSION = "v3.15";
+const APP_VERSION = "v3.16";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 
 /* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
@@ -3612,6 +3612,7 @@ async function forgetPhone(){
   try{ sessionStorage.clear(); }catch(e){}
   try{ if(window.caches) for(const k of await caches.keys()) await caches.delete(k); }catch(e){}
   try{ if(window.indexedDB && indexedDB.databases) for(const d of await indexedDB.databases()) if(d && d.name) indexedDB.deleteDatabase(d.name); }catch(e){}
+  try{ _cardPh.clear(); if(window.indexedDB) indexedDB.deleteDatabase(CARD_DB); }catch(e){}   // v3.16: the card photos — named too, for a Safari that cannot list its databases
   setTimeout(() => { location.href = "/"; }, 400); }
 /* v2.02: export what is saved in the current list as plain text, grouped by category. Weights are the
    stored text because the file is a record, not a display. */
@@ -6781,8 +6782,51 @@ function rcCartSummary(){ const cart=rcpt.cart, took=new Set(rcpt.lines.filter(L
 /* v2.31 (the household's item 5): membership cards for the till — a name, the shop it is for, its number (drawn as a
    Code 128 barcode, js/till.js) and, if added, a photo of the card. On this phone only (ml_cards): never synced, never sent. */
 var cardEdit = null, cardShow = null;   // the add/edit sheet / the card on screen { id, view }. var: render() reads them at boot
-function cardsGet(){ try{ return cardsParse(localStorage.getItem("ml_cards")); }catch(e){ return []; } }
-function cardsPut(a){ try{ localStorage.setItem("ml_cards", JSON.stringify(a.slice(0, CARD_MAX))); return true; }catch(e){ return false; } }
+/* v3.16: the cards' photos live in IndexedDB, not in ml_cards — localStorage holds about 5 MB for the whole app and a few
+   photos filled it ("This phone's storage is full"). In ml_cards such a card says photo:"idb"; the photo is in the store under
+   the card's id, read once at start into _cardPh. A photo is written inline first and marked "idb" only once the store has it,
+   so a failed write never loses it. No IndexedDB: everything stays inline, as before. var: cardsGet may run at boot. */
+var _cardPh = new Map();        // card id → photo data URL, the photos kept in IndexedDB (read once at start)
+var _cardPhReady = false;       // the photos have been read (or IndexedDB is not available)
+var _cardPhOk = !!(typeof window !== "undefined" && window.indexedDB);   // false once the store failed to open
+const CARD_DB = "ml-cards", CARD_STORE = "photos";
+function cardDb(){ return new Promise((res, rej) => { let late = false; const to = setTimeout(() => { late = true; rej(new Error("timeout")); }, 4000);
+    try{ const r = indexedDB.open(CARD_DB, 1);
+      r.onupgradeneeded = () => r.result.createObjectStore(CARD_STORE);
+      r.onsuccess = () => { clearTimeout(to); if(late){ try{ r.result.close(); }catch(e){} return; } res(r.result); };
+      r.onerror = () => { clearTimeout(to); rej(r.error); }; r.onblocked = () => { clearTimeout(to); rej(new Error("blocked")); };
+    }catch(e){ clearTimeout(to); rej(e); } }); }
+function cardDbDo(mode, fn){ return cardDb().then(db => new Promise((res, rej) => { try{ const tx = db.transaction(CARD_STORE, mode), st = tx.objectStore(CARD_STORE);
+    const out = fn(st); tx.oncomplete = () => { db.close(); res(typeof out === "function" ? out() : (out && out.result !== undefined ? out.result : undefined)); };
+    tx.onerror = tx.onabort = () => { db.close(); rej(tx.error); }; }catch(e){ try{ db.close(); }catch(_){} rej(e); } })); }
+function cardPhMark(id, photo){ try{ const a = JSON.parse(localStorage.getItem("ml_cards") || "[]"); if(!Array.isArray(a)) return;   // only that card, only if its inline photo is still this one
+    const c = a.find(x => x && x.id === id); if(!c || c.photo !== photo) return; c.photo = "idb"; localStorage.setItem("ml_cards", JSON.stringify(a)); }catch(e){} }
+function cardPhStore(id, photo){ return cardDbDo("readwrite", st => st.put(photo, id)).then(() => cardPhMark(id, photo)).catch(() => { console.log("[cards] photo store unavailable"); }); }
+function cardsGet(){ try{ return cardsParse(localStorage.getItem("ml_cards")).map(c => c.photo === "idb" ? Object.assign({}, c, { photo:(_cardPh && _cardPh.get(c.id)) || "" }) : c); }catch(e){ return []; } }
+function cardsPut(a){ a = a.slice(0, CARD_MAX);
+  const was = new Map(); try{ cardsParse(localStorage.getItem("ml_cards")).forEach(c => was.set(c.id, c.photo)); }catch(e){}
+  const pend = [];
+  const out = a.map(c => { const p = c.photo || "";
+    if(!p && !_cardPhReady && was.get(c.id) === "idb") return Object.assign({}, c, { photo:"idb" });   // not read yet: an empty photo is "not loaded", never a delete
+    if(_cardPhOk && /^data:/.test(p)){
+      if(was.get(c.id) === "idb" && _cardPh.get(c.id) === p) return Object.assign({}, c, { photo:"idb" });   // unchanged, already in the store
+      _cardPh.set(c.id, p); pend.push([c.id, p]); }   // inline until the store has it (cardPhMark)
+    return c; });
+  try{ localStorage.setItem("ml_cards", JSON.stringify(out)); }catch(e){ return false; }
+  if(_cardPhOk && _cardPhReady){ const keep = new Set(out.filter(c => c.photo).map(c => c.id));
+    for(const id of [..._cardPh.keys()]) if(!keep.has(id)){ _cardPh.delete(id); cardDbDo("readwrite", st => st.delete(id)).catch(() => {}); } }
+  pend.forEach(([id, p]) => cardPhStore(id, p));
+  return true; }
+function cardPhotosLoad(){
+  if(!_cardPhOk){ _cardPhReady = true; return Promise.resolve(); }
+  return cardDbDo("readonly", st => { const k = st.getAllKeys(), v = st.getAll(); return () => ({ keys:k.result || [], vals:v.result || [] }); }).then(r => {
+    r.keys.forEach((k, i) => { if(!_cardPh.has(k)) _cardPh.set(k, r.vals[i]); });
+    _cardPhReady = true;
+    const cards = cardsParse(localStorage.getItem("ml_cards")), byId = new Map(cards.map(c => [c.id, c]));
+    for(const id of [..._cardPh.keys()]){ const c = byId.get(id); if(!c || !c.photo){ _cardPh.delete(id); cardDbDo("readwrite", st => st.delete(id)).catch(() => {}); } }   // a card gone, or its photo removed, while a write was in flight
+    cards.forEach(c => { if(typeof c.photo === "string" && /^data:/.test(c.photo)){ _cardPh.set(c.id, c.photo); cardPhStore(c.id, c.photo); } });   // move the inline photos (inline until stored)
+    if(cards.some(c => c.photo === "idb") && (cardShow || cardEdit)) render();
+  }).catch(() => { _cardPhOk = false; _cardPhReady = true; console.log("[cards] photo store unavailable"); }); }
 function cardFor(store){ return cardForStore(cardsGet(), store, chainOfStore); }   // v2.56 item 8 / v3.04: the logic is js/cards.js
 /* v2.34 (the household's items 1–3): the card comes down from the TOP of the screen — a phone is scanned by its top end —
    with the barcode first. It opens on the card for the shop you are at (or the one asked for), and a swipe left or right
@@ -9744,6 +9788,7 @@ if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ try{ 
    into it. Every launch after that picks the start slot up at the top of the module, no reload. */
 if(migrateAppSlots163()){ applyStoredAppearance(appSlots()[0]); }
 render();
+cardPhotosLoad();   // v3.16: the card photos, from IndexedDB (and the inline ones moved there)
 _booted=true; if(_pendingFinish){ const n=_pendingFinish; _pendingFinish=null; autoFinishAt(n); }   // v2.10
 { const o = takeOutsideText(); if(o){ params.delete("add"); if(o.source==="share"){ params.delete("text"); params.delete("title"); }
     if(_outsideNoList && o.source==="shortcut"){ try{ sessionStorage.removeItem("ml_pendingoutside"); }catch(e){} if(me){ noListOpen=true; render(); } }   // v2.62: a browser that knows no list — nothing added, and nothing kept for later
