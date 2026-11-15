@@ -105,6 +105,7 @@ const COLES_ON = { coles:{ on:true, pct:10, cap:50, day:1, used:{} } };
       await page.goto(`http://127.0.0.1:${port}/index.html?list=v101`, { waitUntil:'domcontentloaded' });
       await page.waitForTimeout(1500); };
     const tap = async(sel)=>{ await page.locator(sel).first().click(); await page.waitForTimeout(450); };
+    const menu = async(id, home)=>{ await tap('#cartNav, #cartNavP'); await tap('#shopMenu'); if(home) await tap('#smHome'); if(id) await tap('#'+id); };   // v3.23: the actions left Settings for the Shop ⋯ menu
     const cache = ()=>page.evaluate(()=>JSON.parse(localStorage.getItem('ml_cache_v101')||'{}'));
     const card = ()=>page.evaluate(()=>{ const c=document.querySelector('#tenCard'); return c ? c.textContent.replace(/\s+/g,' ').trim() : null; });
     const sheet = ()=>page.evaluate(()=>{ const s=document.querySelector('#tenSheet'); if(!s) return null;
@@ -127,7 +128,7 @@ const COLES_ON = { coles:{ on:true, pct:10, cap:50, day:1, used:{} } };
     const c2 = (await cache()).memb.coles;
     ok('the rules are settings, because the chains change them (11%, month from the 2nd)', c2.pct===11 && c2.day===2, JSON.stringify(c2));
     await tap('[data-memb-num="coles|pct|-1"]'); await tap('[data-memb-num="coles|day|-1"]');
-    await tap('[data-memb-list="coles"]');
+    await menu('smTen-coles', 1);   /* SUPERSEDED by v3.23: The stock-up list left Settings for the Shop ⋯ menu. Still protects: the 10% sheet it opens */
     let sh = await sheet();
     ok('the stock-up list opens from Settings, titled for the chain and the month', sh && /Coles 10% shop · October/.test(sh.title), JSON.stringify(sh&&sh.title));
     ok('…rice and toilet paper ticked, chicken unticked ("keeps if frozen"), shampoo with no price yet and no box to tick',
@@ -172,8 +173,8 @@ const COLES_ON = { coles:{ on:true, pct:10, cap:50, day:1, used:{} } };
     for(const [disc, used, label] of [[[{raw:'PLUS SAVER DISCOUNT', amount:4.7}], true, 'with the member discount marks October used'], [[], false, 'without it does not']]){
       rcReply = RC(disc);
       await mk(COLES_ON, { date:[2026,9,27] });
-      await tap('#setNav');
-      const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#optRcpt').click()]);
+      await menu(null);   /* SUPERSEDED by v3.23: Read a receipt left Settings for the Shop ⋯ menu. Still protects: a receipt with the member discount marks the month */
+      const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#smRcpt').click()]);
       await fc.setFiles({ name:'r.png', mimeType:'image/png', buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==','base64') });
       await page.waitForTimeout(1500);
       await tap('#rcSaveBtn');

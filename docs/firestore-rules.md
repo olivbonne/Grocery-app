@@ -103,7 +103,7 @@ removed (see `js/photos.js`).
 - **Sizes and kinds.** An item's and a Regular's `note`, `weight`, `where`, `cat` and `ph` must be text of a sane length, and
   `tags` a short list. Not a list of allowed fields — old items may carry fields from old app versions.
 - **Weekly backups.** `lists/{code}/backups/w0…w3`: one backup a week, four kept in turn, read and written by the list's people
-  only, never deleted. Restore one from Settings › Your data.
+  only, never deleted. Restore one from Settings › Lists & people.
 
 The SAME publish also turns on photos on items (v2.96) and the fridge photo's daily count (v2.94), if not yet published.
 

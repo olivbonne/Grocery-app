@@ -77,7 +77,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     await mk({ srv:{ "lists/v101": D }, cache:D, extra:BASE });
     await page.locator('#setNav').click(); await page.waitForTimeout(600);
     const st = await page.evaluate(()=>{ const bs=[...document.querySelectorAll('[data-opt-qlook]')]; const row=bs[0] && bs[0].closest('.optrow, .optrownl, div'); const seg=bs[0]&&bs[0].parentElement;
-      const first=[...document.querySelectorAll('.optsect, [data-sect]')].find(e=>/Appearance/.test(e.textContent)||e.dataset.sect==='Appearance');
+      const first=[...document.querySelectorAll('.optsect, [data-sect]')].find(e=>/Look/.test(e.textContent)||e.dataset.sect==='Look' /* SUPERSEDED by v3.23: Appearance is Look */);
       return { labels:bs.map(b=>b.textContent.trim()), cut:bs.some(b=>b.scrollWidth>b.clientWidth+1), inside:seg ? seg.getBoundingClientRect().right<=391 && seg.getBoundingClientRect().left>=0 : false, on:bs.filter(b=>b.classList.contains('on')).length,
         look:(document.getElementById('optLook')||{}).textContent||'' }; });
     ok('Settings › Appearance offers Quick look: List, Simple, Comfortable, Compact — none cut, inside the screen, none marked for a look that is none of them',

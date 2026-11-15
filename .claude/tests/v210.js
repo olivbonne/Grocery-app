@@ -59,6 +59,7 @@ const seed = (extra, checkedStore) => `(() => {
     await page.goto(`http://127.0.0.1:${port}/index.html?list=v101`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(1600); };
   const tap = async(sel)=>{ await page.locator(sel).first().click(); await page.waitForTimeout(550); };
+  const menu = async(id, home)=>{ await tap('#cartNav, #cartNavP'); await tap('#shopMenu'); if(home) await tap('#smHome'); if(id) await tap('#'+id); };   // v3.23: the actions left Settings for the Shop ⋯ menu
   const cache = ()=>page.evaluate(()=>JSON.parse(localStorage.getItem('ml_cache_v101')||'{}'));
   const heights = ()=>page.evaluate(()=>[...document.querySelectorAll('#zoomer .pill[data-pill]')].map(p=>Math.round(p.getBoundingClientRect().height)));
 
@@ -147,7 +148,7 @@ const seed = (extra, checkedStore) => `(() => {
     /* ── E. share the list ─────────────────────────────────────────────── */
     /* SUPERSEDED by v2.13: the banner's share button became "Report a problem"; sending the list to another app
        moved to Settings › Other. Still protects the text that is sent: what is to buy, grouped, with amounts. */
-    await tap('#setNav'); await tap('#optSendList');
+    await menu('smSend', 1);   /* SUPERSEDED by v3.23: Send what's to buy left Settings for the Shop ⋯ menu. Still protects: the text that is sent */
     const sh = await page.evaluate(()=>window.__shared);
     ok('Settings › Other shares the list with another app', sh && /^Sandbox — 6 to buy/.test(sh.text||''), JSON.stringify(sh && sh.text && sh.text.slice(0,60)));
     ok('…what is still to buy, grouped, with amounts — not the cart', sh && /• 4× Small can corn kernel/.test(sh.text) && /• 1 kg Chicken thigh/.test(sh.text) && !/Milk|Bread/.test(sh.text), JSON.stringify(sh && sh.text));
@@ -160,7 +161,7 @@ const seed = (extra, checkedStore) => `(() => {
     ok('content that grows after layout is never clipped (Settings could not scroll to the bottom)', grown.after>=grown.before+850 && grown.wrapBottom>=grown.zoomerBottom-1, JSON.stringify(grown));
     /* SUPERSEDED by v2.30: Settings was regrouped (Sort+Sound → Shopping, Predictions/Prices/Memberships → Smart features, Plan → Plan & recipes, Users → People, Other → Lists & sharing + Help). Share link and Export are under Lists & sharing, AI diagnostics under Help. Still protects: all three are in Settings, each where it is filed. */
     const other = await page.evaluate(()=>{ const at=(n,s)=>{ const h=[...document.querySelectorAll('.optsect')].find(x=>x.dataset.sect===n); const b=h&&h.nextElementSibling; return !!(b && b.querySelector(s)); };
-      return [at('Lists & sharing','#optShare'), at('Lists & sharing','#optExport'), at('Help','#optDiag')]; });
+      return [at('Lists & people','#optShare'), at('Lists & people','#optExport'), at('Help','#optDiagFold')]; });   // SUPERSEDED by v3.23: Lists & people holds Share and Export, Help folds the diagnostics. Still protects: each is in its section
     ok('Settings › Other holds Share link, Export and AI diagnostics', JSON.stringify(other)==='[true,true,true]', JSON.stringify(other));
   }catch(e){ ok('the suite ran to the end', false, e.message); }
 

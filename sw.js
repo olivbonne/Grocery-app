@@ -52,7 +52,7 @@ const SHELL = "ml-shell-1";        // bump only if the meaning of the precache c
 const PRECACHE = ["/", "/index.html", "/manifest.webmanifest", "/outfit-latin.woff2", "/outfit-latin-ext.woff2",
   "/img/icon-180.png", "/img/icon-192.png", "/img/icon-512.png",
   "/vendor/firebasejs/10.12.2/firebase-app.js", "/vendor/firebasejs/10.12.2/firebase-firestore.js", "/vendor/firebasejs/10.12.2/firebase-auth.js", "/vendor/firebasejs/10.12.2/firebase-app-check.js",
-  "/app.css?v=3.22", "/js/app.js?v=3.22", "/js/data/catalog.js?v=3.22", "/js/data/drawings.js?v=3.22", "/js/tenpct.js?v=3.22", "/js/compare.js?v=3.22", "/js/shared.js?v=3.22", "/js/spend.js?v=3.22", "/js/aisles.js?v=3.22", "/js/till.js?v=3.22", "/js/platform.js?v=3.22", "/js/amounts.js?v=3.22", "/js/i18n.js?v=3.22", "/js/parse.js?v=3.22", "/js/merge.js?v=3.22", "/js/store.js?v=3.22", "/js/photos.js?v=3.22", "/js/cards.js?v=3.22", "/js/env.js?v=3.22"];
+  "/app.css?v=3.23", "/js/app.js?v=3.23", "/js/data/catalog.js?v=3.23", "/js/data/drawings.js?v=3.23", "/js/tenpct.js?v=3.23", "/js/compare.js?v=3.23", "/js/shared.js?v=3.23", "/js/spend.js?v=3.23", "/js/aisles.js?v=3.23", "/js/till.js?v=3.23", "/js/platform.js?v=3.23", "/js/amounts.js?v=3.23", "/js/i18n.js?v=3.23", "/js/parse.js?v=3.23", "/js/merge.js?v=3.23", "/js/store.js?v=3.23", "/js/photos.js?v=3.23", "/js/cards.js?v=3.23", "/js/env.js?v=3.23"];
 const PRECACHE_V = (PRECACHE.find(u => u.includes("?v=")) || "").split("?v=")[1] || "";   // this release's version
 const HOLD_MS = 24 * 3600 * 1000;  // v3.20: how long a non-tester phone keeps its page after a new version is first seen
 const META = "ml-meta", META_KEY = "/__ml/meta";   // the worker cannot read localStorage; its settings live here

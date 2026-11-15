@@ -70,7 +70,7 @@ const seed = (o) => { o=o||{}; return `(() => {
         tt:h.textTransform, fs:h.fontSize, col:h.color, text:getComputedStyle(document.body).color, lab:l.fontSize,
         hints:[...document.querySelectorAll('.optpage .hint')].filter(vis).map(e=>parseFloat(getComputedStyle(e).fontSize)) }; });
     ok('(15) everyday Settings, in order: Appearance, Tiles, Shopping, Smart features, Plan & recipes, People, Lists & sharing, History, Help, Your data',
-       JSON.stringify(S.names)===JSON.stringify(["Appearance","Tiles","Shopping","Smart features","Plan & recipes","People","Lists & sharing","History","Help","Your data"]), JSON.stringify(S.names));
+       JSON.stringify(S.names)===JSON.stringify(["Look","Shopping","Smart features","Lists & people","Your data","Help"]) /* SUPERSEDED by v3.23: the six sections. Still protects the order */, JSON.stringify(S.names));
     ok('(14) Keep screen on is under Shopping', S.wake, '');
     ok('(19) section names: no uppercase, 18px, the text colour', S.tt==='none' && S.fs==='18px' && S.col===S.text, JSON.stringify({tt:S.tt,fs:S.fs,col:S.col,text:S.text}));
     ok('(19) row labels are 15px and no hint is under 12.5px', S.lab==='15px' && S.hints.length>0 && Math.min(...S.hints)>=12.5, JSON.stringify({lab:S.lab, min:Math.min(...S.hints)}));
@@ -81,6 +81,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     ok('(13) Settings says when backups are taken (once a day, on leaving the app, the last seven days)', /one a day/.test(bk) && /leave the app/.test(bk) && /seven days/.test(bk), bk);
 
     /* (12) price diagnostics */
+    if(!(await page.$('#optPriceDiag'))) await tap('#optDiagFold');   // SUPERSEDED by v3.23: Help › Diagnostics folds it
     await tap('#optPriceDiag');
     const pd = await page.evaluate(()=>({ rows:[...document.querySelectorAll('.pdrow .pd-n')].map(e=>e.textContent), head:(document.querySelector('#pdSheet .hint')||{}).textContent||'' }));
     ok('(12) Help › Price diagnostics lists each item, the most recently priced first', JSON.stringify(pd.rows)==='["Honey","Linguine"]' && /2 items, 3 prices/.test(pd.head), JSON.stringify(pd));

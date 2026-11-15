@@ -68,6 +68,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     await page.goto(`http://127.0.0.1:${port}/index.html?list=v101`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(1500); };
   const tap = async(sel)=>{ await page.locator(sel).first().click(); await page.waitForTimeout(450); };
+  const menu = async(id, home)=>{ await tap('#cartNav, #cartNavP'); await tap('#shopMenu'); if(home) await tap('#smHome'); if(id) await tap('#'+id); };   // v3.23: the actions left Settings for the Shop ⋯ menu
   const order = ()=>page.evaluate(()=>[...document.querySelectorAll('#zoomer .pill[data-pill]')].filter(p=>p.offsetParent!==null).map(p=>(p.querySelector('.pname')||{}).textContent));
   const cache = ()=>page.evaluate(()=>JSON.parse(localStorage.getItem('ml_cache_v101')||'{}'));
 
@@ -86,10 +87,10 @@ const seed = (o) => { o=o||{}; return `(() => {
 
     /* the editor */
     await mk({ map:{} });
-    await tap('#setNav');
-    const b = await page.evaluate(()=>(document.querySelector('#optAisleMap')||{}).textContent||'');
+    await menu(null, 1);   /* SUPERSEDED by v3.23: Aisle map left Settings for the Shop ⋯ menu. Still protects: the chosen shop is named; the editor, the count, the backup and Clear */
+    const b = await page.evaluate(()=>(document.querySelector('#smAisle')||{}).textContent||'');
     ok('Settings › Sort offers the chosen shop\'s aisle map', /Aisle map for Coles Dandenong/.test(b), b);
-    await tap('#optAisleMap');
+    await tap('#smAisle');
     await page.locator('#amText').fill('1 Fruit & veg\nAisle 3 — Bread, spreads & cereal\n\n7 Pasta, rice & sauces\n14 Toilet paper');
     await tap('#amSave');
     const am = ((await cache()).aislemap||{}).dand;
@@ -97,11 +98,13 @@ const seed = (o) => { o=o||{}; return `(() => {
     ok('the editor saves one aisle per line, in order, for everyone (in the list), skipping blanks',
        am && am.aisles.length===4 && am.aisles[1].n==='3' && am.aisles[1].t==='Bread, spreads & cereal' && am.by==='O', JSON.stringify(am));
     ok('…and says how much of the list it places', /Saved 4 aisles · places 4 of 5 on the list/.test(toast), toast);
-    ok('…and the button then says how many aisles', /· 4 aisles/.test(await page.evaluate(()=>(document.querySelector('#optAisleMap')||{}).textContent||'')), '');
+    await menu('smAisle', 1);   // SUPERSEDED by v3.23: the count was on the Settings button; reopened, the editor holds the 4 aisles
+    ok('…and the button then says how many aisles', (await page.locator('#amText').inputValue()).split('\n').filter(x=>x.trim()).length===4, '');
+    await tap('#amClose'); await tap('#setNav');
     const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('#optBackup').click()]);
     const bk = JSON.parse(fs.readFileSync(await dl.path(),'utf8'));
     ok('a backup carries the aisle maps', bk.list && bk.list.aislemap && bk.list.aislemap.dand && bk.list.aislemap.dand.aisles.length===4, '');
-    await tap('#optAisleMap'); await tap('#amClear');
+    await menu('smAisle', 1); await tap('#amClear');
     ok('Clear removes the map', !((await cache()).aislemap||{}).dand, '');
 
     /* the drawings and the plumbing */

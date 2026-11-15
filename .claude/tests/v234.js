@@ -130,7 +130,7 @@ const seed = (o) => { o=o||{}; return `(() => {
 
     /* ── 6 location diagnostics ──────────────────────────────────────── */
     await mk({ store:'dand', doc:{ aislemap:{ dand:{ aisles:[{ n:'5', t:'Bread & bakery' }, { n:'6', t:'Snacks' }] } } } });
-    await tap('#setNav'); await tap('#optLocDiag');
+    await tap('#setNav'); await tap('#optDiagFold'); await tap('#optLocDiag');   // SUPERSEDED by v3.23: Help › Diagnostics folds it
     const ld = await page.evaluate(()=>{ const s=document.querySelector('#ldSheet'); if(!s) return null;
       const row=[...s.querySelectorAll('.pdrow')].map(r=>({ n:r.querySelector('.pd-n').textContent, s:r.querySelector('.pd-s').textContent, t:r.textContent.replace(/\s+/g,' ') }));
       return { now:s.querySelector('.ldrec').textContent, row }; });

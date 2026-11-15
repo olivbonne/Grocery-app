@@ -37,7 +37,8 @@ const seed = (coll, extra) => `(() => {
 /* SUPERSEDED by v2.25: "Your data" (privacy page, leave, empty, forget — the review's R26) is a new everyday section, last.
    This still protects the order of the everyday sections and that no look section appears among them. */
 /* SUPERSEDED by v2.30: Settings was regrouped (Sort+Sound → Shopping, Predictions/Prices/Memberships → Smart features, Plan → Plan & recipes, Users → People, Other → Lists & sharing + Help). */
-const EVERYDAY = ["Appearance","Tiles","Shopping","Smart features","Plan & recipes","People","Lists & sharing","History","Help","Your data"];
+/* SUPERSEDED by v3.23: six everyday sections (Appearance + Tiles → Look; Plan & recipes a subhead of Smart features; People, Lists & sharing and History → Lists & people). Still protects the order and that no look section is among them. */
+const EVERYDAY = ["Look","Shopping","Smart features","Lists & people","Your data","Help"];
 /* SUPERSEDED by v2.63: the look page has a sixth section, "Edit item" (the editor's pill colours and shape). Still protected:
    exactly the look sections, in order, folded as an index. */
 /* SUPERSEDED by v2.69: v2.63's "Edit item" look section became "Sheets" (every sliding sheet, chosen at its top). */
@@ -77,13 +78,13 @@ const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings"
     ok('Settings opens on the everyday sections, in order, and none of the look ones', JSON.stringify(v.names)===JSON.stringify(EVERYDAY), JSON.stringify(v.names));
     ok('…with the search box at the top', v.search && await page.evaluate(()=>{ const s=document.querySelector('.optsearch'), h=document.querySelector('.optpage .optsect');
       return s.getBoundingClientRect().bottom <= h.getBoundingClientRect().top; }), '');
-    const tiles = v.secs.find(x=>x.name==='Tiles')||{rows:[]};
+    const tiles = v.secs.find(x=>x.name==='Look')||{rows:[]};   // SUPERSEDED by v3.23: everyday Tiles is part of Look
     /* SUPERSEDED by v2.80: the display row is called "Tiles across". Still protected: everyday Tiles holds what a tile shows. */
     ok('everyday Tiles holds what a tile shows — display, grouping, icons, Category icons, Icon style', ['Tiles across','Group by category','Item icons','Category icons','Icon style'].every(l=>tiles.rows.some(r=>r.startsWith(l))), JSON.stringify(tiles.rows));
     ok('…and none of the tiles\' colours or shape', !tiles.rows.some(r=>/^(Tile appearance|Selected tiles|Unselected tiles|Tile roundness|Tile gap)/.test(r)), JSON.stringify(tiles.rows));
     /* SUPERSEDED by v3.02: the page behind this button is renamed "Advanced look" (the household's wording). Every check below
        still protects what it did: the button closes Appearance, opens its own page with a back button, and the search reaches it. */
-    ok('Appearance ends with "Advanced look"', ((v.secs.find(x=>x.name==='Appearance')||{rows:[]}).rows.slice(-1)[0]||'').startsWith('Advanced look'), JSON.stringify((v.secs[0]||{}).rows));
+    ok('Appearance ends with "Advanced look"', ((v.secs.find(x=>x.name==='Look')   /* SUPERSEDED by v3.23: Look ends with it */||{rows:[]}).rows.slice(-1)[0]||'').startsWith('Advanced look'), JSON.stringify((v.secs[0]||{}).rows));
     await shot('everyday');
 
     /* ── layer 2: the look page ─────────────────────────────────────── */
@@ -116,7 +117,7 @@ const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings"
     /* ── search ─────────────────────────────────────────────────────── */
     await mk([]);
     v = await search('wallpaper');
-    ok('"wallpaper" leaves the Wallpaper row under Appearance, and nothing else', JSON.stringify(v.names)==='["Appearance"]' && v.secs[0].rows.length>=1 && v.secs[0].rows.every(r=>/^Wallpaper/.test(r)), JSON.stringify(v.secs));
+    ok('"wallpaper" leaves the Wallpaper row under Appearance, and nothing else', JSON.stringify(v.names)==='["Look"]' /* SUPERSEDED by v3.23: Appearance is Look */ && v.secs[0].rows.length>=1 && v.secs[0].rows.every(r=>/^Wallpaper/.test(r)), JSON.stringify(v.secs));
     v = await search('roundness');
     ok('the search reaches the look page: "roundness" finds Tile roundness, its section marked "Advanced look"',
        /* SUPERSEDED by v2.63: "roundness" also finds Edit item's Roundness. Still protected: Tile roundness is found, tagged. */
@@ -144,7 +145,7 @@ const LOOK = ["Layout & motion","Colour","Bars and overlays","Category headings"
     await tap('[data-opt-theme="dark"]');
     const dark = await page.evaluate(()=>document.documentElement.classList.contains('dark') || document.body.classList.contains('dark'));
     v = await view();
-    ok('a setting changed from the results takes effect and keeps the results (Theme › Dark)', dark && v.q==='theme' && JSON.stringify(v.names)==='["Appearance"]', JSON.stringify({dark,q:v.q,n:v.names}));
+    ok('a setting changed from the results takes effect and keeps the results (Theme › Dark)', dark && v.q==='theme' && JSON.stringify(v.names)==='["Look"]' /* SUPERSEDED by v3.23 */, JSON.stringify({dark,q:v.q,n:v.names}));
     await search('location');
     await page.locator('.optsect[data-sect="Shopping"]').click(); await page.waitForTimeout(300);
     const coll = await page.evaluate(()=>localStorage.getItem('ml_optcoll'));

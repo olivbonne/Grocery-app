@@ -79,6 +79,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     const SP = out ? out.replace(/\.png$/,'') : '';
     const hold = async sel => { const t = page.locator(sel).first(); await t.dispatchEvent('pointerdown'); await page.waitForTimeout(700); await t.dispatchEvent('pointerup'); await page.waitForTimeout(700); };
     const tap = async sel => { await page.locator(sel).first().click(); await page.waitForTimeout(450); };
+    const menu = async(id, home)=>{ await tap('#cartNav, #cartNavP'); await tap('#shopMenu'); if(home) await tap('#smHome'); if(id) await tap('#'+id); };   // v3.23: the actions left Settings for the Shop ⋯ menu
     const listW = () => page.evaluate(()=>JSON.parse(JSON.stringify((window.__srv.writes||[]).filter(w=>w.path==='lists/v101'))));
     const srvDoc = () => page.evaluate(()=>JSON.parse(JSON.stringify(window.__srv.docs['lists/v101']||{})));
     const feedRow = () => page.evaluate(()=>{ const r=document.querySelector('#sheet [data-row="feed"]'); return r ? r.textContent.replace(/\s+/g,' ').trim() : null; });
@@ -156,7 +157,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     const fr = pm.filter(r=>r.s==='feed-coles');
     ok('the price is stored as "Coles online", from the feed', fr.length===1 && fr[0].p===3.1 && fr[0].sn==='Coles online' && fr[0].f===1, JSON.stringify(pm));
     ok('…replacing that chain\'s older feed price, and keeping the receipt price', pm.some(r=>r.s==='c9' && r.p===3.5) && !pm.some(r=>r.p===2.9), JSON.stringify(pm));
-    await tap('#setNav'); await tap('#optSpend');
+    await menu('smSpend', 1);   /* SUPERSEDED by v3.23: What we spend left Settings for the Shop ⋯ menu. Still protects: the feed price is not spending */
     const sp = await page.evaluate(()=>{ const s=document.querySelector('#spendSheet'); return s ? s.textContent.replace(/\s+/g,' ') : null; });
     ok('a feed price is never counted in What we spend', sp!==null && !/Coles online/.test(sp) && /Coles Dandenong/.test(sp), sp && sp.slice(0,200));
 

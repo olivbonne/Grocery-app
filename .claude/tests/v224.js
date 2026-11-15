@@ -89,6 +89,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
     await page.goto(`http://127.0.0.1:${port}/index.html?list=v101`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(1500); };
   const tap = async(sel)=>{ await page.locator(sel).first().click(); await page.waitForTimeout(450); };
+  const menu = async(id, home)=>{ await tap('#cartNav, #cartNavP'); await tap('#shopMenu'); if(home) await tap('#smHome'); if(id) await tap('#'+id); };   // v3.23: the actions left Settings for the Shop ⋯ menu
   const cache = ()=>page.evaluate(()=>JSON.parse(localStorage.getItem('ml_cache_v101')||'{}'));
   const sheet = ()=>page.evaluate(()=>{ const s=document.querySelector('#spendSheet'); if(!s) return null;
     const txt = e => e ? e.textContent.replace(/\s+/g,' ').trim() : null;
@@ -97,7 +98,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
       if(el) for(const r of el.querySelectorAll('.sprow')) out.push([txt(r.querySelector('.sp-n')), txt(r.querySelector('.sp-p')), r.dataset.spcat||null]); return out; };
     return { tot:txt(s.querySelector('.sptot')), months:[...s.querySelectorAll('[data-spend-m]')].map(b=>[b.dataset.spendM, b.classList.contains('on')]),
       stores:rows('By store'), cats:rows('By category'), hint:txt(s.querySelector('.hint')) }; });
-  const openSpend = async()=>{ await tap('#setNav'); await tap('#optSpend'); };
+  const openSpend = async()=>{ await menu('smSpend', 1); };   /* SUPERSEDED by v3.23: What we spend left Settings for the Shop ⋯ menu. Still protects: every check on the sheet */
 
   try{
     /* before any receipt is logged: the price memory's two receipts, as estimates */
@@ -115,8 +116,8 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
     await tap('#spendClose');
 
     /* a receipt read now is logged, once */
-    await tap('#setNav');
-    const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#optRcpt').click()]);
+    await menu(null);   /* SUPERSEDED by v3.23: Read a receipt left Settings for the Shop ⋯ menu. Still protects: a receipt read now is logged once */
+    const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#smRcpt').click()]);
     await fc.setFiles({ name:'r.png', mimeType:'image/png', buffer:PNG });
     await page.waitForTimeout(1500);
     await tap('#rcSaveBtn');
@@ -138,7 +139,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
     ok('a month of logged receipts only is not an estimate', s && /^\$40\.00 in October 2026 · 1 receipt$/.test(s.tot) && !/estimated/.test(s.hint||''), JSON.stringify(s));
     ok('…and a category that is gone counts under Others, in one row', s && JSON.stringify(s.cats.map(c=>[c[2],c[1]]))==='[["meat","$25.00"],["others","$15.00"]]', JSON.stringify(s && s.cats));
     ok('…with no month chips when there is only one month', s && s.months.length===0, JSON.stringify(s && s.months));
-    await tap('#spendClose');
+    await tap('#spendClose'); await tap('#setNav');   // SUPERSEDED by v3.23: the sheet opened from the Shop ⋯ menu; the backup is in Settings
     const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('#optBackup').click()]);
     const bk = JSON.parse(fs.readFileSync(await dl.path(),'utf8'));
     ok('a backup carries the log', bk.list && Array.isArray(bk.list.spend) && bk.list.spend.length===1 && bk.list.spend[0].t===3003, JSON.stringify(bk.list && bk.list.spend));
@@ -150,7 +151,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
     await tap('#optPriceClear');
     const cc = await cache();
     ok('clearing the price memory clears the spending too', Object.keys(cc.prices||{}).length===0 && (cc.spend||[]).length===0, JSON.stringify({ p:Object.keys(cc.prices||{}), s:cc.spend }));
-    await tap('#optSpend');
+    await menu('smSpend', 1);   /* SUPERSEDED by v3.23: What we spend left Settings for the Shop ⋯ menu. Still protects: the empty sheet after clearing */
     s = await sheet();
     ok('…and the sheet then says how it fills', s && !s.tot && /Read a receipt after a shop/.test(s.hint||''), JSON.stringify(s));
 

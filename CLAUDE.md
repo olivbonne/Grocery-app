@@ -101,9 +101,10 @@ or what it read), `aisle.js` (v2.28, a photo of an aisle sign → its number and
 - **Settings has two layers (v2.18).** Sections named in `LOOK_SECTS` show only on the "Advanced look" page (called "Customise the look" until v3.02)
   (`#optLook` opens it, `#lookBack` or the Settings tab returns); everything else is everyday Settings. A new section
   is everyday unless it is added there. v3.02: `QUICK_LOOKS` (List, Simple, Comfortable, Compact) set only tiles across, item icons and icon
-  size — in Settings › Appearance and the ⋯ menu (`applyQuickLook`). Since v2.30 everyday Settings is grouped by what it is for — Appearance, Tiles,
-  Shopping, Smart features (AI and receipt features, with `.optsub` subheads), Plan & recipes, People, Lists & sharing, History,
-  Help, Your data; a new row joins one of these, not a new section. Since v2.32 an explanation under a setting is written as
+  size — in Settings › Appearance and the ⋯ menu (`applyQuickLook`). v3.23: everyday Settings is six sections — Look, Shopping, Smart features (with `.optsub` subheads, Plan & recipes among them),
+  Lists & people (History a subhead), Your data, Help (its diagnostics folded behind `#optDiagFold`); a new row joins one of these,
+  not a new section. Actions (read a receipt, which store is cheaper, what we spend, occasions, cards, the stock-up list, the aisle
+  map) are not settings: they live in the Shop ⋯ menu, and the Settings search finds them through `.optacts`. Since v2.32 an explanation under a setting is written as
   `<div class="opthint">` right after its row: `infoBubbles()` folds it behind an (i) on the row's label — write new ones that way. The search (`filterOptions`) only toggles classes — never `render()` from it,
   or the field loses focus and the keyboard drops. A suite that drives a look control opens that page first.
 - **Device features go through `js/platform.js` (v2.43)** — file pickers, location, wake lock, share, barcode, speech. A future native app replaces that file's insides; never call `navigator.*` device APIs or build a file `<input>` directly in js/app.js.

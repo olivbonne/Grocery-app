@@ -83,6 +83,7 @@ const LINK = 'https://grocery-list-88109.firebaseapp.com/__/auth/action?apiKey=k
     await page.goto(`http://127.0.0.1:${port}/index.html?list=v101${o.q||''}`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(1500); };
   const tap = async(sel)=>{ await page.locator(sel).first().click(); await page.waitForTimeout(450); };
+  const menu = async(id, home)=>{ await tap('#cartNav, #cartNavP'); await tap('#shopMenu'); if(home) await tap('#smHome'); if(id) await tap('#'+id); };   // v3.23: the actions left Settings for the Shop ⋯ menu
   const ls = k=>page.evaluate(k=>localStorage.getItem(k), k);
   const shot = async(tag)=>{ if(out) await page.screenshot({ path: out.replace(/\.png$/,'-'+tag+'.png') }); };
   const box = ()=>page.evaluate(()=>{ const b=document.querySelector('#acctBox'); return b ? b.textContent.replace(/\s+/g,' ').trim() : ''; });
@@ -116,14 +117,17 @@ const LINK = 'https://grocery-list-88109.firebaseapp.com/__/auth/action?apiKey=k
 
     /* ── off by default ───────────────────────────────────────────── */
     await mk({ items:ITEMS2, doc:DOC });
-    await tap('#setNav'); await tap('#optCompare'); await page.waitForTimeout(400);
+    await menu('smCompare', 1);   /* SUPERSEDED by v3.23: Which store is cheaper left Settings for the Shop ⋯ menu. Still protects: the comparison, off and on */
+    await page.waitForTimeout(400);
     const r0 = await rows();
     ok('off by default: no shared price is read, and the comparison is the household\'s own', !r0.some(x=>/Woolworths/.test(x)) && await page.evaluate(()=>(window.__reads||[]).length===0), JSON.stringify(r0));
+    await tap('#cmpClose'); await tap('#setNav');   // SUPERSEDED by v3.23: the comparison opened from the Shop ⋯ menu
     ok('…and Settings offers it, off', await page.evaluate(()=>{ const b=document.querySelector('[data-opt-sharepx="0"]'); return !!(b && b.classList.contains('on')); }), '');
 
     /* ── turned on ────────────────────────────────────────────────── */
     await mk({ items:ITEMS2, doc:DOC, extra:`localStorage.setItem("ml_sharepx","1");` });
-    await tap('#setNav'); await tap('#optCompare'); await page.waitForTimeout(900);
+    await menu('smCompare', 1);   /* SUPERSEDED by v3.23: Which store is cheaper left Settings for the Shop ⋯ menu. Still protects: the comparison, off and on */
+    await page.waitForTimeout(900);
     const r1 = await rows();
     ok('turned on: the gaps are filled from other households, and the store\'s line says so', r1.some(x=>/^Woolworths Box Hill.*3 from other households/.test(x)) && r1.some(x=>/^Coles Dandenong/.test(x) && !/other households/.test(x)), JSON.stringify(r1));
     ok('…using the middle price (a $50 outlier among $1 and $1.20 does not count)', r1.some(x=>/^Woolworths Box Hill.*\$3\.60/.test(x)), JSON.stringify(r1));

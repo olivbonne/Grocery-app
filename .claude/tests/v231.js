@@ -61,6 +61,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     await page.goto(`http://127.0.0.1:${port}/index.html?list=v101`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(1500); };
   const tap = async(sel)=>{ await page.locator(sel).first().click(); await page.waitForTimeout(450); };
+  const menu = async(id, home)=>{ await tap('#cartNav, #cartNavP'); await tap('#shopMenu'); if(home) await tap('#smHome'); if(id) await tap('#'+id); };   // v3.23: the actions left Settings for the Shop ⋯ menu
   const ls = k=>page.evaluate(k=>localStorage.getItem(k), k);
   const pill = id=>page.locator(`#zoomer .pill[data-pill="${id}"]:visible`).first();   // visible: the urgent strip keeps hidden copies
 
@@ -89,7 +90,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     /* SUPERSEDED by v2.35: "Add a membership card" opens the add panel (scan, photo, or type it in), and the form no longer asks which
        shop — it is worked out from the name or number. Still protects: the form asks for a name, refuses a card with
        nothing to show, and saves a typed number without its spaces, as a Coles card. */
-    await tap('[data-card-add]');
+    await menu('smCard');   /* SUPERSEDED by v3.23: Add a membership card left Settings for the Shop ⋯ menu. Still protects: with no card yet the menu opens the add panel; the form checks below */
     await tap('#cardTypeGo');
     await tap('#ceSave');
     ok('adding a card: saving with nothing asks for a name', /name/.test(await page.evaluate(()=>(document.querySelector('#ceSheet .rpterr')||{}).textContent||'')), '');
@@ -104,6 +105,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     await tap('#cardClose');
     const saved = JSON.parse(await ls('ml_cards')||'[]');
     ok('…with its number it is saved on this phone (spaces dropped)', saved.length===1 && saved[0].num==='6008943218616910' && saved[0].chain==='coles', JSON.stringify(saved));
+    await tap('#setNav');   // SUPERSEDED by v3.23: the card was added from the Shop ⋯ menu; the list of cards is in Settings
     ok('…and listed under Smart features › Cards at the till', await page.evaluate(()=>{ const h=[...document.querySelectorAll('.optsect')].find(x=>x.dataset.sect==='Smart features'), b=h&&h.nextElementSibling;
       return !!(b && [...b.querySelectorAll('.optsub')].some(e=>/Cards at the till/.test(e.textContent)) && b.querySelector('[data-card-open]')); }), '');
     await tap('[data-card-open]');
@@ -141,8 +143,8 @@ const seed = (o) => { o=o||{}; return `(() => {
     await mk({ store:'dand' });
     for(const id of ['1','2','5','7']){ await pill(id).click(); await page.waitForTimeout(250); }   // rocket, yogurt, nexba, linguine
     await tap('#sweepBtn');
-    await tap('#setNav');
-    const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#optRcpt').click()]);
+    await menu(null);   /* SUPERSEDED by v3.23: Read a receipt left Settings for the Shop ⋯ menu. Still protects: pairing a receipt with the cart */
+    const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#smRcpt').click()]);
     await fc.setFiles({ name:'r.png', mimeType:'image/png', buffer:PNG }); await page.waitForTimeout(1500);
     const rs = () => page.evaluate(()=>({ sum:(document.querySelector('.rccartsum')||{}).textContent||'',
       rows:[...document.querySelectorAll('.rcrow')].map(r=>({ name:r.querySelector('.rcname').value, pick:(r.querySelector('[data-rccart]')||{}).value, guess:!!r.querySelector('.rccart.guess') })) }));

@@ -55,6 +55,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     await page.goto(`http://127.0.0.1:${port}/index.html?list=v101`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(1500); };
   const tap = async(sel)=>{ await page.locator(sel).first().click(); await page.waitForTimeout(450); };
+  const menu = async(id, home)=>{ await tap('#cartNav, #cartNavP'); await tap('#shopMenu'); if(home) await tap('#smHome'); if(id) await tap('#'+id); };   // v3.23: the actions left Settings for the Shop ⋯ menu
   const ls = k=>page.evaluate(k=>localStorage.getItem(k), k);
   const pill = id=>page.locator(`#zoomer .pill[data-pill="${id}"]:visible`).first();   // visible: the urgent strip keeps hidden copies
 
@@ -110,8 +111,8 @@ const seed = (o) => { o=o||{}; return `(() => {
 
     /* (8) the receipt's total */
     await mk({ store:'dand' });
-    await tap('#setNav');
-    const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#optRcpt').click()]);
+    await menu(null);   /* SUPERSEDED by v3.23: Read a receipt left Settings for the Shop ⋯ menu. Still protects: the receipt's total */
+    const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#smRcpt').click()]);
     await fc.setFiles({ name:'r.png', mimeType:'image/png', buffer:PNG }); await page.waitForTimeout(1500);
     const sum = await page.evaluate(()=>(document.querySelector('.rcsum')||{}).textContent||'');
     ok('(8) the receipt sheet shows the total on the receipt, and what the lines read add up to', /Total on the receipt: \$42\.50/.test(sum) && /1 item kept · \$7\.50/.test(sum) && /\$35\.00 not in the lines read/.test(sum), sum);

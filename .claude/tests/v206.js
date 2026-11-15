@@ -115,7 +115,7 @@ const SEED = `(() => {
     ok('no chrome emoji (🏠 📍 🔁 🔬 🗑) as text on the Shop screen', !CHROME_EMOJI.test(await screenText()), '');
     if(out) await page.screenshot({ path: out });
 
-    await tap('#setNav, #setNavP, #setNavS');
+    await tap('#setNav, #setNavP, #setNavS'); await tap('#optDiagFold');   // SUPERSEDED by v3.23: AI diagnostics is in Help › Diagnostics. Still protects the drawn marks
     const st = await page.evaluate(()=>{
       const home=[...document.querySelectorAll('[data-opt-store]')].find(b=>b.dataset.optStore==='home');
       const pin=document.querySelector('#optSetStore'), diag=document.querySelector('#optDiag');

@@ -44,8 +44,7 @@ const seed = (extra) => `(() => {
     await page.addInitScript(seed(extra));
     await page.goto(`http://127.0.0.1:${port}/index.html?list=v101`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(1500);
-    await page.locator('#setNav').click(); await page.waitForTimeout(400);
-    await page.locator('#optAisleMap').click(); await page.waitForTimeout(400); };
+    for(const s of ['#cartNav','#shopMenu','#smHome','#smAisle']){ await page.locator(s).first().click(); await page.waitForTimeout(400); } };   /* SUPERSEDED by v3.23: Aisle map left Settings for the Shop ⋯ menu. Still protects: the reader tests on the sheet */
   const status = ()=>page.evaluate(()=>{ const s=document.querySelector('.amread'); return s ? { t:s.textContent.replace(/\s+/g,' ').trim(), role:s.getAttribute('role') } : null; });
   const box = ()=>page.evaluate(()=>(document.querySelector('#amText')||{}).value);
   const read = async()=>{ const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#amCam').click()]);

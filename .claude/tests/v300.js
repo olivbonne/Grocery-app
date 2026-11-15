@@ -137,8 +137,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     const OCC = [{ id:'t1', name:'Camping', at:1, items:[{name:'Yogurt',cat:'dairy',qty:4,weight:'',note:'Greek',where:''},{name:'Dates',cat:'fruit',qty:3,weight:'',note:'',where:''}] }];
     const DO = DOC({ items:[ it("1","Yogurt","dairy"), it("2","Dates","fruit") ], templates:OCC });
     await mk({ srv:{ "lists/v101": DO }, cache:DO, extra:BASE });
-    await page.locator('#setNav').click(); await page.waitForTimeout(500);
-    await page.locator('#optOccAdd').click(); await page.waitForTimeout(400);
+    for(const s of ['#cartNav','#shopMenu','#smHome','#smOcc']){ await page.locator(s).first().click(); await page.waitForTimeout(400); }   /* SUPERSEDED by v3.23: Add an occasion left Settings for the Shop ⋯ menu. Still protects: adding one */
     await page.locator('[data-occadd="t1"]').click(); await page.waitForTimeout(800);
     const o1 = await all();
     ok('an occasion: "Yogurt · Greek" ×4 sits beside the plain Yogurt with its note; Dates takes the larger count (3)',

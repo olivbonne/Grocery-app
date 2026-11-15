@@ -4,7 +4,7 @@
 launch. 2. Pinning is offered on the first tick at a shop with no pin — and when auto-detect knows no shop, the card asks
 which shop this is, pins it, and gives that trip's ticks (last 3 hours) the shop. 3. The aisle map is offered on the second
 day at a shop with no map. 4. "Never" is per shop. Moments 1 and 2 are for a NEW phone only (one that gave its name since
-v2.48), so the household's phones are not lectured. Phone-level answers live in `ml_onb`; Settings › Shopping ›
+v2.48), so the household's phones are not lectured. Phone-level answers live in `ml_onb`; Settings › Help › Diagnostics ›
 First-time questions › Ask again clears them. Suite: `.claude/tests/v248.js`.
 
 The household asked: "the workflow after adding to Regulars should consider the first time using the app — define where

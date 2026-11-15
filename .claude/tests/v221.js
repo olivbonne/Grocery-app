@@ -80,6 +80,7 @@ const seed = (o) => { o=o||{}; return `(() => {
       await page.goto(`http://127.0.0.1:${port}/index.html?list=v101`, { waitUntil:'domcontentloaded' });
       await page.waitForTimeout(1500); };
     const tap = async(sel)=>{ await page.locator(sel).first().click(); await page.waitForTimeout(450); };
+    const menu = async(id, home)=>{ await tap('#cartNav, #cartNavP'); await tap('#shopMenu'); if(home) await tap('#smHome'); if(id) await tap('#'+id); };   // v3.23: the actions left Settings for the Shop ⋯ menu
     const card = ()=>page.evaluate(()=>{ const c=document.querySelector('#cmpCard'); return c ? c.textContent.replace(/\s+/g,' ').trim() : null; });
     const sheet = ()=>page.evaluate(()=>{ const s=document.querySelector('#cmpSheet'); if(!s) return null;
       return { best:(s.querySelector('.cmpbest')||{}).textContent.replace(/\s+/g,' ').trim(), rows:[...s.querySelectorAll('.cmprow')].map(x=>x.textContent.replace(/\s+/g,' ').trim()) }; });
@@ -107,8 +108,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     await mk({ prices:EVEN });
     ok('no card when the difference is not worth it ($0.40 on $33)', (await card())===null, '');
     await mk({ prices:{ milk:[C(4,'2026-10-10')] } });
-    await tap('#setNav');
-    await tap('#optCompare');
+    await menu('smCompare', 1);   /* SUPERSEDED by v3.23: Which store is cheaper left Settings for the Shop ⋯ menu. Still protects: the sheet */
     s = await sheet();
     ok('Settings › Prices opens it too — and with too few prices it says so', s && /Not enough prices yet to compare two stores on the same things/.test(s.best), JSON.stringify(s));
     const src = fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8');

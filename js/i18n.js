@@ -95,6 +95,8 @@ export const FR = {
   "Plan & recipes": "Menus et recettes",
   "People": "Personnes",
   "Lists & sharing": "Listes et partage",
+  "Lists & people": "Listes et personnes",
+  "Diagnostics": "Diagnostics",
   "History": "Historique",
   "Help": "Aide",
   "Your data": "Vos données",
