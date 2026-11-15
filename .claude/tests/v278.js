@@ -64,7 +64,7 @@ const seed = (extra) => `(() => { if(localStorage.getItem("t_seeded")) return; l
 
     /* fixed lines */
     const H = {};
-    for (const n of ['3','4','8']) {
+    for (const n of ['3','4','6']) { /* SUPERSEDED by v3.22: heights stop at 6 (7 and 8 removed) — 6 stands in for 8; still protects one height per tile, whole lines, more lines taller */
       await mk(`localStorage.setItem("ml_tilelines","${n}");`);
       const tt = await tiles(); H[n]=tt[0].h;
       ok(`${n} lines: data-tilelines="${n}" and every tile the same height`, await attr()===n && tt.every(x=>x.h===tt[0].h), JSON.stringify(tt.map(x=>x.h)));
@@ -72,7 +72,7 @@ const seed = (extra) => `(() => { if(localStorage.getItem("t_seeded")) return; l
       ok(`${n} lines: every name shows whole lines and nothing spills out of its tile`, !bad.length, JSON.stringify(bad));
       if (n==='3' && out) await page.screenshot({ path: out.replace(/\.png$/,'-3lines.png') });
     }
-    ok('more lines make taller tiles (3 < 4 < 8)', H['3']<H['4'] && H['4']<H['8'], JSON.stringify(H));
+    ok('more lines make taller tiles (3 < 4 < 6)', H['3']<H['4'] && H['4']<H['6'], JSON.stringify(H));
 
     /* square */
     await mk('localStorage.setItem("ml_tilelines","sq");');
@@ -85,22 +85,22 @@ const seed = (extra) => `(() => { if(localStorage.getItem("t_seeded")) return; l
     if (out) await page.screenshot({ path: out.replace(/\.png$/,'-square.png') });
 
     /* variable width ignores it */
-    await mk('localStorage.setItem("ml_tilelines","8"); localStorage.setItem("ml_largecols","0");');
+    await mk('localStorage.setItem("ml_tilelines","6"); localStorage.setItem("ml_largecols","0");'); /* SUPERSEDED by v3.22: heights stop at 6 (7 and 8 removed) — 6 stands in for 8; still protects one height per tile, whole lines, more lines taller */
     const vw = await page.evaluate(()=>({ z:document.querySelector('#zoomer').className, h:[...document.querySelectorAll('#zoomer .pill[data-pill]')].map(p=>Math.round(p.getBoundingClientRect().height)) }));
-    ok('variable width ignores the setting (one-line tiles, far below 8 lines)', /largevar/.test(vw.z) && vw.h.every(h=>h<H['8']*0.6), JSON.stringify(vw));
+    ok('variable width ignores the setting (one-line tiles, far below 6 lines)', /largevar/.test(vw.z) && vw.h.every(h=>h<H['6']*0.6), JSON.stringify(vw));
 
     /* the ⋯ menu */
     await mk('');
-    await page.locator('#shopMenuBtn, [aria-label="More"]').first().click(); await page.waitForTimeout(400); await page.evaluate(()=>{ const b=document.getElementById('smMore'); if(b && b.getAttribute('aria-expanded')!=='true') b.click(); }); await page.waitForTimeout(400);   /* SUPERSEDED by v3.08: the display options sit under "More display options" — opened first; still protects the same controls */
+    await page.locator('#shopMenuBtn, [aria-label="More"]').first().click(); await page.waitForTimeout(400); /* SUPERSEDED by v3.22: the display options moved under the "At home" fold — open it first; the check below still protects the same control */ await page.evaluate(()=>{ const h=document.getElementById('smHome'); if(h && h.getAttribute('aria-expanded')!=='true') h.click(); }); await page.waitForTimeout(300); await page.evaluate(()=>{ const b=document.getElementById('smMore'); if(b && b.getAttribute('aria-expanded')!=='true') b.click(); }); await page.waitForTimeout(400);   /* SUPERSEDED by v3.08: the display options sit under "More display options" — opened first; still protects the same controls */
     const mb = await page.evaluate(()=>[...document.querySelectorAll('[data-sm-lines]')].map(b=>(b.dataset.smLines||'v')+(b.classList.contains('on')?'*':'')));
     /* SUPERSEDED by v2.79: heights 1 and 2 were added before 3. Still protected: every height, variable and square are offered,
        in order, with the current one (variable) marked. */
-    ok('the Shop ⋯ menu offers 1–8, variable and square, variable marked', mb.join()==='1,2,3,4,5,6,7,8,v*,sq', JSON.stringify(mb));
+    /* SUPERSEDED by v3.22: 7 and 8 removed — 1–6 */ ok('the Shop ⋯ menu offers 1–6, variable and square, variable marked', mb.join()==='1,2,3,4,5,6,v*,sq', JSON.stringify(mb));
     await page.locator('[data-sm-lines="5"]').click(); await page.waitForTimeout(500);
     const a5 = await page.evaluate(()=>({ v:localStorage.getItem('ml_tilelines'), a:document.documentElement.getAttribute('data-tilelines'), open:!!document.querySelector('#shopMenuEl'), on:(document.querySelector('[data-sm-lines].on')||{}).dataset }));
     ok('…tapping 5 sets it at once and the menu stays open', a5.v==='5' && a5.a==='5' && a5.open && a5.on && a5.on.smLines==='5', JSON.stringify(a5));
     const t5 = await tiles();
-    ok('…and the tiles take one height', t5.every(x=>x.h===t5[0].h) && t5[0].h>H['4'] && t5[0].h<H['8'], JSON.stringify(t5.map(x=>x.h)));
+    ok('…and the tiles take one height', t5.every(x=>x.h===t5[0].h) && t5[0].h>H['4'] && t5[0].h<H['6'], JSON.stringify(t5.map(x=>x.h)));
     if (out) await page.screenshot({ path: out.replace(/\.png$/,'-menu.png') });
     await page.locator('[data-sm-lines=""]').click(); await page.waitForTimeout(500);
     const av = await page.evaluate(()=>({ v:localStorage.getItem('ml_tilelines'), a:document.documentElement.getAttribute('data-tilelines') }));

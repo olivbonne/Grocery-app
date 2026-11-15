@@ -82,7 +82,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     const o0 = await order();
     const outl0 = await page.evaluate(()=>!!document.querySelector('.pblocks.editing, .pblbl, #pageEditBar'));
     ok('out of edit mode: Your list before Regulars, no outlines or toolbars', o0.indexOf('shop.list')>=0 && o0.indexOf('shop.list') < o0.indexOf('shop.regulars') && !outl0, JSON.stringify(o0));
-    await page.locator('#shopMenu').click(); await page.waitForTimeout(400);
+    await page.locator('#shopMenu').click(); await page.waitForTimeout(400); await page.locator('#smHome').click(); await page.waitForTimeout(300); /* SUPERSEDED by v3.22: Edit this page is under At home */
     await page.locator('#smEditPage').click(); await page.waitForTimeout(500);
     const ed = await page.evaluate(()=>({ bar:(document.getElementById('pageEditBar')||{}).textContent||'', labels:[...document.querySelectorAll('.pblocks.editing .pblbl')].map(x=>x.textContent) }));
     await page.locator('#zoomer .pill[data-pill="1"]').click({ force:true }); await page.waitForTimeout(500);
@@ -120,7 +120,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     /* Reset */
     await page.locator('#bottomnav .navbtn').nth(1).click(); await page.waitForTimeout(900);
     page.once('dialog', d=>d.accept());
-    await page.locator('#shopMenu').click(); await page.waitForTimeout(400); await page.locator('#smEditPage').click(); await page.waitForTimeout(400);
+    await page.locator('#shopMenu').click(); await page.waitForTimeout(400); await page.locator('#smHome').click(); await page.waitForTimeout(300); /* SUPERSEDED by v3.22: Edit this page is under At home */ await page.locator('#smEditPage').click(); await page.waitForTimeout(400);
     await page.locator('#peReset').click(); await page.waitForTimeout(500);
     const o5 = await order(); const lay2 = await page.evaluate(()=>JSON.parse(localStorage.getItem('ml_pagelay')||'{}'));
     ok('Reset puts the Shop page back (Your list before Regulars, nothing hidden or narrowed) and leaves the Plan page\'s choice', o5.indexOf('shop.list') < o5.indexOf('shop.regulars') && !o5.some(x=>/\(h\)/.test(x)) && !lay2.shop && !!lay2.plan, JSON.stringify({ o5, lay2 }));

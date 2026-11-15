@@ -77,7 +77,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     const DP = DOC({ items:[ it("1","Milk","dairy"), it("2","Bread","bakery") ], buyAgain:[{ name:"Rice", cat:"bulk", qty:1, weight:"", sub:"", note:"", where:"", ts:2000 }] });
     const OPEN='localStorage.setItem("ml_collapse_v101", JSON.stringify({cats:[],ba:false,regAll:true,regOpen:["bulk","others"]})); localStorage.setItem("ml_largecols","3");';
     await mk({ srv:{ "lists/v101": DP }, cache:DP, extra:BASE+OPEN });
-    await page.locator('#shopMenu').click(); await page.waitForTimeout(400); await page.locator('#smEditPage').click(); await page.waitForTimeout(500);
+    await page.locator('#shopMenu').click(); await page.waitForTimeout(400); await page.locator('#smHome').click(); await page.waitForTimeout(300); /* SUPERSEDED by v3.22: Edit this page is under At home */ await page.locator('#smEditPage').click(); await page.waitForTimeout(500);
     await page.locator('.pblock[data-pb="shop.list"] [data-pbset]').click(); await page.waitForTimeout(400);
     const panel = await page.evaluate(()=>{ const p=document.querySelector('.pblock[data-pb="shop.list"] .pbset'); if(!p) return null;
       return { rows:[...p.querySelectorAll('.pbsrow')].map(r=>r.textContent.replace(/\s+/g,' ').trim()), on:[...p.querySelectorAll('.on')].map(b=>b.textContent.trim()) }; });
@@ -104,7 +104,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     await page.locator('#peDone').click(); await page.waitForTimeout(300);
     await page.locator('#bottomnav .navbtn').nth(1).click(); await page.waitForTimeout(900);
     page.once('dialog', d=>d.accept());
-    await page.locator('#shopMenu').click(); await page.waitForTimeout(400); await page.locator('#smEditPage').click(); await page.waitForTimeout(400);
+    await page.locator('#shopMenu').click(); await page.waitForTimeout(400); await page.locator('#smHome').click(); await page.waitForTimeout(300); /* SUPERSEDED by v3.22: Edit this page is under At home */ await page.locator('#smEditPage').click(); await page.waitForTimeout(400);
     await page.locator('#peReset').click(); await page.waitForTimeout(500);
     const lay = await page.evaluate(()=>JSON.parse(localStorage.getItem('ml_pagelay')||'{}'));
     ok('Reset clears this page\'s block settings', !lay.shop, JSON.stringify(lay));
