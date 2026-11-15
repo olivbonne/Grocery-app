@@ -1126,6 +1126,7 @@ export const FR = {
   "Messages": "Messages",
   "Your list": "Votre liste",
   "At the shop": "Au magasin",
+  "At home": "À la maison",
   "Display": "Affichage",
   "More display options": "Plus d’options d’affichage",
   "Fewer display options": "Moins d’options d’affichage",

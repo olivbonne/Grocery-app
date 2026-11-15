@@ -943,9 +943,9 @@ function applyIcoSize(){ try{ document.documentElement.setAttribute("data-icosiz
 /* v2.82: the width / height arrows are drawn (interface chrome gets drawn marks, CLAUDE.md): iOS showed the ↕ character as a
    blue emoji box. One mark, turned upright for height. A function so it is ready whenever render() first runs. */
 function arrowSVG(up){ return `<svg class="arrowmk${up?' up':''}" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16M8 8l-4 4 4 4M16 8l4 4-4 4"/></svg>`; }
-function tileLines(){ try{ const v=localStorage.getItem("ml_tilelines")||""; return /^([1-8]|sq)$/.test(v) ? v : ""; }catch(e){ return ""; } }
+function tileLines(){ try{ const v=localStorage.getItem("ml_tilelines")||""; return /^[78]$/.test(v) ? "6" : /^([1-6]|sq)$/.test(v) ? v : ""; }catch(e){ return ""; } }   // v3.22: 7 and 8 are no longer offered; a phone that had one shows 6
 function applyTileLines(){ try{ const v=tileLines(), h=document.documentElement; if(v) h.setAttribute("data-tilelines", v); else h.removeAttribute("data-tilelines"); }catch(e){} }
-function setTileLines(v){ v=String(v||""); try{ if(/^([1-8]|sq)$/.test(v)) localStorage.setItem("ml_tilelines", v); else localStorage.removeItem("ml_tilelines"); }catch(e){} applyTileLines(); applyCu(); render(); }
+function setTileLines(v){ v=String(v||""); try{ if(/^([1-6]|sq)$/.test(v)) localStorage.setItem("ml_tilelines", v); else localStorage.removeItem("ml_tilelines"); }catch(e){} applyTileLines(); applyCu(); render(); }
 /* v2.85: the count and the unit on column tiles — "" as now (the "5× 3 lb" line), "sep" a count disc + a unit pill, "tog"
    one pill. LOOK keys (ml_cu_*), so deliberately NOT in APP_EXCLUDE. Published on <html> as data-cu-* only when not the
    default (an untouched install gets no attribute). var: applyTheme() runs applyCu() at boot. */
@@ -1023,7 +1023,7 @@ function cuParts(qty, unit, catColor, meta, aisle){
 /* v2.85: the note span with the unit in front when the unit lives in the note; `.cu-nu` is hidden in the one-line layouts */
 function cuNote(nl, nu){ if(!nu) return nl ? `<span class="pnote">${esc(nl)}</span>` : "";
   return `<span class="pnote${nl?'':' cu-only'}"><span class="cu-nu">${esc(nu)}${nl?" · ":""}</span>${esc(nl||"")}</span>`; }
-function tileLinesBtns(attr){ return [1,2,3,4,5,6,7,8].map(n=>`<button class="colbtn ${tileLines()===String(n)?'on':''}" ${attr}="${n}">${n}</button>`).join("")
+function tileLinesBtns(attr){ return [1,2,3,4,5,6].map(n=>`<button class="colbtn ${tileLines()===String(n)?'on':''}" ${attr}="${n}">${n}</button>`).join("")
   +`<button class="colbtn ${tileLines()===''?'on':''}" ${attr}="" aria-label="${t("Variable height")}">${arrowSVG(true)}</button><button class="colbtn ${tileLines()==='sq'?'on':''}" ${attr}="sq" aria-label="${t("Square")}">□</button>`; }
 /* v2.86: Settings › Count and unit opens with three real tiles — pillHTML's own markup inside a 3-across column grid, so
    the places, bands and margins are exactly the list's. Sample items, never stored; data-pill becomes data-cuprev so
@@ -6678,6 +6678,7 @@ function wireAisleMap(){
 /* v2.30 the Shop page's menu (item 17): what you reach for in the shop — read the receipt, which store is cheaper, what we
    spend, this shop's aisle map, send the list, add an occasion — and Report a problem, which the button used to be. */
 var shopMenuOpen = false;   // var: render() reads it at boot
+var smHomeOpen = false;   // v3.22: the ⋯ menu's "At home" part — closed each time the menu opens
 var smMoreOpen = false;   // v3.08: the display options under "More display options" — open for this session only
 /* v2.95 Edit this page (the page builder, step 1): Shop and Plan are columns of blocks; in edit mode each can move up or down,
    hide, and be full, half or a third wide. ml_pagelay = { shop:{ o:[ids], h:[ids], w:{ id:"half"|"third" } }, plan:{…} } is a
@@ -6775,15 +6776,21 @@ function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRe
   const shops = [{id:"auto",name:t("Auto-detect")},{id:"home",name:t("Home")},...STORES.filter(s=>!storeOverride(s.id).hidden).map(s=>storeById(s.id)),...(state.stores||[]).filter(s=>!storeOverride(s.id).hidden),{id:"other",name:t("Other")}].filter(Boolean), cur = shops.find(s => s.id === storeSel);   // v3.10
   const item = (id, icon, label) => `<button class="smitem" id="${id}" role="menuitem">${icon}<span>${label}</span></button>`;
   return `<div class="smbg" id="smBg"><div class="smenu" id="shopMenuEl" role="menu" aria-label="${t("More")}">
+    ${/* v3.22 (the household): what is used in the shop first — the store, the look, the card, the receipt, undo; the rest folds under "At home" (closed each time the menu opens); Report a problem stays last */""}<div class="smgroup">${t("At the shop")}</div>
     ${/* v2.72: choose the shop here, as Settings › Shopping › Store does — the menu stays open */""}<div class="smtiles smtext"><span class="smtlabel">${t("Store")}</span>${(!smStoreOpen && !smStoreAdding) ? `<div class="smcols smstores"><button class="colbtn on" data-sm-storecur aria-expanded="false">${esc(cur ? cur.name : t("Auto-detect"))}</button><button class="colbtn smchange" id="smStoreChange" aria-expanded="false">${t("Change")}</button></div>` : `<div class="smcols smstores">${shops.map(s=>`<button class="colbtn ${storeSel===s.id?'on':''}" data-sm-store="${esc(s.id)}">${esc(s.name)}</button>`).join("")}<button class="colbtn smadd" data-sm-storeadd>${t("＋ New shop")}</button></div>`}${smStoreAdding?`<div class="smaddrow"><input id="smStoreName" placeholder="${t("Shop name")}" aria-label="${t("Shop name")}" autocomplete="off" /><button class="colbtn" id="smStoreAddGo" style="width:auto;padding:0 12px">${t("Add")}</button></div>`:""}</div>
-    <div class="smgroup">${t("At the shop")}</div>
+    ${/* v3.02 (U1): the four quick looks, as in Settings › Appearance — the menu stays open */""}<div class="smtiles smtext"><span class="smtlabel">${t("Look")}</span><div class="smcols">${QUICK_LOOKS.map(q=>`<button class="colbtn ${quickLookNow()===q.id?'on':''}" data-sm-look="${q.id}">${t(q.label)}</button>`).join("")}</div></div>
     ${item("smCard", CARD_SVG(18), cardsGet().length ? t("Show my card") : t("Add a membership card"))}
     ${item("smRcpt", CAMERA_SVG(18), t("Read a receipt"))}
+    ${undoLog.slice(-3).reverse().map(u=>`<button class="smitem" data-undo="${esc(u.id)}" role="menuitem">${UNDO_SVG(18)}<span>${t("Undo")}: ${esc(u.label)} <span class="smtime">${undoAgo(u.at)}</span></span></button>`).join("")}${/* v3.17 */""}
+    <button class="smmore smhome" id="smHome" aria-expanded="${smHomeOpen}" aria-controls="smHomeBox">${t("At home")} <span aria-hidden="true" class="smmore-c${smHomeOpen?' open':''}">${CHEV_SVG}</span></button>
+    ${smHomeOpen ? `<div id="smHomeBox">
     ${item("smCompare", CART_SVG, t("Which store is cheaper"))}
     ${real ? item("smAisle", PIN_SVG(18), tf("Aisle map for {x}", { x:esc(st.name) })) : ""}
     ${item("smFridge", FRIDGE_SVG(18), t("What's in the fridge?"))}
-    <div class="smgroup">${t("Display")}</div>
-    ${/* v3.02 (U1): the four quick looks, as in Settings › Appearance — the menu stays open */""}<div class="smtiles smtext"><span class="smtlabel">${t("Look")}</span><div class="smcols">${QUICK_LOOKS.map(q=>`<button class="colbtn ${quickLookNow()===q.id?'on':''}" data-sm-look="${q.id}">${t(q.label)}</button>`).join("")}</div></div>
+    ${item("smSend", SHARE_SVG(18), t("Send what's to buy"))}
+    ${item("smOcc", SAVE_SVG(18), t("Occasions — BBQ, camping…"))}
+    ${item("smSpend", FLAG_TAG_SVG, t("What we spend"))}
+    ${item("smEditPage", PAGE_EDIT_SVG(18), t("Edit this page"))}${/* v2.95 */""}
     ${/* v3.08 (U3): the rest of the display options fold under one button — open for this session only */""}<button class="smmore" id="smMore" aria-expanded="${smMoreOpen}" aria-controls="smMoreBox">${t(smMoreOpen ? "Fewer display options" : "More display options")} <span aria-hidden="true" class="smmore-c${smMoreOpen?' open':''}">${CHEV_SVG}</span></button>
     ${smMoreOpen ? `<div id="smMoreBox">
     <div class="smtiles"><span class="smtlabel">${t("Tiles")}</span><div class="smcols">${[1,2,3,4,5,6].map(n=>`<button class="colbtn ${largeCols()===n?'on':''}" data-sm-cols="${n}">${n}</button>`).join("")}<button class="colbtn ${largeCols()===0?'on':''}" data-sm-cols="0" aria-label="${t("Variable width — tiles size to the word")}">${arrowSVG()}</button></div></div>
@@ -6796,12 +6803,7 @@ function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRe
       const sb=(v,l)=>`<button class="colbtn ${cs===v?'on':''}" data-sm-sort="${v}">${l}</button>`;
       return `<div class="smtiles smtext"><span class="smtlabel">${t("Sort")}</span><div class="smcols">${(displayFor()==="flat" && shopMode && aiSortOK())?sb("ai",t("✨ AI")):""}${displayFor()==="flat"?sb("location",t("Location")):""}${sb("cat",t("Category"))}${sb("alpha",t("A–Z"))}</div></div>`; })()}
     </div>` : ""}
-    <div class="smgroup">${t("Your list")}</div>
-    ${undoLog.slice(-3).reverse().map(u=>`<button class="smitem" data-undo="${esc(u.id)}" role="menuitem">${UNDO_SVG(18)}<span>${t("Undo")}: ${esc(u.label)} <span class="smtime">${undoAgo(u.at)}</span></span></button>`).join("")}${/* v3.17 */""}
-    ${item("smSend", SHARE_SVG(18), t("Send what's to buy"))}
-    ${item("smOcc", SAVE_SVG(18), t("Occasions — BBQ, camping…"))}
-    ${item("smSpend", FLAG_TAG_SVG, t("What we spend"))}
-    ${item("smEditPage", PAGE_EDIT_SVG(18), t("Edit this page"))}${/* v2.95 */""}
+    </div>` : ""}
     <div class="smsep"></div>
     ${item("smReport", REPORT_SVG(18), t("Report a problem"))}
   </div></div>`; }
@@ -6831,7 +6833,10 @@ function wirePriceDiag(){
   const bg = app.querySelector("#pdBg"); if(bg) bg.onclick = e => { if(e.target === bg){ priceDiagOpen = false; render(); } };
 }
 function wireShopMenu(){
-  const b = app.querySelector("#shopMenu"); if(b) b.onclick = () => { shopMenuOpen = !shopMenuOpen; if(shopMenuOpen) smStoreOpen = false; render(); };
+  const b = app.querySelector("#shopMenu"); if(b) b.onclick = () => { shopMenuOpen = !shopMenuOpen; if(shopMenuOpen){ smStoreOpen = false; smHomeOpen = false; } render(); };
+  { const hb = app.querySelector("#smHome"); if(hb) hb.onclick = () => { smHomeOpen = !smHomeOpen; render();   // v3.22: the menu stays open
+      if(smHomeOpen){ const m = app.querySelector("#shopMenuEl"), bx = app.querySelector("#smHomeBox"), h = app.querySelector("#smHome");
+        if(m && bx && h){ const mr = m.getBoundingClientRect(), br = bx.getBoundingClientRect(), hr = h.getBoundingClientRect(); if(br.bottom > mr.bottom) m.scrollTop += Math.min(br.bottom - mr.bottom, hr.top - mr.top); } } }; }
   const close = () => { shopMenuOpen = false; };
   const bg = app.querySelector("#smBg"); if(bg) bg.onclick = e => { if(e.target === bg){ close(); render(); } };
   const on = (id, fn) => { const e = app.querySelector("#" + id); if(e) e.onclick = () => { close(); fn(); }; };

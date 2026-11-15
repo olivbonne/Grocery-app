@@ -949,11 +949,12 @@
   .smitem svg { width:18px; height:18px; flex:none; }
   .smsep { height:1px; margin:4px 8px; background:var(--line); }
   /* v3.08 (U3): the Shop ⋯ menu in groups, the rest of the display options under one button */
-  .smgroup { font-size:11.5px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin:10px 12px 2px; }
+  .smgroup { font-size:14px; font-weight:800; color:var(--muted); margin:10px 12px 2px; }   /* v3.22: no capitals */
   .smtime { color:var(--muted); font-weight:500; font-size:12px; margin-left:4px; }   /* v3.17 an undo row's age */
   .smmore { display:flex; align-items:center; justify-content:space-between; width:100%; min-height:42px; padding:8px 12px; border:none;
     border-radius:11px; background:transparent; color:var(--text); font:inherit; font-weight:700; font-size:14px; cursor:pointer; }
   .smmore:active { background:var(--chip); }
+  .smhome { font-weight:800; color:var(--muted); margin-top:4px; }   /* v3.22: the "At home" fold reads as a group title */
   .smstores .smchange { width:auto; padding:0 14px; }   /* v3.10: "Change" / "Changer" reads whole */
   .smmore-c svg { width:16px; height:16px; transition:transform .2s; }
   .smmore-c.open svg { transform:rotate(180deg); }
