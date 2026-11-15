@@ -145,7 +145,8 @@ const seed = (o) => { o=o||{}; return `(() => {
     ok('the receipt card wins: no first-time card under it', await has('#rcNudge') && !(await has('#onbTip')), '');
     ok('ml_onb is kept in both appearance-slot exclusion lists', (src.match(/const APP_EXCLUDE(?:_BOOT)? = \/\^\(([^)]*)\)\//g)||[]).filter(x=>/ml_onb\$/.test(x)).length===2, '');
     await mk({ onb:{ fresh:1, shops:'skip', tip:1, visits:{ c1:[DAY(0)] } } });
-    await tap('#setNav'); await page.locator('#optOnbReset').scrollIntoViewIfNeeded(); await tap('#optOnbReset');
+    await tap('#setNav'); await tap('#optDiagFold');   // SUPERSEDED by v3.23: First-time questions is in Help › Diagnostics
+    await page.locator('#optOnbReset').scrollIntoViewIfNeeded(); await tap('#optOnbReset');
     const o2 = await onb();
     ok('Settings › First-time questions › Ask again clears the answers and keeps the visit days', o2.fresh===1 && !o2.shops && !o2.tip && o2.visits && o2.visits.c1, JSON.stringify(o2));
   } catch(e){ ok('suite ran to the end', false, e.message.slice(0,300)); }

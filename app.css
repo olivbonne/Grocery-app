@@ -1433,6 +1433,10 @@
   .optsearch { display:flex; align-items:center; gap:8px; margin:2px 0 14px; padding:0 4px 0 12px; min-height:46px; border-radius:14px;
     border:1.5px solid var(--line); background:var(--card); color:var(--muted2); box-sizing:border-box; }
   .optsearch-ic { display:inline-flex; flex:none; }
+  .optacts { display:flex; flex-direction:column; gap:6px; }   /* v3.23: actions found by the Settings search */
+  .optpage:not(.searching) .optdiagx { display:none; }   /* v3.23: Help › Diagnostics folded — shown while searching */
+  .optacts .optaction { margin-top:0; }
+  .optpage.look .optacts { display:none; }
   .optsearch input { flex:1; min-width:0; border:none; outline:none; background:transparent; color:var(--text); font:inherit; font-size:16px; font-weight:600; padding:10px 0; -webkit-appearance:none; appearance:none; }
   .optsearch input::placeholder { color:var(--muted2); }
   .optsearch input::-webkit-search-cancel-button { -webkit-appearance:none; display:none; }

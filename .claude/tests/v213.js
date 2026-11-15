@@ -130,7 +130,7 @@ const SMALL = n => SMALL0(n);
     /* ── 6 + 7. Settings ───────────────────────────────────────────────── */
     await tap('#setNav, #setNavP, #setNavS');
     const sh = await page.evaluate(()=>({ back:!!document.querySelector('#setBack'), dot:!!document.querySelector('.topfix .dot'), title:document.querySelector('.topfix .title').textContent.trim(),
-      other:!!document.querySelector('#optSendList') && !!document.querySelector('#optReport') && !!document.querySelector('#optExport') }));
+      other:!!document.querySelector('[data-optact="send"]') && /* SUPERSEDED by v3.23: Send left Settings; the search still finds it */ !!document.querySelector('#optReport') && !!document.querySelector('#optExport') }));
     ok('Settings has no back arrow and no orange full stop', !sh.back && !sh.dot && sh.title==='Settings', JSON.stringify(sh));
     ok('Settings › Other keeps "send what\'s to buy to another app", the export, and a report button', sh.other, JSON.stringify(sh));
     const pick = async(attr)=>page.evaluate(a=>{ const b=[...document.querySelectorAll(`button[data-opt-${a}]`)].find(x=>!['auto','page'].includes(x.getAttribute('data-opt-'+a))); if(!b) return null; b.click(); return b.getAttribute('data-opt-'+a); }, attr);

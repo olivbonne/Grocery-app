@@ -71,6 +71,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
       const f=e=>{ const s=getComputedStyle(e); return [s.fontSize, s.fontWeight]; }; return { l:f(l), h:f(h) }; });
     ok('1 · the Language label is set like the section headings beside it', JSON.stringify(lf.l)===JSON.stringify(lf.h), JSON.stringify(lf));
     await shot('settings');
+    await page.locator('#optDiagFold').click(); await page.waitForTimeout(400);   // SUPERSEDED by v3.23: Connection check is in Help › Diagnostics
     const diag = await page.evaluate(()=>/Security check: (not started|working|not working)/.test(document.body.textContent));
     ok('2 · Settings › Help has a Connection check that says how the security check is doing', diag, '');
     const src = fs.readFileSync(path.join(ROOT,'js','app.js'),'utf8'), guard = fs.readFileSync(path.join(ROOT,'lib','guard.js'),'utf8');

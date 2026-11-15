@@ -55,6 +55,7 @@ const GRID4 = 'localStorage.setItem("ml_displays", JSON.stringify({shop:"large"}
     await page.goto(`http://127.0.0.1:${port}/index.html?list=v101`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(1500); };
   const tap = async(sel)=>{ await page.locator(sel).first().click(); await page.waitForTimeout(500); };
+  const menu = async(id, home)=>{ await tap('#cartNav, #cartNavP'); await tap('#shopMenu'); if(home) await tap('#smHome'); if(id) await tap('#'+id); };   // v3.23: the actions left Settings for the Shop ⋯ menu
 
   try{
     /* ── 1. three-letter day names ─────────────────────────────────────── */
@@ -104,8 +105,8 @@ const GRID4 = 'localStorage.setItem("ml_displays", JSON.stringify({shop:"large"}
     /* ── 5. receipt reading always shows what it is doing ──────────────── */
     let release; const held = new Promise(r=>{ release=r; });
     await mk([it("1","Eggs","fresh")], '', async r=>{ await held; r.fulfill({ status:200, contentType:'application/json', body:JSON.stringify({ store:'', date:'', total:0, items:[{raw:'EGGS',name:'eggs',qty:1,weight:'',price:5,category:'fresh'}] }) }); });
-    await tap('#setNav, #setNavP, #setNavS');
-    const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#optRcpt').click()]);
+    await menu(null);   /* SUPERSEDED by v3.23: Read a receipt left Settings for the Shop ⋯ menu. Still protects: the picker is attached and the wait shows and ends */
+    const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#smRcpt').click()]);
     const attached = await page.evaluate(()=>!!document.querySelector('body > input[type=file]'));
     ok('the photo picker is attached to the page while it is open (iOS skips "change" on a detached one)', attached, '');
     await fc.setFiles({ name:'r.png', mimeType:'image/png', buffer:PNG }); await page.waitForTimeout(500);
@@ -115,8 +116,8 @@ const GRID4 = 'localStorage.setItem("ml_displays", JSON.stringify({shop:"large"}
     release(); await page.waitForTimeout(800);
     ok('…and then the review', await page.evaluate(()=>!!document.querySelector('[data-rcname]')), '');
     await mk([it("1","Eggs","fresh")], '', r=>r.abort('failed'));
-    await tap('#setNav, #setNavP, #setNavS');
-    const [fc2] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#optRcpt').click()]);
+    await menu(null);   /* SUPERSEDED by v3.23: Read a receipt left Settings for the Shop ⋯ menu. Still protects: the picker is attached and the wait shows and ends */
+    const [fc2] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#smRcpt').click()]);
     await fc2.setFiles({ name:'r.png', mimeType:'image/png', buffer:PNG }); await page.waitForTimeout(1200);
     const fail = await page.evaluate(()=>{ const s=document.querySelector('#rcSheet'); return s ? s.textContent.replace(/\s+/g,' ').trim() : null; });
     ok('a request that fails ends in a message, never a silent nothing', /Couldn't read that receipt|No connection/.test(fail||''), fail);

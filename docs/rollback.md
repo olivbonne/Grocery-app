@@ -46,7 +46,7 @@ list is not — it lives in the database).
 ## 5. The list's data is wrong (items missing, a bad merge)
 In this order — each is less recent than the one before:
 1. **Undo**, if the message is still on screen.
-2. **Settings › Your data › Restore** — the phone keeps a snapshot a day for seven days.
+2. **Settings › Lists & people › Restore** — the phone keeps a snapshot a day for seven days.
 3. **Kept in the database (weekly)** in the same place — four weekly backups, restorable from any of the list's phones.
 4. A backup file you exported (**Back up to a file**).
 A restore replaces the list for everyone on it; tell the household first.

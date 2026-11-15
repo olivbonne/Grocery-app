@@ -161,7 +161,7 @@ const SEED = (extra)=>`(() => {
       return h&&h.nextElementSibling; };
     const inside = (body, sel) => !!(body && body.querySelector(sel));
     return { marginsInLayout: inside(sec('Layout & motion'), '[data-opt-num="padl"]'),
-             marginsInTiles:      inside(sec('Tiles'), '[data-opt-num="padl"]'),
+             marginsInTiles:      inside(sec('Look'), '[data-opt-num="padl"]'),   // SUPERSEDED by v3.23: everyday Tiles is part of Look
              roundnessInTiles:    inside(sec('Tile colours and shape'), '[data-opt-num="rad"]'),
              gapInTiles:          inside(sec('Tile colours and shape'), '[data-opt-num="gapx"]'),
              buttonsWithIt:       inside(sec('Layout & motion'), '#optNumSave') && inside(sec('Layout & motion'), '#optNumFactory'),
@@ -206,7 +206,7 @@ const SEED = (extra)=>`(() => {
      rules.length>0 && parseFloat(rules[0].top)===0, JSON.stringify(rules[0]));
   ok('…which holds with every section folded, where it actually shows',
      await (async()=>{
-       for(const n of ['Appearance','Smart features','Tiles','Shopping','People']){   // SUPERSEDED by v2.18: Colour is on the look page; Smart add stands in. SUPERSEDED by v2.30: Settings was regrouped (Sort+Sound → Shopping, Predictions/Prices/Memberships → Smart features, Plan → Plan & recipes, Users → People, Other → Lists & sharing + Help).
+       for(const n of ['Look','Smart features','Shopping','Lists & people','Your data']){   // SUPERSEDED by v3.23: the six sections. Still protects: every folded section keeps its rule.   // SUPERSEDED by v2.18: Colour is on the look page; Smart add stands in. SUPERSEDED by v2.30: Settings was regrouped (Sort+Sound → Shopping, Predictions/Prices/Memberships → Smart features, Plan → Plan & recipes, Users → People, Other → Lists & sharing + Help).
          const h=page.locator(`.optsect[data-sect="${n}"]`);
          await h.scrollIntoViewIfNeeded(); await h.click(); await page.waitForTimeout(250);
        }

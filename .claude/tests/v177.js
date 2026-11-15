@@ -191,10 +191,11 @@ const SEED = (extra)=>`(() => {
      whatever its fold says. The "only its own" neighbour is Sort now. Still protects: folding one section
      leaves every other section's rows alone. */
   /* SUPERSEDED by v2.30: Settings was regrouped (Sort+Sound → Shopping, Predictions/Prices/Memberships → Smart features, Plan → Plan & recipes, Users → People, Other → Lists & sharing + Help). The neighbour is Shopping now; the probe header is History. */
-  const tilesBefore = await rowsIn('Tiles');
+  /* SUPERSEDED by v3.23: six sections — Tiles is part of Look, and the far-down probe header is Lists & people (History is a subhead there). Still protects: a fold hides only its own rows, never rebuilds the page, and is remembered */
+  const tilesBefore = await rowsIn('Look');
   const colourBefore = await rowsIn('Shopping');
-  await page.locator('.optsect[data-sect="Tiles"]').click(); await page.waitForTimeout(400);
-  const tilesAfter = await rowsIn('Tiles');
+  await page.locator('.optsect[data-sect="Look"]').click(); await page.waitForTimeout(400);
+  const tilesAfter = await rowsIn('Look');
   const colourAfter = await rowsIn('Shopping');
   ok('folding a section hides its rows',
      tilesBefore.vis===true && tilesAfter.vis===false && tilesAfter.rows===tilesBefore.rows,
@@ -202,7 +203,7 @@ const SEED = (extra)=>`(() => {
   ok('…and only its own', colourAfter.vis===true && colourAfter.rows===colourBefore.rows,
      JSON.stringify({before:colourBefore, after:colourAfter}));
   ok('…the caret says which way it is', await page.evaluate(()=>{
-     const h=document.querySelector('.optsect[data-sect="Tiles"]');
+     const h=document.querySelector('.optsect[data-sect="Look"]');
      return h.classList.contains('coll') && h.getAttribute('aria-expanded')==='false'; }), '');
 
   /* the part that is easy to get wrong: folding must not rebuild the page */
@@ -212,21 +213,21 @@ const SEED = (extra)=>`(() => {
   /* SUPERSEDED by v2.18: everyday Settings is shorter now that the look has its own page, and Sound sits in
      the first screen — no scroll, so the check would be hollow. The probe header is Predictions, further down.
      Still protects: folding never rebuilds the page or loses the scroll position. */
-  const soundHdr = page.locator('.optsect[data-sect="History"]');
+  const soundHdr = page.locator('.optsect[data-sect="Lists & people"]');
   await soundHdr.scrollIntoViewIfNeeded(); await page.waitForTimeout(400);
   const yBefore = await page.evaluate(()=>window.scrollY);
   ok('settings is long enough to scroll (the check would be hollow otherwise)', yBefore>200, String(yBefore));
-  await page.evaluate(()=>{ const h=document.querySelector('.optsect[data-sect="History"]'); h.dataset.probe="1"; });
+  await page.evaluate(()=>{ const h=document.querySelector('.optsect[data-sect="Lists & people"]'); h.dataset.probe="1"; });
   await soundHdr.click(); await page.waitForTimeout(400);
   const survived = await page.evaluate(()=>({
-    y:window.scrollY, sameNode:(document.querySelector('.optsect[data-sect="History"]')||{}).dataset?.probe==='1' }));
+    y:window.scrollY, sameNode:(document.querySelector('.optsect[data-sect="Lists & people"]')||{}).dataset?.probe==='1' }));
   ok('folding does not rebuild the page — the marked header is the same element afterwards',
      survived.sameNode===true, JSON.stringify(survived));
   ok('…so the scroll position is not thrown away', Math.abs(survived.y-yBefore)<=40,
      JSON.stringify({was:yBefore, now:survived.y}));
 
-  await page.locator('.optsect[data-sect="Tiles"]').click(); await page.waitForTimeout(400);
-  ok('unfolding brings the rows back', (await rowsIn('Tiles')).vis===true, '');
+  await page.locator('.optsect[data-sect="Look"]').click(); await page.waitForTimeout(400);
+  ok('unfolding brings the rows back', (await rowsIn('Look')).vis===true, '');
 
   /* SUPERSEDED by v2.18: the section folded across a relaunch is Sort (Colour is on the look page now).
      Still protects: a fold is remembered, and only that one. */
@@ -235,7 +236,7 @@ const SEED = (extra)=>`(() => {
   await settings();
   const afterReload = await rowsIn('Shopping');
   ok('a folded section is still folded after a relaunch', afterReload.vis===false, JSON.stringify(afterReload));
-  ok('…and the ones you left open are still open', (await rowsIn('Tiles')).vis===true, '');
+  ok('…and the ones you left open are still open', (await rowsIn('Look')).vis===true, '');
 
   /* the rows inside a folded-then-opened section must still work */
   /* SUPERSEDED by v2.18: Colour lives behind "Customise the look", so open that page, then fold and open

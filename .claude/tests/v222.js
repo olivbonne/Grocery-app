@@ -45,6 +45,7 @@ const seed = (store, extra) => `(() => {
     await page.goto(`http://127.0.0.1:${port}/index.html?list=v101`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(1500); };
   const tap = async(sel)=>{ await page.locator(sel).first().click(); await page.waitForTimeout(450); };
+  const menu = async(id, home)=>{ await tap('#cartNav, #cartNavP'); await tap('#shopMenu'); if(home) await tap('#smHome'); if(id) await tap('#'+id); };   // v3.23: the actions left Settings for the Shop ⋯ menu
   const cache = ()=>page.evaluate(()=>JSON.parse(localStorage.getItem('ml_cache_v101')||'{}'));
   /* every tile on the list (not the cart): its name, its last line, the section it sits in */
   const tiles = ()=>page.evaluate(()=>[...document.querySelectorAll('#zoomer .pill[data-pill]')].filter(p=>p.offsetParent!==null).map(p=>{ const s=p.closest('section');
@@ -118,8 +119,7 @@ const seed = (store, extra) => `(() => {
     if(await page.locator('#mainInput').count()){ await page.locator('#mainInput').press('Enter'); await page.waitForTimeout(1600); }
 
     /* ── text that leaves the app ───────────────────────────────────────── */
-    await tap('#setNav');
-    await tap('#optSendList');
+    await menu('smSend', 1);   /* SUPERSEDED by v3.23: Send what's to buy left Settings for the Shop ⋯ menu. Still protects: the text that leaves the app */
     const shared = await page.evaluate(()=>window.__shared && window.__shared.text || '');
     ok('"Send what\'s to buy" says the shop and the note', /• Tofu \(Asian Richmond\) — firm/.test(shared) && /• Milk \(Asian Glenferrie\) — 2L full cream/.test(shared) && /• Rice — jasmine 5kg/.test(shared), shared.slice(0,300));
 

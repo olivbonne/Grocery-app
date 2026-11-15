@@ -104,14 +104,14 @@ const seed = (o) => { o=o||{}; return `(() => {
     ok('…unticking a row too, and the total drops to the other row', t2.sheet && t2.page && /\$12\.00/.test(sum2) && !/\$42/.test(sum2), JSON.stringify({ t2, sum2 }));
     await page.locator('#tenClose').click(); await page.waitForTimeout(300);
     /* What we spend */
-    await page.locator('#setNav').click(); await page.waitForTimeout(600); await page.locator('#optSpend').click(); await page.waitForTimeout(500);
+    for(const s of ['#cartNav','#shopMenu','#smHome','#smSpend']){ await page.locator(s).first().click(); await page.waitForTimeout(450); }   /* SUPERSEDED by v3.23: What we spend left Settings for the Shop ⋯ menu. Still protects: the sheet patches in place */
     await markP('spendSheet');
     await page.locator('[data-spend-m="2026-09"]').click(); await page.waitForTimeout(400);
     const s1 = await sameP('spendSheet'); const on = await page.evaluate(() => [...document.querySelectorAll('[data-spend-m].on')].map(b => b.dataset.spendM).join());
     ok('What we spend: another month patches the sheet in place and shows that month', s1.sheet && on==='2026-09', JSON.stringify({ s1, on }));
     await page.locator('#spendClose').click(); await page.waitForTimeout(300);
     /* Occasions */
-    await page.locator('#optOccAdd').click(); await page.waitForTimeout(500);
+    for(const s of ['#shopMenu','#smHome','#smOcc']){ await page.locator(s).first().click(); await page.waitForTimeout(450); }   /* SUPERSEDED by v3.23: Occasions left Settings for the Shop ⋯ menu. Still protects: the sheet changes mode in place */
     const toSave = await page.locator('#occToSave').count();
     if(toSave){ await markP('occSheet'); await page.locator('#occToSave').click(); await page.waitForTimeout(400);
       const o1 = await sameP('occSheet'); const nm = await page.locator('#occName').count();

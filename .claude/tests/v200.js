@@ -91,7 +91,7 @@ const IDEAS = { source:"model", provider:"", results:[
        JSON.stringify(folded)===JSON.stringify(['Bars and overlays','Category headings','Colour','Count and unit','Layout & motion','Sheets','Tile colours and shape']   /* SUPERSEDED by v2.69: Edit item → Sheets; v2.85: "Count and unit" joins, folded like the rest */),
        JSON.stringify(folded));
     ok('…and Appearance is not among them, since Theme and Text size are why people come',
-       s.some(x=>x.name==='Appearance' && !x.folded), JSON.stringify(s.map(x=>x.name+(x.folded?'*':''))));
+       s.some(x=>x.name==='Look' && !x.folded) /* SUPERSEDED by v3.23: Appearance is Look */, JSON.stringify(s.map(x=>x.name+(x.folded?'*':''))));
 
     /* The point of the whole change: reach Sort without opening anything. SUPERSEDED by v2.30: Settings was regrouped (Sort+Sound → Shopping, Predictions/Prices/Memberships → Smart features, Plan → Plan & recipes, Users → People, Other → Lists & sharing + Help). Sort is Shopping now. */
     const sortY = await page.evaluate(()=>{

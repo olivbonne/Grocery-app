@@ -46,6 +46,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     await page.goto(`http://127.0.0.1:${port}/index.html?list=v101`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(1500); };
   const tap = async(sel)=>{ await page.locator(sel).first().click(); await page.waitForTimeout(450); };
+  const menu = async(id, home)=>{ await tap('#cartNav, #cartNavP'); await tap('#shopMenu'); if(home) await tap('#smHome'); if(id) await tap('#'+id); };   // v3.23: the actions left Settings for the Shop ⋯ menu
   const cache = ()=>page.evaluate(()=>JSON.parse(localStorage.getItem('ml_cache_v101')||'{}'));
   const banner = ()=>page.evaluate(()=>{ const b=document.querySelector('.shopnow'); return b ? b.textContent.replace(/\s+/g,' ').trim() : null; });
 
@@ -79,24 +80,23 @@ const seed = (o) => { o=o||{}; return `(() => {
 
     /* ── R21 lists for occasions ────────────────────────────────────────── */
     await mk({ shopping:'{ Sam:{ store:"Coles Dandenong", at:T-60000 } }' });
-    await tap('#setNav');
-    await tap('#optOccSave');
+    await menu('smOcc', 1); await tap('#occToSave');   /* SUPERSEDED by v3.23: Save what's to buy as an occasion left Settings for the Shop ⋯ menu. Still protects: saving under a name, through the Occasions sheet */
     await page.locator('#occName').fill('BBQ');
     await tap('#occSaveGo');
     let ts = (await cache()).templates||[];
     ok('what is still to buy saves as an occasion, under its name', ts.length===1 && ts[0].name==='BBQ' && ts[0].items.length===3 && ts[0].items.find(x=>x.name==='Ice').note==='2 bags', JSON.stringify(ts));
-    await tap('#optOccSave'); await page.locator('#occName').fill('bbq'); await tap('#occSaveGo');
+    await menu('smOcc', 1); await tap('#occToSave'); await page.locator('#occName').fill('bbq'); await tap('#occSaveGo');
     ts = (await cache()).templates||[];
     ok('…saving the same name again replaces it, not a second one', ts.length===1 && ts[0].name==='bbq', JSON.stringify(ts.map(t=>t.name)));
+    await tap('#setNav');   // SUPERSEDED by v3.23: the occasion was saved from the ⋯ menu; the backup is in Settings
     const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('#optBackup').click()]);
     const bk = JSON.parse(fs.readFileSync(await dl.path(),'utf8'));
     ok('a backup carries the occasions — and not who is shopping (presence, not data)', bk.list && Array.isArray(bk.list.templates) && bk.list.templates.length===1 && !('shopping' in bk.list), JSON.stringify(Object.keys(bk.list||{})));
 
     const OCC = [{ id:'t1', name:'Camping', at:1, items:[{name:'Sausages',cat:'meat',qty:6,weight:'',note:'',where:''},{name:'Marshmallows',cat:'others',qty:1,weight:'',note:'big bag',where:''}] }];
     await mk({ items:[it('1','Sausages','meat',2)], templates:OCC });
-    await tap('#setNav');
-    ok('"Add an occasion" says how many there are', /Add an occasion to the list \(1\)/.test(await page.evaluate(()=>(document.querySelector('#optOccAdd')||{}).textContent||'')), '');
-    await tap('#optOccAdd');
+    await menu('smOcc', 1);   /* SUPERSEDED by v3.23: Add an occasion left Settings for the Shop ⋯ menu. Still protects: the sheet offers each saved occasion (the count was on the Settings button) */
+    ok('"Add an occasion" says how many there are', await page.evaluate(()=>document.querySelectorAll('[data-occadd]').length)===1, '');
     await tap('[data-occadd="t1"]');
     const items = (await cache()).items;
     ok('adding Camping puts its things on the list — Sausages raised to 6, not a second tile; Marshmallows new, with its note',
@@ -106,7 +106,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     await tap('#undoBtn');
     const undone = (await cache()).items;
     ok('…and a whole occasion comes off again with one Undo', undone.length===1 && undone[0].name==='Sausages' && undone[0].qty===2, JSON.stringify(undone.map(i=>i.name+'×'+i.qty)));
-    await tap('#optOccAdd');
+    await menu('smOcc', 1);
     await tap('[data-occdel="t1"]');
     ok('an occasion can be deleted, with Undo', ((await cache()).templates||[]).length===0 && /deleted/.test(await page.evaluate(()=>(document.querySelector('#toast')||{}).textContent||'')), '');
     await tap('#undoBtn');

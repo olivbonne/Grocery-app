@@ -6,29 +6,29 @@
    it on the phone with the page and the app opens without signal. It used to come from www.gstatic.com. */
 import { initializeApp } from "/vendor/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "/vendor/firebasejs/10.12.2/firebase-firestore.js";   /* v2.55: a namespace import, passed to js/store.js */
-import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit, del } from "./store.js?v=3.22";   /* v2.55 (architecture review S8/S10): the database, one door */
-import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.22";
-import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.22";
-import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.22";
-import { compareStores, worthIt } from "./compare.js?v=3.22";
-import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.22";   /* v2.47: shared shelf prices (opt-in) */
-import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.22";
-import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.22";
-import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.22";
-import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.22";   /* v2.43 (architecture review A3): the phone's features, one door */
-import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.22";   /* v2.43 (architecture review L17) */
-import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.22";   /* v2.46 (architecture review L17, phase 3): the text parser */
-import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.22";   /* v2.51 (architecture review S8): items merged one by one */
-import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.22";   /* v2.45 (architecture review S17): the app in French as well as English */
-import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.22";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
-import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.22";   /* v3.04: the cards' logic (architecture review L17) */
-import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.22";   /* v3.05 (H2): previews use their own database */
+import { storeInit, storeReady, ref, listen, put, has, col, listenAll, putMany, canSplit, del } from "./store.js?v=3.23";   /* v2.55 (architecture review S8/S10): the database, one door */
+import { DEFAULT_CATS, MEAT_SUBS, DICT, WALL_TINTS, TINT_BAND, AISLES_DAND, AISLES_RICH, STORES, DEFAULT_CAT_IMG, MEAT_DEFAULT_SUBS, EMOJI_LIB, CATS13, TYPE_CAT13, OLD_CAT13, NOTE_HINTS } from "./data/catalog.js?v=3.23";
+import { DRAWN, CATMARK, DRAW_EXACT, DRAW_HINTS } from "./data/drawings.js?v=3.23";
+import { CHAINS, membNorm, periodOf, chainOfStore, discountSeen, stockUp, stockTotal, setRowQty } from "./tenpct.js?v=3.23";
+import { compareStores, worthIt } from "./compare.js?v=3.23";
+import { shareChain, sharedKey, sharedMedian, sharedRecords } from "./shared.js?v=3.23";   /* v2.47: shared shelf prices (opt-in) */
+import { SPEND_MAX, monthKey, prevMonth, spendEntry, spendLog, spendFromPrices, spendMonths, spendMonth } from "./spend.js?v=3.23";
+import { parseAisleLine, mapAisles, mapRank, aisleTypeOf } from "./aisles.js?v=3.23";
+import { code128SVG, reconcile, nameScore, cardBrand } from "./till.js?v=3.23";
+import { pickFile, hasGeolocation, getPosition, wakeLockSupported, requestWakeLock, hasShare, canShare, share, hasClipboard, copyText, vibrate, barcodeSupported, detectBarcodes, speechRecognitionCtor, isAppleMobile, isNativeApp, takeOutsideText, onOutsideText } from "./platform.js?v=3.23";   /* v2.43 (architecture review A3): the phone's features, one door */
+import { UNIT_TABLE, parseNum, roundAmt, NEUTRAL_UNITS, scaleAmt, mergeAmt } from "./amounts.js?v=3.23";   /* v2.43 (architecture review L17) */
+import { parseEntry, parseLines, pickListFromText } from "./parse.js?v=3.23";   /* v2.46 (architecture review L17, phase 3): the text parser */
+import { itemSig, stampItems, pruneTomb, mergeItems, itemsSig } from "./merge.js?v=3.23";   /* v2.51 (architecture review S8): items merged one by one */
+import { tr, trf, LANGS, langOf } from "./i18n.js?v=3.23";   /* v2.45 (architecture review S17): the app in French as well as English */
+import { PHOTO_MAX_PX, PHOTO_QUALITY, newPhotoId, photoOk, photoRecord, photoGone } from "./photos.js?v=3.23";   /* v2.96: photos on items (Option B) — removable, see the PHOTOS block */
+import { CARD_MAX, cardChainOf, cardChain, cardWords, cardNumFmt, cardsParse, cardForStore, cardMove, cardOpenTarget, cardRoom } from "./cards.js?v=3.23";   /* v3.04: the cards' logic (architecture review L17) */
+import { isPreviewHost, firebaseConfigFor } from "./env.js?v=3.23";   /* v3.05 (H2): previews use their own database */
 
 /* Firebase config is set at the very top of index.html (window.FIREBASE_CONFIG) — v2.19: not this file, since the app moved here.
    v3.05: a Vercel preview gets the preview project (js/env.js). */
 const IS_PREVIEW = (()=>{ try{ return isPreviewHost(location.hostname); }catch(e){ return false; } })();
 const firebaseConfig = firebaseConfigFor(IS_PREVIEW ? location.hostname : "", window.FIREBASE_CONFIG || { apiKey:"REPLACE_ME" });
-const APP_VERSION = "v3.22";
+const APP_VERSION = "v3.23";
 window.__mlVersion = APP_VERSION;   // v2.15: for the crash reporter at the top of the file, which runs before this module
 
 /* ═══ PHOTOS (v2.96, Option B — removable: see js/photos.js) ═══ */
@@ -6785,6 +6785,7 @@ function shopMenuHTML(){ const st = activeStore(), real = !!(st && st.id && isRe
     <button class="smmore smhome" id="smHome" aria-expanded="${smHomeOpen}" aria-controls="smHomeBox">${t("At home")} <span aria-hidden="true" class="smmore-c${smHomeOpen?' open':''}">${CHEV_SVG}</span></button>
     ${smHomeOpen ? `<div id="smHomeBox">
     ${item("smCompare", CART_SVG, t("Which store is cheaper"))}
+    ${/* v3.23: the stock-up list moved here from Settings › Memberships, one per membership that is on */""}${Object.keys(CHAINS).filter(k=>memb()[k] && memb()[k].on).map(k=>`<button class="smitem" id="smTen-${k}" data-sm-ten="${k}" role="menuitem">${CART_SVG}<span>${tf("{x} stock-up list for {m}", { x:esc(CHAINS[k].short), m:esc(monthName(periodOf(new Date(), memb()[k].day))) })}</span></button>`).join("")}
     ${real ? item("smAisle", PIN_SVG(18), tf("Aisle map for {x}", { x:esc(st.name) })) : ""}
     ${item("smFridge", FRIDGE_SVG(18), t("What's in the fridge?"))}
     ${item("smSend", SHARE_SVG(18), t("Send what's to buy"))}
@@ -6843,6 +6844,7 @@ function wireShopMenu(){
   on("smRcpt", () => { render(); rcPick(); });
   on("smFridge", () => { render(); fridgePick(); });
   on("smCompare", () => { cmpOpen = true; render(); });
+  app.querySelectorAll("[data-sm-ten]").forEach(c => c.onclick = () => { close(); tenOpen(c.dataset.smTen); });   // v3.23: tenOpen renders
   on("smSpend", () => { spendOpen = true; spendM = ""; render(); });
   on("smAisle", () => { const st = activeStore(); amOpen = st ? st.id : ""; amDraft = null; amRead = null; render(); });
   on("smSend", () => { render(); shareListText(); });
@@ -8090,6 +8092,7 @@ function wireSettingsPage(){   // v1.19 Settings is its own page (was an overlay
    search across both. Memory only: the look page is where you are, not a preference, and a search left on would
    make Settings look broken the next time. var, not let: boot-order rule. */
 var setLook = false, optQuery = "", _lookY = 0;
+var optDiagOpen = false;   // v3.23: Settings › Help › Diagnostics folded; memory only, closed each launch. var: boot-order rule
 const LOOK_SECTS = new Set(["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tile colours and shape", "Count and unit", "Sheets"]);   // v2.85: Count and unit
 const OPT_COLL_DEFAULT = ["Layout & motion", "Colour", "Bars and overlays", "Category headings", "Tile colours and shape", "Count and unit", "Sheets"];   // v2.69: "Edit item" became "Sheets"   // v2.63: Edit item joins the look page, folded like the rest
 function optColl(){ try{ const raw=localStorage.getItem("ml_optcoll"); if(raw===null) return new Set(OPT_COLL_DEFAULT);
@@ -8163,9 +8166,11 @@ function filterOptions(){ const page=document.querySelector(".optpage"); if(!pag
   page.classList.toggle("searching", words.length>0);
   page.querySelectorAll(".optnomatch").forEach(e=>e.classList.remove("optnomatch"));
   const none=page.querySelector("#optNoMatch");
+  const acts=[...page.querySelectorAll("[data-optact]")]; acts.forEach(b=>{ b.hidden=true; });   // v3.23: the actions, shown only by a matching search
   if(!words.length){ if(none){ none.hidden=true; none.textContent=""; } return; }
   const hit=t=>{ const n=optNorm(t); return words.every(w=>n.includes(w)); };
   let any=0;
+  acts.forEach(b=>{ if(hit(b.textContent)){ b.hidden=false; any++; } });
   page.querySelectorAll(".optlangtop").forEach(r=>{   // v2.56 item 1: the Language row, outside every section
     if(hit(r.textContent+" "+(r.dataset.find||""))) any++; else r.classList.add("optnomatch"); });
   page.querySelectorAll(".optsect").forEach(h=>{ const body=h.nextElementSibling;
@@ -8415,7 +8420,7 @@ function wireOptions(){
     accessWrite({ acl:{[id]:false}, joinKey:newKey(), openUntil:0 }, tf("{x} removed", { x:nm })); });
   const acl=app.querySelector("#accessClose"); if(acl) acl.onclick=()=>accessWrite({ openUntil:0 }, "Closed — only the current link lets someone new in");
   const ank=app.querySelector("#accessNewKey"); if(ank) ank.onclick=()=>{ if(!confirm("Make a new link? The old one stops working for anyone not already on the list.")) return;
-    accessWrite({ joinKey:newKey(), openUntil:0 }, "New link made — share it from Lists & sharing"); };
+    accessWrite({ joinKey:newKey(), openUntil:0 }, "New link made — share it from Lists & people"); };
   const oex=app.querySelector("#optExport"); if(oex) oex.onclick=exportListText;
   const obk=app.querySelector("#optBackup"); if(obk) obk.onclick=backupToFile;   // v2.15 backups
   const orf=app.querySelector("#optRestoreFile"); if(orf) orf.onclick=restorePick;
@@ -8432,6 +8437,21 @@ function wireOptions(){
     vf.onpointerdown=()=>{ _dt=setTimeout(()=>{ diagOpen=true; render(); }, 550); };
     vf.onpointerup=_cancel; vf.onpointerleave=_cancel; vf.onpointercancel=_cancel; }
   const od=app.querySelector("#optDiag"); if(od) od.onclick=()=>{ diagOpen=true; render(); };
+  const odf=app.querySelector("#optDiagFold"); if(odf) odf.onclick=()=>{ optDiagOpen=!optDiagOpen; render(); };
+  if(odf && !optDiagOpen){ for(let n=odf.nextElementSibling; n && n.id!=="verFoot"; n=n.nextElementSibling) n.classList.add("optdiagx"); }   // folded: hidden, but still in the page for the search   // v3.23: a button tap, not the search
+  app.querySelectorAll("[data-optact]").forEach(b=>b.onclick=()=>{ const k=b.dataset.optact;   // v3.23: the actions found by the Settings search — as the Shop ⋯ menu runs them
+    optQuery="";
+    if(k==="rcpt"){ render(); rcPick(); }
+    else if(k==="compare"){ cmpOpen=true; render(); }
+    else if(k==="spend"){ spendOpen=true; spendM=""; render(); }
+    else if(k==="send"){ render(); shareListText(); }
+    else if(k==="occsave"){ occSheet={ mode:"save", name:"" }; render(); }
+    else if(k==="occadd"){ occSheet={ mode:"add" }; render(); }
+    else if(k==="cardsgrid"){ cardShow=cardsGet().length ? { grid:true } : { add:true }; render(); }
+    else if(k==="cardadd"){ if(cardsGet().length>=CARD_MAX){ showToast(tf("Up to {n} cards", { n:CARD_MAX })); return; } cardShow={ add:true }; render(); }
+    else if(k==="aisle"){ amOpen=storeSel; amDraft=null; amRead=null; render(); }
+    else if(k.indexOf("ten-")===0) tenOpen(k.slice(4));
+    else render(); });
   const dbg=app.querySelector("#diagBg"); if(dbg) dbg.onclick=e=>{ if(e.target===dbg){ diagOpen=false; render(); } };
   const dcl=app.querySelector("#diagClose"); if(dcl) dcl.onclick=()=>{ diagOpen=false; render(); };
   const dpr=app.querySelector("#diagProbe"); if(dpr) dpr.oninput=()=>{ const o=app.querySelector("#diagProbeOut"); if(o) o.innerHTML=diagProbeHTML(dpr.value); };
@@ -8973,12 +8993,16 @@ function optionsBody(){
   if(curSort==="ai" && !aiSortOK()) curSort="location";
   return `
     ${view!=="lists" ? `<div class="optsearch${optQuery?' has':''}"><span class="optsearch-ic" aria-hidden="true">${SEARCH_SVG}</span><input id="optSearch" type="search" placeholder="${t("Search settings")}" aria-label="${t("Search settings")}" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" value="${esc(optQuery)}"><button id="optSearchClear" type="button" aria-label="Clear search">×</button></div>
-    <p class="optnone" id="optNoMatch" role="status" hidden></p>` : ""}
+    <p class="optnone" id="optNoMatch" role="status" hidden></p>
+    ${/* v3.23: the actions that left Settings (they live in the Shop ⋯ menu) — hidden, shown by filterOptions when the search matches their label */""}<div class="optacts" id="optActs">${(()=>{ const a=[["rcpt",t("Read a receipt")],["compare",t("Which store is cheaper for this list")],["spend",t("What we spend")],["send",t("Send what's to buy to another app")],["occsave",t("Save what's to buy as an occasion")],["occadd",t("Add an occasion to the list")],["cardsgrid",t("Show all cards")],["cardadd",t("Add a membership card")]];
+      Object.keys(CHAINS).forEach(k=>{ const c=memb()[k]; if(c && c.on) a.push(["ten-"+k, tf("{x} stock-up list for {m}", { x:esc(CHAINS[k].short), m:esc(monthName(periodOf(new Date(), c.day))) })]); });
+      if(isRealStore(storeSel)) a.push(["aisle", tf("Aisle map for {x}", { x:esc((storeById(storeSel)||{}).name||t("this shop")) })]);
+      return a.map(([k,l])=>`<button class="optaction" data-optact="${k}" hidden>→ ${l}</button>`).join(""); })()}</div>` : ""}
     ${/* v2.56 item 1: Language sits above every section, where the household looks first (it was folded
           inside Appearance and nobody found it). Outside any section, so filterOptions matches it on its own
           — by "Language" and "Langue" whichever language is showing. */""}
     <div class="optrow optnl optlangtop" data-layer="main" data-find="Language Langue"><span class="optlabel">${t("Language")}</span><span class="optctrl"><div class="seg">${LANGS.map(l=>`<button data-opt-lang="${l.code}" lang="${l.code}" class="${appLang===l.code?'on':''}">${l.name}</button>`).join("")}</div></span></div>
-    ${sect("Appearance")}
+    ${sect("Look")}${/* v3.23: Appearance and Tiles in one section; the Advanced look button last */""}
     ${rowNL(t("Quick look"), '<div class="seg segfull seg4">' + QUICK_LOOKS.map(q => `<button data-opt-qlook="${q.id}" class="${quickLookNow()===q.id?'on':''}">${t(q.label)}</button>`).join("") + '</div>')}
     <div class="opthint">${t("Sets how many tiles sit across and whether items show their icon: List (1, no icons), Simple (2, no icons), Comfortable (3, large icons), Compact (4, small icons). Notes always show. Colours and everything else stay as they are — Advanced look has every detail.")}</div>
     ${rowNL(t("Theme"), `<div class="seg segfull" style="flex-wrap:wrap">${
@@ -9018,6 +9042,23 @@ function optionsBody(){
     ${/* v1.57 item 2: Text size sits with the wallpaper and the theme — the three things that change
           the whole page at once — and with no rule between them, because they are one group. */""}
     ${rowNL(t("Text size"), `<div class="seg"><button id="optZoomMinus">−</button><span style="min-width:46px;display:flex;align-items:center;justify-content:center;font-weight:800">${Math.round(dens()*100)}%</span><button id="optZoomPlus">+</button></div>`)}
+    ${view!=="lists" ? `<div class="optrow optrow-wide optnl"><span class="optlabel">${t("Tiles across")}</span><div class="optwide">
+      <div class="tdlist">
+        <div class="tdrow">
+        ${/* v2.80: the "Tile display" box went (the household) — the numbers say it, the Preview row shows it */""}
+        <div class="dispcols">${[1,2,3,4,5,6].map(n=>`<button class="colbtn ${dispBase()==='large'&&largeCols()===n?'on':''}" data-opt-cols="${n}">${n}</button>`).join("")}<button class="colbtn ${dispBase()==='large'&&largeCols()===0?'on':''}" data-opt-cols="0" title="${t("Variable width — tiles size to the word")}">${arrowSVG()}</button></div>
+        </div>
+      </div></div></div>
+    ${/* v2.78: tile height, next to the columns */""}<div class="optrow optrow-wide optnl"><span class="optlabel">${t("Tile height")}</span><div class="optwide"><div class="dispcols">${tileLinesBtns("data-opt-lines")}</div></div></div>
+    ${/* v2.79: what tile display and height make together — a picture, not real tiles */""}<div class="optrow optrow-wide optnl"><span class="optlabel">${t("Preview")}</span><div class="optwide">${tilePrevHTML()}</div></div>
+    ${rowNL(t("Group by category"), `<div class="seg"><button data-opt-caton="1" class="${catOn?'on':''}">${t("On")}</button><button data-opt-caton="0" class="${!catOn?'on':''}">${t("Off")}</button></div>`)}
+    ${catOn ? rowNL(t("Group by subcategory"), `<div class="seg"><button data-opt-subon="1" class="${subOn?'on':''}">${t("On")}</button><button data-opt-subon="0" class="${!subOn?'on':''}">${t("Off")}</button></div>`) : ""}` : ""}
+    ${row(t("Item icons"), `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">${iconStyle()==="drawn"?illSVG("bread"):"🍞"}</span>${t("On")}</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>${t("Off")}</button></div>`)}
+    ${itemEmojiOn() ? row(t("Icon size"), `<div class="seg">${[["fill",t("Fill")],["s","S"],["m","M"],["l","L"],["xl","XL"]].map(([k,l])=>`<button data-opt-icosize="${k}" class="${icoSize()===k?'on':''}" aria-label="${tf("Icon size {x}", { x:l })}">${l}</button>`).join("")}</div>`) : ""}
+    ${(itemEmojiOn() && /^(l|xl)$/.test(icoSize())) ? `<div class="opthint">${t("At this size each tile shows its name under the icon.")}</div>` : ""}
+    ${rowNL(t("Category icons"), `<div class="seg"><button data-opt-catemoji="1" class="${catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">${iconStyle()==="drawn"?catMarkSVG("vegetable"):"🥦"}</span>${t("On")}</button><button data-opt-catemoji="0" class="${!catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>${t("Off")}</button></div>`)}
+    ${rowNL(t("Icon style"), `<div class="seg"><button data-opt-iconstyle="drawn" class="${iconStyle()==='drawn'?'on':''}"><span class="tdswatch tdswatch-ico">${catMarkSVG("vegetable")}</span>${t("Drawn")}</button><button data-opt-iconstyle="emoji" class="${iconStyle()==='emoji'?'on':''}">${t("Emoji")}</button></div>`)}
+    <p class="hint" style="text-align:left;margin:0 0 12px">${t("Drawn uses line drawings for items and the nine standard categories; categories you made keep their emoji.")}</p>
     ${/* v2.00 item 2: the appearance slots, the margin steppers and the page-transition controls
           are real preferences, but they are not what someone opens Settings to find — and they sat
           in front of Sort and Smart add. Their own section, folded by default. */""}
@@ -9155,27 +9196,9 @@ function optionsBody(){
     ${colRow(t("Background"), "opt-reghdbg", regHdBg, "reghdbg", {page:true})}
     ${colRow(t("Border"), "opt-reghdbrd", regHdBrd, "reghdbrd", {page:true})}
 
-    ${sectHR("Tiles")}
-    ${view!=="lists" ? `<div class="optrow optrow-wide optnl"><span class="optlabel">${t("Tiles across")}</span><div class="optwide">
-      <div class="tdlist">
-        <div class="tdrow">
-        ${/* v2.80: the "Tile display" box went (the household) — the numbers say it, the Preview row shows it */""}
-        <div class="dispcols">${[1,2,3,4,5,6].map(n=>`<button class="colbtn ${dispBase()==='large'&&largeCols()===n?'on':''}" data-opt-cols="${n}">${n}</button>`).join("")}<button class="colbtn ${dispBase()==='large'&&largeCols()===0?'on':''}" data-opt-cols="0" title="${t("Variable width — tiles size to the word")}">${arrowSVG()}</button></div>
-        </div>
-      </div></div></div>
-    ${/* v2.78: tile height, next to the columns */""}<div class="optrow optrow-wide optnl"><span class="optlabel">${t("Tile height")}</span><div class="optwide"><div class="dispcols">${tileLinesBtns("data-opt-lines")}</div></div></div>
-    ${/* v2.79: what tile display and height make together — a picture, not real tiles */""}<div class="optrow optrow-wide optnl"><span class="optlabel">${t("Preview")}</span><div class="optwide">${tilePrevHTML()}</div></div>
-    ${rowNL(t("Group by category"), `<div class="seg"><button data-opt-caton="1" class="${catOn?'on':''}">${t("On")}</button><button data-opt-caton="0" class="${!catOn?'on':''}">${t("Off")}</button></div>`)}
-    ${catOn ? rowNL(t("Group by subcategory"), `<div class="seg"><button data-opt-subon="1" class="${subOn?'on':''}">${t("On")}</button><button data-opt-subon="0" class="${!subOn?'on':''}">${t("Off")}</button></div>`) : ""}` : ""}
-    ${row(t("Item icons"), `<div class="seg"><button data-opt-itememoji="1" class="${itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">${iconStyle()==="drawn"?illSVG("bread"):"🍞"}</span>${t("On")}</button><button data-opt-itememoji="0" class="${!itemEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>${t("Off")}</button></div>`)}
-    ${itemEmojiOn() ? row(t("Icon size"), `<div class="seg">${[["fill",t("Fill")],["s","S"],["m","M"],["l","L"],["xl","XL"]].map(([k,l])=>`<button data-opt-icosize="${k}" class="${icoSize()===k?'on':''}" aria-label="${tf("Icon size {x}", { x:l })}">${l}</button>`).join("")}</div>`) : ""}
-    ${(itemEmojiOn() && /^(l|xl)$/.test(icoSize())) ? `<div class="opthint">${t("At this size each tile shows its name under the icon.")}</div>` : ""}
-    ${rowNL(t("Category icons"), `<div class="seg"><button data-opt-catemoji="1" class="${catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico">${iconStyle()==="drawn"?catMarkSVG("vegetable"):"🥦"}</span>${t("On")}</button><button data-opt-catemoji="0" class="${!catEmojiOn()?'on':''}"><span class="tdswatch tdswatch-ico off"></span>${t("Off")}</button></div>`)}
-    ${rowNL(t("Icon style"), `<div class="seg"><button data-opt-iconstyle="drawn" class="${iconStyle()==='drawn'?'on':''}"><span class="tdswatch tdswatch-ico">${catMarkSVG("vegetable")}</span>${t("Drawn")}</button><button data-opt-iconstyle="emoji" class="${iconStyle()==='emoji'?'on':''}">${t("Emoji")}</button></div>`)}
-    <p class="hint" style="text-align:left;margin:0 0 12px">${t("Drawn uses line drawings for items and the nine standard categories; categories you made keep their emoji.")}</p>
-    ${iconStyle()==="drawn" ? row(t("Line weight"), `<div class="seg">${[["fine","Fine"],["thin","Thin"],["regular","Regular"],["bold","Bold"]].map(([k,l])=>`<button data-opt-linew="${k}" class="${lineW()===k?'on':''}">${t(l)}</button>`).join("")}</div>`) : ""}
     ${/* v2.18 (R12): the tiles' colours and shape are the look page's; what a tile shows stays in everyday Tiles. */""}
     ${sectHR("Tile colours and shape")}
+    ${/* v3.23: moved here from everyday Tiles */""}${iconStyle()==="drawn" ? row(t("Line weight"), `<div class="seg">${[["fine","Fine"],["thin","Thin"],["regular","Regular"],["bold","Bold"]].map(([k,l])=>`<button data-opt-linew="${k}" class="${lineW()===k?'on':''}">${t(l)}</button>`).join("")}</div>`) : ""}
     ${rowNL(t("Tile appearance"), `<div class="seg"><button data-opt-fill="full" class="${fillMode()==='full'?'on':''}"><span class="tdswatch" data-sw="full" style="background:var(--accent)"></span>${t("Full")}</button><button data-opt-fill="accent" class="${fillMode()==='accent'?'on':''}"><span class="tdswatch" data-sw="accent" style="border:1.5px solid var(--muted2);border-left:4px solid var(--accent)"></span>${t("Accent")}</button><button data-opt-fill="empty" class="${fillMode()==='empty'?'on':''}"><span class="tdswatch" data-sw="empty" style="border:1.5px solid var(--muted2)"></span>${t("Empty")}</button></div>`)}
     ${/* v1.57 item 2: the two tile states, each with the same three colours in the same order, so the
           two blocks can be read against each other. */""}
@@ -9257,7 +9280,6 @@ function optionsBody(){
       ${isRealStore(storeSel) ? `<div class="optrow" style="gap:7px"><input id="storeName" value="${esc((storeById(storeSel)||{}).name||"")}" placeholder="${t("Store name")}" style="flex:1;min-width:0;padding:10px 12px;border-radius:12px;border:2px solid var(--ink);outline:none;background:var(--card);color:var(--text);font-size:14px;font-weight:600" /><button id="storeRemove" style="padding:10px 12px;border-radius:12px;border:2px solid #C24A33;background:transparent;color:#C24A33;font-weight:700;font-size:13px">${t("Remove")}</button></div>` : ""}
     </div></div>
     ${(storeSel==="home" || isRealStore(storeSel)) ? `<button class="optaction" id="optSetStore" style="margin-top:2px">${PIN_SVG(14)} ${tf("Set {x} location here", { x:esc(storeName(storeById(storeSel))||t("store")) })}</button>` : ""}
-    ${isRealStore(storeSel) ? `<button class="optaction" id="optAisleMap" style="margin-top:6px">${/* v2.27 */""}${tf("Aisle map for {x}", { x:esc((storeById(storeSel)||{}).name||t("this shop")) })}${(()=>{ const m=(state.aislemap||{})[storeSel]; return (m && m.aisles && m.aisles.length) ? (m.aisles.length===1 ? tf(" · {n} aisle", { n:m.aisles.length }) : tf(" · {n} aisles", { n:m.aisles.length })) : ""; })()}</button>` : ""}
     ${(()=>{ const hid=[...STORES,...(state.stores||[])].filter(s=>{ const o=storeOverride(s.id); return o.hidden && !o.removed; }); return hid.length ? `<div class="optrow" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:6px"><span class="optlabel" style="font-size:12.5px;color:var(--muted2)">${t("Hidden stores")}</span>${hid.map(s=>`<div style="display:flex;gap:7px;align-items:center"><span style="flex:1;min-width:0;color:var(--muted);font-size:13px;font-weight:600">${esc((storeById(s.id)||s).name||s.id)}</span><button class="storechip" data-store-restore="${s.id}" style="flex:0 0 auto">${t("Restore")}</button><button class="storechip" data-store-delete="${s.id}" aria-label="Delete" style="flex:0 0 auto;border-color:#C24A33;color:#C24A33">✕</button></div>`).join("")}</div>` : ""; })()}
     <div style="margin:-2px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">${(()=>{ const nid=storeSel==="auto"?(useLoc&&!locState.busy&&locState.checked&&!locState.err&&locState.nearId):storeSel; return nid==="home"?HOME_SVG(14)+" ":(storeSel==="auto"&&nid&&storeById(nid))?PIN_SVG(14)+" ":""; })()}${esc(storeLabel())}</div>
     ${view!=="lists" ? `<div class="optrow optrow-wide optnl"><span class="optlabel">${t("Sort")}</span><div class="optwide">
@@ -9265,13 +9287,14 @@ function optionsBody(){
     </div></div>
     <div class="opthint">${t("<b>Location</b> walks the shop you're at, aisle by aisle — its own aisle map if you have made one (Aisle map, below the shops), otherwise the built-in order — and at a market shows only what it sells. <b>✨ AI</b> learns the order you tick things at each shop and follows it next time. <b>Category</b>: your categories in the order they are listed, then A–Z. <b>A–Z</b>: by name. Location and AI show when the list is not grouped by category.")}</div>
     ${(displayFor()==="flat" && curSort==="ai") ? `<div class="opthint">✨ AI learns the order you check things off at ${esc((activeStore()||{}).name||"each store")} and reorders your next trip. Pick the store in Location so it learns per shop.</div>` : ""}
-    ${(displayFor()==="flat" && curSort==="ai" && aiSeenCount()>0) ? `<button class="optaction" id="optResetAI" style="margin:-2px 0 10px">${t("♻︎ Reset AI — restart from category")}</button>` : ""}` : ""}
+    ` : ""}
     ${row(t("Sound"), `<div class="seg"><button data-opt-sound="1" class="${soundOn?'on':''}">${t("On")}</button><button data-opt-sound="0" class="${!soundOn?'on':''}">${t("Off")}</button></div>`)}
-    ${row(t("First-time questions"), `<button class="storechip" id="optOnbReset">${t("Ask again")}</button>`)}<div class="opthint">${t("Your shops, pinning a shop, the aisle map and the how-it-works tip each ask once. This brings back any you answered with Skip or Never.")}</div>
     ${row(t("Keep screen on"), `<div class="seg"><button data-opt-wake="1" class="${wakePref()?'on':''}">${t("On")}</button><button data-opt-wake="0" class="${!wakePref()?'on':''}">${t("Off")}</button></div>`)}
     <div class="opthint">${t("While the cart has something in it, so the phone does not dim and lock mid-aisle.")}</div>
     ${row(t("New items in Regulars"), `<div class="seg"><button data-opt-regnow="1" class="${regNowPref()?'on':''}">${t("On")}</button><button data-opt-regnow="0" class="${!regNowPref()?'on':''}">${t("Off")}</button></div>`)}
     <div class="opthint">${t("What you add with + is kept in Regulars straight away, not only after a shop.")}</div>
+    ${state.members.length ? `${row(t("Say when I'm shopping"), `<div class="seg"><button data-opt-sayshop="1" class="${sayShopOn()?'on':''}">${t("On")}</button><button data-opt-sayshop="0" class="${!sayShopOn()?'on':''}">${t("Off")}</button></div>`)}${/* v3.23: from People */""}
+    <div class="opthint">${t("While you tick things off at a shop, the others see which shop — only its name, for an hour and a half, gone when you finish.")}</div>` : ""}
     ${(view!=="lists") ? `${sect("Smart features")}${/* v2.30: Smart add, restock suggestions, receipts and prices, memberships — the AI-assisted things, in one place */""}${row(t("Smart add"), `<div class="seg"><button data-opt-smart="1" class="${smartOn()?'on':''}">${t("On")}</button><button data-opt-smart="0" class="${!smartOn()?'on':''}">${t("Off")}</button></div>`)}<div class="opthint">${t("The ✨ button in the add bar. Type or paste a whole list or a recipe — “2 kg chicken, milk and eggs for pancakes” — and it becomes separate items with amounts and categories. What you type is sent to the AI reader; nothing else. Recipes on the Plan page have their own reader and work either way.")}</div>${row(t("Siri & Shortcuts"), `<button class="storechip" id="optSiri">${t("Set up Siri")}</button>`)}<div class="opthint">${t("Add to any of your lists by voice from anywhere, with an iPhone Shortcut. On Android, share any text to Market List.")}</div>` : ""}
     ${(view!=="lists") ? `<div class="optsub">${t("Restock suggestions")}</div>${rowNL(t("Suggest restocks"), `<div class="seg"><button data-pred-on="1" class="${predictCfg.on?'on':''}">${t("On")}</button><button data-pred-on="0" class="${!predictCfg.on?'on':''}">${t("Off")}</button></div>`)}
     ${predictCfg.on ? `${rowNL(t("Remind me"), `<div class="seg"><button data-pred-freq="weekly" class="${predictCfg.freq==='weekly'?'on':''}">${t("Weekly")}</button><button data-pred-freq="monthly" class="${predictCfg.freq==='monthly'?'on':''}">${t("Monthly")}</button></div>`)}
@@ -9279,15 +9302,12 @@ function optionsBody(){
       <div class="daychips">${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map((d,i)=>{ const dv=(i+1)%7; return `<button class="daychip ${predictCfg.day===dv?'on':''}" data-pred-day="${dv}">${d}</button>`; }).join("")}</div></div></div>` : ""}
     <div class="opthint">${t("Suggests restocking items on your schedule, from how often you buy them — on your device. Adds only when you tap.")}</div>` : ""}` : ""}
     ${(view!=="lists") ? `<div class="optsub">${t("Receipts and prices")}</div>
-      <button class="optaction" id="optRcpt" style="margin-top:2px">${CAMERA_SVG(16)} ${t("Read a receipt")}</button>
       ${row(t("Ask after a shop"), `<div class="seg"><button data-opt-rcptask="1" class="${rcptAskOn()?'on':''}">${t("On")}</button><button data-opt-rcptask="0" class="${!rcptAskOn()?'on':''}">${t("Off")}</button></div>`)}
       ${row(t("Share prices with other households"), `<div class="seg"><button data-opt-sharepx="1" class="${sharePxOn()?'on':''}">${t("On")}</button><button data-opt-sharepx="0" class="${!sharePxOn()?'on':''}">${t("Off")}</button></div>`)}<div class="opthint">${t("Off unless you turn it on. When on, the prices you confirm from receipts at Coles, Woolworths and ALDI are pooled with other households that also turned it on — the chain, the item, the price and the day, never your list, your shop or your card — and “Which store is cheaper” fills its gaps with the middle price from at least two households. Sharing yours needs your email in Your account; seeing others' does not.")}</div>
       ${(sharePxOn() && !shareEmailAcct()) ? `<div style="margin:0 2px 8px;font-size:12.5px;color:var(--muted2);font-weight:600">${t("Add your email in Your account to share yours — you can already see others'.")}</div>` : ""}
       ${row(t("Shelf prices from the supermarkets' websites"), `<div class="seg"><button data-opt-feed="1" class="${feedOn()?'on':''}">${t("On")}</button><button data-opt-feed="0" class="${!feedOn()?'on':''}">${t("Off")}</button></div>`)}<div class="opthint">${/* v3.19 */""}${t("Once a week the app asks a price service (Apify) for the shelf prices of the products you pinned in Edit item › More › Shelf prices. Product names and ids are sent, nothing about you. Household use only — the supermarkets' terms do not allow scraping.")}</div>
-      <button class="optaction" id="optCompare">${/* v2.21 */""}${t("Which store is cheaper for this list")}</button>
-      <button class="optaction" id="optSpend">${/* v2.24 */""}${t("What we spend")}</button>
       <div style="margin:6px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">${(()=>{ const pc=Object.keys(state.prices||{}).length; return pc ? (pc===1 ? tf("{n} item with a remembered price. Kept in this list, shared only with the people on it.", { n:pc }) : tf("{n} items with a remembered price. Kept in this list, shared only with the people on it.", { n:pc })) : t("Read a receipt after a shop and the app remembers what you paid at each store. Free."); })()}</div>
-      ${(Object.keys(state.prices||{}).length || (state.spend||[]).length) ? `<button class="optaction" id="optPriceClear">${BIN_SVG(16)} ${t("Clear prices and spending")}</button>` : ""}` : ""}
+      ` : ""}
     ${(view!=="lists") ? `<div class="optsub">${t("Memberships")}</div>${/* v2.20 the 10% shop: which memberships the household has, the rules (they change), this month */""}
       ${Object.keys(CHAINS).map(k=>{ const c=memb()[k], p=periodOf(new Date(), c.day), u=c.used[p.key];
         return `${row(esc(CHAINS[k].name), `<div class="seg"><button data-memb-on="${k}|1" class="${c.on?'on':''}">${t("On")}</button><button data-memb-on="${k}|0" class="${!c.on?'on':''}">${t("Off")}</button></div>`)}
@@ -9298,35 +9318,29 @@ function optionsBody(){
         </div></div></div>
         <div class="membstat" data-memb-stat="${k}">${esc(monthName(p))}: ${u ? tf("used on {d}", { d:esc(new Date(u).toLocaleDateString(dateLoc(),{day:"numeric",month:"short"})) }) : (p.daysLeft===1 ? tf("unused · {n} day left", { n:p.daysLeft }) : tf("unused · {n} days left", { n:p.daysLeft }))}
           <button class="storechip" data-memb-used="${k}|${u?0:1}">${u?t("Not used yet"):t("Used it")}</button></div>
-        <button class="optaction" data-memb-list="${k}">${tf("{x} stock-up list for {m}", { x:esc(CHAINS[k].short), m:esc(monthName(p)) })}</button>` : ""}`; }).join("")}
+        ` : ""}`; }).join("")}
       <div style="margin:6px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">${t("Each takes 10% off one shop a month, up to $50, as of October 2026 — set the rules to what your membership says. A receipt that shows the member discount marks the month as used.")}</div>
       <div class="optsub">${t("Cards at the till")}</div>${/* v2.31 item 5: kept on this phone only */""}
       ${cardsGet().map(c=>row(esc(c.name), `<div class="seg"><button data-card-open="${esc(c.id)}">${t("Show")}</button><button data-card-edit="${esc(c.id)}">${t("Edit")}</button></div>`)).join("")}
-      ${cardsGet().length>1 ? `<button class="optaction" id="optCardsGrid">${t("Show all cards")}</button>` : ""}${/* v3.03 */""}
-      <button class="optaction" data-card-add="1">${CARD_SVG(16)} ${t("Add a membership card")}</button>
       ${row(t("Ask for a card after a shop"), `<div class="seg"><button data-opt-cardask="1" class="${cardAskOn()?'on':''}">${t("On")}</button><button data-opt-cardask="0" class="${!cardAskOn()?'on':''}">${t("Off")}</button></div>`)}
       <div class="snapnote">${t("On this phone only. A card comes up when you finish a shop at its store, and from the Shop page's menu.")}</div>` : ""}
-    ${(view!=="lists") ? `${sect("Plan & recipes")}${row(t("Meal slots"), `<div class="seg"><button data-opt-mealslots="1" class="${mealSlotsOn()?'on':''}">${t("On")}</button><button data-opt-mealslots="0" class="${!mealSlotsOn()?'on':''}">${t("Off")}</button></div>`)}
+    ${(view!=="lists") ? `<div class="optsub">${t("Plan & recipes")}</div>${/* v3.23: a subhead of Smart features */""}${row(t("Meal slots"), `<div class="seg"><button data-opt-mealslots="1" class="${mealSlotsOn()?'on':''}">${t("On")}</button><button data-opt-mealslots="0" class="${!mealSlotsOn()?'on':''}">${t("Off")}</button></div>`)}
     <div class="opthint">${t("Breakfast, lunch, dinner or snack on each planned meal.")}</div>` : ""}
     ${(view!=="lists") ? `${row(t("Convert amounts"), `<div class="seg"><button data-opt-units="off" class="${unitsMode()==='off'?'on':''}">${t("Off")}</button><button data-opt-units="metric" class="${unitsMode()==='metric'?'on':''}">${t("Metric")}</button><button data-opt-units="imperial" class="${unitsMode()==='imperial'?'on':''}">${t("Imperial")}</button></div>`)}
     <div class="opthint">${t("Changes how amounts are shown, not what is stored — a recipe\'s own wording comes back if you turn this off. Amounts it can\'t read, like “a pinch”, are left alone.")}</div>` : ""}
-    ${state.members.length ? `${sectHR("People")}<div class="optrow optnl" style="flex-direction:column;align-items:stretch;gap:7px">
+    ${sectHR("Lists & people")}${/* v3.23: Lists & sharing, People and History */""}
+    <button class="optaction" id="optShare" style="margin-top:2px">${t("Share link")}</button>
+    ${state.members.length ? `<div class="optrow optnl" style="flex-direction:column;align-items:stretch;gap:7px">
       <div class="userlist">${state.members.map(m=>`<button class="userchip ${m===me?'on':''}" data-switch-user="${esc(m)}">${esc(m)}${m===me?`<span class="ucur">${t("you")}</span>`:""}</button>`).join("")}</div>
     </div>
     ${accessHTML()}
-    ${row(t("Say when I'm shopping"), `<div class="seg"><button data-opt-sayshop="1" class="${sayShopOn()?'on':''}">${t("On")}</button><button data-opt-sayshop="0" class="${!sayShopOn()?'on':''}">${t("Off")}</button></div>`)}
-    <div class="opthint">${t("While you tick things off at a shop, the others see which shop — only its name, for an hour and a half, gone when you finish.")}</div>` : ""}
-    ${sectHR("Lists & sharing")}
-    <button class="optaction" id="optShare" style="margin-top:2px">${t("Share link")}</button>
-    <button class="optaction" id="optSendList" style="margin-top:10px">${SHARE_SVG(16)} ${t("Send what's to buy to another app")}</button>
-    <button class="optaction" id="optOccSave" style="margin-top:10px">${t("Save what's to buy as an occasion")}</button>
-    <button class="optaction" id="optOccAdd" style="margin-top:10px">${t("Add an occasion to the list")}${(state.templates||[]).length?` (${(state.templates||[]).length})`:""}</button>
+    ` : ""}
     <button class="optaction" id="optExport" style="margin-top:10px">${t("Export the full list — to buy and Regulars")}</button>
     <button class="optaction" id="optBackup" style="margin-top:10px">${t("Back up this list to a file")}</button>
     <button class="optaction" id="optRestoreFile" style="margin-top:10px">${t("Restore from a backup file")}</button>
     ${catList().some(c=>c.id==="pantry") ? "" : `${row(t("Use the new categories"), `<button class="storechip" id="optCats13">${t("Use the new categories")}</button>`)}<div class="opthint">${t("Moves this list to the thirteen categories, in the order a shop is walked (Bakery, Deli, Dairy, Pantry, Frozen…). Items and Regulars move to where shops shelve them; categories you made stay. A backup is taken first.")}</div>`}
     ${snapsHTML()}${srvBakHTML()}
-    ${sectHR("History")}
+    ${subhead("History")}
     ${(()=>{
       /* v1.51: the picker only appears with more than one list — a single-list user does not need to
          be told which one they are looking at. */
@@ -9359,15 +9373,6 @@ function optionsBody(){
         + `<div style="margin:4px 2px 8px;font-size:12.5px;color:var(--muted2);font-weight:600">${t("Kept on this device only — it is not shared with the rest of the household.")}</div>`
         + `<button class="optaction" id="optHistClear" style="margin-top:2px">${BIN_SVG(16)} ${t("Clear this list’s history")}</button>`;
     })()}
-    ${sectHR("Help")}
-    <button class="optaction" id="optReport" style="margin-top:10px">${REPORT_SVG(16)} ${t("Report a problem")}</button>
-    <button class="optaction" id="optDiag" style="margin-top:10px">${FLASK_SVG(16)} ${t("AI diagnostics")}</button>
-    <button class="optaction" id="optPriceDiag" style="margin-top:10px">${FLAG_TAG_SVG} ${t("Price diagnostics")}</button>
-    <button class="optaction" id="optLocDiag" style="margin-top:10px">${PIN_SVG(16)} ${t("Location diagnostics")}</button>
-    ${row(t("New versions first (tester)"), `<div class="seg"><button data-opt-tester="1" class="${testerOn()?'on':''}">${t("On")}</button><button data-opt-tester="0" class="${!testerOn()?'on':''}">${t("Off")}</button></div>`)}<div class="opthint">${/* v3.20 */""}${t("This phone gets each new version as soon as it is out; the household's other phones get it a day later, so a problem shows here first.")}</div>
-    ${(swStatusMaybe(), swPendHTML())}
-    ${row(t("Connection check"), `<span class="optdiag" id="optConnDiag">${connDiagHTML()}</span>`)}<div class="opthint">${t("If saving is slow, a screenshot of this helps find why.")}</div>
-    ${stuckLog().length ? `<button class="optaction" id="optStuck" style="margin-top:10px">${tf("Screen log · {n}", { n:stuckLog().length })}</button>` : ""}
     ${sectHR("Your data")}
     <a class="optaction" id="optPrivacy" href="/privacy.html" style="margin-top:2px">${t("Privacy — what the app keeps, and where")}</a>
     ${acctHTML()}
@@ -9376,7 +9381,21 @@ function optionsBody(){
     <button class="optaction" id="optForget" style="margin-top:10px">${t("Forget everything on this phone")}</button>
     <button class="optaction" id="acctDel" style="margin-top:10px" ${(acct&&acct.busy)?"disabled":""}>${t("Delete my account")}</button>
     ${(acct && acct.del && acct.busy) ? `<div class="rcbusy" role="status" aria-live="polite"><span class="spin" aria-hidden="true"></span>${esc(acct.step||"")}</div>` : (acct && acct.del && acct.err) ? `<div class="rpterr" role="alert">${esc(acct.err)}</div>` : ""}
+      ${(view!=="lists" && (Object.keys(state.prices||{}).length || (state.spend||[]).length)) ? `<button class="optaction" id="optPriceClear" style="margin-top:10px">${BIN_SVG(16)} ${t("Clear prices and spending")}</button>` : ""}
     <div style="margin:6px 2px 10px;font-size:12.5px;color:var(--muted2);font-weight:600">${t("Leaving takes your name off this list and this phone forgets it; the others keep it. Emptying clears what is in the list for everyone — items, Regulars, the plan, prices, spending, occasions and what the app has learned. Forgetting clears every list, name, setting and backup on this phone; the shared lists stay for their people.")} ${t("Deleting your account does all that, takes your name off every list on this phone (a list only you are on is emptied) and deletes your sign-in and its saved settings on the server.")}</div>
+    ${sectHR("Help")}
+    <button class="optaction" id="optReport" style="margin-top:10px">${REPORT_SVG(16)} ${t("Report a problem")}</button>
+    ${row(t("New versions first (tester)"), `<div class="seg"><button data-opt-tester="1" class="${testerOn()?'on':''}">${t("On")}</button><button data-opt-tester="0" class="${!testerOn()?'on':''}">${t("Off")}</button></div>`)}<div class="opthint">${/* v3.20 */""}${t("This phone gets each new version as soon as it is out; the household's other phones get it a day later, so a problem shows here first.")}</div>
+    ${(swStatusMaybe(), swPendHTML())}
+    <button class="optaction" id="optDiagFold" aria-expanded="${optDiagOpen?"true":"false"}" style="margin-top:10px">${FLASK_SVG(16)} ${t("Diagnostics")}</button>${/* v3.23: the diagnostics, folded */""}
+    ${/* always drawn, so the Settings search finds them; folded = hidden by .optdiagx (wireOptions) unless searching */""}
+    <button class="optaction" id="optDiag" style="margin-top:10px">${FLASK_SVG(16)} ${t("AI diagnostics")}</button>
+    <button class="optaction" id="optPriceDiag" style="margin-top:10px">${FLAG_TAG_SVG} ${t("Price diagnostics")}</button>
+    <button class="optaction" id="optLocDiag" style="margin-top:10px">${PIN_SVG(16)} ${t("Location diagnostics")}</button>
+    ${row(t("Connection check"), `<span class="optdiag" id="optConnDiag">${connDiagHTML()}</span>`)}<div class="opthint">${t("If saving is slow, a screenshot of this helps find why.")}</div>
+    ${stuckLog().length ? `<button class="optaction" id="optStuck" style="margin-top:10px">${tf("Screen log · {n}", { n:stuckLog().length })}</button>` : ""}
+    ${(view!=="lists" && displayFor()==="flat" && curSort==="ai" && aiSeenCount()>0) ? `<button class="optaction" id="optResetAI" style="margin:-2px 0 10px">${t("♻︎ Reset AI — restart from category")}</button>` : ""}
+    ${row(t("First-time questions"), `<button class="storechip" id="optOnbReset">${t("Ask again")}</button>`)}<div class="opthint">${t("Your shops, pinning a shop, the aisle map and the how-it-works tip each ask once. This brings back any you answered with Skip or Never.")}</div>
     <div id="verFoot" style="text-align:center;margin-top:12px;font-size:12.5px;color:var(--muted2);font-weight:600" title="Build: ${APP_BUILD_DATE} · hold for diagnostics">${esc(IS_PREVIEW ? APP_VERSION + " · " + t("Preview data") : APP_VERSION)}</div>`;
 }
 function renderSettingsPage(){

@@ -57,6 +57,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     await page.goto(`http://127.0.0.1:${port}/index.html?list=v101`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(1500); };
   const tap = async(sel)=>{ await page.locator(sel).first().click(); await page.waitForTimeout(450); };
+  const menu = async(id, home)=>{ await tap('#cartNav, #cartNavP'); await tap('#shopMenu'); if(home) await tap('#smHome'); if(id) await tap('#'+id); };   // v3.23: the actions left Settings for the Shop ⋯ menu
   const ls = k=>page.evaluate(k=>localStorage.getItem(k), k);
   const pill = id=>page.locator(`#zoomer .pill[data-pill="${id}"]:visible`).first();   // visible: the urgent strip keeps hidden copies
 
@@ -136,19 +137,21 @@ const seed = (o) => { o=o||{}; return `(() => {
     /* ── (11) the 10% sheet ──────────────────────────────────────────── */
     await mk({ doc:{ memb:{ coles:{ on:true } }, prices:PRICES } });
     await tap('#setNav');
-    await tap('[data-memb-list="coles"]');
+    await menu('smTen-coles', 1);   /* SUPERSEDED by v3.23: The stock-up list left Settings for the Shop ⋯ menu. Still protects: the 10% sheet buttons */
     const hb = await page.evaluate(()=>{ const a=document.querySelector('#tenAdd'), c=document.querySelector('#tenClose'); return a && c ? [Math.round(a.getBoundingClientRect().height), Math.round(c.getBoundingClientRect().height), Math.round(a.getBoundingClientRect().top), Math.round(c.getBoundingClientRect().top)] : null; });
     ok('(11) the 10% sheet\'s Add and Close buttons are the same height, side by side', hb && Math.abs(hb[0]-hb[1])<=1 && hb[2]===hb[3], JSON.stringify(hb));
     await tap('#tenClose');
 
     /* ── (7) price diagnostics ───────────────────────────────────────── */
+    await tap('#setNav'); await tap('#optDiagFold');   // SUPERSEDED by v3.23: the diagnostics fold in Help (and the 10% sheet now closes to the Shop page)
     await tap('#optPriceDiag');
     const pd = await page.evaluate(()=>({ s:(document.querySelector('.pdrow .pd-s')||{}).textContent||'' }));
     await page.locator('.pdrow summary').first().click(); await page.waitForTimeout(250);
     const pl = await page.evaluate(()=>(document.querySelector('.pdrec .pd-l')||{}).textContent||'');
     ok('(7) Price diagnostics shows the latest price with its shop, and each record its suburb', /\$7\.50 · Coles Dandenong/.test(pd.s) && pl==='Dandenong VIC', JSON.stringify({pd, pl}));
     await tap('#pdClose');
-    const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#optRcpt').click()]);
+    await menu(null);   /* SUPERSEDED by v3.23: Read a receipt left Settings for the Shop ⋯ menu. Still protects: the receipt read after it */
+    const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#smRcpt').click()]);
     await fc.setFiles({ name:'r.png', mimeType:'image/png', buffer:PNG }); await page.waitForTimeout(1500);
     await tap('#rcSaveBtn');
     const rec = await page.evaluate(()=>{ const h=(JSON.parse(localStorage.getItem('ml_cache_v101')).prices||{}).honey||[]; return h[h.length-1]; });
@@ -163,7 +166,7 @@ const seed = (o) => { o=o||{}; return `(() => {
       return { gap:Math.round(b.top-f.bottom), log:JSON.parse(localStorage.getItem('ml_stucklog')||'[]') }; });
     ok('(12) a "+" out of place is put back on the next touch', st.gap>=0 && st.gap<=40, JSON.stringify({gap:st.gap}));
     ok('(12) …and written down, with how far out it was and what led up to it', st.log.length===1 && st.log[0].gap>300 && Array.isArray(st.log[0].trail) && st.log[0].src==='check', JSON.stringify(st.log[0]).slice(0,240));
-    await tap('#setNav');
+    await tap('#setNav'); await tap('#optDiagFold');   // SUPERSEDED by v3.23: Screen log is in Help › Diagnostics
     await tap('#optStuck');
     ok('(12) Settings › Help › Screen log lists it', await page.evaluate(()=>document.querySelectorAll('#stSheet .strow').length===1), '');
     await tap('#stSend');

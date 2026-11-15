@@ -168,7 +168,7 @@ shared only with the people on that list. Each phone reads at most 10 receipts a
 lower-case words for what the sign lists. It is built from `api/receipt.js`: the same key, the same vision model
 (`GEMINI_MODEL` on Gemini, `GROQ_VISION_MODEL` on Groq), the same retries, time budget and error codes. Nothing new
 to set up. It never logs the photo or what it read. A photo that is not a sign comes back as `{ aisle:"", items:[] }`.
-In the app it fills Settings › Sort › Aisle map, one line per sign, at most 60 signs a day per phone.
+In the app it fills the Shop ⋯ menu › At home › Aisle map, one line per sign, at most 60 signs a day per phone.
 
 ## What's in the fridge? (v2.94)
 

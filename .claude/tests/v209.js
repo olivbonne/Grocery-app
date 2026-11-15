@@ -58,6 +58,7 @@ const SEED = `(() => {
   const load = async()=>{ await page.goto(`http://127.0.0.1:${port}/index.html?list=v101`, { waitUntil:'domcontentloaded' }); await page.waitForTimeout(1500); };
   await load();
   const tap = async(sel)=>{ await page.locator(sel).first().click(); await page.waitForTimeout(550); };
+  const menu = async(id, home)=>{ await tap('#cartNav, #cartNavP'); await tap('#shopMenu'); if(home) await tap('#smHome'); if(id) await tap('#'+id); };   // v3.23: the actions left Settings for the Shop ⋯ menu
   const has = (sel)=>page.evaluate(s=>!!document.querySelector(s), sel);
   const cache = ()=>page.evaluate(()=>JSON.parse(localStorage.getItem('ml_cache_v101')||'{}'));
   const readReceipt = async(sel)=>{ const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.locator(sel).first().click()]);
@@ -69,8 +70,9 @@ const SEED = `(() => {
   try{
     /* ── A. reading ────────────────────────────────────────────────────── */
     await tap('#setNav, #setNavP, #setNavS');
-    ok('Settings › Prices offers "Read a receipt"', await has('#optRcpt'), '');
-    await readReceipt('#optRcpt');
+    await menu(null);   /* SUPERSEDED by v3.23: Read a receipt left Settings for the Shop ⋯ menu. Still protects: it is offered and reads the photo */
+    ok('Settings › Prices offers "Read a receipt"', await has('#smRcpt'), '');
+    await readReceipt('#smRcpt');
     ok('the photo goes to /api/receipt, as an image the phone has already shrunk', sent.length===1 && /^data:image\/jpeg;base64,/.test(sent[0].image||''), JSON.stringify(sent.map(s=>String(s.image||'').slice(0,30))));
     const rv = await page.evaluate(()=>{ const s=document.querySelector('#rcSheet'); if(!s) return null;
       return { store:[...s.querySelectorAll('[data-rcstore].on')].map(b=>b.textContent.trim()),
@@ -122,7 +124,7 @@ const SEED = `(() => {
     await tap('#setNav, #setNavP, #setNavS');
     await page.evaluate(()=>{ const d=new Date(); const k=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); localStorage.setItem('ml_rcptday', k+'|30'); });   // SUPERSEDED by v2.29: the day's limit is 30, not 10
     const before = sent.length;
-    await readReceipt('#optRcpt');
+    await menu(null); await readReceipt('#smRcpt');   /* SUPERSEDED by v3.23: Read a receipt left Settings for the Shop ⋯ menu. Still protects: the limit and the error message */
     const capMsg = await page.evaluate(()=>{ const s=document.querySelector('#rcSheet'); return s ? s.textContent.replace(/\s+/g,' ') : ''; });
     /* SUPERSEDED by v2.29: the limit is 30 a day (it was 10) and the message says to keep the receipt. Still protects: the
        receipt past the limit is stopped before any request, with a message. */
@@ -130,7 +132,7 @@ const SEED = `(() => {
     await tap('#rcOk');
     await page.evaluate(()=>localStorage.removeItem('ml_rcptday'));
     replyStatus=500; replyBody={ error:'Server not configured', code:'not_configured' };
-    await readReceipt('#optRcpt');
+    await menu(null); await readReceipt('#smRcpt');   /* SUPERSEDED by v3.23: Read a receipt left Settings for the Shop ⋯ menu. Still protects: the limit and the error message */
     const errMsg = await page.evaluate(()=>{ const s=document.querySelector('#rcSheet'); return s ? s.textContent.replace(/\s+/g,' ') : ''; });
     ok('a server that is not set up says so plainly', /isn't set up/.test(errMsg), errMsg.slice(0,120));
     await tap('#rcOk');
