@@ -81,7 +81,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     ok('(13) Settings says when backups are taken (once a day, on leaving the app, the last seven days)', /one a day/.test(bk) && /leave the app/.test(bk) && /seven days/.test(bk), bk);
 
     /* (12) price diagnostics */
-    if(!(await page.$('#optPriceDiag'))) await tap('#optDiagFold');   // SUPERSEDED by v3.23: Help › Diagnostics folds it
+    if((await page.getAttribute('#optDiagFold','aria-expanded'))!=='true') await tap('#optDiagFold');   /* the folded rows stay in the page (hidden) so the search finds them */   // SUPERSEDED by v3.23: Help › Diagnostics folds it
     await tap('#optPriceDiag');
     const pd = await page.evaluate(()=>({ rows:[...document.querySelectorAll('.pdrow .pd-n')].map(e=>e.textContent), head:(document.querySelector('#pdSheet .hint')||{}).textContent||'' }));
     ok('(12) Help › Price diagnostics lists each item, the most recently priced first', JSON.stringify(pd.rows)==='["Honey","Linguine"]' && /2 items, 3 prices/.test(pd.head), JSON.stringify(pd));
