@@ -71,13 +71,20 @@ const seed = (o) => { o=o||{}; return `(() => {
     const D = DOC({ items:[ it("1","Milk","dairy"), it("2","Bread","bakery") ] });
     await mk({ srv:{ "lists/v101": D }, cache:D, extra:'localStorage.setItem("ml_nosmall","1");' });
     await page.locator('#shopMenu').click(); await page.waitForTimeout(400);
+    /* SUPERSEDED by v3.22: the shop's things first, the rest under the "At home" fold (closed each time the menu opens); the
+       display options' fold now sits inside it. Still protects: the order, Report last, the display rows folded away */
+    const seqOf = ()=>page.evaluate(()=>[...document.getElementById('shopMenuEl').querySelectorAll('.smgroup, .smitem, #smHome, #smMore, .smtlabel')].map(e=>e.classList.contains('smgroup')?'#'+e.textContent.trim():e.id||e.textContent.trim()).join(' '));
+    const seqHome = await seqOf(), homeExp = await page.evaluate(()=>document.getElementById('smHome').getAttribute('aria-expanded'));
+    ok('closed, the menu reads At the shop: Store, Look, card, receipt, then the At home fold (marked closed), then Report a problem last',
+      seqHome==='#At the shop Store Look smCard smRcpt smHome smReport' && homeExp==='false', seqHome);
+    await page.locator('#smHome').click(); await page.waitForTimeout(400);
     const m0 = await page.evaluate(()=>{ const m=document.getElementById('shopMenuEl');
-      const seq=[...m.querySelectorAll('.smgroup, .smitem, #smMore, .smtlabel')].map(e=>e.classList.contains('smgroup')?'#'+e.textContent.trim():e.id||e.textContent.trim());
+      const seq=[...m.querySelectorAll('.smgroup, .smitem, #smHome, #smMore, .smtlabel')].map(e=>e.classList.contains('smgroup')?'#'+e.textContent.trim():e.id||e.textContent.trim());
       return { seq, h:m.scrollHeight, client:m.clientHeight, display:m.querySelectorAll('[data-sm-cols],[data-sm-lines],[data-sm-zoom],[data-sm-theme],[data-sm-caton],[data-sm-itememoji],[data-sm-sort]').length,
         exp:(document.getElementById('smMore')||{getAttribute:()=>null}).getAttribute('aria-expanded'), more:(document.getElementById('smMore')||{}).textContent||'', svg:!!document.querySelector('#smMore svg') }; });
     const seq = m0.seq.join(' ');
-    ok('the menu reads Store, At the shop, Display (Look + More display options), Your list, then Report a problem last',
-      /^Store #At the shop smCard smRcpt smCompare smFridge #Display Look smMore #Your list smSend smOcc smSpend smEditPage smReport$/.test(seq), seq);
+    ok('At home opened, the menu reads At the shop (Store, Look, card, receipt), At home (cheaper store, fridge, send, occasions, spending, edit this page, More display options), then Report a problem last',
+      /^#At the shop Store Look smCard smRcpt smHome smCompare smFridge smSend smOcc smSpend smEditPage smMore smReport$/.test(seq), seq);
     ok('closed, none of the seven display rows is shown', m0.display===0, String(m0.display));
     ok('the opener says "More display options", is marked closed, and its mark is drawn', /More display options/.test(m0.more) && m0.exp==='false' && m0.svg && !/[›→▸▾⌄]/.test(m0.more), m0.more);
     if(out) await page.screenshot({ path: out.replace(/\.png$/,'-closed.png') });
@@ -93,12 +100,15 @@ const seed = (o) => { o=o||{}; return `(() => {
     ok('…a row inside still works and the box stays open', m2.cols==='2' && m2.open, JSON.stringify(m2));
     await page.mouse.click(20, 820); await page.waitForTimeout(300);
     await page.locator('#shopMenu').click(); await page.waitForTimeout(400);
+    const m3h = await page.evaluate(()=>({ home:document.getElementById('smHome').getAttribute('aria-expanded'), box:!!document.getElementById('smHomeBox') }));
+    ok('…reopening the menu closes At home again', m3h.home==='false' && !m3h.box, JSON.stringify(m3h));   // v3.22
+    await page.locator('#smHome').click(); await page.waitForTimeout(400);
     const m3 = await page.evaluate(()=>!!document.getElementById('smMoreBox'));
-    ok('…closing and reopening the menu keeps it as it was left, while the app is open', m3);
+    ok('…closing and reopening the menu keeps More display options as it was left, while the app is open', m3);   // SUPERSEDED by v3.22: checked after opening At home
     await page.locator('#smMore').click(); await page.waitForTimeout(300);
     ok('…and "Fewer display options" folds it away again', await page.evaluate(()=>!document.getElementById('smMoreBox')));
     const fr = fs.readFileSync(path.join(ROOT,'js','i18n.js'),'utf8');
-    ok('the new words have their French', ['"At the shop"','"Display"','"More display options"','"Fewer display options"','"Your list"'].every(k=>fr.includes(k+':')));
+    ok('the new words have their French', ['"At the shop"','"At home"','"Display"','"More display options"','"Fewer display options"','"Your list"'].every(k=>fr.includes(k+':')));
   } catch(e){ ok('suite ran to the end', false, (e.stack||e.message).slice(0,300)); }
   ok('no console errors anywhere in the run', errors.length===0, JSON.stringify(errors.slice(0,5)));
   if(browser) await browser.close();

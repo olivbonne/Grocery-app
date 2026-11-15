@@ -76,7 +76,7 @@ const seed = (o) => { o=o||{}; return `(() => { if(localStorage.getItem("t_seede
     /* Text size in the Shop menu */
     await mk({ docs:D() }, '');
     const z0 = await page.evaluate(()=>localStorage.getItem('ml_density')||'');
-    await page.locator('#shopMenu').click(); await page.waitForTimeout(500); await page.evaluate(()=>{ const b=document.getElementById('smMore'); if(b && b.getAttribute('aria-expanded')!=='true') b.click(); }); await page.waitForTimeout(400);   /* SUPERSEDED by v3.08: the display options sit under "More display options" — opened first; still protects the same controls */
+    await page.locator('#shopMenu').click(); await page.waitForTimeout(500); /* SUPERSEDED by v3.22: the display options moved under the "At home" fold — open it first; the check below still protects the same control */ await page.evaluate(()=>{ const h=document.getElementById('smHome'); if(h && h.getAttribute('aria-expanded')!=='true') h.click(); }); await page.waitForTimeout(300); await page.evaluate(()=>{ const b=document.getElementById('smMore'); if(b && b.getAttribute('aria-expanded')!=='true') b.click(); }); await page.waitForTimeout(400);   /* SUPERSEDED by v3.08: the display options sit under "More display options" — opened first; still protects the same controls */
     const pct0 = await page.locator('#shopMenuEl .smzpct').innerText().catch(()=>'');
     await page.locator('#shopMenuEl [data-sm-zoom="1"]').click(); await page.waitForTimeout(500);
     const pct1 = await page.locator('#shopMenuEl .smzpct').innerText().catch(()=>'');

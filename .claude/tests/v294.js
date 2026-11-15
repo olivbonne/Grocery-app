@@ -109,7 +109,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==','base64');
     const fridgeTry = async(route)=>{ await mk({ srv:{ "lists/v101": F }, cache:F, extra:BASE });
       await ctx.route('**/api/fridge', route);
-      await page.locator('#shopMenu').click(); await page.waitForTimeout(400);
+      await page.locator('#shopMenu').click(); await page.waitForTimeout(400); await page.locator('#smHome').click(); await page.waitForTimeout(300);   // SUPERSEDED by v3.22: the fridge is under At home
       const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#smFridge').click()]);
       await fc.setFiles({ name:'f.png', mimeType:'image/png', buffer:PNG }); await page.waitForTimeout(1800);
       return page.evaluate(()=>{ const s=document.querySelector('#fridgeSheet'); return s ? s.textContent.replace(/\s+/g,' ').trim() : null; }); };

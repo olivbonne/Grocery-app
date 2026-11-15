@@ -93,7 +93,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     await tap('#rptCancel');
 
     /* ── (5) occasions ───────────────────────────────────────────────── */
-    await tap('#shopMenu');
+    await tap('#shopMenu'); await tap('#smHome');   // SUPERSEDED by v3.22: Occasions is under At home
     ok('(5) the menu item says what it is', /Occasions/.test(await page.evaluate(()=>document.querySelector('#smOcc').textContent)), '');
     await tap('#smOcc');
     const oc = await page.evaluate(()=>({ intro:(document.querySelector('#occSheet .hint')||{}).textContent||'', save:!!document.querySelector('#occToSave'), kb:document.querySelector('#occBg').classList.contains('kbpin') }));
@@ -101,7 +101,7 @@ const seed = (o) => { o=o||{}; return `(() => {
     ok('(3) the occasion sheet follows the keyboard', oc.kb, '');
     await tap('#occToSave');
     await page.locator('#occName').fill('BBQ'); await tap('#occSaveGo');
-    await tap('#shopMenu'); await tap('#smOcc');
+    await tap('#shopMenu'); await tap('#smHome'); await tap('#smOcc');   // SUPERSEDED by v3.22: At home first
     ok('(5) …saving from there puts it in the list of occasions, ready to Add', await page.evaluate(()=>[...document.querySelectorAll('.occ-n')].some(e=>/BBQ/.test(e.textContent)) && !!document.querySelector('[data-occadd]')), '');
     await tap('#occClose');
 
